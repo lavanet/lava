@@ -12,8 +12,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "6500",
-        "allowed_block_lag_for_qos_sync": "2",
+        "average_block_time": 6500,
+        "allowed_block_lag_for_qos_sync": 2,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"
@@ -62,7 +62,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -70,7 +70,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "juno.mint.Query/Inflation",
@@ -78,7 +78,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -86,7 +86,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "juno.mint.Query/Params",
@@ -94,7 +94,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -102,7 +102,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],
@@ -155,8 +155,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "6500",
-        "allowed_block_lag_for_qos_sync": "2",
+        "average_block_time": 6500,
+        "allowed_block_lag_for_qos_sync": 2,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"

@@ -11,8 +11,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": "180000",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 180000,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -39,7 +39,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -47,7 +47,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_blockNumber",
@@ -57,7 +57,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -65,7 +65,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_call",
@@ -75,7 +75,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -83,7 +83,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_chainId",
@@ -93,7 +93,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -101,7 +101,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_estimateFee",
@@ -111,7 +111,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -119,7 +119,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getBlockTransactionCount",
@@ -129,7 +129,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -137,7 +137,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getBlockWithTxHashes",
@@ -149,7 +149,7 @@
                                     "parser_func": "PARSE_CANONICAL",
                                     "default_value": "latest"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -157,7 +157,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getBlockWithTxs",
@@ -169,7 +169,7 @@
                                     "parser_func": "PARSE_CANONICAL",
                                     "default_value": "latest"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -177,7 +177,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getClass",
@@ -187,7 +187,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -195,7 +195,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getClassAt",
@@ -205,7 +205,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -213,7 +213,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getClassHashAt",
@@ -223,7 +223,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -231,7 +231,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getEvents",
@@ -241,7 +241,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -249,7 +249,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getNonce",
@@ -259,7 +259,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -267,7 +267,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getStateUpdate",
@@ -277,7 +277,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -285,7 +285,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getStorageAt",
@@ -295,7 +295,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -303,7 +303,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getTransactionByBlockIdAndIndex",
@@ -313,7 +313,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -321,7 +321,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getTransactionByHash",
@@ -331,7 +331,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -339,7 +339,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_getTransactionReceipt",
@@ -349,7 +349,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -357,7 +357,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_pendingTransactions",
@@ -367,7 +367,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -375,7 +375,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "starknet_syncing",
@@ -385,7 +385,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -393,7 +393,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -451,8 +451,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": "1800000",
-                "allowed_block_lag_for_qos_sync": "1",
+                "average_block_time": 1800000,
+                "allowed_block_lag_for_qos_sync": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

@@ -12,8 +12,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 1,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "5000",
-        "allowed_block_lag_for_qos_sync": "200",
+        "average_block_time": 5000,
+        "allowed_block_lag_for_qos_sync": 200,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"
@@ -38,7 +38,7 @@
                   "parser_arg": [""],
                   "parser_func": "EMPTY"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": false,
                 "category": {
                   "deterministic": true,
@@ -46,7 +46,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "eth_getBlockRange",
@@ -54,7 +54,7 @@
                   "parser_arg": ["1"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -62,7 +62,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "eth_sendTransaction",
@@ -70,7 +70,7 @@
                   "parser_arg": [""],
                   "parser_func": "EMPTY"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": false,
                 "category": {
                   "deterministic": true,
@@ -78,7 +78,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "rollup_gasPrices",
@@ -86,7 +86,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -94,7 +94,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "rollup_getInfo",
@@ -102,7 +102,7 @@
                   "parser_arg": [""],
                   "parser_func": "EMPTY"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -110,7 +110,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],
@@ -140,8 +140,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 1,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "5000",
-        "allowed_block_lag_for_qos_sync": "200",
+        "average_block_time": 5000,
+        "allowed_block_lag_for_qos_sync": 200,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"

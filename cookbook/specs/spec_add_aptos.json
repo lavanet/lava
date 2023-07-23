@@ -11,8 +11,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 5,
-                "average_block_time": "100",
-                "allowed_block_lag_for_qos_sync": "100",
+                "average_block_time": 100,
+                "allowed_block_lag_for_qos_sync": 100,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -39,7 +39,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -47,7 +47,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/-/healthy",
@@ -57,7 +57,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -65,7 +65,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}",
@@ -75,7 +75,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -83,7 +83,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/events/{creation_number}",
@@ -93,7 +93,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -101,7 +101,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/events/{event_handle}/{field_name}",
@@ -111,7 +111,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -119,7 +119,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/module/{module_name}",
@@ -129,7 +129,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -137,7 +137,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/modules",
@@ -147,7 +147,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -155,7 +155,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/resource/{resource_type}",
@@ -165,7 +165,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -173,7 +173,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/resources",
@@ -183,7 +183,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -191,7 +191,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/accounts/{address}/transactions",
@@ -201,7 +201,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -209,7 +209,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/blocks/by_height/{block_height}",
@@ -219,7 +219,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -227,7 +227,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/blocks/by_version/{version}",
@@ -237,7 +237,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -245,7 +245,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/estimate_gas_price",
@@ -255,7 +255,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -263,7 +263,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/events/{event_key}",
@@ -273,7 +273,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -281,7 +281,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/spec",
@@ -291,7 +291,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -299,7 +299,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/transactions/by_hash/{txn_hash}",
@@ -309,7 +309,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -317,7 +317,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/transactions/by_version/{txn_version}",
@@ -327,7 +327,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -335,7 +335,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/transactions/encode_submission",
@@ -345,7 +345,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -353,9 +353,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "rest",
-                                "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [
@@ -432,6 +430,28 @@
                                 },
                                 "api_name": "/"
                             }
+                        ],
+                        "verifications": [
+                            {
+                                "name":"chain-id",
+                                "parse_directive": {
+                                    "function_template": "/",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "chain_id"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/"
+                                },
+                                "values" : [
+                                    {
+                                        "expected_value":"1"
+                                    }
+                                ]
+                            }
                         ]
                     },
                     {
@@ -451,7 +471,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -459,7 +479,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/view",
@@ -469,7 +489,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -477,7 +497,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/transactions/batch",
@@ -487,7 +507,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -495,7 +515,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/tables/table_handle/raw_item",
@@ -505,7 +525,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -513,7 +533,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/tables/{table_handle}/item",
@@ -523,7 +543,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -531,7 +551,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/transactions",
@@ -541,7 +561,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -549,7 +569,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],

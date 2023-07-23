@@ -12,8 +12,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "6500",
-        "allowed_block_lag_for_qos_sync": "2",
+        "average_block_time": 6500,
+        "allowed_block_lag_for_qos_sync": 2,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"
@@ -38,7 +38,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -46,7 +46,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/epochs/v1/epochs",
@@ -54,7 +54,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -62,7 +62,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/erc20/v1/params",
@@ -70,7 +70,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -78,7 +78,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/erc20/v1/token_pairs",
@@ -86,7 +86,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -94,7 +94,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/erc20/v1/token_pairs/{token}",
@@ -102,7 +102,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -110,7 +110,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/fees/v1/fees",
@@ -118,7 +118,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -126,7 +126,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/fees/v1/fees/{contract_address}",
@@ -134,7 +134,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -142,7 +142,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/fees/v1/fees/{deployer_address}",
@@ -150,7 +150,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -158,7 +158,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/fees/v1/params",
@@ -166,7 +166,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -174,7 +174,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/govshuttle/params",
@@ -182,7 +182,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -190,7 +190,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/inflation/v1/circulating_supply",
@@ -198,7 +198,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -206,7 +206,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/inflation/v1/epoch_mint_provision",
@@ -214,7 +214,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -222,7 +222,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/inflation/v1/inflation_rate",
@@ -230,7 +230,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -238,7 +238,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/inflation/v1/params",
@@ -246,7 +246,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -254,7 +254,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/inflation/v1/period",
@@ -262,7 +262,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -270,7 +270,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/inflation/v1/skipped_epochs",
@@ -278,7 +278,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -286,7 +286,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/recovery/v1/params",
@@ -294,7 +294,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -302,7 +302,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/v1/csr/contract/{address}",
@@ -310,7 +310,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -318,7 +318,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/v1/csr/csrs",
@@ -326,7 +326,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -334,7 +334,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/v1/csr/nft/{nftId}",
@@ -342,7 +342,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -350,7 +350,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/v1/csr/params",
@@ -358,7 +358,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -366,7 +366,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/v1/csr/turnstile",
@@ -374,7 +374,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -382,7 +382,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/canto/vesting/v1/balances/{address}",
@@ -390,7 +390,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -398,7 +398,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/account/{address}",
@@ -406,7 +406,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -414,7 +414,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/balances/{address}",
@@ -422,7 +422,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -430,7 +430,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/base_fee",
@@ -438,7 +438,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -446,7 +446,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/codes/{address}",
@@ -454,7 +454,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -462,7 +462,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/cosmos_account/{address}",
@@ -470,7 +470,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -478,7 +478,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/estimate_gas",
@@ -486,7 +486,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -494,7 +494,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/eth_call",
@@ -502,7 +502,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -510,7 +510,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/params",
@@ -518,7 +518,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -526,7 +526,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/storage/{address}/{key}",
@@ -534,7 +534,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -542,7 +542,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/trace_block",
@@ -550,7 +550,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -558,7 +558,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/trace_tx",
@@ -566,7 +566,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -574,7 +574,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/evm/v1/validator_account/{cons_address}",
@@ -582,7 +582,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -590,7 +590,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/feemarket/v1/base_fee",
@@ -598,7 +598,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -606,7 +606,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/feemarket/v1/block_gas",
@@ -614,7 +614,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -622,7 +622,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/ethermint/feemarket/v1/params",
@@ -630,7 +630,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -638,7 +638,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],
@@ -671,7 +671,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -679,7 +679,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.csr.v1.Query/CSRByNFT",
@@ -687,7 +687,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -695,7 +695,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.csr.v1.Query/CSRs",
@@ -703,7 +703,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -711,7 +711,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.csr.v1.Query/Params",
@@ -719,7 +719,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -727,7 +727,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.csr.v1.Query/Turnstile",
@@ -735,7 +735,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -743,7 +743,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.epochs.v1.Query/CurrentEpoch",
@@ -751,7 +751,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -759,7 +759,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.epochs.v1.Query/EpochInfos",
@@ -767,7 +767,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -775,7 +775,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.erc20.v1.Query/Params",
@@ -783,7 +783,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -791,7 +791,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.erc20.v1.Query/TokenPair",
@@ -799,7 +799,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -807,7 +807,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.erc20.v1.Query/TokenPairs",
@@ -815,7 +815,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -823,7 +823,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.fees.v1.Query/DeployerFees",
@@ -831,7 +831,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -839,7 +839,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.fees.v1.Query/Fee",
@@ -847,7 +847,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -855,7 +855,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.fees.v1.Query/Fees",
@@ -863,7 +863,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -871,7 +871,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.fees.v1.Query/Params",
@@ -879,7 +879,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -887,7 +887,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.govshuttle.v1.Query/Params",
@@ -895,7 +895,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -903,7 +903,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.inflation.v1.Query/CirculatingSupply",
@@ -911,7 +911,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -919,7 +919,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.inflation.v1.Query/EpochMintProvision",
@@ -927,7 +927,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -935,7 +935,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.inflation.v1.Query/InflationRate",
@@ -943,7 +943,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -951,7 +951,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.inflation.v1.Query/Params",
@@ -959,7 +959,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -967,7 +967,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.inflation.v1.Query/Period",
@@ -975,7 +975,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -983,7 +983,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.inflation.v1.Query/SkippedEpochs",
@@ -991,7 +991,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -999,7 +999,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.recovery.v1.Query/Params",
@@ -1007,7 +1007,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1015,7 +1015,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "canto.vesting.v1.Query/Balances",
@@ -1023,7 +1023,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1031,7 +1031,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/Account",
@@ -1039,7 +1039,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1047,7 +1047,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/Balance",
@@ -1055,7 +1055,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1063,7 +1063,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/BaseFee",
@@ -1071,7 +1071,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1079,7 +1079,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/Code",
@@ -1087,7 +1087,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1095,7 +1095,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/CosmosAccount",
@@ -1103,7 +1103,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1111,7 +1111,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/EstimateGas",
@@ -1119,7 +1119,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1127,7 +1127,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/EthCall",
@@ -1135,7 +1135,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1143,7 +1143,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/Params",
@@ -1151,7 +1151,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1159,7 +1159,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/Storage",
@@ -1167,7 +1167,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1175,7 +1175,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/TraceBlock",
@@ -1183,7 +1183,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1191,7 +1191,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/TraceTx",
@@ -1199,7 +1199,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1207,7 +1207,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.evm.v1.Query/ValidatorAccount",
@@ -1215,7 +1215,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1223,7 +1223,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.feemarket.v1.Query/BaseFee",
@@ -1231,7 +1231,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1239,7 +1239,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.feemarket.v1.Query/BlockGas",
@@ -1247,7 +1247,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1255,7 +1255,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "ethermint.feemarket.v1.Query/Params",
@@ -1263,7 +1263,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1271,7 +1271,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],

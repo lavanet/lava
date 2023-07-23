@@ -11,8 +11,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "1000",
-                "allowed_block_lag_for_qos_sync": "10",
+                "average_block_time": 1000,
+                "allowed_block_lag_for_qos_sync": 10,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -39,7 +39,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                                 "enabled": true,
 
@@ -50,7 +50,7 @@
                                     "stateful": 0
                                 },
 
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_batchTransaction",
@@ -60,7 +60,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                             
                                         "category": {
@@ -70,7 +70,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -81,7 +81,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -91,7 +91,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -102,7 +102,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -112,7 +112,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -123,7 +123,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -133,7 +133,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -144,7 +144,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -154,7 +154,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -165,7 +165,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -175,7 +175,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -186,7 +186,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -196,7 +196,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -207,7 +207,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -217,7 +217,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -228,7 +228,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -238,7 +238,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -249,7 +249,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -259,7 +259,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -270,7 +270,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -280,7 +280,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCheckpointSummaryByDigest",
@@ -290,7 +290,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -300,7 +300,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -311,7 +311,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -321,7 +321,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -332,7 +332,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -342,7 +342,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -353,7 +353,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -363,7 +363,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -374,7 +374,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -384,7 +384,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -395,7 +395,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -405,7 +405,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -416,7 +416,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -426,7 +426,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -437,7 +437,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -447,7 +447,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -458,7 +458,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -468,7 +468,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getMoveFunctionArgTypes",
@@ -478,7 +478,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -488,7 +488,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -499,7 +499,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -509,7 +509,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -520,7 +520,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -530,7 +530,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -541,7 +541,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -551,7 +551,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -562,7 +562,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -572,7 +572,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -583,7 +583,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -593,7 +593,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -604,7 +604,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -614,7 +614,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -625,7 +625,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -635,7 +635,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -646,7 +646,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -656,7 +656,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -667,7 +667,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -677,7 +677,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -688,7 +688,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -698,7 +698,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -709,7 +709,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -719,7 +719,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -730,7 +730,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -740,7 +740,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -751,7 +751,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -761,7 +761,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -772,7 +772,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -782,7 +782,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -793,7 +793,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -803,7 +803,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -814,7 +814,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -824,7 +824,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -835,7 +835,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -845,7 +845,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -856,7 +856,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -866,7 +866,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -877,7 +877,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -887,7 +887,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -898,7 +898,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -908,7 +908,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -919,7 +919,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -929,7 +929,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -940,7 +940,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -950,7 +950,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -961,7 +961,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -971,7 +971,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -982,7 +982,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -992,7 +992,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1003,7 +1003,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1013,7 +1013,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1024,7 +1024,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1034,7 +1034,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1045,7 +1045,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1055,7 +1055,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1066,7 +1066,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1076,7 +1076,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1087,7 +1087,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1097,7 +1097,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1108,7 +1108,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1118,7 +1118,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1129,7 +1129,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1139,7 +1139,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1150,7 +1150,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1160,7 +1160,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1171,7 +1171,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1181,7 +1181,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             },
                             {
@@ -1192,7 +1192,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                             
                                         "category": {
@@ -1202,7 +1202,7 @@
                                             "stateful": 0
                                         },
                             
-                                        "extra_compute_units": "0"
+                                        "extra_compute_units": 0
                             
                             }
                         ],

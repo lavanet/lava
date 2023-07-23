@@ -11,8 +11,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -39,7 +39,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -47,7 +47,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/interchain_accounts/host/v1/params",
@@ -57,7 +57,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -65,7 +65,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/router/v1/params",
@@ -75,7 +75,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -83,7 +83,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address",
@@ -93,7 +93,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -101,7 +101,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
@@ -111,7 +111,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -119,7 +119,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/transfer/v1/denom_traces",
@@ -129,7 +129,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -137,7 +137,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
@@ -147,7 +147,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -155,7 +155,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/apps/transfer/v1/params",
@@ -165,7 +165,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -173,7 +173,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/client/v1/params",
@@ -183,7 +183,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -191,7 +191,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels",
@@ -201,7 +201,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -209,7 +209,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
@@ -219,7 +219,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -227,7 +227,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
@@ -237,7 +237,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -245,7 +245,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
@@ -255,7 +255,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -263,7 +263,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
@@ -273,7 +273,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -281,7 +281,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
@@ -291,7 +291,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -299,7 +299,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
@@ -309,7 +309,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -317,7 +317,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
@@ -327,7 +327,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -335,7 +335,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
@@ -345,7 +345,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -353,7 +353,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
@@ -363,7 +363,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -371,7 +371,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
@@ -381,7 +381,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -389,7 +389,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
@@ -399,7 +399,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -407,7 +407,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/channel/v1/connections/{connection}/channels",
@@ -417,7 +417,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -425,7 +425,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/client_states",
@@ -435,7 +435,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -443,7 +443,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/client_states/{client_id}",
@@ -453,7 +453,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -461,7 +461,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/client_status/{client_id}",
@@ -471,7 +471,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -479,7 +479,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/consensus_states/{client_id}",
@@ -489,7 +489,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -497,7 +497,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/consensus_states/{client_id}/heights",
@@ -507,7 +507,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -515,7 +515,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
@@ -525,7 +525,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -533,7 +533,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/params",
@@ -543,7 +543,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -551,7 +551,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/upgraded_client_states",
@@ -561,7 +561,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -569,7 +569,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/client/v1/upgraded_consensus_states",
@@ -579,7 +579,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -587,7 +587,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/connection/v1/client_connections/{client_id}",
@@ -597,7 +597,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -605,7 +605,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/connection/v1/connections",
@@ -615,7 +615,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -623,7 +623,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/connection/v1/connections/{connection_id}",
@@ -633,7 +633,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -641,7 +641,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
@@ -651,7 +651,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -659,7 +659,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
@@ -669,7 +669,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -677,7 +677,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/ibc/core/connection/v1/params",
@@ -687,7 +687,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -695,7 +695,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -719,7 +719,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -727,7 +727,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.applications.interchain_accounts.host.v1.Query/Params",
@@ -737,7 +737,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -745,7 +745,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.applications.transfer.v1.Query/DenomHash",
@@ -755,7 +755,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -763,7 +763,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.applications.transfer.v1.Query/DenomTrace",
@@ -773,7 +773,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -781,7 +781,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.applications.transfer.v1.Query/DenomTraces",
@@ -791,7 +791,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -799,7 +799,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.applications.transfer.v1.Query/EscrowAddress",
@@ -809,7 +809,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -817,7 +817,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.applications.transfer.v1.Query/Params",
@@ -827,7 +827,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -835,7 +835,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/Channel",
@@ -845,7 +845,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -853,7 +853,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/ChannelClientState",
@@ -863,7 +863,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -871,7 +871,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/ChannelConsensusState",
@@ -881,7 +881,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -889,7 +889,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/Channels",
@@ -899,7 +899,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -907,7 +907,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/ConnectionChannels",
@@ -917,7 +917,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -925,7 +925,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/NextSequenceReceive",
@@ -935,7 +935,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -943,7 +943,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/PacketAcknowledgement",
@@ -953,7 +953,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -961,7 +961,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/PacketAcknowledgements",
@@ -971,7 +971,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -979,7 +979,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/PacketCommitment",
@@ -989,7 +989,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -997,7 +997,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/PacketCommitments",
@@ -1007,7 +1007,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1015,7 +1015,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/PacketReceipt",
@@ -1025,7 +1025,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1033,7 +1033,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/UnreceivedAcks",
@@ -1043,7 +1043,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1051,7 +1051,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.channel.v1.Query/UnreceivedPackets",
@@ -1061,7 +1061,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1069,7 +1069,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ClientParams",
@@ -1079,7 +1079,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1087,7 +1087,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ClientState",
@@ -1097,7 +1097,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1105,7 +1105,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ClientStates",
@@ -1115,7 +1115,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1123,7 +1123,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ClientStatus",
@@ -1133,7 +1133,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1141,7 +1141,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ConsensusState",
@@ -1151,7 +1151,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1159,7 +1159,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ConsensusStateHeights",
@@ -1169,7 +1169,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1177,7 +1177,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/ConsensusStates",
@@ -1187,7 +1187,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1195,7 +1195,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/UpgradedClientState",
@@ -1205,7 +1205,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1213,7 +1213,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.client.v1.Query/UpgradedConsensusState",
@@ -1223,7 +1223,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1231,7 +1231,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.connection.v1.Query/ClientConnections",
@@ -1241,7 +1241,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1249,7 +1249,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.connection.v1.Query/Connection",
@@ -1259,7 +1259,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1267,7 +1267,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.connection.v1.Query/ConnectionClientState",
@@ -1277,7 +1277,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1285,7 +1285,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.connection.v1.Query/ConnectionConsensusState",
@@ -1295,7 +1295,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1303,7 +1303,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ibc.core.connection.v1.Query/Connections",
@@ -1313,7 +1313,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1321,7 +1321,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],

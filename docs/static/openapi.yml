@@ -32285,6 +32285,89 @@ paths:
                                         base64,hex,bech32
                                 api_name:
                                   type: string
+                          extensions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                cu_multiplier:
+                                  type: number
+                                  format: float
+                          verifications:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                parse_directive:
+                                  type: object
+                                  properties:
+                                    function_tag:
+                                      type: string
+                                      enum:
+                                        - DISABLED
+                                        - GET_BLOCKNUM
+                                        - GET_BLOCK_BY_NUM
+                                        - SET_LATEST_IN_METADATA
+                                        - SET_LATEST_IN_BODY
+                                        - GET_CHAIN_ID
+                                      default: DISABLED
+                                    function_template:
+                                      type: string
+                                    result_parsing:
+                                      type: object
+                                      properties:
+                                        parser_arg:
+                                          type: array
+                                          items:
+                                            type: string
+                                        parser_func:
+                                          type: string
+                                          enum:
+                                            - EMPTY
+                                            - PARSE_BY_ARG
+                                            - PARSE_CANONICAL
+                                            - PARSE_DICTIONARY
+                                            - PARSE_DICTIONARY_OR_ORDERED
+                                            - DEFAULT
+                                          default: EMPTY
+                                          description: >-
+                                            means parameters are non related to
+                                            block, and should fetch latest block
+                                            args: "latest"
+                                          title: >-
+                                            - PARSE_BY_ARG: means parameters are
+                                            ordered and flat expected arguments are:
+                                            [param index] (example: PARAMS:
+                                            [<#BlockNum>,"banana"]) args: 0
+                                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                             - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                             - DEFAULT: reserved
+                                        default_value:
+                                          type: string
+                                          title: >-
+                                            default value when set allows parsing
+                                            failures to assume the default value
+                                        encoding:
+                                          type: string
+                                          title: >-
+                                            used to parse byte responses:
+                                            base64,hex,bech32
+                                    api_name:
+                                      type: string
+                                values:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      extension:
+                                        type: string
+                                      expected_value:
+                                        type: string
               pagination:
                 type: object
                 properties:
@@ -32656,6 +32739,89 @@ paths:
                                       base64,hex,bech32
                               api_name:
                                 type: string
+                        extensions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              cu_multiplier:
+                                type: number
+                                format: float
+                        verifications:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              parse_directive:
+                                type: object
+                                properties:
+                                  function_tag:
+                                    type: string
+                                    enum:
+                                      - DISABLED
+                                      - GET_BLOCKNUM
+                                      - GET_BLOCK_BY_NUM
+                                      - SET_LATEST_IN_METADATA
+                                      - SET_LATEST_IN_BODY
+                                      - GET_CHAIN_ID
+                                    default: DISABLED
+                                  function_template:
+                                    type: string
+                                  result_parsing:
+                                    type: object
+                                    properties:
+                                      parser_arg:
+                                        type: array
+                                        items:
+                                          type: string
+                                      parser_func:
+                                        type: string
+                                        enum:
+                                          - EMPTY
+                                          - PARSE_BY_ARG
+                                          - PARSE_CANONICAL
+                                          - PARSE_DICTIONARY
+                                          - PARSE_DICTIONARY_OR_ORDERED
+                                          - DEFAULT
+                                        default: EMPTY
+                                        description: >-
+                                          means parameters are non related to
+                                          block, and should fetch latest block
+                                          args: "latest"
+                                        title: >-
+                                          - PARSE_BY_ARG: means parameters are
+                                          ordered and flat expected arguments are:
+                                          [param index] (example: PARAMS:
+                                          [<#BlockNum>,"banana"]) args: 0
+                                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                           - DEFAULT: reserved
+                                      default_value:
+                                        type: string
+                                        title: >-
+                                          default value when set allows parsing
+                                          failures to assume the default value
+                                      encoding:
+                                        type: string
+                                        title: >-
+                                          used to parse byte responses:
+                                          base64,hex,bech32
+                                  api_name:
+                                    type: string
+                              values:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    extension:
+                                      type: string
+                                    expected_value:
+                                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -32950,6 +33116,89 @@ paths:
                                         base64,hex,bech32
                                 api_name:
                                   type: string
+                          extensions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                cu_multiplier:
+                                  type: number
+                                  format: float
+                          verifications:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                parse_directive:
+                                  type: object
+                                  properties:
+                                    function_tag:
+                                      type: string
+                                      enum:
+                                        - DISABLED
+                                        - GET_BLOCKNUM
+                                        - GET_BLOCK_BY_NUM
+                                        - SET_LATEST_IN_METADATA
+                                        - SET_LATEST_IN_BODY
+                                        - GET_CHAIN_ID
+                                      default: DISABLED
+                                    function_template:
+                                      type: string
+                                    result_parsing:
+                                      type: object
+                                      properties:
+                                        parser_arg:
+                                          type: array
+                                          items:
+                                            type: string
+                                        parser_func:
+                                          type: string
+                                          enum:
+                                            - EMPTY
+                                            - PARSE_BY_ARG
+                                            - PARSE_CANONICAL
+                                            - PARSE_DICTIONARY
+                                            - PARSE_DICTIONARY_OR_ORDERED
+                                            - DEFAULT
+                                          default: EMPTY
+                                          description: >-
+                                            means parameters are non related to
+                                            block, and should fetch latest block
+                                            args: "latest"
+                                          title: >-
+                                            - PARSE_BY_ARG: means parameters are
+                                            ordered and flat expected arguments are:
+                                            [param index] (example: PARAMS:
+                                            [<#BlockNum>,"banana"]) args: 0
+                                             - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                             - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                             - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                             - DEFAULT: reserved
+                                        default_value:
+                                          type: string
+                                          title: >-
+                                            default value when set allows parsing
+                                            failures to assume the default value
+                                        encoding:
+                                          type: string
+                                          title: >-
+                                            used to parse byte responses:
+                                            base64,hex,bech32
+                                    api_name:
+                                      type: string
+                                values:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      extension:
+                                        type: string
+                                      expected_value:
+                                        type: string
               pagination:
                 type: object
                 properties:
@@ -33321,6 +33570,89 @@ paths:
                                       base64,hex,bech32
                               api_name:
                                 type: string
+                        extensions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              cu_multiplier:
+                                type: number
+                                format: float
+                        verifications:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              parse_directive:
+                                type: object
+                                properties:
+                                  function_tag:
+                                    type: string
+                                    enum:
+                                      - DISABLED
+                                      - GET_BLOCKNUM
+                                      - GET_BLOCK_BY_NUM
+                                      - SET_LATEST_IN_METADATA
+                                      - SET_LATEST_IN_BODY
+                                      - GET_CHAIN_ID
+                                    default: DISABLED
+                                  function_template:
+                                    type: string
+                                  result_parsing:
+                                    type: object
+                                    properties:
+                                      parser_arg:
+                                        type: array
+                                        items:
+                                          type: string
+                                      parser_func:
+                                        type: string
+                                        enum:
+                                          - EMPTY
+                                          - PARSE_BY_ARG
+                                          - PARSE_CANONICAL
+                                          - PARSE_DICTIONARY
+                                          - PARSE_DICTIONARY_OR_ORDERED
+                                          - DEFAULT
+                                        default: EMPTY
+                                        description: >-
+                                          means parameters are non related to
+                                          block, and should fetch latest block
+                                          args: "latest"
+                                        title: >-
+                                          - PARSE_BY_ARG: means parameters are
+                                          ordered and flat expected arguments are:
+                                          [param index] (example: PARAMS:
+                                          [<#BlockNum>,"banana"]) args: 0
+                                           - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                           - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                           - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                           - DEFAULT: reserved
+                                      default_value:
+                                        type: string
+                                        title: >-
+                                          default value when set allows parsing
+                                          failures to assume the default value
+                                      encoding:
+                                        type: string
+                                        title: >-
+                                          used to parse byte responses:
+                                          base64,hex,bech32
+                                  api_name:
+                                    type: string
+                              values:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    extension:
+                                      type: string
+                                    expected_value:
+                                      type: string
         default:
           description: An unexpected error response.
           schema:
@@ -57319,6 +57651,85 @@ definitions:
                   title: 'used to parse byte responses: base64,hex,bech32'
             api_name:
               type: string
+      extensions:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            cu_multiplier:
+              type: number
+              format: float
+      verifications:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            parse_directive:
+              type: object
+              properties:
+                function_tag:
+                  type: string
+                  enum:
+                    - DISABLED
+                    - GET_BLOCKNUM
+                    - GET_BLOCK_BY_NUM
+                    - SET_LATEST_IN_METADATA
+                    - SET_LATEST_IN_BODY
+                    - GET_CHAIN_ID
+                  default: DISABLED
+                function_template:
+                  type: string
+                result_parsing:
+                  type: object
+                  properties:
+                    parser_arg:
+                      type: array
+                      items:
+                        type: string
+                    parser_func:
+                      type: string
+                      enum:
+                        - EMPTY
+                        - PARSE_BY_ARG
+                        - PARSE_CANONICAL
+                        - PARSE_DICTIONARY
+                        - PARSE_DICTIONARY_OR_ORDERED
+                        - DEFAULT
+                      default: EMPTY
+                      description: >-
+                        means parameters are non related to block, and should
+                        fetch latest block args: "latest"
+                      title: >-
+                        - PARSE_BY_ARG: means parameters are ordered and flat
+                        expected arguments are: [param index] (example: PARAMS:
+                        [<#BlockNum>,"banana"]) args: 0
+                         - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                         - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                         - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                         - DEFAULT: reserved
+                    default_value:
+                      type: string
+                      title: >-
+                        default value when set allows parsing failures to assume
+                        the default value
+                    encoding:
+                      type: string
+                      title: 'used to parse byte responses: base64,hex,bech32'
+                api_name:
+                  type: string
+            values:
+              type: array
+              items:
+                type: object
+                properties:
+                  extension:
+                    type: string
+                  expected_value:
+                    type: string
   lavanet.lava.spec.ApiList:
     type: object
     properties:
@@ -57366,6 +57777,14 @@ definitions:
       encoding:
         type: string
         title: 'used to parse byte responses: base64,hex,bech32'
+  lavanet.lava.spec.Extension:
+    type: object
+    properties:
+      name:
+        type: string
+      cu_multiplier:
+        type: number
+        format: float
   lavanet.lava.spec.FUNCTION_TAG:
     type: string
     enum:
@@ -57491,6 +57910,13 @@ definitions:
             type: string
             title: 'used to parse byte responses: base64,hex,bech32'
       api_name:
+        type: string
+  lavanet.lava.spec.ParseValue:
+    type: object
+    properties:
+      extension:
+        type: string
+      expected_value:
         type: string
   lavanet.lava.spec.QueryAllSpecResponse:
     type: object
@@ -57748,6 +58174,88 @@ definitions:
                               title: 'used to parse byte responses: base64,hex,bech32'
                         api_name:
                           type: string
+                  extensions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        cu_multiplier:
+                          type: number
+                          format: float
+                  verifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        parse_directive:
+                          type: object
+                          properties:
+                            function_tag:
+                              type: string
+                              enum:
+                                - DISABLED
+                                - GET_BLOCKNUM
+                                - GET_BLOCK_BY_NUM
+                                - SET_LATEST_IN_METADATA
+                                - SET_LATEST_IN_BODY
+                                - GET_CHAIN_ID
+                              default: DISABLED
+                            function_template:
+                              type: string
+                            result_parsing:
+                              type: object
+                              properties:
+                                parser_arg:
+                                  type: array
+                                  items:
+                                    type: string
+                                parser_func:
+                                  type: string
+                                  enum:
+                                    - EMPTY
+                                    - PARSE_BY_ARG
+                                    - PARSE_CANONICAL
+                                    - PARSE_DICTIONARY
+                                    - PARSE_DICTIONARY_OR_ORDERED
+                                    - DEFAULT
+                                  default: EMPTY
+                                  description: >-
+                                    means parameters are non related to block,
+                                    and should fetch latest block args: "latest"
+                                  title: >-
+                                    - PARSE_BY_ARG: means parameters are ordered
+                                    and flat expected arguments are: [param
+                                    index] (example: PARAMS:
+                                    [<#BlockNum>,"banana"]) args: 0
+                                     - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                     - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                     - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                     - DEFAULT: reserved
+                                default_value:
+                                  type: string
+                                  title: >-
+                                    default value when set allows parsing
+                                    failures to assume the default value
+                                encoding:
+                                  type: string
+                                  title: >-
+                                    used to parse byte responses:
+                                    base64,hex,bech32
+                            api_name:
+                              type: string
+                        values:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              extension:
+                                type: string
+                              expected_value:
+                                type: string
       pagination:
         type: object
         properties:
@@ -58025,6 +58533,88 @@ definitions:
                             title: 'used to parse byte responses: base64,hex,bech32'
                       api_name:
                         type: string
+                extensions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      cu_multiplier:
+                        type: number
+                        format: float
+                verifications:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      parse_directive:
+                        type: object
+                        properties:
+                          function_tag:
+                            type: string
+                            enum:
+                              - DISABLED
+                              - GET_BLOCKNUM
+                              - GET_BLOCK_BY_NUM
+                              - SET_LATEST_IN_METADATA
+                              - SET_LATEST_IN_BODY
+                              - GET_CHAIN_ID
+                            default: DISABLED
+                          function_template:
+                            type: string
+                          result_parsing:
+                            type: object
+                            properties:
+                              parser_arg:
+                                type: array
+                                items:
+                                  type: string
+                              parser_func:
+                                type: string
+                                enum:
+                                  - EMPTY
+                                  - PARSE_BY_ARG
+                                  - PARSE_CANONICAL
+                                  - PARSE_DICTIONARY
+                                  - PARSE_DICTIONARY_OR_ORDERED
+                                  - DEFAULT
+                                default: EMPTY
+                                description: >-
+                                  means parameters are non related to block, and
+                                  should fetch latest block args: "latest"
+                                title: >-
+                                  - PARSE_BY_ARG: means parameters are ordered
+                                  and flat expected arguments are: [param index]
+                                  (example: PARAMS: [<#BlockNum>,"banana"])
+                                  args: 0
+                                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                                   - DEFAULT: reserved
+                              default_value:
+                                type: string
+                                title: >-
+                                  default value when set allows parsing failures
+                                  to assume the default value
+                              encoding:
+                                type: string
+                                title: >-
+                                  used to parse byte responses:
+                                  base64,hex,bech32
+                          api_name:
+                            type: string
+                      values:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            extension:
+                              type: string
+                            expected_value:
+                              type: string
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:
@@ -58339,6 +58929,85 @@ definitions:
                         title: 'used to parse byte responses: base64,hex,bech32'
                   api_name:
                     type: string
+            extensions:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  cu_multiplier:
+                    type: number
+                    format: float
+            verifications:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  parse_directive:
+                    type: object
+                    properties:
+                      function_tag:
+                        type: string
+                        enum:
+                          - DISABLED
+                          - GET_BLOCKNUM
+                          - GET_BLOCK_BY_NUM
+                          - SET_LATEST_IN_METADATA
+                          - SET_LATEST_IN_BODY
+                          - GET_CHAIN_ID
+                        default: DISABLED
+                      function_template:
+                        type: string
+                      result_parsing:
+                        type: object
+                        properties:
+                          parser_arg:
+                            type: array
+                            items:
+                              type: string
+                          parser_func:
+                            type: string
+                            enum:
+                              - EMPTY
+                              - PARSE_BY_ARG
+                              - PARSE_CANONICAL
+                              - PARSE_DICTIONARY
+                              - PARSE_DICTIONARY_OR_ORDERED
+                              - DEFAULT
+                            default: EMPTY
+                            description: >-
+                              means parameters are non related to block, and
+                              should fetch latest block args: "latest"
+                            title: >-
+                              - PARSE_BY_ARG: means parameters are ordered and
+                              flat expected arguments are: [param index]
+                              (example: PARAMS: [<#BlockNum>,"banana"]) args: 0
+                               - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                               - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                               - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                               - DEFAULT: reserved
+                          default_value:
+                            type: string
+                            title: >-
+                              default value when set allows parsing failures to
+                              assume the default value
+                          encoding:
+                            type: string
+                            title: 'used to parse byte responses: base64,hex,bech32'
+                      api_name:
+                        type: string
+                  values:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        extension:
+                          type: string
+                        expected_value:
+                          type: string
   lavanet.lava.spec.Spec.ProvidersTypes:
     type: string
     enum:
@@ -58359,6 +59028,73 @@ definitions:
         format: int64
       hanging_api:
         type: boolean
+  lavanet.lava.spec.Verification:
+    type: object
+    properties:
+      name:
+        type: string
+      parse_directive:
+        type: object
+        properties:
+          function_tag:
+            type: string
+            enum:
+              - DISABLED
+              - GET_BLOCKNUM
+              - GET_BLOCK_BY_NUM
+              - SET_LATEST_IN_METADATA
+              - SET_LATEST_IN_BODY
+              - GET_CHAIN_ID
+            default: DISABLED
+          function_template:
+            type: string
+          result_parsing:
+            type: object
+            properties:
+              parser_arg:
+                type: array
+                items:
+                  type: string
+              parser_func:
+                type: string
+                enum:
+                  - EMPTY
+                  - PARSE_BY_ARG
+                  - PARSE_CANONICAL
+                  - PARSE_DICTIONARY
+                  - PARSE_DICTIONARY_OR_ORDERED
+                  - DEFAULT
+                default: EMPTY
+                description: >-
+                  means parameters are non related to block, and should fetch
+                  latest block args: "latest"
+                title: >-
+                  - PARSE_BY_ARG: means parameters are ordered and flat expected
+                  arguments are: [param index] (example: PARAMS:
+                  [<#BlockNum>,"banana"]) args: 0
+                   - PARSE_CANONICAL: means parameters are ordered and one of them has named properties, expected arguments are: [param index to object,prop_name in object] (example: PARAMS: ["banana",{prop_name:<#BlockNum>}]) need to configure args: 1,"prop_name"
+                   - PARSE_DICTIONARY: means parameters are named, expected arguments are [prop_name,separator] (example: PARAMS: {prop_name:<#BlockNum>,prop2:"banana"}) args: "prop_name"
+                   - PARSE_DICTIONARY_OR_ORDERED: means parameters are named expected arguments are [prop_name,separator,parameter order if not found] for input of: block=15&address=abc OR ?abc,15 we will do args: block,=,1
+                   - DEFAULT: reserved
+              default_value:
+                type: string
+                title: >-
+                  default value when set allows parsing failures to assume the
+                  default value
+              encoding:
+                type: string
+                title: 'used to parse byte responses: base64,hex,bech32'
+          api_name:
+            type: string
+      values:
+        type: array
+        items:
+          type: object
+          properties:
+            extension:
+              type: string
+            expected_value:
+              type: string
   lavanet.lava.projects.ProjectData:
     type: object
     properties:
@@ -58391,6 +59127,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64

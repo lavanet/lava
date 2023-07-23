@@ -11,8 +11,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 64,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": "13000",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 13000,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -39,7 +39,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -47,7 +47,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_blockNumber",
@@ -57,7 +57,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -65,7 +65,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_call",
@@ -75,7 +75,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -83,7 +83,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_chainId",
@@ -93,7 +93,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -101,7 +101,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_coinbase",
@@ -111,7 +111,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -119,7 +119,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_compileLLL",
@@ -129,7 +129,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -137,7 +137,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_createAccessList",
@@ -147,7 +147,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -155,7 +155,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_estimateGas",
@@ -165,7 +165,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -173,7 +173,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_feeHistory",
@@ -183,7 +183,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -191,7 +191,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_gasPrice",
@@ -201,7 +201,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -209,7 +209,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getBalance",
@@ -219,7 +219,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -227,7 +227,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getBlockByHash",
@@ -237,7 +237,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -245,7 +245,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getBlockByNumber",
@@ -255,7 +255,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -263,7 +263,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getBlockTransactionCountByHash",
@@ -273,7 +273,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -281,7 +281,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getBlockTransactionCountByNumber",
@@ -291,7 +291,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -299,7 +299,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getCode",
@@ -309,7 +309,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -317,7 +317,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getCompilers",
@@ -327,7 +327,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -335,7 +335,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getFilterChanges",
@@ -345,7 +345,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -353,7 +353,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getFilterLogs",
@@ -363,7 +363,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "60",
+                                "compute_units": 60,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -371,7 +371,7 @@
                                     "subscription": true,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getLogs",
@@ -382,7 +382,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": "80",
+                                "compute_units": 80,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -390,7 +390,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getProof",
@@ -400,7 +400,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -408,7 +408,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getStorageAt",
@@ -418,7 +418,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -426,7 +426,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getTransactionByBlockHashAndIndex",
@@ -436,7 +436,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -444,7 +444,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getTransactionByBlockNumberAndIndex",
@@ -454,7 +454,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -462,7 +462,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getTransactionByHash",
@@ -472,7 +472,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -480,7 +480,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getTransactionCount",
@@ -490,7 +490,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -498,7 +498,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getTransactionReceipt",
@@ -508,7 +508,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -516,7 +516,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleByBlockHashAndIndex",
@@ -526,7 +526,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "15",
+                                "compute_units": 15,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -534,7 +534,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleByBlockNumberAndIndex",
@@ -544,7 +544,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "15",
+                                "compute_units": 15,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -552,7 +552,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleCountByBlockHash",
@@ -562,7 +562,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -570,7 +570,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleCountByBlockNumber",
@@ -580,7 +580,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -588,7 +588,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getWork",
@@ -598,7 +598,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -606,7 +606,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_hashrate",
@@ -616,7 +616,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -624,7 +624,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_maxPriorityFeePerGas",
@@ -634,7 +634,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -642,7 +642,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_mining",
@@ -652,7 +652,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -660,7 +660,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_newBlockFilter",
@@ -670,7 +670,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -678,7 +678,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_newFilter",
@@ -689,7 +689,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -697,7 +697,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_newPendingTransactionFilter",
@@ -707,7 +707,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -715,7 +715,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_protocolVersion",
@@ -725,7 +725,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -733,7 +733,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_sendRawTransaction",
@@ -743,7 +743,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "290",
+                                "compute_units": 290,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -751,7 +751,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_sendTransaction",
@@ -761,7 +761,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -769,7 +769,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_sign",
@@ -779,7 +779,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -787,7 +787,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_signTransaction",
@@ -797,7 +797,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -805,7 +805,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_subscribe",
@@ -815,7 +815,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -823,7 +823,7 @@
                                     "subscription": true,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_syncing",
@@ -833,7 +833,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -841,7 +841,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_uninstallFilter",
@@ -851,7 +851,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -859,7 +859,7 @@
                                     "subscription": true,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_unsubscribe",
@@ -869,7 +869,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -877,7 +877,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "net_listening",
@@ -887,7 +887,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -895,7 +895,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "net_peerCount",
@@ -905,7 +905,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -913,7 +913,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "net_version",
@@ -923,7 +923,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -931,7 +931,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "rpc_modules",
@@ -941,7 +941,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "1",
+                                "compute_units": 1,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -949,7 +949,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "web3_clientVersion",
@@ -959,7 +959,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -967,7 +967,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "web3_sha3",
@@ -977,7 +977,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "15",
+                                "compute_units": 15,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -985,7 +985,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -1047,7 +1047,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "200",
+                                "compute_units": 200,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -1055,7 +1055,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_getRawBlock",
@@ -1065,7 +1065,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "50",
+                                "compute_units": 50,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1073,7 +1073,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_getRawHeader",
@@ -1083,7 +1083,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "50",
+                                "compute_units": 50,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1091,7 +1091,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_getRawReceipts",
@@ -1101,7 +1101,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "50",
+                                "compute_units": 50,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1109,7 +1109,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_getRawTransaction",
@@ -1119,7 +1119,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "50",
+                                "compute_units": 50,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1127,7 +1127,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_storageRangeAt",
@@ -1137,7 +1137,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "200",
+                                "compute_units": 200,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1145,7 +1145,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_traceBlock",
@@ -1155,7 +1155,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1163,7 +1163,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_traceBlockByHash",
@@ -1173,7 +1173,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -1181,7 +1181,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_traceBlockByNumber",
@@ -1191,7 +1191,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1199,7 +1199,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_traceCall",
@@ -1209,7 +1209,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1217,7 +1217,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "debug_traceTransaction ",
@@ -1227,7 +1227,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "100",
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -1235,7 +1235,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     }
@@ -1252,8 +1252,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 7,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": "13000",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 13000,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

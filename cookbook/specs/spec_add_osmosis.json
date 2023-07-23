@@ -12,8 +12,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "6500",
-        "allowed_block_lag_for_qos_sync": "2",
+        "average_block_time": 6500,
+        "allowed_block_lag_for_qos_sync": 2,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"
@@ -38,7 +38,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -46,7 +46,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/epochs/v1beta1/epochs",
@@ -54,7 +54,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -62,7 +62,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/num_pools",
@@ -70,7 +70,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -78,7 +78,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pool_type/{pool_id}",
@@ -86,7 +86,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -94,7 +94,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pools",
@@ -102,7 +102,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -110,7 +110,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pools/{pool_id}",
@@ -118,7 +118,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -126,7 +126,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/params",
@@ -134,7 +134,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -142,7 +142,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/prices",
@@ -150,7 +150,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -158,7 +158,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/total_pool_liquidity",
@@ -166,7 +166,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -174,7 +174,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/pools/{pool_id}/total_shares",
@@ -182,7 +182,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -190,7 +190,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/total_liquidity",
@@ -198,7 +198,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -206,7 +206,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_in",
@@ -214,7 +214,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -222,7 +222,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/gamm/v1beta1/{pool_id}/estimate/swap_exact_amount_out",
@@ -230,7 +230,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -238,7 +238,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/active_gauges",
@@ -246,7 +246,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -254,7 +254,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/active_gauges_per_denom",
@@ -262,7 +262,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -270,7 +270,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/gauge_by_id/{id}",
@@ -278,7 +278,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -286,7 +286,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/gauges",
@@ -294,7 +294,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -302,7 +302,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/lockable_durations",
@@ -310,7 +310,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -318,7 +318,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/module_distributed_coins",
@@ -326,7 +326,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -334,7 +334,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/module_to_distribute_coins",
@@ -342,7 +342,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -350,7 +350,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/rewards_est/{owner}",
@@ -358,7 +358,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -366,7 +366,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/upcoming_gauges",
@@ -374,7 +374,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -382,7 +382,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/incentives/v1beta1/upcoming_gauges_per_denom",
@@ -390,7 +390,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -398,7 +398,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_coins/{owner}",
@@ -406,7 +406,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -414,7 +414,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_duration/{owner}",
@@ -422,7 +422,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -430,7 +430,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration/{owner}",
@@ -438,7 +438,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -446,7 +446,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_denom/{owner}",
@@ -454,7 +454,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -462,7 +462,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_longer_duration_not_unlocking_only/{owner}",
@@ -470,7 +470,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -478,7 +478,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_pasttime/{owner}",
@@ -486,7 +486,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -494,7 +494,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_denom/{owner}",
@@ -502,7 +502,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -510,7 +510,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_locked_pasttime_not_unlocking_only/{owner}",
@@ -518,7 +518,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -526,7 +526,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_unlockable_coins/{owner}",
@@ -534,7 +534,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -542,7 +542,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_unlocked_before_time/{owner}",
@@ -550,7 +550,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -558,7 +558,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/account_unlocking_coins/{owner}",
@@ -566,7 +566,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -574,7 +574,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/locked_by_id/{lock_id}",
@@ -582,7 +582,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -590,7 +590,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/locked_denom",
@@ -598,7 +598,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -606,7 +606,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/module_balance",
@@ -614,7 +614,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -622,7 +622,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/module_locked_amount",
@@ -630,7 +630,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -638,7 +638,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/lockup/v1beta1/synthetic_lockups_by_lock_id/{lock_id}",
@@ -646,7 +646,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -654,7 +654,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/mint/v1beta1/epoch_provisions",
@@ -662,7 +662,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -670,7 +670,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/mint/v1beta1/params",
@@ -678,7 +678,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -686,7 +686,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/pool-incentives/v1beta1/distr_info",
@@ -694,7 +694,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -702,7 +702,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/pool-incentives/v1beta1/external_incentive_gauges",
@@ -710,7 +710,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -718,7 +718,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/pool-incentives/v1beta1/gauge-ids/{pool_id}",
@@ -726,7 +726,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -734,7 +734,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/pool-incentives/v1beta1/incentivized_pools",
@@ -742,7 +742,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -750,7 +750,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/pool-incentives/v1beta1/lockable_durations",
@@ -758,7 +758,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -766,7 +766,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/pool-incentives/v1beta1/params",
@@ -774,7 +774,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -782,7 +782,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/all_assets",
@@ -790,7 +790,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -798,7 +798,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/all_intermediary_accounts",
@@ -806,7 +806,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -814,7 +814,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/all_superfluid_delegations",
@@ -822,7 +822,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -830,7 +830,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/asset_multiplier",
@@ -838,7 +838,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -846,7 +846,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/asset_type",
@@ -854,7 +854,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -862,7 +862,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/connected_intermediary_account/{lock_id}",
@@ -870,7 +870,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -878,7 +878,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/estimate_superfluid_delegation_amount_by_validator_denom",
@@ -886,7 +886,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -894,7 +894,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/params",
@@ -902,7 +902,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -910,7 +910,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/superfluid_delegation_amount",
@@ -918,7 +918,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -926,7 +926,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/superfluid_delegations/{delegator_address}",
@@ -934,7 +934,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -942,7 +942,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/superfluid_delegations_by_validator_denom",
@@ -950,7 +950,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -958,7 +958,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/superfluid_undelegations_by_delegator/{delegator_address}",
@@ -966,7 +966,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -974,7 +974,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/superfluid/v1beta1/total_delegation_by_delegator/{delegator_address}",
@@ -982,7 +982,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -990,7 +990,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/tokenfactory/v1beta1/denoms/{denom}/authority_metadata",
@@ -998,7 +998,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1006,7 +1006,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/tokenfactory/v1beta1/denoms_from_creator/{creator}",
@@ -1014,7 +1014,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1022,7 +1022,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/tokenfactory/v1beta1/params",
@@ -1030,7 +1030,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1038,7 +1038,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/twap/v1beta1/ArithmeticTwap",
@@ -1046,7 +1046,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1054,7 +1054,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/twap/v1beta1/ArithmeticTwapToNow",
@@ -1062,7 +1062,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1070,7 +1070,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/twap/v1beta1/Params",
@@ -1078,7 +1078,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1086,7 +1086,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/txfees/v1beta1/base_denom",
@@ -1094,7 +1094,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1102,7 +1102,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/txfees/v1beta1/denom_pool_id/{denom}",
@@ -1110,7 +1110,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1118,7 +1118,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/txfees/v1beta1/fee_tokens",
@@ -1126,7 +1126,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1134,7 +1134,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "/osmosis/txfees/v1beta1/spot_price_by_denom",
@@ -1142,7 +1142,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1150,7 +1150,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],
@@ -1183,7 +1183,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1191,7 +1191,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.epochs.v1beta1.Query/EpochInfos",
@@ -1199,7 +1199,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1207,7 +1207,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountIn",
@@ -1215,7 +1215,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1223,7 +1223,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/EstimateSwapExactAmountOut",
@@ -1231,7 +1231,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1239,7 +1239,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/NumPools",
@@ -1247,7 +1247,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1255,7 +1255,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/Pool",
@@ -1263,7 +1263,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1271,7 +1271,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/PoolParams",
@@ -1279,7 +1279,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1287,7 +1287,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/PoolType",
@@ -1295,7 +1295,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1303,7 +1303,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/Pools",
@@ -1311,7 +1311,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1319,7 +1319,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/SpotPrice",
@@ -1327,7 +1327,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1335,7 +1335,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/TotalLiquidity",
@@ -1343,7 +1343,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1351,7 +1351,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/TotalPoolLiquidity",
@@ -1359,7 +1359,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1367,7 +1367,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.gamm.v1beta1.Query/TotalShares",
@@ -1375,7 +1375,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1383,7 +1383,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/ActiveGauges",
@@ -1391,7 +1391,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1399,7 +1399,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/ActiveGaugesPerDenom",
@@ -1407,7 +1407,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1415,7 +1415,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/GaugeByID",
@@ -1423,7 +1423,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1431,7 +1431,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/Gauges",
@@ -1439,7 +1439,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1447,7 +1447,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/LockableDurations",
@@ -1455,7 +1455,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1463,7 +1463,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/ModuleDistributedCoins",
@@ -1471,7 +1471,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1479,7 +1479,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/ModuleToDistributeCoins",
@@ -1487,7 +1487,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1495,7 +1495,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/RewardsEst",
@@ -1503,7 +1503,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1511,7 +1511,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/UpcomingGauges",
@@ -1519,7 +1519,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1527,7 +1527,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.incentives.Query/UpcomingGaugesPerDenom",
@@ -1535,7 +1535,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1543,7 +1543,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedCoins",
@@ -1551,7 +1551,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1559,7 +1559,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedDuration",
@@ -1567,7 +1567,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1575,7 +1575,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedLongerDuration",
@@ -1583,7 +1583,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1591,7 +1591,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedLongerDurationDenom",
@@ -1599,7 +1599,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1607,7 +1607,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedLongerDurationNotUnlockingOnly",
@@ -1615,7 +1615,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1623,7 +1623,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedPastTime",
@@ -1631,7 +1631,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1639,7 +1639,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedPastTimeDenom",
@@ -1647,7 +1647,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1655,7 +1655,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountLockedPastTimeNotUnlockingOnly",
@@ -1663,7 +1663,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1671,7 +1671,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountUnlockableCoins",
@@ -1679,7 +1679,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1687,7 +1687,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountUnlockedBeforeTime",
@@ -1695,7 +1695,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1703,7 +1703,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/AccountUnlockingCoins",
@@ -1711,7 +1711,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1719,7 +1719,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/LockedByID",
@@ -1727,7 +1727,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1735,7 +1735,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/LockedDenom",
@@ -1743,7 +1743,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1751,7 +1751,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/ModuleBalance",
@@ -1759,7 +1759,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1767,7 +1767,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/ModuleLockedAmount",
@@ -1775,7 +1775,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1783,7 +1783,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.lockup.Query/SyntheticLockupsByLockupID",
@@ -1791,7 +1791,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1799,7 +1799,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.mint.v1beta1.Query/EpochProvisions",
@@ -1807,7 +1807,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1815,7 +1815,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.mint.v1beta1.Query/Params",
@@ -1823,7 +1823,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1831,7 +1831,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.poolincentives.v1beta1.Query/DistrInfo",
@@ -1839,7 +1839,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1847,7 +1847,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.poolincentives.v1beta1.Query/ExternalIncentiveGauges",
@@ -1855,7 +1855,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1863,7 +1863,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.poolincentives.v1beta1.Query/GaugeIds",
@@ -1871,7 +1871,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1879,7 +1879,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.poolincentives.v1beta1.Query/IncentivizedPools",
@@ -1887,7 +1887,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1895,7 +1895,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.poolincentives.v1beta1.Query/LockableDurations",
@@ -1903,7 +1903,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1911,7 +1911,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.poolincentives.v1beta1.Query/Params",
@@ -1919,7 +1919,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1927,7 +1927,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/AllAssets",
@@ -1935,7 +1935,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1943,7 +1943,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/AllIntermediaryAccounts",
@@ -1951,7 +1951,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1959,7 +1959,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/AssetMultiplier",
@@ -1967,7 +1967,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1975,7 +1975,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/AssetType",
@@ -1983,7 +1983,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1991,7 +1991,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/ConnectedIntermediaryAccount",
@@ -1999,7 +1999,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2007,7 +2007,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/EstimateSuperfluidDelegatedAmountByValidatorDenom",
@@ -2015,7 +2015,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2023,7 +2023,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/Params",
@@ -2031,7 +2031,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2039,7 +2039,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/SuperfluidDelegationAmount",
@@ -2047,7 +2047,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2055,7 +2055,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/SuperfluidDelegationsByDelegator",
@@ -2063,7 +2063,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2071,7 +2071,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/SuperfluidDelegationsByValidatorDenom",
@@ -2079,7 +2079,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2087,7 +2087,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/SuperfluidUndelegationsByDelegator",
@@ -2095,7 +2095,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2103,7 +2103,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/TotalDelegationByDelegator",
@@ -2111,7 +2111,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2119,7 +2119,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/TotalDelegationByValidatorForDenom",
@@ -2127,7 +2127,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2135,7 +2135,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.superfluid.Query/TotalSuperfluidDelegations",
@@ -2143,7 +2143,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2151,7 +2151,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
@@ -2159,7 +2159,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2167,7 +2167,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.tokenfactory.v1beta1.Query/DenomsFromCreator",
@@ -2175,7 +2175,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2183,7 +2183,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.tokenfactory.v1beta1.Query/Params",
@@ -2191,7 +2191,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2199,7 +2199,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.twap.v1beta1.Query/ArithmeticTwap",
@@ -2207,7 +2207,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2215,7 +2215,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.twap.v1beta1.Query/ArithmeticTwapToNow",
@@ -2223,7 +2223,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2231,7 +2231,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.twap.v1beta1.Query/Params",
@@ -2239,7 +2239,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2247,7 +2247,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.txfees.v1beta1.Query/BaseDenom",
@@ -2255,7 +2255,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2263,7 +2263,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.txfees.v1beta1.Query/DenomPoolId",
@@ -2271,7 +2271,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2279,7 +2279,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.txfees.v1beta1.Query/DenomSpotPrice",
@@ -2287,7 +2287,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2295,7 +2295,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "osmosis.txfees.v1beta1.Query/FeeTokens",
@@ -2303,7 +2303,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -2311,7 +2311,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],
@@ -2364,8 +2364,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "6500",
-        "allowed_block_lag_for_qos_sync": "2",
+        "average_block_time": 6500,
+        "allowed_block_lag_for_qos_sync": 2,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"

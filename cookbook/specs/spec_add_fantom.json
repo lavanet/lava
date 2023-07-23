@@ -14,8 +14,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "1500",
-                "allowed_block_lag_for_qos_sync": "7",
+                "average_block_time": 1500,
+                "allowed_block_lag_for_qos_sync": 7,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -42,7 +42,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "1",
+                                "compute_units": 1,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -50,7 +50,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_blockNumber",
@@ -60,7 +60,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -68,7 +68,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_subscribe",
@@ -78,7 +78,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -86,7 +86,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_unsubscribe",
@@ -96,7 +96,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "19",
+                                "compute_units": 19,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -104,7 +104,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_feeHistory",
@@ -114,7 +114,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "19",
+                                "compute_units": 19,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -122,7 +122,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_maxPriorityFeePerGas",
@@ -132,7 +132,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "21",
+                                "compute_units": 21,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -140,7 +140,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_createAccessList",
@@ -150,7 +150,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "16",
+                                "compute_units": 16,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -158,7 +158,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getTransactionReceipt",
@@ -168,7 +168,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -176,7 +176,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getTransactionByBlockHashAndIndex",
@@ -186,7 +186,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -194,7 +194,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getTransactionByBlockNumberAndIndex",
@@ -204,7 +204,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "19",
+                                "compute_units": 19,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -212,7 +212,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getBlockByNumber",
@@ -222,7 +222,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "75",
+                                "compute_units": 75,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -230,7 +230,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getStorageAt",
@@ -241,7 +241,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": "75",
+                                "compute_units": 75,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -249,7 +249,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getTransactionByHash",
@@ -259,7 +259,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "21",
+                                "compute_units": 21,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -267,7 +267,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_gasPrice",
@@ -277,7 +277,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "17",
+                                "compute_units": 17,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -285,7 +285,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getBalance",
@@ -295,7 +295,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "15",
+                                "compute_units": 15,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -303,7 +303,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getCode",
@@ -313,7 +313,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "15",
+                                "compute_units": 15,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -321,7 +321,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_sign",
@@ -331,7 +331,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "17",
+                                "compute_units": 17,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -339,7 +339,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_signTransaction",
@@ -349,7 +349,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "26",
+                                "compute_units": 26,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -357,7 +357,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_sendTransaction",
@@ -367,7 +367,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "15",
+                                "compute_units": 15,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -375,7 +375,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getBlockTransactionCountByHash",
@@ -385,7 +385,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -393,7 +393,7 @@
                                     "subscription": true,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getBlockTransactionCountByNumber",
@@ -403,7 +403,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "250",
+                                "compute_units": 250,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -411,7 +411,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getProof",
@@ -421,7 +421,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -429,7 +429,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getBlockByHash",
@@ -439,7 +439,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -447,7 +447,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_getTransactionCount",
@@ -457,7 +457,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -465,7 +465,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_call",
@@ -475,7 +475,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -483,7 +483,7 @@
                                     "subscription": true,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_estimateGas",
@@ -493,7 +493,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "87",
+                                "compute_units": 87,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -501,7 +501,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "ftm_sendRawTransaction",
@@ -511,7 +511,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "26",
+                                "compute_units": 26,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -519,7 +519,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "net_version",
@@ -529,7 +529,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -537,7 +537,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "net_listening",
@@ -547,7 +547,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -555,7 +555,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "rpc_modules",
@@ -565,7 +565,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "1",
+                                "compute_units": 1,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -573,7 +573,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_accounts",
@@ -583,7 +583,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -591,7 +591,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_coinbase",
@@ -601,7 +601,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "1",
+                                "compute_units": 1,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -609,7 +609,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_compileLLL",
@@ -619,7 +619,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": true,
@@ -627,7 +627,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getCompilers",
@@ -637,7 +637,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -645,7 +645,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getFilterChanges",
@@ -655,7 +655,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -663,7 +663,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleByBlockHashAndIndex",
@@ -673,7 +673,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": true,
@@ -681,7 +681,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleByBlockNumberAndIndex",
@@ -691,7 +691,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": true,
@@ -699,7 +699,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleCountByBlockHash",
@@ -709,7 +709,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": true,
@@ -717,7 +717,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getUncleCountByBlockNumber",
@@ -727,7 +727,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": true,
@@ -735,7 +735,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_getWork",
@@ -745,7 +745,7 @@
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": true,
@@ -753,7 +753,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_hashrate",
@@ -763,7 +763,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "1",
+                                "compute_units": 1,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -771,7 +771,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_mining",
@@ -781,7 +781,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -789,7 +789,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_newFilter",
@@ -800,7 +800,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": "20",
+                                "compute_units": 20,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -808,7 +808,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_protocolVersion",
@@ -818,7 +818,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -826,7 +826,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "eth_syncing",
@@ -836,7 +836,7 @@
                                     ],
                                     "parser_func": "EMPTY"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": false,
                                 "category": {
                                     "deterministic": false,
@@ -844,7 +844,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -878,8 +878,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "1500",
-                "allowed_block_lag_for_qos_sync": "7",
+                "average_block_time": 1500,
+                "allowed_block_lag_for_qos_sync": 7,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

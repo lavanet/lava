@@ -12,8 +12,8 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 1,
         "blocks_in_finalization_proof": 3,
-        "average_block_time": "70000",
-        "allowed_block_lag_for_qos_sync": "20",
+        "average_block_time": 70000,
+        "allowed_block_lag_for_qos_sync": 20,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "50000000000"
@@ -38,7 +38,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -46,7 +46,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetBlockMessages",
@@ -54,7 +54,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -62,7 +62,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetGenesis",
@@ -70,7 +70,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -78,7 +78,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetMessage",
@@ -86,7 +86,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -94,7 +94,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetNode",
@@ -102,7 +102,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -110,7 +110,7 @@
                   "subscription": false,
                   "stateful": 0
                 },
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetParentMessages",
@@ -118,7 +118,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -127,7 +127,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetParentReceipts",
@@ -135,7 +135,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -144,7 +144,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetPath",
@@ -152,7 +152,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -161,7 +161,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetTipSet",
@@ -169,7 +169,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -178,7 +178,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetTipSetAfterHeight",
@@ -186,7 +186,7 @@
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -195,7 +195,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainGetTipSetByHeight",
@@ -203,7 +203,7 @@
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -212,7 +212,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainHasObj",
@@ -220,7 +220,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -229,7 +229,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainHead",
@@ -237,7 +237,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -246,7 +246,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainNotify",
@@ -254,7 +254,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -263,7 +263,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ChainReadObj",
@@ -271,7 +271,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -280,7 +280,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.ClientQueryAsk",
@@ -288,7 +288,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -297,7 +297,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.GasEstimateFeeCap",
@@ -305,7 +305,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -314,7 +314,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.GasEstimateGasLimit",
@@ -322,7 +322,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -331,7 +331,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.GasEstimateGasPremium",
@@ -339,7 +339,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -348,7 +348,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.MpoolGetNonce",
@@ -356,7 +356,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -365,7 +365,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.MpoolPending",
@@ -373,7 +373,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -382,7 +382,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.MpoolPush",
@@ -390,7 +390,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -399,7 +399,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateAccountKey",
@@ -407,7 +407,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -416,7 +416,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateAllMinerFaults",
@@ -424,7 +424,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -433,7 +433,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateCall",
@@ -441,7 +441,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -450,7 +450,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateChangedActors",
@@ -458,7 +458,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -467,7 +467,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateCompute",
@@ -475,7 +475,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -484,7 +484,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateDealProviderCollateralBounds",
@@ -492,7 +492,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -501,7 +501,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateDecodeParams",
@@ -509,7 +509,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -518,7 +518,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateGetActor",
@@ -526,7 +526,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -535,7 +535,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateGetReceipt",
@@ -543,7 +543,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -552,7 +552,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateListActors",
@@ -560,7 +560,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -569,7 +569,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateListMessages",
@@ -577,7 +577,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -586,7 +586,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateListMiners",
@@ -594,7 +594,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -603,7 +603,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateLookupID",
@@ -611,7 +611,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -620,7 +620,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMarketBalance",
@@ -628,7 +628,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -637,7 +637,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMarketDeals",
@@ -645,7 +645,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -654,7 +654,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMarketParticipants",
@@ -662,7 +662,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -671,7 +671,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMarketStorageDeal",
@@ -679,7 +679,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -688,7 +688,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerActiveSectors",
@@ -696,7 +696,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -705,7 +705,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerAvailableBalance",
@@ -713,7 +713,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -722,7 +722,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerDeadlines",
@@ -730,7 +730,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -739,7 +739,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerFaults",
@@ -747,7 +747,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -756,7 +756,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerInfo",
@@ -764,7 +764,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -773,7 +773,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerInitialPledgeCollateral",
@@ -781,7 +781,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -790,7 +790,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerPartitions",
@@ -798,7 +798,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -807,7 +807,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerPower",
@@ -815,7 +815,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -824,7 +824,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerPreCommitDepositForPower",
@@ -832,7 +832,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -841,7 +841,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerProvingDeadline",
@@ -849,7 +849,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -858,7 +858,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerRecoveries",
@@ -866,7 +866,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -875,7 +875,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerSectorAllocated",
@@ -883,7 +883,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -892,7 +892,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerSectorCount",
@@ -900,7 +900,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -909,7 +909,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateMinerSectors",
@@ -917,7 +917,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -926,7 +926,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateNetworkName",
@@ -934,7 +934,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -943,7 +943,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateNetworkVersion",
@@ -951,7 +951,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -960,7 +960,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateReadState",
@@ -968,7 +968,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -977,7 +977,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateReplay",
@@ -985,7 +985,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -994,7 +994,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateSearchMsg",
@@ -1002,7 +1002,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1011,7 +1011,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateSearchMsgLimited",
@@ -1019,7 +1019,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1028,7 +1028,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateSectorExpiration",
@@ -1036,7 +1036,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1045,7 +1045,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateSectorGetInfo",
@@ -1053,7 +1053,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1062,7 +1062,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateSectorPartition",
@@ -1070,7 +1070,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1079,7 +1079,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateSectorPreCommitInfo",
@@ -1087,7 +1087,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1096,7 +1096,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateVMCirculatingSupplyInternal",
@@ -1104,7 +1104,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1113,7 +1113,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateVerifiedClientStatus",
@@ -1121,7 +1121,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1130,7 +1130,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateVerifiedRegistryRootKey",
@@ -1138,7 +1138,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1147,7 +1147,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.StateVerifierStatus",
@@ -1155,7 +1155,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1164,7 +1164,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.SyncState",
@@ -1172,7 +1172,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -1181,7 +1181,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.WalletBalance",
@@ -1189,7 +1189,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1198,7 +1198,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.WalletValidateAddress",
@@ -1206,7 +1206,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1215,7 +1215,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.WalletVerify",
@@ -1223,7 +1223,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1232,7 +1232,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthAccounts",
@@ -1240,7 +1240,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1249,7 +1249,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthBlockNumber",
@@ -1257,7 +1257,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1266,7 +1266,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthCall",
@@ -1274,7 +1274,7 @@
                   "parser_arg": ["1"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1283,7 +1283,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthChainId",
@@ -1291,7 +1291,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1300,7 +1300,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthEstimateGas",
@@ -1308,7 +1308,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1317,7 +1317,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthFeeHistory",
@@ -1325,7 +1325,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1334,7 +1334,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGasPrice",
@@ -1342,7 +1342,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1351,7 +1351,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetBalance",
@@ -1359,7 +1359,7 @@
                   "parser_arg": ["1"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1368,7 +1368,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetBlockByHash",
@@ -1376,7 +1376,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1385,7 +1385,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetBlockByNumber",
@@ -1393,7 +1393,7 @@
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1402,7 +1402,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetBlockTransactionCountByHash",
@@ -1410,7 +1410,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1419,7 +1419,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetBlockTransactionCountByNumber",
@@ -1427,7 +1427,7 @@
                   "parser_arg": ["0"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1436,7 +1436,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetCode",
@@ -1444,7 +1444,7 @@
                   "parser_arg": ["1"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1453,7 +1453,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetFilterChanges",
@@ -1461,7 +1461,7 @@
                   "parser_arg": ["1"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1470,7 +1470,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetFilterLogs",
@@ -1478,7 +1478,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -1487,7 +1487,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetLogs",
@@ -1495,7 +1495,7 @@
                   "parser_arg": ["0", "toBlock"],
                   "parser_func": "PARSE_CANONICAL"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -1504,7 +1504,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetMessageCidByTransactionHash",
@@ -1512,7 +1512,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1521,7 +1521,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetStorageAt",
@@ -1529,7 +1529,7 @@
                   "parser_arg": ["2"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1538,7 +1538,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetTransactionByHash",
@@ -1546,7 +1546,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1555,7 +1555,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetTransactionCount",
@@ -1563,7 +1563,7 @@
                   "parser_arg": ["1"],
                   "parser_func": "PARSE_BY_ARG"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1572,7 +1572,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetTransactionHashByCid",
@@ -1580,7 +1580,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1589,7 +1589,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthGetTransactionReceipt",
@@ -1597,7 +1597,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -1606,7 +1606,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               },
               {
                 "name": "Filecoin.EthMaxPriorityFeePerGas",
@@ -1614,7 +1614,7 @@
                   "parser_arg": ["latest"],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": "10",
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": false,
@@ -1623,7 +1623,7 @@
                   "stateful": 0
                 },
 
-                "extra_compute_units": "0"
+                "extra_compute_units": 0
               }
             ],
             "headers": [],

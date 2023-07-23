@@ -14,8 +14,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": "5000",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 5000,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -33,7 +33,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -45,7 +45,7 @@
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -57,7 +57,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -69,7 +69,7 @@
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -81,7 +81,7 @@
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -93,7 +93,7 @@
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     }
