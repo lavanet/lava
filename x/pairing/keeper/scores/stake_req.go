@@ -3,6 +3,7 @@ package scores
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 const stakeReqName = "stake-req"
@@ -10,7 +11,7 @@ const stakeReqName = "stake-req"
 // StakeReq implements the ScoreReq interface for provider staking requirement(s)
 type StakeReq struct{}
 
-func (sr *StakeReq) Init() bool {
+func (sr *StakeReq) Init(policy planstypes.Policy) bool {
 	return true
 }
 
@@ -29,6 +30,6 @@ func (sr *StakeReq) Equal(other ScoreReq) bool {
 	return true
 }
 
-func (sr *StakeReq) GetReqForSlot(slotIdx int) ScoreReq {
+func (sr *StakeReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 	return sr
 }

@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"

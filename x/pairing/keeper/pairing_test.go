@@ -919,8 +919,6 @@ func TestGeolocationPairingScores(t *testing.T) {
 	USW := uint64(planstypes.Geolocation_value["USW"])
 	USE_EU := USE + EU
 
-	minStake := sdk.NewInt(10)
-
 	freePlanPolicy := planstypes.Policy{
 		GeolocationProfile: 4, // USE
 		TotalCuLimit:       10,
@@ -1044,7 +1042,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			slots := pairingscores.CalcSlots(planstypes.Policy{
 				GeolocationProfile: effectiveGeo,
 				MaxProvidersToPair: tt.planPolicy.MaxProvidersToPair,
-			}, minStake)
+			})
 
 			geoSeen := map[uint64]bool{}
 			for _, geo := range tt.expectedGeo {
@@ -1053,7 +1051,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 
 			// calc scores and verify the scores are as expected
 			for _, slot := range slots {
-				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot, minStake)
+				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot)
 				require.Nil(t, err)
 
 				ok := verifyGeoScoreForTesting(providerScores, slot, geoSeen)
@@ -1086,7 +1084,7 @@ func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot
 	}
 
 	sort.Slice(providerScores, func(i, j int) bool {
-		return providerScores[i].Score > providerScores[j].Score
+		return providerScores[i].Score.GT(providerScores[j].Score)
 	})
 
 	geoReqObject := pairingscores.GeoReq{}
@@ -1219,7 +1217,6 @@ func TestNoRequiredGeo(t *testing.T) {
 
 // TestGeoSlotCalc checks that the calculated slots always hold a single bit geo req
 func TestGeoSlotCalc(t *testing.T) {
-	minStake := sdk.NewInt(0)
 	geoReqName := pairingscores.GeoReq{}.GetName()
 
 	allGeos := types.GetAllGeolocations()
@@ -1233,7 +1230,7 @@ func TestGeoSlotCalc(t *testing.T) {
 			MaxProvidersToPair: 14,
 		}
 
-		slots := pairingscores.CalcSlots(policy, minStake)
+		slots := pairingscores.CalcSlots(policy)
 		for _, slot := range slots {
 			geoReqFromMap := slot.Reqs[geoReqName]
 			geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
@@ -1252,7 +1249,7 @@ func TestGeoSlotCalc(t *testing.T) {
 		GeolocationProfile: uint64(planstypes.Geolocation_GL),
 		MaxProvidersToPair: 14,
 	}
-	slots := pairingscores.CalcSlots(policy, minStake)
+	slots := pairingscores.CalcSlots(policy)
 	for _, slot := range slots {
 		geoReqFromMap := slot.Reqs[geoReqName]
 		geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)

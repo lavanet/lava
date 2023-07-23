@@ -1,6 +1,7 @@
 package scores
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -17,9 +18,13 @@ const (
 	minGeoLatency = 1
 )
 
+func (gr GeoReq) Init(policy planstypes.Policy) bool {
+	return true
+}
+
 // Score calculates the geo score of a provider based on preset latency data
 // Note: each GeoReq must have exactly a single geolocation (bit)
-func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) uint64 {
+func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) sdk.Uint {
 	// check if the provider supports the required geolocation
 	if gr.Geo&^provider.Geolocation == 0 {
 		return calculateCostFromLatency(minGeoLatency)
@@ -45,10 +50,9 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 	return otherGeoReq == gr
 }
 
-// GetGeoReqsForSlot creates a geo req for a slot by its index
 // TODO: this function doesn't return the optimal geo reqs for the case
 // that there are more required geos than providers to pair
-func GetGeoReqsForSlot(policy planstypes.Policy, slotIdx int) GeoReq {
+func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
 
 	return GeoReq{Geo: uint64(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
@@ -61,7 +65,7 @@ type GeoLatency struct {
 }
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
-func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost uint64) {
+func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost sdk.Uint) {
 	minGeo := planstypes.Geolocation(-1)
 	minLatency := uint64(maxGeoLatency)
 	for _, pGeo := range providerGeos {
@@ -78,8 +82,8 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 	return minGeo, calculateCostFromLatency(minLatency)
 }
 
-func calculateCostFromLatency(latency uint64) uint64 {
-	return maxGeoLatency / latency
+func calculateCostFromLatency(latency uint64) sdk.Uint {
+	return sdk.NewUint(maxGeoLatency / latency)
 }
 
 // GEO_LATENCY_MAP is a map of lists of GeoLatency that defines the cost of geo mismatch
