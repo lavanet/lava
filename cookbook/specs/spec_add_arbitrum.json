@@ -37,18 +37,15 @@
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [
+                        ],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "default_value": "0xa4b1",
-                                    "encoding": "hex"
-                                },
-                                "api_name": "eth_chainId"
+                                "name":"chain-id",
+                                "values" : [
+                                    {
+                                        "expected_value":"0xa4b1"
+                                    }
+                                ]
                             }
                         ]
                     }

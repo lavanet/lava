@@ -132,6 +132,22 @@ func generateHeaders(count int) (retHeaders []*types.Header) {
 	return
 }
 
+func generateVerifications(count int) (retVerifications []*types.Verification) {
+	retVerifications = []*types.Verification{}
+	for i := 0; i < count; i++ {
+		verification := &types.Verification{
+			Name:           "verification" + strconv.Itoa(i),
+			ParseDirective: &types.ParseDirective{},
+			Values: []*types.ParseValue{{
+				Extension:     "",
+				ExpectedValue: "123",
+			}},
+		}
+		retVerifications = append(retVerifications, verification)
+	}
+	return
+}
+
 func createApiCollectionWithHeaders(
 	apiCount int,
 	apiIds []int,
@@ -153,6 +169,7 @@ func createApiCollectionWithHeaders(
 		imports,
 		apiDiff)
 	apiCollection.Headers = generateHeaders(headersCount)
+	apiCollection.Verifications = generateVerifications(headersCount)
 	return apiCollection
 }
 
@@ -751,6 +768,10 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}
 					require.Equal(t, 1, len(apiCol.ParseDirectives), "collectionData %v, parsing %v", apiCol.CollectionData, apiCol.ParseDirectives)
 					require.Equal(t, 2, len(apiCol.Headers))
+					require.Equal(t, 2, len(apiCol.Verifications))
+					for _, verification := range apiCol.Verifications {
+						require.NotNil(t, verification.ParseDirective)
+					}
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
 				require.Equal(t, tt.totalApis, totApis, fullspec)
@@ -805,6 +826,12 @@ func TestCookbookSpecs(t *testing.T) {
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
 			require.NotNil(t, fullspec)
+			for _, apiCol := range fullspec.ApiCollections {
+				for _, verification := range apiCol.Verifications {
+					require.NotNil(t, verification.ParseDirective)
+					require.NotEqual(t, "", verification.ParseDirective.ApiName)
+				}
+			}
 		}
 	}
 }

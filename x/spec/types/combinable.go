@@ -50,7 +50,13 @@ func (e *Extension) Overwrite(Combinable) (Combinable, bool) {
 	return e, false
 }
 
-func (v *Verification) Overwrite(Combinable) (Combinable, bool) {
+func (v *Verification) Overwrite(other Combinable) (Combinable, bool) {
+	if v.ParseDirective == nil {
+		if otherVerification, ok := other.(*Verification); ok && otherVerification.ParseDirective != nil {
+			v.ParseDirective = otherVerification.ParseDirective
+			return v, true
+		}
+	}
 	return v, false
 }
 
