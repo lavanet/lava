@@ -35,6 +35,11 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		return nil, err
 	}
 
+	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
+	if !found {
+		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+	}
+
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
 		return nil, err
@@ -48,10 +53,6 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		return nil, err
 	}
 
-	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
-	if !found {
-		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
-	}
 	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	if !planstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {

@@ -14,11 +14,13 @@ type GeolocationFilter struct {
 }
 
 func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
-	// if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
-	// 	strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
-	// 	f.geolocation = strictestPolicy.GeolocationProfile
-	// 	return true
-	// }
+	/*
+		if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
+			strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
+			f.geolocation = strictestPolicy.GeolocationProfile
+			return true
+		}
+	*/
 	return false
 }
 

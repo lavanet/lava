@@ -166,8 +166,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash)
 
 	for _, group := range slotGroups {
-		// no more providers to pick from
 		if len(indexToSkip) == len(providerScores) {
+			utils.LavaFormatDebug("no more providers to pick from")
 			break
 		}
 
