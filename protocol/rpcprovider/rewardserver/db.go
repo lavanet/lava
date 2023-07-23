@@ -1,7 +1,9 @@
 package rewardserver
 
+import "time"
+
 type DB interface {
-	Save(key string, data []byte) error
+	Save(key string, data []byte, ttl time.Duration) error
 	FindOne(key string) ([]byte, error)
 	FindAll() (map[string][]byte, error)
 	Delete(key string) error
