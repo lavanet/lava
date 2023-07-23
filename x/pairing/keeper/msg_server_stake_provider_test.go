@@ -33,7 +33,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			ts.AdvanceEpoch()
 
 			// Note: using the same "ts" means each provider added gets a new index ("it")
-			ts.addProviderExtra(1, 1, tt.moniker) // geolocation 1, moniker set
+			ts.addProviderMoniker(1, tt.moniker)
 			providerAcct, _ := ts.GetAccount("provider", it)
 
 			ts.AdvanceEpoch()
@@ -60,10 +60,10 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	moniker := "exampleMoniker"
-	ts.addProviderExtra(1, 1, moniker) // geolocation 1, moniker set
+	ts.addProviderMoniker(1, moniker)
 	ts.AdvanceEpoch()
 
-	providerAcct, _ := ts.GetAccount("provider", 0)
+	providerAcct, providerAddr := ts.GetAccount("provider", 0)
 
 	// Get the stake entry and check the provider is staked
 	stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
@@ -72,7 +72,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	ts.StakeAccount(providerAcct, ts.spec, testStake, 1, moniker)
+	ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
