@@ -28,7 +28,10 @@ const (
 	LAVA_LOG_PANIC
 )
 
-var JsonFormat = false
+var (
+	JsonFormat = false
+	NoColor    = true
+)
 
 type Attribute struct {
 	Key   string
@@ -76,15 +79,17 @@ func LoggingLevel(logLevel string) {
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
 }
 
+func GetZeroLogger() zerolog.Logger {
+	if JsonFormat {
+		return zerologlog.Output(os.Stderr)
+	} else {
+		return zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
+	}
+}
+
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	NoColor := true
-
-	if JsonFormat {
-		zerologlog.Logger = zerologlog.Output(os.Stderr)
-	} else {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
-	}
+	zerologlog.Logger = GetZeroLogger()
 
 	var logEvent *zerolog.Event
 	switch severity {

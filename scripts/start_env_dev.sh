@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-if [ -n "$1" ]; then
+if [ -n "$1" ]; then # some systems dont support the log parsing.
     killall lava-protocol
     make build-protocol
     ignite chain build; lavad start

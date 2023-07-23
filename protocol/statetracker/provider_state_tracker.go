@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -114,4 +115,9 @@ func (pst *ProviderStateTracker) GetRecommendedEpochNumToCollectPayment(ctx cont
 
 func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
 	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
+}
+
+func (pst *ProviderStateTracker) GetEpochsToSave(ctx context.Context) (uint64, error) {
+	params, err := pst.stateQuery.EpochStorageQueryClient.Params(ctx, &types.QueryParamsRequest{})
+	return params.Params.EpochsToSave, err
 }

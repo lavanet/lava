@@ -1,7 +1,10 @@
 package rewardserver
 
 import (
+	"time"
+
 	"github.com/dgraph-io/badger/v4"
+	"github.com/lavanet/lava/utils"
 )
 
 type BadgerDB struct {
@@ -10,9 +13,10 @@ type BadgerDB struct {
 
 var _ DB = (*BadgerDB)(nil)
 
-func (mdb *BadgerDB) Save(key string, data []byte) error {
+func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
 	err := mdb.db.Update(func(txn *badger.Txn) error {
-		return txn.Set([]byte(key), data)
+		e := badger.NewEntry([]byte(key), data).WithTTL(ttl)
+		return txn.SetEntry(e)
 	})
 
 	return err
@@ -104,7 +108,9 @@ func NewMemoryDB() *BadgerDB {
 }
 
 func NewLocalDB(path string) *BadgerDB {
-	db, err := badger.Open(badger.DefaultOptions(path))
+	Options := badger.DefaultOptions(path)
+	Options.Logger = utils.LoggerWrapper{LoggerName: "[Badger DB]: "} // replace the logger with lava logger
+	db, err := badger.Open(Options)
 	if err != nil {
 		panic(err)
 	}
