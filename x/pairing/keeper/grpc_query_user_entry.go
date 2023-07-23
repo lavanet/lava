@@ -52,8 +52,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	if err != nil {
 		return nil, err
 	}
-
-	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCU, _ := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	if !planstypes.VerifyTotalCuUsage(policies, project.GetUsedCu()) {
 		allowedCU = 0

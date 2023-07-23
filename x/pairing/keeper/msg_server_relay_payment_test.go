@@ -80,6 +80,22 @@ func (ts *testStruct) addProviderGeolocation(amount int, geolocation uint64) err
 	return nil
 }
 
+func (ts *testStruct) addProviderEndpoints(amount int, endpoints []epochstoragetypes.Endpoint) error {
+	for i := 0; i < amount; i++ {
+		sk, address := sigs.GenerateFloatingKey()
+		ts.providers = append(ts.providers, &common.Account{SK: sk, Addr: address})
+		err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
+		if err != nil {
+			return err
+		}
+		_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (ts *testStruct) getProvider(addr string) *common.Account {
 	for _, provider := range ts.providers {
 		if provider.Addr.String() == addr {

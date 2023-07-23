@@ -23,11 +23,15 @@ type NodeUrl struct {
 	AuthConfig   AuthConfig    `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
 	IpForwarding bool          `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
 	Timeout      time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`
+	Addons       []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 }
 
 func (url *NodeUrl) String() string {
 	if url == nil {
 		return ""
+	}
+	if len(url.Addons) > 0 {
+		return url.Url + "(" + strings.Join(url.Addons, ",") + ")"
 	}
 	return url.Url
 }

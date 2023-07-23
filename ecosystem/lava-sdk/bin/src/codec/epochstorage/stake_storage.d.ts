@@ -23,8 +23,9 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -42,8 +43,9 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -57,8 +59,9 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -146,15 +149,16 @@ export declare const StakeStorage: {
             } & { [K_1 in Exclude<keyof I["stakeEntries"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -227,10 +231,13 @@ export declare const StakeStorage: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_2 in Exclude<keyof I["stakeEntries"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["stakeEntries"][number]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_3 in Exclude<keyof I["stakeEntries"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_4 in Exclude<keyof I["stakeEntries"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_6 in Exclude<keyof I["stakeEntries"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -303,10 +310,10 @@ export declare const StakeStorage: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_7 in Exclude<keyof I["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["stakeEntries"][number], keyof StakeEntry>]: never; })[] & { [K_7 in Exclude<keyof I["stakeEntries"], keyof {
+        } & { [K_8 in Exclude<keyof I["stakeEntries"][number], keyof StakeEntry>]: never; })[] & { [K_9 in Exclude<keyof I["stakeEntries"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -315,15 +322,16 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
         epochBlockHash?: Uint8Array | undefined;
-    } & { [K_8 in Exclude<keyof I, keyof StakeStorage>]: never; }>(base?: I | undefined): StakeStorage;
+    } & { [K_10 in Exclude<keyof I, keyof StakeStorage>]: never; }>(base?: I | undefined): StakeStorage;
     fromPartial<I_1 extends {
         index?: string | undefined;
         stakeEntries?: {
@@ -335,8 +343,9 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -354,8 +363,9 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -369,8 +379,9 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -382,7 +393,7 @@ export declare const StakeStorage: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_9 in Exclude<keyof I_1["stakeEntries"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_11 in Exclude<keyof I_1["stakeEntries"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -455,18 +466,19 @@ export declare const StakeStorage: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_10 in Exclude<keyof I_1["stakeEntries"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_12 in Exclude<keyof I_1["stakeEntries"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -538,11 +550,14 @@ export declare const StakeStorage: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_11 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_13 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"], keyof {
+                } & { [K_13 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_14 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_15 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_17 in Exclude<keyof I_1["stakeEntries"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -615,10 +630,10 @@ export declare const StakeStorage: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I_1["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_15 in Exclude<keyof I_1["stakeEntries"][number], keyof StakeEntry>]: never; })[] & { [K_16 in Exclude<keyof I_1["stakeEntries"], keyof {
+        } & { [K_19 in Exclude<keyof I_1["stakeEntries"][number], keyof StakeEntry>]: never; })[] & { [K_20 in Exclude<keyof I_1["stakeEntries"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -627,15 +642,16 @@ export declare const StakeStorage: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
         epochBlockHash?: Uint8Array | undefined;
-    } & { [K_17 in Exclude<keyof I_1, keyof StakeStorage>]: never; }>(object: I_1): StakeStorage;
+    } & { [K_21 in Exclude<keyof I_1, keyof StakeStorage>]: never; }>(object: I_1): StakeStorage;
 };
 declare type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 export declare type DeepPartial<T> = T extends Builtin ? T : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : T extends {} ? {

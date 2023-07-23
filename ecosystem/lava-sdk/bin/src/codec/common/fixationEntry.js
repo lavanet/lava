@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Entry = exports.protobufPackage = void 0;
+exports.RawMessage = exports.Entry = exports.protobufPackage = void 0;
 /* eslint-disable */
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
@@ -48,43 +48,43 @@ exports.Entry = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.index = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.block = reader.uint64();
                     continue;
                 case 3:
-                    if (tag !== 24) {
+                    if (tag != 24) {
                         break;
                     }
                     message.staleAt = reader.uint64();
                     continue;
                 case 4:
-                    if (tag !== 32) {
+                    if (tag != 32) {
                         break;
                     }
                     message.refcount = reader.uint64();
                     continue;
                 case 5:
-                    if (tag !== 42) {
+                    if (tag != 42) {
                         break;
                     }
                     message.data = reader.bytes();
                     continue;
                 case 6:
-                    if (tag !== 48) {
+                    if (tag != 48) {
                         break;
                     }
                     message.deleteAt = reader.uint64();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -130,6 +130,71 @@ exports.Entry = {
         message.deleteAt = (object.deleteAt !== undefined && object.deleteAt !== null)
             ? long_1.default.fromValue(object.deleteAt)
             : long_1.default.UZERO;
+        return message;
+    },
+};
+function createBaseRawMessage() {
+    return { key: new Uint8Array(), value: new Uint8Array() };
+}
+exports.RawMessage = {
+    encode(message, writer = minimal_1.default.Writer.create()) {
+        if (message.key.length !== 0) {
+            writer.uint32(10).bytes(message.key);
+        }
+        if (message.value.length !== 0) {
+            writer.uint32(18).bytes(message.value);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseRawMessage();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    if (tag != 10) {
+                        break;
+                    }
+                    message.key = reader.bytes();
+                    continue;
+                case 2:
+                    if (tag != 18) {
+                        break;
+                    }
+                    message.value = reader.bytes();
+                    continue;
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array(),
+            value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array(),
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        message.key !== undefined &&
+            (obj.key = base64FromBytes(message.key !== undefined ? message.key : new Uint8Array()));
+        message.value !== undefined &&
+            (obj.value = base64FromBytes(message.value !== undefined ? message.value : new Uint8Array()));
+        return obj;
+    },
+    create(base) {
+        return exports.RawMessage.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(object) {
+        var _a, _b;
+        const message = createBaseRawMessage();
+        message.key = (_a = object.key) !== null && _a !== void 0 ? _a : new Uint8Array();
+        message.value = (_b = object.value) !== null && _b !== void 0 ? _b : new Uint8Array();
         return message;
     },
 };

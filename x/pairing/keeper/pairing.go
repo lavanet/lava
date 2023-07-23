@@ -130,7 +130,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	strictestPolicy, allowedCU, minStake, err := k.getProjectStrictestPolicy(ctx, project, chainID)
+	strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
@@ -138,6 +138,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	if providersType == spectypes.Spec_static {
 		return stakeEntries, allowedCU, project.Index, nil
 	}
+
+	allowedCU = strictestPolicy.EpochCuLimit
 
 	filters := pairingfilters.GetAllFilters()
 
@@ -147,7 +149,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	// create the pairing slots with assigned reqs
-	slots := pairingscores.CalcSlots(strictestPolicy, minStake)
+	slots := pairingscores.CalcSlots(strictestPolicy)
 
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
@@ -163,16 +165,16 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
 	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
 	indexToSkip := make(map[int]bool) // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
-	hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash)
 
-	for _, group := range slotGroups {
+	for idx, group := range slotGroups {
 		if len(indexToSkip) == len(providerScores) {
 			utils.LavaFormatDebug("no more providers to pick from")
 			break
 		}
 
+		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
-		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot, minStake)
+		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -185,10 +187,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, allowedCU, project.Index, err
 }
 
-func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, uint64, sdk.Int, error) {
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return planstypes.Policy{}, 0, sdk.Int{}, err
+		return planstypes.Policy{}, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -199,33 +201,26 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if project.AdminPolicy != nil {
 		policies = append(policies, project.AdminPolicy)
 	}
-
-	if !planstypes.CheckChainIdExistsInPolicies(chainID, policies) {
-		return planstypes.Policy{}, 0, sdk.Int{}, fmt.Errorf("chain ID not found in any of the policies")
+	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
+	if !allowed {
+		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
-
-	spec, found := k.specKeeper.GetSpec(ctx, chainID)
-	if !found {
-		return planstypes.Policy{}, 0, sdk.Int{}, fmt.Errorf("spec not found with chain ID")
-	}
-
-	minStake := spec.MinStakeProvider.Amount
 
 	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, 0, sdk.Int{}, err
+		return planstypes.Policy{}, err
 	}
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, 0, sdk.Int{}, err
+		return planstypes.Policy{}, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return planstypes.Policy{}, 0, sdk.Int{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return planstypes.Policy{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
-	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
@@ -234,9 +229,12 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		MaxProvidersToPair:    providersToPair,
 		SelectedProvidersMode: selectedProvidersMode,
 		SelectedProviders:     selectedProvidersList,
+		ChainPolicies:         []planstypes.ChainPolicy{chainPolicy},
+		EpochCuLimit:          allowedCUEpoch,
+		TotalCuLimit:          allowedCUTotal,
 	}
 
-	return strictestPolicy, allowedCU, minStake, nil
+	return strictestPolicy, nil
 }
 
 func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Policy) (planstypes.SELECTED_PROVIDERS_MODE, []string) {
@@ -295,7 +293,7 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planst
 	return providersToPair, nil
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) (allowedCUThisEpoch uint64, allowedCUTotal uint64) {
 	var policyEpochCuLimit []uint64
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
@@ -310,9 +308,7 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 
 	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
 
-	cuList := []uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}
-
-	return commontypes.FindMin(cuList)
+	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}), effectiveTotalCuOfProject
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {

@@ -27,6 +27,7 @@ export interface LavaSDKOptions {
     geolocation?: string;
     lavaChainId?: string;
     secure?: boolean;
+    allowInsecureTransport?: boolean;
     debug?: boolean;
 }
 export declare class LavaSDK {
@@ -44,6 +45,7 @@ export declare class LavaSDK {
     private account;
     private relayer;
     private secure;
+    private allowInsecureTransport;
     private debugMode;
     private activeSessionManager;
     /**

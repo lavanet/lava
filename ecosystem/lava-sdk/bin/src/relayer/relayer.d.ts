@@ -6,8 +6,9 @@ declare class Relayer {
     private privKey;
     private lavaChainId;
     private prefix;
+    private allowInsecureTransport;
     private badge?;
-    constructor(chainID: string, privKey: string, lavaChainId: string, secure: boolean, badge?: Badge);
+    constructor(chainID: string, privKey: string, lavaChainId: string, secure: boolean, allowInsecureTransport?: boolean, badge?: Badge);
     setBadge(badge: Badge | undefined): void;
     sendRelay(options: SendRelayOptions, consumerProviderSession: ConsumerSessionWithProvider, cuSum: number, apiInterface: string): Promise<RelayReply>;
     extractErrorMessage(error: string): string;

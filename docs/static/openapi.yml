@@ -30053,6 +30053,107 @@ paths:
           type: string
       tags:
         - Query
+  '/lavanet/lava/pairing/effective_policy/{consumer}/{specID}':
+    get:
+      summary: Queries a list of EffectivePolicy items.
+      operationId: LavanetLavaPairingEffectivePolicy
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              policy:
+                type: object
+                properties:
+                  chain_policies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        chain_id:
+                          type: string
+                        apis:
+                          type: array
+                          items:
+                            type: string
+                        collections:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              api_interface:
+                                type: string
+                              internal_path:
+                                type: string
+                              type:
+                                type: string
+                              add_on:
+                                type: string
+                  geolocation_profile:
+                    type: string
+                    format: uint64
+                  total_cu_limit:
+                    type: string
+                    format: uint64
+                  epoch_cu_limit:
+                    type: string
+                    format: uint64
+                  max_providers_to_pair:
+                    type: string
+                    format: uint64
+                  selected_providers_mode:
+                    type: string
+                    enum:
+                      - ALLOWED
+                      - MIXED
+                      - EXCLUSIVE
+                      - DISABLED
+                    default: ALLOWED
+                    description: |-
+                      - ALLOWED: no providers restrictions
+                       - MIXED: use the selected providers mixed with randomly chosen providers
+                       - EXCLUSIVE: use only the selected providers
+                       - DISABLED: selected providers feature is disabled
+                    title: >-
+                      the enum below determines the pairing algorithm's
+                      behaviour with the selected providers feature
+                  selected_providers:
+                    type: array
+                    items:
+                      type: string
+                title: >-
+                  protobuf expected in YAML format: used "moretags" to simplify
+                  parsing
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: consumer
+          in: path
+          required: true
+          type: string
+        - name: specID
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /lavanet/lava/pairing/epoch_payments:
     get:
       summary: Queries a list of EpochPayments items.
@@ -31136,6 +31237,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31336,6 +31450,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31388,6 +31515,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31502,6 +31642,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31554,6 +31707,19 @@ paths:
                               type: array
                               items:
                                 type: string
+                            collections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  api_interface:
+                                    type: string
+                                  internal_path:
+                                    type: string
+                                  type:
+                                    type: string
+                                  add_on:
+                                    type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -31819,6 +31985,12 @@ paths:
                       type: array
                       items:
                         type: string
+                    addon:
+                      type: string
+              optional_interfaces:
+                type: array
+                items:
+                  type: string
         default:
           description: An unexpected error response.
           schema:
@@ -55601,6 +55773,69 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
+  lavanet.lava.pairing.QueryEffectivePolicyResponse:
+    type: object
+    properties:
+      policy:
+        type: object
+        properties:
+          chain_policies:
+            type: array
+            items:
+              type: object
+              properties:
+                chain_id:
+                  type: string
+                apis:
+                  type: array
+                  items:
+                    type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
+          geolocation_profile:
+            type: string
+            format: uint64
+          total_cu_limit:
+            type: string
+            format: uint64
+          epoch_cu_limit:
+            type: string
+            format: uint64
+          max_providers_to_pair:
+            type: string
+            format: uint64
+          selected_providers_mode:
+            type: string
+            enum:
+              - ALLOWED
+              - MIXED
+              - EXCLUSIVE
+              - DISABLED
+            default: ALLOWED
+            description: |-
+              - ALLOWED: no providers restrictions
+               - MIXED: use the selected providers mixed with randomly chosen providers
+               - EXCLUSIVE: use only the selected providers
+               - DISABLED: selected providers feature is disabled
+            title: >-
+              the enum below determines the pairing algorithm's behaviour with
+              the selected providers feature
+          selected_providers:
+            type: array
+            items:
+              type: string
+        title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.pairing.QueryGetEpochPaymentsResponse:
     type: object
     properties:
@@ -55936,6 +56171,106 @@ definitions:
         type: array
         items:
           type: string
+      collections:
+        type: array
+        items:
+          type: object
+          properties:
+            api_interface:
+              type: string
+            internal_path:
+              type: string
+            type:
+              type: string
+            add_on:
+              type: string
+  lavanet.lava.plans.Policy:
+    type: object
+    properties:
+      chain_policies:
+        type: array
+        items:
+          type: object
+          properties:
+            chain_id:
+              type: string
+            apis:
+              type: array
+              items:
+                type: string
+            collections:
+              type: array
+              items:
+                type: object
+                properties:
+                  api_interface:
+                    type: string
+                  internal_path:
+                    type: string
+                  type:
+                    type: string
+                  add_on:
+                    type: string
+      geolocation_profile:
+        type: string
+        format: uint64
+      total_cu_limit:
+        type: string
+        format: uint64
+      epoch_cu_limit:
+        type: string
+        format: uint64
+      max_providers_to_pair:
+        type: string
+        format: uint64
+      selected_providers_mode:
+        type: string
+        enum:
+          - ALLOWED
+          - MIXED
+          - EXCLUSIVE
+          - DISABLED
+        default: ALLOWED
+        description: |-
+          - ALLOWED: no providers restrictions
+           - MIXED: use the selected providers mixed with randomly chosen providers
+           - EXCLUSIVE: use only the selected providers
+           - DISABLED: selected providers feature is disabled
+        title: >-
+          the enum below determines the pairing algorithm's behaviour with the
+          selected providers feature
+      selected_providers:
+        type: array
+        items:
+          type: string
+    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
+  lavanet.lava.plans.SELECTED_PROVIDERS_MODE:
+    type: string
+    enum:
+      - ALLOWED
+      - MIXED
+      - EXCLUSIVE
+      - DISABLED
+    default: ALLOWED
+    description: |-
+      - ALLOWED: no providers restrictions
+       - MIXED: use the selected providers mixed with randomly chosen providers
+       - EXCLUSIVE: use only the selected providers
+       - DISABLED: selected providers feature is disabled
+    title: >-
+      the enum below determines the pairing algorithm's behaviour with the
+      selected providers feature
+  lavanet.lava.spec.CollectionData:
+    type: object
+    properties:
+      api_interface:
+        type: string
+      internal_path:
+        type: string
+      type:
+        type: string
+      add_on:
+        type: string
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -56011,6 +56346,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -56044,53 +56392,6 @@ definitions:
             items:
               type: string
         title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
-  lavanet.lava.plans.Policy:
-    type: object
-    properties:
-      chain_policies:
-        type: array
-        items:
-          type: object
-          properties:
-            chain_id:
-              type: string
-            apis:
-              type: array
-              items:
-                type: string
-      geolocation_profile:
-        type: string
-        format: uint64
-      total_cu_limit:
-        type: string
-        format: uint64
-      epoch_cu_limit:
-        type: string
-        format: uint64
-      max_providers_to_pair:
-        type: string
-        format: uint64
-      selected_providers_mode:
-        type: string
-        enum:
-          - ALLOWED
-          - MIXED
-          - EXCLUSIVE
-          - DISABLED
-        default: ALLOWED
-        description: |-
-          - ALLOWED: no providers restrictions
-           - MIXED: use the selected providers mixed with randomly chosen providers
-           - EXCLUSIVE: use only the selected providers
-           - DISABLED: selected providers feature is disabled
-        title: >-
-          the enum below determines the pairing algorithm's behaviour with the
-          selected providers feature
-      selected_providers:
-        type: array
-        items:
-          type: string
-    title: 'protobuf expected in YAML format: used "moretags" to simplify parsing'
   lavanet.lava.plans.QueryInfoResponse:
     type: object
     properties:
@@ -56150,6 +56451,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56219,22 +56533,6 @@ definitions:
         description: params holds all the parameters of this module.
         type: object
     description: QueryParamsResponse is response type for the Query/Params RPC method.
-  lavanet.lava.plans.SELECTED_PROVIDERS_MODE:
-    type: string
-    enum:
-      - ALLOWED
-      - MIXED
-      - EXCLUSIVE
-      - DISABLED
-    default: ALLOWED
-    description: |-
-      - ALLOWED: no providers restrictions
-       - MIXED: use the selected providers mixed with randomly chosen providers
-       - EXCLUSIVE: use only the selected providers
-       - DISABLED: selected providers feature is disabled
-    title: >-
-      the enum below determines the pairing algorithm's behaviour with the
-      selected providers feature
   lavanet.lava.projects.MsgAddKeysResponse:
     type: object
   lavanet.lava.projects.MsgDelKeysResponse:
@@ -56286,6 +56584,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -56336,6 +56647,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -56425,6 +56749,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56477,6 +56814,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56559,6 +56909,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56611,6 +56974,19 @@ definitions:
                       type: array
                       items:
                         type: string
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -56952,6 +57328,8 @@ definitions:
         type: array
         items:
           type: string
+      addon:
+        type: string
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -56988,17 +57366,6 @@ definitions:
       encoding:
         type: string
         title: 'used to parse byte responses: base64,hex,bech32'
-  lavanet.lava.spec.CollectionData:
-    type: object
-    properties:
-      api_interface:
-        type: string
-      internal_path:
-        type: string
-      type:
-        type: string
-      add_on:
-        type: string
   lavanet.lava.spec.FUNCTION_TAG:
     type: string
     enum:
@@ -57711,6 +58078,12 @@ definitions:
               type: array
               items:
                 type: string
+            addon:
+              type: string
+      optional_interfaces:
+        type: array
+        items:
+          type: string
   lavanet.lava.spec.ShowAllChainsInfoStruct:
     type: object
     properties:

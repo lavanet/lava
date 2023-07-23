@@ -16,10 +16,10 @@ message ApiCollection {
 }
 
 message CollectionData {
-  string api_interface = 1;
-  string internal_path = 2;
-  string type = 3;
-  string add_on = 4;
+  string api_interface = 1 [(gogoproto.moretags) = "mapstructure:\"api_interface\"", (gogoproto.jsontag) = "api_interface"];
+  string internal_path = 2 [(gogoproto.moretags) = "mapstructure:\"internal_path\"", (gogoproto.jsontag) = "internal_path"];
+  string type = 3 [(gogoproto.moretags) = "mapstructure:\"type\"", (gogoproto.jsontag) = "type"];
+	string add_on = 4 [(gogoproto.moretags) = "mapstructure:\"add_on\"", (gogoproto.jsontag) = "add_on"];
 }
 
 message Header {

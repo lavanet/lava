@@ -170,7 +170,7 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			w.WriteHeader(244591)
 		}
 	})
-	chainParser, chainProxy, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, "../../")
+	chainParser, chainRouter, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, "../../")
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -212,7 +212,7 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
-			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
 			require.NoError(t, err)
@@ -237,7 +237,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			w.WriteHeader(244591)
 		}
 	})
-	chainParser, chainProxy, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, "../../")
+	chainParser, chainRouter, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, "../../")
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -279,7 +279,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
 			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the request only if it's latest
 			require.Equal(t, test.block, chainMessage.RequestedBlock())
-			reply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
 			require.NoError(t, err)

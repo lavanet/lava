@@ -12,6 +12,7 @@ import (
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/plans/types"
+	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -45,12 +46,20 @@ func PlanKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"EpochStorageParams",
 	)
 
+	paramsSubspaceSpec := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"SpecParams",
+	)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
+		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
