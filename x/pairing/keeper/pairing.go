@@ -136,10 +136,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	if providersType == spectypes.Spec_static {
-		return stakeEntries, allowedCU, project.Index, nil
+		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
-
-	allowedCU = strictestPolicy.EpochCuLimit
 
 	filters := pairingfilters.GetAllFilters()
 
@@ -179,7 +177,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		prevGroupSlot = group
 	}
 
-	return providers, allowedCU, project.Index, err
+	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
 func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {
