@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Policy } from "../plans/plan";
 
 export const protobufPackage = "lavanet.lava.projects";
 
@@ -9,8 +10,6 @@ export interface Project {
   index: string;
   /** the subscription address that owns the project */
   subscription: string;
-  /** the description of the project for the users convinient */
-  description: string;
   /** enabled flag */
   enabled: boolean;
   /** list of the projects keys */
@@ -67,20 +66,6 @@ export function projectKey_TypeToJSON(object: ProjectKey_Type): string {
   }
 }
 
-/** protobuf expected in YAML format: used "moretags" to simplify parsing */
-export interface Policy {
-  chainPolicies: ChainPolicy[];
-  geolocationProfile: Long;
-  totalCuLimit: Long;
-  epochCuLimit: Long;
-  maxProvidersToPair: Long;
-}
-
-export interface ChainPolicy {
-  chainId: string;
-  apis: string[];
-}
-
 export interface ProtoDeveloperData {
   projectID: string;
 }
@@ -88,7 +73,6 @@ export interface ProtoDeveloperData {
 /** used as a container struct for the subscription module */
 export interface ProjectData {
   name: string;
-  description: string;
   enabled: boolean;
   projectKeys: ProjectKey[];
   policy?: Policy;
@@ -98,7 +82,6 @@ function createBaseProject(): Project {
   return {
     index: "",
     subscription: "",
-    description: "",
     enabled: false,
     projectKeys: [],
     adminPolicy: undefined,
@@ -115,9 +98,6 @@ export const Project = {
     }
     if (message.subscription !== "") {
       writer.uint32(18).string(message.subscription);
-    }
-    if (message.description !== "") {
-      writer.uint32(26).string(message.description);
     }
     if (message.enabled === true) {
       writer.uint32(32).bool(message.enabled);
@@ -148,70 +128,63 @@ export const Project = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.index = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.subscription = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.enabled = reader.bool();
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.projectKeys.push(ProjectKey.decode(reader, reader.uint32()));
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.adminPolicy = Policy.decode(reader, reader.uint32());
           continue;
         case 7:
-          if (tag !== 56) {
+          if (tag != 56) {
             break;
           }
 
           message.usedCu = reader.uint64() as Long;
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.subscriptionPolicy = Policy.decode(reader, reader.uint32());
           continue;
         case 9:
-          if (tag !== 72) {
+          if (tag != 72) {
             break;
           }
 
           message.snapshot = reader.uint64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -223,7 +196,6 @@ export const Project = {
     return {
       index: isSet(object.index) ? String(object.index) : "",
       subscription: isSet(object.subscription) ? String(object.subscription) : "",
-      description: isSet(object.description) ? String(object.description) : "",
       enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
       projectKeys: Array.isArray(object?.projectKeys) ? object.projectKeys.map((e: any) => ProjectKey.fromJSON(e)) : [],
       adminPolicy: isSet(object.adminPolicy) ? Policy.fromJSON(object.adminPolicy) : undefined,
@@ -237,7 +209,6 @@ export const Project = {
     const obj: any = {};
     message.index !== undefined && (obj.index = message.index);
     message.subscription !== undefined && (obj.subscription = message.subscription);
-    message.description !== undefined && (obj.description = message.description);
     message.enabled !== undefined && (obj.enabled = message.enabled);
     if (message.projectKeys) {
       obj.projectKeys = message.projectKeys.map((e) => e ? ProjectKey.toJSON(e) : undefined);
@@ -261,7 +232,6 @@ export const Project = {
     const message = createBaseProject();
     message.index = object.index ?? "";
     message.subscription = object.subscription ?? "";
-    message.description = object.description ?? "";
     message.enabled = object.enabled ?? false;
     message.projectKeys = object.projectKeys?.map((e) => ProjectKey.fromPartial(e)) || [];
     message.adminPolicy = (object.adminPolicy !== undefined && object.adminPolicy !== null)
@@ -303,21 +273,21 @@ export const ProjectKey = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.key = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.kinds = reader.uint32();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -348,213 +318,6 @@ export const ProjectKey = {
   },
 };
 
-function createBasePolicy(): Policy {
-  return {
-    chainPolicies: [],
-    geolocationProfile: Long.UZERO,
-    totalCuLimit: Long.UZERO,
-    epochCuLimit: Long.UZERO,
-    maxProvidersToPair: Long.UZERO,
-  };
-}
-
-export const Policy = {
-  encode(message: Policy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.chainPolicies) {
-      ChainPolicy.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (!message.geolocationProfile.isZero()) {
-      writer.uint32(16).uint64(message.geolocationProfile);
-    }
-    if (!message.totalCuLimit.isZero()) {
-      writer.uint32(24).uint64(message.totalCuLimit);
-    }
-    if (!message.epochCuLimit.isZero()) {
-      writer.uint32(32).uint64(message.epochCuLimit);
-    }
-    if (!message.maxProvidersToPair.isZero()) {
-      writer.uint32(40).uint64(message.maxProvidersToPair);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Policy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.chainPolicies.push(ChainPolicy.decode(reader, reader.uint32()));
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.geolocationProfile = reader.uint64() as Long;
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.totalCuLimit = reader.uint64() as Long;
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.epochCuLimit = reader.uint64() as Long;
-          continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.maxProvidersToPair = reader.uint64() as Long;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Policy {
-    return {
-      chainPolicies: Array.isArray(object?.chainPolicies)
-        ? object.chainPolicies.map((e: any) => ChainPolicy.fromJSON(e))
-        : [],
-      geolocationProfile: isSet(object.geolocationProfile) ? Long.fromValue(object.geolocationProfile) : Long.UZERO,
-      totalCuLimit: isSet(object.totalCuLimit) ? Long.fromValue(object.totalCuLimit) : Long.UZERO,
-      epochCuLimit: isSet(object.epochCuLimit) ? Long.fromValue(object.epochCuLimit) : Long.UZERO,
-      maxProvidersToPair: isSet(object.maxProvidersToPair) ? Long.fromValue(object.maxProvidersToPair) : Long.UZERO,
-    };
-  },
-
-  toJSON(message: Policy): unknown {
-    const obj: any = {};
-    if (message.chainPolicies) {
-      obj.chainPolicies = message.chainPolicies.map((e) => e ? ChainPolicy.toJSON(e) : undefined);
-    } else {
-      obj.chainPolicies = [];
-    }
-    message.geolocationProfile !== undefined &&
-      (obj.geolocationProfile = (message.geolocationProfile || Long.UZERO).toString());
-    message.totalCuLimit !== undefined && (obj.totalCuLimit = (message.totalCuLimit || Long.UZERO).toString());
-    message.epochCuLimit !== undefined && (obj.epochCuLimit = (message.epochCuLimit || Long.UZERO).toString());
-    message.maxProvidersToPair !== undefined &&
-      (obj.maxProvidersToPair = (message.maxProvidersToPair || Long.UZERO).toString());
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<Policy>, I>>(base?: I): Policy {
-    return Policy.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<Policy>, I>>(object: I): Policy {
-    const message = createBasePolicy();
-    message.chainPolicies = object.chainPolicies?.map((e) => ChainPolicy.fromPartial(e)) || [];
-    message.geolocationProfile = (object.geolocationProfile !== undefined && object.geolocationProfile !== null)
-      ? Long.fromValue(object.geolocationProfile)
-      : Long.UZERO;
-    message.totalCuLimit = (object.totalCuLimit !== undefined && object.totalCuLimit !== null)
-      ? Long.fromValue(object.totalCuLimit)
-      : Long.UZERO;
-    message.epochCuLimit = (object.epochCuLimit !== undefined && object.epochCuLimit !== null)
-      ? Long.fromValue(object.epochCuLimit)
-      : Long.UZERO;
-    message.maxProvidersToPair = (object.maxProvidersToPair !== undefined && object.maxProvidersToPair !== null)
-      ? Long.fromValue(object.maxProvidersToPair)
-      : Long.UZERO;
-    return message;
-  },
-};
-
-function createBaseChainPolicy(): ChainPolicy {
-  return { chainId: "", apis: [] };
-}
-
-export const ChainPolicy = {
-  encode(message: ChainPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.chainId !== "") {
-      writer.uint32(10).string(message.chainId);
-    }
-    for (const v of message.apis) {
-      writer.uint32(18).string(v!);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ChainPolicy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseChainPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.chainId = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.apis.push(reader.string());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ChainPolicy {
-    return {
-      chainId: isSet(object.chainId) ? String(object.chainId) : "",
-      apis: Array.isArray(object?.apis) ? object.apis.map((e: any) => String(e)) : [],
-    };
-  },
-
-  toJSON(message: ChainPolicy): unknown {
-    const obj: any = {};
-    message.chainId !== undefined && (obj.chainId = message.chainId);
-    if (message.apis) {
-      obj.apis = message.apis.map((e) => e);
-    } else {
-      obj.apis = [];
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ChainPolicy>, I>>(base?: I): ChainPolicy {
-    return ChainPolicy.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ChainPolicy>, I>>(object: I): ChainPolicy {
-    const message = createBaseChainPolicy();
-    message.chainId = object.chainId ?? "";
-    message.apis = object.apis?.map((e) => e) || [];
-    return message;
-  },
-};
-
 function createBaseProtoDeveloperData(): ProtoDeveloperData {
   return { projectID: "" };
 }
@@ -575,14 +338,14 @@ export const ProtoDeveloperData = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.projectID = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -612,16 +375,13 @@ export const ProtoDeveloperData = {
 };
 
 function createBaseProjectData(): ProjectData {
-  return { name: "", description: "", enabled: false, projectKeys: [], policy: undefined };
+  return { name: "", enabled: false, projectKeys: [], policy: undefined };
 }
 
 export const ProjectData = {
   encode(message: ProjectData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.description !== "") {
-      writer.uint32(18).string(message.description);
     }
     if (message.enabled === true) {
       writer.uint32(24).bool(message.enabled);
@@ -643,42 +403,35 @@ export const ProjectData = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.name = reader.string();
           continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.enabled = reader.bool();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.projectKeys.push(ProjectKey.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.policy = Policy.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -689,7 +442,6 @@ export const ProjectData = {
   fromJSON(object: any): ProjectData {
     return {
       name: isSet(object.name) ? String(object.name) : "",
-      description: isSet(object.description) ? String(object.description) : "",
       enabled: isSet(object.enabled) ? Boolean(object.enabled) : false,
       projectKeys: Array.isArray(object?.projectKeys) ? object.projectKeys.map((e: any) => ProjectKey.fromJSON(e)) : [],
       policy: isSet(object.policy) ? Policy.fromJSON(object.policy) : undefined,
@@ -699,7 +451,6 @@ export const ProjectData = {
   toJSON(message: ProjectData): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.description !== undefined && (obj.description = message.description);
     message.enabled !== undefined && (obj.enabled = message.enabled);
     if (message.projectKeys) {
       obj.projectKeys = message.projectKeys.map((e) => e ? ProjectKey.toJSON(e) : undefined);
@@ -717,7 +468,6 @@ export const ProjectData = {
   fromPartial<I extends Exact<DeepPartial<ProjectData>, I>>(object: I): ProjectData {
     const message = createBaseProjectData();
     message.name = object.name ?? "";
-    message.description = object.description ?? "";
     message.enabled = object.enabled ?? false;
     message.projectKeys = object.projectKeys?.map((e) => ProjectKey.fromPartial(e)) || [];
     message.policy = (object.policy !== undefined && object.policy !== null)

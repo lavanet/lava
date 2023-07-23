@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.QueryClientImpl = exports.QueryListProjectsResponse = exports.QueryListProjectsRequest = exports.QueryCurrentResponse = exports.QueryCurrentRequest = exports.QueryParamsResponse = exports.QueryParamsRequest = exports.protobufPackage = void 0;
+exports.QueryClientImpl = exports.ListInfoStruct = exports.QueryListResponse = exports.QueryListRequest = exports.QueryListProjectsResponse = exports.QueryListProjectsRequest = exports.QueryCurrentResponse = exports.QueryCurrentRequest = exports.QueryParamsResponse = exports.QueryParamsRequest = exports.protobufPackage = void 0;
 /* eslint-disable */
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
@@ -25,7 +25,7 @@ exports.QueryParamsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -65,13 +65,13 @@ exports.QueryParamsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.params = params_1.Params.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -115,13 +115,13 @@ exports.QueryCurrentRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.consumer = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -164,13 +164,13 @@ exports.QueryCurrentResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.sub = subscription_1.Subscription.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -212,13 +212,13 @@ exports.QueryListProjectsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.subscription = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -261,13 +261,13 @@ exports.QueryListProjectsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.projects.push(reader.string());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -297,6 +297,240 @@ exports.QueryListProjectsResponse = {
         return message;
     },
 };
+function createBaseQueryListRequest() {
+    return {};
+}
+exports.QueryListRequest = {
+    encode(_, writer = minimal_1.default.Writer.create()) {
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseQueryListRequest();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(_) {
+        return {};
+    },
+    toJSON(_) {
+        const obj = {};
+        return obj;
+    },
+    create(base) {
+        return exports.QueryListRequest.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(_) {
+        const message = createBaseQueryListRequest();
+        return message;
+    },
+};
+function createBaseQueryListResponse() {
+    return { subsInfo: [] };
+}
+exports.QueryListResponse = {
+    encode(message, writer = minimal_1.default.Writer.create()) {
+        for (const v of message.subsInfo) {
+            exports.ListInfoStruct.encode(v, writer.uint32(10).fork()).ldelim();
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseQueryListResponse();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    if (tag != 10) {
+                        break;
+                    }
+                    message.subsInfo.push(exports.ListInfoStruct.decode(reader, reader.uint32()));
+                    continue;
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            subsInfo: Array.isArray(object === null || object === void 0 ? void 0 : object.subsInfo) ? object.subsInfo.map((e) => exports.ListInfoStruct.fromJSON(e)) : [],
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        if (message.subsInfo) {
+            obj.subsInfo = message.subsInfo.map((e) => e ? exports.ListInfoStruct.toJSON(e) : undefined);
+        }
+        else {
+            obj.subsInfo = [];
+        }
+        return obj;
+    },
+    create(base) {
+        return exports.QueryListResponse.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(object) {
+        var _a;
+        const message = createBaseQueryListResponse();
+        message.subsInfo = ((_a = object.subsInfo) === null || _a === void 0 ? void 0 : _a.map((e) => exports.ListInfoStruct.fromPartial(e))) || [];
+        return message;
+    },
+};
+function createBaseListInfoStruct() {
+    return {
+        consumer: "",
+        plan: "",
+        durationTotal: long_1.default.UZERO,
+        durationLeft: long_1.default.UZERO,
+        monthExpiry: long_1.default.UZERO,
+        monthCuTotal: long_1.default.UZERO,
+        monthCuLeft: long_1.default.UZERO,
+    };
+}
+exports.ListInfoStruct = {
+    encode(message, writer = minimal_1.default.Writer.create()) {
+        if (message.consumer !== "") {
+            writer.uint32(10).string(message.consumer);
+        }
+        if (message.plan !== "") {
+            writer.uint32(18).string(message.plan);
+        }
+        if (!message.durationTotal.isZero()) {
+            writer.uint32(24).uint64(message.durationTotal);
+        }
+        if (!message.durationLeft.isZero()) {
+            writer.uint32(32).uint64(message.durationLeft);
+        }
+        if (!message.monthExpiry.isZero()) {
+            writer.uint32(40).uint64(message.monthExpiry);
+        }
+        if (!message.monthCuTotal.isZero()) {
+            writer.uint32(48).uint64(message.monthCuTotal);
+        }
+        if (!message.monthCuLeft.isZero()) {
+            writer.uint32(56).uint64(message.monthCuLeft);
+        }
+        return writer;
+    },
+    decode(input, length) {
+        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
+        let end = length === undefined ? reader.len : reader.pos + length;
+        const message = createBaseListInfoStruct();
+        while (reader.pos < end) {
+            const tag = reader.uint32();
+            switch (tag >>> 3) {
+                case 1:
+                    if (tag != 10) {
+                        break;
+                    }
+                    message.consumer = reader.string();
+                    continue;
+                case 2:
+                    if (tag != 18) {
+                        break;
+                    }
+                    message.plan = reader.string();
+                    continue;
+                case 3:
+                    if (tag != 24) {
+                        break;
+                    }
+                    message.durationTotal = reader.uint64();
+                    continue;
+                case 4:
+                    if (tag != 32) {
+                        break;
+                    }
+                    message.durationLeft = reader.uint64();
+                    continue;
+                case 5:
+                    if (tag != 40) {
+                        break;
+                    }
+                    message.monthExpiry = reader.uint64();
+                    continue;
+                case 6:
+                    if (tag != 48) {
+                        break;
+                    }
+                    message.monthCuTotal = reader.uint64();
+                    continue;
+                case 7:
+                    if (tag != 56) {
+                        break;
+                    }
+                    message.monthCuLeft = reader.uint64();
+                    continue;
+            }
+            if ((tag & 7) == 4 || tag == 0) {
+                break;
+            }
+            reader.skipType(tag & 7);
+        }
+        return message;
+    },
+    fromJSON(object) {
+        return {
+            consumer: isSet(object.consumer) ? String(object.consumer) : "",
+            plan: isSet(object.plan) ? String(object.plan) : "",
+            durationTotal: isSet(object.durationTotal) ? long_1.default.fromValue(object.durationTotal) : long_1.default.UZERO,
+            durationLeft: isSet(object.durationLeft) ? long_1.default.fromValue(object.durationLeft) : long_1.default.UZERO,
+            monthExpiry: isSet(object.monthExpiry) ? long_1.default.fromValue(object.monthExpiry) : long_1.default.UZERO,
+            monthCuTotal: isSet(object.monthCuTotal) ? long_1.default.fromValue(object.monthCuTotal) : long_1.default.UZERO,
+            monthCuLeft: isSet(object.monthCuLeft) ? long_1.default.fromValue(object.monthCuLeft) : long_1.default.UZERO,
+        };
+    },
+    toJSON(message) {
+        const obj = {};
+        message.consumer !== undefined && (obj.consumer = message.consumer);
+        message.plan !== undefined && (obj.plan = message.plan);
+        message.durationTotal !== undefined && (obj.durationTotal = (message.durationTotal || long_1.default.UZERO).toString());
+        message.durationLeft !== undefined && (obj.durationLeft = (message.durationLeft || long_1.default.UZERO).toString());
+        message.monthExpiry !== undefined && (obj.monthExpiry = (message.monthExpiry || long_1.default.UZERO).toString());
+        message.monthCuTotal !== undefined && (obj.monthCuTotal = (message.monthCuTotal || long_1.default.UZERO).toString());
+        message.monthCuLeft !== undefined && (obj.monthCuLeft = (message.monthCuLeft || long_1.default.UZERO).toString());
+        return obj;
+    },
+    create(base) {
+        return exports.ListInfoStruct.fromPartial(base !== null && base !== void 0 ? base : {});
+    },
+    fromPartial(object) {
+        var _a, _b;
+        const message = createBaseListInfoStruct();
+        message.consumer = (_a = object.consumer) !== null && _a !== void 0 ? _a : "";
+        message.plan = (_b = object.plan) !== null && _b !== void 0 ? _b : "";
+        message.durationTotal = (object.durationTotal !== undefined && object.durationTotal !== null)
+            ? long_1.default.fromValue(object.durationTotal)
+            : long_1.default.UZERO;
+        message.durationLeft = (object.durationLeft !== undefined && object.durationLeft !== null)
+            ? long_1.default.fromValue(object.durationLeft)
+            : long_1.default.UZERO;
+        message.monthExpiry = (object.monthExpiry !== undefined && object.monthExpiry !== null)
+            ? long_1.default.fromValue(object.monthExpiry)
+            : long_1.default.UZERO;
+        message.monthCuTotal = (object.monthCuTotal !== undefined && object.monthCuTotal !== null)
+            ? long_1.default.fromValue(object.monthCuTotal)
+            : long_1.default.UZERO;
+        message.monthCuLeft = (object.monthCuLeft !== undefined && object.monthCuLeft !== null)
+            ? long_1.default.fromValue(object.monthCuLeft)
+            : long_1.default.UZERO;
+        return message;
+    },
+};
 class QueryClientImpl {
     constructor(rpc, opts) {
         this.service = (opts === null || opts === void 0 ? void 0 : opts.service) || "lavanet.lava.subscription.Query";
@@ -304,6 +538,7 @@ class QueryClientImpl {
         this.Params = this.Params.bind(this);
         this.Current = this.Current.bind(this);
         this.ListProjects = this.ListProjects.bind(this);
+        this.List = this.List.bind(this);
     }
     Params(request) {
         const data = exports.QueryParamsRequest.encode(request).finish();
@@ -319,6 +554,11 @@ class QueryClientImpl {
         const data = exports.QueryListProjectsRequest.encode(request).finish();
         const promise = this.rpc.request(this.service, "ListProjects", data);
         return promise.then((data) => exports.QueryListProjectsResponse.decode(minimal_1.default.Reader.create(data)));
+    }
+    List(request) {
+        const data = exports.QueryListRequest.encode(request).finish();
+        const promise = this.rpc.request(this.service, "List", data);
+        return promise.then((data) => exports.QueryListResponse.decode(minimal_1.default.Reader.create(data)));
     }
 }
 exports.QueryClientImpl = QueryClientImpl;

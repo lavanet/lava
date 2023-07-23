@@ -62,6 +62,7 @@ type lavaTest struct {
 	lavadPath            string
 	protocolPath         string
 	lavadArgs            string
+	consumerArgs         string
 	logs                 map[string]*bytes.Buffer
 	commands             map[string]*exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
@@ -82,6 +83,7 @@ func init() {
 }
 
 func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
+	utils.LavaFormatDebug("Executing command " + command)
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -352,7 +354,7 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/ethConsumer%d.yml --from %s %s",
-			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startJSONRPCConsumer (consumer %02d)", idx+1)
@@ -527,7 +529,7 @@ func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumer%d.yml --from %s %s",
-			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCConsumer (consumer %02d)", idx+1)
@@ -1053,6 +1055,7 @@ func runE2E(timeout time.Duration) {
 		lavadPath:    gopath + "/bin/lavad",
 		protocolPath: gopath + "/bin/lava-protocol",
 		lavadArgs:    "--geolocation 1 --log_level debug",
+		consumerArgs: " --allow-insecure-provider-dialing",
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),

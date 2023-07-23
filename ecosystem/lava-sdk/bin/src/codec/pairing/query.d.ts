@@ -25,13 +25,6 @@ export interface QueryProvidersResponse {
     stakeEntry: StakeEntry[];
     output: string;
 }
-export interface QueryClientsRequest {
-    chainID: string;
-}
-export interface QueryClientsResponse {
-    stakeEntry: StakeEntry[];
-    output: string;
-}
 export interface QueryGetPairingRequest {
     chainID: string;
     client: string;
@@ -132,12 +125,9 @@ export declare const QueryParamsResponse: {
     create<I extends {
         params?: {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -147,12 +137,9 @@ export declare const QueryParamsResponse: {
     } & {
         params?: ({
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -160,7 +147,6 @@ export declare const QueryParamsResponse: {
             recommendedEpochNumToCollectPayment?: string | number | Long | undefined;
         } & {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | (Long & {
                 high: number;
@@ -234,78 +220,6 @@ export declare const QueryParamsResponse: {
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
             } & { [K in Exclude<keyof I["params"]["fraudSlashingAmount"], keyof Long>]: never; }) | undefined;
-            servicersToPairCount?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_1 in Exclude<keyof I["params"]["servicersToPairCount"], keyof Long>]: never; }) | undefined;
             epochBlocksOverlap?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -377,8 +291,7 @@ export declare const QueryParamsResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_2 in Exclude<keyof I["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
-            stakeToMaxCUList?: string | undefined;
+            } & { [K_1 in Exclude<keyof I["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -454,18 +367,15 @@ export declare const QueryParamsResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_3 in Exclude<keyof I["params"]["recommendedEpochNumToCollectPayment"], keyof Long>]: never; }) | undefined;
-        } & { [K_4 in Exclude<keyof I["params"], keyof Params>]: never; }) | undefined;
-    } & { [K_5 in Exclude<keyof I, "params">]: never; }>(base?: I | undefined): QueryParamsResponse;
+            } & { [K_2 in Exclude<keyof I["params"]["recommendedEpochNumToCollectPayment"], keyof Long>]: never; }) | undefined;
+        } & { [K_3 in Exclude<keyof I["params"], keyof Params>]: never; }) | undefined;
+    } & { [K_4 in Exclude<keyof I, "params">]: never; }>(base?: I | undefined): QueryParamsResponse;
     fromPartial<I_1 extends {
         params?: {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -475,12 +385,9 @@ export declare const QueryParamsResponse: {
     } & {
         params?: ({
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | Long | undefined;
-            servicersToPairCount?: string | number | Long | undefined;
             epochBlocksOverlap?: string | number | Long | undefined;
-            stakeToMaxCUList?: string | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -488,7 +395,6 @@ export declare const QueryParamsResponse: {
             recommendedEpochNumToCollectPayment?: string | number | Long | undefined;
         } & {
             mintCoinsPerCU?: string | undefined;
-            burnCoinsPerCU?: string | undefined;
             fraudStakeSlashingFactor?: string | undefined;
             fraudSlashingAmount?: string | number | (Long & {
                 high: number;
@@ -561,79 +467,7 @@ export declare const QueryParamsResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_6 in Exclude<keyof I_1["params"]["fraudSlashingAmount"], keyof Long>]: never; }) | undefined;
-            servicersToPairCount?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_7 in Exclude<keyof I_1["params"]["servicersToPairCount"], keyof Long>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I_1["params"]["fraudSlashingAmount"], keyof Long>]: never; }) | undefined;
             epochBlocksOverlap?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -705,8 +539,7 @@ export declare const QueryParamsResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_8 in Exclude<keyof I_1["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
-            stakeToMaxCUList?: string | undefined;
+            } & { [K_6 in Exclude<keyof I_1["params"]["epochBlocksOverlap"], keyof Long>]: never; }) | undefined;
             unpayLimit?: string | undefined;
             slashLimit?: string | undefined;
             dataReliabilityReward?: string | undefined;
@@ -782,9 +615,9 @@ export declare const QueryParamsResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_9 in Exclude<keyof I_1["params"]["recommendedEpochNumToCollectPayment"], keyof Long>]: never; }) | undefined;
-        } & { [K_10 in Exclude<keyof I_1["params"], keyof Params>]: never; }) | undefined;
-    } & { [K_11 in Exclude<keyof I_1, "params">]: never; }>(object: I_1): QueryParamsResponse;
+            } & { [K_7 in Exclude<keyof I_1["params"]["recommendedEpochNumToCollectPayment"], keyof Long>]: never; }) | undefined;
+        } & { [K_8 in Exclude<keyof I_1["params"], keyof Params>]: never; }) | undefined;
+    } & { [K_9 in Exclude<keyof I_1, "params">]: never; }>(object: I_1): QueryParamsResponse;
 };
 export declare const QueryProvidersRequest: {
     encode(message: QueryProvidersRequest, writer?: _m0.Writer): _m0.Writer;
@@ -821,8 +654,9 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -839,8 +673,9 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -854,8 +689,9 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -943,15 +779,16 @@ export declare const QueryProvidersResponse: {
             } & { [K_1 in Exclude<keyof I["stakeEntry"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -1024,10 +861,13 @@ export declare const QueryProvidersResponse: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_2 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["stakeEntry"][number]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_3 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_4 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_6 in Exclude<keyof I["stakeEntry"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -1100,10 +940,10 @@ export declare const QueryProvidersResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["stakeEntry"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_7 in Exclude<keyof I["stakeEntry"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["stakeEntry"][number], keyof StakeEntry>]: never; })[] & { [K_7 in Exclude<keyof I["stakeEntry"], keyof {
+        } & { [K_8 in Exclude<keyof I["stakeEntry"][number], keyof StakeEntry>]: never; })[] & { [K_9 in Exclude<keyof I["stakeEntry"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -1112,15 +952,16 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
         output?: string | undefined;
-    } & { [K_8 in Exclude<keyof I, keyof QueryProvidersResponse>]: never; }>(base?: I | undefined): QueryProvidersResponse;
+    } & { [K_10 in Exclude<keyof I, keyof QueryProvidersResponse>]: never; }>(base?: I | undefined): QueryProvidersResponse;
     fromPartial<I_1 extends {
         stakeEntry?: {
             stake?: {
@@ -1131,8 +972,9 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -1149,8 +991,9 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -1164,8 +1007,9 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -1177,7 +1021,7 @@ export declare const QueryProvidersResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_9 in Exclude<keyof I_1["stakeEntry"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_11 in Exclude<keyof I_1["stakeEntry"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -1250,18 +1094,19 @@ export declare const QueryProvidersResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_10 in Exclude<keyof I_1["stakeEntry"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_12 in Exclude<keyof I_1["stakeEntry"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -1333,11 +1178,14 @@ export declare const QueryProvidersResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_11 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_13 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"], keyof {
+                } & { [K_13 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_14 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_15 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_17 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -1410,10 +1258,10 @@ export declare const QueryProvidersResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["stakeEntry"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I_1["stakeEntry"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_15 in Exclude<keyof I_1["stakeEntry"][number], keyof StakeEntry>]: never; })[] & { [K_16 in Exclude<keyof I_1["stakeEntry"], keyof {
+        } & { [K_19 in Exclude<keyof I_1["stakeEntry"][number], keyof StakeEntry>]: never; })[] & { [K_20 in Exclude<keyof I_1["stakeEntry"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -1422,657 +1270,16 @@ export declare const QueryProvidersResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
         output?: string | undefined;
-    } & { [K_17 in Exclude<keyof I_1, keyof QueryProvidersResponse>]: never; }>(object: I_1): QueryProvidersResponse;
-};
-export declare const QueryClientsRequest: {
-    encode(message: QueryClientsRequest, writer?: _m0.Writer): _m0.Writer;
-    decode(input: _m0.Reader | Uint8Array, length?: number): QueryClientsRequest;
-    fromJSON(object: any): QueryClientsRequest;
-    toJSON(message: QueryClientsRequest): unknown;
-    create<I extends {
-        chainID?: string | undefined;
-    } & {
-        chainID?: string | undefined;
-    } & { [K in Exclude<keyof I, "chainID">]: never; }>(base?: I | undefined): QueryClientsRequest;
-    fromPartial<I_1 extends {
-        chainID?: string | undefined;
-    } & {
-        chainID?: string | undefined;
-    } & { [K_1 in Exclude<keyof I_1, "chainID">]: never; }>(object: I_1): QueryClientsRequest;
-};
-export declare const QueryClientsResponse: {
-    encode(message: QueryClientsResponse, writer?: _m0.Writer): _m0.Writer;
-    decode(input: _m0.Reader | Uint8Array, length?: number): QueryClientsResponse;
-    fromJSON(object: any): QueryClientsResponse;
-    toJSON(message: QueryClientsResponse): unknown;
-    create<I extends {
-        stakeEntry?: {
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        }[] | undefined;
-        output?: string | undefined;
-    } & {
-        stakeEntry?: ({
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        }[] & ({
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        } & {
-            stake?: ({
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } & {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } & { [K in Exclude<keyof I["stakeEntry"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_1 in Exclude<keyof I["stakeEntry"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
-            endpoints?: ({
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] & ({
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            } & {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | (Long & {
-                    high: number;
-                    low: number;
-                    unsigned: boolean;
-                    add: (addend: string | number | Long) => Long;
-                    and: (other: string | number | Long) => Long;
-                    compare: (other: string | number | Long) => number;
-                    comp: (other: string | number | Long) => number;
-                    divide: (divisor: string | number | Long) => Long;
-                    div: (divisor: string | number | Long) => Long;
-                    equals: (other: string | number | Long) => boolean;
-                    eq: (other: string | number | Long) => boolean;
-                    getHighBits: () => number;
-                    getHighBitsUnsigned: () => number;
-                    getLowBits: () => number;
-                    getLowBitsUnsigned: () => number;
-                    getNumBitsAbs: () => number;
-                    greaterThan: (other: string | number | Long) => boolean;
-                    gt: (other: string | number | Long) => boolean;
-                    greaterThanOrEqual: (other: string | number | Long) => boolean;
-                    gte: (other: string | number | Long) => boolean;
-                    ge: (other: string | number | Long) => boolean;
-                    isEven: () => boolean;
-                    isNegative: () => boolean;
-                    isOdd: () => boolean;
-                    isPositive: () => boolean;
-                    isZero: () => boolean;
-                    eqz: () => boolean;
-                    lessThan: (other: string | number | Long) => boolean;
-                    lt: (other: string | number | Long) => boolean;
-                    lessThanOrEqual: (other: string | number | Long) => boolean;
-                    lte: (other: string | number | Long) => boolean;
-                    le: (other: string | number | Long) => boolean;
-                    modulo: (other: string | number | Long) => Long;
-                    mod: (other: string | number | Long) => Long;
-                    rem: (other: string | number | Long) => Long;
-                    multiply: (multiplier: string | number | Long) => Long;
-                    mul: (multiplier: string | number | Long) => Long;
-                    negate: () => Long;
-                    neg: () => Long;
-                    not: () => Long;
-                    countLeadingZeros: () => number;
-                    clz: () => number;
-                    countTrailingZeros: () => number;
-                    ctz: () => number;
-                    notEquals: (other: string | number | Long) => boolean;
-                    neq: (other: string | number | Long) => boolean;
-                    ne: (other: string | number | Long) => boolean;
-                    or: (other: string | number | Long) => Long;
-                    shiftLeft: (numBits: number | Long) => Long;
-                    shl: (numBits: number | Long) => Long;
-                    shiftRight: (numBits: number | Long) => Long;
-                    shr: (numBits: number | Long) => Long;
-                    shiftRightUnsigned: (numBits: number | Long) => Long;
-                    shru: (numBits: number | Long) => Long;
-                    shr_u: (numBits: number | Long) => Long;
-                    rotateLeft: (numBits: number | Long) => Long;
-                    rotl: (numBits: number | Long) => Long;
-                    rotateRight: (numBits: number | Long) => Long;
-                    rotr: (numBits: number | Long) => Long;
-                    subtract: (subtrahend: string | number | Long) => Long;
-                    sub: (subtrahend: string | number | Long) => Long;
-                    toInt: () => number;
-                    toNumber: () => number;
-                    toBytes: (le?: boolean | undefined) => number[];
-                    toBytesLE: () => number[];
-                    toBytesBE: () => number[];
-                    toSigned: () => Long;
-                    toString: (radix?: number | undefined) => string;
-                    toUnsigned: () => Long;
-                    xor: (other: string | number | Long) => Long;
-                } & { [K_2 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["stakeEntry"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["stakeEntry"][number]["endpoints"], keyof {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[]>]: never; }) | undefined;
-            geolocation?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["stakeEntry"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["stakeEntry"][number], keyof StakeEntry>]: never; })[] & { [K_7 in Exclude<keyof I["stakeEntry"], keyof {
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        }[]>]: never; }) | undefined;
-        output?: string | undefined;
-    } & { [K_8 in Exclude<keyof I, keyof QueryClientsResponse>]: never; }>(base?: I | undefined): QueryClientsResponse;
-    fromPartial<I_1 extends {
-        stakeEntry?: {
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        }[] | undefined;
-        output?: string | undefined;
-    } & {
-        stakeEntry?: ({
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        }[] & ({
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        } & {
-            stake?: ({
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } & {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } & { [K_9 in Exclude<keyof I_1["stakeEntry"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_10 in Exclude<keyof I_1["stakeEntry"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
-            endpoints?: ({
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] & ({
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            } & {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | (Long & {
-                    high: number;
-                    low: number;
-                    unsigned: boolean;
-                    add: (addend: string | number | Long) => Long;
-                    and: (other: string | number | Long) => Long;
-                    compare: (other: string | number | Long) => number;
-                    comp: (other: string | number | Long) => number;
-                    divide: (divisor: string | number | Long) => Long;
-                    div: (divisor: string | number | Long) => Long;
-                    equals: (other: string | number | Long) => boolean;
-                    eq: (other: string | number | Long) => boolean;
-                    getHighBits: () => number;
-                    getHighBitsUnsigned: () => number;
-                    getLowBits: () => number;
-                    getLowBitsUnsigned: () => number;
-                    getNumBitsAbs: () => number;
-                    greaterThan: (other: string | number | Long) => boolean;
-                    gt: (other: string | number | Long) => boolean;
-                    greaterThanOrEqual: (other: string | number | Long) => boolean;
-                    gte: (other: string | number | Long) => boolean;
-                    ge: (other: string | number | Long) => boolean;
-                    isEven: () => boolean;
-                    isNegative: () => boolean;
-                    isOdd: () => boolean;
-                    isPositive: () => boolean;
-                    isZero: () => boolean;
-                    eqz: () => boolean;
-                    lessThan: (other: string | number | Long) => boolean;
-                    lt: (other: string | number | Long) => boolean;
-                    lessThanOrEqual: (other: string | number | Long) => boolean;
-                    lte: (other: string | number | Long) => boolean;
-                    le: (other: string | number | Long) => boolean;
-                    modulo: (other: string | number | Long) => Long;
-                    mod: (other: string | number | Long) => Long;
-                    rem: (other: string | number | Long) => Long;
-                    multiply: (multiplier: string | number | Long) => Long;
-                    mul: (multiplier: string | number | Long) => Long;
-                    negate: () => Long;
-                    neg: () => Long;
-                    not: () => Long;
-                    countLeadingZeros: () => number;
-                    clz: () => number;
-                    countTrailingZeros: () => number;
-                    ctz: () => number;
-                    notEquals: (other: string | number | Long) => boolean;
-                    neq: (other: string | number | Long) => boolean;
-                    ne: (other: string | number | Long) => boolean;
-                    or: (other: string | number | Long) => Long;
-                    shiftLeft: (numBits: number | Long) => Long;
-                    shl: (numBits: number | Long) => Long;
-                    shiftRight: (numBits: number | Long) => Long;
-                    shr: (numBits: number | Long) => Long;
-                    shiftRightUnsigned: (numBits: number | Long) => Long;
-                    shru: (numBits: number | Long) => Long;
-                    shr_u: (numBits: number | Long) => Long;
-                    rotateLeft: (numBits: number | Long) => Long;
-                    rotl: (numBits: number | Long) => Long;
-                    rotateRight: (numBits: number | Long) => Long;
-                    rotr: (numBits: number | Long) => Long;
-                    subtract: (subtrahend: string | number | Long) => Long;
-                    sub: (subtrahend: string | number | Long) => Long;
-                    toInt: () => number;
-                    toNumber: () => number;
-                    toBytes: (le?: boolean | undefined) => number[];
-                    toBytesLE: () => number[];
-                    toBytesBE: () => number[];
-                    toSigned: () => Long;
-                    toString: (radix?: number | undefined) => string;
-                    toUnsigned: () => Long;
-                    xor: (other: string | number | Long) => Long;
-                } & { [K_11 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_13 in Exclude<keyof I_1["stakeEntry"][number]["endpoints"], keyof {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[]>]: never; }) | undefined;
-            geolocation?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["stakeEntry"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        } & { [K_15 in Exclude<keyof I_1["stakeEntry"][number], keyof StakeEntry>]: never; })[] & { [K_16 in Exclude<keyof I_1["stakeEntry"], keyof {
-            stake?: {
-                denom?: string | undefined;
-                amount?: string | undefined;
-            } | undefined;
-            address?: string | undefined;
-            stakeAppliedBlock?: string | number | Long | undefined;
-            endpoints?: {
-                iPPORT?: string | undefined;
-                useType?: string | undefined;
-                geolocation?: string | number | Long | undefined;
-            }[] | undefined;
-            geolocation?: string | number | Long | undefined;
-            chain?: string | undefined;
-            moniker?: string | undefined;
-        }[]>]: never; }) | undefined;
-        output?: string | undefined;
-    } & { [K_17 in Exclude<keyof I_1, keyof QueryClientsResponse>]: never; }>(object: I_1): QueryClientsResponse;
+    } & { [K_21 in Exclude<keyof I_1, keyof QueryProvidersResponse>]: never; }>(object: I_1): QueryProvidersResponse;
 };
 export declare const QueryGetPairingRequest: {
     encode(message: QueryGetPairingRequest, writer?: _m0.Writer): _m0.Writer;
@@ -2109,8 +1316,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2130,8 +1338,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2145,8 +1354,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2234,15 +1444,16 @@ export declare const QueryGetPairingResponse: {
             } & { [K_1 in Exclude<keyof I["providers"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -2315,10 +1526,13 @@ export declare const QueryGetPairingResponse: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_2 in Exclude<keyof I["providers"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["providers"][number]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_3 in Exclude<keyof I["providers"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_4 in Exclude<keyof I["providers"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_6 in Exclude<keyof I["providers"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -2391,10 +1605,10 @@ export declare const QueryGetPairingResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_7 in Exclude<keyof I["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["providers"][number], keyof StakeEntry>]: never; })[] & { [K_7 in Exclude<keyof I["providers"], keyof {
+        } & { [K_8 in Exclude<keyof I["providers"][number], keyof StakeEntry>]: never; })[] & { [K_9 in Exclude<keyof I["providers"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -2403,8 +1617,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2481,7 +1696,7 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_8 in Exclude<keyof I["currentEpoch"], keyof Long>]: never; }) | undefined;
+        } & { [K_10 in Exclude<keyof I["currentEpoch"], keyof Long>]: never; }) | undefined;
         timeLeftToNextPairing?: string | number | (Long & {
             high: number;
             low: number;
@@ -2553,7 +1768,7 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_9 in Exclude<keyof I["timeLeftToNextPairing"], keyof Long>]: never; }) | undefined;
+        } & { [K_11 in Exclude<keyof I["timeLeftToNextPairing"], keyof Long>]: never; }) | undefined;
         specLastUpdatedBlock?: string | number | (Long & {
             high: number;
             low: number;
@@ -2625,7 +1840,7 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_10 in Exclude<keyof I["specLastUpdatedBlock"], keyof Long>]: never; }) | undefined;
+        } & { [K_12 in Exclude<keyof I["specLastUpdatedBlock"], keyof Long>]: never; }) | undefined;
         blockOfNextPairing?: string | number | (Long & {
             high: number;
             low: number;
@@ -2697,8 +1912,8 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_11 in Exclude<keyof I["blockOfNextPairing"], keyof Long>]: never; }) | undefined;
-    } & { [K_12 in Exclude<keyof I, keyof QueryGetPairingResponse>]: never; }>(base?: I | undefined): QueryGetPairingResponse;
+        } & { [K_13 in Exclude<keyof I["blockOfNextPairing"], keyof Long>]: never; }) | undefined;
+    } & { [K_14 in Exclude<keyof I, keyof QueryGetPairingResponse>]: never; }>(base?: I | undefined): QueryGetPairingResponse;
     fromPartial<I_1 extends {
         providers?: {
             stake?: {
@@ -2709,8 +1924,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2730,8 +1946,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2745,8 +1962,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -2758,7 +1976,7 @@ export declare const QueryGetPairingResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_13 in Exclude<keyof I_1["providers"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I_1["providers"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -2831,18 +2049,19 @@ export declare const QueryGetPairingResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["providers"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["providers"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -2914,11 +2133,14 @@ export declare const QueryGetPairingResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_15 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_16 in Exclude<keyof I_1["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_17 in Exclude<keyof I_1["providers"][number]["endpoints"], keyof {
+                } & { [K_17 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_18 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_19 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_20 in Exclude<keyof I_1["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_21 in Exclude<keyof I_1["providers"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -2991,10 +2213,10 @@ export declare const QueryGetPairingResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_18 in Exclude<keyof I_1["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_22 in Exclude<keyof I_1["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_19 in Exclude<keyof I_1["providers"][number], keyof StakeEntry>]: never; })[] & { [K_20 in Exclude<keyof I_1["providers"], keyof {
+        } & { [K_23 in Exclude<keyof I_1["providers"][number], keyof StakeEntry>]: never; })[] & { [K_24 in Exclude<keyof I_1["providers"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -3003,8 +2225,9 @@ export declare const QueryGetPairingResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -3081,7 +2304,7 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_21 in Exclude<keyof I_1["currentEpoch"], keyof Long>]: never; }) | undefined;
+        } & { [K_25 in Exclude<keyof I_1["currentEpoch"], keyof Long>]: never; }) | undefined;
         timeLeftToNextPairing?: string | number | (Long & {
             high: number;
             low: number;
@@ -3153,7 +2376,7 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_22 in Exclude<keyof I_1["timeLeftToNextPairing"], keyof Long>]: never; }) | undefined;
+        } & { [K_26 in Exclude<keyof I_1["timeLeftToNextPairing"], keyof Long>]: never; }) | undefined;
         specLastUpdatedBlock?: string | number | (Long & {
             high: number;
             low: number;
@@ -3225,7 +2448,7 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_23 in Exclude<keyof I_1["specLastUpdatedBlock"], keyof Long>]: never; }) | undefined;
+        } & { [K_27 in Exclude<keyof I_1["specLastUpdatedBlock"], keyof Long>]: never; }) | undefined;
         blockOfNextPairing?: string | number | (Long & {
             high: number;
             low: number;
@@ -3297,8 +2520,8 @@ export declare const QueryGetPairingResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_24 in Exclude<keyof I_1["blockOfNextPairing"], keyof Long>]: never; }) | undefined;
-    } & { [K_25 in Exclude<keyof I_1, keyof QueryGetPairingResponse>]: never; }>(object: I_1): QueryGetPairingResponse;
+        } & { [K_28 in Exclude<keyof I_1["blockOfNextPairing"], keyof Long>]: never; }) | undefined;
+    } & { [K_29 in Exclude<keyof I_1, keyof QueryGetPairingResponse>]: never; }>(object: I_1): QueryGetPairingResponse;
 };
 export declare const QueryVerifyPairingRequest: {
     encode(message: QueryVerifyPairingRequest, writer?: _m0.Writer): _m0.Writer;
@@ -6931,8 +6154,9 @@ export declare const QueryUserEntryResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -6949,8 +6173,9 @@ export declare const QueryUserEntryResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7038,15 +6263,16 @@ export declare const QueryUserEntryResponse: {
             } & { [K_1 in Exclude<keyof I["consumer"]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -7119,10 +6345,13 @@ export declare const QueryUserEntryResponse: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_2 in Exclude<keyof I["consumer"]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["consumer"]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["consumer"]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_3 in Exclude<keyof I["consumer"]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_4 in Exclude<keyof I["consumer"]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I["consumer"]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_6 in Exclude<keyof I["consumer"]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -7195,10 +6424,10 @@ export declare const QueryUserEntryResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["consumer"]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_7 in Exclude<keyof I["consumer"]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["consumer"], keyof StakeEntry>]: never; }) | undefined;
+        } & { [K_8 in Exclude<keyof I["consumer"], keyof StakeEntry>]: never; }) | undefined;
         maxCU?: string | number | (Long & {
             high: number;
             low: number;
@@ -7270,8 +6499,8 @@ export declare const QueryUserEntryResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_7 in Exclude<keyof I["maxCU"], keyof Long>]: never; }) | undefined;
-    } & { [K_8 in Exclude<keyof I, keyof QueryUserEntryResponse>]: never; }>(base?: I | undefined): QueryUserEntryResponse;
+        } & { [K_9 in Exclude<keyof I["maxCU"], keyof Long>]: never; }) | undefined;
+    } & { [K_10 in Exclude<keyof I, keyof QueryUserEntryResponse>]: never; }>(base?: I | undefined): QueryUserEntryResponse;
     fromPartial<I_1 extends {
         consumer?: {
             stake?: {
@@ -7282,8 +6511,9 @@ export declare const QueryUserEntryResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7300,8 +6530,9 @@ export declare const QueryUserEntryResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7313,7 +6544,7 @@ export declare const QueryUserEntryResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_9 in Exclude<keyof I_1["consumer"]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_11 in Exclude<keyof I_1["consumer"]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -7386,18 +6617,19 @@ export declare const QueryUserEntryResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_10 in Exclude<keyof I_1["consumer"]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_12 in Exclude<keyof I_1["consumer"]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -7469,11 +6701,14 @@ export declare const QueryUserEntryResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_11 in Exclude<keyof I_1["consumer"]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I_1["consumer"]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_13 in Exclude<keyof I_1["consumer"]["endpoints"], keyof {
+                } & { [K_13 in Exclude<keyof I_1["consumer"]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_14 in Exclude<keyof I_1["consumer"]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_15 in Exclude<keyof I_1["consumer"]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["consumer"]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_17 in Exclude<keyof I_1["consumer"]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -7546,10 +6781,10 @@ export declare const QueryUserEntryResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["consumer"]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I_1["consumer"]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_15 in Exclude<keyof I_1["consumer"], keyof StakeEntry>]: never; }) | undefined;
+        } & { [K_19 in Exclude<keyof I_1["consumer"], keyof StakeEntry>]: never; }) | undefined;
         maxCU?: string | number | (Long & {
             high: number;
             low: number;
@@ -7621,8 +6856,8 @@ export declare const QueryUserEntryResponse: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_16 in Exclude<keyof I_1["maxCU"], keyof Long>]: never; }) | undefined;
-    } & { [K_17 in Exclude<keyof I_1, keyof QueryUserEntryResponse>]: never; }>(object: I_1): QueryUserEntryResponse;
+        } & { [K_20 in Exclude<keyof I_1["maxCU"], keyof Long>]: never; }) | undefined;
+    } & { [K_21 in Exclude<keyof I_1, keyof QueryUserEntryResponse>]: never; }>(object: I_1): QueryUserEntryResponse;
 };
 export declare const QueryStaticProvidersListRequest: {
     encode(message: QueryStaticProvidersListRequest, writer?: _m0.Writer): _m0.Writer;
@@ -7655,8 +6890,9 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7672,8 +6908,9 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7687,8 +6924,9 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7776,15 +7014,16 @@ export declare const QueryStaticProvidersListResponse: {
             } & { [K_1 in Exclude<keyof I["providers"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -7857,10 +7096,13 @@ export declare const QueryStaticProvidersListResponse: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_2 in Exclude<keyof I["providers"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["providers"][number]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_3 in Exclude<keyof I["providers"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_4 in Exclude<keyof I["providers"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_6 in Exclude<keyof I["providers"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -7933,10 +7175,10 @@ export declare const QueryStaticProvidersListResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_7 in Exclude<keyof I["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["providers"][number], keyof StakeEntry>]: never; })[] & { [K_7 in Exclude<keyof I["providers"], keyof {
+        } & { [K_8 in Exclude<keyof I["providers"][number], keyof StakeEntry>]: never; })[] & { [K_9 in Exclude<keyof I["providers"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -7945,14 +7187,15 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_8 in Exclude<keyof I, "providers">]: never; }>(base?: I | undefined): QueryStaticProvidersListResponse;
+    } & { [K_10 in Exclude<keyof I, "providers">]: never; }>(base?: I | undefined): QueryStaticProvidersListResponse;
     fromPartial<I_1 extends {
         providers?: {
             stake?: {
@@ -7963,8 +7206,9 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7980,8 +7224,9 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -7995,8 +7240,9 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8008,7 +7254,7 @@ export declare const QueryStaticProvidersListResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_9 in Exclude<keyof I_1["providers"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_11 in Exclude<keyof I_1["providers"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -8081,18 +7327,19 @@ export declare const QueryStaticProvidersListResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_10 in Exclude<keyof I_1["providers"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_12 in Exclude<keyof I_1["providers"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -8164,11 +7411,14 @@ export declare const QueryStaticProvidersListResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_11 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_12 in Exclude<keyof I_1["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_13 in Exclude<keyof I_1["providers"][number]["endpoints"], keyof {
+                } & { [K_13 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_14 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_15 in Exclude<keyof I_1["providers"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["providers"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_17 in Exclude<keyof I_1["providers"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -8241,10 +7491,10 @@ export declare const QueryStaticProvidersListResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I_1["providers"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_15 in Exclude<keyof I_1["providers"][number], keyof StakeEntry>]: never; })[] & { [K_16 in Exclude<keyof I_1["providers"], keyof {
+        } & { [K_19 in Exclude<keyof I_1["providers"][number], keyof StakeEntry>]: never; })[] & { [K_20 in Exclude<keyof I_1["providers"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -8253,14 +7503,15 @@ export declare const QueryStaticProvidersListResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_17 in Exclude<keyof I_1, "providers">]: never; }>(object: I_1): QueryStaticProvidersListResponse;
+    } & { [K_21 in Exclude<keyof I_1, "providers">]: never; }>(object: I_1): QueryStaticProvidersListResponse;
 };
 export declare const QueryAccountInfoResponse: {
     encode(message: QueryAccountInfoResponse, writer?: _m0.Writer): _m0.Writer;
@@ -8277,8 +7528,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8293,8 +7545,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8309,8 +7562,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8325,8 +7579,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8341,15 +7596,12 @@ export declare const QueryAccountInfoResponse: {
             durationTotal?: string | number | Long | undefined;
             durationLeft?: string | number | Long | undefined;
             monthExpiryTime?: string | number | Long | undefined;
-            prevExpiryBlock?: string | number | Long | undefined;
             monthCuTotal?: string | number | Long | undefined;
             monthCuLeft?: string | number | Long | undefined;
-            prevCuLeft?: string | number | Long | undefined;
         } | undefined;
         project?: {
             index?: string | undefined;
             subscription?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -8364,6 +7616,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             usedCu?: string | number | Long | undefined;
             subscriptionPolicy?: {
@@ -8375,6 +7629,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             snapshot?: string | number | Long | undefined;
         } | undefined;
@@ -8388,8 +7644,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8403,8 +7660,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8492,15 +7750,16 @@ export declare const QueryAccountInfoResponse: {
             } & { [K_1 in Exclude<keyof I["provider"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -8573,10 +7832,13 @@ export declare const QueryAccountInfoResponse: {
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
                 } & { [K_2 in Exclude<keyof I["provider"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_3 in Exclude<keyof I["provider"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_4 in Exclude<keyof I["provider"][number]["endpoints"], keyof {
+                addons?: (string[] & string[] & { [K_3 in Exclude<keyof I["provider"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_4 in Exclude<keyof I["provider"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_5 in Exclude<keyof I["provider"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_6 in Exclude<keyof I["provider"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -8649,10 +7911,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_5 in Exclude<keyof I["provider"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_7 in Exclude<keyof I["provider"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_6 in Exclude<keyof I["provider"][number], keyof StakeEntry>]: never; })[] & { [K_7 in Exclude<keyof I["provider"], keyof {
+        } & { [K_8 in Exclude<keyof I["provider"][number], keyof StakeEntry>]: never; })[] & { [K_9 in Exclude<keyof I["provider"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -8661,8 +7923,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8677,8 +7940,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8692,8 +7956,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8705,7 +7970,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_8 in Exclude<keyof I["frozen"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_10 in Exclude<keyof I["frozen"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -8778,18 +8043,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_9 in Exclude<keyof I["frozen"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_11 in Exclude<keyof I["frozen"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -8861,11 +8127,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_10 in Exclude<keyof I["frozen"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_11 in Exclude<keyof I["frozen"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_12 in Exclude<keyof I["frozen"][number]["endpoints"], keyof {
+                } & { [K_12 in Exclude<keyof I["frozen"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_13 in Exclude<keyof I["frozen"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_14 in Exclude<keyof I["frozen"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I["frozen"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_16 in Exclude<keyof I["frozen"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -8938,10 +8207,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_13 in Exclude<keyof I["frozen"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_17 in Exclude<keyof I["frozen"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_14 in Exclude<keyof I["frozen"][number], keyof StakeEntry>]: never; })[] & { [K_15 in Exclude<keyof I["frozen"], keyof {
+        } & { [K_18 in Exclude<keyof I["frozen"][number], keyof StakeEntry>]: never; })[] & { [K_19 in Exclude<keyof I["frozen"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -8950,8 +8219,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8966,8 +8236,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8981,8 +8252,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -8994,7 +8266,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_16 in Exclude<keyof I["consumer"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_20 in Exclude<keyof I["consumer"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -9067,18 +8339,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_17 in Exclude<keyof I["consumer"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_21 in Exclude<keyof I["consumer"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -9150,11 +8423,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_18 in Exclude<keyof I["consumer"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_19 in Exclude<keyof I["consumer"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_20 in Exclude<keyof I["consumer"][number]["endpoints"], keyof {
+                } & { [K_22 in Exclude<keyof I["consumer"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_23 in Exclude<keyof I["consumer"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_24 in Exclude<keyof I["consumer"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_25 in Exclude<keyof I["consumer"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_26 in Exclude<keyof I["consumer"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -9227,10 +8503,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_21 in Exclude<keyof I["consumer"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_27 in Exclude<keyof I["consumer"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_22 in Exclude<keyof I["consumer"][number], keyof StakeEntry>]: never; })[] & { [K_23 in Exclude<keyof I["consumer"], keyof {
+        } & { [K_28 in Exclude<keyof I["consumer"][number], keyof StakeEntry>]: never; })[] & { [K_29 in Exclude<keyof I["consumer"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -9239,8 +8515,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -9255,8 +8532,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -9270,8 +8548,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -9283,7 +8562,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_24 in Exclude<keyof I["unstaked"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_30 in Exclude<keyof I["unstaked"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -9356,18 +8635,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_25 in Exclude<keyof I["unstaked"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_31 in Exclude<keyof I["unstaked"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -9439,11 +8719,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_26 in Exclude<keyof I["unstaked"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_27 in Exclude<keyof I["unstaked"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_28 in Exclude<keyof I["unstaked"][number]["endpoints"], keyof {
+                } & { [K_32 in Exclude<keyof I["unstaked"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_33 in Exclude<keyof I["unstaked"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_34 in Exclude<keyof I["unstaked"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_35 in Exclude<keyof I["unstaked"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_36 in Exclude<keyof I["unstaked"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -9516,10 +8799,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_29 in Exclude<keyof I["unstaked"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_37 in Exclude<keyof I["unstaked"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_30 in Exclude<keyof I["unstaked"][number], keyof StakeEntry>]: never; })[] & { [K_31 in Exclude<keyof I["unstaked"], keyof {
+        } & { [K_38 in Exclude<keyof I["unstaked"][number], keyof StakeEntry>]: never; })[] & { [K_39 in Exclude<keyof I["unstaked"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -9528,8 +8811,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -9544,10 +8828,8 @@ export declare const QueryAccountInfoResponse: {
             durationTotal?: string | number | Long | undefined;
             durationLeft?: string | number | Long | undefined;
             monthExpiryTime?: string | number | Long | undefined;
-            prevExpiryBlock?: string | number | Long | undefined;
             monthCuTotal?: string | number | Long | undefined;
             monthCuLeft?: string | number | Long | undefined;
-            prevCuLeft?: string | number | Long | undefined;
         } & {
             creator?: string | undefined;
             consumer?: string | undefined;
@@ -9622,7 +8904,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_32 in Exclude<keyof I["subscription"]["block"], keyof Long>]: never; }) | undefined;
+            } & { [K_40 in Exclude<keyof I["subscription"]["block"], keyof Long>]: never; }) | undefined;
             planIndex?: string | undefined;
             planBlock?: string | number | (Long & {
                 high: number;
@@ -9695,7 +8977,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_33 in Exclude<keyof I["subscription"]["planBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_41 in Exclude<keyof I["subscription"]["planBlock"], keyof Long>]: never; }) | undefined;
             durationTotal?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -9767,7 +9049,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_34 in Exclude<keyof I["subscription"]["durationTotal"], keyof Long>]: never; }) | undefined;
+            } & { [K_42 in Exclude<keyof I["subscription"]["durationTotal"], keyof Long>]: never; }) | undefined;
             durationLeft?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -9839,7 +9121,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_35 in Exclude<keyof I["subscription"]["durationLeft"], keyof Long>]: never; }) | undefined;
+            } & { [K_43 in Exclude<keyof I["subscription"]["durationLeft"], keyof Long>]: never; }) | undefined;
             monthExpiryTime?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -9911,79 +9193,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_36 in Exclude<keyof I["subscription"]["monthExpiryTime"], keyof Long>]: never; }) | undefined;
-            prevExpiryBlock?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_37 in Exclude<keyof I["subscription"]["prevExpiryBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_44 in Exclude<keyof I["subscription"]["monthExpiryTime"], keyof Long>]: never; }) | undefined;
             monthCuTotal?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -10055,7 +9265,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_38 in Exclude<keyof I["subscription"]["monthCuTotal"], keyof Long>]: never; }) | undefined;
+            } & { [K_45 in Exclude<keyof I["subscription"]["monthCuTotal"], keyof Long>]: never; }) | undefined;
             monthCuLeft?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -10127,84 +9337,11 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_39 in Exclude<keyof I["subscription"]["monthCuLeft"], keyof Long>]: never; }) | undefined;
-            prevCuLeft?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_40 in Exclude<keyof I["subscription"]["prevCuLeft"], keyof Long>]: never; }) | undefined;
-        } & { [K_41 in Exclude<keyof I["subscription"], keyof Subscription>]: never; }) | undefined;
+            } & { [K_46 in Exclude<keyof I["subscription"]["monthCuLeft"], keyof Long>]: never; }) | undefined;
+        } & { [K_47 in Exclude<keyof I["subscription"], keyof Subscription>]: never; }) | undefined;
         project?: ({
             index?: string | undefined;
             subscription?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -10219,6 +9356,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             usedCu?: string | number | Long | undefined;
             subscriptionPolicy?: {
@@ -10230,12 +9369,13 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             snapshot?: string | number | Long | undefined;
         } & {
             index?: string | undefined;
             subscription?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: ({
                 key?: string | undefined;
@@ -10246,7 +9386,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 key?: string | undefined;
                 kinds?: number | undefined;
-            } & { [K_42 in Exclude<keyof I["project"]["projectKeys"][number], keyof import("../projects/project").ProjectKey>]: never; })[] & { [K_43 in Exclude<keyof I["project"]["projectKeys"], keyof {
+            } & { [K_48 in Exclude<keyof I["project"]["projectKeys"][number], keyof import("../projects/project").ProjectKey>]: never; })[] & { [K_49 in Exclude<keyof I["project"]["projectKeys"], keyof {
                 key?: string | undefined;
                 kinds?: number | undefined;
             }[]>]: never; }) | undefined;
@@ -10259,6 +9399,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } & {
                 chainPolicies?: ({
                     chainId?: string | undefined;
@@ -10268,8 +9410,8 @@ export declare const QueryAccountInfoResponse: {
                     apis?: string[] | undefined;
                 } & {
                     chainId?: string | undefined;
-                    apis?: (string[] & string[] & { [K_44 in Exclude<keyof I["project"]["adminPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-                } & { [K_45 in Exclude<keyof I["project"]["adminPolicy"]["chainPolicies"][number], keyof import("../projects/project").ChainPolicy>]: never; })[] & { [K_46 in Exclude<keyof I["project"]["adminPolicy"]["chainPolicies"], keyof {
+                    apis?: (string[] & string[] & { [K_50 in Exclude<keyof I["project"]["adminPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+                } & { [K_51 in Exclude<keyof I["project"]["adminPolicy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_52 in Exclude<keyof I["project"]["adminPolicy"]["chainPolicies"], keyof {
                     chainId?: string | undefined;
                     apis?: string[] | undefined;
                 }[]>]: never; }) | undefined;
@@ -10344,7 +9486,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_47 in Exclude<keyof I["project"]["adminPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+                } & { [K_53 in Exclude<keyof I["project"]["adminPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
                 totalCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -10416,7 +9558,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_48 in Exclude<keyof I["project"]["adminPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_54 in Exclude<keyof I["project"]["adminPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
                 epochCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -10488,7 +9630,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_49 in Exclude<keyof I["project"]["adminPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_55 in Exclude<keyof I["project"]["adminPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
                 maxProvidersToPair?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -10560,8 +9702,10 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_50 in Exclude<keyof I["project"]["adminPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-            } & { [K_51 in Exclude<keyof I["project"]["adminPolicy"], keyof import("../projects/project").Policy>]: never; }) | undefined;
+                } & { [K_56 in Exclude<keyof I["project"]["adminPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: (string[] & string[] & { [K_57 in Exclude<keyof I["project"]["adminPolicy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+            } & { [K_58 in Exclude<keyof I["project"]["adminPolicy"], keyof import("../plans/plan").Policy>]: never; }) | undefined;
             usedCu?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -10633,7 +9777,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_52 in Exclude<keyof I["project"]["usedCu"], keyof Long>]: never; }) | undefined;
+            } & { [K_59 in Exclude<keyof I["project"]["usedCu"], keyof Long>]: never; }) | undefined;
             subscriptionPolicy?: ({
                 chainPolicies?: {
                     chainId?: string | undefined;
@@ -10643,6 +9787,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } & {
                 chainPolicies?: ({
                     chainId?: string | undefined;
@@ -10652,8 +9798,8 @@ export declare const QueryAccountInfoResponse: {
                     apis?: string[] | undefined;
                 } & {
                     chainId?: string | undefined;
-                    apis?: (string[] & string[] & { [K_53 in Exclude<keyof I["project"]["subscriptionPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-                } & { [K_54 in Exclude<keyof I["project"]["subscriptionPolicy"]["chainPolicies"][number], keyof import("../projects/project").ChainPolicy>]: never; })[] & { [K_55 in Exclude<keyof I["project"]["subscriptionPolicy"]["chainPolicies"], keyof {
+                    apis?: (string[] & string[] & { [K_60 in Exclude<keyof I["project"]["subscriptionPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+                } & { [K_61 in Exclude<keyof I["project"]["subscriptionPolicy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_62 in Exclude<keyof I["project"]["subscriptionPolicy"]["chainPolicies"], keyof {
                     chainId?: string | undefined;
                     apis?: string[] | undefined;
                 }[]>]: never; }) | undefined;
@@ -10728,7 +9874,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_56 in Exclude<keyof I["project"]["subscriptionPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+                } & { [K_63 in Exclude<keyof I["project"]["subscriptionPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
                 totalCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -10800,7 +9946,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_57 in Exclude<keyof I["project"]["subscriptionPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_64 in Exclude<keyof I["project"]["subscriptionPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
                 epochCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -10872,7 +10018,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_58 in Exclude<keyof I["project"]["subscriptionPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_65 in Exclude<keyof I["project"]["subscriptionPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
                 maxProvidersToPair?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -10944,8 +10090,10 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_59 in Exclude<keyof I["project"]["subscriptionPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-            } & { [K_60 in Exclude<keyof I["project"]["subscriptionPolicy"], keyof import("../projects/project").Policy>]: never; }) | undefined;
+                } & { [K_66 in Exclude<keyof I["project"]["subscriptionPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: (string[] & string[] & { [K_67 in Exclude<keyof I["project"]["subscriptionPolicy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+            } & { [K_68 in Exclude<keyof I["project"]["subscriptionPolicy"], keyof import("../plans/plan").Policy>]: never; }) | undefined;
             snapshot?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -11017,9 +10165,9 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_61 in Exclude<keyof I["project"]["snapshot"], keyof Long>]: never; }) | undefined;
-        } & { [K_62 in Exclude<keyof I["project"], keyof Project>]: never; }) | undefined;
-    } & { [K_63 in Exclude<keyof I, keyof QueryAccountInfoResponse>]: never; }>(base?: I | undefined): QueryAccountInfoResponse;
+            } & { [K_69 in Exclude<keyof I["project"]["snapshot"], keyof Long>]: never; }) | undefined;
+        } & { [K_70 in Exclude<keyof I["project"], keyof Project>]: never; }) | undefined;
+    } & { [K_71 in Exclude<keyof I, keyof QueryAccountInfoResponse>]: never; }>(base?: I | undefined): QueryAccountInfoResponse;
     fromPartial<I_1 extends {
         provider?: {
             stake?: {
@@ -11030,8 +10178,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11046,8 +10195,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11062,8 +10212,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11078,8 +10229,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11094,15 +10246,12 @@ export declare const QueryAccountInfoResponse: {
             durationTotal?: string | number | Long | undefined;
             durationLeft?: string | number | Long | undefined;
             monthExpiryTime?: string | number | Long | undefined;
-            prevExpiryBlock?: string | number | Long | undefined;
             monthCuTotal?: string | number | Long | undefined;
             monthCuLeft?: string | number | Long | undefined;
-            prevCuLeft?: string | number | Long | undefined;
         } | undefined;
         project?: {
             index?: string | undefined;
             subscription?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -11117,6 +10266,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             usedCu?: string | number | Long | undefined;
             subscriptionPolicy?: {
@@ -11128,6 +10279,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             snapshot?: string | number | Long | undefined;
         } | undefined;
@@ -11141,8 +10294,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11156,8 +10310,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11169,7 +10324,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_64 in Exclude<keyof I_1["provider"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_72 in Exclude<keyof I_1["provider"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -11242,18 +10397,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_65 in Exclude<keyof I_1["provider"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_73 in Exclude<keyof I_1["provider"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -11325,11 +10481,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_66 in Exclude<keyof I_1["provider"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_67 in Exclude<keyof I_1["provider"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_68 in Exclude<keyof I_1["provider"][number]["endpoints"], keyof {
+                } & { [K_74 in Exclude<keyof I_1["provider"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_75 in Exclude<keyof I_1["provider"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_76 in Exclude<keyof I_1["provider"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_77 in Exclude<keyof I_1["provider"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_78 in Exclude<keyof I_1["provider"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -11402,10 +10561,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_69 in Exclude<keyof I_1["provider"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_79 in Exclude<keyof I_1["provider"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_70 in Exclude<keyof I_1["provider"][number], keyof StakeEntry>]: never; })[] & { [K_71 in Exclude<keyof I_1["provider"], keyof {
+        } & { [K_80 in Exclude<keyof I_1["provider"][number], keyof StakeEntry>]: never; })[] & { [K_81 in Exclude<keyof I_1["provider"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -11414,8 +10573,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11430,8 +10590,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11445,8 +10606,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11458,7 +10620,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_72 in Exclude<keyof I_1["frozen"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_82 in Exclude<keyof I_1["frozen"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -11531,18 +10693,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_73 in Exclude<keyof I_1["frozen"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_83 in Exclude<keyof I_1["frozen"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -11614,11 +10777,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_74 in Exclude<keyof I_1["frozen"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_75 in Exclude<keyof I_1["frozen"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_76 in Exclude<keyof I_1["frozen"][number]["endpoints"], keyof {
+                } & { [K_84 in Exclude<keyof I_1["frozen"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_85 in Exclude<keyof I_1["frozen"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_86 in Exclude<keyof I_1["frozen"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_87 in Exclude<keyof I_1["frozen"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_88 in Exclude<keyof I_1["frozen"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -11691,10 +10857,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_77 in Exclude<keyof I_1["frozen"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_89 in Exclude<keyof I_1["frozen"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_78 in Exclude<keyof I_1["frozen"][number], keyof StakeEntry>]: never; })[] & { [K_79 in Exclude<keyof I_1["frozen"], keyof {
+        } & { [K_90 in Exclude<keyof I_1["frozen"][number], keyof StakeEntry>]: never; })[] & { [K_91 in Exclude<keyof I_1["frozen"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -11703,8 +10869,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11719,8 +10886,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11734,8 +10902,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -11747,7 +10916,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_80 in Exclude<keyof I_1["consumer"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_92 in Exclude<keyof I_1["consumer"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -11820,18 +10989,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_81 in Exclude<keyof I_1["consumer"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_93 in Exclude<keyof I_1["consumer"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -11903,11 +11073,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_82 in Exclude<keyof I_1["consumer"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_83 in Exclude<keyof I_1["consumer"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_84 in Exclude<keyof I_1["consumer"][number]["endpoints"], keyof {
+                } & { [K_94 in Exclude<keyof I_1["consumer"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_95 in Exclude<keyof I_1["consumer"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_96 in Exclude<keyof I_1["consumer"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_97 in Exclude<keyof I_1["consumer"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_98 in Exclude<keyof I_1["consumer"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -11980,10 +11153,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_85 in Exclude<keyof I_1["consumer"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_99 in Exclude<keyof I_1["consumer"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_86 in Exclude<keyof I_1["consumer"][number], keyof StakeEntry>]: never; })[] & { [K_87 in Exclude<keyof I_1["consumer"], keyof {
+        } & { [K_100 in Exclude<keyof I_1["consumer"][number], keyof StakeEntry>]: never; })[] & { [K_101 in Exclude<keyof I_1["consumer"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -11992,8 +11165,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -12008,8 +11182,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -12023,8 +11198,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -12036,7 +11212,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 denom?: string | undefined;
                 amount?: string | undefined;
-            } & { [K_88 in Exclude<keyof I_1["unstaked"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+            } & { [K_102 in Exclude<keyof I_1["unstaked"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
             address?: string | undefined;
             stakeAppliedBlock?: string | number | (Long & {
                 high: number;
@@ -12109,18 +11285,19 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_89 in Exclude<keyof I_1["unstaked"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_103 in Exclude<keyof I_1["unstaked"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
             endpoints?: ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] & ({
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             } & {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -12192,11 +11369,14 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_90 in Exclude<keyof I_1["unstaked"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-            } & { [K_91 in Exclude<keyof I_1["unstaked"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_92 in Exclude<keyof I_1["unstaked"][number]["endpoints"], keyof {
+                } & { [K_104 in Exclude<keyof I_1["unstaked"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                addons?: (string[] & string[] & { [K_105 in Exclude<keyof I_1["unstaked"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                apiInterfaces?: (string[] & string[] & { [K_106 in Exclude<keyof I_1["unstaked"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+            } & { [K_107 in Exclude<keyof I_1["unstaked"][number]["endpoints"][number], keyof import("../epochstorage/endpoint").Endpoint>]: never; })[] & { [K_108 in Exclude<keyof I_1["unstaked"][number]["endpoints"], keyof {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[]>]: never; }) | undefined;
             geolocation?: string | number | (Long & {
                 high: number;
@@ -12269,10 +11449,10 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_93 in Exclude<keyof I_1["unstaked"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_109 in Exclude<keyof I_1["unstaked"][number]["geolocation"], keyof Long>]: never; }) | undefined;
             chain?: string | undefined;
             moniker?: string | undefined;
-        } & { [K_94 in Exclude<keyof I_1["unstaked"][number], keyof StakeEntry>]: never; })[] & { [K_95 in Exclude<keyof I_1["unstaked"], keyof {
+        } & { [K_110 in Exclude<keyof I_1["unstaked"][number], keyof StakeEntry>]: never; })[] & { [K_111 in Exclude<keyof I_1["unstaked"], keyof {
             stake?: {
                 denom?: string | undefined;
                 amount?: string | undefined;
@@ -12281,8 +11461,9 @@ export declare const QueryAccountInfoResponse: {
             stakeAppliedBlock?: string | number | Long | undefined;
             endpoints?: {
                 iPPORT?: string | undefined;
-                useType?: string | undefined;
                 geolocation?: string | number | Long | undefined;
+                addons?: string[] | undefined;
+                apiInterfaces?: string[] | undefined;
             }[] | undefined;
             geolocation?: string | number | Long | undefined;
             chain?: string | undefined;
@@ -12297,10 +11478,8 @@ export declare const QueryAccountInfoResponse: {
             durationTotal?: string | number | Long | undefined;
             durationLeft?: string | number | Long | undefined;
             monthExpiryTime?: string | number | Long | undefined;
-            prevExpiryBlock?: string | number | Long | undefined;
             monthCuTotal?: string | number | Long | undefined;
             monthCuLeft?: string | number | Long | undefined;
-            prevCuLeft?: string | number | Long | undefined;
         } & {
             creator?: string | undefined;
             consumer?: string | undefined;
@@ -12375,7 +11554,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_96 in Exclude<keyof I_1["subscription"]["block"], keyof Long>]: never; }) | undefined;
+            } & { [K_112 in Exclude<keyof I_1["subscription"]["block"], keyof Long>]: never; }) | undefined;
             planIndex?: string | undefined;
             planBlock?: string | number | (Long & {
                 high: number;
@@ -12448,7 +11627,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_97 in Exclude<keyof I_1["subscription"]["planBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_113 in Exclude<keyof I_1["subscription"]["planBlock"], keyof Long>]: never; }) | undefined;
             durationTotal?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -12520,7 +11699,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_98 in Exclude<keyof I_1["subscription"]["durationTotal"], keyof Long>]: never; }) | undefined;
+            } & { [K_114 in Exclude<keyof I_1["subscription"]["durationTotal"], keyof Long>]: never; }) | undefined;
             durationLeft?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -12592,7 +11771,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_99 in Exclude<keyof I_1["subscription"]["durationLeft"], keyof Long>]: never; }) | undefined;
+            } & { [K_115 in Exclude<keyof I_1["subscription"]["durationLeft"], keyof Long>]: never; }) | undefined;
             monthExpiryTime?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -12664,79 +11843,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_100 in Exclude<keyof I_1["subscription"]["monthExpiryTime"], keyof Long>]: never; }) | undefined;
-            prevExpiryBlock?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_101 in Exclude<keyof I_1["subscription"]["prevExpiryBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_116 in Exclude<keyof I_1["subscription"]["monthExpiryTime"], keyof Long>]: never; }) | undefined;
             monthCuTotal?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -12808,7 +11915,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_102 in Exclude<keyof I_1["subscription"]["monthCuTotal"], keyof Long>]: never; }) | undefined;
+            } & { [K_117 in Exclude<keyof I_1["subscription"]["monthCuTotal"], keyof Long>]: never; }) | undefined;
             monthCuLeft?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -12880,84 +11987,11 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_103 in Exclude<keyof I_1["subscription"]["monthCuLeft"], keyof Long>]: never; }) | undefined;
-            prevCuLeft?: string | number | (Long & {
-                high: number;
-                low: number;
-                unsigned: boolean;
-                add: (addend: string | number | Long) => Long;
-                and: (other: string | number | Long) => Long;
-                compare: (other: string | number | Long) => number;
-                comp: (other: string | number | Long) => number;
-                divide: (divisor: string | number | Long) => Long;
-                div: (divisor: string | number | Long) => Long;
-                equals: (other: string | number | Long) => boolean;
-                eq: (other: string | number | Long) => boolean;
-                getHighBits: () => number;
-                getHighBitsUnsigned: () => number;
-                getLowBits: () => number;
-                getLowBitsUnsigned: () => number;
-                getNumBitsAbs: () => number;
-                greaterThan: (other: string | number | Long) => boolean;
-                gt: (other: string | number | Long) => boolean;
-                greaterThanOrEqual: (other: string | number | Long) => boolean;
-                gte: (other: string | number | Long) => boolean;
-                ge: (other: string | number | Long) => boolean;
-                isEven: () => boolean;
-                isNegative: () => boolean;
-                isOdd: () => boolean;
-                isPositive: () => boolean;
-                isZero: () => boolean;
-                eqz: () => boolean;
-                lessThan: (other: string | number | Long) => boolean;
-                lt: (other: string | number | Long) => boolean;
-                lessThanOrEqual: (other: string | number | Long) => boolean;
-                lte: (other: string | number | Long) => boolean;
-                le: (other: string | number | Long) => boolean;
-                modulo: (other: string | number | Long) => Long;
-                mod: (other: string | number | Long) => Long;
-                rem: (other: string | number | Long) => Long;
-                multiply: (multiplier: string | number | Long) => Long;
-                mul: (multiplier: string | number | Long) => Long;
-                negate: () => Long;
-                neg: () => Long;
-                not: () => Long;
-                countLeadingZeros: () => number;
-                clz: () => number;
-                countTrailingZeros: () => number;
-                ctz: () => number;
-                notEquals: (other: string | number | Long) => boolean;
-                neq: (other: string | number | Long) => boolean;
-                ne: (other: string | number | Long) => boolean;
-                or: (other: string | number | Long) => Long;
-                shiftLeft: (numBits: number | Long) => Long;
-                shl: (numBits: number | Long) => Long;
-                shiftRight: (numBits: number | Long) => Long;
-                shr: (numBits: number | Long) => Long;
-                shiftRightUnsigned: (numBits: number | Long) => Long;
-                shru: (numBits: number | Long) => Long;
-                shr_u: (numBits: number | Long) => Long;
-                rotateLeft: (numBits: number | Long) => Long;
-                rotl: (numBits: number | Long) => Long;
-                rotateRight: (numBits: number | Long) => Long;
-                rotr: (numBits: number | Long) => Long;
-                subtract: (subtrahend: string | number | Long) => Long;
-                sub: (subtrahend: string | number | Long) => Long;
-                toInt: () => number;
-                toNumber: () => number;
-                toBytes: (le?: boolean | undefined) => number[];
-                toBytesLE: () => number[];
-                toBytesBE: () => number[];
-                toSigned: () => Long;
-                toString: (radix?: number | undefined) => string;
-                toUnsigned: () => Long;
-                xor: (other: string | number | Long) => Long;
-            } & { [K_104 in Exclude<keyof I_1["subscription"]["prevCuLeft"], keyof Long>]: never; }) | undefined;
-        } & { [K_105 in Exclude<keyof I_1["subscription"], keyof Subscription>]: never; }) | undefined;
+            } & { [K_118 in Exclude<keyof I_1["subscription"]["monthCuLeft"], keyof Long>]: never; }) | undefined;
+        } & { [K_119 in Exclude<keyof I_1["subscription"], keyof Subscription>]: never; }) | undefined;
         project?: ({
             index?: string | undefined;
             subscription?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: {
                 key?: string | undefined;
@@ -12972,6 +12006,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             usedCu?: string | number | Long | undefined;
             subscriptionPolicy?: {
@@ -12983,12 +12019,13 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } | undefined;
             snapshot?: string | number | Long | undefined;
         } & {
             index?: string | undefined;
             subscription?: string | undefined;
-            description?: string | undefined;
             enabled?: boolean | undefined;
             projectKeys?: ({
                 key?: string | undefined;
@@ -12999,7 +12036,7 @@ export declare const QueryAccountInfoResponse: {
             } & {
                 key?: string | undefined;
                 kinds?: number | undefined;
-            } & { [K_106 in Exclude<keyof I_1["project"]["projectKeys"][number], keyof import("../projects/project").ProjectKey>]: never; })[] & { [K_107 in Exclude<keyof I_1["project"]["projectKeys"], keyof {
+            } & { [K_120 in Exclude<keyof I_1["project"]["projectKeys"][number], keyof import("../projects/project").ProjectKey>]: never; })[] & { [K_121 in Exclude<keyof I_1["project"]["projectKeys"], keyof {
                 key?: string | undefined;
                 kinds?: number | undefined;
             }[]>]: never; }) | undefined;
@@ -13012,6 +12049,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } & {
                 chainPolicies?: ({
                     chainId?: string | undefined;
@@ -13021,8 +12060,8 @@ export declare const QueryAccountInfoResponse: {
                     apis?: string[] | undefined;
                 } & {
                     chainId?: string | undefined;
-                    apis?: (string[] & string[] & { [K_108 in Exclude<keyof I_1["project"]["adminPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-                } & { [K_109 in Exclude<keyof I_1["project"]["adminPolicy"]["chainPolicies"][number], keyof import("../projects/project").ChainPolicy>]: never; })[] & { [K_110 in Exclude<keyof I_1["project"]["adminPolicy"]["chainPolicies"], keyof {
+                    apis?: (string[] & string[] & { [K_122 in Exclude<keyof I_1["project"]["adminPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+                } & { [K_123 in Exclude<keyof I_1["project"]["adminPolicy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_124 in Exclude<keyof I_1["project"]["adminPolicy"]["chainPolicies"], keyof {
                     chainId?: string | undefined;
                     apis?: string[] | undefined;
                 }[]>]: never; }) | undefined;
@@ -13097,7 +12136,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_111 in Exclude<keyof I_1["project"]["adminPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+                } & { [K_125 in Exclude<keyof I_1["project"]["adminPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
                 totalCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -13169,7 +12208,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_112 in Exclude<keyof I_1["project"]["adminPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_126 in Exclude<keyof I_1["project"]["adminPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
                 epochCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -13241,7 +12280,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_113 in Exclude<keyof I_1["project"]["adminPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_127 in Exclude<keyof I_1["project"]["adminPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
                 maxProvidersToPair?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -13313,8 +12352,10 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_114 in Exclude<keyof I_1["project"]["adminPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-            } & { [K_115 in Exclude<keyof I_1["project"]["adminPolicy"], keyof import("../projects/project").Policy>]: never; }) | undefined;
+                } & { [K_128 in Exclude<keyof I_1["project"]["adminPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: (string[] & string[] & { [K_129 in Exclude<keyof I_1["project"]["adminPolicy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+            } & { [K_130 in Exclude<keyof I_1["project"]["adminPolicy"], keyof import("../plans/plan").Policy>]: never; }) | undefined;
             usedCu?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -13386,7 +12427,7 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_116 in Exclude<keyof I_1["project"]["usedCu"], keyof Long>]: never; }) | undefined;
+            } & { [K_131 in Exclude<keyof I_1["project"]["usedCu"], keyof Long>]: never; }) | undefined;
             subscriptionPolicy?: ({
                 chainPolicies?: {
                     chainId?: string | undefined;
@@ -13396,6 +12437,8 @@ export declare const QueryAccountInfoResponse: {
                 totalCuLimit?: string | number | Long | undefined;
                 epochCuLimit?: string | number | Long | undefined;
                 maxProvidersToPair?: string | number | Long | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: string[] | undefined;
             } & {
                 chainPolicies?: ({
                     chainId?: string | undefined;
@@ -13405,8 +12448,8 @@ export declare const QueryAccountInfoResponse: {
                     apis?: string[] | undefined;
                 } & {
                     chainId?: string | undefined;
-                    apis?: (string[] & string[] & { [K_117 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
-                } & { [K_118 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["chainPolicies"][number], keyof import("../projects/project").ChainPolicy>]: never; })[] & { [K_119 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["chainPolicies"], keyof {
+                    apis?: (string[] & string[] & { [K_132 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["chainPolicies"][number]["apis"], keyof string[]>]: never; }) | undefined;
+                } & { [K_133 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["chainPolicies"][number], keyof import("../plans/plan").ChainPolicy>]: never; })[] & { [K_134 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["chainPolicies"], keyof {
                     chainId?: string | undefined;
                     apis?: string[] | undefined;
                 }[]>]: never; }) | undefined;
@@ -13481,7 +12524,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_120 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
+                } & { [K_135 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["geolocationProfile"], keyof Long>]: never; }) | undefined;
                 totalCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -13553,7 +12596,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_121 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_136 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["totalCuLimit"], keyof Long>]: never; }) | undefined;
                 epochCuLimit?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -13625,7 +12668,7 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_122 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
+                } & { [K_137 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["epochCuLimit"], keyof Long>]: never; }) | undefined;
                 maxProvidersToPair?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -13697,8 +12740,10 @@ export declare const QueryAccountInfoResponse: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_123 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
-            } & { [K_124 in Exclude<keyof I_1["project"]["subscriptionPolicy"], keyof import("../projects/project").Policy>]: never; }) | undefined;
+                } & { [K_138 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["maxProvidersToPair"], keyof Long>]: never; }) | undefined;
+                selectedProvidersMode?: import("../plans/plan").selectedProvidersMode | undefined;
+                selectedProviders?: (string[] & string[] & { [K_139 in Exclude<keyof I_1["project"]["subscriptionPolicy"]["selectedProviders"], keyof string[]>]: never; }) | undefined;
+            } & { [K_140 in Exclude<keyof I_1["project"]["subscriptionPolicy"], keyof import("../plans/plan").Policy>]: never; }) | undefined;
             snapshot?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -13770,9 +12815,9 @@ export declare const QueryAccountInfoResponse: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_125 in Exclude<keyof I_1["project"]["snapshot"], keyof Long>]: never; }) | undefined;
-        } & { [K_126 in Exclude<keyof I_1["project"], keyof Project>]: never; }) | undefined;
-    } & { [K_127 in Exclude<keyof I_1, keyof QueryAccountInfoResponse>]: never; }>(object: I_1): QueryAccountInfoResponse;
+            } & { [K_141 in Exclude<keyof I_1["project"]["snapshot"], keyof Long>]: never; }) | undefined;
+        } & { [K_142 in Exclude<keyof I_1["project"], keyof Project>]: never; }) | undefined;
+    } & { [K_143 in Exclude<keyof I_1, keyof QueryAccountInfoResponse>]: never; }>(object: I_1): QueryAccountInfoResponse;
 };
 /** Query defines the gRPC querier service. */
 export interface Query {
@@ -13780,8 +12825,6 @@ export interface Query {
     Params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
     /** Queries a list of Providers items. */
     Providers(request: QueryProvidersRequest): Promise<QueryProvidersResponse>;
-    /** Queries a list of Clients items. */
-    Clients(request: QueryClientsRequest): Promise<QueryClientsResponse>;
     /** Queries a list of GetPairing items. */
     GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
     /** Queries a list of VerifyPairing items. */
@@ -13811,7 +12854,6 @@ export declare class QueryClientImpl implements Query {
     });
     Params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
     Providers(request: QueryProvidersRequest): Promise<QueryProvidersResponse>;
-    Clients(request: QueryClientsRequest): Promise<QueryClientsResponse>;
     GetPairing(request: QueryGetPairingRequest): Promise<QueryGetPairingResponse>;
     VerifyPairing(request: QueryVerifyPairingRequest): Promise<QueryVerifyPairingResponse>;
     UniquePaymentStorageClientProvider(request: QueryGetUniquePaymentStorageClientProviderRequest): Promise<QueryGetUniquePaymentStorageClientProviderResponse>;
