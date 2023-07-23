@@ -23,6 +23,25 @@ func TestSlice(t *testing.T) {
 	}
 }
 
+func TestConcat(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		slices [][]int
+		concat []int
+	}{
+		{"one empty slice", [][]int{{}}, []int{}},
+		{"two empty slices", [][]int{{}, {}}, []int{}},
+		{"empty slice with slice", [][]int{{}, {1, 2}, {}}, []int{1, 2}},
+		{"slice with empty slice", [][]int{{1, 2}, {}}, []int{1, 2}},
+		{"regular slices", [][]int{{1, 2}, {3, 4}, {5, 6}}, []int{1, 2, 3, 4, 5, 6}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			concat := Concat(tt.slices...)
+			require.Equal(t, tt.concat, concat)
+		})
+	}
+}
+
 func TestMin(t *testing.T) {
 	for _, tt := range []struct {
 		name  string
