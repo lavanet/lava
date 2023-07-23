@@ -17,10 +17,8 @@ func (k Keeper) Current(goCtx context.Context, req *types.QueryCurrentRequest) (
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	res := types.QueryCurrentResponse{}
 
-	block := uint64(ctx.BlockHeight())
-
-	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, req.Consumer, block, &sub); found {
+	sub, found := k.GetSubscription(ctx, req.Consumer)
+	if found {
 		res.Sub = &sub
 	}
 

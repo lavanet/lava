@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 	commontypes "github.com/lavanet/lava/common/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 )
@@ -33,17 +35,16 @@ func CmdSetPolicy() *cobra.Command {
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
 
-			fmt.Println("hi")
-
 			var policy planstypes.Policy
 			hooks := []mapstructure.DecodeHookFuncType{planstypes.SelectedProvidersModeHookFunc()}
 			err = commontypes.ReadYaml(adminPolicyFilePath, "Policy", &policy, hooks)
 			if err != nil {
 				return err
 			}
-
-			fmt.Println("hello")
-
+			err = verifyChainPoliciesAreCorrectlySet(clientCtx, &policy)
+			if err != nil {
+				return err
+			}
 			msg := types.NewMsgSetPolicy(
 				clientCtx.GetFromAddress().String(),
 				projectId,
@@ -60,4 +61,31 @@ func CmdSetPolicy() *cobra.Command {
 	cmd.MarkFlagRequired(flags.FlagFrom)
 
 	return cmd
+}
+
+func verifyChainPoliciesAreCorrectlySet(clientCtx client.Context, policy *planstypes.Policy) error {
+	specQuerier := spectypes.NewQueryClient(clientCtx)
+	var chainInfo *spectypes.QueryShowChainInfoResponse
+	for policyIdx, chainPolicy := range policy.ChainPolicies {
+		for idx, collection := range chainPolicy.Collections {
+			if collection.AddOn == "" {
+				// fix the addon for a collection on an optiona apiInterface
+				if chainInfo == nil {
+					var err error
+					chainInfo, err = specQuerier.ShowChainInfo(context.Background(), &spectypes.QueryShowChainInfoRequest{ChainName: chainPolicy.ChainId})
+					if err != nil {
+						return err
+					}
+				}
+				for _, optionalApiInterface := range chainInfo.OptionalInterfaces {
+					if optionalApiInterface == collection.ApiInterface {
+						policy.ChainPolicies[policyIdx].Collections[idx].AddOn = optionalApiInterface
+						continue
+					}
+				}
+				return fmt.Errorf("can't set an empty addon in a collection, empty addons are ignored %#v", chainPolicy)
+			}
+		}
+	}
+	return nil
 }

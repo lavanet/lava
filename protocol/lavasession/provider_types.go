@@ -41,8 +41,16 @@ func (endpoint *RPCProviderEndpoint) UrlsString() string {
 	return strings.Join(st_urls, ", ")
 }
 
+func (endpoint *RPCProviderEndpoint) AddonsString() string {
+	st_urls := make([]string, len(endpoint.NodeUrls))
+	for idx, url := range endpoint.NodeUrls {
+		st_urls[idx] = strings.Join(url.Addons, ",")
+	}
+	return strings.Join(st_urls, "; ")
+}
+
 func (endpoint *RPCProviderEndpoint) String() string {
-	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress.Address + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress.Address + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10) + " Addons:" + endpoint.AddonsString()
 }
 
 func (endpoint *RPCProviderEndpoint) Validate() error {

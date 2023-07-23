@@ -97,12 +97,14 @@ message QueryShowChainInfoRequest {
 message ApiList {
 	string interface = 4;
 	repeated string supportedApis = 5;
+  string addon = 6;
 }
 
 message QueryShowChainInfoResponse {
 	string chainID = 1;
 	repeated string interfaces = 2;
 	repeated ApiList supportedApisInterfaceList = 3;
+  repeated string optional_interfaces = 4;
   }
 
 // this line is used by starport scaffolding # 3

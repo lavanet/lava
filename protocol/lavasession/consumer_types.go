@@ -78,6 +78,7 @@ type Endpoint struct {
 	Client             *pairingtypes.RelayerClient
 	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
+	Addons             []string
 }
 
 type SessionWithProvider struct {
@@ -120,6 +121,22 @@ type ConsumerSessionsWithProvider struct {
 	MaxComputeUnits   uint64
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
+}
+
+func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	if addon == "" {
+		return true
+	}
+	for _, endpoint := range cswp.Endpoints {
+		for _, addonSupported := range endpoint.Addons {
+			if addonSupported == addon {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {

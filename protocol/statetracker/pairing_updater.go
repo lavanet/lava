@@ -128,7 +128,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		//
 		pairingEndpoints := make([]*lavasession.Endpoint, len(relevantEndpoints))
 		for idx, relevantEndpoint := range relevantEndpoints {
-			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0}
+			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: relevantEndpoint.Addons}
 			pairingEndpoints[idx] = endp
 		}
 

@@ -38,7 +38,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 		Name:  "x-cosmos-block-height",
 		Value: "55",
 	}
-	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 55, "tendermintrpc", metadataValue)
+	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 55, "tendermintrpc", metadataValue, []string{"test"})
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
@@ -87,7 +87,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 		Name:  "banana",
 		Value: "55",
 	}
-	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue)
+	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, []string{"test"})
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", testSpecId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
