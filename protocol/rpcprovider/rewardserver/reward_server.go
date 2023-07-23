@@ -229,6 +229,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		}
 
 		if rws.isEpochTooOld(epoch, currentEpoch, epochsToSave) {
+			utils.LavaFormatInfo("Deleting old rewards for epoch", utils.Attribute{Key: "oldEpoch", Value: epoch})
 			err := rws.rewardDB.DeleteEpochRewards(epoch)
 			if err != nil {
 				utils.LavaFormatWarning("failed deleting epoch", err, utils.Attribute{Key: "epoch", Value: epoch})
