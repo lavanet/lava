@@ -91,3 +91,9 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 	return m.keeper.plansFS.MigrateVersionFrom(ctx, 3)
 }
+
+// Migrate6to7 implements store migration from v6 to v7:
+// -- trigger fixation migration (v4->v5), initialize IsLatest field
+func (m Migrator) Migrate6to7(ctx sdk.Context) error {
+	return m.keeper.plansFS.MigrateVersionFrom(ctx, 4)
+}

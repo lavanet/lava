@@ -230,15 +230,14 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	return nil
 }
 
-// Migrate3to4 implements store migration from v5 to v6:
+// Migrate5to6 implements store migration from v5 to v6:
 // -- trigger fixation migration, deleteat and live variables
 func (m Migrator) Migrate5to6(ctx sdk.Context) error {
-	err := m.keeper.developerKeysFS.MigrateVersionFrom(ctx, 3)
-	if err != nil {
-		return err
-	}
+	return m.migrateFixationsVersion(ctx)
+}
 
-	err = m.keeper.projectsFS.MigrateVersionFrom(ctx, 3)
-
-	return err
+// Migrate6to7 implements store migration from v6 to v7:
+// -- trigger fixation migration (v4->v5), initialize IsLatest field
+func (m Migrator) Migrate6to7(ctx sdk.Context) error {
+	return m.migrateFixationsVersion(ctx)
 }

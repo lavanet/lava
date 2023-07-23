@@ -139,7 +139,7 @@ type FixationStore struct {
 	tstore   TimerStore
 }
 
-var fixationVersion uint64 = 4
+var fixationVersion uint64 = 5
 
 func FixationVersion() uint64 {
 	return fixationVersion

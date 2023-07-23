@@ -19,6 +19,7 @@ var fixationMigrators = map[int]func(sdk.Context, *FixationStore) error{
 	1: fixationMigrate1to2,
 	2: fixationMigrate2to3,
 	3: fixationMigrate3to4,
+	4: fixationMigrate4to5,
 }
 
 // MigrateVerrsion performs pending internal version migration(s), if any.
@@ -193,6 +194,47 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 
 			entry.DeleteAt = math.MaxUint64
 			fs.setEntry(ctx, entry)
+		}
+	}
+
+	return nil
+}
+
+// fixationMigrate4to5: mark latest entries with new IsLatest flag
+//   - mark latest entries with entry.IsLatest = true
+func fixationMigrate4to5(ctx sdk.Context, fs *FixationStore) error {
+	err := fs.tstore.MigrateVersion(ctx)
+	if err != nil {
+		return err
+	}
+
+	utils.LavaFormatDebug("migrate fixation store: v4 -> v5")
+
+	ctxBlock := uint64(ctx.BlockHeight())
+	indices := fs.GetAllEntryIndices(ctx)
+
+	for _, index := range indices {
+		utils.LavaFormatDebug("  entry", utils.Attribute{Key: "index", Value: index})
+
+		safeIndex, err := types.SanitizeIndex(index)
+		if err != nil {
+			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
+		}
+
+		// find latest entry (excluding possible future entries)
+		entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, ctxBlock)
+		if !found {
+			// still possible, if this entry has only future existence
+			utils.LavaFormatInfo("    no latest entry", utils.Attribute{Key: "index", Value: index})
+			continue
+		}
+
+		if !entry.IsDeletedBy(ctxBlock) {
+			utils.LavaFormatDebug("    set latest", utils.Attribute{Key: "block", Value: entry.Block})
+			entry.IsLatest = true
+			fs.setEntry(ctx, entry)
+		} else {
+			utils.LavaFormatDebug("    skip entry", utils.Attribute{Key: "block", Value: entry.Block})
 		}
 	}
 
