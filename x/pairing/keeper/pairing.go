@@ -136,10 +136,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	if providersType == spectypes.Spec_static {
-		return stakeEntries, allowedCU, project.Index, nil
+		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
-
-	allowedCU = strictestPolicy.EpochCuLimit
 
 	filters := pairingfilters.GetAllFilters()
 
@@ -150,6 +148,9 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 	// create the pairing slots with assigned reqs
 	slots := pairingscores.CalcSlots(strictestPolicy)
+	if len(slots) >= len(stakeEntries) {
+		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
+	}
 
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
@@ -164,27 +165,19 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
 	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
 	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
-	indexToSkip := make(map[int]bool) // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
-
 	for idx, group := range slotGroups {
-		if len(indexToSkip) == len(providerScores) {
-			utils.LavaFormatDebug("no more providers to pick from")
-			break
-		}
-
 		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
 			return nil, 0, "", err
 		}
-		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData, indexToSkip)
+		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData)
 		providers = append(providers, pickedProviders...)
-
 		prevGroupSlot = group
 	}
 
-	return providers, allowedCU, project.Index, err
+	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
 func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {

@@ -170,14 +170,14 @@ func PrepareHashData(projectIndex string, chainID string, epochHash []byte, idx 
 }
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
-func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hashData []byte, chosenProvidersIdx map[int]bool) (returnedProviders []epochstoragetypes.StakeEntry) {
+func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hashData []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
 	if len(scores) == 0 {
 		return returnedProviders
 	}
 
 	scoreSum := sdk.ZeroUint()
-	for idx, providerScore := range scores {
-		if chosenProvidersIdx[idx] {
+	for _, providerScore := range scores {
+		if !providerScore.ValidForSelection {
 			// skip index of providers already selected
 			continue
 		}
@@ -186,15 +186,6 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 	if scoreSum == sdk.ZeroUint() {
 		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
 		return returnedProviders
-	}
-
-	if groupCount >= len(scores)-len(chosenProvidersIdx) {
-		providers := []epochstoragetypes.StakeEntry{}
-		for idx, score := range scores {
-			providers = append(providers, *score.Provider)
-			chosenProvidersIdx[idx] = true
-		}
-		return providers
 	}
 
 	for it := 0; it < groupCount; it++ {
@@ -206,7 +197,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		newScoreSum := sdk.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
-			if chosenProvidersIdx[idx] {
+			if !scores[idx].ValidForSelection {
 				// skip index of providers already selected
 				continue
 			}
@@ -216,7 +207,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 				// we hit our chosen provider
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
 				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
-				chosenProvidersIdx[idx] = true
+				scores[idx].ValidForSelection = false
 				break
 			}
 		}

@@ -1104,11 +1104,11 @@ func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot
 	maxScore := providerScores[0].Score
 	for _, score := range providerScores {
 		if score.Provider.Geolocation == geoReq.Geo {
-			if score.Score != maxScore {
+			if !score.Score.Equal(maxScore) {
 				return false
 			}
 		} else {
-			if score.Score == maxScore {
+			if score.Score.Equal(maxScore) {
 				return false
 			} else {
 				break
