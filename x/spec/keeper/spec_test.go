@@ -456,8 +456,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
-		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeProvider:              common.NewCoin(5000),
+		MinStakeClient:                common.NewCoin(5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -477,8 +477,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
-		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeProvider:              common.NewCoin(5000),
+		MinStakeClient:                common.NewCoin(5000),
 		Imports:                       []string{"parent"},
 	}
 
