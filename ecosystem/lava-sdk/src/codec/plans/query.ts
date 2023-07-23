@@ -55,7 +55,7 @@ export const QueryParamsRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -102,14 +102,14 @@ export const QueryParamsResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.params = Params.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -157,7 +157,7 @@ export const QueryListRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -204,14 +204,14 @@ export const QueryListResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.plansInfo.push(ListInfoStruct.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -272,28 +272,28 @@ export const ListInfoStruct = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.index = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.description = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.price = Coin.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -350,14 +350,14 @@ export const QueryInfoRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.planIndex = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -406,14 +406,14 @@ export const QueryInfoResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.planInfo = Plan.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);

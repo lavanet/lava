@@ -7,6 +7,7 @@ exports.GenesisState = exports.BadgeUsedCu = exports.protobufPackage = void 0;
 /* eslint-disable */
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
+const fixationEntry_1 = require("../common/fixationEntry");
 const epoch_payments_1 = require("./epoch_payments");
 const params_1 = require("./params");
 const provider_payment_storage_1 = require("./provider_payment_storage");
@@ -33,19 +34,19 @@ exports.BadgeUsedCu = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.badgeUsedCuKey = reader.bytes();
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.usedCu = reader.uint64();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -85,6 +86,7 @@ function createBaseGenesisState() {
         providerPaymentStorageList: [],
         epochPaymentsList: [],
         badgeUsedCuList: [],
+        badgesTS: [],
     };
 }
 exports.GenesisState = {
@@ -104,6 +106,9 @@ exports.GenesisState = {
         for (const v of message.badgeUsedCuList) {
             exports.BadgeUsedCu.encode(v, writer.uint32(42).fork()).ldelim();
         }
+        for (const v of message.badgesTS) {
+            fixationEntry_1.RawMessage.encode(v, writer.uint32(50).fork()).ldelim();
+        }
         return writer;
     },
     decode(input, length) {
@@ -114,37 +119,43 @@ exports.GenesisState = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.params = params_1.Params.decode(reader, reader.uint32());
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.uniquePaymentStorageClientProviderList.push(unique_payment_storage_client_provider_1.UniquePaymentStorageClientProvider.decode(reader, reader.uint32()));
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.providerPaymentStorageList.push(provider_payment_storage_1.ProviderPaymentStorage.decode(reader, reader.uint32()));
                     continue;
                 case 4:
-                    if (tag !== 34) {
+                    if (tag != 34) {
                         break;
                     }
                     message.epochPaymentsList.push(epoch_payments_1.EpochPayments.decode(reader, reader.uint32()));
                     continue;
                 case 5:
-                    if (tag !== 42) {
+                    if (tag != 42) {
                         break;
                     }
                     message.badgeUsedCuList.push(exports.BadgeUsedCu.decode(reader, reader.uint32()));
                     continue;
+                case 6:
+                    if (tag != 50) {
+                        break;
+                    }
+                    message.badgesTS.push(fixationEntry_1.RawMessage.decode(reader, reader.uint32()));
+                    continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -166,6 +177,7 @@ exports.GenesisState = {
             badgeUsedCuList: Array.isArray(object === null || object === void 0 ? void 0 : object.badgeUsedCuList)
                 ? object.badgeUsedCuList.map((e) => exports.BadgeUsedCu.fromJSON(e))
                 : [],
+            badgesTS: Array.isArray(object === null || object === void 0 ? void 0 : object.badgesTS) ? object.badgesTS.map((e) => fixationEntry_1.RawMessage.fromJSON(e)) : [],
         };
     },
     toJSON(message) {
@@ -195,13 +207,19 @@ exports.GenesisState = {
         else {
             obj.badgeUsedCuList = [];
         }
+        if (message.badgesTS) {
+            obj.badgesTS = message.badgesTS.map((e) => e ? fixationEntry_1.RawMessage.toJSON(e) : undefined);
+        }
+        else {
+            obj.badgesTS = [];
+        }
         return obj;
     },
     create(base) {
         return exports.GenesisState.fromPartial(base !== null && base !== void 0 ? base : {});
     },
     fromPartial(object) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const message = createBaseGenesisState();
         message.params = (object.params !== undefined && object.params !== null)
             ? params_1.Params.fromPartial(object.params)
@@ -213,6 +231,7 @@ exports.GenesisState = {
             ((_b = object.providerPaymentStorageList) === null || _b === void 0 ? void 0 : _b.map((e) => provider_payment_storage_1.ProviderPaymentStorage.fromPartial(e))) || [];
         message.epochPaymentsList = ((_c = object.epochPaymentsList) === null || _c === void 0 ? void 0 : _c.map((e) => epoch_payments_1.EpochPayments.fromPartial(e))) || [];
         message.badgeUsedCuList = ((_d = object.badgeUsedCuList) === null || _d === void 0 ? void 0 : _d.map((e) => exports.BadgeUsedCu.fromPartial(e))) || [];
+        message.badgesTS = ((_e = object.badgesTS) === null || _e === void 0 ? void 0 : _e.map((e) => fixationEntry_1.RawMessage.fromPartial(e))) || [];
         return message;
     },
 };

@@ -21,6 +21,7 @@ export interface RelaySession {
   lavaChainId: string;
   sig: Uint8Array;
   badge?: Badge;
+  qosExcellenceReport?: QualityOfServiceReport;
 }
 
 export interface Badge {
@@ -40,6 +41,7 @@ export interface RelayPrivateData {
   apiInterface: string;
   salt: Uint8Array;
   metadata: Metadata[];
+  addon: string[];
 }
 
 export interface Metadata {
@@ -56,7 +58,6 @@ export interface RelayReply {
   data: Uint8Array;
   /** sign the data hash+query hash+nonce */
   sig: Uint8Array;
-  nonce: number;
   latestBlock: Long;
   finalizedBlocksHashes: Uint8Array;
   /** sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num */
@@ -84,6 +85,7 @@ function createBaseRelaySession(): RelaySession {
     lavaChainId: "",
     sig: new Uint8Array(),
     badge: undefined,
+    qosExcellenceReport: undefined,
   };
 }
 
@@ -125,6 +127,9 @@ export const RelaySession = {
     if (message.badge !== undefined) {
       Badge.encode(message.badge, writer.uint32(98).fork()).ldelim();
     }
+    if (message.qosExcellenceReport !== undefined) {
+      QualityOfServiceReport.encode(message.qosExcellenceReport, writer.uint32(106).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -136,91 +141,98 @@ export const RelaySession = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.specId = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.contentHash = reader.bytes();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.sessionId = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.cuSum = reader.uint64() as Long;
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.provider = reader.string();
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.relayNum = reader.uint64() as Long;
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.qosReport = QualityOfServiceReport.decode(reader, reader.uint32());
           continue;
         case 8:
-          if (tag !== 64) {
+          if (tag != 64) {
             break;
           }
 
           message.epoch = reader.int64() as Long;
           continue;
         case 9:
-          if (tag !== 74) {
+          if (tag != 74) {
             break;
           }
 
           message.unresponsiveProviders = reader.bytes();
           continue;
         case 10:
-          if (tag !== 82) {
+          if (tag != 82) {
             break;
           }
 
           message.lavaChainId = reader.string();
           continue;
         case 11:
-          if (tag !== 90) {
+          if (tag != 90) {
             break;
           }
 
           message.sig = reader.bytes();
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag != 98) {
             break;
           }
 
           message.badge = Badge.decode(reader, reader.uint32());
           continue;
+        case 13:
+          if (tag != 106) {
+            break;
+          }
+
+          message.qosExcellenceReport = QualityOfServiceReport.decode(reader, reader.uint32());
+          continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -244,6 +256,9 @@ export const RelaySession = {
       lavaChainId: isSet(object.lavaChainId) ? String(object.lavaChainId) : "",
       sig: isSet(object.sig) ? bytesFromBase64(object.sig) : new Uint8Array(),
       badge: isSet(object.badge) ? Badge.fromJSON(object.badge) : undefined,
+      qosExcellenceReport: isSet(object.qosExcellenceReport)
+        ? QualityOfServiceReport.fromJSON(object.qosExcellenceReport)
+        : undefined,
     };
   },
 
@@ -267,6 +282,9 @@ export const RelaySession = {
     message.sig !== undefined &&
       (obj.sig = base64FromBytes(message.sig !== undefined ? message.sig : new Uint8Array()));
     message.badge !== undefined && (obj.badge = message.badge ? Badge.toJSON(message.badge) : undefined);
+    message.qosExcellenceReport !== undefined && (obj.qosExcellenceReport = message.qosExcellenceReport
+      ? QualityOfServiceReport.toJSON(message.qosExcellenceReport)
+      : undefined);
     return obj;
   },
 
@@ -294,6 +312,9 @@ export const RelaySession = {
     message.lavaChainId = object.lavaChainId ?? "";
     message.sig = object.sig ?? new Uint8Array();
     message.badge = (object.badge !== undefined && object.badge !== null) ? Badge.fromPartial(object.badge) : undefined;
+    message.qosExcellenceReport = (object.qosExcellenceReport !== undefined && object.qosExcellenceReport !== null)
+      ? QualityOfServiceReport.fromPartial(object.qosExcellenceReport)
+      : undefined;
     return message;
   },
 };
@@ -330,42 +351,42 @@ export const Badge = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.cuAllocation = reader.uint64() as Long;
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.epoch = reader.uint64() as Long;
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.address = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.lavaChainId = reader.string();
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.projectSig = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -420,6 +441,7 @@ function createBaseRelayPrivateData(): RelayPrivateData {
     apiInterface: "",
     salt: new Uint8Array(),
     metadata: [],
+    addon: [],
   };
 }
 
@@ -446,6 +468,9 @@ export const RelayPrivateData = {
     for (const v of message.metadata) {
       Metadata.encode(v!, writer.uint32(58).fork()).ldelim();
     }
+    for (const v of message.addon) {
+      writer.uint32(66).string(v!);
+    }
     return writer;
   },
 
@@ -457,56 +482,63 @@ export const RelayPrivateData = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.connectionType = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.apiUrl = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.requestBlock = reader.int64() as Long;
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.apiInterface = reader.string();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.salt = reader.bytes();
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.metadata.push(Metadata.decode(reader, reader.uint32()));
           continue;
+        case 8:
+          if (tag != 66) {
+            break;
+          }
+
+          message.addon.push(reader.string());
+          continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -523,6 +555,7 @@ export const RelayPrivateData = {
       apiInterface: isSet(object.apiInterface) ? String(object.apiInterface) : "",
       salt: isSet(object.salt) ? bytesFromBase64(object.salt) : new Uint8Array(),
       metadata: Array.isArray(object?.metadata) ? object.metadata.map((e: any) => Metadata.fromJSON(e)) : [],
+      addon: Array.isArray(object?.addon) ? object.addon.map((e: any) => String(e)) : [],
     };
   },
 
@@ -540,6 +573,11 @@ export const RelayPrivateData = {
       obj.metadata = message.metadata.map((e) => e ? Metadata.toJSON(e) : undefined);
     } else {
       obj.metadata = [];
+    }
+    if (message.addon) {
+      obj.addon = message.addon.map((e) => e);
+    } else {
+      obj.addon = [];
     }
     return obj;
   },
@@ -559,6 +597,7 @@ export const RelayPrivateData = {
     message.apiInterface = object.apiInterface ?? "";
     message.salt = object.salt ?? new Uint8Array();
     message.metadata = object.metadata?.map((e) => Metadata.fromPartial(e)) || [];
+    message.addon = object.addon?.map((e) => e) || [];
     return message;
   },
 };
@@ -586,21 +625,21 @@ export const Metadata = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.name = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.value = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -657,21 +696,21 @@ export const RelayRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.relaySession = RelaySession.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.relayData = RelayPrivateData.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -715,7 +754,6 @@ function createBaseRelayReply(): RelayReply {
   return {
     data: new Uint8Array(),
     sig: new Uint8Array(),
-    nonce: 0,
     latestBlock: Long.ZERO,
     finalizedBlocksHashes: new Uint8Array(),
     sigBlocks: new Uint8Array(),
@@ -730,9 +768,6 @@ export const RelayReply = {
     }
     if (message.sig.length !== 0) {
       writer.uint32(18).bytes(message.sig);
-    }
-    if (message.nonce !== 0) {
-      writer.uint32(24).uint32(message.nonce);
     }
     if (!message.latestBlock.isZero()) {
       writer.uint32(32).int64(message.latestBlock);
@@ -757,56 +792,49 @@ export const RelayReply = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.sig = reader.bytes();
           continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.nonce = reader.uint32();
-          continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.latestBlock = reader.int64() as Long;
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.finalizedBlocksHashes = reader.bytes();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.sigBlocks = reader.bytes();
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.metadata.push(Metadata.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -818,7 +846,6 @@ export const RelayReply = {
     return {
       data: isSet(object.data) ? bytesFromBase64(object.data) : new Uint8Array(),
       sig: isSet(object.sig) ? bytesFromBase64(object.sig) : new Uint8Array(),
-      nonce: isSet(object.nonce) ? Number(object.nonce) : 0,
       latestBlock: isSet(object.latestBlock) ? Long.fromValue(object.latestBlock) : Long.ZERO,
       finalizedBlocksHashes: isSet(object.finalizedBlocksHashes)
         ? bytesFromBase64(object.finalizedBlocksHashes)
@@ -834,7 +861,6 @@ export const RelayReply = {
       (obj.data = base64FromBytes(message.data !== undefined ? message.data : new Uint8Array()));
     message.sig !== undefined &&
       (obj.sig = base64FromBytes(message.sig !== undefined ? message.sig : new Uint8Array()));
-    message.nonce !== undefined && (obj.nonce = Math.round(message.nonce));
     message.latestBlock !== undefined && (obj.latestBlock = (message.latestBlock || Long.ZERO).toString());
     message.finalizedBlocksHashes !== undefined &&
       (obj.finalizedBlocksHashes = base64FromBytes(
@@ -858,7 +884,6 @@ export const RelayReply = {
     const message = createBaseRelayReply();
     message.data = object.data ?? new Uint8Array();
     message.sig = object.sig ?? new Uint8Array();
-    message.nonce = object.nonce ?? 0;
     message.latestBlock = (object.latestBlock !== undefined && object.latestBlock !== null)
       ? Long.fromValue(object.latestBlock)
       : Long.ZERO;
@@ -895,28 +920,28 @@ export const QualityOfServiceReport = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.latency = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.availability = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.sync = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);

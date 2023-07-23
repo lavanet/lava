@@ -35,31 +35,31 @@ exports.Proof = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 8) {
+                    if (tag != 8) {
                         break;
                     }
                     message.total = reader.int64();
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.index = reader.int64();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.leafHash = reader.bytes();
                     continue;
                 case 4:
-                    if (tag !== 34) {
+                    if (tag != 34) {
                         break;
                     }
                     message.aunts.push(reader.bytes());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -122,19 +122,19 @@ exports.ValueOp = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.key = reader.bytes();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.proof = exports.Proof.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -189,25 +189,25 @@ exports.DominoOp = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.key = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.input = reader.string();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.output = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -264,25 +264,25 @@ exports.ProofOp = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.type = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.key = reader.bytes();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.data = reader.bytes();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -335,13 +335,13 @@ exports.ProofOps = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.ops.push(exports.ProofOp.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);

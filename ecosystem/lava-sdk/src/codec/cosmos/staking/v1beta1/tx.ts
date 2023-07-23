@@ -179,56 +179,56 @@ export const MsgCreateValidator = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.description = Description.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.commission = CommissionRates.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.minSelfDelegation = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.delegatorAddress = reader.string();
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.validatorAddress = reader.string();
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.pubkey = Any.decode(reader, reader.uint32());
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.value = Coin.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -302,7 +302,7 @@ export const MsgCreateValidatorResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -358,35 +358,35 @@ export const MsgEditValidator = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.description = Description.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validatorAddress = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.commissionRate = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.minSelfDelegation = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -446,7 +446,7 @@ export const MsgEditValidatorResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -499,28 +499,28 @@ export const MsgDelegate = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.delegatorAddress = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validatorAddress = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.amount = Coin.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -576,7 +576,7 @@ export const MsgDelegateResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -632,35 +632,35 @@ export const MsgBeginRedelegate = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.delegatorAddress = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validatorSrcAddress = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.validatorDstAddress = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.amount = Coin.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -722,14 +722,14 @@ export const MsgBeginRedelegateResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.completionTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -784,28 +784,28 @@ export const MsgUndelegate = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.delegatorAddress = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validatorAddress = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.amount = Coin.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -864,14 +864,14 @@ export const MsgUndelegateResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.completionTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -929,35 +929,35 @@ export const MsgCancelUnbondingDelegation = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.delegatorAddress = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validatorAddress = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.amount = Coin.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.creationHeight = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1018,7 +1018,7 @@ export const MsgCancelUnbondingDelegationResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1072,21 +1072,21 @@ export const MsgUpdateParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.authority = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.params = Params.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1139,7 +1139,7 @@ export const MsgUpdateParamsResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1282,8 +1282,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
+  let millis = t.seconds.toNumber() * 1_000;
+  millis += t.nanos / 1_000_000;
   return new Date(millis);
 }
 

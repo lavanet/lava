@@ -26,7 +26,7 @@ exports.QueryParamsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -66,13 +66,13 @@ exports.QueryParamsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.params = distribution_1.Params.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -116,13 +116,13 @@ exports.QueryValidatorDistributionInfoRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.validatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -171,25 +171,25 @@ exports.QueryValidatorDistributionInfoResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.operatorAddress = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.selfBondRewards.push(coin_1.DecCoin.decode(reader, reader.uint32()));
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.commission.push(coin_1.DecCoin.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -252,13 +252,13 @@ exports.QueryValidatorOutstandingRewardsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.validatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -301,13 +301,13 @@ exports.QueryValidatorOutstandingRewardsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.rewards = distribution_1.ValidatorOutstandingRewards.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -352,13 +352,13 @@ exports.QueryValidatorCommissionRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.validatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -401,13 +401,13 @@ exports.QueryValidatorCommissionResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.commission = distribution_1.ValidatorAccumulatedCommission.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -463,31 +463,31 @@ exports.QueryValidatorSlashesRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.validatorAddress = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 16) {
+                    if (tag != 16) {
                         break;
                     }
                     message.startingHeight = reader.uint64();
                     continue;
                 case 3:
-                    if (tag !== 24) {
+                    if (tag != 24) {
                         break;
                     }
                     message.endingHeight = reader.uint64();
                     continue;
                 case 4:
-                    if (tag !== 34) {
+                    if (tag != 34) {
                         break;
                     }
                     message.pagination = pagination_1.PageRequest.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -551,19 +551,19 @@ exports.QueryValidatorSlashesResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.slashes.push(distribution_1.ValidatorSlashEvent.decode(reader, reader.uint32()));
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.pagination = pagination_1.PageResponse.decode(reader, reader.uint32());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -622,19 +622,19 @@ exports.QueryDelegationRewardsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.delegatorAddress = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.validatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -682,13 +682,13 @@ exports.QueryDelegationRewardsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.rewards.push(coin_1.DecCoin.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -736,13 +736,13 @@ exports.QueryDelegationTotalRewardsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.delegatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -788,19 +788,19 @@ exports.QueryDelegationTotalRewardsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.rewards.push(distribution_1.DelegationDelegatorReward.decode(reader, reader.uint32()));
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.total.push(coin_1.DecCoin.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -860,13 +860,13 @@ exports.QueryDelegatorValidatorsRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.delegatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -909,13 +909,13 @@ exports.QueryDelegatorValidatorsResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.validators.push(reader.string());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -963,13 +963,13 @@ exports.QueryDelegatorWithdrawAddressRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.delegatorAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -1012,13 +1012,13 @@ exports.QueryDelegatorWithdrawAddressResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.withdrawAddress = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -1058,7 +1058,7 @@ exports.QueryCommunityPoolRequest = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -1098,13 +1098,13 @@ exports.QueryCommunityPoolResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.pool.push(coin_1.DecCoin.decode(reader, reader.uint32()));
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);

@@ -21,3 +21,18 @@ export function generateRPCData(method: string, params: Array<any>): string {
     "}"
   );
 }
+
+export function parseLong(long: Long): number {
+  /**
+   * this function will parse long to a 64bit number,
+   * this assumes all systems running the sdk will run on 64bit systems
+   * @param long A long number to parse into number
+   */
+  const high = Number(long.high);
+  const low = Number(long.low);
+  const parsedNumber = (high << 32) + low;
+  if (high > 0) {
+    console.log("MAYBE AN ISSUE", high);
+  }
+  return parsedNumber;
+}

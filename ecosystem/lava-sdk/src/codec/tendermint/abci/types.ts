@@ -695,119 +695,119 @@ export const Request = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.echo = RequestEcho.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.flush = RequestFlush.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.info = RequestInfo.decode(reader, reader.uint32());
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.initChain = RequestInitChain.decode(reader, reader.uint32());
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.query = RequestQuery.decode(reader, reader.uint32());
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.beginBlock = RequestBeginBlock.decode(reader, reader.uint32());
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.checkTx = RequestCheckTx.decode(reader, reader.uint32());
           continue;
         case 9:
-          if (tag !== 74) {
+          if (tag != 74) {
             break;
           }
 
           message.deliverTx = RequestDeliverTx.decode(reader, reader.uint32());
           continue;
         case 10:
-          if (tag !== 82) {
+          if (tag != 82) {
             break;
           }
 
           message.endBlock = RequestEndBlock.decode(reader, reader.uint32());
           continue;
         case 11:
-          if (tag !== 90) {
+          if (tag != 90) {
             break;
           }
 
           message.commit = RequestCommit.decode(reader, reader.uint32());
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag != 98) {
             break;
           }
 
           message.listSnapshots = RequestListSnapshots.decode(reader, reader.uint32());
           continue;
         case 13:
-          if (tag !== 106) {
+          if (tag != 106) {
             break;
           }
 
           message.offerSnapshot = RequestOfferSnapshot.decode(reader, reader.uint32());
           continue;
         case 14:
-          if (tag !== 114) {
+          if (tag != 114) {
             break;
           }
 
           message.loadSnapshotChunk = RequestLoadSnapshotChunk.decode(reader, reader.uint32());
           continue;
         case 15:
-          if (tag !== 122) {
+          if (tag != 122) {
             break;
           }
 
           message.applySnapshotChunk = RequestApplySnapshotChunk.decode(reader, reader.uint32());
           continue;
         case 16:
-          if (tag !== 130) {
+          if (tag != 130) {
             break;
           }
 
           message.prepareProposal = RequestPrepareProposal.decode(reader, reader.uint32());
           continue;
         case 17:
-          if (tag !== 138) {
+          if (tag != 138) {
             break;
           }
 
           message.processProposal = RequestProcessProposal.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -958,14 +958,14 @@ export const RequestEcho = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.message = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1011,7 +1011,7 @@ export const RequestFlush = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1067,35 +1067,35 @@ export const RequestInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.version = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.blockVersion = reader.uint64() as Long;
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.p2pVersion = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.abciVersion = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1181,49 +1181,49 @@ export const RequestInitChain = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.time = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.chainId = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.consensusParams = ConsensusParams.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.validators.push(ValidatorUpdate.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.appStateBytes = reader.bytes();
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.initialHeight = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1312,35 +1312,35 @@ export const RequestQuery = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.path = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.prove = reader.bool();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1412,35 +1412,35 @@ export const RequestBeginBlock = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.hash = reader.bytes();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.header = Header.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.lastCommitInfo = CommitInfo.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.byzantineValidators.push(Misbehavior.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1515,21 +1515,21 @@ export const RequestCheckTx = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.tx = reader.bytes();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.type = reader.int32() as any;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1583,14 +1583,14 @@ export const RequestDeliverTx = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.tx = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1639,14 +1639,14 @@ export const RequestEndBlock = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1694,7 +1694,7 @@ export const RequestCommit = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1738,7 +1738,7 @@ export const RequestListSnapshots = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1788,21 +1788,21 @@ export const RequestOfferSnapshot = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.snapshot = Snapshot.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.appHash = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1865,28 +1865,28 @@ export const RequestLoadSnapshotChunk = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.height = reader.uint64() as Long;
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.format = reader.uint32();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.chunk = reader.uint32();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1951,28 +1951,28 @@ export const RequestApplySnapshotChunk = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.index = reader.uint32();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.chunk = reader.bytes();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.sender = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2060,63 +2060,63 @@ export const RequestPrepareProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.maxTxBytes = reader.int64() as Long;
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.txs.push(reader.bytes());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.localLastCommit = ExtendedCommitInfo.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.misbehavior.push(Misbehavior.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.time = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.nextValidatorsHash = reader.bytes();
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.proposerAddress = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2243,63 +2243,63 @@ export const RequestProcessProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.txs.push(reader.bytes());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.proposedLastCommit = CommitInfo.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.misbehavior.push(Misbehavior.decode(reader, reader.uint32()));
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.hash = reader.bytes();
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.time = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.nextValidatorsHash = reader.bytes();
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.proposerAddress = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2461,126 +2461,126 @@ export const Response = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.exception = ResponseException.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.echo = ResponseEcho.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.flush = ResponseFlush.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.info = ResponseInfo.decode(reader, reader.uint32());
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.initChain = ResponseInitChain.decode(reader, reader.uint32());
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.query = ResponseQuery.decode(reader, reader.uint32());
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.beginBlock = ResponseBeginBlock.decode(reader, reader.uint32());
           continue;
         case 9:
-          if (tag !== 74) {
+          if (tag != 74) {
             break;
           }
 
           message.checkTx = ResponseCheckTx.decode(reader, reader.uint32());
           continue;
         case 10:
-          if (tag !== 82) {
+          if (tag != 82) {
             break;
           }
 
           message.deliverTx = ResponseDeliverTx.decode(reader, reader.uint32());
           continue;
         case 11:
-          if (tag !== 90) {
+          if (tag != 90) {
             break;
           }
 
           message.endBlock = ResponseEndBlock.decode(reader, reader.uint32());
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag != 98) {
             break;
           }
 
           message.commit = ResponseCommit.decode(reader, reader.uint32());
           continue;
         case 13:
-          if (tag !== 106) {
+          if (tag != 106) {
             break;
           }
 
           message.listSnapshots = ResponseListSnapshots.decode(reader, reader.uint32());
           continue;
         case 14:
-          if (tag !== 114) {
+          if (tag != 114) {
             break;
           }
 
           message.offerSnapshot = ResponseOfferSnapshot.decode(reader, reader.uint32());
           continue;
         case 15:
-          if (tag !== 122) {
+          if (tag != 122) {
             break;
           }
 
           message.loadSnapshotChunk = ResponseLoadSnapshotChunk.decode(reader, reader.uint32());
           continue;
         case 16:
-          if (tag !== 130) {
+          if (tag != 130) {
             break;
           }
 
           message.applySnapshotChunk = ResponseApplySnapshotChunk.decode(reader, reader.uint32());
           continue;
         case 17:
-          if (tag !== 138) {
+          if (tag != 138) {
             break;
           }
 
           message.prepareProposal = ResponsePrepareProposal.decode(reader, reader.uint32());
           continue;
         case 18:
-          if (tag !== 146) {
+          if (tag != 146) {
             break;
           }
 
           message.processProposal = ResponseProcessProposal.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2737,14 +2737,14 @@ export const ResponseException = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.error = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2793,14 +2793,14 @@ export const ResponseEcho = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.message = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2846,7 +2846,7 @@ export const ResponseFlush = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -2911,42 +2911,42 @@ export const ResponseInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.data = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.version = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.appVersion = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.lastBlockHeight = reader.int64() as Long;
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.lastBlockAppHash = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3022,28 +3022,28 @@ export const ResponseInitChain = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.consensusParams = ConsensusParams.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validators.push(ValidatorUpdate.decode(reader, reader.uint32()));
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.appHash = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3144,70 +3144,70 @@ export const ResponseQuery = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.code = reader.uint32();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.log = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.info = reader.string();
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.index = reader.int64() as Long;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.key = reader.bytes();
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.value = reader.bytes();
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.proofOps = ProofOps.decode(reader, reader.uint32());
           continue;
         case 9:
-          if (tag !== 72) {
+          if (tag != 72) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
         case 10:
-          if (tag !== 82) {
+          if (tag != 82) {
             break;
           }
 
           message.codespace = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3288,14 +3288,14 @@ export const ResponseBeginBlock = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.events.push(Event.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3390,84 +3390,84 @@ export const ResponseCheckTx = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.code = reader.uint32();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.log = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.info = reader.string();
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.gasWanted = reader.int64() as Long;
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.gasUsed = reader.int64() as Long;
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.events.push(Event.decode(reader, reader.uint32()));
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.codespace = reader.string();
           continue;
         case 9:
-          if (tag !== 74) {
+          if (tag != 74) {
             break;
           }
 
           message.sender = reader.string();
           continue;
         case 10:
-          if (tag !== 80) {
+          if (tag != 80) {
             break;
           }
 
           message.priority = reader.int64() as Long;
           continue;
         case 11:
-          if (tag !== 90) {
+          if (tag != 90) {
             break;
           }
 
           message.mempoolError = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3589,63 +3589,63 @@ export const ResponseDeliverTx = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.code = reader.uint32();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.log = reader.string();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.info = reader.string();
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.gasWanted = reader.int64() as Long;
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.gasUsed = reader.int64() as Long;
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.events.push(Event.decode(reader, reader.uint32()));
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.codespace = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3732,28 +3732,28 @@ export const ResponseEndBlock = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.validatorUpdates.push(ValidatorUpdate.decode(reader, reader.uint32()));
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.consensusParamUpdates = ConsensusParams.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.events.push(Event.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3830,21 +3830,21 @@ export const ResponseCommit = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.retainHeight = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3901,14 +3901,14 @@ export const ResponseListSnapshots = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.snapshots.push(Snapshot.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -3963,14 +3963,14 @@ export const ResponseOfferSnapshot = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.result = reader.int32() as any;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4019,14 +4019,14 @@ export const ResponseLoadSnapshotChunk = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.chunk = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4084,20 +4084,19 @@ export const ResponseApplySnapshotChunk = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.result = reader.int32() as any;
           continue;
         case 2:
-          if (tag === 16) {
+          if (tag == 16) {
             message.refetchChunks.push(reader.uint32());
-
             continue;
           }
 
-          if (tag === 18) {
+          if (tag == 18) {
             const end2 = reader.uint32() + reader.pos;
             while (reader.pos < end2) {
               message.refetchChunks.push(reader.uint32());
@@ -4108,14 +4107,14 @@ export const ResponseApplySnapshotChunk = {
 
           break;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.rejectSenders.push(reader.string());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4180,14 +4179,14 @@ export const ResponsePrepareProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.txs.push(reader.bytes());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4240,14 +4239,14 @@ export const ResponseProcessProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.status = reader.int32() as any;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4299,21 +4298,21 @@ export const CommitInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.round = reader.int32();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.votes.push(VoteInfo.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4374,21 +4373,21 @@ export const ExtendedCommitInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.round = reader.int32();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.votes.push(ExtendedVoteInfo.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4449,21 +4448,21 @@ export const Event = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.type = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.attributes.push(EventAttribute.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4529,28 +4528,28 @@ export const EventAttribute = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.key = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.value = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.index = reader.bool();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4616,35 +4615,35 @@ export const TxResult = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.index = reader.uint32();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.tx = reader.bytes();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.result = ResponseDeliverTx.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4712,21 +4711,21 @@ export const Validator = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.address = reader.bytes();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.power = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4784,21 +4783,21 @@ export const ValidatorUpdate = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.pubKey = PublicKey.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.power = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4857,21 +4856,21 @@ export const VoteInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.validator = Validator.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.signedLastBlock = reader.bool();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -4934,28 +4933,28 @@ export const ExtendedVoteInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.validator = Validator.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.signedLastBlock = reader.bool();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.voteExtension = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -5030,42 +5029,42 @@ export const Misbehavior = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.type = reader.int32() as any;
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.validator = Validator.decode(reader, reader.uint32());
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.height = reader.int64() as Long;
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.time = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.totalVotingPower = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -5148,42 +5147,42 @@ export const Snapshot = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 8) {
+          if (tag != 8) {
             break;
           }
 
           message.height = reader.uint64() as Long;
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.format = reader.uint32();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.chunks = reader.uint32();
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.hash = reader.bytes();
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.metadata = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -5436,8 +5435,8 @@ function toTimestamp(date: Date): Timestamp {
 }
 
 function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
+  let millis = t.seconds.toNumber() * 1_000;
+  millis += t.nanos / 1_000_000;
   return new Date(millis);
 }
 

@@ -18,9 +18,9 @@ const grpc_web_1 = require("@improbable-eng/grpc-web");
 const relay_pb_1 = require("../grpc_web_services/pairing/relay_pb");
 const relay_pb_service_1 = require("../grpc_web_services/pairing/relay_pb_service");
 const browser_1 = __importDefault(require("../util/browser"));
+const browserAllowInsecure_1 = __importDefault(require("../util/browserAllowInsecure"));
 class Relayer {
-    constructor(chainID, privKey, lavaChainId, secure, badge) {
-        this.prefix = "http";
+    constructor(chainID, privKey, lavaChainId, secure, allowInsecureTransport, badge) {
         this.byteArrayToString = (byteArray) => {
             let output = "";
             for (let i = 0; i < byteArray.length; i++) {
@@ -49,9 +49,8 @@ class Relayer {
         this.chainID = chainID;
         this.privKey = privKey;
         this.lavaChainId = lavaChainId;
-        if (secure) {
-            this.prefix = "https";
-        }
+        this.prefix = secure ? "https" : "http";
+        this.allowInsecureTransport = allowInsecureTransport !== null && allowInsecureTransport !== void 0 ? allowInsecureTransport : false;
         this.badge = badge;
     }
     // when an epoch changes we need to update the badge
@@ -76,7 +75,7 @@ class Relayer {
             requestPrivateData.setConnectionType(connectionType);
             requestPrivateData.setApiUrl(url);
             requestPrivateData.setData(enc.encode(data));
-            requestPrivateData.setRequestBlock(0);
+            requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
             requestPrivateData.setApiInterface(apiInterface);
             requestPrivateData.setSalt(consumerSession.getNewSalt());
             const contentHash = this.calculateContentHashForRelayData(requestPrivateData);
@@ -107,7 +106,9 @@ class Relayer {
                 grpc_web_1.grpc.invoke(relay_pb_service_1.Relayer.Relay, {
                     request: request,
                     host: this.prefix + "://" + consumerSession.Endpoint.Addr,
-                    transport: browser_1.default,
+                    transport: this.allowInsecureTransport
+                        ? browserAllowInsecure_1.default // if allow insecure we use a transport with rejectUnauthorized disabled
+                        : browser_1.default,
                     onMessage: (message) => {
                         resolve(message);
                     },

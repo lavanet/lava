@@ -37,8 +37,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -436,8 +437,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -455,8 +457,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -474,8 +477,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -489,8 +493,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -578,15 +583,16 @@ export declare const GenesisState: {
                 } & { [K_7 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
                 endpoints?: ({
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] & ({
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 } & {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | (Long & {
                         high: number;
                         low: number;
@@ -659,10 +665,13 @@ export declare const GenesisState: {
                         toUnsigned: () => Long;
                         xor: (other: string | number | Long) => Long;
                     } & { [K_8 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-                } & { [K_9 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_10 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"], keyof {
+                    addons?: (string[] & string[] & { [K_9 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                    apiInterfaces?: (string[] & string[] & { [K_10 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+                } & { [K_11 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_12 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["endpoints"], keyof {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[]>]: never; }) | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
@@ -735,10 +744,10 @@ export declare const GenesisState: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_11 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                } & { [K_13 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
                 chain?: string | undefined;
                 moniker?: string | undefined;
-            } & { [K_12 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number], keyof import("./stake_entry").StakeEntry>]: never; })[] & { [K_13 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"], keyof {
+            } & { [K_14 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"][number], keyof import("./stake_entry").StakeEntry>]: never; })[] & { [K_15 in Exclude<keyof I["stakeStorageList"][number]["stakeEntries"], keyof {
                 stake?: {
                     denom?: string | undefined;
                     amount?: string | undefined;
@@ -747,15 +756,16 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
                 moniker?: string | undefined;
             }[]>]: never; }) | undefined;
             epochBlockHash?: Uint8Array | undefined;
-        } & { [K_14 in Exclude<keyof I["stakeStorageList"][number], keyof StakeStorage>]: never; })[] & { [K_15 in Exclude<keyof I["stakeStorageList"], keyof {
+        } & { [K_16 in Exclude<keyof I["stakeStorageList"][number], keyof StakeStorage>]: never; })[] & { [K_17 in Exclude<keyof I["stakeStorageList"], keyof {
             index?: string | undefined;
             stakeEntries?: {
                 stake?: {
@@ -766,8 +776,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -851,7 +862,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_16 in Exclude<keyof I["epochDetails"]["startBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I["epochDetails"]["startBlock"], keyof Long>]: never; }) | undefined;
             earliestStart?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -923,7 +934,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_17 in Exclude<keyof I["epochDetails"]["earliestStart"], keyof Long>]: never; }) | undefined;
+            } & { [K_19 in Exclude<keyof I["epochDetails"]["earliestStart"], keyof Long>]: never; }) | undefined;
             deletedEpochs?: ((string | number | Long)[] & (string | number | (Long & {
                 high: number;
                 low: number;
@@ -995,8 +1006,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_18 in Exclude<keyof I["epochDetails"]["deletedEpochs"][number], keyof Long>]: never; }))[] & { [K_19 in Exclude<keyof I["epochDetails"]["deletedEpochs"], keyof (string | number | Long)[]>]: never; }) | undefined;
-        } & { [K_20 in Exclude<keyof I["epochDetails"], keyof EpochDetails>]: never; }) | undefined;
+            } & { [K_20 in Exclude<keyof I["epochDetails"]["deletedEpochs"][number], keyof Long>]: never; }))[] & { [K_21 in Exclude<keyof I["epochDetails"]["deletedEpochs"], keyof (string | number | Long)[]>]: never; }) | undefined;
+        } & { [K_22 in Exclude<keyof I["epochDetails"], keyof EpochDetails>]: never; }) | undefined;
         fixatedParamsList?: ({
             index?: string | undefined;
             parameter?: Uint8Array | undefined;
@@ -1079,13 +1090,13 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_21 in Exclude<keyof I["fixatedParamsList"][number]["fixationBlock"], keyof Long>]: never; }) | undefined;
-        } & { [K_22 in Exclude<keyof I["fixatedParamsList"][number], keyof FixatedParams>]: never; })[] & { [K_23 in Exclude<keyof I["fixatedParamsList"], keyof {
+            } & { [K_23 in Exclude<keyof I["fixatedParamsList"][number]["fixationBlock"], keyof Long>]: never; }) | undefined;
+        } & { [K_24 in Exclude<keyof I["fixatedParamsList"][number], keyof FixatedParams>]: never; })[] & { [K_25 in Exclude<keyof I["fixatedParamsList"], keyof {
             index?: string | undefined;
             parameter?: Uint8Array | undefined;
             fixationBlock?: string | number | Long | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_24 in Exclude<keyof I, keyof GenesisState>]: never; }>(base?: I | undefined): GenesisState;
+    } & { [K_26 in Exclude<keyof I, keyof GenesisState>]: never; }>(base?: I | undefined): GenesisState;
     fromPartial<I_1 extends {
         params?: {
             unstakeHoldBlocks?: string | number | Long | undefined;
@@ -1105,8 +1116,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -1203,7 +1215,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_25 in Exclude<keyof I_1["params"]["unstakeHoldBlocks"], keyof Long>]: never; }) | undefined;
+            } & { [K_27 in Exclude<keyof I_1["params"]["unstakeHoldBlocks"], keyof Long>]: never; }) | undefined;
             epochBlocks?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1275,7 +1287,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_26 in Exclude<keyof I_1["params"]["epochBlocks"], keyof Long>]: never; }) | undefined;
+            } & { [K_28 in Exclude<keyof I_1["params"]["epochBlocks"], keyof Long>]: never; }) | undefined;
             epochsToSave?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1347,7 +1359,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_27 in Exclude<keyof I_1["params"]["epochsToSave"], keyof Long>]: never; }) | undefined;
+            } & { [K_29 in Exclude<keyof I_1["params"]["epochsToSave"], keyof Long>]: never; }) | undefined;
             latestParamChange?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1419,7 +1431,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_28 in Exclude<keyof I_1["params"]["latestParamChange"], keyof Long>]: never; }) | undefined;
+            } & { [K_30 in Exclude<keyof I_1["params"]["latestParamChange"], keyof Long>]: never; }) | undefined;
             unstakeHoldBlocksStatic?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1491,8 +1503,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_29 in Exclude<keyof I_1["params"]["unstakeHoldBlocksStatic"], keyof Long>]: never; }) | undefined;
-        } & { [K_30 in Exclude<keyof I_1["params"], keyof Params>]: never; }) | undefined;
+            } & { [K_31 in Exclude<keyof I_1["params"]["unstakeHoldBlocksStatic"], keyof Long>]: never; }) | undefined;
+        } & { [K_32 in Exclude<keyof I_1["params"], keyof Params>]: never; }) | undefined;
         stakeStorageList?: ({
             index?: string | undefined;
             stakeEntries?: {
@@ -1504,8 +1516,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -1523,8 +1536,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -1542,8 +1556,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -1557,8 +1572,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -1570,7 +1586,7 @@ export declare const GenesisState: {
                 } & {
                     denom?: string | undefined;
                     amount?: string | undefined;
-                } & { [K_31 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
+                } & { [K_33 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["stake"], keyof import("../cosmos/base/v1beta1/coin").Coin>]: never; }) | undefined;
                 address?: string | undefined;
                 stakeAppliedBlock?: string | number | (Long & {
                     high: number;
@@ -1643,18 +1659,19 @@ export declare const GenesisState: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_32 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
+                } & { [K_34 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["stakeAppliedBlock"], keyof Long>]: never; }) | undefined;
                 endpoints?: ({
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] & ({
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 } & {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | (Long & {
                         high: number;
                         low: number;
@@ -1726,11 +1743,14 @@ export declare const GenesisState: {
                         toString: (radix?: number | undefined) => string;
                         toUnsigned: () => Long;
                         xor: (other: string | number | Long) => Long;
-                    } & { [K_33 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
-                } & { [K_34 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_35 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"], keyof {
+                    } & { [K_35 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                    addons?: (string[] & string[] & { [K_36 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["addons"], keyof string[]>]: never; }) | undefined;
+                    apiInterfaces?: (string[] & string[] & { [K_37 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number]["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+                } & { [K_38 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"][number], keyof import("./endpoint").Endpoint>]: never; })[] & { [K_39 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["endpoints"], keyof {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[]>]: never; }) | undefined;
                 geolocation?: string | number | (Long & {
                     high: number;
@@ -1803,10 +1823,10 @@ export declare const GenesisState: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_36 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
+                } & { [K_40 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number]["geolocation"], keyof Long>]: never; }) | undefined;
                 chain?: string | undefined;
                 moniker?: string | undefined;
-            } & { [K_37 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number], keyof import("./stake_entry").StakeEntry>]: never; })[] & { [K_38 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"], keyof {
+            } & { [K_41 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"][number], keyof import("./stake_entry").StakeEntry>]: never; })[] & { [K_42 in Exclude<keyof I_1["stakeStorageList"][number]["stakeEntries"], keyof {
                 stake?: {
                     denom?: string | undefined;
                     amount?: string | undefined;
@@ -1815,15 +1835,16 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
                 moniker?: string | undefined;
             }[]>]: never; }) | undefined;
             epochBlockHash?: Uint8Array | undefined;
-        } & { [K_39 in Exclude<keyof I_1["stakeStorageList"][number], keyof StakeStorage>]: never; })[] & { [K_40 in Exclude<keyof I_1["stakeStorageList"], keyof {
+        } & { [K_43 in Exclude<keyof I_1["stakeStorageList"][number], keyof StakeStorage>]: never; })[] & { [K_44 in Exclude<keyof I_1["stakeStorageList"], keyof {
             index?: string | undefined;
             stakeEntries?: {
                 stake?: {
@@ -1834,8 +1855,9 @@ export declare const GenesisState: {
                 stakeAppliedBlock?: string | number | Long | undefined;
                 endpoints?: {
                     iPPORT?: string | undefined;
-                    useType?: string | undefined;
                     geolocation?: string | number | Long | undefined;
+                    addons?: string[] | undefined;
+                    apiInterfaces?: string[] | undefined;
                 }[] | undefined;
                 geolocation?: string | number | Long | undefined;
                 chain?: string | undefined;
@@ -1919,7 +1941,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_41 in Exclude<keyof I_1["epochDetails"]["startBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_45 in Exclude<keyof I_1["epochDetails"]["startBlock"], keyof Long>]: never; }) | undefined;
             earliestStart?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1991,7 +2013,7 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_42 in Exclude<keyof I_1["epochDetails"]["earliestStart"], keyof Long>]: never; }) | undefined;
+            } & { [K_46 in Exclude<keyof I_1["epochDetails"]["earliestStart"], keyof Long>]: never; }) | undefined;
             deletedEpochs?: ((string | number | Long)[] & (string | number | (Long & {
                 high: number;
                 low: number;
@@ -2063,8 +2085,8 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_43 in Exclude<keyof I_1["epochDetails"]["deletedEpochs"][number], keyof Long>]: never; }))[] & { [K_44 in Exclude<keyof I_1["epochDetails"]["deletedEpochs"], keyof (string | number | Long)[]>]: never; }) | undefined;
-        } & { [K_45 in Exclude<keyof I_1["epochDetails"], keyof EpochDetails>]: never; }) | undefined;
+            } & { [K_47 in Exclude<keyof I_1["epochDetails"]["deletedEpochs"][number], keyof Long>]: never; }))[] & { [K_48 in Exclude<keyof I_1["epochDetails"]["deletedEpochs"], keyof (string | number | Long)[]>]: never; }) | undefined;
+        } & { [K_49 in Exclude<keyof I_1["epochDetails"], keyof EpochDetails>]: never; }) | undefined;
         fixatedParamsList?: ({
             index?: string | undefined;
             parameter?: Uint8Array | undefined;
@@ -2147,13 +2169,13 @@ export declare const GenesisState: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_46 in Exclude<keyof I_1["fixatedParamsList"][number]["fixationBlock"], keyof Long>]: never; }) | undefined;
-        } & { [K_47 in Exclude<keyof I_1["fixatedParamsList"][number], keyof FixatedParams>]: never; })[] & { [K_48 in Exclude<keyof I_1["fixatedParamsList"], keyof {
+            } & { [K_50 in Exclude<keyof I_1["fixatedParamsList"][number]["fixationBlock"], keyof Long>]: never; }) | undefined;
+        } & { [K_51 in Exclude<keyof I_1["fixatedParamsList"][number], keyof FixatedParams>]: never; })[] & { [K_52 in Exclude<keyof I_1["fixatedParamsList"], keyof {
             index?: string | undefined;
             parameter?: Uint8Array | undefined;
             fixationBlock?: string | number | Long | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_49 in Exclude<keyof I_1, keyof GenesisState>]: never; }>(object: I_1): GenesisState;
+    } & { [K_53 in Exclude<keyof I_1, keyof GenesisState>]: never; }>(object: I_1): GenesisState;
 };
 declare type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 export declare type DeepPartial<T> = T extends Builtin ? T : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : T extends {} ? {

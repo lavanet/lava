@@ -17,6 +17,7 @@ export interface RelaySession {
     lavaChainId: string;
     sig: Uint8Array;
     badge?: Badge;
+    qosExcellenceReport?: QualityOfServiceReport;
 }
 export interface Badge {
     cuAllocation: Long;
@@ -34,6 +35,7 @@ export interface RelayPrivateData {
     apiInterface: string;
     salt: Uint8Array;
     metadata: Metadata[];
+    addon: string[];
 }
 export interface Metadata {
     name: string;
@@ -47,7 +49,6 @@ export interface RelayReply {
     data: Uint8Array;
     /** sign the data hash+query hash+nonce */
     sig: Uint8Array;
-    nonce: number;
     latestBlock: Long;
     finalizedBlocksHashes: Uint8Array;
     /** sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num */
@@ -86,6 +87,11 @@ export declare const RelaySession: {
             address?: string | undefined;
             lavaChainId?: string | undefined;
             projectSig?: Uint8Array | undefined;
+        } | undefined;
+        qosExcellenceReport?: {
+            latency?: string | undefined;
+            availability?: string | undefined;
+            sync?: string | undefined;
         } | undefined;
     } & {
         specId?: string | undefined;
@@ -546,7 +552,16 @@ export declare const RelaySession: {
             lavaChainId?: string | undefined;
             projectSig?: Uint8Array | undefined;
         } & { [K_7 in Exclude<keyof I["badge"], keyof Badge>]: never; }) | undefined;
-    } & { [K_8 in Exclude<keyof I, keyof RelaySession>]: never; }>(base?: I | undefined): RelaySession;
+        qosExcellenceReport?: ({
+            latency?: string | undefined;
+            availability?: string | undefined;
+            sync?: string | undefined;
+        } & {
+            latency?: string | undefined;
+            availability?: string | undefined;
+            sync?: string | undefined;
+        } & { [K_8 in Exclude<keyof I["qosExcellenceReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
+    } & { [K_9 in Exclude<keyof I, keyof RelaySession>]: never; }>(base?: I | undefined): RelaySession;
     fromPartial<I_1 extends {
         specId?: string | undefined;
         contentHash?: Uint8Array | undefined;
@@ -569,6 +584,11 @@ export declare const RelaySession: {
             address?: string | undefined;
             lavaChainId?: string | undefined;
             projectSig?: Uint8Array | undefined;
+        } | undefined;
+        qosExcellenceReport?: {
+            latency?: string | undefined;
+            availability?: string | undefined;
+            sync?: string | undefined;
         } | undefined;
     } & {
         specId?: string | undefined;
@@ -644,7 +664,7 @@ export declare const RelaySession: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_9 in Exclude<keyof I_1["sessionId"], keyof Long>]: never; }) | undefined;
+        } & { [K_10 in Exclude<keyof I_1["sessionId"], keyof Long>]: never; }) | undefined;
         cuSum?: string | number | (Long & {
             high: number;
             low: number;
@@ -716,7 +736,7 @@ export declare const RelaySession: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_10 in Exclude<keyof I_1["cuSum"], keyof Long>]: never; }) | undefined;
+        } & { [K_11 in Exclude<keyof I_1["cuSum"], keyof Long>]: never; }) | undefined;
         provider?: string | undefined;
         relayNum?: string | number | (Long & {
             high: number;
@@ -789,7 +809,7 @@ export declare const RelaySession: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_11 in Exclude<keyof I_1["relayNum"], keyof Long>]: never; }) | undefined;
+        } & { [K_12 in Exclude<keyof I_1["relayNum"], keyof Long>]: never; }) | undefined;
         qosReport?: ({
             latency?: string | undefined;
             availability?: string | undefined;
@@ -798,7 +818,7 @@ export declare const RelaySession: {
             latency?: string | undefined;
             availability?: string | undefined;
             sync?: string | undefined;
-        } & { [K_12 in Exclude<keyof I_1["qosReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
+        } & { [K_13 in Exclude<keyof I_1["qosReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
         epoch?: string | number | (Long & {
             high: number;
             low: number;
@@ -870,7 +890,7 @@ export declare const RelaySession: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_13 in Exclude<keyof I_1["epoch"], keyof Long>]: never; }) | undefined;
+        } & { [K_14 in Exclude<keyof I_1["epoch"], keyof Long>]: never; }) | undefined;
         unresponsiveProviders?: Uint8Array | undefined;
         lavaChainId?: string | undefined;
         sig?: Uint8Array | undefined;
@@ -952,7 +972,7 @@ export declare const RelaySession: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
+            } & { [K_15 in Exclude<keyof I_1["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
             epoch?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -1024,12 +1044,21 @@ export declare const RelaySession: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_15 in Exclude<keyof I_1["badge"]["epoch"], keyof Long>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["badge"]["epoch"], keyof Long>]: never; }) | undefined;
             address?: string | undefined;
             lavaChainId?: string | undefined;
             projectSig?: Uint8Array | undefined;
-        } & { [K_16 in Exclude<keyof I_1["badge"], keyof Badge>]: never; }) | undefined;
-    } & { [K_17 in Exclude<keyof I_1, keyof RelaySession>]: never; }>(object: I_1): RelaySession;
+        } & { [K_17 in Exclude<keyof I_1["badge"], keyof Badge>]: never; }) | undefined;
+        qosExcellenceReport?: ({
+            latency?: string | undefined;
+            availability?: string | undefined;
+            sync?: string | undefined;
+        } & {
+            latency?: string | undefined;
+            availability?: string | undefined;
+            sync?: string | undefined;
+        } & { [K_18 in Exclude<keyof I_1["qosExcellenceReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
+    } & { [K_19 in Exclude<keyof I_1, keyof RelaySession>]: never; }>(object: I_1): RelaySession;
 };
 export declare const Badge: {
     encode(message: Badge, writer?: _m0.Writer): _m0.Writer;
@@ -1363,6 +1392,7 @@ export declare const RelayPrivateData: {
             name?: string | undefined;
             value?: string | undefined;
         }[] | undefined;
+        addon?: string[] | undefined;
     } & {
         connectionType?: string | undefined;
         apiUrl?: string | undefined;
@@ -1454,7 +1484,8 @@ export declare const RelayPrivateData: {
             name?: string | undefined;
             value?: string | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_3 in Exclude<keyof I, keyof RelayPrivateData>]: never; }>(base?: I | undefined): RelayPrivateData;
+        addon?: (string[] & string[] & { [K_3 in Exclude<keyof I["addon"], keyof string[]>]: never; }) | undefined;
+    } & { [K_4 in Exclude<keyof I, keyof RelayPrivateData>]: never; }>(base?: I | undefined): RelayPrivateData;
     fromPartial<I_1 extends {
         connectionType?: string | undefined;
         apiUrl?: string | undefined;
@@ -1466,6 +1497,7 @@ export declare const RelayPrivateData: {
             name?: string | undefined;
             value?: string | undefined;
         }[] | undefined;
+        addon?: string[] | undefined;
     } & {
         connectionType?: string | undefined;
         apiUrl?: string | undefined;
@@ -1541,7 +1573,7 @@ export declare const RelayPrivateData: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_4 in Exclude<keyof I_1["requestBlock"], keyof Long>]: never; }) | undefined;
+        } & { [K_5 in Exclude<keyof I_1["requestBlock"], keyof Long>]: never; }) | undefined;
         apiInterface?: string | undefined;
         salt?: Uint8Array | undefined;
         metadata?: ({
@@ -1553,11 +1585,12 @@ export declare const RelayPrivateData: {
         } & {
             name?: string | undefined;
             value?: string | undefined;
-        } & { [K_5 in Exclude<keyof I_1["metadata"][number], keyof Metadata>]: never; })[] & { [K_6 in Exclude<keyof I_1["metadata"], keyof {
+        } & { [K_6 in Exclude<keyof I_1["metadata"][number], keyof Metadata>]: never; })[] & { [K_7 in Exclude<keyof I_1["metadata"], keyof {
             name?: string | undefined;
             value?: string | undefined;
         }[]>]: never; }) | undefined;
-    } & { [K_7 in Exclude<keyof I_1, keyof RelayPrivateData>]: never; }>(object: I_1): RelayPrivateData;
+        addon?: (string[] & string[] & { [K_8 in Exclude<keyof I_1["addon"], keyof string[]>]: never; }) | undefined;
+    } & { [K_9 in Exclude<keyof I_1, keyof RelayPrivateData>]: never; }>(object: I_1): RelayPrivateData;
 };
 export declare const Metadata: {
     encode(message: Metadata, writer?: _m0.Writer): _m0.Writer;
@@ -1608,6 +1641,11 @@ export declare const RelayRequest: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         } | undefined;
         relayData?: {
             connectionType?: string | undefined;
@@ -1620,6 +1658,7 @@ export declare const RelayRequest: {
                 name?: string | undefined;
                 value?: string | undefined;
             }[] | undefined;
+            addon?: string[] | undefined;
         } | undefined;
     } & {
         relaySession?: ({
@@ -1644,6 +1683,11 @@ export declare const RelayRequest: {
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
+            } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
             } | undefined;
         } & {
             specId?: string | undefined;
@@ -2104,7 +2148,16 @@ export declare const RelayRequest: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } & { [K_7 in Exclude<keyof I["relaySession"]["badge"], keyof Badge>]: never; }) | undefined;
-        } & { [K_8 in Exclude<keyof I["relaySession"], keyof RelaySession>]: never; }) | undefined;
+            qosExcellenceReport?: ({
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & { [K_8 in Exclude<keyof I["relaySession"]["qosExcellenceReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
+        } & { [K_9 in Exclude<keyof I["relaySession"], keyof RelaySession>]: never; }) | undefined;
         relayData?: ({
             connectionType?: string | undefined;
             apiUrl?: string | undefined;
@@ -2116,6 +2169,7 @@ export declare const RelayRequest: {
                 name?: string | undefined;
                 value?: string | undefined;
             }[] | undefined;
+            addon?: string[] | undefined;
         } & {
             connectionType?: string | undefined;
             apiUrl?: string | undefined;
@@ -2191,7 +2245,7 @@ export declare const RelayRequest: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_9 in Exclude<keyof I["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_10 in Exclude<keyof I["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
             apiInterface?: string | undefined;
             salt?: Uint8Array | undefined;
             metadata?: ({
@@ -2203,12 +2257,13 @@ export declare const RelayRequest: {
             } & {
                 name?: string | undefined;
                 value?: string | undefined;
-            } & { [K_10 in Exclude<keyof I["relayData"]["metadata"][number], keyof Metadata>]: never; })[] & { [K_11 in Exclude<keyof I["relayData"]["metadata"], keyof {
+            } & { [K_11 in Exclude<keyof I["relayData"]["metadata"][number], keyof Metadata>]: never; })[] & { [K_12 in Exclude<keyof I["relayData"]["metadata"], keyof {
                 name?: string | undefined;
                 value?: string | undefined;
             }[]>]: never; }) | undefined;
-        } & { [K_12 in Exclude<keyof I["relayData"], keyof RelayPrivateData>]: never; }) | undefined;
-    } & { [K_13 in Exclude<keyof I, keyof RelayRequest>]: never; }>(base?: I | undefined): RelayRequest;
+            addon?: (string[] & string[] & { [K_13 in Exclude<keyof I["relayData"]["addon"], keyof string[]>]: never; }) | undefined;
+        } & { [K_14 in Exclude<keyof I["relayData"], keyof RelayPrivateData>]: never; }) | undefined;
+    } & { [K_15 in Exclude<keyof I, keyof RelayRequest>]: never; }>(base?: I | undefined): RelayRequest;
     fromPartial<I_1 extends {
         relaySession?: {
             specId?: string | undefined;
@@ -2233,6 +2288,11 @@ export declare const RelayRequest: {
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
             } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } | undefined;
         } | undefined;
         relayData?: {
             connectionType?: string | undefined;
@@ -2245,6 +2305,7 @@ export declare const RelayRequest: {
                 name?: string | undefined;
                 value?: string | undefined;
             }[] | undefined;
+            addon?: string[] | undefined;
         } | undefined;
     } & {
         relaySession?: ({
@@ -2269,6 +2330,11 @@ export declare const RelayRequest: {
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
+            } | undefined;
+            qosExcellenceReport?: {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
             } | undefined;
         } & {
             specId?: string | undefined;
@@ -2344,7 +2410,7 @@ export declare const RelayRequest: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_14 in Exclude<keyof I_1["relaySession"]["sessionId"], keyof Long>]: never; }) | undefined;
+            } & { [K_16 in Exclude<keyof I_1["relaySession"]["sessionId"], keyof Long>]: never; }) | undefined;
             cuSum?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -2416,7 +2482,7 @@ export declare const RelayRequest: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_15 in Exclude<keyof I_1["relaySession"]["cuSum"], keyof Long>]: never; }) | undefined;
+            } & { [K_17 in Exclude<keyof I_1["relaySession"]["cuSum"], keyof Long>]: never; }) | undefined;
             provider?: string | undefined;
             relayNum?: string | number | (Long & {
                 high: number;
@@ -2489,7 +2555,7 @@ export declare const RelayRequest: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_16 in Exclude<keyof I_1["relaySession"]["relayNum"], keyof Long>]: never; }) | undefined;
+            } & { [K_18 in Exclude<keyof I_1["relaySession"]["relayNum"], keyof Long>]: never; }) | undefined;
             qosReport?: ({
                 latency?: string | undefined;
                 availability?: string | undefined;
@@ -2498,7 +2564,7 @@ export declare const RelayRequest: {
                 latency?: string | undefined;
                 availability?: string | undefined;
                 sync?: string | undefined;
-            } & { [K_17 in Exclude<keyof I_1["relaySession"]["qosReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
+            } & { [K_19 in Exclude<keyof I_1["relaySession"]["qosReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
             epoch?: string | number | (Long & {
                 high: number;
                 low: number;
@@ -2570,7 +2636,7 @@ export declare const RelayRequest: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_18 in Exclude<keyof I_1["relaySession"]["epoch"], keyof Long>]: never; }) | undefined;
+            } & { [K_20 in Exclude<keyof I_1["relaySession"]["epoch"], keyof Long>]: never; }) | undefined;
             unresponsiveProviders?: Uint8Array | undefined;
             lavaChainId?: string | undefined;
             sig?: Uint8Array | undefined;
@@ -2652,7 +2718,7 @@ export declare const RelayRequest: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_19 in Exclude<keyof I_1["relaySession"]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
+                } & { [K_21 in Exclude<keyof I_1["relaySession"]["badge"]["cuAllocation"], keyof Long>]: never; }) | undefined;
                 epoch?: string | number | (Long & {
                     high: number;
                     low: number;
@@ -2724,12 +2790,21 @@ export declare const RelayRequest: {
                     toString: (radix?: number | undefined) => string;
                     toUnsigned: () => Long;
                     xor: (other: string | number | Long) => Long;
-                } & { [K_20 in Exclude<keyof I_1["relaySession"]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
+                } & { [K_22 in Exclude<keyof I_1["relaySession"]["badge"]["epoch"], keyof Long>]: never; }) | undefined;
                 address?: string | undefined;
                 lavaChainId?: string | undefined;
                 projectSig?: Uint8Array | undefined;
-            } & { [K_21 in Exclude<keyof I_1["relaySession"]["badge"], keyof Badge>]: never; }) | undefined;
-        } & { [K_22 in Exclude<keyof I_1["relaySession"], keyof RelaySession>]: never; }) | undefined;
+            } & { [K_23 in Exclude<keyof I_1["relaySession"]["badge"], keyof Badge>]: never; }) | undefined;
+            qosExcellenceReport?: ({
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & {
+                latency?: string | undefined;
+                availability?: string | undefined;
+                sync?: string | undefined;
+            } & { [K_24 in Exclude<keyof I_1["relaySession"]["qosExcellenceReport"], keyof QualityOfServiceReport>]: never; }) | undefined;
+        } & { [K_25 in Exclude<keyof I_1["relaySession"], keyof RelaySession>]: never; }) | undefined;
         relayData?: ({
             connectionType?: string | undefined;
             apiUrl?: string | undefined;
@@ -2741,6 +2816,7 @@ export declare const RelayRequest: {
                 name?: string | undefined;
                 value?: string | undefined;
             }[] | undefined;
+            addon?: string[] | undefined;
         } & {
             connectionType?: string | undefined;
             apiUrl?: string | undefined;
@@ -2816,7 +2892,7 @@ export declare const RelayRequest: {
                 toString: (radix?: number | undefined) => string;
                 toUnsigned: () => Long;
                 xor: (other: string | number | Long) => Long;
-            } & { [K_23 in Exclude<keyof I_1["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
+            } & { [K_26 in Exclude<keyof I_1["relayData"]["requestBlock"], keyof Long>]: never; }) | undefined;
             apiInterface?: string | undefined;
             salt?: Uint8Array | undefined;
             metadata?: ({
@@ -2828,12 +2904,13 @@ export declare const RelayRequest: {
             } & {
                 name?: string | undefined;
                 value?: string | undefined;
-            } & { [K_24 in Exclude<keyof I_1["relayData"]["metadata"][number], keyof Metadata>]: never; })[] & { [K_25 in Exclude<keyof I_1["relayData"]["metadata"], keyof {
+            } & { [K_27 in Exclude<keyof I_1["relayData"]["metadata"][number], keyof Metadata>]: never; })[] & { [K_28 in Exclude<keyof I_1["relayData"]["metadata"], keyof {
                 name?: string | undefined;
                 value?: string | undefined;
             }[]>]: never; }) | undefined;
-        } & { [K_26 in Exclude<keyof I_1["relayData"], keyof RelayPrivateData>]: never; }) | undefined;
-    } & { [K_27 in Exclude<keyof I_1, keyof RelayRequest>]: never; }>(object: I_1): RelayRequest;
+            addon?: (string[] & string[] & { [K_29 in Exclude<keyof I_1["relayData"]["addon"], keyof string[]>]: never; }) | undefined;
+        } & { [K_30 in Exclude<keyof I_1["relayData"], keyof RelayPrivateData>]: never; }) | undefined;
+    } & { [K_31 in Exclude<keyof I_1, keyof RelayRequest>]: never; }>(object: I_1): RelayRequest;
 };
 export declare const RelayReply: {
     encode(message: RelayReply, writer?: _m0.Writer): _m0.Writer;
@@ -2843,7 +2920,6 @@ export declare const RelayReply: {
     create<I extends {
         data?: Uint8Array | undefined;
         sig?: Uint8Array | undefined;
-        nonce?: number | undefined;
         latestBlock?: string | number | Long | undefined;
         finalizedBlocksHashes?: Uint8Array | undefined;
         sigBlocks?: Uint8Array | undefined;
@@ -2854,7 +2930,6 @@ export declare const RelayReply: {
     } & {
         data?: Uint8Array | undefined;
         sig?: Uint8Array | undefined;
-        nonce?: number | undefined;
         latestBlock?: string | number | (Long & {
             high: number;
             low: number;
@@ -2946,7 +3021,6 @@ export declare const RelayReply: {
     fromPartial<I_1 extends {
         data?: Uint8Array | undefined;
         sig?: Uint8Array | undefined;
-        nonce?: number | undefined;
         latestBlock?: string | number | Long | undefined;
         finalizedBlocksHashes?: Uint8Array | undefined;
         sigBlocks?: Uint8Array | undefined;
@@ -2957,7 +3031,6 @@ export declare const RelayReply: {
     } & {
         data?: Uint8Array | undefined;
         sig?: Uint8Array | undefined;
-        nonce?: number | undefined;
         latestBlock?: string | number | (Long & {
             high: number;
             low: number;
