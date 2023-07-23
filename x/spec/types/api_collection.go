@@ -65,7 +65,6 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // changes in place inside the apic
 // nil merge maps means not to combine that field
 func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool) (err error) {
-
 	mergedApis := map[string]interface{}{}
 	mergedHeaders := map[string]interface{}{}
 	mergedParsers := map[string]interface{}{}
@@ -113,7 +112,6 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 		if err != nil {
 			return fmt.Errorf("merging verifications error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
-
 	}
 
 	// merge collected APIs into current apiCollection's APIs (unless overridden)

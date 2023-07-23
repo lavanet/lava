@@ -215,25 +215,30 @@ func TestSpecGetAll(t *testing.T) {
 
 // setupSpecsForSpecInheritance returns a slice of Spec according to the
 // template therein, to simulate collection of existing Spec(s) on the chain.
-func (ts *tester) setupSpecsForSpecInheritance(apis []*types.Api) {
+func (ts *tester) setupSpecsForSpecInheritance(apis []*types.Api, apisDiff []*types.Api) {
 	template := []struct {
 		name    string
 		enabled bool
 		imports []string
 		apis    []int
+		apiDiff bool
 	}{
 		{name: "disabled", enabled: false, imports: nil, apis: []int{0, 2}},
 		{name: "one-two", enabled: true, imports: nil, apis: []int{0, 2}},
 		{name: "oneX-three", enabled: true, imports: nil, apis: []int{1, 4}},
 		{name: "three-four", enabled: true, imports: nil, apis: []int{1, 3}},
-		{name: "threeX-four", enabled: true, imports: nil, apis: []int{3, 6}},
+		{name: "threeX-four", enabled: true, imports: nil, apis: []int{3, 6}, apiDiff: true},
 	}
 
 	for _, tt := range template {
+		apisToSpec := selectMockApis(apis, tt.apis)
+		if tt.apiDiff {
+			apisToSpec = selectMockApis(apisDiff, tt.apis)
+		}
 		apiCollection := &types.ApiCollection{
 			Enabled:        true,
 			CollectionData: types.CollectionData{ApiInterface: "stub"},
-			Apis:           selectMockApis(apis, tt.apis),
+			Apis:           apisToSpec,
 		}
 		spec := types.Spec{
 			Name:           tt.name,
@@ -350,7 +355,8 @@ func TestSpecWithImport(t *testing.T) {
 	ts := newTester(t)
 
 	apis := prepareMockApis(8, "")
-	ts.setupSpecsForSpecInheritance(apis)
+	apisDiff := prepareMockApis(8, "X")
+	ts.setupSpecsForSpecInheritance(apis, apisDiff)
 
 	for _, tt := range specTemplates {
 		sp := types.Spec{
