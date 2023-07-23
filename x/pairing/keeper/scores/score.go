@@ -68,7 +68,7 @@ func GetAllReqs() []ScoreReq {
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
 // TODO: this function should be changed in the future since it only supports stake reqs
-func CalcSlots(policy planstypes.Policy, minStake sdk.Int) []*PairingSlot {
+func CalcSlots(policy planstypes.Policy) []*PairingSlot {
 	// init slot array (should be as the number of providers to pair)
 	slots := make([]*PairingSlot, policy.MaxProvidersToPair)
 
