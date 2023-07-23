@@ -7,6 +7,8 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/lavanet/lava/protocol/common"
+
 	"github.com/lavanet/lava/utils"
 )
 
@@ -32,8 +34,8 @@ func (geh *genericErrorHandler) handleConnectionError(err error) error {
 }
 
 func (geh *genericErrorHandler) handleGenericErrors(ctx context.Context, nodeError error) error {
-	if ctx.Err() == context.DeadlineExceeded {
-		return utils.LavaFormatError("Provider Failed Sending Message", context.DeadlineExceeded)
+	if nodeError == context.DeadlineExceeded || ctx.Err() == context.DeadlineExceeded {
+		return utils.LavaFormatError("Provider Failed Sending Message", common.ContextDeadlineExceededError)
 	}
 	retError := geh.handleConnectionError(nodeError)
 	if retError != nil {
