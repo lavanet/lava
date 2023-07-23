@@ -39,6 +39,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -163,8 +164,8 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 }
 
 // PrepareHashData prepares the hash needed in the pseudo-random choice of providers
-func PrepareHashData(projectIndex string, chainID string, epochHash []byte) []byte {
-	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex)}, nil)
+func PrepareHashData(projectIndex string, chainID string, epochHash []byte, idx int) []byte {
+	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex), []byte(strconv.Itoa(idx))}, nil)
 }
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)

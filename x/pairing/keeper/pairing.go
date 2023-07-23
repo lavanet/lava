@@ -163,9 +163,9 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
 	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
 	indexToSkip := make(map[int]bool) // keep the indices of chosen providers to we won't pick the same providers twice (for different groups)
-	hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash)
 
-	for _, group := range slotGroups {
+	for idx, group := range slotGroups {
+		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
