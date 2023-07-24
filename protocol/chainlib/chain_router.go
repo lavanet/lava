@@ -32,12 +32,17 @@ func NewRouterKey(addons []string) RouterKey {
 	if len(addons) == 0 {
 		return sep + sep
 	}
-	sort.Strings(addons)
-	if addons[0] != "" {
-		// add support for empty addon in all routers
-		addons = append([]string{""}, addons...)
+	// make sure addons have no repetitions
+	uniqueAddons := map[string]struct{}{"": {}} // always support the empty addon
+	for _, addon := range addons {
+		uniqueAddons[addon] = struct{}{}
 	}
-	return RouterKey(sep + strings.Join(addons, sep) + sep)
+	uniqueAddonsSlice := []string{}
+	for addon := range uniqueAddons { // we are sorting this anyway so we don't have to keep order
+		uniqueAddonsSlice = append(uniqueAddonsSlice, addon)
+	}
+	sort.Strings(uniqueAddonsSlice)
+	return RouterKey(sep + strings.Join(uniqueAddonsSlice, sep) + sep)
 }
 
 func (cri *chainRouterImpl) getChainProxySupporting(addons []string) ChainProxy {

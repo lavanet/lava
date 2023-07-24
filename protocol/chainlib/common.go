@@ -83,9 +83,42 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 	return retMeatadata, overwriteRequestedBlock, ignoredMetadata
 }
 
-func (bcp *BaseChainParser) GetVerifications(addons []string) []VerificationContainer {
-	routerKey := NewRouterKey(addons)
-	return bcp.verifications[routerKey]
+func (bcp *BaseChainParser) isAddon(addon string) bool {
+	for collectionKey := range bcp.apiCollections {
+		if collectionKey.Addon == addon {
+			return true
+		}
+	}
+	return false
+}
+
+func (bcp *BaseChainParser) separateAddonsExtensions(supported []string) (addons []string, extensions []string) {
+	for _, addon := range supported {
+		if bcp.isAddon(addon) {
+			addons = append(addons, addon)
+		} else {
+			if addon == "" {
+				continue
+			}
+			extensions = append(extensions, addon)
+		}
+	}
+	return addons, extensions
+}
+
+// gets all verifications for an endpoint supporting multiple addons and extensions
+func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerifications []VerificationContainer) {
+	// addons will contains extensions and addons,
+	// extensions must exist in all verifications, addons must be split because they are separated
+	supported, extensions := bcp.separateAddonsExtensions(supported)
+	for _, addon := range supported {
+		routerKey := NewRouterKey(append(extensions, addon))
+		verifications, ok := bcp.verifications[routerKey]
+		if ok {
+			retVerifications = append(retVerifications, verifications...)
+		}
+	}
+	return
 }
 
 func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header, verifications map[RouterKey][]VerificationContainer) {

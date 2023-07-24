@@ -703,16 +703,6 @@
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [
-                        ],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0xa86a"
-                                    }
-                                ]
-                            }
                         ]
                     }
                 ]

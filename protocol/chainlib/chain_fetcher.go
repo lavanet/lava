@@ -63,27 +63,30 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatWarning("verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	parserInput, err := FormatResponseForParsing(reply, chainMessage)
-	if err != nil {
-		return err
-	}
-	parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
-	if err != nil {
-		return utils.LavaFormatWarning("Failed To Parse result", err, []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
-			{Key: "Method", Value: parsing.GetApiName()},
-			{Key: "Response", Value: string(reply.Data)},
-		}...)
-	}
+	// some verifications only want the response, and don;t care about the value
+	if verification.Value != "*" {
+		parserInput, err := FormatResponseForParsing(reply, chainMessage)
+		if err != nil {
+			return err
+		}
+		parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
+		if err != nil {
+			return utils.LavaFormatWarning("Failed To Parse result", err, []utils.Attribute{
+				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Response", Value: string(reply.Data)},
+			}...)
+		}
 
-	if parsedResult != verification.Value {
-		return utils.LavaFormatWarning("Failed verification expected and received are", err, []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
-			{Key: "Method", Value: parsing.GetApiName()},
-			{Key: "Response", Value: string(reply.Data)},
-		}...)
+		if parsedResult != verification.Value {
+			return utils.LavaFormatWarning("Failed verification expected and received are", err, []utils.Attribute{
+				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Response", Value: string(reply.Data)},
+			}...)
+		}
 	}
-
+	utils.LavaFormatInfo("Verified successfully", utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: verification.Value})
 	return nil
 }
 
