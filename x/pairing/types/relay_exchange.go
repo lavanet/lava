@@ -13,6 +13,10 @@ type RelayExchange struct {
 	Reply   RelayReply
 }
 
+func NewRelayExchange(req RelayRequest, res RelayReply) RelayExchange {
+	return RelayExchange{Request: req, Reply: res}
+}
+
 func (re RelayExchange) GetSignature() []byte {
 	return re.Reply.Sig
 }

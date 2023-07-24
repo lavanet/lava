@@ -18,10 +18,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
 	// Update signature,
-	relayExchange := pairingtypes.RelayExchange{
-		Request: request,
-		Reply:   *reply,
-	}
+	relayExchange := pairingtypes.NewRelayExchange(request, *reply)
 	sig, err := sigs.Sign(pkey, relayExchange)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed signing relay response", err,
@@ -31,13 +28,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 
 	if signDataReliability {
 		// update sig blocks signature
-		relayFinalization := pairingtypes.RelayFinalization{
-			Exchange: pairingtypes.RelayExchange{
-				Request: request,
-				Reply:   *reply,
-			},
-			Addr: consumerAddress,
-		}
+		relayFinalization := pairingtypes.NewRelayFinalization(pairingtypes.NewRelayExchange(request, *reply), consumerAddress)
 		sigBlocks, err := sigs.Sign(pkey, relayFinalization)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed signing finalization data", err,
@@ -49,10 +40,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 }
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
-	relayExchange := pairingtypes.RelayExchange{
-		Request: *relayRequest,
-		Reply:   *reply,
-	}
+	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
 	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {
 		return err
@@ -69,13 +57,7 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 }
 
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock int64, blockDistanceForfinalization uint32) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
-	relayFinalization := pairingtypes.RelayFinalization{
-		Exchange: pairingtypes.RelayExchange{
-			Request: *relayRequest,
-			Reply:   *reply,
-		},
-		Addr: consumerAcc,
-	}
+	relayFinalization := pairingtypes.NewRelayFinalization(pairingtypes.NewRelayExchange(*relayRequest, *reply), consumerAcc)
 	serverKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
 		return nil, nil, err

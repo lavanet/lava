@@ -15,6 +15,10 @@ type RelayFinalizationMetaData struct {
 	Addr     sdk.AccAddress
 }
 
+func NewRelayFinalizationMetaData(meta ReplyMetadata, req pairingtypes.RelayRequest, addr sdk.AccAddress) RelayFinalizationMetaData {
+	return RelayFinalizationMetaData{MetaData: meta, Request: req, Addr: addr}
+}
+
 func (rfm RelayFinalizationMetaData) GetSignature() []byte {
 	return rfm.MetaData.SigBlocks
 }

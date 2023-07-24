@@ -13,6 +13,10 @@ type RelayFinalization struct {
 	Addr     sdk.AccAddress
 }
 
+func NewRelayFinalization(exch RelayExchange, addr sdk.AccAddress) RelayFinalization {
+	return RelayFinalization{Exchange: exch, Addr: addr}
+}
+
 func (rf RelayFinalization) GetSignature() []byte {
 	return rf.Exchange.GetSignature()
 }

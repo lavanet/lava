@@ -10,10 +10,7 @@ func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.Re
 	if reply == nil || req == nil {
 		return nil
 	}
-	relayExchange := pairingtypes.RelayExchange{
-		Request: *req,
-		Reply:   *reply,
-	}
+	relayExchange := pairingtypes.NewRelayExchange(*req, *reply)
 	allDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
 	res := &types.ReplyMetadata{
 		HashAllDataHash:       sigs.HashMsg(allDataHash),

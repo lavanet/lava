@@ -122,20 +122,11 @@ func TestDetection(t *testing.T) {
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 			reply.Data = append(reply.Data, tt.ReplyData...)
-			relayExchange := types.RelayExchange{
-				Request: *msg.ResponseConflict.ConflictRelayData1.Request,
-				Reply:   *reply,
-			}
+			relayExchange := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply)
 			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
 			require.Nil(t, err)
 			reply.Sig = sig
-			relayFinalization := types.RelayFinalization{
-				Exchange: types.RelayExchange{
-					Request: *msg.ResponseConflict.ConflictRelayData1.Request,
-					Reply:   *reply,
-				},
-				Addr: ts.consumer.Addr,
-			}
+			relayFinalization := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply), ts.consumer.Addr)
 			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
 			require.Nil(t, err)
 			reply.SigBlocks = sigBlocks
