@@ -74,6 +74,8 @@ func findMissingFields(content interface{}) []string {
 	// Check if each expected field is present in the unmarshaled content
 	for fieldName := range expectedFields {
 		fieldValue := contentValue.FieldByName(fieldName)
+
+		// note that this check will always treat zero value fields as missing (which will make them get the declared default value)
 		if !fieldValue.IsValid() || fieldValue.IsZero() {
 			missingFields = append(missingFields, fieldName)
 		}
