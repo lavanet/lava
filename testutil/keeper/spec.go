@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -82,9 +84,10 @@ func GetASpec(specIndex string, getToTopMostPath string, ctxArg *sdk.Context, ke
 		if err != nil {
 			return spectypes.Spec{}, err
 		}
+		decoder := json.NewDecoder(bytes.NewReader(contents))
+		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 
-		err = codec.NewLegacyAmino().UnmarshalJSON(contents, &proposal)
-		if err != nil {
+		if err := decoder.Decode(&proposal); err != nil {
 			return spectypes.Spec{}, err
 		}
 
