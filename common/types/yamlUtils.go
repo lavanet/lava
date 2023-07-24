@@ -53,15 +53,15 @@ func findMissingFields(content interface{}) []string {
 	contentValue := reflect.ValueOf(content)
 	contentType := contentValue.Type()
 
-	// Ensure content is a struct or a pointer to a struct
-	if contentType.Kind() != reflect.Struct && (contentType.Kind() != reflect.Ptr || contentType.Elem().Kind() != reflect.Struct) {
-		return missingFields
-	}
-
 	// Get the type of the struct
 	if contentType.Kind() == reflect.Ptr {
 		contentType = contentType.Elem()
 		contentValue = contentValue.Elem()
+	}
+
+	// Ensure content is a struct or a pointer to a struct
+	if contentType.Kind() != reflect.Struct {
+		panic("findMissingFields was called with a non-struct type")
 	}
 
 	// Extract the expected field names from the struct

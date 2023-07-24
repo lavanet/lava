@@ -11,15 +11,11 @@ import (
 	commontypes "github.com/lavanet/lava/common/types"
 )
 
-var policyDefaultValues map[string]interface{}
-
 // init policy default values (for fields that their natural zero value is not good)
 // the values were chosen in a way that they will not influence the strictest policy calculation
-func init() {
-	policyDefaultValues = make(map[string]interface{})
-
-	policyDefaultValues["GeolocationProfile"] = uint64(Geolocation_value["GL"])
-	policyDefaultValues["MaxProvidersToPair"] = uint64(math.MaxUint64)
+var policyDefaultValues = map[string]interface{}{
+	"GeolocationProfile": uint64(Geolocation_value["GL"]),
+	"MaxProvidersToPair": uint64(math.MaxUint64),
 }
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
