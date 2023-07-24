@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	common "github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/spec/client/utils"
@@ -489,8 +489,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
-		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeProvider:              common.NewCoin(5000),
+		MinStakeClient:                common.NewCoin(5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -510,8 +510,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
-		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeProvider:              common.NewCoin(5000),
+		MinStakeClient:                common.NewCoin(5000),
 		Imports:                       []string{"parent"},
 	}
 

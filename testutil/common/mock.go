@@ -8,7 +8,7 @@ import (
 )
 
 func CreateMockSpec() spectypes.Spec {
-	specName := "mock_spec"
+	specName := "mockspec"
 	spec := spectypes.Spec{}
 	spec.Name = specName
 	spec.Index = specName

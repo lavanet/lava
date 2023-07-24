@@ -53,6 +53,11 @@ func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCI
 	if err != nil {
 		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
 	}
+
+	// Make sure the response does not have an error
+	if msg.Error != nil && msg.Result == nil {
+		return nil, utils.LavaFormatError("response is an error message", msg.Error)
+	}
 	return ParsableRPCInput{Result: msg.Result}, nil
 }
 
