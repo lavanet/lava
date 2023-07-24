@@ -66,7 +66,7 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if projectKeysFilePath != "" {
-				_, err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys, nil)
+				_, err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys, nil, false)
 				if err != nil {
 					return err
 				}

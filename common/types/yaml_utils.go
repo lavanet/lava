@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType) (missingFields []string, err error) {
+func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType, allowMissingFields bool) (missingFields []string, err error) {
 	configPath, configName := filepath.Split(filePath)
 	if configPath == "" {
 		configPath = "."
@@ -42,7 +42,10 @@ func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []E
 		return missingFields, err
 	}
 
-	missingFields = findMissingFields(content)
+	if allowMissingFields {
+		missingFields = findMissingFields(content)
+	}
+
 	return missingFields, nil
 }
 
@@ -61,7 +64,7 @@ func findMissingFields(content interface{}) []string {
 
 	// Ensure content is a struct or a pointer to a struct
 	if contentType.Kind() != reflect.Struct {
-		panic("findMissingFields was called with a non-struct type")
+		panic("findMissingFields was called with a non-struct type: " + contentType.Kind().String())
 	}
 
 	// Extract the expected field names from the struct

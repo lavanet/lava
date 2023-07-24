@@ -182,7 +182,7 @@ func ParsePolicyFromYaml(filePath string) (*Policy, error) {
 		// Add more enum hook functions for other enum types as needed
 	}
 
-	missingFields, err := commontypes.ReadYaml(filePath, "Policy", &policy, enumHooks)
+	missingFields, err := commontypes.ReadYaml(filePath, "Policy", &policy, enumHooks, true)
 	if err != nil {
 		return &policy, err
 	}
