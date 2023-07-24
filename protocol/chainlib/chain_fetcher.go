@@ -223,26 +223,20 @@ func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage Chain
 }
 
 type DummyChainFetcher struct {
-	endpoint *lavasession.RPCProviderEndpoint
+	ChainFetcher
 }
 
-func (cf *DummyChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
-	return *cf.endpoint
-}
-
+// overwrite this
 func (cf *DummyChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	return 0, nil
 }
 
+// overwrite this too
 func (cf *DummyChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	return "dummy", nil
 }
 
-func (cf *DummyChainFetcher) Validate(ctx context.Context) error {
-	return nil
-}
-
-func NewDummyChainFetcher(ctx context.Context, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
-	cf := &DummyChainFetcher{endpoint: endpoint}
+func NewVerificationsOnlyChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
+	cf := &DummyChainFetcher{ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}}
 	return cf
 }
