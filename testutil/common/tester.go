@@ -38,7 +38,7 @@ type Tester struct {
 
 const (
 	PROVIDER string = "provider"
-	CONSUMER        = "consumer"
+	CONSUMER string = "consumer"
 )
 
 func NewTester(t *testing.T) *Tester {
