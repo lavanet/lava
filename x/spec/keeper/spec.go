@@ -219,12 +219,13 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 }
 
 // returns whether a spec name is a valid spec in the consensus
-// first return value is found and active, second argument is found only
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
+// first return value is found and active, second argument is found only, third argument is the provider's type (dynamic/static)
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType types.Spec_ProvidersTypes) {
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
 		foundAndActive = spec.Enabled
+		providersType = spec.ProvidersTypes
 	}
 	return
 }

@@ -57,7 +57,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return fmt.Errorf("conflict was received outside of the allowed span, current: %d, span %d - %d", ctx.BlockHeight(), epochStart, epochStart+span)
 	}
 
-	_, err = k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
+	_, _, err = k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
 	if err != nil {
 		return err
 	}
