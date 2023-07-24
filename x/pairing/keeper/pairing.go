@@ -200,7 +200,6 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if !allowed {
 		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
-	utils.LavaFormatError("BANANABIG,", nil, utils.Attribute{Key: "chainPolicy", Value: chainPolicy}, utils.Attribute{Key: "policies", Value: policies}, utils.Attribute{Key: "policiesLen", Value: len(policies)})
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)

@@ -97,6 +97,7 @@ func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string) {
 	}
 }
 
+// csm is Rlocked
 func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string) (supportingProviderAddresses []string) {
 	for _, providerAdress := range csm.validAddresses {
 		providerEntry := csm.pairing[providerAdress]
@@ -107,11 +108,10 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string) (s
 	return supportingProviderAddresses
 }
 
-// assuming csm is locked
-func (csm *ConsumerSessionManager) GetValidAddresses(addon string) []string {
+// assuming csm is Rlocked
+func (csm *ConsumerSessionManager) getValidAddresses(addon string) (addresses []string) {
 	if csm.addonAddresses == nil || csm.addonAddresses[addon] == nil {
-		csm.RemoveAddonAddresses(addon)
-		csm.addonAddresses[addon] = csm.CalculateAddonValidAddresses(addon)
+		return csm.CalculateAddonValidAddresses(addon)
 	}
 	return csm.addonAddresses[addon]
 }
@@ -237,22 +237,15 @@ func (csm *ConsumerSessionManager) atomicReadCurrentEpoch() (epoch uint64) {
 	return atomic.LoadUint64(&csm.currentEpoch)
 }
 
-// validate if reset is needed for valid addresses list.
-func (csm *ConsumerSessionManager) shouldResetValidAddresses(addon string) (reset bool, numberOfResets uint64) {
-	csm.lock.RLock() // lock read to validate length
-	defer csm.lock.RUnlock()
-	numberOfResets = csm.numberOfResets
-	if len(csm.GetValidAddresses(addon)) == 0 {
-		reset = true
-	}
-	return
+func (csm *ConsumerSessionManager) atomicReadNumberOfResets() (resets uint64) {
+	return atomic.LoadUint64(&csm.numberOfResets)
 }
 
 // reset the valid addresses list and increase numberOfResets
 func (csm *ConsumerSessionManager) resetValidAddresses(addon string) uint64 {
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
-	if len(csm.GetValidAddresses(addon)) == 0 { // re verify it didn't change while waiting for lock.
+	if len(csm.getValidAddresses(addon)) == 0 { // re verify it didn't change while waiting for lock.
 		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil)
 		csm.setValidAddressesToDefaultValue(addon)
 		csm.numberOfResets += 1
@@ -261,10 +254,22 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string) uint64 {
 	return csm.numberOfResets
 }
 
+func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string) []string {
+	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
+	defer csm.lock.Unlock()
+	if csm.addonAddresses == nil || csm.addonAddresses[addon] == nil {
+		csm.RemoveAddonAddresses(addon)
+		csm.addonAddresses[addon] = csm.CalculateAddonValidAddresses(addon)
+	}
+	return csm.addonAddresses[addon]
+}
+
 // validating we still have providers, otherwise reset valid addresses list
+// also caches validAddresses for an addon to save on compute
 func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string) uint64 {
-	reset, numberOfResets := csm.shouldResetValidAddresses(addon)
-	if reset {
+	numberOfResets := csm.atomicReadNumberOfResets()
+	validAddresses := csm.cacheAddonAddresses(addon)
+	if len(validAddresses) == 0 {
 		numberOfResets = csm.resetValidAddresses(addon)
 	}
 	return numberOfResets
@@ -427,17 +432,17 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
 	ignoredProvidersListLength := len(ignoredProvidersList)
-	validAddressesLength := len(csm.GetValidAddresses(addon))
+	validAddressesLength := len(csm.getValidAddresses(addon))
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: csm.GetValidAddresses(addon)}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
+		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: csm.getValidAddresses(addon)}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
 		return
 	}
-	providers := csm.providerOptimizer.ChooseProvider(csm.GetValidAddresses(addon), ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+	providers := csm.providerOptimizer.ChooseProvider(csm.getValidAddresses(addon), ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
 	if debug {
 		utils.LavaFormatDebug("choosing provider",
-			utils.Attribute{Key: "validAddresses", Value: csm.GetValidAddresses(addon)},
+			utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon)},
 			utils.Attribute{Key: "ignoredProvidersList", Value: ignoredProvidersList},
 			utils.Attribute{Key: "chosenProviders", Value: providers},
 		)
@@ -445,7 +450,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 
 	// make sure we have at least 1 valid provider
 	if len(providers) == 0 || providers[0] == "" {
-		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: csm.GetValidAddresses(addon)}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
+		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: csm.getValidAddresses(addon)}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
 		return
 	}
@@ -491,7 +496,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 					utils.Attribute{Key: "pairing", Value: csm.pairing},
 					utils.Attribute{Key: "epochAtStart", Value: currentEpoch},
 					utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()},
-					utils.Attribute{Key: "validAddresses", Value: csm.GetValidAddresses(addon)},
+					utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon)},
 					utils.Attribute{Key: "wantedProviderNumber", Value: wantedProviderNumber},
 				)
 			}

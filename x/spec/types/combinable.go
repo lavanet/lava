@@ -78,6 +78,9 @@ func (h *Verification) GetEnabled() bool {
 	return true
 }
 
+// this function is used to combine combinables from the parents and the current collection and combine them into the current collection
+// it takes a map of current existing combinables, the parent combinables in mergedMap, the list of combinables from the parents, and the list of combinables in the current spec
+// toCombine and currentMap hold the same data arranged in a different set, the same for mergedMap and combineFrom
 func CombineFields[T Combinable](currentMap map[string]CurrentContainer, mergedMap map[string]interface{}, combineFrom []T, toCombine []T, allowOverwrite bool) ([]T, map[string]interface{}, error) {
 	for _, combinable := range combineFrom {
 		if !combinable.GetEnabled() {

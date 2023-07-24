@@ -610,10 +610,10 @@ func TestPairingWithAddons(t *testing.T) {
 			err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 			require.Nil(t, err)
 			time.Sleep(5 * time.Millisecond) // let probes finish
-			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.GetValidAddresses(addon))}, utils.Attribute{Key: "valid addresses", Value: csm.GetValidAddresses(addon)}, utils.Attribute{Key: "addon", Value: addon})
-			require.NotEqual(t, 0, len(csm.GetValidAddresses(addon)), "valid addresses: %#v addonAddresses %#v", csm.GetValidAddresses(addon), csm.addonAddresses)
+			utils.LavaFormatDebug("valid providers::::", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon)}, utils.Attribute{Key: "addon", Value: addon})
+			require.NotEqual(t, 0, len(csm.getValidAddresses(addon)), "valid addresses: %#v addonAddresses %#v", csm.getValidAddresses(addon), csm.addonAddresses)
 			// block all providers
-			initialProvidersLen := len(csm.GetValidAddresses(addon))
+			initialProvidersLen := len(csm.getValidAddresses(addon))
 			for i := 0; i < initialProvidersLen; i++ {
 				css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, addon) // get a session
 				require.Nil(t, err, i)
@@ -621,11 +621,11 @@ func TestPairingWithAddons(t *testing.T) {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 					require.Nil(t, err)
 				}
-				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.GetValidAddresses(addon))}, utils.Attribute{Key: "valid addresses", Value: csm.GetValidAddresses(addon)})
+				utils.LavaFormatDebug("length!", utils.Attribute{Key: "length", Value: len(csm.getValidAddresses(addon))}, utils.Attribute{Key: "valid addresses", Value: csm.getValidAddresses(addon)})
 			}
-			require.Equal(t, 0, len(csm.GetValidAddresses(addon)), csm.validAddresses)
+			require.Equal(t, 0, len(csm.getValidAddresses(addon)), csm.validAddresses)
 			if addon != "" {
-				require.NotEqual(t, csm.GetValidAddresses(addon), csm.GetValidAddresses(""))
+				require.NotEqual(t, csm.getValidAddresses(addon), csm.getValidAddresses(""))
 			}
 			css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, addon) // get a session
 			require.Nil(t, err)
