@@ -64,7 +64,7 @@ export declare class LavaSDK {
         lavaAddress: string;
         privateKey: string;
         seedPhrase: string;
-    } | undefined>;
+    }>;
     private debugPrint;
     private fetchNewBadge;
     private initLavaProviders;

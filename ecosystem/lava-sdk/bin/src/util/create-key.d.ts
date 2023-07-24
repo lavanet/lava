@@ -19,5 +19,5 @@ export declare const axiosInstance: import("axios").AxiosInstance;
 export declare const generateKey: () => Promise<GeneratedKeyType>;
 export declare function getKey(apiAccessKey: string, developerKey: string): Promise<any>;
 export declare function getKeys(apiAccessKey: string): Promise<any>;
-export declare function createDeveloperKey(publicKey: string, apiAccessKey: string): Promise<import("axios").AxiosResponse<any, any>>;
-export declare function timeout(delayMS: number): Promise<unknown>;
+export declare function createDeveloperKey(apiAccessKey: string, developerKey: string): Promise<import("axios").AxiosResponse<any, any>>;
+export declare function sleep(delayMS: number): Promise<unknown>;

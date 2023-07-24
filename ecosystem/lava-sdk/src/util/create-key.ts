@@ -83,11 +83,11 @@ export async function getKeys(apiAccessKey: string): Promise<any> {
 }
 
 export async function createDeveloperKey(
-  publicKey: string,
-  apiAccessKey: string
+  apiAccessKey: string,
+  developerKey: string
 ) {
   const keyParams: DeveloperKeyParams = {
-    projectKey: publicKey,
+    projectKey: developerKey,
     name: `SDK Generated Key-${uuid().toLowerCase()}`,
   };
   return await axiosInstance.post(`/developer-keys/`, keyParams, {
@@ -95,6 +95,6 @@ export async function createDeveloperKey(
   });
 }
 
-export function timeout(delayMS: number) {
+export function sleep(delayMS: number) {
   return new Promise((res) => setTimeout(res, delayMS));
 }

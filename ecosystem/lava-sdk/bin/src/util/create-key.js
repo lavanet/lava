@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.timeout = exports.createDeveloperKey = exports.getKeys = exports.getKey = exports.generateKey = exports.axiosInstance = exports.DeveloperKeyStatus = exports.MAX_ATTEMPTS = void 0;
+exports.sleep = exports.createDeveloperKey = exports.getKeys = exports.getKey = exports.generateKey = exports.axiosInstance = exports.DeveloperKeyStatus = exports.MAX_ATTEMPTS = void 0;
 const amino_1 = require("@cosmjs/amino");
 const crypto_1 = require("@cosmjs/crypto");
 const encoding_1 = require("@cosmjs/encoding");
@@ -68,10 +68,10 @@ function getKeys(apiAccessKey) {
     });
 }
 exports.getKeys = getKeys;
-function createDeveloperKey(publicKey, apiAccessKey) {
+function createDeveloperKey(apiAccessKey, developerKey) {
     return __awaiter(this, void 0, void 0, function* () {
         const keyParams = {
-            projectKey: publicKey,
+            projectKey: developerKey,
             name: `SDK Generated Key-${(0, uuidv4_1.uuid)().toLowerCase()}`,
         };
         return yield exports.axiosInstance.post(`/developer-keys/`, keyParams, {
@@ -80,7 +80,7 @@ function createDeveloperKey(publicKey, apiAccessKey) {
     });
 }
 exports.createDeveloperKey = createDeveloperKey;
-function timeout(delayMS) {
+function sleep(delayMS) {
     return new Promise((res) => setTimeout(res, delayMS));
 }
-exports.timeout = timeout;
+exports.sleep = sleep;

@@ -31,7 +31,7 @@ import {
   createDeveloperKey,
   generateKey,
   getKey,
-  timeout,
+  sleep,
 } from "../util/create-key";
 import axios from "axios";
 /**
@@ -175,7 +175,7 @@ export class LavaSDK {
     console.log("✅ Key was generated successfully");
 
     try {
-      await createDeveloperKey(lavaAddress, apiSecretKey);
+      await createDeveloperKey(apiSecretKey, lavaAddress);
       console.log(
         "We're syncing your key with the project. It might take a few minutes."
       );
@@ -202,7 +202,7 @@ export class LavaSDK {
           console.log("❌Error: Timeout");
           return;
         }
-        await timeout(10000);
+        await sleep(10000);
       }
     }
 

@@ -94,7 +94,7 @@ class LavaSDK {
             const { address: lavaAddress, privateHex: privateKey, mnemonicChecked: seedPhrase, } = yield (0, create_key_1.generateKey)();
             console.log("✅ Key was generated successfully");
             try {
-                yield (0, create_key_1.createDeveloperKey)(lavaAddress, apiSecretKey);
+                yield (0, create_key_1.createDeveloperKey)(apiSecretKey, lavaAddress);
                 console.log("We're syncing your key with the project. It might take a few minutes.");
             }
             catch (error) {
@@ -104,7 +104,7 @@ class LavaSDK {
                 else {
                     console.error("❌Unknown Error: ", error);
                 }
-                return;
+                // return;
             }
             let developerKeyStatus;
             let attemptsCounter = create_key_1.MAX_ATTEMPTS;
@@ -118,9 +118,8 @@ class LavaSDK {
                     attemptsCounter--;
                     if (attemptsCounter === 0) {
                         console.log("❌Error: Timeout");
-                        return;
                     }
-                    yield (0, create_key_1.timeout)(10000);
+                    yield (0, create_key_1.sleep)(10000);
                 }
             }
             console.log("✅ Key was synced successfully");
