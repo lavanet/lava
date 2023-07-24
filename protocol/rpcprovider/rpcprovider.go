@@ -162,7 +162,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
 
-			chainProxy, err := chainlib.GetChainProxy(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
+			chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
@@ -179,6 +179,20 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			chainCommonSetup := func() error {
 				chainMutexes[chainID].Lock()
 				defer chainMutexes[chainID].Unlock()
+
+				var chainFetcher chainlib.ChainFetcherIf
+				if enabled, _ := chainParser.DataReliabilityParams(); enabled {
+					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+				} else {
+					chainFetcher = chainlib.NewDummyChainFetcher(ctx, rpcProviderEndpoint)
+				}
+
+				// Fetch and validate chain id
+				err = chainFetcher.Validate(ctx)
+				if err != nil {
+					return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to fetch chain ID, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+				}
+
 				chainTrackerInf, found := stateTrackersPerChain.Load(chainID)
 				if !found {
 					blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
@@ -188,23 +202,14 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 						NewLatestCallback: recordMetricsOnNewBlock,
 					}
-					var chainFetcher chainlib.ChainFetcherIf
-					if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-						chainFetcher = chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
-					} else {
-						chainFetcher = chainlib.NewDummyChainFetcher(ctx, rpcProviderEndpoint)
-					}
+
 					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 					if err != nil {
 						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 					}
-					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
 
-					// Fetch chain id
-					err := chainFetcher.Validate(ctx)
-					if err != nil {
-						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to fetch chain ID, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-					}
+					// Any validation needs to be before we store chain tracker for given chain id
+					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
 				} else {
 					var ok bool
 					chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
@@ -224,11 +229,11 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 			providerMetrics := providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
 
-			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainProxy, chainParser)
+			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 			rpcProviderServer := &RPCProviderServer{}
-			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainProxy, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
+			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainRouter, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
 			// set up grpc listener
 			var listener *ProviderListener
 			func() {
@@ -258,7 +263,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		disabledEndpointsList = append(disabledEndpointsList, disabledEndpoint)
 	}
 	if len(disabledEndpointsList) > 0 {
-		utils.LavaFormatError(utils.FormatStringerList("RPCProvider Runnig with disabled Endpoints:", disabledEndpointsList), nil)
+		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsList), nil)
 		if len(disabledEndpointsList) == parallelJobs {
 			utils.LavaFormatFatal("all endpoints are disabled", nil)
 		}
@@ -372,6 +377,13 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			rpcProviderEndpoints, err = ParseEndpoints(viper.GetViper(), geolocation)
 			if err != nil || len(rpcProviderEndpoints) == 0 {
 				return utils.LavaFormatError("invalid endpoints definition", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(endpoints_strings, "")})
+			}
+			for _, endpoint := range rpcProviderEndpoints {
+				for _, nodeUrl := range endpoint.NodeUrls {
+					if nodeUrl.Url == "" {
+						utils.LavaFormatError("invalid endpoint definition, empty url in nodeUrl", err, utils.Attribute{Key: "endpoint", Value: endpoint})
+					}
+				}
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()

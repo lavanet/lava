@@ -9,7 +9,7 @@ export interface Subscription {
   creator: string;
   /** consumer uses the subscription */
   consumer: string;
-  /** when the subscription was created */
+  /** when the subscription was last recharged */
   block: Long;
   /** index (name) of plan */
   planIndex: string;
@@ -21,14 +21,10 @@ export interface Subscription {
   durationLeft: Long;
   /** expiry time of current month */
   monthExpiryTime: Long;
-  /** when previous month expired */
-  prevExpiryBlock: Long;
   /** CU allowance during current month */
   monthCuTotal: Long;
   /** CU remaining during current month */
   monthCuLeft: Long;
-  /** CU remaining for previous month */
-  prevCuLeft: Long;
 }
 
 function createBaseSubscription(): Subscription {
@@ -41,10 +37,8 @@ function createBaseSubscription(): Subscription {
     durationTotal: Long.UZERO,
     durationLeft: Long.UZERO,
     monthExpiryTime: Long.UZERO,
-    prevExpiryBlock: Long.UZERO,
     monthCuTotal: Long.UZERO,
     monthCuLeft: Long.UZERO,
-    prevCuLeft: Long.UZERO,
   };
 }
 
@@ -74,17 +68,11 @@ export const Subscription = {
     if (!message.monthExpiryTime.isZero()) {
       writer.uint32(64).uint64(message.monthExpiryTime);
     }
-    if (!message.prevExpiryBlock.isZero()) {
-      writer.uint32(72).uint64(message.prevExpiryBlock);
-    }
     if (!message.monthCuTotal.isZero()) {
       writer.uint32(80).uint64(message.monthCuTotal);
     }
     if (!message.monthCuLeft.isZero()) {
       writer.uint32(88).uint64(message.monthCuLeft);
-    }
-    if (!message.prevCuLeft.isZero()) {
-      writer.uint32(96).uint64(message.prevCuLeft);
     }
     return writer;
   },
@@ -97,91 +85,77 @@ export const Subscription = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.consumer = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.block = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.planIndex = reader.string();
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.planBlock = reader.uint64() as Long;
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.durationTotal = reader.uint64() as Long;
           continue;
         case 7:
-          if (tag !== 56) {
+          if (tag != 56) {
             break;
           }
 
           message.durationLeft = reader.uint64() as Long;
           continue;
         case 8:
-          if (tag !== 64) {
+          if (tag != 64) {
             break;
           }
 
           message.monthExpiryTime = reader.uint64() as Long;
           continue;
-        case 9:
-          if (tag !== 72) {
-            break;
-          }
-
-          message.prevExpiryBlock = reader.uint64() as Long;
-          continue;
         case 10:
-          if (tag !== 80) {
+          if (tag != 80) {
             break;
           }
 
           message.monthCuTotal = reader.uint64() as Long;
           continue;
         case 11:
-          if (tag !== 88) {
+          if (tag != 88) {
             break;
           }
 
           message.monthCuLeft = reader.uint64() as Long;
           continue;
-        case 12:
-          if (tag !== 96) {
-            break;
-          }
-
-          message.prevCuLeft = reader.uint64() as Long;
-          continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -199,10 +173,8 @@ export const Subscription = {
       durationTotal: isSet(object.durationTotal) ? Long.fromValue(object.durationTotal) : Long.UZERO,
       durationLeft: isSet(object.durationLeft) ? Long.fromValue(object.durationLeft) : Long.UZERO,
       monthExpiryTime: isSet(object.monthExpiryTime) ? Long.fromValue(object.monthExpiryTime) : Long.UZERO,
-      prevExpiryBlock: isSet(object.prevExpiryBlock) ? Long.fromValue(object.prevExpiryBlock) : Long.UZERO,
       monthCuTotal: isSet(object.monthCuTotal) ? Long.fromValue(object.monthCuTotal) : Long.UZERO,
       monthCuLeft: isSet(object.monthCuLeft) ? Long.fromValue(object.monthCuLeft) : Long.UZERO,
-      prevCuLeft: isSet(object.prevCuLeft) ? Long.fromValue(object.prevCuLeft) : Long.UZERO,
     };
   },
 
@@ -216,10 +188,8 @@ export const Subscription = {
     message.durationTotal !== undefined && (obj.durationTotal = (message.durationTotal || Long.UZERO).toString());
     message.durationLeft !== undefined && (obj.durationLeft = (message.durationLeft || Long.UZERO).toString());
     message.monthExpiryTime !== undefined && (obj.monthExpiryTime = (message.monthExpiryTime || Long.UZERO).toString());
-    message.prevExpiryBlock !== undefined && (obj.prevExpiryBlock = (message.prevExpiryBlock || Long.UZERO).toString());
     message.monthCuTotal !== undefined && (obj.monthCuTotal = (message.monthCuTotal || Long.UZERO).toString());
     message.monthCuLeft !== undefined && (obj.monthCuLeft = (message.monthCuLeft || Long.UZERO).toString());
-    message.prevCuLeft !== undefined && (obj.prevCuLeft = (message.prevCuLeft || Long.UZERO).toString());
     return obj;
   },
 
@@ -245,17 +215,11 @@ export const Subscription = {
     message.monthExpiryTime = (object.monthExpiryTime !== undefined && object.monthExpiryTime !== null)
       ? Long.fromValue(object.monthExpiryTime)
       : Long.UZERO;
-    message.prevExpiryBlock = (object.prevExpiryBlock !== undefined && object.prevExpiryBlock !== null)
-      ? Long.fromValue(object.prevExpiryBlock)
-      : Long.UZERO;
     message.monthCuTotal = (object.monthCuTotal !== undefined && object.monthCuTotal !== null)
       ? Long.fromValue(object.monthCuTotal)
       : Long.UZERO;
     message.monthCuLeft = (object.monthCuLeft !== undefined && object.monthCuLeft !== null)
       ? Long.fromValue(object.monthCuLeft)
-      : Long.UZERO;
-    message.prevCuLeft = (object.prevCuLeft !== undefined && object.prevCuLeft !== null)
-      ? Long.fromValue(object.prevCuLeft)
       : Long.UZERO;
     return message;
   },

@@ -14,6 +14,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -25,6 +26,7 @@ const (
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"
 	MaxCuResponseKey            = "max-cu-resp"
+	EffectivePolicyRespKey      = "effective-policy-resp"
 )
 
 type StateQuery struct {
@@ -97,6 +99,27 @@ type ConsumerStateQuery struct {
 func NewConsumerStateQuery(ctx context.Context, clientCtx client.Context) *ConsumerStateQuery {
 	csq := &ConsumerStateQuery{StateQuery: *NewStateQuery(ctx, clientCtx), clientCtx: clientCtx, lastChainID: ""}
 	return csq
+}
+
+func (csq *ConsumerStateQuery) GetEffectivePolicy(ctx context.Context, consumerAddress string, specID string) (*plantypes.Policy, error) {
+	cachedInterface, found := csq.ResponsesCache.Get(EffectivePolicyRespKey + specID)
+	if found && cachedInterface != nil {
+		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryEffectivePolicyResponse); ok {
+			return cachedResp.GetPolicy(), nil
+		} else {
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryEffectivePolicyResponse"}, utils.Attribute{Key: "type", Value: cachedInterface})
+		}
+	}
+
+	resp, err := csq.PairingQueryClient.EffectivePolicy(ctx, &pairingtypes.QueryEffectivePolicyRequest{
+		Consumer: consumerAddress,
+		SpecID:   specID,
+	})
+	if err != nil || resp.GetPolicy() == nil {
+		return nil, err
+	}
+	csq.ResponsesCache.SetWithTTL(EffectivePolicyRespKey+specID, resp, 1, DefaultTimeToLiveExpiration)
+	return resp.GetPolicy(), nil
 }
 
 func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch uint64, nextBlockForUpdate uint64, errRet error) {

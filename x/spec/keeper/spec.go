@@ -219,12 +219,13 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 }
 
 // returns whether a spec name is a valid spec in the consensus
-// first return value is found and active, second argument is found only
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
+// first return value is found and active, second argument is found only, third argument is the provider's type (dynamic/static)
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType types.Spec_ProvidersTypes) {
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
 		foundAndActive = spec.Enabled
+		providersType = spec.ProvidersTypes
 	}
 	return
 }
@@ -253,6 +254,7 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 // returns map[apiInterface][]addons
 func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error) {
 	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
+	var spec types.Spec
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
@@ -264,8 +266,10 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, ma
 			)
 		}
 		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
+		return expectedInterfaces, nil
 	}
-	return
+	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedInterfacesForSpec", nil,
+		utils.Attribute{Key: "chainID", Value: chainID})
 }
 
 func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {

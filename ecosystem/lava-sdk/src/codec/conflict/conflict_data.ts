@@ -12,7 +12,15 @@ export interface ResponseConflict {
 
 export interface ConflictRelayData {
   request?: RelayRequest;
-  reply?: RelayReply;
+  reply?: ReplyMetadata;
+}
+
+export interface ReplyMetadata {
+  hashAllDataHash: Uint8Array;
+  sig: Uint8Array;
+  latestBlock: Long;
+  finalizedBlocksHashes: Uint8Array;
+  sigBlocks: Uint8Array;
 }
 
 export interface FinalizationConflict {
@@ -43,21 +51,21 @@ export const ResponseConflict = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.conflictRelayData0 = ConflictRelayData.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.conflictRelayData1 = ConflictRelayData.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -113,7 +121,7 @@ export const ConflictRelayData = {
       RelayRequest.encode(message.request, writer.uint32(10).fork()).ldelim();
     }
     if (message.reply !== undefined) {
-      RelayReply.encode(message.reply, writer.uint32(18).fork()).ldelim();
+      ReplyMetadata.encode(message.reply, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -126,21 +134,21 @@ export const ConflictRelayData = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.request = RelayRequest.decode(reader, reader.uint32());
           continue;
-        case 2:
-          if (tag !== 18) {
+        case 3:
+          if (tag != 26) {
             break;
           }
 
-          message.reply = RelayReply.decode(reader, reader.uint32());
+          message.reply = ReplyMetadata.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -151,14 +159,14 @@ export const ConflictRelayData = {
   fromJSON(object: any): ConflictRelayData {
     return {
       request: isSet(object.request) ? RelayRequest.fromJSON(object.request) : undefined,
-      reply: isSet(object.reply) ? RelayReply.fromJSON(object.reply) : undefined,
+      reply: isSet(object.reply) ? ReplyMetadata.fromJSON(object.reply) : undefined,
     };
   },
 
   toJSON(message: ConflictRelayData): unknown {
     const obj: any = {};
     message.request !== undefined && (obj.request = message.request ? RelayRequest.toJSON(message.request) : undefined);
-    message.reply !== undefined && (obj.reply = message.reply ? RelayReply.toJSON(message.reply) : undefined);
+    message.reply !== undefined && (obj.reply = message.reply ? ReplyMetadata.toJSON(message.reply) : undefined);
     return obj;
   },
 
@@ -172,8 +180,136 @@ export const ConflictRelayData = {
       ? RelayRequest.fromPartial(object.request)
       : undefined;
     message.reply = (object.reply !== undefined && object.reply !== null)
-      ? RelayReply.fromPartial(object.reply)
+      ? ReplyMetadata.fromPartial(object.reply)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseReplyMetadata(): ReplyMetadata {
+  return {
+    hashAllDataHash: new Uint8Array(),
+    sig: new Uint8Array(),
+    latestBlock: Long.ZERO,
+    finalizedBlocksHashes: new Uint8Array(),
+    sigBlocks: new Uint8Array(),
+  };
+}
+
+export const ReplyMetadata = {
+  encode(message: ReplyMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.hashAllDataHash.length !== 0) {
+      writer.uint32(10).bytes(message.hashAllDataHash);
+    }
+    if (message.sig.length !== 0) {
+      writer.uint32(18).bytes(message.sig);
+    }
+    if (!message.latestBlock.isZero()) {
+      writer.uint32(24).int64(message.latestBlock);
+    }
+    if (message.finalizedBlocksHashes.length !== 0) {
+      writer.uint32(34).bytes(message.finalizedBlocksHashes);
+    }
+    if (message.sigBlocks.length !== 0) {
+      writer.uint32(42).bytes(message.sigBlocks);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReplyMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReplyMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.hashAllDataHash = reader.bytes();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.sig = reader.bytes();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.latestBlock = reader.int64() as Long;
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.finalizedBlocksHashes = reader.bytes();
+          continue;
+        case 5:
+          if (tag != 42) {
+            break;
+          }
+
+          message.sigBlocks = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReplyMetadata {
+    return {
+      hashAllDataHash: isSet(object.hashAllDataHash) ? bytesFromBase64(object.hashAllDataHash) : new Uint8Array(),
+      sig: isSet(object.sig) ? bytesFromBase64(object.sig) : new Uint8Array(),
+      latestBlock: isSet(object.latestBlock) ? Long.fromValue(object.latestBlock) : Long.ZERO,
+      finalizedBlocksHashes: isSet(object.finalizedBlocksHashes)
+        ? bytesFromBase64(object.finalizedBlocksHashes)
+        : new Uint8Array(),
+      sigBlocks: isSet(object.sigBlocks) ? bytesFromBase64(object.sigBlocks) : new Uint8Array(),
+    };
+  },
+
+  toJSON(message: ReplyMetadata): unknown {
+    const obj: any = {};
+    message.hashAllDataHash !== undefined &&
+      (obj.hashAllDataHash = base64FromBytes(
+        message.hashAllDataHash !== undefined ? message.hashAllDataHash : new Uint8Array(),
+      ));
+    message.sig !== undefined &&
+      (obj.sig = base64FromBytes(message.sig !== undefined ? message.sig : new Uint8Array()));
+    message.latestBlock !== undefined && (obj.latestBlock = (message.latestBlock || Long.ZERO).toString());
+    message.finalizedBlocksHashes !== undefined &&
+      (obj.finalizedBlocksHashes = base64FromBytes(
+        message.finalizedBlocksHashes !== undefined ? message.finalizedBlocksHashes : new Uint8Array(),
+      ));
+    message.sigBlocks !== undefined &&
+      (obj.sigBlocks = base64FromBytes(message.sigBlocks !== undefined ? message.sigBlocks : new Uint8Array()));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReplyMetadata>, I>>(base?: I): ReplyMetadata {
+    return ReplyMetadata.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReplyMetadata>, I>>(object: I): ReplyMetadata {
+    const message = createBaseReplyMetadata();
+    message.hashAllDataHash = object.hashAllDataHash ?? new Uint8Array();
+    message.sig = object.sig ?? new Uint8Array();
+    message.latestBlock = (object.latestBlock !== undefined && object.latestBlock !== null)
+      ? Long.fromValue(object.latestBlock)
+      : Long.ZERO;
+    message.finalizedBlocksHashes = object.finalizedBlocksHashes ?? new Uint8Array();
+    message.sigBlocks = object.sigBlocks ?? new Uint8Array();
     return message;
   },
 };
@@ -201,21 +337,21 @@ export const FinalizationConflict = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.relayReply0 = RelayReply.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.relayReply1 = RelayReply.decode(reader, reader.uint32());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -254,6 +390,50 @@ export const FinalizationConflict = {
     return message;
   },
 };
+
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (tsProtoGlobalThis.Buffer) {
+    return Uint8Array.from(tsProtoGlobalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = tsProtoGlobalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (tsProtoGlobalThis.Buffer) {
+    return tsProtoGlobalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return tsProtoGlobalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -1,0 +1,8 @@
+syntax="proto3";
+
+package lavanet.lava.downtime.v1;
+
+option go_package = "github.com/lavanet/lava/x/downtime/v1";
+
+// Query represents the query service API for the downtime module.
+service Query {}

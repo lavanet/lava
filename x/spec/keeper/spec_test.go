@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"context"
 	"os"
 	"strconv"
 	"strings"
@@ -9,52 +8,37 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/spec"
 	"github.com/lavanet/lava/x/spec/client/utils"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
-type testStruct struct {
-	t       *testing.T
-	servers *keepertest.Servers
-	keepers *keepertest.Keepers
-	_ctx    context.Context
-	ctx     sdk.Context
+type tester struct {
+	common.Tester
 }
 
-func newTestStruct(t *testing.T) *testStruct {
-	servers, keepers, _ctx := keepertest.InitAllKeepers(t)
-	ts := &testStruct{
-		t:       t,
-		servers: servers,
-		keepers: keepers,
-		_ctx:    _ctx,
-		ctx:     sdk.UnwrapSDKContext(_ctx),
-	}
-	ts.AdvanceEpoch(1)
-	return ts
+func newTester(t *testing.T) *tester {
+	return &tester{Tester: *common.NewTester(t)}
 }
 
-func (ts *testStruct) BlockHeight() uint64 {
-	return uint64(ts.ctx.BlockHeight())
+func (ts *tester) getSpec(index string) (types.Spec, bool) {
+	return ts.Keepers.Spec.GetSpec(ts.Ctx, index)
 }
 
-func (ts *testStruct) AdvanceBlock(count int) {
-	for i := 0; i < count; i += 1 {
-		ts._ctx = keepertest.AdvanceBlock(ts._ctx, ts.keepers)
-	}
-	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+func (ts *tester) setSpec(spec types.Spec) {
+	ts.Keepers.Spec.SetSpec(ts.Ctx, spec)
 }
 
-func (ts *testStruct) AdvanceEpoch(count int) {
-	for i := 0; i < count; i += 1 {
-		ts._ctx = keepertest.AdvanceEpoch(ts._ctx, ts.keepers)
-	}
-	ts.ctx = sdk.UnwrapSDKContext(ts._ctx)
+func (ts *tester) removeSpec(index string) {
+	ts.Keepers.Spec.RemoveSpec(ts.Ctx, index)
+}
+
+func (ts *tester) expandSpec(spec types.Spec) (types.Spec, error) {
+	return ts.Keepers.Spec.ExpandSpec(ts.Ctx, spec)
 }
 
 // prepareMockApis returns a slice of mock ServiceApi for use in Spec
@@ -104,7 +88,15 @@ func prepareMockParsing(count int) []*types.ParseDirective {
 	return mockParsing
 }
 
-func createApiCollection(apiCount int, apiIds []int, parsingCount int, apiInterface string, connectionType string, addon string, imports []*types.CollectionData) *types.ApiCollection {
+func createApiCollection(
+	apiCount int,
+	apiIds []int,
+	parsingCount int,
+	apiInterface string,
+	connectionType string,
+	addon string,
+	imports []*types.CollectionData,
+) *types.ApiCollection {
 	return &types.ApiCollection{
 		Enabled: true,
 		CollectionData: types.CollectionData{
@@ -132,8 +124,24 @@ func generateHeaders(count int) (retHeaders []*types.Header) {
 	return
 }
 
-func createApiCollectionWithHeaders(apiCount int, apiIds []int, parsingCount int, headersCount int, apiInterface string, connectionType string, addon string, imports []*types.CollectionData) *types.ApiCollection {
-	apiCollection := createApiCollection(apiCount, apiIds, parsingCount, apiInterface, connectionType, addon, imports)
+func createApiCollectionWithHeaders(
+	apiCount int,
+	apiIds []int,
+	parsingCount int,
+	headersCount int,
+	apiInterface string,
+	connectionType string,
+	addon string,
+	imports []*types.CollectionData,
+) *types.ApiCollection {
+	apiCollection := createApiCollection(
+		apiCount,
+		apiIds,
+		parsingCount,
+		apiInterface,
+		connectionType,
+		addon,
+		imports)
 	apiCollection.Headers = generateHeaders(headersCount)
 	return apiCollection
 }
@@ -159,13 +167,15 @@ func createNSpec(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Spec {
 	return items
 }
 
+func (ts *tester) createNSpec(n int) []types.Spec {
+	return createNSpec(&ts.Keepers.Spec, ts.Ctx, n)
+}
+
 func TestSpecGet(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
-	items := createNSpec(keeper, ctx, 10)
+	ts := newTester(t)
+	items := ts.createNSpec(10)
 	for _, item := range items {
-		rst, found := keeper.GetSpec(ctx,
-			item.Index,
-		)
+		rst, found := ts.getSpec(item.Index)
 		require.True(t, found)
 		require.Equal(t,
 			nullify.Fill(&item),
@@ -175,33 +185,28 @@ func TestSpecGet(t *testing.T) {
 }
 
 func TestSpecRemove(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
-	items := createNSpec(keeper, ctx, 10)
+	ts := newTester(t)
+	items := ts.createNSpec(10)
 	for _, item := range items {
-		keeper.RemoveSpec(ctx,
-			item.Index,
-		)
-		_, found := keeper.GetSpec(ctx,
-			item.Index,
-		)
+		ts.removeSpec(item.Index)
+		_, found := ts.getSpec(item.Index)
 		require.False(t, found)
 	}
 }
 
 func TestSpecGetAll(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
-	items := createNSpec(keeper, ctx, 10)
+	ts := newTester(t)
+	items := ts.createNSpec(10)
+	rst := ts.Keepers.Spec.GetAllSpec(ts.Ctx)
 	require.ElementsMatch(t,
 		nullify.Fill(items),
-		nullify.Fill(keeper.GetAllSpec(ctx)),
+		nullify.Fill(rst),
 	)
 }
 
-// prepareMockCurrentSpecs returns a slice of Spec according to the template
-// therein, to simulate the collection of existing Spec(s) on the chain.
-func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []*types.Api) map[string]types.Spec {
-	currentSpecs := make(map[string]types.Spec)
-
+// setupSpecsForSpecInheritance returns a slice of Spec according to the
+// template therein, to simulate collection of existing Spec(s) on the chain.
+func (ts *tester) setupSpecsForSpecInheritance(apis []*types.Api) {
 	template := []struct {
 		name    string
 		enabled bool
@@ -216,21 +221,23 @@ func prepareMockCurrentSpecs(keeper *keeper.Keeper, ctx sdk.Context, apis []*typ
 	}
 
 	for _, tt := range template {
+		apiCollection := &types.ApiCollection{
+			Enabled:        true,
+			CollectionData: types.CollectionData{ApiInterface: "stub"},
+			Apis:           selectMockApis(apis, tt.apis),
+		}
 		spec := types.Spec{
 			Name:           tt.name,
 			Index:          tt.name,
 			Enabled:        tt.enabled,
-			ApiCollections: []*types.ApiCollection{{Enabled: true, CollectionData: types.CollectionData{ApiInterface: "stub"}, Apis: selectMockApis(apis, tt.apis)}},
+			ApiCollections: []*types.ApiCollection{apiCollection},
 		}
-		currentSpecs[tt.name] = spec
-		keeper.SetSpec(ctx, spec)
+		ts.AddSpec(tt.name, spec) // also calls SetSpec()
 	}
-
-	return currentSpecs
 }
 
-// Note: the API identifiers below refer to the APIs from the
-// function prepareMockCurrentApis() above
+// Note: the API identifiers below refer to the APIs from the function
+// setupSpecsForSpecInheritance() above
 var specTemplates = []struct {
 	desc    string
 	name    string
@@ -329,19 +336,12 @@ var specTemplates = []struct {
 	},
 }
 
-func simulateSpecProposal(ts *testStruct, name, title string, specs []types.Spec) error {
-	proposal := types.NewSpecAddProposal(name, title, specs)
-	proposalHandler := spec.NewSpecProposalsHandler(ts.keepers.Spec)
-	return proposalHandler(ts.ctx, proposal)
-}
-
 // Test Spec with "import" directives (using to the templates above).
 func TestSpecWithImport(t *testing.T) {
-	ts := newTestStruct(t)
-	keeper := ts.keepers.Spec
+	ts := newTester(t)
 
 	apis := prepareMockApis(8)
-	_ = prepareMockCurrentSpecs(&keeper, ts.ctx, apis)
+	ts.setupSpecsForSpecInheritance(apis)
 
 	for _, tt := range specTemplates {
 		sp := types.Spec{
@@ -361,7 +361,7 @@ func TestSpecWithImport(t *testing.T) {
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
-			fullspec, err := keeper.ExpandSpec(ts.ctx, sp)
+			fullspec, err := ts.expandSpec(sp)
 			if tt.ok == true {
 				require.Nil(t, err, err)
 				require.Len(t, fullspec.ApiCollections[0].Apis, len(tt.result))
@@ -379,7 +379,7 @@ func TestSpecWithImport(t *testing.T) {
 					require.True(t, found)
 				}
 
-				keeper.SetSpec(ts.ctx, sp)
+				ts.setSpec(sp)
 			} else {
 				require.NotNil(t, err)
 			}
@@ -387,9 +387,7 @@ func TestSpecWithImport(t *testing.T) {
 	}
 }
 
-func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, ctx sdk.Context) map[string]types.Spec {
-	currentSpecs := make(map[string]types.Spec)
-
+func (ts *tester) setupSpecsForApiInheritance() {
 	template := []struct {
 		name           string
 		enabled        bool
@@ -435,16 +433,12 @@ func prepareMockCurrentSpecsForApiCollectionInheritance(keeper *keeper.Keeper, c
 			Enabled:        tt.enabled,
 			ApiCollections: tt.apiCollections,
 		}
-		currentSpecs[tt.name] = spec
-		keeper.SetSpec(ctx, spec)
+		ts.AddSpec(tt.name, spec) // also calls SetSpec()
 	}
-
-	return currentSpecs
 }
 
 func TestSpecUpdateInherit(t *testing.T) {
-	ts := newTestStruct(t)
-	keeper := ts.keepers.Spec
+	ts := newTester(t)
 
 	api := types.Api{
 		Enabled:      true,
@@ -462,8 +456,8 @@ func TestSpecUpdateInherit(t *testing.T) {
 		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
-		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeProvider:              common.NewCoin(5000),
+		MinStakeClient:                common.NewCoin(5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -483,53 +477,53 @@ func TestSpecUpdateInherit(t *testing.T) {
 		BlocksInFinalizationProof:     3,
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
-		MinStakeProvider:              sdk.NewCoin("ulava", sdk.NewInt(5000)),
-		MinStakeClient:                sdk.NewCoin("ulava", sdk.NewInt(5000)),
+		MinStakeProvider:              common.NewCoin(5000),
+		MinStakeClient:                common.NewCoin(5000),
 		Imports:                       []string{"parent"},
 	}
 
 	// add a parent spec and a child spec
-	err := simulateSpecProposal(ts, "parent", "propose parent spec", []types.Spec{parentSpec})
+	err := keepertest.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, []types.Spec{parentSpec})
 	require.Nil(t, err)
 
-	err = simulateSpecProposal(ts, "child", "propose child spec", []types.Spec{childSpec})
+	err = keepertest.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, []types.Spec{childSpec})
 	require.Nil(t, err)
 
 	block1 := ts.BlockHeight()
 
-	sp, found := keeper.GetSpec(ts.ctx, "child")
+	sp, found := ts.getSpec("child")
 	require.True(t, found)
-	sp, err = keeper.ExpandSpec(ts.ctx, sp)
+	sp, err = ts.expandSpec(sp)
 	require.Nil(t, err)
 	require.Equal(t, uint64(10), sp.ApiCollections[0].Apis[0].ComputeUnits)
 	require.Equal(t, block1, sp.BlockLastUpdated)
 
-	ts.AdvanceBlock(1)
+	ts.AdvanceBlock()
 
 	// modify the parent spec and verify that the child is refreshed
 
 	parentSpec.ApiCollections[0].Apis[0].ComputeUnits = 20
-	err = simulateSpecProposal(ts, "parent", "propose parent spec", []types.Spec{parentSpec})
+	err = keepertest.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, []types.Spec{parentSpec})
 	require.Nil(t, err)
 
-	sp, found = keeper.GetSpec(ts.ctx, "parent")
+	sp, found = ts.getSpec("parent")
 	require.True(t, found)
 	require.Equal(t, uint64(20), sp.ApiCollections[0].Apis[0].ComputeUnits)
 	require.Equal(t, block1+1, sp.BlockLastUpdated)
 
-	sp, found = keeper.GetSpec(ts.ctx, "child")
+	sp, found = ts.getSpec("child")
 	require.True(t, found)
-	sp, err = keeper.ExpandSpec(ts.ctx, sp)
+	sp, err = ts.expandSpec(sp)
 	require.Nil(t, err)
 	require.Equal(t, uint64(20), sp.ApiCollections[0].Apis[0].ComputeUnits)
 	require.Equal(t, block1+1, sp.BlockLastUpdated)
 }
 
 func TestApiCollectionsExpandAndInheritance(t *testing.T) {
-	ts := newTestStruct(t)
-	keeper := ts.keepers.Spec
+	ts := newTester(t)
 
-	debugme := prepareMockCurrentSpecsForApiCollectionInheritance(&keeper, ts.ctx)
+	apis := prepareMockApis(20)
+	ts.setupSpecsForApiInheritance()
 
 	specTemplates := []struct {
 		desc                 string
@@ -705,8 +699,6 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 		},
 	}
 
-	apis := prepareMockApis(20)
-
 	for _, tt := range specTemplates {
 		sp := types.Spec{
 			Name:           tt.name,
@@ -717,8 +709,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 		}
 
 		t.Run(tt.desc, func(t *testing.T) {
-			fullspec, err := keeper.ExpandSpec(ts.ctx, sp)
-			_ = debugme
+			fullspec, err := ts.expandSpec(sp)
 			if tt.ok == true {
 				// check Result against the baseline spec  "test1", "", "",
 				// count apis to totalApis
@@ -768,7 +759,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}
 					require.True(t, found)
 				}
-				keeper.SetSpec(ts.ctx, sp)
+				ts.setSpec(sp)
 			} else {
 				require.Error(t, err, "spec with no error although expected %s", sp.Index)
 			}
@@ -777,8 +768,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 }
 
 func TestCookbookSpecs(t *testing.T) {
-	ts := newTestStruct(t)
-	keeper := ts.keepers.Spec
+	ts := newTester(t)
 
 	getToTopMostPath := "../../../"
 	proposalFile := "./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json"
@@ -793,8 +783,8 @@ func TestCookbookSpecs(t *testing.T) {
 		require.Nil(t, err)
 
 		for _, sp := range proposal.Proposal.Specs {
-			keeper.SetSpec(ts.ctx, sp)
-			fullspec, err := keeper.ExpandSpec(ts.ctx, sp)
+			ts.setSpec(sp)
+			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
 			require.NotNil(t, fullspec)
 		}

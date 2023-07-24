@@ -48,7 +48,7 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 			)
 		}
 		if err := ss.Update(ctx, []byte(c.Key), []byte(c.Value)); err != nil {
-			return utils.LavaFormatWarning("Gov Proposal Param Change Error", fmt.Errorf("tried to modify "+string(epochstoragetypes.KeyLatestParamChange)),
+			return utils.LavaFormatWarning("Gov Proposal Param Change Error", fmt.Errorf("tried to modify %s: %w", c.Key, err),
 				details...,
 			)
 		}
