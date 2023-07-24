@@ -18,7 +18,7 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch
-	_, err := ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, client1Acct.Addr, epoch)
+	_, _, err := ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, client1Acct.Addr, epoch)
 	require.Nil(t, err)
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
@@ -61,7 +61,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch (key added retroactively to this epoch)
-	_, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
+	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
 	require.Nil(t, err)
 
 	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
@@ -105,7 +105,7 @@ func TestAddKeyCreateProject(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	_, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
+	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
 	require.Nil(t, err)
 
 	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)

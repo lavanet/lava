@@ -3,7 +3,6 @@ package rpcprovider
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"math/rand"
 	"os"
@@ -253,10 +252,10 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 
 func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 	cmdTestProviderCaCert := &cobra.Command{
-		Use:     `provider-ca-cert {network-address}`,
+		Use:     `provider-ca-cert --network-address "ip:port"`,
 		Short:   `test the certificate of an rpc provider`,
 		Long:    `test if the rpc provider in the given network address is using the right format of CA certificate`,
-		Example: `provider-ca-cert 127.0.0.1:2211`,
+		Example: `lavad test provider-ca-cert --network-address "127.0.0.1:2379"`,
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// handle flags, pass necessary fields
@@ -264,28 +263,12 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 			if err != nil {
 				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
 			}
-			cert, err := cmd.Flags().GetString(certFlag)
-			if err != nil {
-				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
-			}
 
 			ctx := context.Background()
 			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
-			caCert, err := os.ReadFile(cert)
-			if err != nil {
-				return utils.LavaFormatError("Failed setting up tls certificate from local path", err)
-			}
 
-			certPool := x509.NewCertPool()
-			if !certPool.AppendCertsFromPEM(caCert) {
-				return utils.LavaFormatError("failed to append server certificate", nil)
-			}
-
-			creds := credentials.NewTLS(&tls.Config{
-				RootCAs: certPool,
-			})
-
+			creds := credentials.NewTLS(&tls.Config{})
 			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(creds))
 			if err != nil {
 				utils.LavaFormatError("Failed to dial network address", err, utils.Attribute{Key: "Address", Value: networkAddress})
@@ -300,12 +283,6 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 
 	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "", "network address")
 	err := cmdTestProviderCaCert.MarkFlagRequired(networkAddressFlag)
-	if err != nil {
-		utils.LavaFormatFatal("MarkFlagRequired Error", err)
-	}
-
-	cmdTestProviderCaCert.Flags().String(certFlag, "", "certificate file")
-	err = cmdTestProviderCaCert.MarkFlagRequired(certFlag)
 	if err != nil {
 		utils.LavaFormatFatal("MarkFlagRequired Error", err)
 	}
