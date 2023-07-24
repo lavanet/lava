@@ -36,7 +36,24 @@ type Tester struct {
 	specs    map[string]spectypes.Spec
 }
 
+const (
+	PROVIDER string = "provider"
+	CONSUMER string = "consumer"
+)
+
 func NewTester(t *testing.T) *Tester {
+	ts := NewTesterRaw(t)
+
+	// AdvanceBlock() and AdvanceEpoch() always use the current time for the
+	// first block (and ignores the time delta arg if given); So call it here
+	// to generate a first timestamp and avoid any subsequent call with detla
+	// argument call having the delta ignored.
+	ts.AdvanceEpoch()
+
+	return ts
+}
+
+func NewTesterRaw(t *testing.T) *Tester {
 	servers, keepers, GoCtx := testkeeper.InitAllKeepers(t)
 
 	ts := &Tester{
@@ -52,12 +69,6 @@ func NewTester(t *testing.T) *Tester {
 		projects: make(map[string]projectstypes.ProjectData),
 		specs:    make(map[string]spectypes.Spec),
 	}
-
-	// AdvanceBlock() and AdvanceEpoch() always use the current time for the
-	// first block (and ignores the time delta arg if given); So call it here
-	// to generate a first timestamp and avoid any subsequent call with detla
-	// argument call having the delta ignored.
-	ts.AdvanceEpoch()
 
 	return ts
 }
@@ -117,22 +128,37 @@ func (ts *Tester) Accounts(name string) []Account {
 	return accounts
 }
 
-func (ts *Tester) StakeAccount(acct Account, spec spectypes.Spec, amount int64, geoloc uint64, moniker string) error {
-	addr := acct.Addr.String()
-	return ts.StakeProvider(addr, spec, amount, geoloc, moniker)
+func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
+	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "")
 }
 
-func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64, geoloc uint64, moniker string) error {
-	apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
-	endpoint := epochstoragetypes.Endpoint{
-		IPPORT:        "123",
-		ApiInterfaces: []string{apiInterface},
-		Geolocation:   geoloc,
+func (ts *Tester) StakeProviderExtra(
+	addr string,
+	spec spectypes.Spec,
+	amount int64,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc uint64,
+	moniker string,
+) error {
+	// if geoloc left zero, use default 1
+	if geoloc == 0 {
+		geoloc = 1
 	}
-	endpoints := []epochstoragetypes.Endpoint{endpoint}
-	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
 
+	// if necessary, generate mock endpoints
+	if endpoints == nil {
+		apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
+		endpoint := epochstoragetypes.Endpoint{
+			IPPORT:        "123",
+			ApiInterfaces: []string{apiInterface},
+			Geolocation:   geoloc,
+		}
+		endpoints = []epochstoragetypes.Endpoint{endpoint}
+	}
+
+	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
 	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
+
 	return err
 }
 
@@ -202,6 +228,16 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 	return spec
 }
 
+// misc shortcuts
+
+func NewCoin(amount int64) sdk.Coin {
+	return sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+}
+
+func NewCoins(amount ...int64) []sdk.Coin {
+	return slices.Filter(amount, NewCoin)
+}
+
 // keeper helpers
 
 func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
@@ -227,6 +263,10 @@ func (ts *Tester) GetProjectForDeveloper(devkey string, block uint64) (projectst
 
 func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projectstypes.ProtoDeveloperData, error) {
 	return ts.Keepers.Projects.GetProjectDeveloperData(ts.Ctx, devkey, block)
+}
+
+func (ts *Tester) VotePeriod() uint64 {
+	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
 }
 
 // proposals, transactions, queries
@@ -461,7 +501,10 @@ func (ts *Tester) BlocksToSave() uint64 {
 	return blocksToSave
 }
 
-func (ts *Tester) EpochsToSave() uint64 {
+func (ts *Tester) EpochsToSave(block ...uint64) uint64 {
+	if len(block) == 0 {
+		return ts.Keepers.Epochstorage.EpochsToSaveRaw(ts.Ctx)
+	}
 	epochsToSave, err := ts.Keepers.Epochstorage.EpochsToSave(ts.Ctx, ts.BlockHeight())
 	if err != nil {
 		panic("EpochsToSave: failed to fetch: " + err.Error())
@@ -480,8 +523,15 @@ func (ts *Tester) EpochBlocks(block ...uint64) uint64 {
 	return epoch
 }
 
-func (ts *Tester) EpochStart() uint64 {
-	return ts.Keepers.Epochstorage.GetEpochStart(ts.Ctx)
+func (ts *Tester) EpochStart(block ...uint64) uint64 {
+	if len(block) == 0 {
+		return ts.Keepers.Epochstorage.GetEpochStart(ts.Ctx)
+	}
+	epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, block[0])
+	if err != nil {
+		panic("EpochStart: failed to fetch: " + err.Error())
+	}
+	return epoch
 }
 
 func (ts *Tester) GetNextEpoch() uint64 {
@@ -490,6 +540,14 @@ func (ts *Tester) GetNextEpoch() uint64 {
 		panic("GetNextEpoch: failed to fetch: " + err.Error())
 	}
 	return epoch
+}
+
+func (ts *Tester) AdvanceToBlock(block uint64) {
+	if block < ts.BlockHeight() {
+		panic("AdvanceToBlock: block in the past: " +
+			strconv.Itoa(int(block)) + "<" + strconv.Itoa(int(ts.BlockHeight())))
+	}
+	ts.AdvanceBlocks(block - ts.BlockHeight())
 }
 
 func (ts *Tester) AdvanceBlocks(count uint64, delta ...time.Duration) *Tester {

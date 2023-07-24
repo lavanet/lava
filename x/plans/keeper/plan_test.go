@@ -5,11 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
@@ -58,7 +56,7 @@ func (ts *tester) createTestPlans(count int, withSameIndex bool, startIndex int)
 			Description:              "plan to test",
 			Type:                     "rpc",
 			Block:                    100,
-			Price:                    sdk.NewCoin("ulava", sdk.OneInt()),
+			Price:                    common.NewCoin(1),
 			PlanPolicy:               policy,
 			AllowOveruse:             true,
 			OveruseRate:              overuseRate,
@@ -153,7 +151,7 @@ func TestAddInvalidPlan(t *testing.T) {
 
 			switch tt.fieldIndex {
 			case PRICE_FIELD:
-				plans[0].Price = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
+				plans[0].Price = common.NewCoin(0)
 			case OVERUSE_FIELDS:
 				plans[0].AllowOveruse = true
 				plans[0].OveruseRate = 0

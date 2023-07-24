@@ -12,6 +12,14 @@ func Slice[T any](v ...T) []T {
 	return v
 }
 
+func Concat[T any](s ...[]T) []T {
+	v := []T{}
+	for _, x := range s {
+		v = append(v, x...)
+	}
+	return v
+}
+
 func Min[T constraints.Ordered](s []T) (m T) {
 	if len(s) > 0 {
 		m = s[0]
