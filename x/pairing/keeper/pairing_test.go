@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -28,7 +29,7 @@ func TestPairingUniqueness(t *testing.T) {
 	require.Nil(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		_, addr := ts.AddAccount("provider", i, balance)
+		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
 		err := ts.StakeProvider(addr, ts.spec, stake)
 		require.Nil(t, err)
 	}
@@ -92,7 +93,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	require.Nil(t, err)
 
 	for i := 1; i <= 10; i++ {
-		_, addr := ts.AddAccount("provider", i, balance)
+		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
 		err := ts.StakeProvider(addr, ts.spec, stake)
 		require.Nil(t, err)
 	}
@@ -161,8 +162,8 @@ func TestGetPairing(t *testing.T) {
 				ts.AdvanceBlocks(epochBlocks / 2)
 			}
 
-			_, clientAddr := ts.GetAccount("client", 0)
-			_, providerAddr := ts.GetAccount("provider", 0)
+			_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+			_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			// get pairing for client (for epoch zero expect to fail)
 			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
@@ -241,7 +242,7 @@ func TestPairingStatic(t *testing.T) {
 	require.Nil(t, err)
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
-		_, addr := ts.AddAccount("provider", i, testBalance)
+		_, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
 		err := ts.StakeProvider(addr, ts.spec, testStake+int64(i))
 		require.Nil(t, err)
 	}
@@ -589,11 +590,11 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.addProvider(200)
-	_, p1 := ts.GetAccount("provider", 0)
-	_, p2 := ts.GetAccount("provider", 1)
-	_, p3 := ts.GetAccount("provider", 2)
-	_, p4 := ts.GetAccount("provider", 3)
-	_, p5 := ts.GetAccount("provider", 4)
+	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	_, p3 := ts.GetAccount(common.PROVIDER, 2)
+	_, p4 := ts.GetAccount(common.PROVIDER, 3)
+	_, p5 := ts.GetAccount(common.PROVIDER, 4)
 
 	providerSets := []struct {
 		planProviders []string

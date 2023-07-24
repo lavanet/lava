@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
@@ -14,8 +15,8 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	epochsToSave := ts.EpochsToSave()
 
-	_, providerAddr := ts.GetAccount("provider", 0)
-	clientAcct, _ := ts.GetAccount("client", 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	clientAcct, _ := ts.GetAccount(common.CONSUMER, 0)
 
 	// make payment request
 	cusum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10

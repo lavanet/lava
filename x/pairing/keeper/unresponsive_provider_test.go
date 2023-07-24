@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -41,8 +42,8 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(providersCount, clientsCount, providersCount-1) // set providers-to-pair
 
-	clients := ts.Accounts("client")
-	providers := ts.Accounts("provider")
+	clients := ts.Accounts(common.CONSUMER)
+	providers := ts.Accounts(common.PROVIDER)
 
 	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
 
@@ -116,7 +117,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(providersCount, clientsCount, providersCount-1) // set providers-to-pair
 
-	clients := ts.Accounts("client")
+	clients := ts.Accounts(common.CONSUMER)
 
 	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
 
@@ -195,7 +196,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	ts := newTester(t)
 	ts.setupForPayments(providersCount, clientsCount, providersCount-1) // set providers-to-pair
 
-	clients := ts.Accounts("client")
+	clients := ts.Accounts(common.CONSUMER)
 
 	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
 
@@ -286,7 +287,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
 	ts.addProviderGeolocation(2, 2)
 
-	clients := ts.Accounts("client")
+	clients := ts.Accounts(common.CONSUMER)
 
 	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
 

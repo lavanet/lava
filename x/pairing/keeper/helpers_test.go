@@ -38,9 +38,9 @@ func newTester(t *testing.T) *tester {
 }
 
 func (ts *tester) addClient(count int) {
-	start := len(ts.Accounts("client"))
+	start := len(ts.Accounts(common.CONSUMER))
 	for i := 0; i < count; i++ {
-		_, addr := ts.AddAccount("client", start+i, testBalance)
+		_, addr := ts.AddAccount(common.CONSUMER, start+i, testBalance)
 		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 1)
 		if err != nil {
 			panic("addClient: failed to buy subscription: " + err.Error())
@@ -75,9 +75,9 @@ func (ts *tester) addProviderExtra(
 	geoloc uint64,
 	moniker string,
 ) error {
-	start := len(ts.Accounts("provider"))
+	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {
-		_, addr := ts.AddAccount("provider", start+i, testBalance)
+		_, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
 		err := ts.StakeProviderExtra(addr, ts.spec, testStake, endpoints, geoloc, moniker)
 		if err != nil {
 			return err
@@ -86,8 +86,8 @@ func (ts *tester) addProviderExtra(
 	return nil
 }
 
-// setupForPayments creates staked providers and clients _with_ subscriptions. They can be
-// accesses using ts.Account("provider", idx) and ts.Account("provider", idx) respectively.
+// setupForPayments creates staked providers and clients with subscriptions. They can be accessed
+// using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
 	if providersToPair > 0 {
 		// will overwrite the default "mock" plan
@@ -203,8 +203,8 @@ func (ts *tester) verifyRelayPayment(relaySession *pairingtypes.RelaySession, ex
 	}
 
 	// note: assume a single client and a single provider, so these make sense:
-	_, client1Addr := ts.GetAccount("client", 0)
-	providerAcct, _ := ts.GetAccount("provider", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	providerPaymentStorageKey := ts.Keepers.Pairing.GetProviderPaymentStorageKey(
 		ts.Ctx, ts.spec.Name, epoch, providerAcct.Addr)

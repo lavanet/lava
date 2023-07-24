@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +14,7 @@ func TestFreeze(t *testing.T) {
 	providersCount := 2
 	ts.setupForPayments(providersCount, 1, providersCount) // 1 client, set providers-to-pair
 
-	_, clientAddr := ts.GetAccount("client", 0)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	// get pairing list
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
@@ -123,7 +124,7 @@ func TestUnstakeFrozen(t *testing.T) {
 	providersCount := 2
 	ts.setupForPayments(providersCount, 1, providersCount) // 1 client, set providers-to-pair
 
-	_, clientAddr := ts.GetAccount("client", 0)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	// get pairing list
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
@@ -191,7 +192,7 @@ func TestPaymentFrozen(t *testing.T) {
 	providersCount := 2
 	ts.setupForPayments(providersCount, 1, providersCount) // 1 client, set providers-to-pair
 
-	clientAcct, clientAddr := ts.GetAccount("client", 0)
+	clientAcct, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	blockPreFreeze := ts.BlockHeight()
 	ts.AdvanceEpoch()

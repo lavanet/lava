@@ -19,8 +19,8 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	firstEpoch := ts.EpochStart()
 	epochsToSave := ts.EpochsToSave()
@@ -83,8 +83,8 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			ts := newTester(t)
 			ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-			client1Acct, _ := ts.GetAccount("client", 0)
-			providerAcct, providerAddr := ts.GetAccount("provider", 0)
+			client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+			providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 			block := int64(ts.BlockHeight()) + tt.blockTime
@@ -106,8 +106,8 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	_, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	maxcu := ts.plan.PlanPolicy.EpochCuLimit
 
@@ -133,10 +133,10 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	providersCount := 2
 
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
-	clients := ts.Accounts("client")
+	clients := ts.Accounts(common.CONSUMER)
 
-	_, provider1Addr := ts.GetAccount("provider", 0)
-	provider2Acct, provider2Addr := ts.GetAccount("provider", 1)
+	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
 	unresponsiveProvidersData, err := json.Marshal([]string{provider2Addr})
 	require.Nil(t, err)
@@ -168,9 +168,9 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	providersCount := 2
 
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
-	clients := ts.Accounts("client")
+	clients := ts.Accounts(common.CONSUMER)
 
-	provider1Acct, provider1Addr := ts.GetAccount("provider", 0)
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 
 	// move to epoch 3 so we can check enough epochs in the past
 	ts.AdvanceEpochs(2)
@@ -221,10 +221,10 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	providersCount := 2
 
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
-	clients := ts.Accounts("client")
+	clients := ts.Accounts(common.CONSUMER)
 
-	_, provider1Addr := ts.GetAccount("provider", 0)
-	provider2Acct, provider2Addr := ts.GetAccount("provider", 1)
+	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
@@ -263,8 +263,8 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
@@ -282,8 +282,8 @@ func TestRelayPaymentDataModification(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
-	_, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
@@ -318,8 +318,8 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	_, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
@@ -351,8 +351,8 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	epochsToSave := ts.EpochsToSave()
 	epochBlocks := ts.EpochBlocks()
@@ -410,8 +410,8 @@ func TestRelayPaymentQoS(t *testing.T) {
 			ts := newTester(t)
 			ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-			client1Acct, _ := ts.GetAccount("client", 0)
-			providerAcct, providerAddr := ts.GetAccount("provider", 0)
+			client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+			providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 			qos := &types.QualityOfServiceReport{
@@ -438,8 +438,8 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
@@ -468,8 +468,8 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	dev1Acct, dev1Addr := ts.Account("dev1")
 	_, dev2Addr := ts.Account("dev2")
 
-	_, client1Addr := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	projectData := projecttypes.ProjectData{
 		Name:    "proj1",
@@ -531,8 +531,8 @@ func TestBadgeValidation(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
@@ -612,8 +612,8 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
@@ -657,8 +657,8 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
@@ -725,8 +725,8 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
@@ -800,9 +800,9 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
-	providers := ts.Accounts("provider")
+	providers := ts.Accounts(common.PROVIDER)
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
 	epochStart := ts.EpochStart()

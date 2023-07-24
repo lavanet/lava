@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -18,8 +19,8 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Create badQos: to see the effect of changing QosWeight, the provider need to
 	// provide bad service (here, his score is 0%)
@@ -97,8 +98,8 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	epochBlocks := ts.EpochBlocks()
 	epochsToSave := ts.EpochsToSave()
@@ -158,8 +159,8 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	epochBlocks := ts.EpochBlocks()
 	epochsToSave := ts.EpochsToSave()
@@ -225,8 +226,8 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	epochBlocks := ts.EpochBlocks()
 	epochsToSave := ts.EpochsToSave()
@@ -298,8 +299,8 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// make sure EpochBlocks default value is 20, and EpochsToSave is 10
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
@@ -361,8 +362,8 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// make sure EpochBlocks default value is 20, and EpochsToSave is 10
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
@@ -439,8 +440,8 @@ func TestStakePaymentUnstake(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount("client", 0)
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// ensure that EpochBlocks default value is 20, EpochsToSave is 10,  unstakeHoldBlocks is 210
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
@@ -498,8 +499,8 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		ts := newTester(t)
 		ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-		client1Acct, _ := ts.GetAccount("client", 0)
-		providerAcct, providerAddr := ts.GetAccount("provider", 0)
+		client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+		providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 		epochBlocks := ts.EpochBlocks()
 		epochsToSave := ts.EpochsToSave()

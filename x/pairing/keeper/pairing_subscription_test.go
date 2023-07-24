@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/slices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -14,7 +15,7 @@ func TestGetPairingForSubscription(t *testing.T) {
 	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	_, client1Addr := ts.GetAccount("client", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	_, dev1Addr := ts.Account("dev1")
 
 	ts.AdvanceEpoch()
@@ -55,7 +56,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	ts.AdvanceEpoch()
 
@@ -108,8 +109,8 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
 	ts.setupForPayments(1, 1, 0) // 1 provider, 2 client, default providers-to-pair
 
-	_, providerAddr := ts.GetAccount("provider", 0)
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	_, dev1Addr := ts.Account("dev1")
 
 	consumers := slices.Slice(client1Addr, dev1Addr)
@@ -196,7 +197,7 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 
 	ts.setupForPayments(1, 1, 0) // 1 provider, 0 client, default providers-to-pair
 
-	_, client1Addr := ts.GetAccount("client", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	proj, err := ts.QueryProjectDeveloper(client1Addr)
 	require.Nil(t, err)
@@ -255,7 +256,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(6, 1, 0) // 6 provider, 1 client, default providers-to-pair
 
-	_, client1Addr := ts.GetAccount("client", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	res, err := ts.QueryProjectDeveloper(client1Addr)
 	require.Nil(t, err)
@@ -318,8 +319,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
-	_, providerAddr := ts.GetAccount("provider", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	res, err := ts.QueryProjectDeveloper(client1Addr)
 	require.Nil(t, err)
@@ -436,7 +437,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(100, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	// add 10 months to the subscription
 	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10)
@@ -486,8 +487,8 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	_, client1Addr := ts.GetAccount("client", 0)
-	_, providerAddr := ts.GetAccount("provider", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 	_, dev1Addr := ts.Account("dev1")
 
 	oldEpochCuLimit := ts.plan.PlanPolicy.EpochCuLimit

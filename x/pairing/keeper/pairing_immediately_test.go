@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/slices"
 	projectTypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount("client", 0)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	epoch := ts.EpochStart()
 
@@ -32,7 +33,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	_, client1Addr := ts.GetAccount("client", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	dev1Acct, dev1Addr := ts.Account("dev1")
 
 	// takes effect retroactively in the current epoch
@@ -76,7 +77,7 @@ func TestAddKeyCreateProject(t *testing.T) {
 	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	_, client1Addr := ts.GetAccount("client", 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	dev1Acct, dev1Addr := ts.Account("dev1")
 
 	devkey := projectTypes.ProjectDeveloperKey(dev1Addr)

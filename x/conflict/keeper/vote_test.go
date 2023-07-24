@@ -103,7 +103,8 @@ func TestNotVotersProviders(t *testing.T) {
 	ts := newTester(t)
 	voteID, detection, relay0, _ := ts.setupForCommit()
 
-	_, notVoterProvider := ts.AddAccount("provider", 10, 10000) // create new provider not in stake
+	// create new provider not in stake
+	_, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, 10000)
 
 	msg := conflicttypes.MsgConflictVoteCommit{}
 	msg.Creator = notVoterProvider
@@ -136,7 +137,7 @@ func TestNewVoterOldVote(t *testing.T) {
 
 	// add a staked provider
 	balance := int64(10000)
-	_, notVoterProvider := ts.AddAccount("provider", 10, balance)
+	_, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, balance)
 	err := ts.StakeProvider(notVoterProvider, ts.spec, balance/10)
 	require.Nil(t, err)
 

@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	ts.AddSpec("mock", ts.spec)
 
 	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
-	providerAcct, providerAddr := ts.AddAccount("provider", 0, balance)
+	providerAcct, providerAddr := ts.AddAccount(common.PROVIDER, 0, balance)
 
 	err := ts.StakeProvider(providerAddr, ts.spec, balance/2)
 	require.Nil(t, err)

@@ -36,6 +36,11 @@ type Tester struct {
 	specs    map[string]spectypes.Spec
 }
 
+const (
+	PROVIDER string = "provider"
+	CONSUMER        = "consumer"
+)
+
 func NewTester(t *testing.T) *Tester {
 	ts := NewTesterRaw(t)
 

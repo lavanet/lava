@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,7 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 
 	// stake a provider
 	ts.addProvider(1)
-	providerAcct, _ := ts.GetAccount("provider", 0)
+	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// Verify the provider paid for its stake request
 	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
@@ -93,7 +94,7 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	ts.AdvanceBlocks(19)
 	// stake a provider
 	ts.addProvider(1)
-	providerAcct, _ := ts.GetAccount("provider", 0)
+	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// Verify the provider/client paid for its stake request
 	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
@@ -137,7 +138,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
 
-	providerAcct, _ := ts.GetAccount("provider", 0)
+	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// Verify the provider paid for its stake request
 	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
@@ -198,7 +199,7 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
 
-	providerAcct, _ := ts.GetAccount("provider", 0)
+	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// Verify the provider/client paid for its stake request
 	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)

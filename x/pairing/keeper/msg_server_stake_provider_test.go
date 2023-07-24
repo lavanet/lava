@@ -34,7 +34,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 
 			// Note: using the same "ts" means each provider added gets a new index ("it")
 			ts.addProviderMoniker(1, tt.moniker)
-			providerAcct, _ := ts.GetAccount("provider", it)
+			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
 
 			ts.AdvanceEpoch()
 
@@ -63,7 +63,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	ts.addProviderMoniker(1, moniker)
 	ts.AdvanceEpoch()
 
-	providerAcct, providerAddr := ts.GetAccount("provider", 0)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
 	stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
@@ -320,7 +320,7 @@ func TestStakeEndpoints(t *testing.T) {
 	ts.spec.ApiCollections = apiCollections
 	ts.AddSpec("mock", ts.spec)
 
-	_, providerAddr := ts.AddAccount("provider", 0, testBalance)
+	_, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
 
 	getEndpoint := func(
 		host string,
