@@ -29,15 +29,8 @@ var DeveloperKeyStatus;
 })(DeveloperKeyStatus = exports.DeveloperKeyStatus || (exports.DeveloperKeyStatus = {}));
 const GW_BACKEND_URL = "https://gateway-master.lava-cybertron.xyz/sdk";
 // const GW_BACKEND_URL = "http://127.0.0.1:4455/sdk";
-// const GW_BACKEND_URL = "http://127.0.0.1:4455/gateway/api";
-// const GW_BACKEND_URL = "http://127.0.0.1:3331";
-// const GW_BACKEND_URL = "https://gateway-master.lava-cybertron.xyz/gateway";
-// http://127.0.0.1:4455/gateway/api
-// https://gateway-master.lava-cybertron.xyz/gateway/api/sdk/developer-keys/<key>
-// https://gateway-master.lava-cybertron.xyz/sdk/developer-keys
 exports.axiosInstance = axios_1.default.create({
     baseURL: `${GW_BACKEND_URL}/api/sdk`,
-    //   withCredentials: true,
 });
 const generateKey = () => __awaiter(void 0, void 0, void 0, function* () {
     const prefix = "lava@";

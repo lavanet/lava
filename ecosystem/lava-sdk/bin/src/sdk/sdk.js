@@ -89,27 +89,22 @@ class LavaSDK {
         });
     }
     static createKey(apiSecretKey) {
-        var _a, _b;
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const { address: lavaAddress, privateHex: privateKey, mnemonicChecked: seedPhrase, } = yield (0, create_key_1.generateKey)();
             console.log("✅ Key was generated successfully");
             try {
-                const res = yield (0, create_key_1.createDeveloperKey)(lavaAddress, apiSecretKey);
-                console.log("🚀 ~ createKey ~ res:", res);
-                //todo if not okay.. throw...
+                yield (0, create_key_1.createDeveloperKey)(lavaAddress, apiSecretKey);
                 console.log("We're syncing your key with the project. It might take a few minutes.");
             }
             catch (error) {
                 if (axios_1.default.isAxiosError(error)) {
-                    console.log("❌  axios.isAxiosError(error):");
-                    console.error("Error: ", (_a = error.response) === null || _a === void 0 ? void 0 : _a.data.message);
-                    console.error("Error2: ", (_b = error.response) === null || _b === void 0 ? void 0 : _b.data);
-                    // Do something with this error...
+                    console.error("❌Error: ", (_a = error.response) === null || _a === void 0 ? void 0 : _a.data.message);
                 }
                 else {
-                    console.log("❌ELSE  axios.isAxiosError(error):");
-                    console.error(error);
+                    console.error("❌Unknown Error: ", error);
                 }
+                return;
             }
             let developerKeyStatus;
             let attemptsCounter = create_key_1.MAX_ATTEMPTS;
@@ -122,8 +117,8 @@ class LavaSDK {
                 else {
                     attemptsCounter--;
                     if (attemptsCounter === 0) {
-                        console.log("Error: ");
-                        break;
+                        console.log("❌Error: Timeout");
+                        return;
                     }
                     yield (0, create_key_1.timeout)(10000);
                 }
