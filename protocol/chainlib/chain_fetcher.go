@@ -37,11 +37,53 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 }
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
-	realChainID, specChainId, err := cf.FetchChainID(ctx)
-	// Validate spec chain id
-	if specChainId != realChainID {
-		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain ID, continuing with other endpoints", err, utils.Attribute{Key: "Spec chain ID", Value: specChainId}, utils.Attribute{Key: "Real chain ID", Value: realChainID}, utils.Attribute{Key: "endpoint", Value: cf.FetchEndpoint()})
+	for _, url := range cf.endpoint.NodeUrls {
+		addons := url.Addons
+		verifications := cf.chainParser.GetVerifications(addons)
+		for _, verification := range verifications {
+			err := cf.Verify(ctx, verification, addons)
+			if err != nil {
+				return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
+			}
+		}
 	}
+	return nil
+}
+
+func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, addons []string) error {
+	parsing := &verification.ParseDirective
+	collectionType := verification.ConnectionType
+	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, nil, cf.ChainFetcherMetadata())
+	if err != nil {
+		return utils.LavaFormatError("verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+	}
+
+	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, addons)
+	if err != nil {
+		return utils.LavaFormatWarning("verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+	}
+
+	parserInput, err := FormatResponseForParsing(reply, chainMessage)
+	if err != nil {
+		return err
+	}
+	parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
+	if err != nil {
+		return utils.LavaFormatWarning("Failed To Parse result", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: parsing.GetApiName()},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
+	}
+
+	if parsedResult != verification.Value {
+		return utils.LavaFormatWarning("Failed verification expected and received are", err, []utils.Attribute{
+			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "Method", Value: parsing.GetApiName()},
+			{Key: "Response", Value: string(reply.Data)},
+		}...)
+	}
+
 	return nil
 }
 
@@ -50,44 +92,6 @@ func (cf *ChainFetcher) ChainFetcherMetadata() []pairingtypes.Metadata {
 		{Name: ChainFetcherHeaderName, Value: cf.FetchEndpoint().NetworkAddress.Address},
 	}
 	return ret
-}
-
-func (cf *ChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
-	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_CHAIN_ID)
-	tagName := spectypes.FUNCTION_TAG_GET_CHAIN_ID.String()
-	// If parsing tag or wanted result does not exist
-	// skip chain id check with warning
-	if !ok || parsing.ResultParsing.DefaultValue == "" {
-		utils.LavaFormatWarning("skipping chain ID validation, chain ID missing from the spec", nil,
-			utils.Attribute{Key: "Chain ID", Value: cf.endpoint.ChainID},
-		)
-		return "", "", nil
-	}
-
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil, cf.ChainFetcherMetadata())
-	if err != nil {
-		return "", "", utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
-	}
-
-	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
-	if err != nil {
-		return "", "", utils.LavaFormatWarning(tagName+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
-	}
-
-	parserInput, err := FormatResponseForParsing(reply, chainMessage)
-	if err != nil {
-		return "", "", err
-	}
-	specID, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
-	if err != nil {
-		return "", "", utils.LavaFormatWarning("Failed To Parse FetchChainID", err, []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
-			{Key: "Method", Value: parsing.GetApiName()},
-			{Key: "Response", Value: string(reply.Data)},
-		}...)
-	}
-
-	return specID, parsing.ResultParsing.DefaultValue, nil
 }
 
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {

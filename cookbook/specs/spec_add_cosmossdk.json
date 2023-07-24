@@ -2017,12 +2017,12 @@
                         ],
                         "headers": [
                             {
-                                "name":"x-cosmos-block-height",
+                                "name": "x-cosmos-block-height",
                                 "kind": "pass_both",
-                                "function_tag":"SET_LATEST_IN_METADATA"
+                                "function_tag": "SET_LATEST_IN_METADATA"
                             },
                             {
-                                "name":"grpc-metadata-x-cosmos-block-height",
+                                "name": "grpc-metadata-x-cosmos-block-height",
                                 "kind": "pass_both"
                             }
                         ],
@@ -2060,6 +2060,24 @@
                                 "function_template": "%d",
                                 "function_tag": "SET_LATEST_IN_METADATA",
                                 "api_name": "x-cosmos-block-height"
+                            }
+                        ],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "/node_info",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "node_info",
+                                            "network"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/node_info"
+                                }
                             }
                         ]
                     },
@@ -3624,13 +3642,13 @@
                         ],
                         "headers": [
                             {
-                                "name":"x-cosmos-block-height",
+                                "name": "x-cosmos-block-height",
                                 "kind": "pass_both"
                             },
                             {
-                                "name":"grpc-metadata-x-cosmos-block-height",
+                                "name": "grpc-metadata-x-cosmos-block-height",
                                 "kind": "pass_both",
-                                "function_tag":"SET_LATEST_IN_METADATA"
+                                "function_tag": "SET_LATEST_IN_METADATA"
                             }
                         ],
                         "inheritance_apis": [],
@@ -3667,6 +3685,24 @@
                                 "function_template": "%d",
                                 "function_tag": "SET_LATEST_IN_METADATA",
                                 "api_name": "grpc-metadata-x-cosmos-block-height"
+                            }
+                        ],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "defaultNodeInfo",
+                                            "network"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                                }
                             }
                         ]
                     },
@@ -4254,6 +4290,24 @@
                                     "encoding": "hex"
                                 },
                                 "api_name": "block"
+                            }
+                        ],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "node_info",
+                                            "network"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "status"
+                                }
                             }
                         ]
                     }

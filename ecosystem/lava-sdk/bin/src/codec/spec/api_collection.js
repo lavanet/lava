@@ -15,7 +15,7 @@ var functionTag;
     functionTag[functionTag["GET_BLOCK_BY_NUM"] = 2] = "GET_BLOCK_BY_NUM";
     functionTag[functionTag["SET_LATEST_IN_METADATA"] = 3] = "SET_LATEST_IN_METADATA";
     functionTag[functionTag["SET_LATEST_IN_BODY"] = 4] = "SET_LATEST_IN_BODY";
-    functionTag[functionTag["GET_CHAIN_ID"] = 5] = "GET_CHAIN_ID";
+    functionTag[functionTag["VERIFICATION"] = 5] = "VERIFICATION";
     functionTag[functionTag["UNRECOGNIZED"] = -1] = "UNRECOGNIZED";
 })(functionTag = exports.functionTag || (exports.functionTag = {}));
 function functionTagFromJSON(object) {
@@ -36,8 +36,8 @@ function functionTagFromJSON(object) {
         case "SET_LATEST_IN_BODY":
             return functionTag.SET_LATEST_IN_BODY;
         case 5:
-        case "GET_CHAIN_ID":
-            return functionTag.GET_CHAIN_ID;
+        case "VERIFICATION":
+            return functionTag.VERIFICATION;
         case -1:
         case "UNRECOGNIZED":
         default:
@@ -57,8 +57,8 @@ function functionTagToJSON(object) {
             return "SET_LATEST_IN_METADATA";
         case functionTag.SET_LATEST_IN_BODY:
             return "SET_LATEST_IN_BODY";
-        case functionTag.GET_CHAIN_ID:
-            return "GET_CHAIN_ID";
+        case functionTag.VERIFICATION:
+            return "VERIFICATION";
         case functionTag.UNRECOGNIZED:
         default:
             return "UNRECOGNIZED";

@@ -19,10 +19,16 @@ const (
 
 type chainRouterImpl struct {
 	lock             *sync.RWMutex
-	chainProxyRouter map[string]ChainProxy
+	chainProxyRouter map[RouterKey]ChainProxy
 }
 
-func (cri *chainRouterImpl) routerKey(addons []string) string {
+type RouterKey string
+
+func (rk *RouterKey) String() string {
+	return string(*rk)
+}
+
+func NewRouterKey(addons []string) RouterKey {
 	if len(addons) == 0 {
 		return sep + sep
 	}
@@ -31,19 +37,19 @@ func (cri *chainRouterImpl) routerKey(addons []string) string {
 		// add support for empty addon in all routers
 		addons = append([]string{""}, addons...)
 	}
-	return sep + strings.Join(addons, sep) + sep
+	return RouterKey(sep + strings.Join(addons, sep) + sep)
 }
 
 func (cri *chainRouterImpl) getChainProxySupporting(addons []string) ChainProxy {
 	cri.lock.RLock()
 	defer cri.lock.RUnlock()
-	wantedRouterKey := cri.routerKey(addons)
+	wantedRouterKey := NewRouterKey(addons)
 	if chainProxyRet, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
 		return chainProxyRet
 	}
 	type selection struct {
 		chainProxy ChainProxy
-		routerKey  string
+		routerKey  RouterKey
 	}
 	selected := selection{}
 	// check for the best endpoint that supports the requested addons
@@ -51,7 +57,7 @@ possibilitiesLoop:
 	for routerKey, chainProxy := range cri.chainProxyRouter {
 		for _, addon := range addons {
 			addonToSearch := sep + addon + sep
-			if !strings.Contains(routerKey, addonToSearch) {
+			if !strings.Contains(routerKey.String(), addonToSearch) {
 				if debug {
 					utils.LavaFormatDebug("chainProxy not supporting", utils.Attribute{Key: "routerKey", Value: routerKey}, utils.Attribute{Key: "addonToSearch", Value: addonToSearch})
 				}
@@ -59,7 +65,7 @@ possibilitiesLoop:
 			}
 		}
 		// if we have a selection that fits and is more precise than what we need
-		if strings.Count(selected.routerKey, sep) < strings.Count(routerKey, sep) && selected.routerKey != "" {
+		if strings.Count(selected.routerKey.String(), sep) < strings.Count(routerKey.String(), sep) && selected.routerKey != "" {
 			continue
 		}
 		// means the current routerKey supports all of the addons requested
@@ -94,11 +100,11 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (ChainRouter, error) {
 	cri := chainRouterImpl{
 		lock:             &sync.RWMutex{},
-		chainProxyRouter: map[string]ChainProxy{},
+		chainProxyRouter: map[RouterKey]ChainProxy{},
 	}
-	routerProxies := map[string][]common.NodeUrl{}
+	routerProxies := map[RouterKey][]common.NodeUrl{}
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
-		routerKey := cri.routerKey(nodeUrl.Addons)
+		routerKey := NewRouterKey(nodeUrl.Addons)
 		var nodeUrls []common.NodeUrl
 		var ok bool
 		if nodeUrls, ok = routerProxies[routerKey]; !ok {

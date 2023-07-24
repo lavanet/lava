@@ -358,35 +358,35 @@
                         ],
                         "headers": [
                             {
-                                "name":"x-aptos-ledger-version",
+                                "name": "x-aptos-ledger-version",
                                 "kind": "pass_reply"
                             },
                             {
-                                "name":"x-aptos-block-height",
+                                "name": "x-aptos-block-height",
                                 "kind": "pass_reply"
                             },
                             {
-                                "name":"x-aptos-ledger-oldest-version",
+                                "name": "x-aptos-ledger-oldest-version",
                                 "kind": "pass_reply"
                             },
                             {
-                                "name":"x-aptos-oldest-block-height",
+                                "name": "x-aptos-oldest-block-height",
                                 "kind": "pass_reply"
                             },
                             {
-                                "name":"x-aptos-chain-id",
+                                "name": "x-aptos-chain-id",
                                 "kind": "pass_reply"
                             },
                             {
-                                "name":"x-aptos-epoch",
+                                "name": "x-aptos-epoch",
                                 "kind": "pass_reply"
                             },
                             {
-                                "name":"x-aptos-ledger-timestampusec",
+                                "name": "x-aptos-ledger-timestampusec",
                                 "kind": "pass_ignore"
                             },
                             {
-                                "name":"x-aptos-cursor",
+                                "name": "x-aptos-cursor",
                                 "kind": "pass_reply"
                             }
                         ],
@@ -420,7 +420,7 @@
                         ],
                         "verifications": [
                             {
-                                "name":"chain-id",
+                                "name": "chain-id",
                                 "parse_directive": {
                                     "function_template": "/",
                                     "function_tag": "VERIFICATION",
@@ -433,9 +433,9 @@
                                     },
                                     "api_name": "/"
                                 },
-                                "values" : [
+                                "values": [
                                     {
-                                        "expected_value":"1"
+                                        "expected_value": "1"
                                     }
                                 ]
                             }

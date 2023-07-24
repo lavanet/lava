@@ -28,6 +28,13 @@ const (
 	debug                     = false
 )
 
+type VerificationContainer struct {
+	ConnectionType string
+	Name           string
+	ParseDirective spectypes.ParseDirective
+	Value          string
+}
+
 type TaggedContainer struct {
 	Parsing       *spectypes.ParseDirective
 	ApiCollection *spectypes.ApiCollection
@@ -45,6 +52,7 @@ type BaseChainParser struct {
 	serverApis     map[ApiKey]ApiContainer
 	apiCollections map[CollectionKey]*spectypes.ApiCollection
 	headers        map[ApiKey]*spectypes.Header
+	verifications  map[RouterKey][]VerificationContainer
 }
 
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
@@ -75,12 +83,18 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 	return retMeatadata, overwriteRequestedBlock, ignoredMetadata
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
+func (bcp *BaseChainParser) GetVerifications(addons []string) []VerificationContainer {
+	routerKey := NewRouterKey(addons)
+	return bcp.verifications[routerKey]
+}
+
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header, verifications map[RouterKey][]VerificationContainer) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
 	bcp.headers = headers
 	bcp.apiCollections = apiCollections
+	bcp.verifications = verifications
 }
 
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
@@ -259,11 +273,12 @@ func addAttributeToError(key string, value string, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[RouterKey][]VerificationContainer) {
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
+	verifications := map[RouterKey][]VerificationContainer{}
 	if spec.Enabled {
 		for _, apiCollection := range spec.ApiCollections {
 			if !apiCollection.Enabled {
@@ -318,10 +333,30 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 					ConnectionType: collectionKey.ConnectionType,
 				}] = header
 			}
+			for _, verification := range apiCollection.Verifications {
+				for _, parseValue := range verification.Values {
+					verCont := VerificationContainer{
+						ConnectionType: apiCollection.CollectionData.Type,
+						Name:           verification.Name,
+						ParseDirective: *verification.ParseDirective,
+						Value:          parseValue.ExpectedValue,
+					}
+					extensions := strings.Split(parseValue.Extension, ",")
+					// we are appending addons and extensions because chainRouter is routing using them
+					routerKey := NewRouterKey(append([]string{apiCollection.CollectionData.AddOn}, extensions...))
+					extensionVerifications, ok := verifications[routerKey]
+					if !ok {
+						extensionVerifications = []VerificationContainer{verCont}
+					} else {
+						extensionVerifications = append(extensionVerifications, verCont)
+					}
+					verifications[routerKey] = extensionVerifications
+				}
+			}
 			apiCollections[collectionKey] = apiCollection
 		}
 	}
-	return serverApis, taggedApis, apiCollections, headers
+	return serverApis, taggedApis, apiCollections, headers, verifications
 }
 
 // matchSpecApiByName returns service api which match given name

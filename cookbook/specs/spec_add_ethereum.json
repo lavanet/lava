@@ -1018,7 +1018,7 @@
                         ],
                         "verifications": [
                             {
-                                "name":"chain-id",
+                                "name": "chain-id",
                                 "parse_directive": {
                                     "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
                                     "function_tag": "VERIFICATION",
@@ -1031,9 +1031,9 @@
                                     },
                                     "api_name": "eth_chainId"
                                 },
-                                "values" : [
+                                "values": [
                                     {
-                                        "expected_value":"0x1"
+                                        "expected_value": "0x1"
                                     }
                                 ]
                             }
@@ -1280,22 +1280,30 @@
                             "type": "POST",
                             "add_on": ""
                         },
-                        "apis":[],
+                        "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex",
-                                    "default_value":  "0x5"
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0"
+                                        ],
+                                        "parser_func": "PARSE_BY_ARG",
+                                        "encoding": "hex"
+                                    },
+                                    "api_name": "eth_chainId"
                                 },
-                                "api_name": "eth_chainId"
+                                "values": [
+                                    {
+                                        "expected_value": "0x5"
+                                    }
+                                ]
                             }
                         ]
                     }

@@ -7,7 +7,7 @@ export declare enum functionTag {
     GET_BLOCK_BY_NUM = 2,
     SET_LATEST_IN_METADATA = 3,
     SET_LATEST_IN_BODY = 4,
-    GET_CHAIN_ID = 5,
+    VERIFICATION = 5,
     UNRECOGNIZED = -1
 }
 export declare function functionTagFromJSON(object: any): functionTag;

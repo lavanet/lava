@@ -189,7 +189,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 					// Fetch chain id
 					err := chainFetcher.Validate(ctx)
 					if err != nil {
-						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to fetch chain ID, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 					}
 				} else {
 					var ok bool

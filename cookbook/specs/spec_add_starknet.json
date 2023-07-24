@@ -422,19 +422,28 @@
                                     "parser_func": "PARSE_BY_ARG"
                                 },
                                 "api_name": "starknet_blockNumber"
-                            },
+                            }
+                        ],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex",
-                                    "default_value":  "0x534e5f4d41494e"
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0"
+                                        ],
+                                        "parser_func": "PARSE_BY_ARG",
+                                        "encoding": "hex"
+                                    },
+                                    "api_name": "starknet_chainId"
                                 },
-                                "api_name": "starknet_chainId"
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f4d41494e"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -470,22 +479,30 @@
                             "type": "POST",
                             "add_on": ""
                         },
-                        "apis":[],
+                        "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex",
-                                    "default_value":  "0x534e5f474f45524c49"
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_chainId\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0"
+                                        ],
+                                        "parser_func": "PARSE_BY_ARG",
+                                        "encoding": "hex"
+                                    },
+                                    "api_name": "starknet_chainId"
                                 },
-                                "api_name": "starknet_chainId"
+                                "values": [
+                                    {
+                                        "expected_value": "0x534e5f474f45524c49"
+                                    }
+                                ]
                             }
                         ]
                     }

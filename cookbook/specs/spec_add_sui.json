@@ -41,15 +41,12 @@
                                 },
                                 "compute_units": 100,
                                 "enabled": true,
-                                "enabled": true,
-
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-
                                 "extra_compute_units": 0
                             },
                             {
@@ -62,16 +59,13 @@
                                 },
                                 "compute_units": 100,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_devInspectTransaction",
@@ -83,16 +77,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_dryRunTransaction",
@@ -104,16 +95,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_executeTransaction",
@@ -125,16 +113,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_executeTransactionSerializedSig",
@@ -146,16 +131,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getAllBalances",
@@ -167,16 +149,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getAllCoins",
@@ -188,16 +167,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getBalance",
@@ -209,16 +185,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCheckpointContents",
@@ -230,16 +203,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCheckpointContentsByDigest",
@@ -251,16 +221,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCheckpoint",
@@ -272,15 +239,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCheckpointSummaryByDigest",
@@ -292,16 +257,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCoinMetadata",
@@ -313,16 +275,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCoins",
@@ -334,16 +293,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getCommitteeInfo",
@@ -355,16 +311,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getDelegatedStakes",
@@ -376,16 +329,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getDynamicFieldObject",
@@ -397,16 +347,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getDynamicFields",
@@ -418,16 +365,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getEvents",
@@ -439,16 +383,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getLatestCheckpointSequenceNumber",
@@ -460,15 +401,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getMoveFunctionArgTypes",
@@ -480,16 +419,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getNormalizedMoveFunction",
@@ -501,16 +437,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getNormalizedMoveModule",
@@ -522,16 +455,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getNormalizedMoveModulesByPackage",
@@ -543,16 +473,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getNormalizedMoveStruct",
@@ -564,16 +491,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getObject",
@@ -585,16 +509,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getObjectsOwnedByAddress",
@@ -606,16 +527,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getRawObject",
@@ -627,16 +545,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getReferenceGasPrice",
@@ -648,16 +563,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getSuiSystemState",
@@ -669,16 +581,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getTotalSupply",
@@ -690,16 +599,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getTotalTransactionNumber",
@@ -711,16 +617,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getTransaction",
@@ -732,16 +635,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getTransactionAuthSigners",
@@ -753,16 +653,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getTransactions",
@@ -774,16 +671,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getTransactionsInRange",
@@ -795,16 +689,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_getValidators",
@@ -816,16 +707,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_mergeCoins",
@@ -837,16 +725,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_moveCall",
@@ -858,16 +743,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_pay",
@@ -879,16 +761,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_payAllSui",
@@ -900,16 +779,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_paySui",
@@ -921,16 +797,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_publish",
@@ -942,16 +815,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_requestAddDelegation",
@@ -963,16 +833,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_requestSwitchDelegation",
@@ -984,16 +851,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_requestWithdrawDelegation",
@@ -1005,16 +869,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_splitCoin",
@@ -1026,16 +887,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_splitCoinEqual",
@@ -1047,16 +905,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_submitTransaction",
@@ -1068,16 +923,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_subscribeEvent",
@@ -1089,16 +941,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": true,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": true,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_tblsSignRandomnessObject",
@@ -1110,16 +959,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_transferObject",
@@ -1131,16 +977,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_transferSui",
@@ -1152,16 +995,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_object_id",
@@ -1173,16 +1013,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "sui_tryGetPastObject",
@@ -1194,16 +1031,13 @@
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
-                            
-                                        "category": {
-                                            "deterministic": true,
-                                            "local": false,
-                                            "subscription": false,
-                                            "stateful": 0
-                                        },
-                            
-                                        "extra_compute_units": 0
-                            
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -1232,23 +1066,32 @@
                                     "parser_func": "PARSE_BY_ARG"
                                 },
                                 "api_name": "sui_getLatestCheckpointSequenceNumber"
-                            },
+                            }
+                        ],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getChainIdentifier\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex",
-                                    "default_value": "6bd1dd20"
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"sui_getChainIdentifier\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0"
+                                        ],
+                                        "parser_func": "PARSE_BY_ARG",
+                                        "encoding": "hex"
+                                    },
+                                    "api_name": "sui_getChainIdentifier"
                                 },
-                                "api_name": "sui_getChainIdentifier"
+                                "values": [
+                                    {
+                                        "expected_value": "6bd1dd20"
+                                    }
+                                ]
                             }
                         ]
                     }
-                    ]
+                ]
             }
         ]
     },

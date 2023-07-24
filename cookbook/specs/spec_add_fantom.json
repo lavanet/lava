@@ -849,19 +849,15 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"ftm_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex",
-                                    "default_value":  "0xfa"
-                                },
-                                "api_name": "ftm_chainId"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0xfa"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -897,22 +893,18 @@
                             "type": "POST",
                             "add_on": ""
                         },
-                        "apis":[],
+                        "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"ftm_chainId\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "encoding": "hex",
-                                    "default_value":  "0xfa2"
-                                },
-                                "api_name": "ftm_chainId"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0xfa2"
+                                    }
+                                ]
                             }
                         ]
                     }

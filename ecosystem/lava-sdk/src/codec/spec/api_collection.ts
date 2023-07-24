@@ -10,7 +10,7 @@ export enum functionTag {
   GET_BLOCK_BY_NUM = 2,
   SET_LATEST_IN_METADATA = 3,
   SET_LATEST_IN_BODY = 4,
-  GET_CHAIN_ID = 5,
+  VERIFICATION = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -32,8 +32,8 @@ export function functionTagFromJSON(object: any): functionTag {
     case "SET_LATEST_IN_BODY":
       return functionTag.SET_LATEST_IN_BODY;
     case 5:
-    case "GET_CHAIN_ID":
-      return functionTag.GET_CHAIN_ID;
+    case "VERIFICATION":
+      return functionTag.VERIFICATION;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -53,8 +53,8 @@ export function functionTagToJSON(object: functionTag): string {
       return "SET_LATEST_IN_METADATA";
     case functionTag.SET_LATEST_IN_BODY:
       return "SET_LATEST_IN_BODY";
-    case functionTag.GET_CHAIN_ID:
-      return "GET_CHAIN_ID";
+    case functionTag.VERIFICATION:
+      return "VERIFICATION";
     case functionTag.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
