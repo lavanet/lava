@@ -60,6 +60,11 @@ export declare class LavaSDK {
      */
     constructor(options: LavaSDKOptions);
     static create(options: LavaSDKOptions): Promise<LavaSDK>;
+    static createKey(apiSecretKey: string): Promise<{
+        lavaAddress: string;
+        privateKey: string;
+        seedPhrase: string;
+    }>;
     private debugPrint;
     private fetchNewBadge;
     private initLavaProviders;

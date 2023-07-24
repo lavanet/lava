@@ -16,7 +16,6 @@
     "run_rest_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/restAPI.js",
     "run_jsonrpc_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC.js",
     "run_jsonrpc_badge_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC_badge_test.js",
-
     "run_test_tendermint_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/tendermintRPC_test.js",
     "node_test_tendermint_example": "node ./bin/examples/tendermintRPC_test.js",
     "run_test_rest_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/restAPI_test.js",
@@ -32,6 +31,7 @@
     "lava-sdk": "bin/main.js"
   },
   "devDependencies": {
+    "@types/elliptic": "^6.4.14",
     "@types/jest": "^29.2.2",
     "http-server": "^14.1.1",
     "typescript": "^4.8.4",
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@cosmjs/amino": "^0.29.4",
-    "@cosmjs/crypto": "^0.29.4",
+    "@cosmjs/crypto": "^0.29.5",
     "@cosmjs/encoding": "^0.29.4",
     "@cosmjs/launchpad": "^0.27.1",
     "@cosmjs/proto-signing": "^0.29.4",
@@ -51,8 +51,10 @@
     "@types/google-protobuf": "^3.15.6",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
+    "axios": "^1.4.0",
     "chalk": "4.1.2",
     "commander": "^9.4.1",
+    "elliptic": "^6.5.4",
     "eslint": "^8.29.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
@@ -65,7 +67,9 @@
     "rxjs": "^7.5.7",
     "ts-jest": "^29.0.3",
     "ts-proto": "^1.145.0",
-    "ts-protoc-gen": "^0.15.0"
+    "ts-protoc-gen": "^0.15.0",
+    "util": "^0.12.5",
+    "uuidv4": "^6.2.13"
   },
   "types": "./bin/src/sdk/sdk.d.ts",
   "directories": {
@@ -87,7 +91,7 @@
   },
   "homepage": "https://github.com/lavanet/lava-sdk#readme",
   "engines": {
-		"node": ">=18",
-		"npm": ">=6.12.0"
-	}
+    "node": ">=18",
+    "npm": ">=6.12.0"
+  }
 }

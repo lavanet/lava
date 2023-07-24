@@ -21,6 +21,8 @@ const chains_1 = require("../util/chains");
 const common_1 = require("../util/common");
 const providers_1 = require("../lavaOverLava/providers");
 const default_1 = require("../config/default");
+const create_key_1 = require("../util/create-key");
+const axios_1 = __importDefault(require("axios"));
 class LavaSDK {
     /**
      * Create Lava-SDK instance
@@ -84,6 +86,50 @@ class LavaSDK {
     static create(options) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield new LavaSDK(options);
+        });
+    }
+    static createKey(apiSecretKey) {
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            const { address: lavaAddress, privateHex: privateKey, mnemonicChecked: seedPhrase, } = yield (0, create_key_1.generateKey)();
+            console.log("✅ Key was generated successfully");
+            try {
+                const res = yield (0, create_key_1.createDeveloperKey)(lavaAddress, apiSecretKey);
+                console.log("🚀 ~ createKey ~ res:", res);
+                //todo if not okay.. throw...
+                console.log("We're syncing your key with the project. It might take a few minutes.");
+            }
+            catch (error) {
+                if (axios_1.default.isAxiosError(error)) {
+                    console.log("❌  axios.isAxiosError(error):");
+                    console.error("Error: ", (_a = error.response) === null || _a === void 0 ? void 0 : _a.data.message);
+                    console.error("Error2: ", (_b = error.response) === null || _b === void 0 ? void 0 : _b.data);
+                    // Do something with this error...
+                }
+                else {
+                    console.log("❌ELSE  axios.isAxiosError(error):");
+                    console.error(error);
+                }
+            }
+            let developerKeyStatus;
+            let attemptsCounter = create_key_1.MAX_ATTEMPTS;
+            while (true) {
+                const data = yield (0, create_key_1.getKey)(apiSecretKey, lavaAddress);
+                developerKeyStatus = data.data.status;
+                if (developerKeyStatus === create_key_1.DeveloperKeyStatus.SYNCED) {
+                    break;
+                }
+                else {
+                    attemptsCounter--;
+                    if (attemptsCounter === 0) {
+                        console.log("Error: ");
+                        break;
+                    }
+                    yield (0, create_key_1.timeout)(10000);
+                }
+            }
+            console.log("✅ Key was synced successfully");
+            return { lavaAddress, privateKey, seedPhrase: seedPhrase.toString() };
         });
     }
     debugPrint(message, ...optionalParams) {

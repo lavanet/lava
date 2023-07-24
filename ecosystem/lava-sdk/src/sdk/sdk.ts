@@ -25,6 +25,15 @@ import {
 } from "../config/default";
 import { QueryShowAllChainsResponse } from "../codec/spec/query";
 import { GenerateBadgeResponse } from "../grpc_web_services/pairing/badges_pb";
+import {
+  DeveloperKeyStatus,
+  MAX_ATTEMPTS,
+  createDeveloperKey,
+  generateKey,
+  getKey,
+  timeout,
+} from "../util/create-key";
+import axios from "axios";
 /**
  * Options for sending RPC relay.
  */
@@ -155,6 +164,51 @@ export class LavaSDK {
    */
   static async create(options: LavaSDKOptions): Promise<LavaSDK> {
     return await new LavaSDK(options);
+  }
+
+  static async createKey(apiSecretKey: string) {
+    const {
+      address: lavaAddress,
+      privateHex: privateKey,
+      mnemonicChecked: seedPhrase,
+    } = await generateKey();
+    console.log("✅ Key was generated successfully");
+
+    try {
+      await createDeveloperKey(lavaAddress, apiSecretKey);
+      console.log(
+        "We're syncing your key with the project. It might take a few minutes."
+      );
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("❌Error: ", error.response?.data.message);
+      } else {
+        console.error("❌Unknown Error: ", error);
+      }
+      return;
+    }
+
+    let developerKeyStatus: DeveloperKeyStatus;
+    let attemptsCounter = MAX_ATTEMPTS;
+
+    while (true) {
+      const data = await getKey(apiSecretKey, lavaAddress);
+      developerKeyStatus = data.data.status;
+      if (developerKeyStatus === DeveloperKeyStatus.SYNCED) {
+        break;
+      } else {
+        attemptsCounter--;
+        if (attemptsCounter === 0) {
+          console.log("❌Error: Timeout");
+          return;
+        }
+        await timeout(10000);
+      }
+    }
+
+    console.log("✅ Key was synced successfully");
+
+    return { lavaAddress, privateKey, seedPhrase: seedPhrase.toString() };
   }
 
   private debugPrint(message?: any, ...optionalParams: any[]) {
