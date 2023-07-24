@@ -131,7 +131,11 @@ func CombineUnique[T Combinable](appendFrom []T, appendTo []T, currentMap map[st
 				if appendTo[current.index].Differeniator() != combinable.Differeniator() {
 					return nil, fmt.Errorf("differentiator mismatch in overwrite %s vs %s", combinable.Differeniator(), appendTo[current.index].Differeniator())
 				}
-				appendTo[current.index] = overwritten.(T)
+				overwrittenT, ok := overwritten.(T)
+				if !ok {
+					return nil, fmt.Errorf("failed casting overwritten to T %s", overwritten.Differeniator())
+				}
+				appendTo[current.index] = overwrittenT
 			}
 		}
 	}
