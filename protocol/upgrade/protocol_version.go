@@ -44,31 +44,25 @@ func (um *UpgradeManager) SetProtocolVersion(newVersion *protocoltypes.Version) 
 }
 
 func BuildVersionFromParamChangeEvent(event terderminttypes.Event) bool {
-	foundVersionParam := false
 	var versionValue []byte
 
 	for _, attribute := range event.Attributes {
 		key := string(attribute.Key)
 		value := string(attribute.Value)
 
-		if key == "param" {
-			if value == "Version" {
-				foundVersionParam = true
-			} else {
-				// Reset the flag if we encounter a "param" not equal to "Version"
-				foundVersionParam = false
-			}
-		} else if key == "value" && foundVersionParam {
+		if key == "param" && value != "Version" {
+			return false
+		}
+		if key == "value" {
 			versionValue = attribute.Value
 			break
 		}
 	}
-	// if versionValue not found, return false
 	if versionValue == nil {
 		return false
 	}
 	var version *ProtocolVersion
-	// We are making sure that proposal value can be unmarshalled with ProtocolVersion type
+	// making sure that proposal value can be unmarshalled with ProtocolVersion type
 	err := json.Unmarshal(versionValue, &version)
 	return err == nil
 }
