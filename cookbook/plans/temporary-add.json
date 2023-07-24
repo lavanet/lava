@@ -27,13 +27,6 @@
                                 "eth_blockNumber",
                                 "eth_accounts"
                             ]
-                        },
-                        {
-                            "chain_id": "FTM250",
-                            "apis": [
-                                "ftm_chainId",
-                                "ftm_blockNumber"
-                            ]
                         }
                     ],
                     "geolocation_profile": "18446744073709551615",

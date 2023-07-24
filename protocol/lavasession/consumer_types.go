@@ -16,6 +16,10 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
+const AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
+
+var AllowInsecureConnectionToProviders = false
+
 type SessionInfo struct {
 	Session           *SingleConsumerSession
 	Epoch             uint64
@@ -74,6 +78,7 @@ type Endpoint struct {
 	Client             *pairingtypes.RelayerClient
 	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
+	Addons             []string
 }
 
 type SessionWithProvider struct {
@@ -116,6 +121,22 @@ type ConsumerSessionsWithProvider struct {
 	MaxComputeUnits   uint64
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
+}
+
+func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+	if addon == "" {
+		return true
+	}
+	for _, endpoint := range cswp.Endpoints {
+		for _, addonSupported := range endpoint.Addons {
+			if addonSupported == addon {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
@@ -207,7 +228,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-	conn, err := ConnectgRPCClient(connectCtx, addr)
+	conn, err := ConnectgRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
 	if err != nil {
 		return nil, nil, err
 	}

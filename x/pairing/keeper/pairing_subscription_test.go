@@ -111,7 +111,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	policies := []*planstypes.Policy{proj.AdminPolicy, proj.SubscriptionPolicy, &ts.plan.PlanPolicy}
 	sub, found := ts.keepers.Subscription.GetSubscription(_ctx, proj.GetSubscription())
 	require.True(t, found)
-	allowedCu := ts.keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, proj.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCu, _ := ts.keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, proj.GetUsedCu(), sub.GetMonthCuLeft())
 
 	tests := []struct {
 		name  string

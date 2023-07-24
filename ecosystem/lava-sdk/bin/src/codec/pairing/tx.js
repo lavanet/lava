@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MsgClientImpl = exports.MsgUnfreezeProviderResponse = exports.MsgUnfreezeProvider = exports.MsgFreezeProviderResponse = exports.MsgFreezeProvider = exports.MsgRelayPaymentResponse = exports.MsgRelayPayment = exports.MsgUnstakeClientResponse = exports.MsgUnstakeClient = exports.MsgUnstakeProviderResponse = exports.MsgUnstakeProvider = exports.MsgStakeClientResponse = exports.MsgStakeClient = exports.MsgStakeProviderResponse = exports.MsgStakeProvider = exports.protobufPackage = void 0;
+exports.MsgClientImpl = exports.MsgUnfreezeProviderResponse = exports.MsgUnfreezeProvider = exports.MsgFreezeProviderResponse = exports.MsgFreezeProvider = exports.MsgRelayPaymentResponse = exports.MsgRelayPayment = exports.MsgUnstakeProviderResponse = exports.MsgUnstakeProvider = exports.MsgStakeProviderResponse = exports.MsgStakeProvider = exports.protobufPackage = void 0;
 /* eslint-disable */
 const long_1 = __importDefault(require("long"));
 const minimal_1 = __importDefault(require("protobufjs/minimal"));
@@ -44,43 +44,43 @@ exports.MsgStakeProvider = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.chainID = reader.string();
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.amount = coin_1.Coin.decode(reader, reader.uint32());
                     continue;
                 case 4:
-                    if (tag !== 34) {
+                    if (tag != 34) {
                         break;
                     }
                     message.endpoints.push(endpoint_1.Endpoint.decode(reader, reader.uint32()));
                     continue;
                 case 5:
-                    if (tag !== 40) {
+                    if (tag != 40) {
                         break;
                     }
                     message.geolocation = reader.uint64();
                     continue;
                 case 6:
-                    if (tag !== 50) {
+                    if (tag != 50) {
                         break;
                     }
                     message.moniker = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -146,7 +146,7 @@ exports.MsgStakeProviderResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -165,134 +165,6 @@ exports.MsgStakeProviderResponse = {
     },
     fromPartial(_) {
         const message = createBaseMsgStakeProviderResponse();
-        return message;
-    },
-};
-function createBaseMsgStakeClient() {
-    return { creator: "", chainID: "", amount: undefined, geolocation: long_1.default.UZERO };
-}
-exports.MsgStakeClient = {
-    encode(message, writer = minimal_1.default.Writer.create()) {
-        if (message.creator !== "") {
-            writer.uint32(10).string(message.creator);
-        }
-        if (message.chainID !== "") {
-            writer.uint32(18).string(message.chainID);
-        }
-        if (message.amount !== undefined) {
-            coin_1.Coin.encode(message.amount, writer.uint32(26).fork()).ldelim();
-        }
-        if (!message.geolocation.isZero()) {
-            writer.uint32(32).uint64(message.geolocation);
-        }
-        return writer;
-    },
-    decode(input, length) {
-        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
-        let end = length === undefined ? reader.len : reader.pos + length;
-        const message = createBaseMsgStakeClient();
-        while (reader.pos < end) {
-            const tag = reader.uint32();
-            switch (tag >>> 3) {
-                case 1:
-                    if (tag !== 10) {
-                        break;
-                    }
-                    message.creator = reader.string();
-                    continue;
-                case 2:
-                    if (tag !== 18) {
-                        break;
-                    }
-                    message.chainID = reader.string();
-                    continue;
-                case 3:
-                    if (tag !== 26) {
-                        break;
-                    }
-                    message.amount = coin_1.Coin.decode(reader, reader.uint32());
-                    continue;
-                case 4:
-                    if (tag !== 32) {
-                        break;
-                    }
-                    message.geolocation = reader.uint64();
-                    continue;
-            }
-            if ((tag & 7) === 4 || tag === 0) {
-                break;
-            }
-            reader.skipType(tag & 7);
-        }
-        return message;
-    },
-    fromJSON(object) {
-        return {
-            creator: isSet(object.creator) ? String(object.creator) : "",
-            chainID: isSet(object.chainID) ? String(object.chainID) : "",
-            amount: isSet(object.amount) ? coin_1.Coin.fromJSON(object.amount) : undefined,
-            geolocation: isSet(object.geolocation) ? long_1.default.fromValue(object.geolocation) : long_1.default.UZERO,
-        };
-    },
-    toJSON(message) {
-        const obj = {};
-        message.creator !== undefined && (obj.creator = message.creator);
-        message.chainID !== undefined && (obj.chainID = message.chainID);
-        message.amount !== undefined && (obj.amount = message.amount ? coin_1.Coin.toJSON(message.amount) : undefined);
-        message.geolocation !== undefined && (obj.geolocation = (message.geolocation || long_1.default.UZERO).toString());
-        return obj;
-    },
-    create(base) {
-        return exports.MsgStakeClient.fromPartial(base !== null && base !== void 0 ? base : {});
-    },
-    fromPartial(object) {
-        var _a, _b;
-        const message = createBaseMsgStakeClient();
-        message.creator = (_a = object.creator) !== null && _a !== void 0 ? _a : "";
-        message.chainID = (_b = object.chainID) !== null && _b !== void 0 ? _b : "";
-        message.amount = (object.amount !== undefined && object.amount !== null)
-            ? coin_1.Coin.fromPartial(object.amount)
-            : undefined;
-        message.geolocation = (object.geolocation !== undefined && object.geolocation !== null)
-            ? long_1.default.fromValue(object.geolocation)
-            : long_1.default.UZERO;
-        return message;
-    },
-};
-function createBaseMsgStakeClientResponse() {
-    return {};
-}
-exports.MsgStakeClientResponse = {
-    encode(_, writer = minimal_1.default.Writer.create()) {
-        return writer;
-    },
-    decode(input, length) {
-        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
-        let end = length === undefined ? reader.len : reader.pos + length;
-        const message = createBaseMsgStakeClientResponse();
-        while (reader.pos < end) {
-            const tag = reader.uint32();
-            switch (tag >>> 3) {
-            }
-            if ((tag & 7) === 4 || tag === 0) {
-                break;
-            }
-            reader.skipType(tag & 7);
-        }
-        return message;
-    },
-    fromJSON(_) {
-        return {};
-    },
-    toJSON(_) {
-        const obj = {};
-        return obj;
-    },
-    create(base) {
-        return exports.MsgStakeClientResponse.fromPartial(base !== null && base !== void 0 ? base : {});
-    },
-    fromPartial(_) {
-        const message = createBaseMsgStakeClientResponse();
         return message;
     },
 };
@@ -317,19 +189,19 @@ exports.MsgUnstakeProvider = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.chainID = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -374,7 +246,7 @@ exports.MsgUnstakeProviderResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -393,106 +265,6 @@ exports.MsgUnstakeProviderResponse = {
     },
     fromPartial(_) {
         const message = createBaseMsgUnstakeProviderResponse();
-        return message;
-    },
-};
-function createBaseMsgUnstakeClient() {
-    return { creator: "", chainID: "" };
-}
-exports.MsgUnstakeClient = {
-    encode(message, writer = minimal_1.default.Writer.create()) {
-        if (message.creator !== "") {
-            writer.uint32(10).string(message.creator);
-        }
-        if (message.chainID !== "") {
-            writer.uint32(18).string(message.chainID);
-        }
-        return writer;
-    },
-    decode(input, length) {
-        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
-        let end = length === undefined ? reader.len : reader.pos + length;
-        const message = createBaseMsgUnstakeClient();
-        while (reader.pos < end) {
-            const tag = reader.uint32();
-            switch (tag >>> 3) {
-                case 1:
-                    if (tag !== 10) {
-                        break;
-                    }
-                    message.creator = reader.string();
-                    continue;
-                case 2:
-                    if (tag !== 18) {
-                        break;
-                    }
-                    message.chainID = reader.string();
-                    continue;
-            }
-            if ((tag & 7) === 4 || tag === 0) {
-                break;
-            }
-            reader.skipType(tag & 7);
-        }
-        return message;
-    },
-    fromJSON(object) {
-        return {
-            creator: isSet(object.creator) ? String(object.creator) : "",
-            chainID: isSet(object.chainID) ? String(object.chainID) : "",
-        };
-    },
-    toJSON(message) {
-        const obj = {};
-        message.creator !== undefined && (obj.creator = message.creator);
-        message.chainID !== undefined && (obj.chainID = message.chainID);
-        return obj;
-    },
-    create(base) {
-        return exports.MsgUnstakeClient.fromPartial(base !== null && base !== void 0 ? base : {});
-    },
-    fromPartial(object) {
-        var _a, _b;
-        const message = createBaseMsgUnstakeClient();
-        message.creator = (_a = object.creator) !== null && _a !== void 0 ? _a : "";
-        message.chainID = (_b = object.chainID) !== null && _b !== void 0 ? _b : "";
-        return message;
-    },
-};
-function createBaseMsgUnstakeClientResponse() {
-    return {};
-}
-exports.MsgUnstakeClientResponse = {
-    encode(_, writer = minimal_1.default.Writer.create()) {
-        return writer;
-    },
-    decode(input, length) {
-        const reader = input instanceof minimal_1.default.Reader ? input : minimal_1.default.Reader.create(input);
-        let end = length === undefined ? reader.len : reader.pos + length;
-        const message = createBaseMsgUnstakeClientResponse();
-        while (reader.pos < end) {
-            const tag = reader.uint32();
-            switch (tag >>> 3) {
-            }
-            if ((tag & 7) === 4 || tag === 0) {
-                break;
-            }
-            reader.skipType(tag & 7);
-        }
-        return message;
-    },
-    fromJSON(_) {
-        return {};
-    },
-    toJSON(_) {
-        const obj = {};
-        return obj;
-    },
-    create(base) {
-        return exports.MsgUnstakeClientResponse.fromPartial(base !== null && base !== void 0 ? base : {});
-    },
-    fromPartial(_) {
-        const message = createBaseMsgUnstakeClientResponse();
         return message;
     },
 };
@@ -520,25 +292,25 @@ exports.MsgRelayPayment = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.relays.push(relay_1.RelaySession.decode(reader, reader.uint32()));
                     continue;
                 case 4:
-                    if (tag !== 34) {
+                    if (tag != 34) {
                         break;
                     }
                     message.descriptionString = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -591,7 +363,7 @@ exports.MsgRelayPaymentResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -637,25 +409,25 @@ exports.MsgFreezeProvider = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.chainIds.push(reader.string());
                     continue;
                 case 3:
-                    if (tag !== 26) {
+                    if (tag != 26) {
                         break;
                     }
                     message.reason = reader.string();
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -708,7 +480,7 @@ exports.MsgFreezeProviderResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -751,19 +523,19 @@ exports.MsgUnfreezeProvider = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
                 case 1:
-                    if (tag !== 10) {
+                    if (tag != 10) {
                         break;
                     }
                     message.creator = reader.string();
                     continue;
                 case 2:
-                    if (tag !== 18) {
+                    if (tag != 18) {
                         break;
                     }
                     message.chainIds.push(reader.string());
                     continue;
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -813,7 +585,7 @@ exports.MsgUnfreezeProviderResponse = {
             const tag = reader.uint32();
             switch (tag >>> 3) {
             }
-            if ((tag & 7) === 4 || tag === 0) {
+            if ((tag & 7) == 4 || tag == 0) {
                 break;
             }
             reader.skipType(tag & 7);
@@ -840,9 +612,7 @@ class MsgClientImpl {
         this.service = (opts === null || opts === void 0 ? void 0 : opts.service) || "lavanet.lava.pairing.Msg";
         this.rpc = rpc;
         this.StakeProvider = this.StakeProvider.bind(this);
-        this.StakeClient = this.StakeClient.bind(this);
         this.UnstakeProvider = this.UnstakeProvider.bind(this);
-        this.UnstakeClient = this.UnstakeClient.bind(this);
         this.RelayPayment = this.RelayPayment.bind(this);
         this.FreezeProvider = this.FreezeProvider.bind(this);
         this.UnfreezeProvider = this.UnfreezeProvider.bind(this);
@@ -852,20 +622,10 @@ class MsgClientImpl {
         const promise = this.rpc.request(this.service, "StakeProvider", data);
         return promise.then((data) => exports.MsgStakeProviderResponse.decode(minimal_1.default.Reader.create(data)));
     }
-    StakeClient(request) {
-        const data = exports.MsgStakeClient.encode(request).finish();
-        const promise = this.rpc.request(this.service, "StakeClient", data);
-        return promise.then((data) => exports.MsgStakeClientResponse.decode(minimal_1.default.Reader.create(data)));
-    }
     UnstakeProvider(request) {
         const data = exports.MsgUnstakeProvider.encode(request).finish();
         const promise = this.rpc.request(this.service, "UnstakeProvider", data);
         return promise.then((data) => exports.MsgUnstakeProviderResponse.decode(minimal_1.default.Reader.create(data)));
-    }
-    UnstakeClient(request) {
-        const data = exports.MsgUnstakeClient.encode(request).finish();
-        const promise = this.rpc.request(this.service, "UnstakeClient", data);
-        return promise.then((data) => exports.MsgUnstakeClientResponse.decode(minimal_1.default.Reader.create(data)));
     }
     RelayPayment(request) {
         const data = exports.MsgRelayPayment.encode(request).finish();

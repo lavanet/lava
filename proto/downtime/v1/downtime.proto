@@ -1,0 +1,8 @@
+syntax="proto3";
+
+package lavanet.lava.downtime.v1;
+
+option go_package = "github.com/lavanet/lava/x/downtime/v1";
+
+// Params defines the parameters of the downtime module.
+message Params {}

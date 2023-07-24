@@ -7,6 +7,7 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "pairing/params.proto";
 import "pairing/epoch_payments.proto";
 // this line is used by starport scaffolding # 1
+import "plans/policy.proto";
 import "pairing/provider_payment_storage.proto";
 import "pairing/unique_payment_storage_client_provider.proto";
 import "epochstorage/stake_entry.proto";
@@ -74,6 +75,11 @@ service Query {
 // Queries a list of StaticProvidersList items.
 	rpc StaticProvidersList(QueryStaticProvidersListRequest) returns (QueryStaticProvidersListResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/static_providers_list/{chainID}";
+	}
+
+// Queries a list of EffectivePolicy items.
+	rpc EffectivePolicy(QueryEffectivePolicyRequest) returns (QueryEffectivePolicyResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -207,4 +213,13 @@ message QueryAccountInfoResponse {
 	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
 
 }
+message QueryEffectivePolicyRequest {
+  string consumer = 1;
+  string specID = 2;
+}
+
+message QueryEffectivePolicyResponse {
+	lavanet.lava.plans.Policy policy = 1;
+}
+
 // this line is used by starport scaffolding # 3

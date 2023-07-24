@@ -12,6 +12,8 @@ export const protobufPackage = "google.protobuf";
  *     service Foo {
  *       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
  *     }
+ *
+ * The JSON representation for `Empty` is empty JSON object `{}`.
  */
 export interface Empty {
 }
@@ -33,7 +35,7 @@ export const Empty = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);

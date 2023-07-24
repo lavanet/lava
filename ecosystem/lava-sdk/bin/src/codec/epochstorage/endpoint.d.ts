@@ -3,8 +3,9 @@ import _m0 from "protobufjs/minimal";
 export declare const protobufPackage = "lavanet.lava.epochstorage";
 export interface Endpoint {
     iPPORT: string;
-    useType: string;
     geolocation: Long;
+    addons: string[];
+    apiInterfaces: string[];
 }
 export declare const Endpoint: {
     encode(message: Endpoint, writer?: _m0.Writer): _m0.Writer;
@@ -13,11 +14,11 @@ export declare const Endpoint: {
     toJSON(message: Endpoint): unknown;
     create<I extends {
         iPPORT?: string | undefined;
-        useType?: string | undefined;
         geolocation?: string | number | Long | undefined;
+        addons?: string[] | undefined;
+        apiInterfaces?: string[] | undefined;
     } & {
         iPPORT?: string | undefined;
-        useType?: string | undefined;
         geolocation?: string | number | (Long & {
             high: number;
             low: number;
@@ -90,14 +91,16 @@ export declare const Endpoint: {
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
         } & { [K in Exclude<keyof I["geolocation"], keyof Long>]: never; }) | undefined;
-    } & { [K_1 in Exclude<keyof I, keyof Endpoint>]: never; }>(base?: I | undefined): Endpoint;
+        addons?: (string[] & string[] & { [K_1 in Exclude<keyof I["addons"], keyof string[]>]: never; }) | undefined;
+        apiInterfaces?: (string[] & string[] & { [K_2 in Exclude<keyof I["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+    } & { [K_3 in Exclude<keyof I, keyof Endpoint>]: never; }>(base?: I | undefined): Endpoint;
     fromPartial<I_1 extends {
         iPPORT?: string | undefined;
-        useType?: string | undefined;
         geolocation?: string | number | Long | undefined;
+        addons?: string[] | undefined;
+        apiInterfaces?: string[] | undefined;
     } & {
         iPPORT?: string | undefined;
-        useType?: string | undefined;
         geolocation?: string | number | (Long & {
             high: number;
             low: number;
@@ -169,8 +172,10 @@ export declare const Endpoint: {
             toString: (radix?: number | undefined) => string;
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
-        } & { [K_2 in Exclude<keyof I_1["geolocation"], keyof Long>]: never; }) | undefined;
-    } & { [K_3 in Exclude<keyof I_1, keyof Endpoint>]: never; }>(object: I_1): Endpoint;
+        } & { [K_4 in Exclude<keyof I_1["geolocation"], keyof Long>]: never; }) | undefined;
+        addons?: (string[] & string[] & { [K_5 in Exclude<keyof I_1["addons"], keyof string[]>]: never; }) | undefined;
+        apiInterfaces?: (string[] & string[] & { [K_6 in Exclude<keyof I_1["apiInterfaces"], keyof string[]>]: never; }) | undefined;
+    } & { [K_7 in Exclude<keyof I_1, keyof Endpoint>]: never; }>(object: I_1): Endpoint;
 };
 declare type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 export declare type DeepPartial<T> = T extends Builtin ? T : T extends Long ? string | number | Long : T extends Array<infer U> ? Array<DeepPartial<U>> : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>> : T extends {} ? {

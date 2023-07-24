@@ -67,7 +67,7 @@ screen -S lav1_providers -X screen -t win7 -X bash -c "source ~/.bashrc; lavad s
 screen -S lav1_providers -X screen -t win8 -X bash -c "source ~/.bashrc; lavad server 127.0.0.1 2276 $LAVA_GRPC LAV1 grpc $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/LAV1_2276.log"
 
 # portal
-screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc 127.0.0.1:3340 LAV1 rest 127.0.0.1:3341 LAV1 tendermintrpc 127.0.0.1:3352 LAV1 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 2>&1 | tee $LOGS_DIR/PORTAL_ALL_SUB.log"
+screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer 127.0.0.1:3333 ETH1 jsonrpc 127.0.0.1:3340 LAV1 rest 127.0.0.1:3341 LAV1 tendermintrpc 127.0.0.1:3352 LAV1 grpc $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL_ALL_SUB.log"
 
 echo "--done setting screens--"
 screen -ls

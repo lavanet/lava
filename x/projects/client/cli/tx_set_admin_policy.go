@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -8,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +32,6 @@ func CmdSetPolicy() *cobra.Command {
 
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
-
 			policy, err := planstypes.ParsePolicyFromYaml(adminPolicyFilePath)
 			if err != nil {
 				return err
@@ -51,4 +53,31 @@ func CmdSetPolicy() *cobra.Command {
 	cmd.MarkFlagRequired(flags.FlagFrom)
 
 	return cmd
+}
+
+func verifyChainPoliciesAreCorrectlySet(clientCtx client.Context, policy *planstypes.Policy) error {
+	specQuerier := spectypes.NewQueryClient(clientCtx)
+	var chainInfo *spectypes.QueryShowChainInfoResponse
+	for policyIdx, chainPolicy := range policy.ChainPolicies {
+		for idx, collection := range chainPolicy.Collections {
+			if collection.AddOn == "" {
+				// fix the addon for a collection on an optiona apiInterface
+				if chainInfo == nil {
+					var err error
+					chainInfo, err = specQuerier.ShowChainInfo(context.Background(), &spectypes.QueryShowChainInfoRequest{ChainName: chainPolicy.ChainId})
+					if err != nil {
+						return err
+					}
+				}
+				for _, optionalApiInterface := range chainInfo.OptionalInterfaces {
+					if optionalApiInterface == collection.ApiInterface {
+						policy.ChainPolicies[policyIdx].Collections[idx].AddOn = optionalApiInterface
+						continue
+					}
+				}
+				return fmt.Errorf("can't set an empty addon in a collection, empty addons are ignored %#v", chainPolicy)
+			}
+		}
+	}
+	return nil
 }
