@@ -18,7 +18,7 @@ func NewRelayFinalization(exch RelayExchange, addr sdk.AccAddress) RelayFinaliza
 }
 
 func (rf RelayFinalization) GetSignature() []byte {
-	return rf.Exchange.GetSignature()
+	return rf.Exchange.Reply.SigBlocks
 }
 
 func (rf RelayFinalization) PrepareForSignature() []byte {
