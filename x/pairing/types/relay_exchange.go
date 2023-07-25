@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bytes"
 	"strings"
 
 	"github.com/lavanet/lava/utils"
@@ -39,7 +38,11 @@ func (re RelayExchange) DataToSign() []byte {
 		[]byte(re.Request.RelayData.String()),
 		metadataBytes,
 	}
-	return bytes.Join(msgParts, nil)
+	var totalLen int
+	for _, arr := range msgParts {
+		totalLen += len(arr)
+	}
+	return sigs.Join(msgParts)
 }
 
 func (re RelayExchange) HashRounds() int {
@@ -62,6 +65,6 @@ func (rp RelayPrivateData) GetContentHashData() []byte {
 		requestBlockBytes,
 		rp.Salt,
 	}
-	msgData := bytes.Join(msgParts, nil)
+	msgData := sigs.Join(msgParts)
 	return msgData
 }

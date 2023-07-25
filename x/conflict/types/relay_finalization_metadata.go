@@ -1,8 +1,6 @@
 package types
 
 import (
-	"bytes"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -32,7 +30,7 @@ func (rfm RelayFinalizationMetaData) DataToSign() []byte {
 		rfm.Addr,
 		relaySessionHash,
 	}
-	return bytes.Join(msgParts, nil)
+	return sigs.Join(msgParts)
 }
 
 func (rfm RelayFinalizationMetaData) HashRounds() int {

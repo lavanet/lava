@@ -1,8 +1,6 @@
 package types
 
 import (
-	"bytes"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils/sigs"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
@@ -30,7 +28,7 @@ func (rf RelayFinalization) DataToSign() []byte {
 		rf.Addr,
 		relaySessionHash,
 	}
-	return bytes.Join(msgParts, nil)
+	return sigs.Join(msgParts)
 }
 
 func (rf RelayFinalization) HashRounds() int {
