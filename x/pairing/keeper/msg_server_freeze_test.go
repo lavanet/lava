@@ -5,7 +5,6 @@ import (
 
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -228,19 +227,11 @@ func TestPaymentFrozen(t *testing.T) {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
-	relayRequest := &types.RelaySession{
-		Provider:  providerToFreeze.Address,
-		SessionId: uint64(1),
-		SpecId:    ts.spec.Name,
-		CuSum:     ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10,
-		Epoch:     int64(blockPreFreeze),
-		RelayNum:  0,
-	}
 	cusum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerToFreeze.Address, 1, cusum, blockPreFreeze, 0)
 
 	sig, err := sigs.Sign(clientAcct.SK, *relaySession)
-	relayRequest.Sig = sig
+	relaySession.Sig = sig
 	require.Nil(t, err)
 
 	_, err = ts.TxPairingRelayPayment(providerToFreeze.Address, relaySession)
