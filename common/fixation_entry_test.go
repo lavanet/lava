@@ -48,7 +48,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 	var dummy sdk.Coin
 
 	for i := 0; i < countObj; i++ {
-		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i + 1))})
+		coins = append(coins, sdk.NewCoin("utest", sdk.NewInt(int64(i+1))))
 	}
 
 	for _, play := range playbook {
@@ -63,6 +63,9 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 		what := play.op + " " + play.name +
 			" index: " + index +
 			" block: " + strconv.Itoa(int(block))
+		// uncomment for debugging:
+		// fmt.Printf("step: cmd %s, ctx %d, count %d, block %d\n",
+		//     play.op, ctx.BlockHeight(), play.count, block)
 		switch play.op {
 		case "append":
 			if play.count > 0 && block > uint64(ctx.BlockHeight()) {
@@ -314,6 +317,22 @@ func TestDoublePutEntry(t *testing.T) {
 	}
 
 	require.Panics(t, func() { testWithFixationTemplate(t, playbook, 1, 1) })
+}
+
+func TestPutFutureEntry(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
+		{op: "append", name: "entry #1 version 1 (future)", count: -block1, coin: 0},
+		{op: "getvers", name: "to check 2 versions", count: 2},
+		{op: "block", name: "advance 1 block", count: 1},
+		{op: "put", name: "cancel entry #1 version 1", count: block1},
+		{op: "getvers", name: "to check 1 versions", count: 1},
+	}
+
+	testWithFixationTemplate(t, playbook, 1, 1)
 }
 
 func TestDelEntry(t *testing.T) {

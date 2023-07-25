@@ -3,9 +3,7 @@ package rpcprovider
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -27,6 +25,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -49,7 +48,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 	goodChains := []string{}
 	badChains := []string{}
 	for _, providerEntry := range providerEntries {
-		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain})
+		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(apiInterface string, addons []string) (time.Duration, error) {
@@ -86,6 +85,9 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				return relayLatency, nil
 			}
 			endpointServices := endpoint.GetSupportedServices()
+			if len(endpointServices) == 0 {
+				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
+			}
 			for _, endpointService := range endpointServices {
 				probeLatency, err := checkOneProvider(endpointService.ApiInterface, []string{endpointService.Addon})
 				if err != nil {
@@ -97,7 +99,10 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 			}
 		}
 	}
-	fmt.Printf("----------------------------------------SUMMARY----------------------------------------\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
+	if len(badChains) == 0 {
+		badChains = []string{"None 🎉! all tests passed ✅"}
+	}
+	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
 	return nil
 }
 
@@ -129,6 +134,12 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
+			// setting the insecure option on provider dial, this should be used in development only!
+			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
+			if lavasession.AllowInsecureConnectionToProviders {
+				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
+			}
+
 			var address string
 			if len(args) == 0 {
 				keyName, err := sigs.GetKeyName(clientCtx)
@@ -175,17 +186,31 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 					}
 					chainID := splitted[len(splitted)-1]
 					// add dummy geoloc
-					firstElement := splitted[0]
-					splitted[0] = "1" // add dummpy geoLoc
-					endpointsToParse := []string{firstElement}
-					endpointsToParseJoin := []string{strings.Join(append(endpointsToParse, splitted[len(splitted)-1]), ",")}
+					splitted[0] = splitted[0] + "," + "1" // add dummy geoLoc
+
+					endpointsToParseJoin := []string{strings.Join(splitted[:len(splitted)-1], ",")}
 					endpoints, _, err := pairingcli.HandleEndpointsAndGeolocationArgs(endpointsToParseJoin, "*")
 					if err != nil {
 						return err
 					}
+					if len(endpoints) == 0 {
+						return fmt.Errorf("returned empty endpoints list from HandleEndpointsAndGeolocationArgs parsing: %s", endpointsToParseJoin)
+					}
+					if len(endpoints[0].ApiInterfaces) == 0 {
+						// need to read required apiInterfaces from on chain
+						chainInfoResponse, err := specQuerier.ShowChainInfo(ctx, &spectypes.QueryShowChainInfoRequest{
+							ChainName: chainID,
+						})
+						if err != nil {
+							return utils.LavaFormatError("failed reading on chain data in order to resolve endpoint", err, utils.Attribute{Key: "endpoint", Value: endpoints[0]})
+						}
+						endpoints[0].ApiInterfaces = chainInfoResponse.Interfaces
+					}
+					utils.LavaFormatDebug("endpoints to check", utils.Attribute{Key: "endpoints", Value: endpoints})
 					providerEntry := epochstoragetypes.StakeEntry{
-						Endpoints: endpoints,
-						Chain:     chainID,
+						Endpoints:   endpoints,
+						Chain:       chainID,
+						Geolocation: 1,
 					}
 					stakedProviderChains = append(stakedProviderChains, providerEntry)
 				}
@@ -212,6 +237,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			if len(stakedProviderChains) == 0 {
 				utils.LavaFormatError("no active chains for provider", nil, utils.Attribute{Key: "address", Value: address})
 			}
+			utils.LavaFormatDebug("checking chain entries", utils.Attribute{Key: "stakedProviderChains", Value: stakedProviderChains})
 			return startTesting(ctx, clientCtx, txFactory, stakedProviderChains)
 		},
 	}
@@ -219,16 +245,17 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCProvider)
 	cmdTestRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdTestRPCProvider.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider
 }
 
 func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 	cmdTestProviderCaCert := &cobra.Command{
-		Use:     `provider-ca-cert {network-address}`,
+		Use:     `provider-ca-cert --network-address "ip:port"`,
 		Short:   `test the certificate of an rpc provider`,
 		Long:    `test if the rpc provider in the given network address is using the right format of CA certificate`,
-		Example: `provider-ca-cert 127.0.0.1:2211`,
+		Example: `lavad test provider-ca-cert --network-address "127.0.0.1:2379"`,
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// handle flags, pass necessary fields
@@ -236,28 +263,12 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 			if err != nil {
 				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
 			}
-			cert, err := cmd.Flags().GetString(certFlag)
-			if err != nil {
-				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
-			}
 
 			ctx := context.Background()
 			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
-			caCert, err := ioutil.ReadFile(cert)
-			if err != nil {
-				return utils.LavaFormatError("Failed setting up tls certificate from local path", err)
-			}
 
-			certPool := x509.NewCertPool()
-			if !certPool.AppendCertsFromPEM(caCert) {
-				return utils.LavaFormatError("failed to append server certificate", nil)
-			}
-
-			creds := credentials.NewTLS(&tls.Config{
-				RootCAs: certPool,
-			})
-
+			creds := credentials.NewTLS(&tls.Config{})
 			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(creds))
 			if err != nil {
 				utils.LavaFormatError("Failed to dial network address", err, utils.Attribute{Key: "Address", Value: networkAddress})
@@ -272,12 +283,6 @@ func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
 
 	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "", "network address")
 	err := cmdTestProviderCaCert.MarkFlagRequired(networkAddressFlag)
-	if err != nil {
-		utils.LavaFormatFatal("MarkFlagRequired Error", err)
-	}
-
-	cmdTestProviderCaCert.Flags().String(certFlag, "", "certificate file")
-	err = cmdTestProviderCaCert.MarkFlagRequired(certFlag)
 	if err != nil {
 		utils.LavaFormatFatal("MarkFlagRequired Error", err)
 	}

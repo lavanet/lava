@@ -53,9 +53,11 @@ func IsSessionSyncLoss(err error) bool {
 	return code == codes.Code(SessionOutOfSyncError.ABCICode())
 }
 
-func ConnectgRPCClient(ctx context.Context, address string) (*grpc.ClientConn, error) {
+func ConnectgRPCClient(ctx context.Context, address string, allowInsecure bool) (*grpc.ClientConn, error) {
 	var tlsConf tls.Config
-	tlsConf.InsecureSkipVerify = true // as the providers are self signed we need to skip verify against CA certificates
+	if allowInsecure {
+		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
+	}
 	credentials := credentials.NewTLS(&tlsConf)
 	return grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 }

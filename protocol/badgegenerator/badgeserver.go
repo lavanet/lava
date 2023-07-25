@@ -60,6 +60,11 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err)
+			}
+			utils.LoggingLevel(logLevel)
 
 			RunBadgeServer(cmd, v)
 
@@ -99,7 +104,6 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("Error in open listener", err)
 	}
-	// set up the grpc server
 
 	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
 	chainId := v.GetString(LavaChainIDEnvironmentVariable)

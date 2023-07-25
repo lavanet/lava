@@ -19,6 +19,11 @@ export interface Entry {
   deleteAt: Long;
 }
 
+export interface RawMessage {
+  key: Uint8Array;
+  value: Uint8Array;
+}
+
 function createBaseEntry(): Entry {
   return {
     index: "",
@@ -61,49 +66,49 @@ export const Entry = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.index = reader.string();
           continue;
         case 2:
-          if (tag !== 16) {
+          if (tag != 16) {
             break;
           }
 
           message.block = reader.uint64() as Long;
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.staleAt = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.refcount = reader.uint64() as Long;
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag != 42) {
             break;
           }
 
           message.data = reader.bytes();
           continue;
         case 6:
-          if (tag !== 48) {
+          if (tag != 48) {
             break;
           }
 
           message.deleteAt = reader.uint64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -152,6 +157,79 @@ export const Entry = {
     message.deleteAt = (object.deleteAt !== undefined && object.deleteAt !== null)
       ? Long.fromValue(object.deleteAt)
       : Long.UZERO;
+    return message;
+  },
+};
+
+function createBaseRawMessage(): RawMessage {
+  return { key: new Uint8Array(), value: new Uint8Array() };
+}
+
+export const RawMessage = {
+  encode(message: RawMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key.length !== 0) {
+      writer.uint32(10).bytes(message.key);
+    }
+    if (message.value.length !== 0) {
+      writer.uint32(18).bytes(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RawMessage {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRawMessage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.key = reader.bytes();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RawMessage {
+    return {
+      key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array(),
+      value: isSet(object.value) ? bytesFromBase64(object.value) : new Uint8Array(),
+    };
+  },
+
+  toJSON(message: RawMessage): unknown {
+    const obj: any = {};
+    message.key !== undefined &&
+      (obj.key = base64FromBytes(message.key !== undefined ? message.key : new Uint8Array()));
+    message.value !== undefined &&
+      (obj.value = base64FromBytes(message.value !== undefined ? message.value : new Uint8Array()));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RawMessage>, I>>(base?: I): RawMessage {
+    return RawMessage.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RawMessage>, I>>(object: I): RawMessage {
+    const message = createBaseRawMessage();
+    message.key = object.key ?? new Uint8Array();
+    message.value = object.value ?? new Uint8Array();
     return message;
   },
 };

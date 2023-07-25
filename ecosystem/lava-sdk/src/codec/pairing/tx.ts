@@ -19,30 +19,12 @@ export interface MsgStakeProvider {
 export interface MsgStakeProviderResponse {
 }
 
-export interface MsgStakeClient {
-  creator: string;
-  chainID: string;
-  amount?: Coin;
-  geolocation: Long;
-}
-
-export interface MsgStakeClientResponse {
-}
-
 export interface MsgUnstakeProvider {
   creator: string;
   chainID: string;
 }
 
 export interface MsgUnstakeProviderResponse {
-}
-
-export interface MsgUnstakeClient {
-  creator: string;
-  chainID: string;
-}
-
-export interface MsgUnstakeClientResponse {
 }
 
 export interface MsgRelayPayment {
@@ -106,49 +88,49 @@ export const MsgStakeProvider = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.chainID = reader.string();
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.amount = Coin.decode(reader, reader.uint32());
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.endpoints.push(Endpoint.decode(reader, reader.uint32()));
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.geolocation = reader.uint64() as Long;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.moniker = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -219,7 +201,7 @@ export const MsgStakeProviderResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -242,151 +224,6 @@ export const MsgStakeProviderResponse = {
 
   fromPartial<I extends Exact<DeepPartial<MsgStakeProviderResponse>, I>>(_: I): MsgStakeProviderResponse {
     const message = createBaseMsgStakeProviderResponse();
-    return message;
-  },
-};
-
-function createBaseMsgStakeClient(): MsgStakeClient {
-  return { creator: "", chainID: "", amount: undefined, geolocation: Long.UZERO };
-}
-
-export const MsgStakeClient = {
-  encode(message: MsgStakeClient, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.creator !== "") {
-      writer.uint32(10).string(message.creator);
-    }
-    if (message.chainID !== "") {
-      writer.uint32(18).string(message.chainID);
-    }
-    if (message.amount !== undefined) {
-      Coin.encode(message.amount, writer.uint32(26).fork()).ldelim();
-    }
-    if (!message.geolocation.isZero()) {
-      writer.uint32(32).uint64(message.geolocation);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): MsgStakeClient {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgStakeClient();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.chainID = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.amount = Coin.decode(reader, reader.uint32());
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.geolocation = reader.uint64() as Long;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MsgStakeClient {
-    return {
-      creator: isSet(object.creator) ? String(object.creator) : "",
-      chainID: isSet(object.chainID) ? String(object.chainID) : "",
-      amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
-      geolocation: isSet(object.geolocation) ? Long.fromValue(object.geolocation) : Long.UZERO,
-    };
-  },
-
-  toJSON(message: MsgStakeClient): unknown {
-    const obj: any = {};
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.chainID !== undefined && (obj.chainID = message.chainID);
-    message.amount !== undefined && (obj.amount = message.amount ? Coin.toJSON(message.amount) : undefined);
-    message.geolocation !== undefined && (obj.geolocation = (message.geolocation || Long.UZERO).toString());
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<MsgStakeClient>, I>>(base?: I): MsgStakeClient {
-    return MsgStakeClient.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<MsgStakeClient>, I>>(object: I): MsgStakeClient {
-    const message = createBaseMsgStakeClient();
-    message.creator = object.creator ?? "";
-    message.chainID = object.chainID ?? "";
-    message.amount = (object.amount !== undefined && object.amount !== null)
-      ? Coin.fromPartial(object.amount)
-      : undefined;
-    message.geolocation = (object.geolocation !== undefined && object.geolocation !== null)
-      ? Long.fromValue(object.geolocation)
-      : Long.UZERO;
-    return message;
-  },
-};
-
-function createBaseMsgStakeClientResponse(): MsgStakeClientResponse {
-  return {};
-}
-
-export const MsgStakeClientResponse = {
-  encode(_: MsgStakeClientResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): MsgStakeClientResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgStakeClientResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): MsgStakeClientResponse {
-    return {};
-  },
-
-  toJSON(_: MsgStakeClientResponse): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<MsgStakeClientResponse>, I>>(base?: I): MsgStakeClientResponse {
-    return MsgStakeClientResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<MsgStakeClientResponse>, I>>(_: I): MsgStakeClientResponse {
-    const message = createBaseMsgStakeClientResponse();
     return message;
   },
 };
@@ -414,21 +251,21 @@ export const MsgUnstakeProvider = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.chainID = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -479,7 +316,7 @@ export const MsgUnstakeProviderResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -502,121 +339,6 @@ export const MsgUnstakeProviderResponse = {
 
   fromPartial<I extends Exact<DeepPartial<MsgUnstakeProviderResponse>, I>>(_: I): MsgUnstakeProviderResponse {
     const message = createBaseMsgUnstakeProviderResponse();
-    return message;
-  },
-};
-
-function createBaseMsgUnstakeClient(): MsgUnstakeClient {
-  return { creator: "", chainID: "" };
-}
-
-export const MsgUnstakeClient = {
-  encode(message: MsgUnstakeClient, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.creator !== "") {
-      writer.uint32(10).string(message.creator);
-    }
-    if (message.chainID !== "") {
-      writer.uint32(18).string(message.chainID);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): MsgUnstakeClient {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgUnstakeClient();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.creator = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.chainID = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MsgUnstakeClient {
-    return {
-      creator: isSet(object.creator) ? String(object.creator) : "",
-      chainID: isSet(object.chainID) ? String(object.chainID) : "",
-    };
-  },
-
-  toJSON(message: MsgUnstakeClient): unknown {
-    const obj: any = {};
-    message.creator !== undefined && (obj.creator = message.creator);
-    message.chainID !== undefined && (obj.chainID = message.chainID);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<MsgUnstakeClient>, I>>(base?: I): MsgUnstakeClient {
-    return MsgUnstakeClient.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<MsgUnstakeClient>, I>>(object: I): MsgUnstakeClient {
-    const message = createBaseMsgUnstakeClient();
-    message.creator = object.creator ?? "";
-    message.chainID = object.chainID ?? "";
-    return message;
-  },
-};
-
-function createBaseMsgUnstakeClientResponse(): MsgUnstakeClientResponse {
-  return {};
-}
-
-export const MsgUnstakeClientResponse = {
-  encode(_: MsgUnstakeClientResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): MsgUnstakeClientResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgUnstakeClientResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(_: any): MsgUnstakeClientResponse {
-    return {};
-  },
-
-  toJSON(_: MsgUnstakeClientResponse): unknown {
-    const obj: any = {};
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<MsgUnstakeClientResponse>, I>>(base?: I): MsgUnstakeClientResponse {
-    return MsgUnstakeClientResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<MsgUnstakeClientResponse>, I>>(_: I): MsgUnstakeClientResponse {
-    const message = createBaseMsgUnstakeClientResponse();
     return message;
   },
 };
@@ -647,28 +369,28 @@ export const MsgRelayPayment = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.relays.push(RelaySession.decode(reader, reader.uint32()));
           continue;
         case 4:
-          if (tag !== 34) {
+          if (tag != 34) {
             break;
           }
 
           message.descriptionString = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -726,7 +448,7 @@ export const MsgRelayPaymentResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -779,28 +501,28 @@ export const MsgFreezeProvider = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.chainIds.push(reader.string());
           continue;
         case 3:
-          if (tag !== 26) {
+          if (tag != 26) {
             break;
           }
 
           message.reason = reader.string();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -858,7 +580,7 @@ export const MsgFreezeProviderResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -908,21 +630,21 @@ export const MsgUnfreezeProvider = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.creator = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.chainIds.push(reader.string());
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -977,7 +699,7 @@ export const MsgUnfreezeProviderResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -1007,9 +729,7 @@ export const MsgUnfreezeProviderResponse = {
 /** Msg defines the Msg service. */
 export interface Msg {
   StakeProvider(request: MsgStakeProvider): Promise<MsgStakeProviderResponse>;
-  StakeClient(request: MsgStakeClient): Promise<MsgStakeClientResponse>;
   UnstakeProvider(request: MsgUnstakeProvider): Promise<MsgUnstakeProviderResponse>;
-  UnstakeClient(request: MsgUnstakeClient): Promise<MsgUnstakeClientResponse>;
   RelayPayment(request: MsgRelayPayment): Promise<MsgRelayPaymentResponse>;
   FreezeProvider(request: MsgFreezeProvider): Promise<MsgFreezeProviderResponse>;
   /** this line is used by starport scaffolding # proto/tx/rpc */
@@ -1023,9 +743,7 @@ export class MsgClientImpl implements Msg {
     this.service = opts?.service || "lavanet.lava.pairing.Msg";
     this.rpc = rpc;
     this.StakeProvider = this.StakeProvider.bind(this);
-    this.StakeClient = this.StakeClient.bind(this);
     this.UnstakeProvider = this.UnstakeProvider.bind(this);
-    this.UnstakeClient = this.UnstakeClient.bind(this);
     this.RelayPayment = this.RelayPayment.bind(this);
     this.FreezeProvider = this.FreezeProvider.bind(this);
     this.UnfreezeProvider = this.UnfreezeProvider.bind(this);
@@ -1036,22 +754,10 @@ export class MsgClientImpl implements Msg {
     return promise.then((data) => MsgStakeProviderResponse.decode(_m0.Reader.create(data)));
   }
 
-  StakeClient(request: MsgStakeClient): Promise<MsgStakeClientResponse> {
-    const data = MsgStakeClient.encode(request).finish();
-    const promise = this.rpc.request(this.service, "StakeClient", data);
-    return promise.then((data) => MsgStakeClientResponse.decode(_m0.Reader.create(data)));
-  }
-
   UnstakeProvider(request: MsgUnstakeProvider): Promise<MsgUnstakeProviderResponse> {
     const data = MsgUnstakeProvider.encode(request).finish();
     const promise = this.rpc.request(this.service, "UnstakeProvider", data);
     return promise.then((data) => MsgUnstakeProviderResponse.decode(_m0.Reader.create(data)));
-  }
-
-  UnstakeClient(request: MsgUnstakeClient): Promise<MsgUnstakeClientResponse> {
-    const data = MsgUnstakeClient.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UnstakeClient", data);
-    return promise.then((data) => MsgUnstakeClientResponse.decode(_m0.Reader.create(data)));
   }
 
   RelayPayment(request: MsgRelayPayment): Promise<MsgRelayPaymentResponse> {

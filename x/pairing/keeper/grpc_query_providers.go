@@ -36,7 +36,7 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 		stakeEntries = stakeEntriesNoFrozen
 	}
 
-	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}

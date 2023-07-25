@@ -19,7 +19,6 @@ func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []m
 	// handle proto enums
 	opts := []viper.DecoderConfigOption{
 		func(dc *mapstructure.DecoderConfig) {
-			dc.ErrorUnset = true
 			dc.ErrorUnused = true
 		},
 	}

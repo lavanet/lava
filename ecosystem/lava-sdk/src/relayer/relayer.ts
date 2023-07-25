@@ -11,12 +11,14 @@ import {
 import { Relayer as RelayerService } from "../grpc_web_services/pairing/relay_pb_service";
 import { Badge } from "../grpc_web_services/pairing/relay_pb";
 import transport from "../util/browser";
+import transportAllowInsecure from "../util/browserAllowInsecure";
 
 class Relayer {
   private chainID: string;
   private privKey: string;
   private lavaChainId: string;
-  private prefix = "http";
+  private prefix: string;
+  private allowInsecureTransport: boolean;
   private badge?: Badge;
 
   constructor(
@@ -24,14 +26,14 @@ class Relayer {
     privKey: string,
     lavaChainId: string,
     secure: boolean,
+    allowInsecureTransport?: boolean,
     badge?: Badge
   ) {
     this.chainID = chainID;
     this.privKey = privKey;
     this.lavaChainId = lavaChainId;
-    if (secure) {
-      this.prefix = "https";
-    }
+    this.prefix = secure ? "https" : "http";
+    this.allowInsecureTransport = allowInsecureTransport ?? false;
     this.badge = badge;
   }
 
@@ -67,7 +69,7 @@ class Relayer {
     requestPrivateData.setConnectionType(connectionType);
     requestPrivateData.setApiUrl(url);
     requestPrivateData.setData(enc.encode(data));
-    requestPrivateData.setRequestBlock(0);
+    requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
     requestPrivateData.setApiInterface(apiInterface);
     requestPrivateData.setSalt(consumerSession.getNewSalt());
 
@@ -106,7 +108,9 @@ class Relayer {
       grpc.invoke(RelayerService.Relay, {
         request: request,
         host: this.prefix + "://" + consumerSession.Endpoint.Addr,
-        transport: transport,
+        transport: this.allowInsecureTransport
+          ? transportAllowInsecure // if allow insecure we use a transport with rejectUnauthorized disabled
+          : transport, // otherwise normal transport (default to rejectUnauthorized = true)
         onMessage: (message: RelayReply) => {
           resolve(message);
         },

@@ -2,7 +2,7 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
-import "plans/plan.proto"; 
+import "plans/policy.proto"; 
 option (gogoproto.equal_all) = true;
 option go_package = "github.com/lavanet/lava/x/projects/types";
 

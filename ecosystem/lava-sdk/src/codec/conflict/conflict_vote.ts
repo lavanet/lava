@@ -53,21 +53,21 @@ export const Provider = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.account = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.response = reader.bytes();
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -128,28 +128,28 @@ export const Vote = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.address = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.Hash = reader.bytes();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.Result = reader.int64() as Long;
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);
@@ -255,91 +255,91 @@ export const ConflictVote = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
+          if (tag != 10) {
             break;
           }
 
           message.index = reader.string();
           continue;
         case 2:
-          if (tag !== 18) {
+          if (tag != 18) {
             break;
           }
 
           message.clientAddress = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag != 24) {
             break;
           }
 
           message.voteDeadline = reader.uint64() as Long;
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag != 32) {
             break;
           }
 
           message.voteStartBlock = reader.uint64() as Long;
           continue;
         case 5:
-          if (tag !== 40) {
+          if (tag != 40) {
             break;
           }
 
           message.voteState = reader.int64() as Long;
           continue;
         case 6:
-          if (tag !== 50) {
+          if (tag != 50) {
             break;
           }
 
           message.chainID = reader.string();
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag != 58) {
             break;
           }
 
           message.apiUrl = reader.string();
           continue;
         case 8:
-          if (tag !== 66) {
+          if (tag != 66) {
             break;
           }
 
           message.requestData = reader.bytes();
           continue;
         case 9:
-          if (tag !== 72) {
+          if (tag != 72) {
             break;
           }
 
           message.requestBlock = reader.uint64() as Long;
           continue;
         case 10:
-          if (tag !== 82) {
+          if (tag != 82) {
             break;
           }
 
           message.firstProvider = Provider.decode(reader, reader.uint32());
           continue;
         case 11:
-          if (tag !== 90) {
+          if (tag != 90) {
             break;
           }
 
           message.secondProvider = Provider.decode(reader, reader.uint32());
           continue;
         case 12:
-          if (tag !== 98) {
+          if (tag != 98) {
             break;
           }
 
           message.votes.push(Vote.decode(reader, reader.uint32()));
           continue;
       }
-      if ((tag & 7) === 4 || tag === 0) {
+      if ((tag & 7) == 4 || tag == 0) {
         break;
       }
       reader.skipType(tag & 7);

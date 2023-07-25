@@ -35,6 +35,14 @@ type Attribute struct {
 	Value interface{}
 }
 
+func StringMapToAttributes(details map[string]string) []Attribute {
+	var attrs []Attribute
+	for key, val := range details {
+		attrs = append(attrs, Attribute{Key: key, Value: val})
+	}
+	return attrs
+}
+
 func LogAttr(key string, value interface{}) Attribute {
 	return Attribute{Key: key, Value: value}
 }

@@ -13,13 +13,13 @@ import (
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
 
 type JsonrpcMessage struct {
-	Version string               `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage      `json:"id,omitempty"`
-	Method  string               `json:"method,omitempty"`
-	Params  interface{}          `json:"params,omitempty"`
-	Error   *rpcclient.JsonError `json:"error,omitempty"`
-	Result  json.RawMessage      `json:"result,omitempty"`
-	chainproxy.BaseMessage
+	Version                string               `json:"jsonrpc,omitempty"`
+	ID                     json.RawMessage      `json:"id,omitempty"`
+	Method                 string               `json:"method,omitempty"`
+	Params                 interface{}          `json:"params,omitempty"`
+	Error                  *rpcclient.JsonError `json:"error,omitempty"`
+	Result                 json.RawMessage      `json:"result,omitempty"`
+	chainproxy.BaseMessage `json:"-"`
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
@@ -52,6 +52,11 @@ func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCI
 	err := json.Unmarshal(input, msg)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
+	}
+
+	// Make sure the response does not have an error
+	if msg.Error != nil && msg.Result == nil {
+		return nil, utils.LavaFormatError("response is an error message", msg.Error)
 	}
 	return ParsableRPCInput{Result: msg.Result}, nil
 }

@@ -71,22 +71,68 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 // from the imported Spec(s). It returns the expanded Spec.
 func (k Keeper) ExpandSpec(ctx sdk.Context, spec types.Spec) (types.Spec, error) {
 	depends := map[string]bool{spec.Index: true}
+	inherit := map[string]bool{}
 
-	details, err := k.doExpandSpec(ctx, &spec, depends, spec.Index)
+	details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index)
 	if err != nil {
 		return spec, utils.LavaFormatError("spec expand failed", err,
 			utils.Attribute{Key: "imports", Value: details},
 		)
 	}
+
 	return spec, nil
 }
 
+// RefreshSpec checks which one Spec inherits from another (just recently
+// updated) Spec, and if so updates the the BlockLastUpdated of the former.
+func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.Spec) ([]string, error) {
+	depends := map[string]bool{spec.Index: true}
+	inherit := map[string]bool{}
+
+	if details, err := k.doExpandSpec(ctx, &spec, depends, &inherit, spec.Index); err != nil {
+		return nil, utils.LavaFormatWarning("spec refresh failed (import)", err,
+			utils.Attribute{Key: "imports", Value: details},
+		)
+	}
+
+	if details, err := spec.ValidateSpec(k.MaxCU(ctx)); err != nil {
+		details["invalidates"] = spec.Index
+		attrs := utils.StringMapToAttributes(details)
+		return nil, utils.LavaFormatWarning("spec refresh failed (invalidate)", err, attrs...)
+	}
+
+	var inherited []string
+	for _, ancestor := range ancestors {
+		if _, ok := inherit[ancestor.Index]; ok {
+			inherited = append(inherited, ancestor.Index)
+		}
+	}
+
+	if len(inherited) > 0 {
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
+		k.SetSpec(ctx, spec)
+	}
+
+	return inherited, nil
+}
+
 // doExpandSpec performs the actual work and recusion for ExpandSpec above.
-func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[string]bool, details string) (string, error) {
+func (k Keeper) doExpandSpec(
+	ctx sdk.Context,
+	spec *types.Spec,
+	depends map[string]bool,
+	inherit *map[string]bool,
+	details string,
+) (string, error) {
 	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
 
 	if len(spec.Imports) != 0 {
 		var parents []types.Spec
+
+		// update (cumulative) inherit
+		for _, index := range spec.Imports {
+			(*inherit)[index] = true
+		}
 
 		// visual markers when import deepens
 		details += "->["
@@ -109,7 +155,7 @@ func (k Keeper) doExpandSpec(ctx sdk.Context, spec *types.Spec, depends map[stri
 			}
 
 			depends[index] = true
-			details, err := k.doExpandSpec(ctx, &imported, depends, details)
+			details, err := k.doExpandSpec(ctx, &imported, depends, inherit, details)
 			if err != nil {
 				return details, err
 			}
@@ -173,12 +219,13 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 }
 
 // returns whether a spec name is a valid spec in the consensus
-// first return value is found and active, second argument is found only
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
+// first return value is found and active, second argument is found only, third argument is the provider's type (dynamic/static)
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType types.Spec_ProvidersTypes) {
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
 		foundAndActive = spec.Enabled
+		providersType = spec.ProvidersTypes
 	}
 	return
 }
@@ -207,6 +254,7 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 // returns map[apiInterface][]addons
 func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error) {
 	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
+	var spec types.Spec
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
 		spec, err := k.ExpandSpec(ctx, spec)
@@ -218,8 +266,10 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, ma
 			)
 		}
 		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
+		return expectedInterfaces, nil
 	}
-	return
+	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedInterfacesForSpec", nil,
+		utils.Attribute{Key: "chainID", Value: chainID})
 }
 
 func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {

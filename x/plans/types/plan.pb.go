@@ -8,6 +8,7 @@ import (
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	_ "github.com/lavanet/lava/x/spec/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -23,38 +24,6 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
-
-// the enum below determines the pairing algorithm's behaviour with the selected providers feature
-type SELECTED_PROVIDERS_MODE int32
-
-const (
-	SELECTED_PROVIDERS_MODE_ALLOWED   SELECTED_PROVIDERS_MODE = 0
-	SELECTED_PROVIDERS_MODE_MIXED     SELECTED_PROVIDERS_MODE = 1
-	SELECTED_PROVIDERS_MODE_EXCLUSIVE SELECTED_PROVIDERS_MODE = 2
-	SELECTED_PROVIDERS_MODE_DISABLED  SELECTED_PROVIDERS_MODE = 3
-)
-
-var SELECTED_PROVIDERS_MODE_name = map[int32]string{
-	0: "ALLOWED",
-	1: "MIXED",
-	2: "EXCLUSIVE",
-	3: "DISABLED",
-}
-
-var SELECTED_PROVIDERS_MODE_value = map[string]int32{
-	"ALLOWED":   0,
-	"MIXED":     1,
-	"EXCLUSIVE": 2,
-	"DISABLED":  3,
-}
-
-func (x SELECTED_PROVIDERS_MODE) String() string {
-	return proto.EnumName(SELECTED_PROVIDERS_MODE_name, int32(x))
-}
-
-func (SELECTED_PROVIDERS_MODE) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_e5909a10cd0e3497, []int{0}
-}
 
 // The geolocation values are encoded as bits in a bitmask, with two special values:
 // GLS is set to 0 so it will be restrictive with the AND operator.
@@ -102,7 +71,7 @@ func (x Geolocation) String() string {
 }
 
 func (Geolocation) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_e5909a10cd0e3497, []int{1}
+	return fileDescriptor_e5909a10cd0e3497, []int{0}
 }
 
 type Plan struct {
@@ -213,219 +182,46 @@ func (m *Plan) GetPlanPolicy() Policy {
 	return Policy{}
 }
 
-// protobuf expected in YAML format: used "moretags" to simplify parsing
-type Policy struct {
-	ChainPolicies         []ChainPolicy           `protobuf:"bytes,1,rep,name=chain_policies,json=chainPolicies,proto3" json:"chain_policies" mapstructure:"chain_policies"`
-	GeolocationProfile    uint64                  `protobuf:"varint,2,opt,name=geolocation_profile,json=geolocationProfile,proto3" json:"geolocation_profile" mapstructure:"geolocation_profile"`
-	TotalCuLimit          uint64                  `protobuf:"varint,3,opt,name=total_cu_limit,json=totalCuLimit,proto3" json:"total_cu_limit" mapstructure:"total_cu_limit"`
-	EpochCuLimit          uint64                  `protobuf:"varint,4,opt,name=epoch_cu_limit,json=epochCuLimit,proto3" json:"epoch_cu_limit" mapstructure:"epoch_cu_limit"`
-	MaxProvidersToPair    uint64                  `protobuf:"varint,5,opt,name=max_providers_to_pair,json=maxProvidersToPair,proto3" json:"max_providers_to_pair" mapstructure:"max_providers_to_pair"`
-	SelectedProvidersMode SELECTED_PROVIDERS_MODE `protobuf:"varint,6,opt,name=selected_providers_mode,json=selectedProvidersMode,proto3,enum=lavanet.lava.plans.SELECTED_PROVIDERS_MODE" json:"selected_providers_mode" mapstructure:"selected_providers_mode"`
-	SelectedProviders     []string                `protobuf:"bytes,7,rep,name=selected_providers,json=selectedProviders,proto3" json:"selected_providers" mapstructure:"selected_providers"`
-}
-
-func (m *Policy) Reset()         { *m = Policy{} }
-func (m *Policy) String() string { return proto.CompactTextString(m) }
-func (*Policy) ProtoMessage()    {}
-func (*Policy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5909a10cd0e3497, []int{1}
-}
-func (m *Policy) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Policy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Policy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Policy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Policy.Merge(m, src)
-}
-func (m *Policy) XXX_Size() int {
-	return m.Size()
-}
-func (m *Policy) XXX_DiscardUnknown() {
-	xxx_messageInfo_Policy.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Policy proto.InternalMessageInfo
-
-func (m *Policy) GetChainPolicies() []ChainPolicy {
-	if m != nil {
-		return m.ChainPolicies
-	}
-	return nil
-}
-
-func (m *Policy) GetGeolocationProfile() uint64 {
-	if m != nil {
-		return m.GeolocationProfile
-	}
-	return 0
-}
-
-func (m *Policy) GetTotalCuLimit() uint64 {
-	if m != nil {
-		return m.TotalCuLimit
-	}
-	return 0
-}
-
-func (m *Policy) GetEpochCuLimit() uint64 {
-	if m != nil {
-		return m.EpochCuLimit
-	}
-	return 0
-}
-
-func (m *Policy) GetMaxProvidersToPair() uint64 {
-	if m != nil {
-		return m.MaxProvidersToPair
-	}
-	return 0
-}
-
-func (m *Policy) GetSelectedProvidersMode() SELECTED_PROVIDERS_MODE {
-	if m != nil {
-		return m.SelectedProvidersMode
-	}
-	return SELECTED_PROVIDERS_MODE_ALLOWED
-}
-
-func (m *Policy) GetSelectedProviders() []string {
-	if m != nil {
-		return m.SelectedProviders
-	}
-	return nil
-}
-
-type ChainPolicy struct {
-	ChainId string   `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty" mapstructure:"chain_id"`
-	Apis    []string `protobuf:"bytes,2,rep,name=apis,proto3" json:"apis,omitempty" mapstructure:"apis"`
-}
-
-func (m *ChainPolicy) Reset()         { *m = ChainPolicy{} }
-func (m *ChainPolicy) String() string { return proto.CompactTextString(m) }
-func (*ChainPolicy) ProtoMessage()    {}
-func (*ChainPolicy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e5909a10cd0e3497, []int{2}
-}
-func (m *ChainPolicy) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ChainPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ChainPolicy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ChainPolicy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ChainPolicy.Merge(m, src)
-}
-func (m *ChainPolicy) XXX_Size() int {
-	return m.Size()
-}
-func (m *ChainPolicy) XXX_DiscardUnknown() {
-	xxx_messageInfo_ChainPolicy.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ChainPolicy proto.InternalMessageInfo
-
-func (m *ChainPolicy) GetChainId() string {
-	if m != nil {
-		return m.ChainId
-	}
-	return ""
-}
-
-func (m *ChainPolicy) GetApis() []string {
-	if m != nil {
-		return m.Apis
-	}
-	return nil
-}
-
 func init() {
-	proto.RegisterEnum("lavanet.lava.plans.SELECTED_PROVIDERS_MODE", SELECTED_PROVIDERS_MODE_name, SELECTED_PROVIDERS_MODE_value)
 	proto.RegisterEnum("lavanet.lava.plans.Geolocation", Geolocation_name, Geolocation_value)
 	proto.RegisterType((*Plan)(nil), "lavanet.lava.plans.Plan")
-	proto.RegisterType((*Policy)(nil), "lavanet.lava.plans.Policy")
-	proto.RegisterType((*ChainPolicy)(nil), "lavanet.lava.plans.ChainPolicy")
 }
 
 func init() { proto.RegisterFile("plans/plan.proto", fileDescriptor_e5909a10cd0e3497) }
 
 var fileDescriptor_e5909a10cd0e3497 = []byte{
-	// 891 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x55, 0x4d, 0x6f, 0xdb, 0x36,
-	0x18, 0xb6, 0x6c, 0xc5, 0x96, 0x29, 0x27, 0xe0, 0xd8, 0x16, 0xd1, 0x52, 0xcc, 0x72, 0xb5, 0x75,
-	0x30, 0x3a, 0x40, 0x46, 0x53, 0x6c, 0x87, 0x7d, 0x00, 0xf3, 0x87, 0x16, 0xd8, 0x70, 0x16, 0x43,
-	0x6e, 0xda, 0x6e, 0x3b, 0x08, 0xb4, 0xc4, 0x39, 0xdc, 0x64, 0x51, 0x90, 0x64, 0x2f, 0xfd, 0x03,
-	0x3b, 0xef, 0x67, 0x0c, 0xc3, 0x7e, 0x48, 0x8f, 0x3d, 0xee, 0x24, 0x0c, 0xc9, 0xcd, 0x47, 0xff,
-	0x81, 0x0e, 0xa4, 0x94, 0x0f, 0xcf, 0x0e, 0x7a, 0x31, 0x5f, 0x3e, 0xcf, 0xc3, 0xf7, 0x21, 0x5f,
-	0xbf, 0x14, 0x01, 0x0c, 0x7d, 0x1c, 0xc4, 0x2d, 0xfe, 0x6b, 0x86, 0x11, 0x4b, 0x18, 0x42, 0x3e,
-	0x5e, 0xe0, 0x80, 0x24, 0x26, 0x1f, 0x4d, 0x41, 0x1f, 0xdc, 0x9f, 0xb2, 0x29, 0x13, 0x74, 0x8b,
-	0x47, 0x99, 0xf2, 0xa0, 0xee, 0xb2, 0x78, 0xc6, 0xe2, 0xd6, 0x04, 0xc7, 0xa4, 0xb5, 0x78, 0x3a,
-	0x21, 0x09, 0x7e, 0xda, 0x72, 0x19, 0xcd, 0x33, 0x19, 0xbf, 0x97, 0x80, 0x3c, 0xf2, 0x71, 0x80,
-	0xee, 0x83, 0x1d, 0x1a, 0x78, 0xe4, 0x5c, 0x93, 0x1a, 0x52, 0xb3, 0x6a, 0x67, 0x13, 0x8e, 0x4e,
-	0x7c, 0xe6, 0xfe, 0xaa, 0x95, 0x1a, 0x52, 0x53, 0xb6, 0xb3, 0x09, 0xfa, 0x1c, 0xec, 0x84, 0x11,
-	0x75, 0x89, 0x26, 0x37, 0xa4, 0xa6, 0x7a, 0xf8, 0xa1, 0x99, 0x99, 0x98, 0xdc, 0xc4, 0xcc, 0x4d,
-	0xcc, 0x2e, 0xa3, 0x41, 0x47, 0x7e, 0x93, 0xea, 0x05, 0x3b, 0x53, 0xa3, 0x8f, 0xc1, 0x2e, 0xf6,
-	0x7d, 0xf6, 0x9b, 0xc3, 0x16, 0x24, 0x9a, 0xc7, 0x44, 0x53, 0x1a, 0x52, 0x53, 0xb1, 0x6b, 0x02,
-	0x3c, 0xc9, 0x30, 0xf4, 0x08, 0xd4, 0x72, 0xda, 0x89, 0x70, 0x42, 0xb4, 0xaa, 0x30, 0x56, 0x73,
-	0xcc, 0xc6, 0x09, 0x41, 0x0d, 0xa0, 0x7a, 0x24, 0x76, 0x23, 0x1a, 0x26, 0x94, 0x05, 0x9a, 0x2a,
-	0x36, 0x7c, 0x1b, 0x42, 0x08, 0xc8, 0xc9, 0xeb, 0x90, 0x68, 0x35, 0x41, 0x89, 0x18, 0x7d, 0x0d,
-	0x0e, 0x70, 0x10, 0xcc, 0xb1, 0xef, 0x78, 0x34, 0x76, 0xd9, 0x3c, 0x48, 0x9c, 0x90, 0x44, 0x2e,
-	0x09, 0x12, 0x3c, 0x25, 0xda, 0xae, 0xb0, 0xd1, 0x32, 0x45, 0x2f, 0x17, 0x8c, 0xae, 0x79, 0xd4,
-	0x06, 0x2a, 0x2f, 0xb3, 0x13, 0x32, 0x9f, 0xba, 0xaf, 0xb5, 0x3d, 0x71, 0xf0, 0x03, 0x73, 0xf3,
-	0x7f, 0x30, 0x47, 0x42, 0x91, 0x9f, 0x1c, 0x70, 0x2c, 0x43, 0x06, 0xb2, 0x02, 0xa0, 0x3a, 0x90,
-	0x95, 0x22, 0x2c, 0x0d, 0x64, 0x65, 0x07, 0x96, 0x07, 0xb2, 0x52, 0x86, 0x95, 0x81, 0xac, 0x54,
-	0xa0, 0x62, 0xfc, 0x5d, 0x06, 0xe5, 0x4c, 0x88, 0x66, 0x60, 0xcf, 0x3d, 0xc3, 0x34, 0x37, 0xa3,
-	0x24, 0xd6, 0xa4, 0x46, 0xa9, 0xa9, 0x1e, 0xea, 0xdb, 0xec, 0xba, 0x5c, 0x99, 0x7b, 0x3e, 0xe6,
-	0x9e, 0xab, 0x54, 0xff, 0x68, 0x86, 0xc3, 0x38, 0x89, 0xe6, 0x6e, 0x32, 0x8f, 0xc8, 0x97, 0xc6,
-	0x7a, 0x32, 0xc3, 0xde, 0x75, 0xaf, 0xd7, 0x50, 0x12, 0xa3, 0x00, 0xdc, 0x9b, 0x12, 0xe6, 0x33,
-	0x17, 0xf3, 0xda, 0x39, 0x61, 0xc4, 0x7e, 0xa6, 0x3e, 0xd1, 0x8a, 0xbc, 0x22, 0x9d, 0x6f, 0x96,
-	0xa9, 0xbe, 0x8d, 0x5e, 0xa5, 0xba, 0xb1, 0xee, 0xb2, 0x45, 0x64, 0xd8, 0xe8, 0x16, 0x3a, 0xca,
-	0x40, 0xf4, 0x03, 0xd8, 0x4b, 0x58, 0x82, 0x7d, 0xc7, 0x9d, 0x3b, 0x3e, 0x9d, 0xd1, 0x24, 0x6b,
-	0xae, 0xce, 0xb3, 0x65, 0xaa, 0xff, 0x8f, 0xd9, 0x3c, 0xcb, 0x3a, 0x6f, 0xd8, 0x35, 0x01, 0x74,
-	0xe7, 0x43, 0x3e, 0xe5, 0xa9, 0x49, 0xc8, 0xdc, 0xb3, 0x9b, 0xd4, 0xf2, 0x4d, 0xea, 0x75, 0x66,
-	0x33, 0xf5, 0x3a, 0x6f, 0xd8, 0x35, 0x01, 0x5c, 0xa5, 0x4e, 0xc0, 0x83, 0x19, 0x3e, 0xe7, 0x27,
-	0x5b, 0x50, 0x8f, 0x44, 0xb1, 0x93, 0x30, 0x27, 0xc4, 0x34, 0xd2, 0x76, 0x84, 0x43, 0x7b, 0x99,
-	0xea, 0xdb, 0x05, 0xab, 0x54, 0xff, 0x64, 0xdd, 0x68, 0xab, 0xcc, 0xb0, 0xd1, 0x0c, 0x9f, 0x8f,
-	0xae, 0xe0, 0xe7, 0x6c, 0x84, 0x69, 0x84, 0xfe, 0x92, 0xc0, 0x7e, 0x4c, 0x7c, 0xe2, 0x26, 0xc4,
-	0xbb, 0xb5, 0x66, 0xc6, 0x3c, 0xa2, 0x95, 0x1b, 0x52, 0x73, 0xef, 0xf0, 0xb3, 0x6d, 0x4d, 0x31,
-	0xb6, 0x86, 0x56, 0xf7, 0xb9, 0xd5, 0x73, 0x46, 0xf6, 0xc9, 0x8b, 0x7e, 0xcf, 0xb2, 0xc7, 0xce,
-	0xf1, 0x49, 0xcf, 0xea, 0x58, 0xcb, 0x54, 0xbf, 0x2b, 0xdf, 0x2a, 0xd5, 0x3f, 0x5d, 0xdf, 0xe7,
-	0x1d, 0x42, 0xc3, 0x7e, 0x70, 0xc5, 0x5c, 0x6f, 0xf7, 0x98, 0x79, 0x04, 0xfd, 0x02, 0xd0, 0xe6,
-	0x12, 0xad, 0xd2, 0x28, 0x35, 0xab, 0x9d, 0xaf, 0x96, 0xa9, 0xbe, 0x85, 0x5d, 0xa5, 0xfa, 0xa3,
-	0xf7, 0x99, 0x1a, 0xf6, 0x07, 0x1b, 0x7e, 0xc6, 0x02, 0xa8, 0xb7, 0x3a, 0x1f, 0x7d, 0x01, 0x94,
-	0xac, 0xcb, 0xa9, 0x97, 0x7d, 0xc0, 0x3a, 0x0f, 0x57, 0xa9, 0xbe, 0xbf, 0xed, 0x1e, 0x50, 0xcf,
-	0xb0, 0x2b, 0x22, 0xec, 0x7b, 0xa8, 0x05, 0x64, 0x1c, 0xd2, 0x58, 0x2b, 0x8a, 0x4d, 0x3e, 0xcc,
-	0xef, 0xcf, 0xbd, 0xf5, 0x75, 0x5c, 0x61, 0xd8, 0x42, 0xf8, 0xe4, 0x7b, 0xb0, 0x7f, 0x47, 0x71,
-	0x91, 0x0a, 0x2a, 0xed, 0xe1, 0xf0, 0xe4, 0xa5, 0xd5, 0x83, 0x05, 0x54, 0x05, 0x3b, 0xc7, 0xfd,
-	0x57, 0x56, 0x0f, 0x4a, 0x68, 0x17, 0x54, 0xad, 0x57, 0xdd, 0xe1, 0xe9, 0xb8, 0xff, 0xc2, 0x82,
-	0x45, 0x54, 0x03, 0x4a, 0xaf, 0x3f, 0x6e, 0x77, 0x86, 0x56, 0x0f, 0x96, 0x9e, 0xfc, 0x04, 0xd4,
-	0xa3, 0x9b, 0x2b, 0x82, 0x2a, 0xa0, 0x74, 0x34, 0x1c, 0xc3, 0x02, 0x0f, 0x4e, 0xc7, 0x5d, 0x28,
-	0xa1, 0x32, 0x28, 0x5a, 0xa7, 0xb0, 0x98, 0x01, 0x16, 0x94, 0xb3, 0xe0, 0x25, 0x54, 0x38, 0xd3,
-	0xfe, 0x0e, 0x42, 0x31, 0x8e, 0x61, 0x43, 0x8c, 0xa7, 0xf0, 0x5b, 0xa4, 0x80, 0xe2, 0xd1, 0x10,
-	0xbe, 0x7b, 0x57, 0xea, 0x74, 0xff, 0xbc, 0xa8, 0x4b, 0x6f, 0x2e, 0xea, 0xd2, 0xdb, 0x8b, 0xba,
-	0xf4, 0xef, 0x45, 0x5d, 0xfa, 0xe3, 0xb2, 0x5e, 0x78, 0x7b, 0x59, 0x2f, 0xfc, 0x73, 0x59, 0x2f,
-	0xfc, 0xf8, 0x78, 0x4a, 0x93, 0xb3, 0xf9, 0xc4, 0x74, 0xd9, 0xac, 0x95, 0xf7, 0x90, 0x18, 0x5b,
-	0xe7, 0xad, 0xec, 0xc1, 0xe1, 0x9f, 0xcd, 0x78, 0x52, 0x16, 0x0f, 0xc5, 0xb3, 0xff, 0x02, 0x00,
-	0x00, 0xff, 0xff, 0xe4, 0xc7, 0x74, 0xc6, 0x86, 0x06, 0x00, 0x00,
+	// 492 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x92, 0x41, 0x8b, 0x13, 0x31,
+	0x14, 0xc7, 0x3b, 0x6d, 0xb6, 0xcd, 0x66, 0xba, 0x12, 0xc2, 0x1e, 0xb2, 0x3d, 0x8c, 0xa3, 0x22,
+	0x14, 0x0f, 0x19, 0x56, 0xf1, 0xe6, 0xc1, 0xdd, 0xba, 0x16, 0xca, 0x82, 0xa5, 0xa5, 0x08, 0x7a,
+	0x18, 0xd2, 0x34, 0xd4, 0x60, 0x76, 0x32, 0xcc, 0xa4, 0x75, 0xf7, 0x0b, 0x78, 0xf6, 0x63, 0xf8,
+	0x51, 0xf6, 0xb8, 0x47, 0x4f, 0x22, 0xed, 0x07, 0x59, 0x49, 0x32, 0x8a, 0xe0, 0x65, 0xde, 0xcb,
+	0xef, 0xff, 0x98, 0xf7, 0xfe, 0x2f, 0x41, 0xb8, 0xd4, 0xbc, 0xa8, 0x33, 0xf7, 0x65, 0x65, 0x65,
+	0xac, 0x21, 0x44, 0xf3, 0x2d, 0x2f, 0xa4, 0x65, 0x2e, 0x32, 0x2f, 0x0f, 0x8e, 0xd7, 0x66, 0x6d,
+	0xbc, 0x9c, 0xb9, 0x2c, 0x54, 0x0e, 0x12, 0x61, 0xea, 0x2b, 0x53, 0x67, 0x4b, 0x5e, 0xcb, 0x6c,
+	0x7b, 0xba, 0x94, 0x96, 0x9f, 0x66, 0xc2, 0xa8, 0xe6, 0x4f, 0x83, 0x93, 0xba, 0x94, 0x22, 0xe3,
+	0xa5, 0xca, 0x85, 0xd1, 0x5a, 0x0a, 0xab, 0xcc, 0x1f, 0x89, 0x34, 0x6d, 0x8d, 0x56, 0xe2, 0x26,
+	0xb0, 0xc7, 0x5f, 0x3b, 0x08, 0x4c, 0x35, 0x2f, 0xc8, 0x31, 0x3a, 0x50, 0xc5, 0x4a, 0x5e, 0xd3,
+	0x28, 0x8d, 0x86, 0x87, 0xb3, 0x70, 0x70, 0x74, 0xa9, 0x8d, 0xf8, 0x4c, 0x3b, 0x69, 0x34, 0x04,
+	0xb3, 0x70, 0x20, 0x2f, 0xd1, 0x41, 0x59, 0x29, 0x21, 0x29, 0x48, 0xa3, 0x61, 0xfc, 0xfc, 0x84,
+	0x85, 0x99, 0x98, 0x9b, 0x89, 0x35, 0x33, 0xb1, 0x91, 0x51, 0xc5, 0x39, 0xb8, 0xfd, 0xf9, 0xb0,
+	0x35, 0x0b, 0xd5, 0xe4, 0x09, 0x3a, 0xe2, 0x5a, 0x9b, 0x2f, 0xb9, 0xd9, 0xca, 0x6a, 0x53, 0x4b,
+	0x0a, 0xd3, 0x68, 0x08, 0x67, 0x7d, 0x0f, 0xdf, 0x05, 0x46, 0x1e, 0xa1, 0x7e, 0x23, 0xe7, 0x15,
+	0xb7, 0x92, 0x1e, 0xfa, 0xc6, 0x71, 0xc3, 0x66, 0xdc, 0x4a, 0x92, 0xa2, 0x78, 0x25, 0x6b, 0x51,
+	0xa9, 0xd2, 0x99, 0xa3, 0xb1, 0x1f, 0xf8, 0x5f, 0x44, 0x08, 0x02, 0xf6, 0xa6, 0x94, 0xb4, 0xef,
+	0x25, 0x9f, 0x93, 0x57, 0x68, 0xc0, 0x8b, 0x62, 0xc3, 0x75, 0xbe, 0x52, 0xb5, 0x30, 0x9b, 0xc2,
+	0xe6, 0xa5, 0xac, 0x84, 0x2c, 0x2c, 0x5f, 0x4b, 0x7a, 0xe4, 0xdb, 0xd0, 0x50, 0xf1, 0xa6, 0x29,
+	0x98, 0xfe, 0xd5, 0xc9, 0x19, 0x8a, 0xdd, 0xf6, 0xf2, 0xb0, 0x3c, 0xfa, 0xc0, 0x1b, 0x1f, 0xb0,
+	0xff, 0xaf, 0x8d, 0x4d, 0x7d, 0x45, 0xe3, 0x1c, 0x39, 0x16, 0xc8, 0x04, 0x40, 0x84, 0xe3, 0x09,
+	0x80, 0x6d, 0xdc, 0x99, 0x00, 0x78, 0x80, 0xbb, 0x13, 0x00, 0xbb, 0xb8, 0x37, 0x01, 0xb0, 0x87,
+	0xe1, 0xb3, 0x8f, 0x28, 0x1e, 0x4b, 0xa3, 0x8d, 0xe0, 0xde, 0x41, 0x0f, 0x75, 0xc6, 0x97, 0x73,
+	0xdc, 0x72, 0xc9, 0x62, 0x3e, 0xc2, 0x11, 0xe9, 0xa2, 0xf6, 0xc5, 0x02, 0xb7, 0x03, 0xb8, 0xc0,
+	0x20, 0x24, 0xef, 0x31, 0x74, 0xca, 0xd9, 0x5b, 0x8c, 0x7d, 0x9c, 0xe3, 0xd4, 0xc7, 0x05, 0x7e,
+	0x4d, 0x20, 0x6a, 0x8f, 0x2f, 0xf1, 0xfd, 0x7d, 0xe7, 0x7c, 0xf4, 0x7d, 0x97, 0x44, 0xb7, 0xbb,
+	0x24, 0xba, 0xdb, 0x25, 0xd1, 0xaf, 0x5d, 0x12, 0x7d, 0xdb, 0x27, 0xad, 0xbb, 0x7d, 0xd2, 0xfa,
+	0xb1, 0x4f, 0x5a, 0x1f, 0x9e, 0xae, 0x95, 0xfd, 0xb4, 0x59, 0x32, 0x61, 0xae, 0xb2, 0xc6, 0x90,
+	0x8f, 0xd9, 0x75, 0x16, 0x5e, 0x8c, 0xdb, 0x5f, 0xbd, 0xec, 0xfa, 0x17, 0xf3, 0xe2, 0x77, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0x8b, 0x22, 0x49, 0x1a, 0xbe, 0x02, 0x00, 0x00,
 }
 
 func (this *Plan) Equal(that interface{}) bool {
@@ -473,90 +269,6 @@ func (this *Plan) Equal(that interface{}) bool {
 	}
 	if !this.PlanPolicy.Equal(&that1.PlanPolicy) {
 		return false
-	}
-	return true
-}
-func (this *Policy) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Policy)
-	if !ok {
-		that2, ok := that.(Policy)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.ChainPolicies) != len(that1.ChainPolicies) {
-		return false
-	}
-	for i := range this.ChainPolicies {
-		if !this.ChainPolicies[i].Equal(&that1.ChainPolicies[i]) {
-			return false
-		}
-	}
-	if this.GeolocationProfile != that1.GeolocationProfile {
-		return false
-	}
-	if this.TotalCuLimit != that1.TotalCuLimit {
-		return false
-	}
-	if this.EpochCuLimit != that1.EpochCuLimit {
-		return false
-	}
-	if this.MaxProvidersToPair != that1.MaxProvidersToPair {
-		return false
-	}
-	if this.SelectedProvidersMode != that1.SelectedProvidersMode {
-		return false
-	}
-	if len(this.SelectedProviders) != len(that1.SelectedProviders) {
-		return false
-	}
-	for i := range this.SelectedProviders {
-		if this.SelectedProviders[i] != that1.SelectedProviders[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *ChainPolicy) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*ChainPolicy)
-	if !ok {
-		that2, ok := that.(ChainPolicy)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.ChainId != that1.ChainId {
-		return false
-	}
-	if len(this.Apis) != len(that1.Apis) {
-		return false
-	}
-	for i := range this.Apis {
-		if this.Apis[i] != that1.Apis[i] {
-			return false
-		}
 	}
 	return true
 }
@@ -649,116 +361,6 @@ func (m *Plan) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Policy) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Policy) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Policy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.SelectedProviders) > 0 {
-		for iNdEx := len(m.SelectedProviders) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.SelectedProviders[iNdEx])
-			copy(dAtA[i:], m.SelectedProviders[iNdEx])
-			i = encodeVarintPlan(dAtA, i, uint64(len(m.SelectedProviders[iNdEx])))
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
-	if m.SelectedProvidersMode != 0 {
-		i = encodeVarintPlan(dAtA, i, uint64(m.SelectedProvidersMode))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.MaxProvidersToPair != 0 {
-		i = encodeVarintPlan(dAtA, i, uint64(m.MaxProvidersToPair))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.EpochCuLimit != 0 {
-		i = encodeVarintPlan(dAtA, i, uint64(m.EpochCuLimit))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.TotalCuLimit != 0 {
-		i = encodeVarintPlan(dAtA, i, uint64(m.TotalCuLimit))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.GeolocationProfile != 0 {
-		i = encodeVarintPlan(dAtA, i, uint64(m.GeolocationProfile))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.ChainPolicies) > 0 {
-		for iNdEx := len(m.ChainPolicies) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.ChainPolicies[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintPlan(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ChainPolicy) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ChainPolicy) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ChainPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Apis) > 0 {
-		for iNdEx := len(m.Apis) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Apis[iNdEx])
-			copy(dAtA[i:], m.Apis[iNdEx])
-			i = encodeVarintPlan(dAtA, i, uint64(len(m.Apis[iNdEx])))
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.ChainId) > 0 {
-		i -= len(m.ChainId)
-		copy(dAtA[i:], m.ChainId)
-		i = encodeVarintPlan(dAtA, i, uint64(len(m.ChainId)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintPlan(dAtA []byte, offset int, v uint64) int {
 	offset -= sovPlan(v)
 	base := offset
@@ -804,61 +406,6 @@ func (m *Plan) Size() (n int) {
 	}
 	l = m.PlanPolicy.Size()
 	n += 1 + l + sovPlan(uint64(l))
-	return n
-}
-
-func (m *Policy) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.ChainPolicies) > 0 {
-		for _, e := range m.ChainPolicies {
-			l = e.Size()
-			n += 1 + l + sovPlan(uint64(l))
-		}
-	}
-	if m.GeolocationProfile != 0 {
-		n += 1 + sovPlan(uint64(m.GeolocationProfile))
-	}
-	if m.TotalCuLimit != 0 {
-		n += 1 + sovPlan(uint64(m.TotalCuLimit))
-	}
-	if m.EpochCuLimit != 0 {
-		n += 1 + sovPlan(uint64(m.EpochCuLimit))
-	}
-	if m.MaxProvidersToPair != 0 {
-		n += 1 + sovPlan(uint64(m.MaxProvidersToPair))
-	}
-	if m.SelectedProvidersMode != 0 {
-		n += 1 + sovPlan(uint64(m.SelectedProvidersMode))
-	}
-	if len(m.SelectedProviders) > 0 {
-		for _, s := range m.SelectedProviders {
-			l = len(s)
-			n += 1 + l + sovPlan(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *ChainPolicy) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ChainId)
-	if l > 0 {
-		n += 1 + l + sovPlan(uint64(l))
-	}
-	if len(m.Apis) > 0 {
-		for _, s := range m.Apis {
-			l = len(s)
-			n += 1 + l + sovPlan(uint64(l))
-		}
-	}
 	return n
 }
 
@@ -1135,331 +682,6 @@ func (m *Plan) Unmarshal(dAtA []byte) error {
 			if err := m.PlanPolicy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipPlan(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthPlan
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Policy) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowPlan
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Policy: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Policy: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainPolicies", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthPlan
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainPolicies = append(m.ChainPolicies, ChainPolicy{})
-			if err := m.ChainPolicies[len(m.ChainPolicies)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GeolocationProfile", wireType)
-			}
-			m.GeolocationProfile = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.GeolocationProfile |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TotalCuLimit", wireType)
-			}
-			m.TotalCuLimit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.TotalCuLimit |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EpochCuLimit", wireType)
-			}
-			m.EpochCuLimit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.EpochCuLimit |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxProvidersToPair", wireType)
-			}
-			m.MaxProvidersToPair = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MaxProvidersToPair |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 6:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SelectedProvidersMode", wireType)
-			}
-			m.SelectedProvidersMode = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.SelectedProvidersMode |= SELECTED_PROVIDERS_MODE(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SelectedProviders", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthPlan
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SelectedProviders = append(m.SelectedProviders, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipPlan(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthPlan
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ChainPolicy) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowPlan
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ChainPolicy: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ChainPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthPlan
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ChainId = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Apis", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthPlan
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Apis = append(m.Apis, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
