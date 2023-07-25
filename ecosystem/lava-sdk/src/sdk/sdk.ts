@@ -359,7 +359,7 @@ export class LavaSDK {
     }
     let lastRelayResponse = null;
 
-    for (let i = 0; i <= pairingList.length; i++) {
+    for (let i = 0; i < pairingList.length; i++) {
       try {
         // Send relay
         const relayResponse = await this.relayer.sendRelay(
