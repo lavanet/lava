@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
+// RelayExchange consists a relay request and its corresponding response
 type RelayExchange struct {
 	Request RelayRequest
 	Reply   RelayReply
