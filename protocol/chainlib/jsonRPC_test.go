@@ -150,3 +150,34 @@ func TestJsonRpcChainProxy(t *testing.T) {
 		closeServer()
 	}
 }
+
+func TestAddonAndVerifications(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
+	})
+
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../")
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainRouter)
+	require.NotNil(t, chainFetcher)
+
+	verifications := chainParser.GetVerifications([]string{"debug"})
+	require.NotEmpty(t, verifications)
+	for _, verification := range verifications {
+		parsing := &verification.ParseDirective
+		collectionType := verification.ConnectionType
+		chainMessage, err := CraftChainMessage(parsing, collectionType, chainParser, nil, nil)
+		require.NoError(t, err)
+		reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, verification.Routing.AsAddons())
+		require.NoError(t, err)
+		_, err = FormatResponseForParsing(reply, chainMessage)
+		require.NoError(t, err)
+	}
+	if closeServer != nil {
+		closeServer()
+	}
+}

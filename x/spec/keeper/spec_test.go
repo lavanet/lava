@@ -826,11 +826,17 @@ func TestCookbookSpecs(t *testing.T) {
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
 			require.NotNil(t, fullspec)
+			verifications := []*types.Verification{}
 			for _, apiCol := range fullspec.ApiCollections {
 				for _, verification := range apiCol.Verifications {
 					require.NotNil(t, verification.ParseDirective)
 					require.NotEqual(t, "", verification.ParseDirective.ApiName)
 				}
+				verifications = append(verifications, apiCol.Verifications...)
+			}
+			if fullspec.Enabled {
+				// all specs need to have verifications
+				require.Greater(t, len(verifications), 0, fullspec.Index)
 			}
 		}
 	}

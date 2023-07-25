@@ -2066,17 +2066,17 @@
                             {
                                 "name": "chain-id",
                                 "parse_directive": {
-                                    "function_template": "/node_info",
+                                    "function_template": "/cosmos/base/tendermint/v1beta1/node_info",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "node_info",
+                                            "default_node_info",
                                             "network"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "/node_info"
+                                    "api_name": "/cosmos/base/tendermint/v1beta1/node_info"
                                 }
                             }
                         ]

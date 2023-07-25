@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	sep = "/"
+	sep = "|"
 )
 
 type chainRouterImpl struct {
@@ -26,6 +26,13 @@ type RouterKey string
 
 func (rk *RouterKey) String() string {
 	return string(*rk)
+}
+
+// when you need unique addons slice back from the router key
+func (rk *RouterKey) AsAddons() []string {
+	rkString, _ := strings.CutPrefix(string(*rk), sep)
+	rkString, _ = strings.CutSuffix(rkString, sep)
+	return strings.Split(rkString, sep)
 }
 
 func NewRouterKey(addons []string) RouterKey {

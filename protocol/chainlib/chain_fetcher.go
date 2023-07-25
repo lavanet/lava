@@ -40,8 +40,11 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
 		addons := url.Addons
 		verifications := cf.chainParser.GetVerifications(addons)
+		if len(verifications) == 0 {
+			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
+		}
 		for _, verification := range verifications {
-			err := cf.Verify(ctx, verification, addons)
+			err := cf.Verify(ctx, verification)
 			if err != nil {
 				return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 			}
@@ -50,17 +53,17 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, addons []string) error {
+func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer) error {
 	parsing := &verification.ParseDirective
 	collectionType := verification.ConnectionType
 	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, nil, cf.ChainFetcherMetadata())
 	if err != nil {
-		return utils.LavaFormatError("verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, addons)
+	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, verification.Routing.AsAddons())
 	if err != nil {
-		return utils.LavaFormatWarning("verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
 	// some verifications only want the response, and don;t care about the value
@@ -71,7 +74,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 		parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
 		if err != nil {
-			return utils.LavaFormatWarning("Failed To Parse result", err, []utils.Attribute{
+			return utils.LavaFormatWarning("[-] verify failed to parse result", err, []utils.Attribute{
 				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 				{Key: "Method", Value: parsing.GetApiName()},
 				{Key: "Response", Value: string(reply.Data)},
@@ -79,14 +82,14 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 
 		if parsedResult != verification.Value {
-			return utils.LavaFormatWarning("Failed verification expected and received are", err, []utils.Attribute{
+			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
 				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 				{Key: "Method", Value: parsing.GetApiName()},
 				{Key: "Response", Value: string(reply.Data)},
 			}...)
 		}
 	}
-	utils.LavaFormatInfo("Verified successfully", utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: verification.Value})
+	utils.LavaFormatInfo("[+] verified successfully", utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: verification.Value})
 	return nil
 }
 
