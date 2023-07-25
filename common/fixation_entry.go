@@ -40,7 +40,7 @@ import (
 //    - AdvanceBlock(): notify of block progress (e.g. BeginBlock) for garbage collection
 // Note:
 //    - methods marked with (*) expect an exact existing method, or otherwise will panic
-//    - methods marked with (**) will match an entry with the nearest-smaller block version
+//    - methods marked with (**) will match an entry with the nearest-no-later block version
 //
 // Usage and behavior:
 //
@@ -48,32 +48,52 @@ import (
 // version is the one with the highest block that is not greater than the current (ctx) block
 // height. If an entry version is in the future (with respect to current block height), then
 // it will become the new latest entry when its block is reached.
-// A new entry version is added using AppendEntry().The version must be the current or future
+//
+// A new entry version is added using AppendEntry(). The version must be the current or future
 // block, and higher than the latest entry's. Appending the same version again will override
 // its previous data. An entry version can be modified using ModifyEntry().
+//
+// GetEntry() returns the latest (with respect to current, not future) version of an entry. A
+// nearest-no-later (than a given block) entry version can be obtained with FindEntry().
+//
 // Entry versions maintain reference count (refcount) that determine their lifetime. New entry
 // versions (appended) start with refcount 1. The refcount of the latest version is incremented
 // using GetEntry(). The refcount of any version is decremented using PutEntry(). The refcount
 // of the latest version is also decremented when a newer version is appended.
-// When an entry's refcount reaches 0, it remains alive (visible) for a predefined period of
-// blocks (stale-period), and then becomes stale (insvisible). Stale entries eventually get
-// cleaned up.
-// A nearest-smaller entry version can be obtained using FindEntry(). If the nearest smaller
-// entry is stale, FindEntry() will return not-found. A specific entry version can be obtained
-// using ReadEntry(), including of stale entries. (Thus, ReadEntry() is suitable for testing
-// and migrations, or when the caller knows that the entry version is not stale).
+//
+// When an entry's refcount reaches 0, it remains partly visible for a predefined period of
+// blocks (stale-period), and then becomes stale and fully invisible. During the stale-period
+// GetEntry() will ignore the entry, however FindEntry() will find it. If the nearest-no-later
+// (then a given block) entry is already stale, FindEntry() will return not-found. ReadEntry()
+// will fetch any specific entry version, including of stale entries. (Thus, it is suitable for
+// testing and migrations, or when the caller knows that the entry version exists, being stale
+// or not). Stale entries eventually get cleaned up automatically.
+//
 // An entry can be deleted using DelEntry(), after which is will not possible to GetEntry(),
-// and calls to FindEntry() for a block beyond that at time of deletion (or later) would fail.
-// Until the data has been fully cleaned up (i.e. no refcount and beyond all stale-periods),
+// and calls to FindEntry() for a block beyond that time of deletion (at or later) would fail
+// too. Until the data has been fully cleaned up (i.e. no refcount and past all stale-periods),
 // calls to AppendEntry() with that entry's index will fail.
+//
+// The per-entry APIs are and their actions are summarized below:
+//
+// o AppendEntry() adds a new version of an entry (could be a future version)
+// o ModifyEntry() updates an existing version of an entry (could be a future version)
+// o DelEntry() deletes and entry and make it invisible to GetEntry()
+// o GetEntry() gets the latest (up to current) version of an entry, except if in stale-period
+// o FindEntry() gets the nearest-no-later version of an entry, including if in stale-period
+// o ReadEntry() gets a specific entry version (stale or not)
+// o PutEntry() drops reference counts taken by GetEntry()
+//
 // GetAllEntryVersions() and GetEntryVersionsRange() give the all -or some- versions (blocks)
 // of an entry. GetAllEntryIndices() return all the entry indices (names).
+//
 // On every new block, AdvanceBlock() should be called.
 //
 // Entry names (index) must contain only visible ascii characters (ascii values 32-125).
 // The ascii 'DEL' invisible character is used internally to terminate the index values
 // when stored, to ensure that no two indices can ever overlap, i.e. one being the prefix
 // of the other.
+//
 // (Note that this properly supports Bech32 addresses, which are limited to use only
 // visible ascii characters as per https://en.bitcoin.it/wiki/BIP_0173#Specification).
 //
@@ -393,31 +413,8 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.Safe
 	fs.setEntryIndex(ctx, safeIndex, false)
 	fs.putEntry(ctx, entry)
 
-	// forcefully remove all future entries: they were never referenced hence do not
-	// require stale-period.
-
-	store := fs.getEntryStore(ctx, safeIndex)
-
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
-	defer iterator.Close()
-
-	var entriesToRemove []types.Entry
-	for ; iterator.Valid(); iterator.Next() {
-		var entry types.Entry
-		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
-
-		if entry.Block <= ctxBlock {
-			break
-		}
-
-		entriesToRemove = append(entriesToRemove, entry)
-	}
-
-	for _, entry := range entriesToRemove {
-		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerFutureEntry)
-		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
-		fs.removeEntry(ctx, entry.SafeIndex(), entry.Block)
-	}
+	// no need to trim future entries: they were trimmed at the time of DelEntry,
+	// and since then new entries (beyond DeleteAt block) could not be appended.
 }
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.SafeIndex, _ uint64) {
@@ -497,6 +494,37 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.Saf
 	}
 }
 
+// trimFutureEntries discards all future entries (relative to the current block)
+func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry types.Entry) {
+	store := fs.getEntryStore(ctx, lastEntry.SafeIndex())
+
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	// first collect all the candidates, and later remove them (as the iterator
+	// logic gets confused with ongoing changes)
+	var entriesToRemove []types.Entry
+	for ; iterator.Valid(); iterator.Next() {
+		var entry types.Entry
+		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
+
+		if entry.Block <= lastEntry.DeleteAt {
+			break
+		}
+
+		entriesToRemove = append(entriesToRemove, entry)
+	}
+
+	// forcefully remove the future entries:
+	// they were never referenced hence do not require stale-period.
+
+	for _, entry := range entriesToRemove {
+		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerFutureEntry)
+		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
+		fs.removeEntry(ctx, entry.SafeIndex(), entry.Block)
+	}
+}
+
 // ReadEntry returns and existing entry with index and specific block
 // (should be called only for existing entries; will panic otherwise)
 func (fs *FixationStore) ReadEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) {
@@ -531,7 +559,7 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 }
 
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
-// nearest-smaller block version for the given block arg.
+// nearest-no-later block version for the given block arg.
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) (types.Entry, bool) {
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryStore(ctx, safeIndex)
@@ -638,6 +666,7 @@ func (fs *FixationStore) HasEntry(ctx sdk.Context, index string, block uint64) b
 }
 
 // GetEntry returns the latest entry by index and increments the refcount
+// (while ignoring entries in stale-period)
 func (fs *FixationStore) GetEntry(ctx sdk.Context, index string, entryData codec.ProtoMarshaler) bool {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
@@ -676,8 +705,18 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 	entry.Refcount -= 1
 
 	if entry.Refcount == 0 {
-		// never overflows because ctx.BlockHeight is int64
-		entry.StaleAt = uint64(ctx.BlockHeight()) + uint64(types.STALE_ENTRY_TIME)
+		block := uint64(ctx.BlockHeight())
+
+		// future entries (i.e. cancel of a future append) are deleted immediately:
+		// they were never in use so they need not undergo stale-period.
+		if entry.Block > block {
+			fs.cancelEntry(ctx, entry.SafeIndex(), entry.Block)
+			return
+		}
+
+		// non-future entries must pass "stale period"; setup a timer for that
+		// (the computation never overflows because ctx.BlockHeight is int64)
+		entry.StaleAt = block + uint64(types.STALE_ENTRY_TIME)
 		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
@@ -737,6 +776,12 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 		fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 	}
 
+	// discard all future entries beyond the DeleteAt block, since they will never
+	// become the latest; and there will be no new entries beyond DeleteAt block
+	// as AppendEntry() does not allow such additions.
+
+	fs.trimFutureEntries(ctx, entry)
+
 	return nil
 }
 
@@ -744,6 +789,25 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 func (fs *FixationStore) removeEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
 	store := fs.getEntryStore(ctx, safeIndex)
 	store.Delete(types.EncodeKey(block))
+}
+
+// cancelEntry cancels a future entry from the store
+func (fs *FixationStore) cancelEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
+	fs.removeEntry(ctx, safeIndex, block)
+
+	// in the unusual case that a future entry is added and then removed without
+	// having turned latest or having another non-future entry added (i.e. there
+	// has not yet been a "latest" entry), then we need to remove the EntryIndex
+	// if we are the last in the chain.
+
+	store := fs.getEntryStore(ctx, safeIndex)
+
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	if !iterator.Valid() {
+		fs.removeEntryIndex(ctx, safeIndex)
+	}
 }
 
 func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, block uint64, filter func(*types.Entry) bool) (blocks []uint64) {
@@ -782,7 +846,7 @@ func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, b
 	return blocks
 }
 
-// GetEntryVersionsRange returns a list of versions from nearest-smaller block
+// GetEntryVersionsRange returns a list of versions from nearest-no-later block
 // and onward, and not more than delta blocks further (skip stale entries).
 func (fs *FixationStore) GetEntryVersionsRange(ctx sdk.Context, index string, block, delta uint64) (blocks []uint64) {
 	filter := func(entry *types.Entry) bool {
