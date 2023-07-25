@@ -825,7 +825,7 @@ func TestCookbookSpecs(t *testing.T) {
 		decoder := json.NewDecoder(bytes.NewReader(contents))
 		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 		err = decoder.Decode(&proposal)
-		require.Nil(t, err)
+		require.Nil(t, err, fileName)
 
 		for _, sp := range proposal.Proposal.Specs {
 			ts.setSpec(sp)

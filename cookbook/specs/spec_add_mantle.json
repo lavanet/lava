@@ -42,7 +42,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -50,7 +50,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "rollup_getInfo",
@@ -60,7 +60,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -68,7 +68,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "rollup_gasPrices",
@@ -78,7 +78,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": "10",
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -86,7 +86,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
