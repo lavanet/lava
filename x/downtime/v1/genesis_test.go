@@ -25,8 +25,8 @@ func TestGenesis_Validate(t *testing.T) {
 				},
 				DowntimesGarbageCollection: []*DowntimeGarbageCollection{
 					{
-						Block:  1,
-						GcTime: time.Now(),
+						Block:   1,
+						GcBlock: 1,
 					},
 				},
 			},

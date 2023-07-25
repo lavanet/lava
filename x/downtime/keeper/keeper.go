@@ -10,17 +10,23 @@ import (
 	gogowellknown "github.com/gogo/protobuf/types"
 	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace) Keeper {
+type EpochStorageKeeper interface {
+	GetParams(ctx sdk.Context) (params epochstoragetypes.Params)
+}
+
+func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(v1.ParamKeyTable())
 	}
 	return Keeper{
-		storeKey:   sk,
-		cdc:        cdc,
-		paramstore: ps,
+		storeKey:           sk,
+		cdc:                cdc,
+		paramstore:         ps,
+		epochStorageKeeper: esk,
 	}
 }
 
@@ -28,6 +34,8 @@ type Keeper struct {
 	storeKey   sdk.StoreKey
 	cdc        codec.BinaryCodec
 	paramstore paramtypes.Subspace
+
+	epochStorageKeeper EpochStorageKeeper
 }
 
 // ------ STATE -------
@@ -205,10 +213,16 @@ func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height 
 
 // ------ STATE END -------
 
+// GCBlocks returns the number of blocks a downtime should live.
+func (k Keeper) GCBlocks(ctx sdk.Context) uint64 {
+	p := k.epochStorageKeeper.GetParams(ctx)
+	return p.EpochBlocks * p.EpochsToSave
+}
+
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
 	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
-	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), uint64(ctx.BlockHeight())+k.GetParams(ctx).GarbageCollectionBlocks)
+	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), uint64(ctx.BlockHeight())+k.GCBlocks(ctx))
 }
 
 // GarbageCollectDowntimes will garbage collect downtimes.

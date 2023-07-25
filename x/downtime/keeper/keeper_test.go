@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -87,6 +88,7 @@ func TestBeginBlock(t *testing.T) {
 	}
 
 	app, ctx := app.TestSetup()
+	app.EpochstorageKeeper.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(1)
 	keeper := app.DowntimeKeeper
 	keeper.SetParams(ctx, v1.DefaultParams())
@@ -122,7 +124,7 @@ func TestBeginBlock(t *testing.T) {
 	require.False(t, hadDowntimes)
 
 	// we check garbage collection by advancing blocks until the garbage collection blocks are reached
-	gcBlocks := keeper.GetParams(ctx).GarbageCollectionBlocks
+	gcBlocks := keeper.GCBlocks(ctx)
 	for i := 0; i < int(gcBlocks); i++ {
 		ctx = nextBlock(ctx, 1*time.Second)
 		keeper.BeginBlock(ctx)

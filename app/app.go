@@ -536,7 +536,7 @@ func New(
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
 
 	// downtime module
-	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName))
+	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
 	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
