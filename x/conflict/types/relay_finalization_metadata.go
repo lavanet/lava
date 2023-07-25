@@ -30,6 +30,6 @@ func (rfm RelayFinalizationMetaData) DataToSign() []byte {
 	return bytes.Join([][]byte{latestBlockBytes, rfm.MetaData.FinalizedBlocksHashes, rfm.Addr, relaySessionHash}, nil)
 }
 
-func (rfm RelayFinalizationMetaData) HashCount() int {
+func (rfm RelayFinalizationMetaData) HashRounds() int {
 	return 1
 }

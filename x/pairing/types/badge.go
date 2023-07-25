@@ -40,6 +40,6 @@ func (b Badge) DataToSign() []byte {
 	return []byte(b.String())
 }
 
-func (b Badge) HashCount() int {
+func (b Badge) HashRounds() int {
 	return 1
 }

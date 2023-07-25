@@ -8,6 +8,6 @@ func (rm ReplyMetadata) DataToSign() []byte {
 	return rm.HashAllDataHash
 }
 
-func (rm ReplyMetadata) HashCount() int {
+func (rm ReplyMetadata) HashRounds() int {
 	return 0
 }

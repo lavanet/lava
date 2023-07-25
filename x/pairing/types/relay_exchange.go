@@ -37,7 +37,7 @@ func (re RelayExchange) DataToSign() []byte {
 	return bytes.Join([][]byte{re.Reply.GetData(), []byte(re.Request.RelayData.String()), metadataBytes}, nil)
 }
 
-func (re RelayExchange) HashCount() int {
+func (re RelayExchange) HashRounds() int {
 	return 2
 }
 

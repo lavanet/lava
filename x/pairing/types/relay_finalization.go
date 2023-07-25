@@ -28,6 +28,6 @@ func (rf RelayFinalization) DataToSign() []byte {
 	return bytes.Join([][]byte{latestBlockBytes, rf.Exchange.Reply.FinalizedBlocksHashes, rf.Addr, relaySessionHash}, nil)
 }
 
-func (rf RelayFinalization) HashCount() int {
+func (rf RelayFinalization) HashRounds() int {
 	return 1
 }

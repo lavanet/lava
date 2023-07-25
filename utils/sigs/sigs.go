@@ -20,13 +20,13 @@ type Signable interface {
 	// DataToSign processes the object's data before it's hashed and signed
 	DataToSign() []byte
 	// HashRounds gets the number of times the object's data is hashed before it's signed
-	HashCount() int
+	HashRounds() int
 }
 
 // Sign creates a signature for a struct. The prepareFunc prepares the struct before extracting the data for the signature
 func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
 	msgData := data.DataToSign()
-	for i := 0; i < data.HashCount(); i++ {
+	for i := 0; i < data.HashRounds(); i++ {
 		msgData = HashMsg(msgData)
 	}
 
@@ -56,7 +56,7 @@ func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	sig := data.GetSignature()
 
 	msgData := data.DataToSign()
-	for i := 0; i < data.HashCount(); i++ {
+	for i := 0; i < data.HashRounds(); i++ {
 		msgData = HashMsg(msgData)
 	}
 

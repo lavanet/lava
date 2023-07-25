@@ -15,7 +15,7 @@ func (rs RelaySession) DataToSign() []byte {
 	return []byte(rs.String())
 }
 
-func (rs RelaySession) HashCount() int {
+func (rs RelaySession) HashRounds() int {
 	return 1
 }
 
