@@ -24,12 +24,17 @@ const (
 	debug                     = false
 )
 
+type VerificationKey struct {
+	Extension string
+	Addon     string
+}
+
 type VerificationContainer struct {
 	ConnectionType string
 	Name           string
 	ParseDirective spectypes.ParseDirective
 	Value          string
-	Routing        RouterKey
+	VerificationKey
 }
 
 type TaggedContainer struct {

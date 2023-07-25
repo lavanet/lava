@@ -39,7 +39,10 @@ func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
 		addons := url.Addons
-		verifications := cf.chainParser.GetVerifications(addons)
+		verifications, err := cf.chainParser.GetVerifications(addons)
+		if err != nil {
+			return err
+		}
 		if len(verifications) == 0 {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
@@ -61,7 +64,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, verification.Routing.AsAddons())
+	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
 	if err != nil {
 		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}

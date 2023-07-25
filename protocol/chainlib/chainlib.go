@@ -55,7 +55,8 @@ type ChainParser interface {
 	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool)
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
-	GetVerifications(supported []string) []VerificationContainer
+	GetVerifications(supported []string) ([]VerificationContainer, error)
+	SeparateAddonsExtensions(supported []string) (addons []string, extensions []string, err error)
 }
 
 type ChainMessage interface {
@@ -88,8 +89,8 @@ type ChainListener interface {
 }
 
 type ChainRouter interface {
-	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, addons []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
-	GetSupportedExtensions() []string
+	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	ExtensionsSupported([]string) bool
 }
 
 type ChainProxy interface {

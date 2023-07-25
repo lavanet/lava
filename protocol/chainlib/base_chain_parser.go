@@ -12,13 +12,15 @@ import (
 )
 
 type BaseChainParser struct {
-	taggedApis     map[spectypes.FUNCTION_TAG]TaggedContainer
-	spec           spectypes.Spec
-	rwLock         sync.RWMutex
-	serverApis     map[ApiKey]ApiContainer
-	apiCollections map[CollectionKey]*spectypes.ApiCollection
-	headers        map[ApiKey]*spectypes.Header
-	verifications  map[RouterKey][]VerificationContainer
+	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec              spectypes.Spec
+	rwLock            sync.RWMutex
+	serverApis        map[ApiKey]ApiContainer
+	apiCollections    map[CollectionKey]*spectypes.ApiCollection
+	headers           map[ApiKey]*spectypes.Header
+	verifications     map[VerificationKey][]VerificationContainer
+	allowedAddons     map[string]struct{}
+	allowedExtensions map[string]struct{}
 }
 
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
@@ -50,51 +52,82 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 }
 
 func (bcp *BaseChainParser) isAddon(addon string) bool {
-	for collectionKey := range bcp.apiCollections {
-		if collectionKey.Addon == addon {
-			return true
-		}
-	}
-	return false
+	_, ok := bcp.allowedAddons[addon]
+	return ok
 }
 
-func (bcp *BaseChainParser) separateAddonsExtensions(supported []string) (addons []string, extensions []string) {
-	for _, addon := range supported {
-		if bcp.isAddon(addon) {
-			addons = append(addons, addon)
+func (bcp *BaseChainParser) isExtension(extension string) bool {
+	_, ok := bcp.allowedExtensions[extension]
+	return ok
+}
+
+// this function errors if it meets a value that is neither a n addon or an extension
+func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons []string, extensions []string, err error) {
+	checked := map[string]struct{}{}
+	for _, supportedToCheck := range supported {
+		// ignore repeated occurrences
+		if _, ok := checked[supportedToCheck]; ok {
+			continue
+		}
+		checked[supportedToCheck] = struct{}{}
+
+		if bcp.isAddon(supportedToCheck) {
+			addons = append(addons, supportedToCheck)
 		} else {
-			if addon == "" {
+			if supportedToCheck == "" {
 				continue
 			}
-			extensions = append(extensions, addon)
+			if !bcp.isExtension(supportedToCheck) {
+				// neither is an error
+				return nil, nil, utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", nil, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
+			}
+			extensions = append(extensions, supportedToCheck)
 		}
 	}
-	return addons, extensions
+	return addons, extensions, nil
 }
 
 // gets all verifications for an endpoint supporting multiple addons and extensions
-func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerifications []VerificationContainer) {
+func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerifications []VerificationContainer, err error) {
 	// addons will contains extensions and addons,
 	// extensions must exist in all verifications, addons must be split because they are separated
-	addons, extensions := bcp.separateAddonsExtensions(supported)
+	addons, extensions, err := bcp.SeparateAddonsExtensions(supported)
+	if err != nil {
+		return nil, err
+	}
 	addons = append(addons, "") // always add the empty addon
 	for _, addon := range addons {
-		routerKey := NewRouterKey(append(extensions, addon))
-		verifications, ok := bcp.verifications[routerKey]
-		if ok {
-			retVerifications = append(retVerifications, verifications...)
+		for _, extension := range extensions {
+			verificationKey := VerificationKey{
+				Extension: extension,
+				Addon:     addon,
+			}
+			verifications, ok := bcp.verifications[verificationKey]
+			if ok {
+				retVerifications = append(retVerifications, verifications...)
+			}
 		}
 	}
 	return
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header, verifications map[RouterKey][]VerificationContainer) {
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header, verifications map[VerificationKey][]VerificationContainer) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
 	bcp.headers = headers
 	bcp.apiCollections = apiCollections
 	bcp.verifications = verifications
+	allowedAddons := map[string]struct{}{}
+	allowedExtensions := map[string]struct{}{}
+	for _, apoCollection := range apiCollections {
+		for _, extension := range apoCollection.Extensions {
+			allowedExtensions[extension.Name] = struct{}{}
+		}
+		allowedAddons[apoCollection.CollectionData.AddOn] = struct{}{}
+	}
+	bcp.allowedAddons = allowedAddons
+	bcp.allowedExtensions = allowedExtensions
 }
 
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
@@ -169,12 +202,12 @@ func (apip *BaseChainParser) getApiCollection(connectionType string, internalPat
 	return api, nil
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[RouterKey][]VerificationContainer) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey][]VerificationContainer) {
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
-	verifications := map[RouterKey][]VerificationContainer{}
+	verifications := map[VerificationKey][]VerificationContainer{}
 	if spec.Enabled {
 		for _, apiCollection := range spec.ApiCollections {
 			if !apiCollection.Enabled {
@@ -231,23 +264,24 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 			}
 			for _, verification := range apiCollection.Verifications {
 				for _, parseValue := range verification.Values {
-					extensions := strings.Split(parseValue.Extension, ",")
-					// we are appending addons and extensions because chainRouter is routing using them
-					routerKey := NewRouterKey(append([]string{apiCollection.CollectionData.AddOn}, extensions...))
+					verificationKey := VerificationKey{
+						Extension: parseValue.Extension,
+						Addon:     apiCollection.CollectionData.AddOn,
+					}
+
 					verCont := VerificationContainer{
-						ConnectionType: apiCollection.CollectionData.Type,
-						Name:           verification.Name,
-						ParseDirective: *verification.ParseDirective,
-						Value:          parseValue.ExpectedValue,
-						Routing:        routerKey,
+						ConnectionType:  apiCollection.CollectionData.Type,
+						Name:            verification.Name,
+						ParseDirective:  *verification.ParseDirective,
+						Value:           parseValue.ExpectedValue,
+						VerificationKey: verificationKey,
 					}
-					extensionVerifications, ok := verifications[routerKey]
-					if !ok {
-						extensionVerifications = []VerificationContainer{verCont}
+
+					if extensionVerifications, ok := verifications[verificationKey]; !ok {
+						verifications[verificationKey] = []VerificationContainer{verCont}
 					} else {
-						extensionVerifications = append(extensionVerifications, verCont)
+						verifications[verificationKey] = append(extensionVerifications, verCont)
 					}
-					verifications[routerKey] = extensionVerifications
 				}
 			}
 			apiCollections[collectionKey] = apiCollection

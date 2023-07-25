@@ -165,14 +165,15 @@ func TestAddonAndVerifications(t *testing.T) {
 	require.NotNil(t, chainRouter)
 	require.NotNil(t, chainFetcher)
 
-	verifications := chainParser.GetVerifications([]string{"debug"})
+	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	require.NoError(t, err)
 	require.NotEmpty(t, verifications)
 	for _, verification := range verifications {
 		parsing := &verification.ParseDirective
 		collectionType := verification.ConnectionType
 		chainMessage, err := CraftChainMessage(parsing, collectionType, chainParser, nil, nil)
 		require.NoError(t, err)
-		reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, verification.Routing.AsAddons())
+		reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
 		require.NoError(t, err)
 		_, err = FormatResponseForParsing(reply, chainMessage)
 		require.NoError(t, err)
