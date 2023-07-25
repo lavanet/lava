@@ -54,3 +54,4 @@ ecosystem/lava-sdk/bin/examples/restAPI_test.js
 ecosystem/lava-sdk/bin/examples/tendermintRPC_test.js
 ecosystem/lava-sdk/bin/examples/jsonRPC_badge_test.js
 ecosystem/lava-sdk/pairingList.json
+
