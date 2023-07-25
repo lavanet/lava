@@ -84,7 +84,7 @@ func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 	for i, entry := range queryResponse.StakeEntry {
 		var restEndpoint string
 		for _, endpoint := range entry.Endpoints {
-			if endpoint.UseType == "rest" {
+			if endpoint.IPPORT == "tendermintrpc" {
 				restEndpoint = endpoint.IPPORT
 				break
 			}

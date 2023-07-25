@@ -520,8 +520,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 
 	// validate all providers are up
 	for idx := 6; idx <= 10; idx++ {
-		lt.checkProviderResponsive(ctx, fmt.Sprintf("127.0.0.1:227%d", idx-5), time.Minute)
-		lt.checkProviderResponsive(ctx, fmt.Sprintf("127.0.0.1:228%d", idx-5), time.Minute)
+		lt.checkProviderResponsive(ctx, fmt.Sprintf("127.0.0.1:226%d", idx-5), time.Minute)
 	}
 
 	utils.LavaFormatInfo("startLavaProviders OK")
