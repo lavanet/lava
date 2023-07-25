@@ -88,27 +88,27 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 			continue
 		}
 
-		mergedApisList, mergedApis, err = CombineFields(currentApis, mergedApis, collection.Apis, mergedApisList, allowOverwrite)
+		mergedApisList, mergedApis, err = CombineFields(currentApis, collection.Apis, mergedApis, mergedApisList, allowOverwrite)
 		if err != nil {
 			return fmt.Errorf("merging apis error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
 
-		mergedHeadersList, mergedHeaders, err = CombineFields(currentHeaders, mergedHeaders, collection.Headers, mergedHeadersList, allowOverwrite)
+		mergedHeadersList, mergedHeaders, err = CombineFields(currentHeaders, collection.Headers, mergedHeaders, mergedHeadersList, allowOverwrite)
 		if err != nil {
 			return fmt.Errorf("merging headers error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
 
-		mergedParsersList, mergedParsers, err = CombineFields(currentParsers, mergedParsers, collection.ParseDirectives, mergedParsersList, allowOverwrite)
+		mergedParsersList, mergedParsers, err = CombineFields(currentParsers, collection.ParseDirectives, mergedParsers, mergedParsersList, allowOverwrite)
 		if err != nil {
 			return fmt.Errorf("merging parse directives error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
 
-		mergedExtensionsList, mergedExtensions, err = CombineFields(currentExtensions, mergedExtensions, collection.Extensions, mergedExtensionsList, allowOverwrite)
+		mergedExtensionsList, mergedExtensions, err = CombineFields(currentExtensions, collection.Extensions, mergedExtensions, mergedExtensionsList, allowOverwrite)
 		if err != nil {
 			return fmt.Errorf("merging extensions error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
 
-		mergedVerificationsList, mergedVerifications, err = CombineFields(currentVerifications, mergedVerifications, collection.Verifications, mergedVerificationsList, allowOverwrite)
+		mergedVerificationsList, mergedVerifications, err = CombineFields(currentVerifications, collection.Verifications, mergedVerifications, mergedVerificationsList, allowOverwrite)
 		if err != nil {
 			return fmt.Errorf("merging verifications error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
