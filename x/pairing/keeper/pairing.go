@@ -249,14 +249,12 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
 		if policy != nil {
-			if policy.EpochCuLimit == 0 {
-				continue
+			if policy.EpochCuLimit != 0 {
+				policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
 			}
-			if policy.TotalCuLimit == 0 {
-				continue
+			if policy.TotalCuLimit != 0 {
+				policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
 			}
-			policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
-			policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
 		}
 	}
 
