@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"strings"
 
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 )
 
