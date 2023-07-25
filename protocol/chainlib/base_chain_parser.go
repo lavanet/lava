@@ -231,7 +231,6 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 			}
 			for _, verification := range apiCollection.Verifications {
 				for _, parseValue := range verification.Values {
-
 					extensions := strings.Split(parseValue.Extension, ",")
 					// we are appending addons and extensions because chainRouter is routing using them
 					routerKey := NewRouterKey(append([]string{apiCollection.CollectionData.AddOn}, extensions...))
