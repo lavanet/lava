@@ -170,7 +170,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, string(replyDataBuf))
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../")
+	chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../", nil)
 	if closeServer != nil {
 		defer closeServer()
 	}

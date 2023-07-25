@@ -95,6 +95,9 @@ func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerificatio
 	if err != nil {
 		return nil, err
 	}
+	if len(extensions) == 0 {
+		extensions = []string{""}
+	}
 	addons = append(addons, "") // always add the empty addon
 	for _, addon := range addons {
 		for _, extension := range extensions {

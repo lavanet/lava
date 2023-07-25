@@ -135,7 +135,7 @@ func TestJsonRpcChainProxy(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../")
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -159,7 +159,7 @@ func TestAddonAndVerifications(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
 	})
 
-	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../")
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"debug"})
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainRouter)

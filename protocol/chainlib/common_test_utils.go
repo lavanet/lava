@@ -66,7 +66,7 @@ func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tm
 
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, addons []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
@@ -96,7 +96,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		if err != nil {
 			return nil, nil, nil, closeServer, err
 		}
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String()})
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: addons})
 		go func() {
 			service := myServiceImplementation{serverCallback: serverCallback}
 			tmservice.RegisterServiceServer(grpcServer, service)
@@ -114,7 +114,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	} else {
 		mockServer := httptest.NewServer(serverCallback)
 		closeServer = mockServer.Close
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: addons})
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, err
