@@ -24,5 +24,10 @@ func (rs RelaySession) CalculateHashForFinalization() []byte {
 	sessionIdBytes := sigs.Encode(rs.SessionId)
 	blockHeightBytes := sigs.Encode(uint64(rs.Epoch))
 	relayNumBytes := sigs.Encode(rs.RelayNum)
-	return bytes.Join([][]byte{sessionIdBytes, blockHeightBytes, relayNumBytes}, nil)
+	msgParts := [][]byte{
+		sessionIdBytes,
+		blockHeightBytes,
+		relayNumBytes,
+	}
+	return bytes.Join(msgParts, nil)
 }

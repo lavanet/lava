@@ -26,7 +26,13 @@ func (rfm RelayFinalizationMetaData) GetSignature() []byte {
 func (rfm RelayFinalizationMetaData) DataToSign() []byte {
 	relaySessionHash := tendermintcrypto.Sha256(rfm.Request.RelaySession.CalculateHashForFinalization())
 	latestBlockBytes := sigs.Encode(uint64(rfm.MetaData.LatestBlock))
-	return bytes.Join([][]byte{latestBlockBytes, rfm.MetaData.FinalizedBlocksHashes, rfm.Addr, relaySessionHash}, nil)
+	msgParts := [][]byte{
+		latestBlockBytes,
+		rfm.MetaData.FinalizedBlocksHashes,
+		rfm.Addr,
+		relaySessionHash,
+	}
+	return bytes.Join(msgParts, nil)
 }
 
 func (rfm RelayFinalizationMetaData) HashRounds() int {

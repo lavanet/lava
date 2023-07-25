@@ -34,7 +34,12 @@ func (re RelayExchange) DataToSign() []byte {
 	}
 	// we remove the salt from the signature because it can be different
 	re.Request.RelayData.Salt = nil
-	return bytes.Join([][]byte{re.Reply.GetData(), []byte(re.Request.RelayData.String()), metadataBytes}, nil)
+	msgParts := [][]byte{
+		re.Reply.GetData(),
+		[]byte(re.Request.RelayData.String()),
+		metadataBytes,
+	}
+	return bytes.Join(msgParts, nil)
 }
 
 func (re RelayExchange) HashRounds() int {
@@ -47,6 +52,16 @@ func (rp RelayPrivateData) GetContentHashData() []byte {
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
 	}
 	requestBlockBytes := sigs.Encode(uint64(rp.RequestBlock))
-	msgData := bytes.Join([][]byte{metadataBytes, []byte(strings.Join(rp.Addon, "")), []byte(rp.ApiInterface), []byte(rp.ConnectionType), []byte(rp.ApiUrl), rp.Data, requestBlockBytes, rp.Salt}, nil)
+	msgParts := [][]byte{
+		metadataBytes,
+		[]byte(strings.Join(rp.Addon, "")),
+		[]byte(rp.ApiInterface),
+		[]byte(rp.ConnectionType),
+		[]byte(rp.ApiUrl),
+		rp.Data,
+		requestBlockBytes,
+		rp.Salt,
+	}
+	msgData := bytes.Join(msgParts, nil)
 	return msgData
 }
