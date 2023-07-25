@@ -36,7 +36,7 @@ func (b Badge) GetSignature() []byte {
 }
 
 func (b Badge) DataToSign() []byte {
-	b.ProjectSig = []byte{}
+	b.ProjectSig = nil
 	return []byte(b.String())
 }
 

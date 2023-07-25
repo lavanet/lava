@@ -23,8 +23,8 @@ func (re RelayExchange) GetSignature() []byte {
 }
 
 func (re RelayExchange) DataToSign() []byte {
-	re.Reply.Sig = []byte{}
-	metadataBytes := make([]byte, 0)
+	re.Reply.Sig = nil
+	var metadataBytes []byte
 	for _, metadata := range re.Reply.GetMetadata() {
 		data, err := metadata.Marshal()
 		if err != nil {
@@ -33,7 +33,7 @@ func (re RelayExchange) DataToSign() []byte {
 		metadataBytes = append(metadataBytes, data...)
 	}
 	// we remove the salt from the signature because it can be different
-	re.Request.RelayData.Salt = []byte{}
+	re.Request.RelayData.Salt = nil
 	return bytes.Join([][]byte{re.Reply.GetData(), []byte(re.Request.RelayData.String()), metadataBytes}, nil)
 }
 
@@ -43,16 +43,11 @@ func (re RelayExchange) HashRounds() int {
 
 func (rp RelayPrivateData) GetContentHashData() []byte {
 	requestBlockBytes := make([]byte, 8)
-	metadataBytes := make([]byte, 0)
-	metadata := rp.Metadata
-	for _, metadataEntry := range metadata {
+	var metadataBytes []byte
+	for _, metadataEntry := range rp.Metadata {
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
 	}
 	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(rp.RequestBlock))
-	addon := rp.Addon
-	if addon == nil {
-		addon = []string{}
-	}
-	msgData := bytes.Join([][]byte{metadataBytes, []byte(strings.Join(addon, "")), []byte(rp.ApiInterface), []byte(rp.ConnectionType), []byte(rp.ApiUrl), rp.Data, requestBlockBytes, rp.Salt}, nil)
+	msgData := bytes.Join([][]byte{metadataBytes, []byte(strings.Join(rp.Addon, "")), []byte(rp.ApiInterface), []byte(rp.ConnectionType), []byte(rp.ApiUrl), rp.Data, requestBlockBytes, rp.Salt}, nil)
 	return msgData
 }

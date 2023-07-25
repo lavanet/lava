@@ -11,7 +11,7 @@ func (rs RelaySession) GetSignature() []byte {
 
 func (rs RelaySession) DataToSign() []byte {
 	rs.Badge = nil // its not a part of the signature, its a separate part
-	rs.Sig = []byte{}
+	rs.Sig = nil
 	return []byte(rs.String())
 }
 
