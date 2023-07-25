@@ -57,6 +57,19 @@ jobs:
         timeout_minutes: 20
         command: ignite chain build -v
 
+      # Install Node.js
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
+
+      # Install dependencies and build
+    - name: Install dependencies and build
+      run: |
+        cd ecosystem/lava-sdk
+        npm install
+        npm run build
+
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################

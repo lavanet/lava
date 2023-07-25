@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"io/ioutil"
 	"log"
 	"os"
@@ -82,15 +83,14 @@ func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 
 	// Transform stakeEntries to pairingList
 	for i, entry := range queryResponse.StakeEntry {
-		var restEndpoint string
+		var tendermintEndpoint string
 		for _, endpoint := range entry.Endpoints {
-			if endpoint.IPPORT == "tendermintrpc" {
-				restEndpoint = endpoint.IPPORT
-				break
+			if slices.Contains(endpoint.ApiInterfaces, "tendermintrpc") {
+				tendermintEndpoint = endpoint.IPPORT
 			}
 		}
 		pairingList.TestNet.One[i] = Pair{
-			RPCAddress:    restEndpoint,
+			RPCAddress:    tendermintEndpoint,
 			PublicAddress: entry.Address,
 		}
 	}

@@ -18,7 +18,7 @@ async function main() {
 
     const chainID = parsedResponse.result;
     console.log(chainID)
-    if (chainID != "0x2") {
+    if (chainID != "0x1") {
         throw new Error(" ERR Chain ID is not equal to 0x1");
     }
 }
