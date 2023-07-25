@@ -5,11 +5,9 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -27,7 +25,12 @@ func newTester(t *testing.T) *tester {
 }
 
 func (ts *tester) getSubscription(consumer string) (types.Subscription, bool) {
-	return ts.Keepers.Subscription.GetSubscription(ts.Ctx, consumer)
+	sub, err := ts.QuerySubscriptionCurrent(consumer)
+	require.Nil(ts.T, err)
+	if sub.Sub == nil {
+		return types.Subscription{}, false
+	}
+	return *sub.Sub, true
 }
 
 func TestCreateSubscription(t *testing.T) {
@@ -399,7 +402,7 @@ func TestExpiryTime(t *testing.T) {
 
 		t.Run(now.Format("2006-01-02"), func(t *testing.T) {
 			// new account per attempt
-			_, sub1Addr := ts.AddAccount("tmp", 10000).Account("tmp")
+			_, sub1Addr := ts.AddAccount("tmp", 0, 10000)
 
 			delta := now.Sub(ts.BlockTime())
 			ts.AdvanceBlock(delta)
@@ -425,7 +428,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	sub1Acct, sub1Addr := ts.Account("sub1")
 	plan := ts.Plan("mock")
 
-	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10000)))
+	coins := common.NewCoins(10000)
 	ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
@@ -479,11 +482,11 @@ func TestPrice(t *testing.T) {
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			// new account per attempt
-			sub1Acct, sub1Addr := ts.AddAccount("tmp", 10000).Account("tmp")
+			sub1Acct, sub1Addr := ts.AddAccount("tmp", 0, 10000)
 
 			plan := ts.Plan("mock")
 			plan.AnnualDiscountPercentage = tt.discount
-			plan.Price = sdk.NewCoin("ulava", sdk.NewInt(tt.price))
+			plan.Price = common.NewCoin(tt.price)
 			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 
@@ -493,8 +496,8 @@ func TestPrice(t *testing.T) {
 			_, found := ts.getSubscription(sub1Addr)
 			require.True(t, found)
 
-			balance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sub1Acct.Addr, epochstoragetypes.TokenDenom)
-			require.Equal(t, balance.Amount.Int64(), 10000-tt.cost)
+			balance := ts.GetBalance(sub1Acct.Addr)
+			require.Equal(t, balance, 10000-tt.cost)
 
 			// will expire and remove
 			ts.AdvanceMonths(tt.duration)

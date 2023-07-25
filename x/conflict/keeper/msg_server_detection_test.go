@@ -1,12 +1,10 @@
 package keeper_test
 
 import (
-	"context"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
@@ -16,55 +14,56 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const NUM_OF_PROVIDERS = 5
+const ProvidersCount = 5
 
-type testStruct struct {
-	ctx       context.Context
-	keepers   *testkeeper.Keepers
-	servers   *testkeeper.Servers
-	Providers []common.Account
-	spec      spectypes.Spec
-	plan      plantypes.Plan
+type tester struct {
+	common.Tester
 	consumer  common.Account
+	providers []common.Account
+	plan      plantypes.Plan
+	spec      spectypes.Spec
 }
 
-func setupForConflictTests(t *testing.T, numOfProviders int) testStruct {
-	ts := testStruct{}
-	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	// init keepers state
-	var balance int64 = 100000
+func newTester(t *testing.T) *tester {
+	ts := &tester{Tester: *common.NewTester(t)}
 
-	// setup consumer
-	ts.consumer = common.CreateNewAccount(ts.ctx, *ts.keepers, balance)
+	ts.AddPlan("mock", common.CreateMockPlan())
+	ts.AddSpec("mock", common.CreateMockSpec())
 
-	// setup providers
-	for i := 0; i < numOfProviders; i++ {
-		ts.Providers = append(ts.Providers, common.CreateNewAccount(ts.ctx, *ts.keepers, balance))
+	ts.AdvanceEpoch()
+
+	return ts
+}
+
+func (ts *tester) setupForConflict(providersCount int) *tester {
+	var (
+		balance int64 = 100000
+		stake   int64 = 1000
+	)
+
+	ts.plan = ts.Plan("mock")
+	ts.spec = ts.Spec("mock")
+
+	consumer, consumerAddr := ts.AddAccount("consumer", 0, balance)
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, ts.plan.Index, 1)
+	require.Nil(ts.T, err)
+	ts.consumer = consumer
+
+	for i := 0; i < providersCount; i++ {
+		providerAcct, providerAddr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(providerAddr, ts.spec, stake)
+		require.Nil(ts.T, err)
+		ts.providers = append(ts.providers, providerAcct)
 	}
 
-	ts.spec = common.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-
-	ts.plan = common.CreateMockPlan()
-	ts.keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.ctx), ts.plan)
-
-	var stake int64 = 1000
-
-	// subscribe consumer
-	common.BuySubscription(t, ts.ctx, *ts.keepers, *ts.servers, ts.consumer, ts.plan.Index)
-
-	// stake providers
-	for _, provider := range ts.Providers {
-		common.StakeAccount(t, ts.ctx, *ts.keepers, *ts.servers, provider, ts.spec, stake)
-	}
-
-	// advance for the staking to be valid
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.AdvanceEpoch()
 	return ts
 }
 
 func TestDetection(t *testing.T) {
-	ts := setupForConflictTests(t, NUM_OF_PROVIDERS)
+	ts := newTester(t)
+	ts.setupForConflict(ProvidersCount)
+
 	tests := []struct {
 		name           string
 		Creator        common.Account
@@ -83,24 +82,24 @@ func TestDetection(t *testing.T) {
 		ReplyData      []byte
 		Valid          bool
 	}{
-		{"HappyFlow", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 0, 100, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"CuSumChange", ts.consumer, ts.Providers[0], ts.Providers[2], "", "", 0, "", []byte{}, 0, 0, 100, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"RelayNumChange", ts.consumer, ts.Providers[0], ts.Providers[3], "", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"SessionIDChange", ts.consumer, ts.Providers[0], ts.Providers[4], "", "", 0, "", []byte{}, 0, 0, 0, 1, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
-		{"QoSNil", ts.consumer, ts.Providers[2], ts.Providers[3], "", "", 0, "", []byte{}, 0, 0, 0, 0, nil, []byte("DIFF"), true},
-		{"BadCreator", ts.Providers[4], ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadConnectionType", ts.consumer, ts.Providers[0], ts.Providers[1], "DIFF", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadURL", ts.consumer, ts.Providers[0], ts.Providers[1], "", "DIFF", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadBlockHeight", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 10, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadChainID", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "DIFF", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadData", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte("DIFF"), 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"BadRequestBlock", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
-		{"SameReplyData", ts.consumer, ts.Providers[0], ts.Providers[1], "", "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte{}, false},
+		{"HappyFlow", ts.consumer, ts.providers[0], ts.providers[1], "", "", 0, "", []byte{}, 0, 100, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"CuSumChange", ts.consumer, ts.providers[0], ts.providers[2], "", "", 0, "", []byte{}, 0, 0, 100, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"RelayNumChange", ts.consumer, ts.providers[0], ts.providers[3], "", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"SessionIDChange", ts.consumer, ts.providers[0], ts.providers[4], "", "", 0, "", []byte{}, 0, 0, 0, 1, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), true},
+		{"QoSNil", ts.consumer, ts.providers[2], ts.providers[3], "", "", 0, "", []byte{}, 0, 0, 0, 0, nil, []byte("DIFF"), true},
+		{"BadCreator", ts.providers[4], ts.providers[0], ts.providers[1], "", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadConnectionType", ts.consumer, ts.providers[0], ts.providers[1], "DIFF", "", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadURL", ts.consumer, ts.providers[0], ts.providers[1], "", "DIFF", 0, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadBlockHeight", ts.consumer, ts.providers[0], ts.providers[1], "", "", 10, "", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadChainID", ts.consumer, ts.providers[0], ts.providers[1], "", "", 0, "DIFF", []byte{}, 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadData", ts.consumer, ts.providers[0], ts.providers[1], "", "", 0, "", []byte("DIFF"), 0, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"BadRequestBlock", ts.consumer, ts.providers[0], ts.providers[1], "", "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte("DIFF"), false},
+		{"SameReplyData", ts.consumer, ts.providers[0], ts.providers[1], "", "", 0, "", []byte{}, 10, 0, 0, 0, &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}, []byte{}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg, _, reply, err := common.CreateMsgDetectionTest(ts.ctx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
+			msg, _, reply, err := common.CreateMsgDetectionTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
 			require.Nil(t, err)
 
 			msg.Creator = tt.Creator.Addr.String()
@@ -130,10 +129,11 @@ func TestDetection(t *testing.T) {
 			reply.SigBlocks = sigBlocks
 			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request.RelayData)
 			// send detection msg
-			_, err = ts.servers.ConflictServer.Detection(ts.ctx, msg)
+			_, err = ts.txConflictDetection(msg)
 			if tt.Valid {
+				events := ts.Ctx.EventManager().Events()
 				require.Nil(t, err)
-				require.Equal(t, sdk.UnwrapSDKContext(ts.ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.ctx).EventManager().Events())-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
+				require.Equal(t, events[len(events)-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
 			}
 		})
 	}
