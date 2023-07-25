@@ -229,7 +229,7 @@ class LavaSDK {
                 throw errors_1.default.errRelayerServiceNotInitialized;
             }
             let lastRelayResponse = null;
-            for (let i = 0; i <= pairingList.length; i++) {
+            for (let i = 0; i < pairingList.length; i++) {
                 try {
                     // Send relay
                     const relayResponse = yield this.relayer.sendRelay(options, pairingList[i], cuSum, this.rpcInterface);

@@ -3,168 +3,138 @@ package keeper_test
 import (
 	"math"
 	"testing"
-	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPairingUniqueness(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
-
-	// init keepers state
-	spec := common.CreateMockSpec()
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
-
-	plan := common.CreateMockPlan()
-	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
 
 	var balance int64 = 10000
 	stake := balance / 10
 
-	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer1, plan.Index)
-	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer2, plan.Index)
+	_, sub1Addr := ts.Account("sub1")
+	_, sub2Addr := ts.Account("sub2")
+
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1)
+	require.Nil(t, err)
+	_, err = ts.TxSubscriptionBuy(sub2Addr, sub2Addr, ts.plan.Index, 1)
+	require.Nil(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake)
+		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(addr, ts.spec, stake)
+		require.Nil(t, err)
 	}
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch()
 
 	// test that 2 different clients get different pairings
-	providers1, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	pairing1, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
+	require.Nil(t, err)
+	pairing2, err := ts.QueryPairingGetPairing(ts.spec.Index, sub2Addr)
 	require.Nil(t, err)
 
-	providers2, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer2.Addr)
-	require.Nil(t, err)
+	filter := func(p epochstoragetypes.StakeEntry) string { return p.Address }
 
-	require.Equal(t, len(providers1), len(providers2))
+	providerAddrs1 := slices.Filter(pairing1.Providers, filter)
+	providerAddrs2 := slices.Filter(pairing2.Providers, filter)
 
-	different := false
+	require.Equal(t, len(pairing1.Providers), len(pairing2.Providers))
+	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs2))
 
-	for _, provider := range providers1 {
-		found := false
-		for _, provider2 := range providers2 {
-			if provider.Address == provider2.Address {
-				found = true
-			}
-		}
-		if !found {
-			different = true
-		}
-	}
-
-	require.True(t, different)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch()
 
 	// test that in different epoch we get different pairings for consumer1
-	providers11, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	pairing11, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 	require.Nil(t, err)
 
-	require.Equal(t, len(providers1), len(providers11))
-	different = false
-	for i := range providers1 {
-		if providers1[i].Address != providers11[i].Address {
-			different = true
-			break
-		}
-	}
-	require.True(t, different)
+	providerAddrs11 := slices.Filter(pairing11.Providers, filter)
+
+	require.Equal(t, len(pairing1.Providers), len(pairing11.Providers))
+	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs11))
 
 	// test that get pairing gives the same results for the whole epoch
-	epochBlocks := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
+	epochBlocks := ts.EpochBlocks()
 	for i := uint64(0); i < epochBlocks-1; i++ {
-		ctx = testkeeper.AdvanceBlock(ctx, keepers)
+		ts.AdvanceBlock()
 
-		providers111, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+		pairing111, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 		require.Nil(t, err)
 
-		for i := range providers1 {
-			require.Equal(t, providers11[i].Address, providers111[i].Address)
-			providerAddr, err := sdk.AccAddressFromBech32(providers11[i].Address)
+		for i := range pairing11.Providers {
+			providerAddr := pairing11.Providers[i].Address
+			require.Equal(t, providerAddr, pairing111.Providers[i].Address)
 			require.Nil(t, err)
-			valid, _, _, _, _ := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddr, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-			require.True(t, valid)
+			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, ts.BlockHeight())
+			require.Nil(t, err)
+			require.True(t, verify.Valid)
 		}
 	}
 }
 
 func TestValidatePairingDeterminism(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
-
-	// init keepers state
-	spec := common.CreateMockSpec()
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
-
-	plan := common.CreateMockPlan()
-	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
 	var balance int64 = 10000
 	stake := balance / 10
 
-	consumer1 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer1, plan.Index)
-	consumer2 := common.CreateNewAccount(ctx, *keepers, balance)
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer2, plan.Index)
+	_, sub1Addr := ts.Account("sub1")
+
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1)
+	require.Nil(t, err)
 
 	for i := 1; i <= 10; i++ {
-		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake)
+		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(addr, ts.spec, stake)
+		require.Nil(t, err)
 	}
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch()
 
 	// test that 2 different clients get different pairings
-	pairedProviders, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr)
+	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 	require.Nil(t, err)
-	verifyPairingOncurrentBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+
+	block := ts.BlockHeight()
 	testAllProviders := func() {
-		for _, provider := range pairedProviders {
-			providerAddress, err := sdk.AccAddressFromBech32(provider.Address)
+		for _, provider := range pairing.Providers {
+			providerAddr := provider.Address
+			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, block)
 			require.Nil(t, err)
-			valid, _, _, _, errPairing := keepers.Pairing.ValidatePairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer1.Addr, providerAddress, verifyPairingOncurrentBlock)
-			require.Nil(t, errPairing)
-			require.True(t, valid)
+			require.True(t, verify.Valid)
 		}
 	}
-	startBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
-	for i := startBlock; i < startBlock+(func() uint64 {
-		blockToSave, err := keepers.Epochstorage.BlocksToSave(sdk.UnwrapSDKContext(ctx), i)
-		require.Nil(t, err)
-		return blockToSave
-	})(); i++ {
-		ctx = testkeeper.AdvanceBlock(ctx, keepers)
+
+	count := ts.BlocksToSave() - ts.BlockHeight()
+	for i := 0; i < int(count); i++ {
+		ts.AdvanceBlock()
 		testAllProviders()
 	}
 }
 
-// Test that verifies that new get-pairing return values (CurrentEpoch, TimeLeftToNextPairing, SpecLastUpdatedBlock) is working properly
 func TestGetPairing(t *testing.T) {
+	ts := newTester(t)
+
+	// do not use ts.setupForPayments(1, 1, 0), because it kicks off with AdvanceEpoch()
+	// (for the benefit of users) but the "zeroEpoch" test below expects to start at the
+	// same epoch of staking the providers.
+	ts.addClient(1)
+	ts.addProvider(1)
+
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
 	constBlockTime := testkeeper.BLOCK_TIME
+	epochBlocks := ts.EpochBlocks()
 
-	// setup testnet with mock spec, stake a client and a provider
-	ts := setupForPaymentTest(t)
-	// get epochBlocks (number of blocks in an epoch)
-	epochBlocks := ts.keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ts.ctx))
-
-	// define tests - different epoch, valid tells if the payment request should work
+	// test: different epoch, valid tells if the payment request should work
 	tests := []struct {
 		name                string
 		validPairingExists  bool
@@ -183,86 +153,68 @@ func TestGetPairing(t *testing.T) {
 			case "zeroEpoch":
 				// do nothing
 			case "firstEpoch":
-				ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+				ts.AdvanceEpoch()
 			case "commonEpoch":
-				for i := 0; i < 5; i++ {
-					ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-				}
+				ts.AdvanceEpochs(5)
 			case "epochTimesChanged":
-				for i := 0; i < 5; i++ {
-					ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-				}
-				smallerBlockTime := constBlockTime / 2
-				ts.ctx = testkeeper.AdvanceBlocks(ts.ctx, ts.keepers, int(epochBlocks)/2, smallerBlockTime)
-				ts.ctx = testkeeper.AdvanceBlocks(ts.ctx, ts.keepers, int(epochBlocks)/2)
+				ts.AdvanceEpochs(5)
+				ts.AdvanceBlocks(epochBlocks/2, constBlockTime/2)
+				ts.AdvanceBlocks(epochBlocks / 2)
 			}
 
-			// construct get-pairing request
-			pairingReq := types.QueryGetPairingRequest{ChainID: ts.spec.Index, Client: ts.clients[0].Addr.String()}
+			_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+			_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-			// get pairing for client (for epoch zero there is no pairing -> expect to fail)
-			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &pairingReq)
+			// get pairing for client (for epoch zero expect to fail)
+			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
 			if !tt.validPairingExists {
 				require.NotNil(t, err)
 			} else {
 				require.Nil(t, err)
 
 				// verify the expected provider
-				require.Equal(t, ts.providers[0].Addr.String(), pairing.Providers[0].Address)
+				require.Equal(t, providerAddr, pairing.Providers[0].Address)
 
 				// verify the current epoch
-				currentEpoch := ts.keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ts.ctx))
-				require.Equal(t, currentEpoch, pairing.CurrentEpoch)
+				epochThis := ts.EpochStart()
+				require.Equal(t, epochThis, pairing.CurrentEpoch)
 
 				// verify the SpecLastUpdatedBlock
-				specLastUpdatedBlock := ts.spec.BlockLastUpdated
-				require.Equal(t, specLastUpdatedBlock, pairing.SpecLastUpdatedBlock)
+				require.Equal(t, ts.spec.BlockLastUpdated, pairing.SpecLastUpdatedBlock)
 
-				// get timestamps from previous epoch
-				prevEpoch, err := ts.keepers.Epochstorage.GetPreviousEpochStartForBlock(sdk.UnwrapSDKContext(ts.ctx), currentEpoch)
+				// if prevEpoch == 0 -> averageBlockTime = 0
+				// else calculate the time (like the actual get-pairing function)
+				epochPrev, err := ts.Keepers.Epochstorage.GetPreviousEpochStartForBlock(ts.Ctx, epochThis)
 				require.Nil(t, err)
 
-				// if prevEpoch == 0 -> averageBlockTime = 0, else calculate the time (like the actual get-pairing function)
-				averageBlockTime := uint64(0)
-				if prevEpoch != 0 {
-					// get timestamps
-					timestampList := []time.Time{}
-					for block := prevEpoch; block <= currentEpoch; block++ {
-						blockCore := ts.keepers.BlockStore.LoadBlock(int64(block))
-						timestampList = append(timestampList, blockCore.Time)
-					}
-
-					// calculate average block time
-					totalTime := uint64(0)
-					for i := 1; i < len(timestampList); i++ {
-						totalTime += uint64(timestampList[i].Sub(timestampList[i-1]).Seconds())
-					}
-					averageBlockTime = totalTime / epochBlocks
+				var averageBlockTime uint64
+				if epochPrev != 0 {
+					// calculate average block time base on total time from first block of
+					// previous epoch until first block of this epoch and block dfference.
+					blockCore1 := ts.Keepers.BlockStore.LoadBlock(int64(epochPrev))
+					blockCore2 := ts.Keepers.BlockStore.LoadBlock(int64(epochThis))
+					delta := blockCore2.Time.Sub(blockCore1.Time).Seconds()
+					averageBlockTime = uint64(delta) / (epochThis - epochPrev)
 				}
 
-				// Get the next epoch
-				nextEpochStart, err := ts.keepers.Epochstorage.GetNextEpoch(sdk.UnwrapSDKContext(ts.ctx), currentEpoch)
+				overlapBlocks := ts.Keepers.Pairing.EpochBlocksOverlap(ts.Ctx)
+				nextEpochStart, err := ts.Keepers.Epochstorage.GetNextEpoch(ts.Ctx, epochThis)
 				require.Nil(t, err)
-
-				// Get epochBlocksOverlap
-				overlapBlocks := ts.keepers.Pairing.EpochBlocksOverlap(sdk.UnwrapSDKContext(ts.ctx))
 
 				// calculate the block in which the next pairing will happen (+overlap)
 				nextPairingBlock := nextEpochStart + overlapBlocks
-
-				// Get number of blocks from the current block to the next epoch
-				blocksUntilNewEpoch := nextPairingBlock - uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight())
-
-				// Calculate the time left for the next pairing in seconds (blocks left * avg block time)
+				// calculate number of blocks from the current block to the next epoch
+				blocksUntilNewEpoch := nextPairingBlock - ts.BlockHeight()
+				// calculate time left for the next pairing (blocks left* avg block time)
 				timeLeftToNextPairing := blocksUntilNewEpoch * averageBlockTime
 
-				// verify the TimeLeftToNextPairing
 				if !tt.isEpochTimesChanged {
 					require.Equal(t, timeLeftToNextPairing, pairing.TimeLeftToNextPairing)
 				} else {
 					// averageBlockTime in get-pairing query -> minimal average across sampled epoch
 					// averageBlockTime in this test -> normal average across epoch
-					// we've used a smaller blocktime some of the time -> averageBlockTime from get-pairing is smaller than the averageBlockTime calculated in this test
+					// we've used a smaller blocktime some of the time -> averageBlockTime from
+					// get-pairing is smaller than the averageBlockTime calculated in this test
 					require.Less(t, pairing.TimeLeftToNextPairing, timeLeftToNextPairing)
 				}
 
@@ -274,41 +226,42 @@ func TestGetPairing(t *testing.T) {
 }
 
 func TestPairingStatic(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
-	// init keepers state
-	spec := common.CreateMockSpec()
-	spec.ProvidersTypes = spectypes.Spec_static
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+	_, sub1Addr := ts.Account("sub1")
 
-	plan := common.CreateMockPlan()
-	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+	ts.spec.ProvidersTypes = spectypes.Spec_static
+	// will overwrite the default "mock" spec
+	// (no TxProposalAddSpecs because the mock spec does not pass validaton)
+	ts.AddSpec("mock", ts.spec)
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch()
 
-	consumer := common.CreateNewAccount(ctx, *keepers, balance)
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1)
+	require.Nil(t, err)
 
-	for i := uint64(0); i < plan.PlanPolicy.MaxProvidersToPair*2; i++ {
-		provider := common.CreateNewAccount(ctx, *keepers, balance)
-		common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, stake+int64(i))
+	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
+		_, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
+		err := ts.StakeProvider(addr, ts.spec, testStake+int64(i))
+		require.Nil(t, err)
 	}
 
 	// we expect to get all the providers in static spec
 
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch()
 
-	providers, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
+	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 	require.Nil(t, err)
 
-	for i, provider := range providers {
-		require.Equal(t, provider.Stake.Amount.Int64(), stake+int64(i))
+	for i, provider := range pairing.Providers {
+		require.Equal(t, provider.Stake.Amount.Int64(), testStake+int64(i))
 	}
 }
 
 func TestAddonPairing(t *testing.T) {
-	ts := setupForPaymentTest(t)
-	specId := ts.spec.Index
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
 
 	mandatory := spectypes.CollectionData{
 		ApiInterface: "mandatory",
@@ -342,7 +295,11 @@ func TestAddonPairing(t *testing.T) {
 			CollectionData: mandatoryAddon,
 		},
 	}
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+
+	// will overwrite the default "mock" spec
+	ts.AddSpec("mock", ts.spec)
+	specId := ts.spec.Index
+
 	mandatoryChainPolicy := &planstypes.ChainPolicy{
 		ChainId:     specId,
 		Collections: []spectypes.CollectionData{mandatory},
@@ -359,6 +316,7 @@ func TestAddonPairing(t *testing.T) {
 		ChainId:     specId,
 		Collections: []spectypes.CollectionData{mandatoryAddon, optional},
 	}
+
 	templates := []struct {
 		name                      string
 		planChainPolicy           *planstypes.ChainPolicy
@@ -472,6 +430,7 @@ func TestAddonPairing(t *testing.T) {
 			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 	}
+
 	mandatorySupportingEndpoints := []epochstoragetypes.Endpoint{{
 		IPPORT:        "123",
 		Geolocation:   1,
@@ -484,22 +443,23 @@ func TestAddonPairing(t *testing.T) {
 		Addons:        []string{mandatoryAddon.AddOn},
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
 	}}
-	mandatoryAndMandatoryAddonSupportingEndpoints := mandatorySupportingEndpoints
-	mandatoryAndMandatoryAddonSupportingEndpoints = append(mandatoryAndMandatoryAddonSupportingEndpoints, mandatoryAddonSupportingEndpoints...)
+	mandatoryAndMandatoryAddonSupportingEndpoints := slices.Concat(
+		mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints)
+
 	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
 		IPPORT:        "123",
 		Geolocation:   1,
 		Addons:        []string{optional.AddOn},
 		ApiInterfaces: []string{optional.ApiInterface},
 	}}
-	optionalAndMandatorySupportingEndpoints := mandatorySupportingEndpoints
-	optionalAndMandatorySupportingEndpoints = append(optionalAndMandatorySupportingEndpoints, optionalSupportingEndpoints...)
+	optionalAndMandatorySupportingEndpoints := slices.Concat(
+		mandatorySupportingEndpoints, optionalSupportingEndpoints)
+	optionalAndMandatoryAddonSupportingEndpoints := slices.Concat(
+		mandatoryAddonSupportingEndpoints, optionalSupportingEndpoints)
 
-	optionalAndMandatoryAddonSupportingEndpoints := mandatoryAddonSupportingEndpoints
-	optionalAndMandatoryAddonSupportingEndpoints = append(optionalAndMandatoryAddonSupportingEndpoints, optionalSupportingEndpoints...)
+	allSupportingEndpoints := slices.Concat(
+		mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints)
 
-	allSupportingEndpoints := mandatorySupportingEndpoints
-	allSupportingEndpoints = append(allSupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints...)
 	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
 		IPPORT:        "123",
 		Geolocation:   1,
@@ -527,8 +487,6 @@ func TestAddonPairing(t *testing.T) {
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
-			// create plan, propose it and buy subscription
-			plan := common.CreateMockPlan()
 			defaultPolicy := func() planstypes.Policy {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
@@ -538,66 +496,53 @@ func TestAddonPairing(t *testing.T) {
 					EpochCuLimit:       math.MaxUint64,
 				}
 			}
+
+			plan := ts.plan // original mock template
 			plan.PlanPolicy = defaultPolicy()
 
 			if tt.planChainPolicy != nil {
 				plan.PlanPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.planChainPolicy}
 			}
-			subAddr := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000).Addr.String()
 
-			err := testkeeper.SimulatePlansAddProposal(sdk.UnwrapSDKContext(ts.ctx), ts.keepers.Plans, []planstypes.Plan{plan})
+			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 
-			_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subscriptiontypes.MsgBuy{
-				Creator:  subAddr,
-				Consumer: subAddr,
-				Index:    plan.Index,
-				Duration: 1,
-			})
+			_, sub1Addr := ts.AddAccount("sub", 0, 10000)
+
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
 			require.Nil(t, err)
 
 			// get the admin project and set its policies
-			subProjects, err := ts.keepers.Subscription.ListProjects(ts.ctx, &subscriptiontypes.QueryListProjectsRequest{
-				Subscription: subAddr,
-			})
+			subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
 			require.Nil(t, err)
 			require.Equal(t, 1, len(subProjects.Projects))
 
-			adminProject, err := ts.keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ts.ctx), subProjects.Projects[0], uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
-			require.Nil(t, err)
+			projectID := subProjects.Projects[0]
+
 			if tt.projChainPolicy != nil {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
-				_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
-					Creator: subAddr,
-					Project: adminProject.Index,
-					Policy:  projPolicy,
-				})
-			}
-
-			require.Nil(t, err)
-
-			// apply policy change
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-			if tt.subscChainPolicy != nil {
-				subscPolicy := defaultPolicy()
-				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
-				_, err = ts.servers.ProjectServer.SetSubscriptionPolicy(ts.ctx, &projectstypes.MsgSetSubscriptionPolicy{
-					Creator:  subAddr,
-					Projects: []string{adminProject.Index},
-					Policy:   subscPolicy,
-				})
+				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, projPolicy)
 				require.Nil(t, err)
 			}
 
 			// apply policy change
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			ts.AdvanceEpoch()
 
-			// get pairing of two consecutive epochs
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-			project, err := ts.keepers.Projects.GetProjectForBlock(sdk.UnwrapSDKContext(ts.ctx), adminProject.Index, uint64(sdk.UnwrapSDKContext(ts.ctx).BlockHeight()))
+			if tt.subscChainPolicy != nil {
+				subscPolicy := defaultPolicy()
+				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
+				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, subscPolicy)
+				require.Nil(t, err)
+			}
+
+			// apply policy change
+			ts.AdvanceEpochs(2)
+
+			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
-			strictestPolicy, err := ts.keepers.Pairing.GetProjectStrictestPolicy(sdk.UnwrapSDKContext(ts.ctx), project, ts.spec.Index)
+
+			strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
@@ -614,10 +559,7 @@ func TestAddonPairing(t *testing.T) {
 				}
 			}
 
-			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
-				ChainID: ts.spec.Index,
-				Client:  subAddr,
-			})
+			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 			if tt.expectedProviders > 0 {
 				require.Nil(t, err)
 				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
@@ -629,31 +571,30 @@ func TestAddonPairing(t *testing.T) {
 }
 
 func TestSelectedProvidersPairing(t *testing.T) {
-	ts := setupForPaymentTest(t)
-	_ctx := sdk.UnwrapSDKContext(ts.ctx)
+	ts := newTester(t)
 
-	projPolicy := &planstypes.Policy{
+	ts.addProvider(200)
+
+	policy := &planstypes.Policy{
 		GeolocationProfile: math.MaxUint64,
 		MaxProvidersToPair: 3,
 	}
-
-	err := ts.addProvider(200)
-	require.Nil(t, err)
 
 	allowed := planstypes.SELECTED_PROVIDERS_MODE_ALLOWED
 	exclusive := planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
 	disabled := planstypes.SELECTED_PROVIDERS_MODE_DISABLED
 
-	maxProvidersToPair, err := ts.keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
-		[]*planstypes.Policy{&ts.plan.PlanPolicy, projPolicy},
+	maxProvidersToPair, err := ts.Keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
+		[]*planstypes.Policy{&ts.plan.PlanPolicy, policy},
 	)
 	require.Nil(t, err)
 
-	p1 := ts.providers[0].Addr.String()
-	p2 := ts.providers[1].Addr.String()
-	p3 := ts.providers[2].Addr.String()
-	p4 := ts.providers[3].Addr.String()
-	p5 := ts.providers[4].Addr.String()
+	ts.addProvider(200)
+	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	_, p3 := ts.GetAccount(common.PROVIDER, 2)
+	_, p4 := ts.GetAccount(common.PROVIDER, 3)
+	_, p5 := ts.GetAccount(common.PROVIDER, 4)
 
 	providerSets := []struct {
 		planProviders []string
@@ -714,111 +655,76 @@ func TestSelectedProvidersPairing(t *testing.T) {
 		{"EXCLUSIVE mode non-staked provider stakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
 	}
 
-	expectedProvidersAfterUnstake := []string{}
-	for _, tt := range templates {
+	var expectedProvidersAfterUnstake []string
+
+	for i, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
+			_, sub1Addr := ts.AddAccount("sub", i, 10000)
+
 			// create plan, propose it and buy subscription
-			plan := common.CreateMockPlan()
-			subAddr := common.CreateNewAccount(ts.ctx, *ts.keepers, 10000).Addr.String()
+			plan := ts.Plan("mock")
 			providersSet := providerSets[tt.providersSet]
 
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
-			err := testkeeper.SimulatePlansAddProposal(_ctx, ts.keepers.Plans, []planstypes.Plan{plan})
+			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 
-			_, err = ts.servers.SubscriptionServer.Buy(ts.ctx, &subscriptiontypes.MsgBuy{
-				Creator:  subAddr,
-				Consumer: subAddr,
-				Index:    plan.Index,
-				Duration: 1,
-			})
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
 			require.Nil(t, err)
 
 			// get the admin project and set its policies
-			subProjects, err := ts.keepers.Subscription.ListProjects(ts.ctx, &subscriptiontypes.QueryListProjectsRequest{
-				Subscription: subAddr,
-			})
+			res, err := ts.QuerySubscriptionListProjects(sub1Addr)
 			require.Nil(t, err)
-			require.Equal(t, 1, len(subProjects.Projects))
+			require.Equal(t, 1, len(res.Projects))
 
-			adminProject, err := ts.keepers.Projects.GetProjectForBlock(_ctx, subProjects.Projects[0], uint64(_ctx.BlockHeight()))
+			project, err := ts.GetProjectForBlock(res.Projects[0], ts.BlockHeight())
 			require.Nil(t, err)
 
-			projPolicy.SelectedProvidersMode = tt.projMode
-			projPolicy.SelectedProviders = providersSet.projProviders
+			policy.SelectedProvidersMode = tt.projMode
+			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.servers.ProjectServer.SetPolicy(ts.ctx, &projectstypes.MsgSetPolicy{
-				Creator: subAddr,
-				Project: adminProject.Index,
-				Policy:  *projPolicy,
-			})
+			_, err = ts.TxProjectSetPolicy(project.Index, sub1Addr, *policy)
 			require.Nil(t, err)
 
-			// apply policy change
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+			// skip epoch for the policy change to take effect
+			ts.AdvanceEpoch()
 
-			projPolicy.SelectedProvidersMode = tt.subMode
-			projPolicy.SelectedProviders = providersSet.subProviders
+			policy.SelectedProvidersMode = tt.subMode
+			policy.SelectedProviders = providersSet.subProviders
 
-			_, err = ts.servers.ProjectServer.SetSubscriptionPolicy(ts.ctx, &projectstypes.MsgSetSubscriptionPolicy{
-				Creator:  subAddr,
-				Projects: []string{adminProject.Index},
-				Policy:   *projPolicy,
-			})
+			_, err = ts.TxProjectSetSubscriptionPolicy(project.Index, sub1Addr, *policy)
 			require.Nil(t, err)
 
-			// apply policy change
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+			// skip epoch for the policy change to take effect
+			ts.AdvanceEpoch()
+			// and another epoch to get pairing of two consecutive epochs
+			ts.AdvanceEpoch()
 
-			// get pairing of two consecutive epochs
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-			_ctx = sdk.UnwrapSDKContext(ts.ctx)
-
-			pairing, err := ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
-				ChainID: ts.spec.Index,
-				Client:  subAddr,
-			})
+			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 			require.Nil(t, err)
+
 			providerAddresses1 := []string{}
 			for _, provider := range pairing.Providers {
 				providerAddresses1 = append(providerAddresses1, provider.Address)
 			}
 
 			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
-				_, err = ts.servers.PairingServer.UnstakeProvider(ts.ctx, &types.MsgUnstakeProvider{
-					Creator: p1,
-					ChainID: ts.spec.Index,
-				})
+				// unstake p1 and remove from expected providers
+				_, err = ts.TxPairingUnstakeProvider(p1, ts.spec.Index)
 				require.Nil(t, err)
-				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:] // remove p1 from expected providers
+				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				endpoints := []epochstoragetypes.Endpoint{{
-					IPPORT:        "123",
-					ApiInterfaces: []string{ts.spec.GetApiCollections()[0].CollectionData.ApiInterface},
-					Geolocation:   uint64(1),
-				}}
-				_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{
-					Creator:     p1,
-					ChainID:     ts.spec.Index,
-					Amount:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10000000)),
-					Endpoints:   endpoints,
-					Geolocation: uint64(1),
-				})
+				err := ts.StakeProvider(p1, ts.spec, 10000000)
 				require.Nil(t, err)
 			}
 
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-			_ctx = sdk.UnwrapSDKContext(ts.ctx)
+			ts.AdvanceEpoch()
 
-			pairing, err = ts.keepers.Pairing.GetPairing(ts.ctx, &types.QueryGetPairingRequest{
-				ChainID: ts.spec.Index,
-				Client:  subAddr,
-			})
+			pairing, err = ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 			require.Nil(t, err)
+
 			providerAddresses2 := []string{}
 			for _, provider := range pairing.Providers {
 				providerAddresses2 = append(providerAddresses2, provider.Address)
@@ -827,14 +733,14 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			// check pairings
 			switch tt.name {
 			case "ALLOWED mode normal pairing", "DISABLED mode normal pairing":
-				require.False(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
 
 			case "EXCLUSIVE mode selected MaxProvidersToPair providers":
-				require.True(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
-				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
 
 			case "EXCLUSIVE mode selected less than MaxProvidersToPair providers",
 				"EXCLUSIVE mode selected less than MaxProvidersToPair different providers",
@@ -842,61 +748,26 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				"EXCLUSIVE mode intersection between plan/proj policies",
 				"EXCLUSIVE mode intersection between sub/proj policies",
 				"EXCLUSIVE mode intersection between all policies":
-				require.True(t, unorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Less(t, uint64(len(providerAddresses1)), maxProvidersToPair)
-				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
 
 			case "EXCLUSIVE mode selected more than MaxProvidersToPair providers":
-				require.True(t, IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
-				require.True(t, IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
+				require.True(t, slices.IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
+				require.True(t, slices.IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
 
 			case "EXCLUSIVE mode provider unstakes after first pairing":
-				require.False(t, unorderedEqual(providerAddresses1, providerAddresses2))
-				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
-				require.True(t, unorderedEqual(expectedProvidersAfterUnstake, providerAddresses2))
+				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, slices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses2))
 
 			case "EXCLUSIVE mode non-staked provider stakes after first pairing":
-				require.False(t, unorderedEqual(providerAddresses1, providerAddresses2))
-				require.True(t, unorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses2))
-				require.True(t, unorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
+				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses2))
+				require.True(t, slices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
 			}
 		})
 	}
-}
-
-func unorderedEqual(first, second []string) bool {
-	if len(first) != len(second) {
-		return false
-	}
-	exists := make(map[string]bool)
-	for _, value := range first {
-		exists[value] = true
-	}
-	for _, value := range second {
-		if !exists[value] {
-			return false
-		}
-	}
-	return true
-}
-
-func IsSubset(subset, superset []string) bool {
-	// Create a map to store the elements of the superset
-	elements := make(map[string]bool)
-
-	// Populate the map with elements from the superset
-	for _, elem := range superset {
-		elements[elem] = true
-	}
-
-	// Check each element of the subset against the map
-	for _, elem := range subset {
-		if !elements[elem] {
-			return false
-		}
-	}
-
-	return true
 }

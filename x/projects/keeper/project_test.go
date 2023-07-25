@@ -26,15 +26,10 @@ func newTester(t *testing.T) *tester {
 }
 
 func (ts *tester) setupProjectData() *tester {
-	ts.AddAccount("pd1_adm", 10000)
-	ts.AddAccount("pd2_both", 10000)
-	ts.AddAccount("pd3_adm", 10000)
-	ts.AddAccount("pd3_dev", 10000)
-
-	_, pd1adm := ts.Account("pd1_adm")
-	_, pd2both := ts.Account("pd2_both")
-	_, pd3adm := ts.Account("pd3_adm")
-	_, pd3dev := ts.Account("pd3_dev")
+	_, pd1adm := ts.AddAccount("pd_adm_", 1, 10000)
+	_, pd2both := ts.AddAccount("pd_both_", 2, 10000)
+	_, pd3adm := ts.AddAccount("pd_adm_", 3, 10000)
+	_, pd3dev := ts.AddAccount("pd_dev_", 3, 10000)
 
 	// admin key
 	keys_1_admin := []types.ProjectKey{
@@ -83,48 +78,10 @@ func (ts *tester) setupProjectData() *tester {
 }
 
 func (ts *tester) isKeyInProject(index, key string, kind types.ProjectKey_Type) bool {
-	resp, err := ts.Keepers.Projects.Info(ts.GoCtx, &types.QueryInfoRequest{Project: index})
+	resp, err := ts.QueryProjectInfo(index)
 	require.Nil(ts.T, err, "project: "+index+", key: "+key)
 	pk := resp.Project.GetKey(key)
 	return pk.IsType(kind)
-}
-
-func (ts *tester) addProjectKeys(index, creator string, projectKeys ...types.ProjectKey) error {
-	msg := types.MsgAddKeys{
-		Creator:     creator,
-		Project:     index,
-		ProjectKeys: projectKeys,
-	}
-	_, err := ts.Servers.ProjectServer.AddKeys(ts.GoCtx, &msg)
-	return err
-}
-
-func (ts *tester) delProjectKeys(index, creator string, projectKeys ...types.ProjectKey) error {
-	msg := types.MsgDelKeys{
-		Creator:     creator,
-		Project:     index,
-		ProjectKeys: projectKeys,
-	}
-	_, err := ts.Servers.ProjectServer.DelKeys(ts.GoCtx, &msg)
-	return err
-}
-
-func (ts *tester) txSetProjectPolicy(projectID string, subkey string, policy planstypes.Policy) (*types.MsgSetPolicyResponse, error) {
-	msg := types.MsgSetPolicy{
-		Creator: subkey,
-		Policy:  policy,
-		Project: projectID,
-	}
-	return ts.Servers.ProjectServer.SetPolicy(ts.GoCtx, &msg)
-}
-
-func (ts *tester) txSetSubscriptionPolicy(projectID string, subkey string, policy planstypes.Policy) (*types.MsgSetSubscriptionPolicyResponse, error) {
-	msg := types.MsgSetSubscriptionPolicy{
-		Creator:  subkey,
-		Policy:   policy,
-		Projects: []string{projectID},
-	}
-	return ts.Servers.ProjectServer.SetSubscriptionPolicy(ts.GoCtx, &msg)
 }
 
 func TestCreateDefaultProject(t *testing.T) {
@@ -158,7 +115,7 @@ func TestCreateProject(t *testing.T) {
 	projectData := ts.ProjectData("pd2")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd2_both")
+	_, adm1Addr := ts.Account("pd_both_2")
 
 	err := ts.Keepers.Projects.CreateProject(ts.Ctx, sub1Addr, projectData, plan)
 	require.Nil(t, err)
@@ -257,7 +214,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	ts.AdvanceBlock()
 
 	projectID := types.ProjectIndex(sub1Addr, projectData.Name)
-	err = ts.addProjectKeys(projectID, sub1Addr, types.ProjectDeveloperKey(dev2Addr))
+	err = ts.TxProjectAddKeys(projectID, sub1Addr, types.ProjectDeveloperKey(dev2Addr))
 	require.Nil(t, err)
 
 	ts.AdvanceBlock()
@@ -313,8 +270,8 @@ func TestAddDelKeys(t *testing.T) {
 	plan := ts.Plan("mock")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd3_adm")
-	_, dev1Addr := ts.Account("pd3_dev")
+	_, adm1Addr := ts.Account("pd_adm_3")
+	_, dev1Addr := ts.Account("pd_dev_3")
 	_, dev2Addr := ts.Account("dev1")
 	_, dev3Addr := ts.Account("dev2")
 
@@ -330,27 +287,27 @@ func TestAddDelKeys(t *testing.T) {
 
 	// add myself as admin (should fail)
 	pk := types.ProjectAdminKey(dev1Addr)
-	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
+	err = ts.TxProjectAddKeys(project.Index, dev1Addr, pk)
 	require.NotNil(t, err)
 
 	// admin key adds an invalid key (should fail)
 	pk = types.NewProjectKey(dev2Addr).AddType(0x4)
-	err = ts.addProjectKeys(project.Index, adm1Addr, pk)
+	err = ts.TxProjectAddKeys(project.Index, adm1Addr, pk)
 	require.NotNil(t, err)
 
 	// admin key adds a developer
 	pk = types.ProjectDeveloperKey(dev2Addr)
-	err = ts.addProjectKeys(project.Index, adm1Addr, pk)
+	err = ts.TxProjectAddKeys(project.Index, adm1Addr, pk)
 	require.Nil(t, err)
 
 	// developer tries to add an admin (should fail)
 	pk = types.ProjectAdminKey(dev2Addr)
-	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
+	err = ts.TxProjectAddKeys(project.Index, dev1Addr, pk)
 	require.NotNil(t, err)
 
 	// admin adding admin
 	pk = types.ProjectAdminKey(dev1Addr)
-	err = ts.addProjectKeys(project.Index, adm1Addr, pk)
+	err = ts.TxProjectAddKeys(project.Index, adm1Addr, pk)
 	require.Nil(t, err)
 
 	require.True(t, ts.isKeyInProject(project.Index, dev1Addr, types.ProjectKey_ADMIN))
@@ -360,7 +317,7 @@ func TestAddDelKeys(t *testing.T) {
 
 	// new admin adding another developer
 	pk = types.ProjectDeveloperKey(dev3Addr)
-	err = ts.addProjectKeys(project.Index, dev1Addr, pk)
+	err = ts.TxProjectAddKeys(project.Index, dev1Addr, pk)
 	require.Nil(t, err)
 
 	require.True(t, ts.isKeyInProject(project.Index, dev3Addr, types.ProjectKey_DEVELOPER))
@@ -371,32 +328,32 @@ func TestAddDelKeys(t *testing.T) {
 
 	// developer delete admin (should fail)
 	pk = types.ProjectAdminKey(adm1Addr)
-	err = ts.delProjectKeys(project.Index, dev2Addr, pk)
+	err = ts.TxProjectDelKeys(project.Index, dev2Addr, pk)
 	require.NotNil(t, err)
 
 	// developer delete developer (should fail)
 	pk = types.ProjectDeveloperKey(dev3Addr)
-	err = ts.delProjectKeys(project.Index, dev2Addr, pk)
+	err = ts.TxProjectDelKeys(project.Index, dev2Addr, pk)
 	require.NotNil(t, err)
 
 	// new admin delete subscription owner admin (should fail)
 	pk = types.ProjectAdminKey(sub1Addr)
-	err = ts.delProjectKeys(project.Index, adm1Addr, pk)
+	err = ts.TxProjectDelKeys(project.Index, adm1Addr, pk)
 	require.NotNil(t, err)
 
 	// subscription owner (admin) delete other admin
 	pk = types.ProjectAdminKey(adm1Addr)
-	err = ts.delProjectKeys(project.Index, sub1Addr, pk)
+	err = ts.TxProjectDelKeys(project.Index, sub1Addr, pk)
 	require.Nil(t, err)
 
 	// admin delete developer after admin removed (should fail)
 	pk = types.ProjectDeveloperKey(dev3Addr)
-	err = ts.delProjectKeys(project.Index, adm1Addr, pk)
+	err = ts.TxProjectDelKeys(project.Index, adm1Addr, pk)
 	require.NotNil(t, err)
 
 	// subscription owner (admin) delete developer
 	pk = types.ProjectDeveloperKey(dev3Addr)
-	err = ts.delProjectKeys(project.Index, sub1Addr, pk)
+	err = ts.TxProjectDelKeys(project.Index, sub1Addr, pk)
 	require.Nil(t, err)
 
 	// deletion take effect in next epoch
@@ -416,7 +373,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	plan := ts.Plan("mock")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd1_adm")
+	_, adm1Addr := ts.Account("pd_adm_1")
 
 	err := ts.Keepers.Projects.CreateAdminProject(ts.Ctx, sub1Addr, plan)
 	require.Nil(t, err)
@@ -452,7 +409,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	plan := ts.Plan("mock")
 
 	_, sub1Addr := ts.Account("sub1")
-	_, adm1Addr := ts.Account("pd1_adm")
+	_, adm1Addr := ts.Account("pd_adm_1")
 	_, dev1Addr := ts.Account("dev1")
 
 	projectID := types.ProjectIndex(sub1Addr, projectData.Name)
@@ -463,7 +420,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	ts.AdvanceBlock()
 
 	pk := types.ProjectDeveloperKey(dev1Addr)
-	err = ts.addProjectKeys(projectID, adm1Addr, pk)
+	err = ts.TxProjectAddKeys(projectID, adm1Addr, pk)
 	require.Nil(t, err)
 
 	spec := common.CreateMockSpec()
@@ -577,7 +534,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			}
 
 			if testAdminPolicy {
-				_, err := ts.txSetProjectPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetPolicy(tt.projectID, tt.creator, newPolicy)
 				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -588,7 +545,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 					require.NotNil(t, err)
 				}
 			} else {
-				_, err := ts.txSetSubscriptionPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetSubscriptionPolicy(tt.projectID, tt.creator, newPolicy)
 				if tt.setSubscriptionPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -611,7 +568,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	projectData := ts.ProjectData("pd1")
 	plan := ts.Plan("mock")
 
-	_, sub1Addr := ts.Account("pd1_adm")
+	_, sub1Addr := ts.Account("pd_adm_1")
 	_, dev1Addr := ts.Account("dev1")
 
 	err := ts.Keepers.Projects.CreateProject(ts.Ctx, sub1Addr, projectData, plan)
@@ -630,7 +587,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	block2 := ts.BlockHeight()
 
 	// add developer key (created fixation)
-	err = ts.addProjectKeys(project.Index, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(project.Index, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 
 	// second epoch to move further, otherwise snapshot will affect the current new
@@ -711,36 +668,36 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	projectID1 := types.ProjectIndex(sub1Addr, projectData1.Name)
 	projectID2 := types.ProjectIndex(sub2Addr, projectData2.Name)
 
-	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 
-	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev2Addr))
+	err = ts.TxProjectAddKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev2Addr))
 	require.Nil(t, err)
 	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 	require.True(t, ts.isKeyInProject(projectID1, dev2Addr, types.ProjectKey_DEVELOPER))
 
-	proj, err := ts.GetProjectForDeveloper(sub1Addr)
+	res, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
-	require.Equal(t, 3, len(proj.ProjectKeys))
+	require.Equal(t, 3, len(res.Project.ProjectKeys))
 
 	// add twice - ok
-	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectAddKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
-	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	err = ts.TxProjectAddKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
 	require.Nil(t, err)
 
 	require.True(t, ts.isKeyInProject(projectID1, adm1Addr, types.ProjectKey_ADMIN))
 	require.True(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
 
 	// del twice - fail
-	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectDelKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectDelKeys(projectID1, sub1Addr, types.ProjectAdminKey(adm1Addr))
 	require.NotNil(t, err)
-	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	err = ts.TxProjectDelKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
+	err = ts.TxProjectDelKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev3Addr))
 	require.NotNil(t, err)
 
 	// del takes effect in next epoch
@@ -750,30 +707,30 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	require.False(t, ts.isKeyInProject(projectID1, dev3Addr, types.ProjectKey_DEVELOPER))
 
 	// add, del, and add again in same epoch
-	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectDelKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
-	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
 
-	err = ts.addProjectKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
+	err = ts.TxProjectAddKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
+	err = ts.TxProjectDelKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
 	require.Nil(t, err)
-	err = ts.addProjectKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
+	err = ts.TxProjectAddKeys(projectID2, adm1Addr, types.ProjectDeveloperKey(dev4Addr))
 	require.NotNil(t, err)
 
 	ts.AdvanceEpoch()
 
 	// add, del admin (admin should invalid immediately)
-	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm2Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm2Addr))
 	require.Nil(t, err)
-	err = ts.addProjectKeys(projectID2, adm2Addr, types.ProjectDeveloperKey(dev6Addr))
+	err = ts.TxProjectAddKeys(projectID2, adm2Addr, types.ProjectDeveloperKey(dev6Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm2Addr))
+	err = ts.TxProjectDelKeys(projectID2, sub2Addr, types.ProjectAdminKey(adm2Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectID2, adm2Addr, types.ProjectDeveloperKey(dev6Addr))
+	err = ts.TxProjectDelKeys(projectID2, adm2Addr, types.ProjectDeveloperKey(dev6Addr))
 	require.NotNil(t, err)
 
 	// del takes effect in next epoch
@@ -785,9 +742,9 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	require.True(t, ts.isKeyInProject(projectID2, dev6Addr, types.ProjectKey_DEVELOPER))
 
 	// add dev to two projects in same epoch (latter fails)
-	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev5Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev5Addr))
 	require.Nil(t, err)
-	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev5Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev5Addr))
 	require.NotNil(t, err)
 }
 
@@ -844,9 +801,9 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	// part (1): delete keys then project
 
 	// delete key from each project
-	err = ts.delProjectKeys(projectsID[0], sub1Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectDelKeys(projectsID[0], sub1Addr, types.ProjectAdminKey(adm1Addr))
 	require.Nil(t, err)
-	err = ts.delProjectKeys(projectsID[1], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectDelKeys(projectsID[1], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 
 	// now delete the projects (double delete) in same epoch
@@ -884,9 +841,9 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.Nil(t, err)
 
 	// delete key from each project: should being  (project being deleted)
-	err = ts.delProjectKeys(projectsID[2], sub1Addr, types.ProjectAdminKey(adm1Addr))
+	err = ts.TxProjectDelKeys(projectsID[2], sub1Addr, types.ProjectAdminKey(adm1Addr))
 	require.NotNil(t, err)
-	err = ts.delProjectKeys(projectsID[3], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectDelKeys(projectsID[3], sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.NotNil(t, err)
 
 	proj, err = ts.GetProjectForBlock(projectsID[2], ts.BlockHeight())
@@ -946,21 +903,21 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 
-	err = ts.addProjectKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub2Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.NotNil(t, err) // developer was already added to the first project
 
 	ts.AdvanceEpoch()
 
-	proj1, err := ts.GetProjectForDeveloper(sub1Addr)
+	res1, err := ts.QueryProjectDeveloper(sub1Addr)
 	require.Nil(t, err)
-	proj2, err := ts.GetProjectForDeveloper(sub2Addr)
+	res2, err := ts.QueryProjectDeveloper(sub2Addr)
 	require.Nil(t, err)
 
-	require.Equal(t, 2, len(proj1.ProjectKeys))
-	require.Equal(t, 1, len(proj2.ProjectKeys))
+	require.Equal(t, 2, len(res1.Project.ProjectKeys))
+	require.Equal(t, 1, len(res2.Project.ProjectKeys))
 }
 
 func TestSetPolicySelectedProviders(t *testing.T) {
@@ -1042,7 +999,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.txSetProjectPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetPolicy(admProject.Index, sub1Addr, policy)
 			if tt.projPolicyValid {
 				require.Nil(t, err)
 			} else {
@@ -1052,7 +1009,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.subMode
 			policy.SelectedProviders = providersSet.subProviders
 
-			_, err = ts.txSetSubscriptionPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(admProject.Index, sub1Addr, policy)
 			if tt.subPolicyValid {
 				require.Nil(t, err)
 			} else {
