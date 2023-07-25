@@ -50,6 +50,7 @@ func (mdb *BadgerDB) FindAll(providerAddress, specId string) (map[string][]byte,
 	err := mdb.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10
+		opts.Prefix = []byte(providerAddress + specId)
 
 		it := txn.NewIterator(opts)
 		defer it.Close()

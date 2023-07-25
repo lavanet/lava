@@ -31,6 +31,29 @@ func TestSave(t *testing.T) {
 	require.Equal(t, 1, len(rewards))
 }
 
+func TestFindAll(t *testing.T) {
+	providerAddr := "providerAddr"
+	specId := "specId"
+	db := rewardserver.NewMemoryDB()
+	rs := rewardserver.NewRewardDB(providerAddr, specId, db)
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	proof := common.BuildRelayRequest(ctx, providerAddr, []byte{}, uint64(0), specId, nil)
+
+	_, err := rs.Save("consumerAddr", "consumerKey"+specId, proof)
+	require.NoError(t, err)
+
+	anotherSpecId := "anotherSpecId"
+	rs2 := rewardserver.NewRewardDB(providerAddr, anotherSpecId, db)
+	anotherSpecProof := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, uint64(1), uint64(0), anotherSpecId, nil)
+	anotherSpecProof.Epoch = 2
+	_, err = rs2.Save("consumerAddr", "consumerKey"+anotherSpecId, anotherSpecProof)
+	require.NoError(t, err)
+
+	rewards, err := rs.FindAll()
+	require.NoError(t, err)
+	require.Equal(t, 1, len(rewards))
+}
+
 func TestFindOne(t *testing.T) {
 	providerAddr := "providerAddr"
 	specId := "specId"
