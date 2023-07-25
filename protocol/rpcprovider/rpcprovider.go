@@ -62,7 +62,6 @@ type ProviderStateTrackerInf interface {
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
-	GetEpochsToSave(ctx context.Context) (uint64, error)
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 

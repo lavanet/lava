@@ -237,7 +237,9 @@ func TestUpdateEpoch(t *testing.T) {
 			_, _ = rws.SendNewProof(context.Background(), proof, epoch, acc.String(), "apiInterface")
 		}
 
-		rws.UpdateEpoch(20)
+		stubRewardsTxSender.earliestBlockInMemory = 2
+
+		rws.UpdateEpoch(3)
 
 		// ensure no payments have been sent
 		require.Len(t, stubRewardsTxSender.sentPayments, 0)
@@ -295,8 +297,8 @@ func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *r
 }
 
 type rewardsTxSenderDouble struct {
-	epochsToSave uint64
-	sentPayments []*pairingtypes.RelaySession
+	earliestBlockInMemory uint64
+	sentPayments          []*pairingtypes.RelaySession
 }
 
 func (rts *rewardsTxSenderDouble) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string) error {
@@ -310,9 +312,5 @@ func (rts *rewardsTxSenderDouble) GetEpochSizeMultipliedByRecommendedEpochNumToC
 }
 
 func (rts *rewardsTxSenderDouble) EarliestBlockInMemory(_ context.Context) (uint64, error) {
-	return 1, nil
-}
-
-func (rts *rewardsTxSenderDouble) GetEpochsToSave(_ context.Context) (uint64, error) {
-	return rts.epochsToSave, nil
+	return rts.earliestBlockInMemory, nil
 }
