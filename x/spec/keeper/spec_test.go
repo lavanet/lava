@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -807,10 +806,17 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 func TestCookbookSpecs(t *testing.T) {
 	ts := newTester(t)
 
-	getToTopMostPath := "../../../"
-	proposalFile := "./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json"
+	getToTopMostPath := "../../.././cookbook/specs/"
+	// base specs needs to be proposed first
+	baseSpecs := []string{"spec_add_ibc.json", "spec_add_cosmoswasm.json", "spec_add_cosmossdk.json", "spec_add_cosmossdk_full.json", "spec_add_ethereum.json"}
 
-	for _, fileName := range strings.Split(proposalFile, ",") {
+	Specs, err := getAllFilesInDirectory(getToTopMostPath)
+	require.Nil(t, err)
+
+	// remove the base specs so there wont be a duplicate
+	Specs = removeSetFromSet(baseSpecs, Specs)
+	Specs = append(baseSpecs, Specs...)
+	for _, fileName := range Specs {
 		proposal := utils.SpecAddProposalJSON{}
 
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
@@ -840,4 +846,41 @@ func TestCookbookSpecs(t *testing.T) {
 			}
 		}
 	}
+}
+
+func getAllFilesInDirectory(directory string) ([]string, error) {
+	var files []string
+
+	dir, err := os.ReadDir(directory)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range dir {
+		if entry.IsDir() {
+			// Skip directories; we only want files
+			continue
+		}
+		files = append(files, entry.Name())
+	}
+
+	return files, nil
+}
+
+func removeSetFromSet(set1, set2 []string) []string {
+	// Create a map to store the elements of the first set
+	elements := make(map[string]bool)
+	for _, str := range set1 {
+		elements[str] = true
+	}
+
+	// Create a new slice with elements of the second set that are not present in the first set
+	var resultSet []string
+	for _, str := range set2 {
+		if !elements[str] {
+			resultSet = append(resultSet, str)
+		}
+	}
+
+	return resultSet
 }
