@@ -1,16 +1,16 @@
 {
-    "title": "Epoch params change",
-    "description": "to validate we support param changes",
+    "title": "Protocol Version Change",
+    "description": "Update version",
     "changes": [
         {
-            "subspace": "user",
-            "key": "SessionBlocks",
-            "value": "21"
-        },
-        {
-            "subspace": "user",
-            "key": "SessionsToSave",
-            "value": "8"
+          "subspace": "protocol",
+          "key": "Version",
+          "value": {
+            "provider_target": "1.18.2",
+            "consumer_target": "1.18.2",
+            "provider_min": "1.16.2",
+            "consumer_min": "1.16.2"
+          }
         }
     ],
     "deposit": "10000000ulava"

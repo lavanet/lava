@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/conflict/types"
 )
 
@@ -47,17 +48,17 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 		)
 	}
 
-	commitHash := types.CommitVoteData(msg.Nonce, msg.Hash)
+	commitHash := types.CommitVoteData(msg.Nonce, msg.Hash, msg.Creator)
 	if !bytes.Equal(commitHash, conflictVote.Votes[index].Hash) {
 		return nil, utils.LavaFormatWarning("Simulation: provider reveal does not match the commit", sdkerrors.ErrInvalidRequest,
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "voteID", Value: msg.VoteID},
 		)
 	}
-
-	if bytes.Equal(msg.Hash, conflictVote.FirstProvider.Response) {
+	hashAllDataHash := sigs.HashMsg(msg.Hash) // since the conflict detection sends hashmsg(sigs.AllDataHash()), for equality we need to hash
+	if bytes.Equal(hashAllDataHash, conflictVote.FirstProvider.Response) {
 		conflictVote.Votes[index].Result = types.Provider0
-	} else if bytes.Equal(msg.Hash, conflictVote.SecondProvider.Response) {
+	} else if bytes.Equal(hashAllDataHash, conflictVote.SecondProvider.Response) {
 		conflictVote.Votes[index].Result = types.Provider1
 	} else {
 		conflictVote.Votes[index].Result = types.NoneOfTheProviders

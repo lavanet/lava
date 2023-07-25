@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type RestMessage struct {
 	Msg      []byte
 	Path     string
 	SpecPath string
-	Header   []pairingtypes.Metadata
+	chainproxy.BaseMessage
 }
 
 // GetParams will be deprecated after we remove old client
@@ -38,6 +38,11 @@ func (cp RestMessage) GetParams() interface{} {
 	}
 
 	return parameters
+}
+
+func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+	// if !done else we need a different setter
 }
 
 // GetResult will be deprecated after we remove old client

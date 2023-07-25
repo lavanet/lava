@@ -50,6 +50,32 @@ case $terminal_type in
 		fi
 
 		echo " * Sourced $comp_dir/_lavad"
+
+		# create the completion script
+		lava-protocol completion > /tmp/_lava-protocol
+		comp_dir="$HOME/.bash_completion.d"
+		# move the completion script to /etc/bash_completion.d/lava-protocol
+		if [ ! -d $comp_dir ]; then
+			mkdir $comp_dir
+		fi
+		mv /tmp/_lava-protocol $comp_dir
+		echo " * Created an auto-completion script in $comp_dir"
+
+		bashrc_file="$HOME/.bashrc"
+		if [ -f "$HOME/.bash_profile" ]; then
+			bashrc_file="$HOME/.bash_profile"
+		fi
+
+		if ! grep -q "source $file" $bashrc_file; then
+			echo >> $bashrc_file
+			echo "if [ -d $comp_dir ]; then" >> $bashrc_file
+			echo "	for file in $comp_dir/*; do"  >> $bashrc_file
+			echo "		source \$file" >> $bashrc_file
+			echo "	done" >> $bashrc_file
+			echo "fi" >> $bashrc_file
+		fi
+
+		echo " * Sourced $comp_dir/_lava-protocol"
 		;;
 	zsh)
                 # create the completion script
@@ -61,6 +87,19 @@ case $terminal_type in
                         mkdir -p $comp_dir
                 fi
                 mv /tmp/_lavad $comp_dir
+		echo " * Created an auto-completion script in $comp_dir"
+
+		# add necessary lines to $HOME/.zshrc
+                echo 'fpath=(~/.zsh/completion $fpath)' >> ~/.zshenv
+
+		lava-protocol completion --zsh > /tmp/_lava-protocol
+		comp_dir="$HOME/.zsh/completion"
+
+                # move the completion script to $HOME/.zsh/completion
+                if [ ! -d $comp_dir ]; then
+                        mkdir -p $comp_dir
+                fi
+                mv /tmp/_lava-protocol $comp_dir
 		echo " * Created an auto-completion script in $comp_dir"
 
 		# add necessary lines to $HOME/.zshrc

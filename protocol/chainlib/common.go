@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -24,43 +25,176 @@ import (
 const (
 	ContextUserValueKeyDappID = "dappID"
 	RetryListeningInterval    = 10 // seconds
+	debug                     = false
 )
 
+type TaggedContainer struct {
+	Parsing       *spectypes.ParseDirective
+	ApiCollection *spectypes.ApiCollection
+}
+
+type ApiContainer struct {
+	api           *spectypes.Api
+	collectionKey CollectionKey
+}
+
 type BaseChainParser struct {
-	taggedApis map[string]spectypes.ServiceApi
-	rwLock     sync.RWMutex
+	taggedApis     map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec           spectypes.Spec
+	rwLock         sync.RWMutex
+	serverApis     map[ApiKey]ApiContainer
+	apiCollections map[CollectionKey]*spectypes.ApiCollection
+	headers        map[ApiKey]*spectypes.Header
 }
 
-func (bcp *BaseChainParser) SetTaggedApis(taggedApis map[string]spectypes.ServiceApi) {
+func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	if len(metadata) == 0 {
+		return []pairingtypes.Metadata{}, "", []pairingtypes.Metadata{}
+	}
+	retMeatadata := []pairingtypes.Metadata{}
+	for _, header := range metadata {
+		headerName := strings.ToLower(header.Name)
+		apiKey := ApiKey{Name: headerName, ConnectionType: apiCollection.CollectionData.Type}
+		headerDirective, ok := bcp.headers[apiKey]
+		if !ok {
+			// this header is not handled
+			continue
+		}
+		if headerDirective.Kind == headersDirection || headerDirective.Kind == spectypes.Header_pass_both {
+			retMeatadata = append(retMeatadata, header)
+			if headerDirective.FunctionTag == spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA {
+				// this header sets the latest requested block
+				overwriteRequestedBlock = header.Value
+			}
+		} else if headerDirective.Kind == spectypes.Header_pass_ignore {
+			ignoredMetadata = append(ignoredMetadata, header)
+		}
+	}
+	return retMeatadata, overwriteRequestedBlock, ignoredMetadata
+}
+
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header) {
+	bcp.spec = spec
+	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
+	bcp.headers = headers
+	bcp.apiCollections = apiCollections
 }
 
-func (bcp *BaseChainParser) GetSpecApiByTag(tag string) (spectypes.ServiceApi, bool) {
+func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 
 	val, ok := bcp.taggedApis[tag]
-	return val, ok
+	if !ok {
+		return nil, nil, false
+	}
+	return val.Parsing, &val.ApiCollection.CollectionData, ok
+}
+
+// getSupportedApi fetches service api from spec by name
+func (apip *BaseChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+
+	// Acquire read lock
+	apip.rwLock.RLock()
+	defer apip.rwLock.RUnlock()
+
+	// Fetch server api by name
+	apiCont, ok := apip.serverApis[ApiKey{
+		Name:           name,
+		ConnectionType: connectionType,
+	}]
+
+	// Return an error if spec does not exist
+	if !ok {
+		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+	}
+
+	// Return an error if api is disabled
+	if !apiCont.api.Enabled {
+		return nil, utils.LavaFormatError("api is disabled", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+	}
+
+	return &apiCont, nil
+}
+
+// getSupportedApi fetches service api from spec by name
+func (apip *BaseChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+	// Guard that the GrpcChainParser instance exists
+	if apip == nil {
+		return nil, errors.New("ChainParser not defined")
+	}
+
+	// Acquire read lock
+	apip.rwLock.RLock()
+	defer apip.rwLock.RUnlock()
+
+	// Fetch server api by name
+	api, ok := apip.apiCollections[CollectionKey{
+		ConnectionType: connectionType,
+		InternalPath:   internalPath,
+		Addon:          addon,
+	}]
+
+	// Return an error if spec does not exist
+	if !ok {
+		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "connectionType", Value: connectionType})
+	}
+
+	// Return an error if api is disabled
+	if !api.Enabled {
+		return nil, utils.LavaFormatError("api is disabled", nil, utils.Attribute{Key: "connectionType", Value: connectionType})
+	}
+
+	return api, nil
+}
+
+type updatableRPCInput interface {
+	parser.RPCInput
+	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
+	AppendHeader(metadata []pairingtypes.Metadata)
 }
 
 type parsedMessage struct {
-	serviceApi     *spectypes.ServiceApi
-	apiInterface   *spectypes.ApiInterface
+	api            *spectypes.Api
 	requestedBlock int64
-	msg            parser.RPCInput
+	msg            updatableRPCInput
+	apiCollection  *spectypes.ApiCollection
+}
+
+type ApiKey struct {
+	Name           string
+	ConnectionType string
+}
+
+type CollectionKey struct {
+	ConnectionType string
+	InternalPath   string
+	Addon          string
 }
 
 type BaseChainProxy struct {
+	ErrorHandler
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
 }
 
-func (pm parsedMessage) GetServiceApi() *spectypes.ServiceApi {
-	return pm.serviceApi
+func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
+	pm.msg.AppendHeader(metadata)
 }
 
-func (pm parsedMessage) GetInterface() *spectypes.ApiInterface {
-	return pm.apiInterface
+func (pm parsedMessage) GetApi() *spectypes.Api {
+	return pm.api
+}
+
+func (pm parsedMessage) GetApiCollection() *spectypes.ApiCollection {
+	return pm.apiCollection
 }
 
 func (pm parsedMessage) RequestedBlock() int64 {
@@ -69,6 +203,18 @@ func (pm parsedMessage) RequestedBlock() int64 {
 
 func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
 	return pm.msg
+}
+
+func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
+	if latestBlock <= spectypes.NOT_APPLICABLE || pm.RequestedBlock() != spectypes.LATEST_BLOCK {
+		return false
+	}
+	success := pm.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
+	if success {
+		pm.requestedBlock = latestBlock
+		return true
+	}
+	return false
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
@@ -113,54 +259,85 @@ func addAttributeToError(key string, value string, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[string]spectypes.ServiceApi, retTaggedApis map[string]spectypes.ServiceApi) {
-	serverApis := map[string]spectypes.ServiceApi{}
-	taggedApis := map[string]spectypes.ServiceApi{}
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header) {
+	serverApis := map[ApiKey]ApiContainer{}
+	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
+	headers := map[ApiKey]*spectypes.Header{}
+	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	if spec.Enabled {
-		for _, api := range spec.Apis {
-			if !api.Enabled {
+		for _, apiCollection := range spec.ApiCollections {
+			if !apiCollection.Enabled {
 				continue
 			}
-			//
-			// TODO: find a better spot for this (more optimized, precompile regex, etc)
-			for _, apiInterface := range api.ApiInterfaces {
-				if apiInterface.Interface != rpcInterface {
-					// spec will contain many api interfaces, we only need those that belong to the apiInterface of this sentry
+			if apiCollection.CollectionData.ApiInterface != rpcInterface {
+				continue
+			}
+			collectionKey := CollectionKey{
+				ConnectionType: apiCollection.CollectionData.Type,
+				InternalPath:   apiCollection.CollectionData.InternalPath,
+				Addon:          apiCollection.CollectionData.AddOn,
+			}
+			for _, parsing := range apiCollection.ParseDirectives {
+				taggedApis[parsing.FunctionTag] = TaggedContainer{
+					Parsing:       parsing,
+					ApiCollection: apiCollection,
+				}
+			}
+
+			for _, api := range apiCollection.Apis {
+				if !api.Enabled {
 					continue
 				}
-				if apiInterface.Interface == spectypes.APIInterfaceRest {
+				//
+				// TODO: find a better spot for this (more optimized, precompile regex, etc)
+				if rpcInterface == spectypes.APIInterfaceRest {
 					re := regexp.MustCompile(`{[^}]+}`)
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)
 					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
-					serverApis[processedName] = api
+					serverApis[ApiKey{
+						Name:           processedName,
+						ConnectionType: collectionKey.ConnectionType,
+					}] = ApiContainer{
+						api:           api,
+						collectionKey: collectionKey,
+					}
 				} else {
-					serverApis[api.Name] = api
-				}
-
-				if api.Parsing.GetFunctionTag() != "" {
-					taggedApis[api.Parsing.GetFunctionTag()] = api
+					serverApis[ApiKey{
+						Name:           api.Name,
+						ConnectionType: collectionKey.ConnectionType,
+					}] = ApiContainer{
+						api:           api,
+						collectionKey: collectionKey,
+					}
 				}
 			}
+			for _, header := range apiCollection.Headers {
+				headers[ApiKey{
+					Name:           header.Name,
+					ConnectionType: collectionKey.ConnectionType,
+				}] = header
+			}
+			apiCollections[collectionKey] = apiCollection
 		}
 	}
-	return serverApis, taggedApis
+	return serverApis, taggedApis, apiCollections, headers
 }
 
 // matchSpecApiByName returns service api which match given name
-func matchSpecApiByName(name string, serverApis map[string]spectypes.ServiceApi) (spectypes.ServiceApi, bool) {
+func matchSpecApiByName(name string, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
-		re, err := regexp.Compile("^" + apiName + "$")
+		re, err := regexp.Compile("^" + apiName.Name + "$")
 		if err != nil {
 			utils.LavaFormatError("regex Compile api", err, utils.Attribute{Key: "apiName", Value: apiName})
 			continue
 		}
-		if re.MatchString(name) {
-			return api, true
+		if re.MatchString(name) && apiName.ConnectionType == connectionType {
+			return &api, true
 		}
 	}
-	return spectypes.ServiceApi{}, false
+	return nil, false
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
@@ -228,25 +405,14 @@ func GetListenerWithRetryGrpc(protocol string, addr string) net.Listener {
 	}
 }
 
-func GetApiInterfaceFromServiceApi(serviceApi *spectypes.ServiceApi, connectionType string) *spectypes.ApiInterface {
-	var apiInterface *spectypes.ApiInterface = nil
-	for i := range serviceApi.ApiInterfaces {
-		if serviceApi.ApiInterfaces[i].Type == connectionType {
-			apiInterface = &serviceApi.ApiInterfaces[i]
-			break
-		}
-	}
-	return apiInterface
-}
-
 type CraftData struct {
 	Path           string
 	Data           []byte
 	ConnectionType string
 }
 
-func CraftChainMessage(serviceApi spectypes.ServiceApi, chainParser ChainParser, craftData *CraftData) (ChainMessageForSend, error) {
-	return chainParser.CraftMessage(serviceApi, craftData)
+func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
+	return chainParser.CraftMessage(parsing, connectionType, craftData, metadata)
 }
 
 // rest request headers are formatted like map[string]string

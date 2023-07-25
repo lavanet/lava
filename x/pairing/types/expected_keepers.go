@@ -12,10 +12,10 @@ import (
 
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
-	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool)
+	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType spectypes.Spec_ProvidersTypes)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 	GeolocationCount(ctx sdk.Context) uint64
-	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) map[string]bool
+	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error)
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }
 
@@ -29,6 +29,7 @@ type EpochstorageKeeper interface {
 	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
 	IsEpochStart(ctx sdk.Context) (res bool)
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error)
+	BlocksToSaveRaw(ctx sdk.Context) (res uint64)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
 	PopUnstakeEntries(ctx sdk.Context, block uint64) (value []epochstoragetypes.StakeEntry)
@@ -68,6 +69,7 @@ type BankKeeper interface {
 type ProjectsKeeper interface {
 	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, block uint64, cu uint64) (err error)
 	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, errRet error)
+	GetProjectForBlock(ctx sdk.Context, projectID string, block uint64) (projectstypes.Project, error)
 }
 
 type SubscriptionKeeper interface {

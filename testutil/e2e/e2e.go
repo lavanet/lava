@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,12 +40,13 @@ import (
 	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
 	logsFolder   = "./testutil/e2e/logs/"
-	configFolder = "./testutil/e2e/e2eProviderConfigs/"
+	configFolder = "./testutil/e2e/e2eProviderConfigs"
 )
 
 var (
@@ -59,7 +61,9 @@ type lavaTest struct {
 	testFinishedProperly bool
 	grpcConn             *grpc.ClientConn
 	lavadPath            string
+	protocolPath         string
 	lavadArgs            string
+	consumerArgs         string
 	logs                 map[string]*bytes.Buffer
 	commands             map[string]*exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
@@ -80,6 +84,7 @@ func init() {
 }
 
 func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
+	utils.LavaFormatDebug("Executing command " + command)
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -197,20 +202,29 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 	panic("Lava Check Failed")
 }
 
-func (lt *lavaTest) stakeLava() {
-	stakeCommand := "./scripts/init_e2e.sh"
-	lt.logs["01_stakeLava"] = new(bytes.Buffer)
+func (lt *lavaTest) compileLavaProtocol() {
+	buildCommand := "./scripts/build_env_e2e.sh"
+	lt.logs["01_buildProtocol"] = new(bytes.Buffer)
 	cmd := exec.Cmd{
-		Path:   stakeCommand,
-		Args:   strings.Split(stakeCommand, " "),
-		Stdout: lt.logs["01_stakeLava"],
-		Stderr: lt.logs["01_stakeLava"],
+		Path:   buildCommand,
+		Args:   strings.Split(buildCommand, " "),
+		Stdout: lt.logs["01_buildProtocol"],
+		Stderr: lt.logs["01_buildProtocol"],
 	}
 	err := cmd.Start()
 	if err != nil {
-		panic("Staking Failed " + err.Error())
+		panic("compileLavaProtocol Failed " + err.Error())
 	}
 	cmd.Wait()
+}
+
+func (lt *lavaTest) stakeLava(ctx context.Context) {
+	command := "./scripts/init_e2e.sh"
+	logName := "01_stakeLava"
+	funcName := "stakeLava"
+
+	lt.execCommand(ctx, funcName, logName, command, true)
+	utils.LavaFormatInfo(funcName + " OK")
 }
 
 func (lt *lavaTest) checkStakeLava(
@@ -233,7 +247,7 @@ func (lt *lavaTest) checkStakeLava(
 
 	// check if plans added exist
 	if len(planQueryRes.PlansInfo) != planCount {
-		panic("Staking Failed PLAN count")
+		panic("Staking Failed PLAN count" + fmt.Sprintf("expected %d, got %d", planCount, len(planQueryRes.PlansInfo)))
 	}
 
 	for _, plan := range planQueryRes.PlansInfo {
@@ -322,7 +336,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/jsonrpcProvider%d.yml --from servicer%d %s",
-			lt.lavadPath, configFolder, idx, idx, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
@@ -341,7 +355,7 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/ethConsumer%d.yml --from %s %s",
-			lt.lavadPath, configFolder, idx+1, u, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startJSONRPCConsumer (consumer %02d)", idx+1)
@@ -372,7 +386,10 @@ func (lt *lavaTest) checkProviderResponsive(ctx context.Context, rpcURL string, 
 	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting Provider " + rpcURL)
 		nctx, cancel := context.WithTimeout(ctx, time.Second)
-		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		var tlsConf tls.Config
+		tlsConf.InsecureSkipVerify = true // skip CA validation
+		credentials := credentials.NewTLS(&tlsConf)
+		grpcClient, err := grpc.DialContext(nctx, rpcURL, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 		if err != nil {
 			// utils.LavaFormatInfo(fmt.Sprintf("Provider is still intializing %s", err), nil)
 			cancel()
@@ -494,7 +511,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/lavaProvider%d --from servicer%d %s",
-			lt.lavadPath, configFolder, idx, idx, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
 		funcName := fmt.Sprintf("startLavaProviders (provider %02d)", idx-5)
@@ -514,7 +531,7 @@ func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumer%d.yml --from %s %s",
-			lt.lavadPath, configFolder, idx+1, u, lt.lavadArgs,
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCConsumer (consumer %02d)", idx+1)
@@ -1037,7 +1054,9 @@ func runE2E(timeout time.Duration) {
 	lt := &lavaTest{
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
+		protocolPath: gopath + "/bin/lava-protocol",
 		lavadArgs:    "--geolocation 1 --log_level debug",
+		consumerArgs: " --allow-insecure-provider-dialing",
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
@@ -1056,8 +1075,14 @@ func runE2E(timeout time.Duration) {
 	go lt.startLava(context.Background())
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
+	lt.compileLavaProtocol()
+	utils.LavaFormatInfo("Compiling Protocol OK")
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	utils.LavaFormatInfo("Staking Lava")
-	lt.stakeLava()
+	lt.stakeLava(ctx)
 
 	// scripts/init_e2e.sh will:
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
@@ -1080,9 +1105,6 @@ func runE2E(timeout time.Duration) {
 			f(i)
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)

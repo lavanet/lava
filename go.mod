@@ -3,7 +3,7 @@ module github.com/lavanet/lava
 go 1.18
 
 require (
-	github.com/99designs/keyring v1.1.6
+	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/btcsuite/btcd v0.22.1
 	github.com/cosmos/cosmos-sdk v0.45.11
 	github.com/cosmos/ibc-go/v3 v3.0.1
@@ -26,7 +26,6 @@ require (
 )
 
 require (
-	github.com/coniks-sys/coniks-go v0.0.0-20180722014011-11acf4819b71
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
@@ -186,7 +185,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/zondax/hid v0.9.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	go.opencensus.io v0.23.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/net v0.10.0

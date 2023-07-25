@@ -86,13 +86,6 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 	appparams "github.com/lavanet/lava/app/params"
 	"github.com/lavanet/lava/app/upgrades"
-	"github.com/lavanet/lava/app/upgrades/v0_5_0"
-	"github.com/lavanet/lava/app/upgrades/v0_5_1"
-	"github.com/lavanet/lava/app/upgrades/v0_5_2"
-	"github.com/lavanet/lava/app/upgrades/v0_9_1"
-	"github.com/lavanet/lava/app/upgrades/v0_9_6"
-	"github.com/lavanet/lava/app/upgrades/v0_9_7"
-	"github.com/lavanet/lava/app/upgrades/v0_9_8"
 	"github.com/lavanet/lava/docs"
 	conflictmodule "github.com/lavanet/lava/x/conflict"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -110,6 +103,9 @@ import (
 	projectsmodule "github.com/lavanet/lava/x/projects"
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
 	projectsmoduletypes "github.com/lavanet/lava/x/projects/types"
+	protocolmodule "github.com/lavanet/lava/x/protocol"
+	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
+	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
 	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -133,39 +129,8 @@ const (
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
 var Upgrades = []upgrades.Upgrade{
-	upgrades.Upgrade_0_4_0,
-	upgrades.Upgrade_0_4_3,
-	upgrades.Upgrade_0_4_4,
-	upgrades.Upgrade_0_4_5,
-	v0_5_0.Upgrade,
-	v0_5_1.Upgrade,
-	v0_5_2.Upgrade,
-	upgrades.Upgrade_0_6_0_RC3,
-	upgrades.Upgrade_0_6_0,
-	upgrades.Upgrade_0_6_1,
-	upgrades.Upgrade_0_7_0,
-	upgrades.Upgrade_0_7_1,
-	// upgrades.Upgrade_0_8_0,
-	upgrades.Upgrade_0_8_1,
-	v0_9_1.Upgrade,
-	upgrades.Upgrade_0_9_2,
-	upgrades.Upgrade_0_9_3,
-	upgrades.Upgrade_0_9_5,
-	v0_9_6.Upgrade,
-	v0_9_7.Upgrade,
-	v0_9_8.Upgrade,
-	upgrades.Upgrade_0_10_0,
-	upgrades.Upgrade_0_10_1,
-	upgrades.Upgrade_0_11_0,
-	upgrades.Upgrade_0_11_1,
-	upgrades.Upgrade_0_11_2,
-	upgrades.Upgrade_0_12_0,
-	upgrades.Upgrade_0_12_1,
-	upgrades.Upgrade_0_13_0,
-	upgrades.Upgrade_0_13_1,
-	upgrades.Upgrade_0_14_0,
-	upgrades.Upgrade_0_15_0,
-	upgrades.Upgrade_0_15_1,
+	upgrades.Upgrade_0_20_1,
+	upgrades.Upgrade_0_20_2,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -221,6 +186,7 @@ var (
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
 		projectsmodule.AppModuleBasic{},
+		protocolmodule.AppModuleBasic{},
 		plansmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
@@ -423,6 +389,7 @@ func New(
 		keys[plansmoduletypes.MemStoreKey],
 		app.GetSubspace(plansmoduletypes.ModuleName),
 		app.EpochstorageKeeper,
+		app.SpecKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -517,6 +484,14 @@ func New(
 	)
 	conflictModule := conflictmodule.NewAppModule(appCodec, app.ConflictKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.ProtocolKeeper = *protocolmodulekeeper.NewKeeper(
+		appCodec,
+		keys[protocolmoduletypes.StoreKey],
+		keys[protocolmoduletypes.MemStoreKey],
+		app.GetSubspace(protocolmoduletypes.ModuleName),
+	)
+	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
+
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
@@ -563,6 +538,7 @@ func New(
 		conflictModule,
 		projectsModule,
 		plansModule,
+		protocolModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -591,6 +567,7 @@ func New(
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
+		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
@@ -616,6 +593,7 @@ func New(
 		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
+		protocolmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -647,6 +625,7 @@ func New(
 		pairingmoduletypes.ModuleName,
 		projectsmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
+		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
@@ -684,6 +663,7 @@ func New(
 		pairingModule,
 		conflictModule,
 		projectsModule,
+		protocolModule,
 		plansModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
@@ -902,6 +882,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
 	paramsKeeper.Subspace(projectsmoduletypes.ModuleName)
+	paramsKeeper.Subspace(protocolmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 

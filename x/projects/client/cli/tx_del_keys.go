@@ -27,7 +27,7 @@ func CmdDelKeys() *cobra.Command {
 
 			if len(args) > 1 {
 				projectKeysFilePath := args[1]
-				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys)
+				err = commontypes.ReadYaml(projectKeysFilePath, "Project-Keys", &projectKeys, nil)
 				if err != nil {
 					return err
 				}

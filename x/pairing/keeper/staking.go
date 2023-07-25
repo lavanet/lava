@@ -55,23 +55,22 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 		}
 		return nil
 	}
-	geolocations := k.specKeeper.GeolocationCount(ctx)
-	if geolocation == 0 || geolocation > (1<<geolocations) {
+
+	if !types.IsValidGeoEnum(int32(geolocation)) {
 		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)
 	}
 
-	err = k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
+	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid endpoints implementation for the given spec", err,
 			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "endpoints", Value: endpoints},
-			utils.Attribute{Key: "Chain", Value: chainID},
+			utils.Attribute{Key: "chain", Value: chainID},
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)
 	}
-
 	// new staking takes effect from the next block
 	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
 
@@ -115,7 +114,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 			existingEntry.Stake = amount
 			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
-			existingEntry.Endpoints = endpoints
+			existingEntry.Endpoints = endpointsVerified
 			existingEntry.Moniker = moniker
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 			detailsMap := map[string]string{}
@@ -146,7 +145,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 		)
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpoints, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpointsVerified, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 	appended := false
 
@@ -161,42 +160,67 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 	return err
 }
 
-func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (err error) {
-	expectedInterfaces := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID)
-	geolocMap := map[string]bool{} // TODO: turn this into spectypes.ApiInterface
-	geolocations := k.specKeeper.GeolocationCount(ctx)
-	geolocKey := func(intefaceName string, geolocation uint64) string {
-		return intefaceName + "_" + strconv.FormatUint(geolocation, 10)
+func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
+	expectedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, true)
+	if err != nil {
+		return nil, fmt.Errorf("expected interfaces: %w", err)
 	}
+	allowedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, false)
+	if err != nil {
+		return nil, fmt.Errorf("allowed interfaces: %w", err)
+	}
+
+	geolocMapRequired := map[epochstoragetypes.EndpointService]struct{}{}
+	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
+	geolocations := k.specKeeper.GeolocationCount(ctx)
+
+	geolocKey := func(intefaceName string, geolocation uint64, addon string) epochstoragetypes.EndpointService {
+		return epochstoragetypes.EndpointService{
+			ApiInterface: intefaceName + "_" + strconv.FormatUint(geolocation, 10),
+			Addon:        addon,
+		}
+	}
+
 	for idx := uint64(0); idx < geolocations; idx++ {
 		// geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {
-			for expectedApiInterface := range expectedInterfaces {
-				geolocMap[geolocKey(expectedApiInterface, geolocZone)] = true
+			for expectedEndpointService := range expectedInterfaces {
+				key := geolocKey(expectedEndpointService.ApiInterface, geolocZone, expectedEndpointService.Addon)
+				geolocMapRequired[key] = struct{}{}
+			}
+			for expectedEndpointService := range allowedInterfaces {
+				key := geolocKey(expectedEndpointService.ApiInterface, geolocZone, expectedEndpointService.Addon)
+				geolocMapAllowed[key] = struct{}{}
 			}
 		}
 	}
+
 	// check all endpoints only implement expected interfaces
-	for _, endpoint := range endpoints {
-		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
-		if geolocMap[key] {
-			continue
-		} else {
-			return fmt.Errorf("servicer implemented api interfaces that are not in the spec: %s, current expected: %+v", key, geolocMap)
+	for idx, endpoint := range endpoints {
+		endpoint.SetApiInterfacesFromAddons(allowedInterfaces) // support apiInterfaces inside addons list
+		endpoint.SetDefaultApiInterfaces(expectedInterfaces)   // support empty apiInterfaces list
+		endpoints[idx] = endpoint
+		for _, endpointService := range endpoint.GetSupportedServices() {
+			key := geolocKey(endpointService.ApiInterface, endpoint.Geolocation, endpointService.Addon)
+			if _, ok := geolocMapAllowed[key]; !ok {
+				return nil, fmt.Errorf("servicer implements api interfaces not allowed in the spec: %s, current allowed: %+v", key, geolocMapAllowed)
+			}
 		}
 	}
+
 	// check all expected api interfaces are implemented
 	for _, endpoint := range endpoints {
-		key := geolocKey(endpoint.UseType, endpoint.Geolocation)
-		if geolocMap[key] {
-			// interface is implemented and expected
-			delete(geolocMap, key) // remove this from expected implementations
+		for _, endpointService := range endpoint.GetSupportedServices() {
+			key := geolocKey(endpointService.ApiInterface, endpoint.Geolocation, endpointService.Addon)
+			delete(geolocMapRequired, key) // remove this from expected implementations
 		}
 	}
-	if len(geolocMap) == 0 {
-		// all interfaces and geolocations were implemented
-		return nil
+
+	if len(geolocMapRequired) != 0 {
+		return nil, fmt.Errorf("servicer does not implement all expected interfaces for all geolocations: %+v, missing implementation count: %d", geolocMapRequired, len(geolocMapRequired))
 	}
-	return fmt.Errorf("not all expected interfaces are implemented for all geolocations: %+v, missing implementation count: %d", geolocMap, len(geolocMap))
+
+	// all interfaces and geolocations were implemented
+	return endpoints, nil
 }

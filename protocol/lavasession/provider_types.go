@@ -18,12 +18,19 @@ type ProviderSessionsEpochData struct {
 	MissingComputeUnits uint64
 }
 
+type NetworkAddressData struct {
+	Address    string `yaml:"address,omitempty" json:"address,omitempty" mapstructure:"address,omitempty"` // HOST:PORT
+	KeyPem     string `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem    string `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+	DisableTLS bool   `yaml:"disable-tls,omitempty" json:"disable-tls,omitempty" mapstructure:"disable-tls"`
+}
+
 type RPCProviderEndpoint struct {
-	NetworkAddress string           `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"` // HOST:PORT
-	ChainID        string           `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                                // spec chain identifier
-	ApiInterface   string           `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
-	Geolocation    uint64           `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
-	NodeUrls       []common.NodeUrl `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
+	NetworkAddress NetworkAddressData `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address,omitempty"`
+	ChainID        string             `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"` // spec chain identifier
+	ApiInterface   string             `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
 }
 
 func (endpoint *RPCProviderEndpoint) UrlsString() string {
@@ -34,8 +41,16 @@ func (endpoint *RPCProviderEndpoint) UrlsString() string {
 	return strings.Join(st_urls, ", ")
 }
 
+func (endpoint *RPCProviderEndpoint) AddonsString() string {
+	st_urls := make([]string, len(endpoint.NodeUrls))
+	for idx, url := range endpoint.NodeUrls {
+		st_urls[idx] = strings.Join(url.Addons, ",")
+	}
+	return strings.Join(st_urls, "; ")
+}
+
 func (endpoint *RPCProviderEndpoint) String() string {
-	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10)
+	return endpoint.ChainID + ":" + endpoint.ApiInterface + " Network Address:" + endpoint.NetworkAddress.Address + " Node: " + endpoint.UrlsString() + " Geolocation:" + strconv.FormatUint(endpoint.Geolocation, 10) + " Addons:" + endpoint.AddonsString()
 }
 
 func (endpoint *RPCProviderEndpoint) Validate() error {
@@ -101,9 +116,15 @@ type ProviderSessionsWithConsumer struct {
 	isBlockListed     uint32
 	consumerAddr      string
 	epochData         *ProviderSessionsEpochData
+	badgeEpochData    map[string]*ProviderSessionsEpochData
 	Lock              sync.RWMutex
 	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
 	pairedProviders   int64
+}
+
+type BadgeSession struct {
+	BadgeCuAllocation uint64
+	BadgeUser         string
 }
 
 func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
@@ -112,6 +133,7 @@ func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSes
 		isBlockListed:     0,
 		consumerAddr:      consumerAddr,
 		epochData:         epochData,
+		badgeEpochData:    map[string]*ProviderSessionsEpochData{},
 		isDataReliability: isDataReliability,
 		pairedProviders:   pairedProviders,
 	}
@@ -137,12 +159,20 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadMaxComputeUnits() (maxComput
 	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
+func atomicReadBadgeMaxComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (maxComputeUnits uint64) {
+	return atomic.LoadUint64(&badgeUserEpochData.MaxComputeUnits)
+}
+
 func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64) {
 	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
+}
+
+func atomicReadBadgeUsedComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (usedComputeUnits uint64) {
+	return atomic.LoadUint64(&badgeUserEpochData.UsedComputeUnits)
 }
 
 func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
@@ -152,33 +182,46 @@ func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
+func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed uint64, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
+	if newUsed == knownUsed { // no need to compare swap
+		return true
+	}
+	return atomic.CompareAndSwapUint64(&badgeUserEpochData.UsedComputeUnits, knownUsed, newUsed)
+}
+
 func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.MissingComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicWriteMissingComputeUnits(cu uint64) {
-	atomic.StoreUint64(&pswc.epochData.MissingComputeUnits, cu)
+func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteMissingComputeUnits(newUsed uint64, knownUsed uint64) bool {
+	if newUsed == knownUsed { // no need to compare swap
+		return true
+	}
+	return atomic.CompareAndSwapUint64(&pswc.epochData.MissingComputeUnits, knownUsed, newUsed)
 }
 
-func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool) {
-	missing := pswc.atomicReadMissingComputeUnits()
-	used := pswc.atomicReadUsedComputeUnits()
-	max := pswc.atomicReadMaxComputeUnits()
-	// do not allow bypassing max used CU
-	if currentMissingCU+missing+used > max {
-		return false
+func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool, totalMissingCu uint64) {
+	for {
+		missing := pswc.atomicReadMissingComputeUnits()
+		used := pswc.atomicReadUsedComputeUnits()
+		max := pswc.atomicReadMaxComputeUnits()
+		totalMissingCu = missing + currentMissingCU
+		// do not allow bypassing max used CU
+		if totalMissingCu+used > max {
+			return false, totalMissingCu
+		}
+		// do not allow having more missing than threshold
+		if totalMissingCu > uint64(float64(max)*allowedThreshold) {
+			return false, totalMissingCu
+		}
+		// do not allow having more missing than already used
+		if totalMissingCu > used {
+			return false, totalMissingCu
+		}
+		if pswc.atomicCompareAndWriteMissingComputeUnits(totalMissingCu, missing) {
+			return true, totalMissingCu
+		}
 	}
-	// do not allow having more missing than threshold
-	if currentMissingCU+missing > uint64(float64(max)*allowedThreshold) {
-		return false
-	}
-	// do not allow having more missing than already used
-	if currentMissingCU+missing > used {
-		return false
-	}
-	// TODO: use compare and swap for race avoidance
-	pswc.atomicWriteMissingComputeUnits(currentMissingCU + missing)
-	return true
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent

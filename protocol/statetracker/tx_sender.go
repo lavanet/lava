@@ -3,7 +3,6 @@ package statetracker
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -15,11 +14,12 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 const (
-	defaultGasPrice      = "0.000000001ulava"
+	defaultGasPrice      = "0.000000001" + epochstoragetypes.TokenDenom
 	defaultGasAdjustment = 3
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
@@ -143,12 +143,17 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		} else if strings.Contains(transactionResult, "out of gas") {
 			utils.LavaFormatInfo("Transaction got out of gas error, retrying next block.")
 			retryWithNewSequenceNumber = true // retry with out of gas issue
+		} else if strings.Contains(transactionResult, "insufficient fees; got:") { //
+			err := parseInsufficientFeesError(transactionResult, gasUsed)
+			if err == nil {
+				return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
+			}
 		}
 	}
 	if !success {
-		return utils.LavaFormatError(fmt.Sprintf("failed sending transaction %s", summarizedTransactionResult), nil)
+		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
 	}
-	utils.LavaFormatInfo(fmt.Sprintf("succeeded sending transaction %s", summarizedTransactionResult))
+	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "result", Value: summarizedTransactionResult})
 	return nil
 }
 
@@ -241,5 +246,31 @@ func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliability
 	if err != nil {
 		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
 	}
+	return nil
+}
+
+func parseInsufficientFeesError(msg string, gasUsed uint64) error {
+	feesPart := strings.Split(msg, "insufficient fees; got: ")[1]
+	prices := strings.Split(feesPart, epochstoragetypes.TokenDenom)
+	var required int
+	var err error
+	for _, p := range prices {
+		if strings.Contains(p, " required: ") {
+			requiredParsedString := strings.Split(p, " required: ")[1]
+			required, err = strconv.Atoi(requiredParsedString)
+			if err != nil {
+				return utils.LavaFormatError("Failed converting string to number", err, utils.Attribute{Key: "requiredParsedString", Value: requiredParsedString})
+			}
+		}
+	}
+	if required == 0 {
+		return utils.LavaFormatError("Failed fetching required gas from error", nil, utils.Attribute{Key: "message", Value: prices})
+	}
+	minimumGasPricesGot := (float64(gasUsed) / float64(required))
+	utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
+		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
+		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + epochstoragetypes.TokenDenom},
+	)
+
 	return nil
 }

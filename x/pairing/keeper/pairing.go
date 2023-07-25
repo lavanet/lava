@@ -3,38 +3,37 @@ package keeper
 import (
 	"fmt"
 	"math"
-	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
+	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
-func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error) {
+func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
 	// TODO: add support for spec changes
-	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	foundAndActive, _, providersType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
-		return 0, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
+		return 0, providersType, fmt.Errorf("spec not found and active for chainID given: %s", chainID)
 	}
 	earliestSavedEpoch := k.epochStorageKeeper.GetEarliestEpochStart(ctx)
 	if block < earliestSavedEpoch {
-		return 0, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
+		return 0, providersType, fmt.Errorf("block %d is earlier than earliest saved block %d", block, earliestSavedEpoch)
 	}
 
 	requestedEpochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
-		return 0, err
+		return 0, providersType, err
 	}
 	currentEpochStart := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	if requestedEpochStart > currentEpochStart {
-		return 0, utils.LavaFormatWarning("VerifyPairing requested epoch is too new", fmt.Errorf("cant get epoch start for future block"),
+		return 0, providersType, utils.LavaFormatWarning("VerifyPairing requested epoch is too new", fmt.Errorf("cant get epoch start for future block"),
 			utils.Attribute{Key: "requested block", Value: block},
 			utils.Attribute{Key: "requested epoch", Value: requestedEpochStart},
 			utils.Attribute{Key: "current epoch", Value: currentEpochStart},
@@ -43,13 +42,13 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 
 	blocksToSave, err := k.epochStorageKeeper.BlocksToSave(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
-		return 0, err
+		return 0, providersType, err
 	}
 
 	if requestedEpochStart+blocksToSave < currentEpochStart {
-		return 0, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
+		return 0, providersType, fmt.Errorf("requestedEpochStart %d is earlier current epoch %d by more than BlocksToSave %d", requestedEpochStart, currentEpochStart, blocksToSave)
 	}
-	return requestedEpochStart, nil
+	return requestedEpochStart, providersType, nil
 }
 
 func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
@@ -67,7 +66,13 @@ func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress
 	for i, clientStakeEntry := range userStakedEntries {
 		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
 		if err != nil {
-			panic(fmt.Sprintf("invalid user address saved in keeper %s, err: %s", clientStakeEntry.Address, err))
+			// this should not happen; to avoid panic we simply skip this one (thus
+			// freeze the situation so it can be investigated and orderly resolved).
+			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
+				utils.LogAttr("address", clientStakeEntry.Address),
+				utils.LogAttr("chainID", clientStakeEntry.Chain),
+			)
+			continue
 		}
 		if clientAddr.Equals(clientAddress) {
 			if clientStakeEntry.StakeAppliedBlock > block {
@@ -110,9 +115,14 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, projectID string, errorRet error) {
 	var strictestPolicy planstypes.Policy
 
-	epoch, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
+	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
+	}
+
+	stakeEntries, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
+	if !found {
+		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
 	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
@@ -120,33 +130,62 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	strictestPolicy, allowedCU, err = k.getProjectStrictestPolicy(ctx, project, chainID)
+	strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	possibleProviders, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
-	if !found {
-		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
+	if providersType == spectypes.Spec_static {
+		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
 
-	possibleProviders, err = pairingfilters.FilterProviders(ctx, filters, possibleProviders, strictestPolicy, epoch)
+	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, "", err
 	}
 
-	providers, err = k.calculatePairingForClient(ctx, possibleProviders, project.Index, block,
-		chainID, epochHash, strictestPolicy.MaxProvidersToPair)
+	// create the pairing slots with assigned reqs
+	slots := pairingscores.CalcSlots(strictestPolicy)
+	if len(slots) >= len(stakeEntries) {
+		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
+	}
 
-	return providers, allowedCU, project.Index, err
+	// group identical slots (in terms of reqs types)
+	slotGroups := pairingscores.GroupSlots(slots)
+
+	// create providerScore array with all possible providers
+	providerScores := []*pairingscores.PairingScore{}
+	for i := range stakeEntries {
+		providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
+		providerScores = append(providerScores, providerScore)
+	}
+
+	// calculate score (always on the diff in score components of consecutive groups) and pick providers
+	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
+	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
+
+	for idx, group := range slotGroups {
+		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
+		diffSlot := group.Subtract(prevGroupSlot)
+		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData)
+		providers = append(providers, pickedProviders...)
+
+		prevGroupSlot = group
+	}
+
+	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
-func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, uint64, error) {
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return planstypes.Policy{}, 0, err
+		return planstypes.Policy{}, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -157,23 +196,23 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if project.AdminPolicy != nil {
 		policies = append(policies, project.AdminPolicy)
 	}
-
-	if !planstypes.CheckChainIdExistsInPolicies(chainID, policies) {
-		return planstypes.Policy{}, 0, fmt.Errorf("chain ID not found in any of the policies")
+	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
+	if !allowed {
+		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
 
 	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, 0, err
+		return planstypes.Policy{}, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return planstypes.Policy{}, 0, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return planstypes.Policy{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
-	allowedCU := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
@@ -182,9 +221,12 @@ func (k Keeper) getProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		MaxProvidersToPair:    providersToPair,
 		SelectedProvidersMode: selectedProvidersMode,
 		SelectedProviders:     selectedProvidersList,
+		ChainPolicies:         []planstypes.ChainPolicy{chainPolicy},
+		EpochCuLimit:          allowedCUEpoch,
+		TotalCuLimit:          allowedCUTotal,
 	}
 
-	return strictestPolicy, allowedCU, nil
+	return strictestPolicy, nil
 }
 
 func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Policy) (planstypes.SELECTED_PROVIDERS_MODE, []string) {
@@ -199,8 +241,8 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 		}
 	}
 
-	effectiveMode := commontypes.FindMax(selectedProvidersModeList)
-	effectiveSelectedProviders := commontypes.Intersection(selectedProvidersList...)
+	effectiveMode := slices.Max(selectedProvidersModeList)
+	effectiveSelectedProviders := slices.Intersection(selectedProvidersList...)
 
 	return effectiveMode, effectiveSelectedProviders
 }
@@ -235,7 +277,7 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planst
 	return providersToPair, nil
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) uint64 {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) (allowedCUThisEpoch uint64, allowedCUTotal uint64) {
 	var policyEpochCuLimit []uint64
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
@@ -245,12 +287,13 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 		}
 	}
 
-	effectiveTotalCuOfProject := commontypes.FindMin(policyTotalCuLimit)
+	effectiveTotalCuOfProject := slices.Min(policyTotalCuLimit)
 	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
 
-	effectiveEpochCuOfProject := commontypes.FindMin(policyEpochCuLimit)
+	effectiveEpochCuOfProject := slices.Min(policyEpochCuLimit)
 
-	return commontypes.FindMin([]uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription})
+	slice := []uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}
+	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
 func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {
@@ -267,7 +310,13 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	for _, possibleAddr := range validAddresses {
 		providerAccAddr, err := sdk.AccAddressFromBech32(possibleAddr.Address)
 		if err != nil {
-			panic(fmt.Sprintf("invalid provider address saved in keeper %s, err: %s", providerAccAddr, err))
+			// panic:ok: provider address saved on chain must be valid
+			utils.LavaFormatPanic("critical: invalid provider address for payment", err,
+				utils.Attribute{Key: "chainID", Value: chainID},
+				utils.Attribute{Key: "client", Value: clientAddress},
+				utils.Attribute{Key: "provider", Value: providerAccAddr},
+				utils.Attribute{Key: "epochBlock", Value: epoch},
+			)
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
@@ -276,85 +325,4 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	}
 
 	return false, allowedCU, 0, projectID, nil
-}
-
-func (k Keeper) calculatePairingForClient(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, developerAddress string, epochStartBlock uint64, chainID string, epochHash []byte, providersToPair uint64) (validProviders []epochstoragetypes.StakeEntry, err error) {
-	if epochStartBlock > uint64(ctx.BlockHeight()) {
-		k.Logger(ctx).Error("\ninvalid session start\n")
-		panic(fmt.Sprintf("invalid session start saved in keeper %d, current block was %d", epochStartBlock, uint64(ctx.BlockHeight())))
-	}
-
-	spec, found := k.specKeeper.GetSpec(ctx, chainID)
-	if !found {
-		return nil, fmt.Errorf("spec not found or not enabled")
-	}
-
-	if spec.ProvidersTypes == spectypes.Spec_dynamic {
-		// calculates a hash and randomly chooses the providers
-		return k.returnSubsetOfProvidersByStake(ctx, developerAddress, providers, providersToPair, epochStartBlock, chainID, epochHash), nil
-	}
-
-	return providers, nil
-}
-
-// this function randomly chooses count providers by weight
-func (k Keeper) returnSubsetOfProvidersByStake(ctx sdk.Context, clientAddress string, providersMaps []epochstoragetypes.StakeEntry, count uint64, block uint64, chainID string, epochHash []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
-	stakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
-	hashData := make([]byte, 0)
-	for _, stakedProvider := range providersMaps {
-		stakeSum = stakeSum.Add(stakedProvider.Stake)
-	}
-	if stakeSum.IsZero() {
-		// list is empty
-		return returnedProviders
-	}
-
-	// add the session start block hash to the function to make it as unpredictable as we can
-	hashData = append(hashData, epochHash...)
-	hashData = append(hashData, chainID...)       // to make this pairing unique per chainID
-	hashData = append(hashData, clientAddress...) // to make this pairing unique per consumer
-
-	indexToSkip := make(map[int]bool) // a trick to create a unique set in golang
-	for it := 0; it < int(count); it++ {
-		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
-		bigIntNum := new(big.Int).SetBytes(hash)
-		hashAsNumber := sdk.NewIntFromBigInt(bigIntNum)
-		modRes := hashAsNumber.Mod(stakeSum.Amount)
-
-		newStakeSum := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(0))
-		// we loop the servicers list form the end because the list is sorted, biggest is last,
-		// and statistically this will have less iterations
-
-		for idx := len(providersMaps) - 1; idx >= 0; idx-- {
-			stakedProvider := providersMaps[idx]
-			if indexToSkip[idx] {
-				// this is an index we added
-				continue
-			}
-			newStakeSum = newStakeSum.Add(stakedProvider.Stake)
-			if modRes.LT(newStakeSum.Amount) {
-				// we hit our chosen provider
-				returnedProviders = append(returnedProviders, stakedProvider)
-				stakeSum = stakeSum.Sub(stakedProvider.Stake) // we remove this provider from the random pool, so the sum is lower now
-				indexToSkip[idx] = true
-				break
-			}
-		}
-		if uint64(len(returnedProviders)) >= count {
-			return returnedProviders
-		}
-		if stakeSum.IsZero() {
-			break
-		}
-		hashData = append(hashData, []byte{uint8(it)}...)
-	}
-	return returnedProviders
-}
-
-func (k Keeper) returnSubsetOfProvidersByHighestStake(ctx sdk.Context, providersEntries []epochstoragetypes.StakeEntry, count uint64) (returnedProviders []epochstoragetypes.StakeEntry) {
-	if uint64(len(providersEntries)) <= count {
-		return providersEntries
-	} else {
-		return providersEntries[0:count]
-	}
 }

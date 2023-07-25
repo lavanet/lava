@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,10 +9,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 )
@@ -31,31 +29,26 @@ func CmdStakeProvider() *cobra.Command {
 		Long: `args:
 		[chain-id] is the spec the provider wishes to support
 		[amount] is the ulava amount to be staked
-		[endpoint endpoint ...] are a space separated list of HOST:PORT,useType,geolocation, should be defined within "quotes"
-		[geolocation] should be the geolocation code to be staked for`,
-		Example: `lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com/rpc,jsonrpc,1" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
-		Args:    cobra.ExactArgs(4),
+		[endpoint endpoint ...] are a space separated list of HOST:PORT,geolocation,[apiInterface,apiInterface,addon,addon,] should be defined within "quotes". Note that you can specify the geolocation using a single uint64 (which will be treated as a bitmask (see plan.proto)) or using one of the geolocation codes. Valid geolocation codes: AF, AS, AU, EU, USE (US east), USC, USW, GL (global).
+		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
+		
+		IMPORTANT: endpoint should not contain your node URL, it should point to the grpc listener of your provider service defined in your provider config or cli args`,
+		Example: `
+		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider-africa.com:2221,AF" "my-provider-europe.com:2221,EU" AF,EU -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc,archive,trace" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+
+		Args: cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
 			if err != nil {
 				return err
 			}
-			tmpArg := strings.Fields(args[2])
-			argEndpoints := []epochstoragetypes.Endpoint{}
-			for _, endpointStr := range tmpArg {
-				splitted := strings.Split(endpointStr, ",")
-				if len(splitted) != 3 {
-					return fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,useType,geolocation HOST:PORT,useType,geolocation, received: %s", endpointStr)
-				}
-				geoloc, err := strconv.ParseUint(splitted[2], 10, 64)
-				if err != nil {
-					return fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
-				}
-				endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: splitted[1], Geolocation: geoloc}
-				argEndpoints = append(argEndpoints, endpoint)
-			}
-			argGeolocation, err := cast.ToUint64E(args[3])
+
+			argEndpoints, argGeolocation32, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
+			argGeolocation := uint64(argGeolocation32)
 			if err != nil {
 				return err
 			}
@@ -119,11 +112,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			specQuerier := spectypes.NewQueryClient(clientCtx)
-			allChains, err := specQuerier.ShowAllChains(context.Background(), &spectypes.QueryShowAllChainsRequest{})
-			if err != nil {
-				return utils.LavaFormatError("could not get the list of all chains, in order to construct the transaction", err)
-			}
 
 			handleBulk := func(cmd *cobra.Command, args []string) (msgs []sdk.Msg, err error) {
 				if len(args) != BULK_ARG_COUNT {
@@ -146,7 +134,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 					if err != nil {
 						return nil, fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
 					}
-					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], UseType: "STUB", Geolocation: geoloc}
+					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], Geolocation: geoloc}
 					argEndpoints[geoloc] = endpoint
 				}
 				argGeolocation, err := cast.ToUint64E(args[3])
@@ -154,20 +142,14 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				chainsToEndpointsMap := map[string][]string{}
-				for _, chainStructInfo := range allChains.ChainInfoList {
-					chainsToEndpointsMap[chainStructInfo.ChainID] = chainStructInfo.EnabledApiInterfaces
-				}
 				for _, chainID := range chainIDs {
 					if chainID == "" {
 						continue
 					}
-					interfacesForThisChainID := chainsToEndpointsMap[chainID]
 					allEndpoints := []epochstoragetypes.Endpoint{}
 					for geoloc, endpointForGeoloc := range argEndpoints {
-						endpoints := make([]epochstoragetypes.Endpoint, len(interfacesForThisChainID))
-						for idx, interfaceName := range interfacesForThisChainID {
-							endpoints[idx] = epochstoragetypes.Endpoint{IPPORT: endpointForGeoloc.IPPORT, Geolocation: geoloc, UseType: interfaceName}
+						endpoints := []epochstoragetypes.Endpoint{
+							{IPPORT: endpointForGeoloc.IPPORT, Geolocation: geoloc},
 						}
 						allEndpoints = append(allEndpoints, endpoints...)
 					}
@@ -206,4 +188,62 @@ func CmdBulkStakeProvider() *cobra.Command {
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
+}
+
+func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []epochstoragetypes.Endpoint, geo int32, err error) {
+	var endpointsGeoloc int32
+
+	// handle endpoints
+	for _, endpointStr := range endpArg {
+		split := strings.Split(endpointStr, ",")
+		if len(split) < 2 {
+			return nil, 0, fmt.Errorf("invalid endpoint format: %s", endpointStr)
+		}
+
+		geoloc, err := types.ParseGeoEnum(split[1])
+		if err != nil {
+			return nil, 0, fmt.Errorf("invalid endpoint format: %w, format: %s", err, strings.Join(split, ";"))
+		}
+
+		if geoloc == int32(planstypes.Geolocation_GL) {
+			// if global ("GL"), append the endpoint in all possible geolocations
+			for _, geoloc := range types.GetGeolocations() {
+				endpoint := epochstoragetypes.Endpoint{
+					IPPORT:      split[0],
+					Geolocation: uint64(geoloc),
+				}
+				if len(split) > 2 {
+					endpoint.Addons = split[2:]
+				}
+				endp = append(endp, endpoint)
+			}
+			endpointsGeoloc = int32(planstypes.Geolocation_GL)
+		} else {
+			// if not global, verify the geolocation is a single region and append as is
+			if !types.IsGeoEnumSingleBit(geoloc) {
+				return nil, 0, fmt.Errorf("endpoint must include exactly one geolocation code: %s", split[1])
+			}
+			endpoint := epochstoragetypes.Endpoint{
+				IPPORT:      split[0],
+				Geolocation: uint64(geoloc),
+			}
+			if len(split) > 2 {
+				endpoint.Addons = split[2:]
+			}
+			endp = append(endp, endpoint)
+			endpointsGeoloc |= geoloc
+		}
+	}
+	if geoArg != "*" {
+		// handle geolocation
+		geo, err = types.ParseGeoEnum(geoArg)
+		if err != nil {
+			return nil, 0, fmt.Errorf("invalid geolocation format: %w", err)
+		}
+
+		if geo != endpointsGeoloc {
+			return nil, 0, types.GeolocationNotMatchWithEndpointsError
+		}
+	}
+	return endp, endpointsGeoloc, nil
 }

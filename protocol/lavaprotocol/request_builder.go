@@ -10,9 +10,18 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+const (
+	debug = false
+)
+
+type HeaderFilterer interface {
+	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
+}
 
 type RelayRequestCommonData struct {
 	ChainID        string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
@@ -45,7 +54,7 @@ func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	requestData.Salt = nonceBytes
 }
 
-func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata) *pairingtypes.RelayPrivateData {
+func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addons []string) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
@@ -53,6 +62,7 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 		RequestBlock:   requestBlock,
 		ApiInterface:   apiInterface,
 		Metadata:       metadata,
+		Addon:          addons,
 	}
 	guid, found := utils.GetUniqueIdentifier(ctx)
 	if !found {
@@ -63,11 +73,16 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 }
 
 func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
-	var pQOS *pairingtypes.QualityOfServiceReport = nil
-	if singleConsumerSession.QoSInfo.LastQoSReport != nil {
-		QOS := *singleConsumerSession.QoSInfo.LastQoSReport
-		pQOS = &QOS
+	copyQoSServiceReport := func(reportToCopy *pairingtypes.QualityOfServiceReport) *pairingtypes.QualityOfServiceReport {
+		if reportToCopy != nil {
+			QOS := *reportToCopy
+			return &QOS
+		}
+		return nil
 	}
+
+	copiedQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastQoSReport)
+	copiedExcellenceQOS := copyQoSServiceReport(singleConsumerSession.QoSInfo.LastExcellenceQoSReport)
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
@@ -76,12 +91,13 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 		CuSum:                 singleConsumerSession.CuSum + singleConsumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,
 		RelayNum:              singleConsumerSession.RelayNum, // RelayNum is always incremented
-		QosReport:             pQOS,
+		QosReport:             copiedQOS,
 		Epoch:                 epoch,
 		UnresponsiveProviders: reportedProviders,
 		LavaChainId:           lavaChainID,
 		Sig:                   nil,
 		Badge:                 nil,
+		QosExcellenceReport:   copiedExcellenceQOS,
 	}
 }
 
@@ -117,8 +133,8 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func VerifyReliabilityResults(ctx context.Context, originalResult *RelayResult, dataReliabilityResult *RelayResult) (conflicts *conflicttypes.ResponseConflict) {
-	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, originalResult, dataReliabilityResult)
+func VerifyReliabilityResults(ctx context.Context, originalResult *RelayResult, dataReliabilityResult *RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
+	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, *originalResult.Reply, *originalResult.Request, *dataReliabilityResult.Reply, *dataReliabilityResult.Request, apiCollection, headerFilterer)
 	if conflict_now {
 		return detectionMessage
 	}
@@ -126,17 +142,57 @@ func VerifyReliabilityResults(ctx context.Context, originalResult *RelayResult, 
 	return nil
 }
 
-func compareRelaysFindConflict(ctx context.Context, result1 *RelayResult, result2 *RelayResult) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {
-	compare_result := bytes.Compare(result1.Reply.Data, result2.Reply.Data)
+func compareRelaysFindConflict(ctx context.Context, reply1 pairingtypes.RelayReply, request1 pairingtypes.RelayRequest, reply2 pairingtypes.RelayReply, request2 pairingtypes.RelayRequest, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflict bool, responseConflict *conflicttypes.ResponseConflict) {
+	// remove ignored headers so we can compare metadata and also send the signatures properly on chain
+	reply1.Metadata, _, _ = headerFilterer.HandleHeaders(reply1.Metadata, apiCollection, spectypes.Header_pass_reply)
+	reply2.Metadata, _, _ = headerFilterer.HandleHeaders(reply2.Metadata, apiCollection, spectypes.Header_pass_reply)
+	compare_result := bytes.Compare(reply1.Data, reply2.Data)
+	// TODO: compare metadata too
 	if compare_result == 0 {
 		// they have equal data
 		return false, nil
 	}
+
 	// they have different data! report!
-	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Data0", Value: string(result1.Reply.Data)}, utils.Attribute{Key: "Data1", Value: result2.Reply.Data})
+	utils.LavaFormatWarning("Simulation: DataReliability detected mismatching results, Reporting...", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "Data0", Value: string(reply1.Data)}, utils.Attribute{Key: "Data1", Value: reply2.Data})
 	responseConflict = &conflicttypes.ResponseConflict{
-		ConflictRelayData0: &conflicttypes.ConflictRelayData{Reply: result1.Reply, Request: result1.Request},
-		ConflictRelayData1: &conflicttypes.ConflictRelayData{Reply: result2.Reply, Request: result2.Request},
+		ConflictRelayData0: conflictconstruct.ConstructConflictRelayData(&reply1, &request1),
+		ConflictRelayData1: conflictconstruct.ConstructConflictRelayData(&reply2, &request2),
+	}
+	if debug {
+		firstAsString := string(reply1.Data)
+		secondAsString := string(reply2.Data)
+		_, idxDiff := findFirstDifferentChar(firstAsString, secondAsString)
+		if idxDiff > 0 && idxDiff+100 < len(firstAsString) && idxDiff+100 < len(secondAsString) {
+			utils.LavaFormatDebug("different in responses detected", utils.Attribute{Key: "index", Value: idxDiff}, utils.Attribute{Key: "first_diff", Value: firstAsString[idxDiff : idxDiff+100]}, utils.Attribute{Key: "second_diff", Value: secondAsString[idxDiff : idxDiff+100]})
+		}
 	}
 	return true, responseConflict
+}
+
+func findFirstDifferentChar(str1, str2 string) (rune, int) {
+	// Find the minimum length between the two strings
+	minLen := len(str1)
+	if len(str2) < minLen {
+		minLen = len(str2)
+	}
+
+	// Iterate over the characters and find the first difference
+	for i := 0; i < minLen; i++ {
+		if str1[i] != str2[i] {
+			return rune(str1[i]), i
+		}
+	}
+
+	// If the loop completes without finding a difference,
+	// return the first extra character from the longer string
+	if len(str1) != len(str2) {
+		if len(str1) < len(str2) {
+			return rune(str2[minLen]), minLen
+		}
+		return rune(str1[minLen]), minLen
+	}
+
+	// Return -1 if the strings are identical
+	return -1, -1
 }

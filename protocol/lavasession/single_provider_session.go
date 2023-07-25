@@ -21,6 +21,7 @@ type SingleProviderSession struct {
 	lock               sync.RWMutex
 	RelayNum           uint64
 	PairingEpoch       uint64
+	BadgeUserData      *ProviderSessionsEpochData
 	occupyingGuid      uint64 // used for tracking errors
 }
 
@@ -28,6 +29,10 @@ type SingleProviderSession struct {
 // is used to determine if the proof is beneficial and needs to be sent to rewardServer
 func (sps *SingleProviderSession) IsPayingRelay() bool {
 	return sps.LatestRelayCu > 0
+}
+
+func (sps *SingleProviderSession) IsBadgeSession() bool {
+	return sps.BadgeUserData != nil
 }
 
 func (sps *SingleProviderSession) writeCuSumAtomically(cuSum uint64) {
@@ -107,6 +112,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 	return nil
 }
 
+// if this errors out the caller needs to unlock the session, this is not implemented inside because code between getting the session and this needs the same behavior
 func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
@@ -134,31 +140,32 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 			relayRequestTotalCU = sps.CuSum // sets cuToAdd to 0
 		}
 
-		var cuErr error = nil
 		// verify there are enough missing cus allowed
-		canAddMissingCU := sps.userSessionsParent.SafeAddMissingComputeUnits(missingCU, allowedThreshold)
+		canAddMissingCU, totalMissingCu := sps.userSessionsParent.SafeAddMissingComputeUnits(missingCU, allowedThreshold)
 		if !canAddMissingCU {
-			cuErr = utils.LavaFormatWarning("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
+			return utils.LavaFormatWarning("CU mismatch PrepareSessionForUsage, Provider and consumer disagree on CuSum", ProviderConsumerCuMisMatch,
 				utils.Attribute{Key: "request.CuSum", Value: relayRequestTotalCU},
 				utils.Attribute{Key: "provider.CuSum", Value: sps.CuSum},
 				utils.Attribute{Key: "specCU", Value: cuFromSpec},
 				utils.Attribute{Key: "expected", Value: sps.CuSum + cuFromSpec},
 				utils.Attribute{Key: "GUID", Value: ctx},
 				utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
-				utils.Attribute{Key: "missingCUs", Value: missingCU},
+				utils.Attribute{Key: "currentMissingCUs", Value: missingCU},
+				utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
 				utils.Attribute{Key: "allowedThreshold", Value: allowedThreshold},
 			)
 		}
 		// verify missing cus aren't immediately expended and are scattered across the session duration
 
-		if cuErr != nil {
-			sps.lock.Unlock() // unlock on error
-			return cuErr
-		}
 		// there are missing CU but that's fine because it's within the threshold, and provider gets paid for the new request
 		// reading userSessionParent address because it's a fixed string value that isn't changing
-		utils.LavaFormatWarning("CU Mismatch within the threshold", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "missingCU", Value: missingCU}, utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
-			utils.Attribute{Key: "sessionID", Value: sps.SessionID}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
+		utils.LavaFormatWarning("CU Mismatch within the threshold", nil,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "currentMissingCU", Value: missingCU},
+			utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
+			utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
+			utils.Attribute{Key: "sessionID", Value: sps.SessionID},
+			utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
 	}
 
 	// if consumer wants to pay more, we need to adjust the payment. so next relay will be in sync
@@ -167,9 +174,19 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	// this must happen first, as we also validate and add the used cu to parent here
 	err = sps.validateAndAddUsedCU(cuToAdd, maxCu)
 	if err != nil {
-		sps.lock.Unlock() // unlock on error
 		return err
 	}
+
+	// Update badgeUsedCu in ProviderSessionsWithConsumer
+	if sps.IsBadgeSession() {
+		maxCuBadge := atomicReadBadgeMaxComputeUnits(sps.BadgeUserData)
+		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, sps.BadgeUserData)
+		if err != nil {
+			sps.lock.Unlock() // unlock on error
+			return err
+		}
+	}
+
 	// finished validating, can add all info.
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
@@ -182,6 +199,44 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		utils.Attribute{Key: "relayNum", Value: sps.RelayNum},
 	)
 	return nil
+}
+
+func (sps *SingleProviderSession) DisbandSession() error {
+	if sps.lock.TryLock() { // verify.
+		// if we managed to lock throw an error for misuse.
+		defer sps.lock.Unlock()
+		return utils.LavaFormatError("verifyLock failure, lock was free", LockMisUseDetectedError)
+	}
+	if sps.LatestRelayCu != 0 {
+		return utils.LavaFormatError("verifyLock failure, lock was free", LockMisUseDetectedError)
+	}
+	sps.lock.Unlock()
+	return nil
+}
+
+func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, maxCu uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+	for {
+		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
+		if badgeUsedCu+currentCU > maxCu {
+			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
+				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
+				utils.Attribute{Key: "currentCU", Value: currentCU},
+				utils.Attribute{Key: "maxCu", Value: maxCu},
+			)
+		}
+		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
+			return nil
+		}
+	}
+}
+
+func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+	for {
+		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)                                      // check used cu of badge user now
+		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of badge used cu from the known value
+			return nil
+		}
+	}
 }
 
 func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {
@@ -231,7 +286,11 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 
 	sps.CuSum -= sps.LatestRelayCu
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
+	if sps.IsBadgeSession() {
+		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, sps.BadgeUserData)
+	}
 	sps.LatestRelayCu = 0
+
 	return nil
 }
 

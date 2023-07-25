@@ -6,14 +6,13 @@ option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
 
-import "spec/service_api.proto"; 
+import "spec/api_collection.proto"; 
 import "cosmos/base/v1beta1/coin.proto";
 
 message Spec {
   string index = 1; 
   string name = 2; 
-  repeated string imports = 15;
-  repeated ServiceApi apis = 3 [(gogoproto.nullable) = false]; 
+  reserved 3; 
   bool enabled = 4;
   uint32 reliability_threshold = 5;
   bool data_reliability_enabled = 6;
@@ -24,11 +23,13 @@ message Spec {
   uint64 block_last_updated = 11;
   cosmos.base.v1beta1.Coin min_stake_provider = 12[(gogoproto.nullable) = false];
   cosmos.base.v1beta1.Coin min_stake_client = 13[(gogoproto.nullable) = false];
-
+  
   enum ProvidersTypes {
     dynamic = 0;
     static = 1;
   }
-
+  
   ProvidersTypes providers_types = 14;
+  repeated string imports = 15;
+  repeated ApiCollection api_collections = 16;
 }

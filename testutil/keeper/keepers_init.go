@@ -26,6 +26,8 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	protocolkeeper "github.com/lavanet/lava/x/protocol/keeper"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -56,6 +58,7 @@ type Keepers struct {
 	Pairing       pairingkeeper.Keeper
 	Projects      projectskeeper.Keeper
 	Plans         planskeeper.Keeper
+	Protocol      protocolkeeper.Keeper
 	ParamsKeeper  paramskeeper.Keeper
 	BlockStore    MockBlockStore
 }
@@ -66,6 +69,7 @@ type Servers struct {
 	PairingServer      pairingtypes.MsgServer
 	ConflictServer     conflicttypes.MsgServer
 	ProjectServer      projectstypes.MsgServer
+	ProtocolServer     protocoltypes.MsgServer
 	SubscriptionServer subscriptiontypes.MsgServer
 	PlansServer        planstypes.MsgServer
 }
@@ -102,6 +106,17 @@ func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, p
 	return err
 }
 
+func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
+	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -129,6 +144,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(projectsStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(projectsMemStoreKey, sdk.StoreTypeMemory, nil)
 
+	protocolStoreKey := sdk.NewKVStoreKey(protocoltypes.StoreKey)
+	protocolMemStoreKey := storetypes.NewMemoryStoreKey(protocoltypes.MemStoreKey)
+	stateStore.MountStoreWithDB(protocolStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(protocolMemStoreKey, sdk.StoreTypeMemory, nil)
+
 	subscriptionStoreKey := sdk.NewKVStoreKey(subscriptiontypes.StoreKey)
 	subscriptionMemStoreKey := storetypes.NewMemoryStoreKey(subscriptiontypes.MemStoreKey)
 	stateStore.MountStoreWithDB(subscriptionStoreKey, sdk.StoreTypeIAVL, db)
@@ -155,6 +175,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(spectypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
+	paramsKeeper.Subspace(protocoltypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -162,6 +183,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	pairingparamsSubspace, _ := paramsKeeper.GetSubspace(pairingtypes.ModuleName)
 
 	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
+
+	protocolparamsSubspace, _ := paramsKeeper.GetSubspace(protocoltypes.ModuleName)
 
 	projectsparamsSubspace, _ := paramsKeeper.GetSubspace(projectstypes.ModuleName)
 
@@ -181,8 +204,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage)
+	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
+	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans)
 	ks.ParamsKeeper = paramsKeeper
@@ -198,6 +222,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
+	ks.Protocol.SetParams(ctx, protocoltypes.DefaultParams())
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
@@ -209,6 +234,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
+	ss.ProtocolServer = protocolkeeper.NewMsgServerImpl(ks.Protocol)
 	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
@@ -12,12 +13,13 @@ import (
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
 
 type JsonrpcMessage struct {
-	Version string               `json:"jsonrpc,omitempty"`
-	ID      json.RawMessage      `json:"id,omitempty"`
-	Method  string               `json:"method,omitempty"`
-	Params  interface{}          `json:"params,omitempty"`
-	Error   *rpcclient.JsonError `json:"error,omitempty"`
-	Result  json.RawMessage      `json:"result,omitempty"`
+	Version                string               `json:"jsonrpc,omitempty"`
+	ID                     json.RawMessage      `json:"id,omitempty"`
+	Method                 string               `json:"method,omitempty"`
+	Params                 interface{}          `json:"params,omitempty"`
+	Error                  *rpcclient.JsonError `json:"error,omitempty"`
+	Result                 json.RawMessage      `json:"result,omitempty"`
+	chainproxy.BaseMessage `json:"-"`
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
@@ -41,11 +43,20 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 	return msg, nil
 }
 
+func (gm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return false
+}
+
 func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
 	msg := &JsonrpcMessage{}
 	err := json.Unmarshal(input, msg)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
+	}
+
+	// Make sure the response does not have an error
+	if msg.Error != nil && msg.Result == nil {
+		return nil, utils.LavaFormatError("response is an error message", msg.Error)
 	}
 	return ParsableRPCInput{Result: msg.Result}, nil
 }

@@ -3,40 +3,39 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUnstakeStaticProvider(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+	ts := newTester(t)
 
-	spec := common.CreateMockSpec()
-	spec.ProvidersTypes = spectypes.Spec_static
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+	// will overwrite the default "mock" spec
+	ts.spec.ProvidersTypes = spectypes.Spec_static
+	ts.AddSpec("mock", ts.spec)
 
-	balance := 5 * spec.MinStakeProvider.Amount.Int64()
-	provider := common.CreateNewAccount(ctx, *keepers, balance)
+	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
+	providerAcct, providerAddr := ts.AddAccount(common.PROVIDER, 0, balance)
 
-	common.StakeAccount(t, ctx, *keepers, *servers, provider, spec, balance/2)
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-
-	unstakeHoldBlocks := keepers.Epochstorage.UnstakeHoldBlocks(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-	unstakeHoldBlocksStatic := keepers.Epochstorage.UnstakeHoldBlocksStatic(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-
-	_, err := servers.PairingServer.UnstakeProvider(ctx, &types.MsgUnstakeProvider{Creator: provider.Addr.String(), ChainID: spec.Index})
+	err := ts.StakeProvider(providerAddr, ts.spec, balance/2)
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceBlocks(ctx, keepers, int(unstakeHoldBlocks))
+	ts.AdvanceEpoch()
 
-	_, found, _ := keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ctx), provider.Addr)
+	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
+	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
+
+	_, err = ts.TxPairingUnstakeProvider(providerAddr, ts.spec.Index)
+	require.Nil(t, err)
+
+	ts.AdvanceBlocks(unstakeHoldBlocks)
+
+	_, found, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
 	require.True(t, found)
 
-	ctx = testkeeper.AdvanceBlocks(ctx, keepers, int(unstakeHoldBlocksStatic-unstakeHoldBlocks))
+	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
-	_, found, _ = keepers.Epochstorage.UnstakeEntryByAddress(sdk.UnwrapSDKContext(ctx), provider.Addr)
+	_, found, _ = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
 	require.False(t, found)
 }

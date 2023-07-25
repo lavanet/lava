@@ -13,6 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/lavanet/lava/protocol/common"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -328,6 +330,10 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 		newLatestBlock, err = cs.fetchLatestBlockNum(ctx)
 	}
 	if err != nil {
+		// Add suggestion if error is due to context deadline exceeded
+		if common.ContextDeadlineExceededError.Is(err) {
+			utils.LavaFormatError("suggestion -- If you encounter a 'context deadline exceeded' error, consider increasing the timeout configuration in the 'node-url' config option. Sometimes, the initial HTTPS/WSS communication takes a long time to establish a connection.", nil)
+		}
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
@@ -336,6 +342,10 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 		_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 	}
 	if err != nil {
+		// Add suggestion if error is due to context deadline exceeded
+		if common.ContextDeadlineExceededError.Is(err) {
+			utils.LavaFormatError("suggestion -- If you encounter a 'context deadline exceeded' error, consider increasing the timeout configuration in the 'node-url' config option. Sometimes, the initial HTTPS/WSS communication takes a long time to establish a connection.", nil)
+		}
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	return nil
@@ -427,4 +437,18 @@ func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
 		backoff = maxIncrease
 	}
 	return backoff
+}
+
+func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock int64, toBlock int64, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesMapRet map[int64]interface{}) {
+	for _, block := range requestedHashes {
+		if block.Block == requestBlock {
+			requestedBlockHash = []byte(block.Hash)
+			if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
+				finalizedBlockHashes[block.Block] = block.Hash
+			}
+		} else {
+			finalizedBlockHashes[block.Block] = block.Hash
+		}
+	}
+	return requestedBlockHash, finalizedBlockHashes
 }

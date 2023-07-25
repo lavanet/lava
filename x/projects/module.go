@@ -139,18 +139,22 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 	// register v2 -> v3 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.Migrate2to3); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
 	// register v3 -> v4 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.Migrate3to4); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v4: %w", types.ModuleName, err))
 	}
 	// register v4 -> v5 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.Migrate4to5); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
 	// register v5 -> v6 migration
 	if err := cfg.RegisterMigration(types.ModuleName, 5, migrator.Migrate5to6); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
 }

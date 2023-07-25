@@ -2,8 +2,11 @@ package chainproxy
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/lavanet/lava/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
@@ -15,8 +18,53 @@ type CustomParsingMessage interface {
 	NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error)
 }
 
+type BaseMessage struct {
+	Headers                 []pairingtypes.Metadata
+	LatestBlockHeaderSetter *spectypes.ParseDirective
+}
+
+// appends only headers that do not exist
+func (bm *BaseMessage) AppendHeader(metadata []pairingtypes.Metadata) {
+	existing := map[string]struct{}{}
+	for _, metadataEntry := range bm.Headers {
+		existing[metadataEntry.Name] = struct{}{}
+	}
+	for _, metadataEntry := range metadata {
+		if _, ok := existing[metadataEntry.Name]; !ok {
+			bm.Headers = append(bm.Headers, metadataEntry)
+		}
+	}
+}
+
+func (bm *BaseMessage) SetLatestBlockWithHeader(latestBlock uint64, modifyContent bool) (done bool) {
+	if bm.LatestBlockHeaderSetter == nil {
+		return false
+	}
+	headerValue := fmt.Sprintf(bm.LatestBlockHeaderSetter.FunctionTemplate, latestBlock)
+	for idx, header := range bm.Headers {
+		if header.Name == bm.LatestBlockHeaderSetter.ApiName {
+			if modifyContent {
+				bm.Headers[idx].Value = headerValue
+			}
+			return true
+		}
+	}
+	if modifyContent {
+		bm.Headers = append(bm.Headers, pairingtypes.Metadata{
+			Name:  bm.LatestBlockHeaderSetter.ApiName,
+			Value: headerValue,
+		})
+	}
+	return true
+}
+
+func (bm BaseMessage) GetHeaders() []pairingtypes.Metadata {
+	return bm.Headers
+}
+
 type DefaultRPCInput struct {
 	Result json.RawMessage
+	BaseMessage
 }
 
 func (dri DefaultRPCInput) GetParams() interface{} {

@@ -52,19 +52,22 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
-	GetSpecApiByTag(tag string) (specApi spectypes.ServiceApi, existed bool)
-	CraftMessage(serviceApi spectypes.ServiceApi, craftData *CraftData) (ChainMessageForSend, error)
+	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool)
+	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
+	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 }
 
 type ChainMessage interface {
 	RequestedBlock() int64
+	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
+	AppendHeader(metadata []pairingtypes.Metadata)
 	ChainMessageForSend
 }
 
 type ChainMessageForSend interface {
-	GetServiceApi() *spectypes.ServiceApi
-	GetInterface() *spectypes.ApiInterface
+	GetApi() *spectypes.Api
 	GetRPCMessage() parser.RPCInput
+	GetApiCollection() *spectypes.ApiCollection
 }
 
 type RelaySender interface {
@@ -83,21 +86,28 @@ type ChainListener interface {
 	Serve(ctx context.Context)
 }
 
+type ChainRouter interface {
+	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, addons []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
+	GetSupportedExtensions() []string
+}
+
 type ChainProxy interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) // has to be thread safe, reuse code within ParseMsg as common functionality
 }
 
-func GetChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
-	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+func GetChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainRouter, error) {
+	var proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)
 	switch rpcProviderEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime, chainParser)
+		proxyConstructor = NewJrpcChainProxy
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewtendermintRpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+		proxyConstructor = NewtendermintRpcChainProxy
 	case spectypes.APIInterfaceRest:
-		return NewRestChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime)
+		proxyConstructor = NewRestChainProxy
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainProxy(ctx, nConns, rpcProviderEndpoint, averageBlockTime, chainParser)
+		proxyConstructor = NewGrpcChainProxy
+	default:
+		return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
 	}
-	return nil, fmt.Errorf("chain proxy for apiInterface (%s) not found", rpcProviderEndpoint.ApiInterface)
+	return newChainRouter(ctx, nConns, *rpcProviderEndpoint, chainParser, proxyConstructor)
 }

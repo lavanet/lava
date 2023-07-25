@@ -12,6 +12,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 	k.InitSubscriptions(ctx, genState.SubsFS)
+	k.InitSubscriptionsTimers(ctx, genState.SubsTS)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
@@ -19,6 +20,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
 	genesis.SubsFS = k.ExportSubscriptions(ctx)
+	genesis.SubsTS = k.ExportSubscriptionsTimers(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
