@@ -22,7 +22,7 @@ func (re RelayExchange) GetSignature() []byte {
 	return re.Reply.Sig
 }
 
-func (re RelayExchange) PrepareForSignature() []byte {
+func (re RelayExchange) DataToSign() []byte {
 	re.Reply.Sig = []byte{}
 	metadataBytes := make([]byte, 0)
 	for _, metadata := range re.Reply.GetMetadata() {

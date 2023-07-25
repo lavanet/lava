@@ -17,15 +17,15 @@ import (
 type Signable interface {
 	// GetSignature gets the object's signature
 	GetSignature() []byte
-	// DataToSign process the object's data before it's hashed and signed
-	PrepareForSignature() []byte
+	// DataToSign processes the object's data before it's hashed and signed
+	DataToSign() []byte
 	// HashRounds gets the number of times the object's data is hashed before it's signed
 	HashCount() int
 }
 
 // Sign creates a signature for a struct. The prepareFunc prepares the struct before extracting the data for the signature
 func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
-	msgData := data.PrepareForSignature()
+	msgData := data.DataToSign()
 	for i := 0; i < data.HashCount(); i++ {
 		msgData = HashMsg(msgData)
 	}
@@ -55,7 +55,7 @@ func ExtractSignerAddress(data Signable) (sdk.AccAddress, error) {
 func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	sig := data.GetSignature()
 
-	msgData := data.PrepareForSignature()
+	msgData := data.DataToSign()
 	for i := 0; i < data.HashCount(); i++ {
 		msgData = HashMsg(msgData)
 	}

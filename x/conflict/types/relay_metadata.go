@@ -4,7 +4,7 @@ func (rm ReplyMetadata) GetSignature() []byte {
 	return rm.Sig
 }
 
-func (rm ReplyMetadata) PrepareForSignature() []byte {
+func (rm ReplyMetadata) DataToSign() []byte {
 	return rm.HashAllDataHash
 }
 

@@ -35,7 +35,7 @@ func (b Badge) GetSignature() []byte {
 	return b.ProjectSig
 }
 
-func (b Badge) PrepareForSignature() []byte {
+func (b Badge) DataToSign() []byte {
 	b.ProjectSig = []byte{}
 	return []byte(b.String())
 }

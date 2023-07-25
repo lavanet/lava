@@ -245,7 +245,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	}
 
 	relayExchange := pairingtypes.NewRelayExchange(*relay, *reply)
-	allDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
+	allDataHash := sigs.HashMsg(relayExchange.DataToSign())
 	utils.LavaFormatDebug("honest provider allDataHash", utils.Attribute{Key: "hash", Value: fmt.Sprintf("%#v", allDataHash)})
 
 	// now send this to another provider

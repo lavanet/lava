@@ -11,7 +11,7 @@ func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.Re
 		return nil
 	}
 	relayExchange := pairingtypes.NewRelayExchange(*req, *reply)
-	allDataHash := sigs.HashMsg(relayExchange.PrepareForSignature())
+	allDataHash := sigs.HashMsg(relayExchange.DataToSign())
 	res := &types.ReplyMetadata{
 		HashAllDataHash:       sigs.HashMsg(allDataHash),
 		Sig:                   reply.Sig,

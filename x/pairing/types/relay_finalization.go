@@ -21,7 +21,7 @@ func (rf RelayFinalization) GetSignature() []byte {
 	return rf.Exchange.Reply.SigBlocks
 }
 
-func (rf RelayFinalization) PrepareForSignature() []byte {
+func (rf RelayFinalization) DataToSign() []byte {
 	relaySessionHash := tendermintcrypto.Sha256(rf.Exchange.Request.RelaySession.CalculateHashForFinalization())
 	latestBlockBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(rf.Exchange.Reply.LatestBlock))
