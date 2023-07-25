@@ -24,76 +24,86 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 },
-                "apis": [
+                "api_collections": [
                     {
-                        "name": "eth_getBlockRange",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
                         "enabled": true,
-                        "api_interfaces": [
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
                             {
+                                "name": "eth_getBlockRange",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "rollup_getInfo",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "rollup_getInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
-                            }
-                        ]
-                    },
-                    {
-                        "name": "rollup_gasPrices",
-                        "block_parsing": {
-                            "parser_arg": [
-                                "latest"
-                            ],
-                            "parser_func": "DEFAULT"
-                        },
-                        "compute_units": "10",
-                        "enabled": true,
-                        "api_interfaces": [
+                            },
                             {
+                                "name": "rollup_gasPrices",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": "10",
+                                "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "interface": "jsonrpc",
-                                "type": "POST",
                                 "extra_compute_units": "0"
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_CHAIN_ID",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "hex",
+                                    "default_value": "0x1389"
+                                },
+                                "api_name": "eth_chainId"
                             }
                         ]
                     }
