@@ -2,9 +2,9 @@ package types
 
 import (
 	"bytes"
-	"encoding/binary"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils/sigs"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
@@ -23,8 +23,7 @@ func (rf RelayFinalization) GetSignature() []byte {
 
 func (rf RelayFinalization) DataToSign() []byte {
 	relaySessionHash := tendermintcrypto.Sha256(rf.Exchange.Request.RelaySession.CalculateHashForFinalization())
-	latestBlockBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(rf.Exchange.Reply.LatestBlock))
+	latestBlockBytes := sigs.Encode(uint64(rf.Exchange.Reply.LatestBlock))
 	return bytes.Join([][]byte{latestBlockBytes, rf.Exchange.Reply.FinalizedBlocksHashes, rf.Addr, relaySessionHash}, nil)
 }
 

@@ -1,8 +1,7 @@
 package types
 
 import (
-	"encoding/binary"
-
+	"github.com/lavanet/lava/utils/sigs"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
@@ -37,8 +36,7 @@ const (
 )
 
 func CommitVoteData(nonce int64, dataHash []byte, providerAddress string) []byte {
-	commitData := make([]byte, 8) // nonce bytes
-	binary.LittleEndian.PutUint64(commitData, uint64(nonce))
+	commitData := sigs.Encode(uint64(nonce))
 	commitData = append(commitData, dataHash...)
 	commitData = append(commitData, []byte(providerAddress)...)
 	commitDataHash := tendermintcrypto.Sha256(commitData)

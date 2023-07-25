@@ -1,6 +1,7 @@
 package sigs
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -70,6 +71,12 @@ func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	pk := recPub.SerializeCompressed()
 
 	return (secp256k1.PubKey)(pk), nil
+}
+
+func Encode(val uint64) []byte {
+	encodedVal := make([]byte, 8)
+	binary.LittleEndian.PutUint64(encodedVal, val)
+	return encodedVal
 }
 
 func GetKeyName(clientCtx client.Context) (string, error) {

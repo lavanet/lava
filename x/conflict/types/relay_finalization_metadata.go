@@ -2,9 +2,9 @@ package types
 
 import (
 	"bytes"
-	"encoding/binary"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
@@ -25,8 +25,7 @@ func (rfm RelayFinalizationMetaData) GetSignature() []byte {
 
 func (rfm RelayFinalizationMetaData) DataToSign() []byte {
 	relaySessionHash := tendermintcrypto.Sha256(rfm.Request.RelaySession.CalculateHashForFinalization())
-	latestBlockBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(latestBlockBytes, uint64(rfm.MetaData.LatestBlock))
+	latestBlockBytes := sigs.Encode(uint64(rfm.MetaData.LatestBlock))
 	return bytes.Join([][]byte{latestBlockBytes, rfm.MetaData.FinalizedBlocksHashes, rfm.Addr, relaySessionHash}, nil)
 }
 

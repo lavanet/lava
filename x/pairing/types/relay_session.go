@@ -2,7 +2,8 @@ package types
 
 import (
 	"bytes"
-	"encoding/binary"
+
+	"github.com/lavanet/lava/utils/sigs"
 )
 
 func (rs RelaySession) GetSignature() []byte {
@@ -20,11 +21,8 @@ func (rs RelaySession) HashRounds() int {
 }
 
 func (rs RelaySession) CalculateHashForFinalization() []byte {
-	sessionIdBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(sessionIdBytes, rs.SessionId)
-	blockHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(blockHeightBytes, uint64(rs.Epoch))
-	relayNumBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(relayNumBytes, rs.RelayNum)
+	sessionIdBytes := sigs.Encode(rs.SessionId)
+	blockHeightBytes := sigs.Encode(uint64(rs.Epoch))
+	relayNumBytes := sigs.Encode(rs.RelayNum)
 	return bytes.Join([][]byte{sessionIdBytes, blockHeightBytes, relayNumBytes}, nil)
 }

@@ -1,14 +1,14 @@
-package sigs
+package types
 
 import (
 	"testing"
 
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/stretchr/testify/require"
 )
 
 func TestExtractSignerAddressFromBadge(t *testing.T) {
-	pkey, addr := GenerateFloatingKey()
+	pkey, addr := sigs.GenerateFloatingKey()
 
 	tests := []struct {
 		name          string
@@ -20,12 +20,12 @@ func TestExtractSignerAddressFromBadge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			badge := pairingtypes.CreateBadge(100, 0, addr, "lava", tt.predefinedSig)
-			sig, err := Sign(pkey, *badge)
+			badge := CreateBadge(100, 0, addr, "lava", tt.predefinedSig)
+			sig, err := sigs.Sign(pkey, *badge)
 			require.Nil(t, err)
 			badge.ProjectSig = sig
 
-			extractedAddr, err := ExtractSignerAddress(*badge)
+			extractedAddr, err := sigs.ExtractSignerAddress(*badge)
 			require.Nil(t, err)
 			require.Equal(t, addr, extractedAddr)
 		})

@@ -2,10 +2,10 @@ package types
 
 import (
 	"bytes"
-	"encoding/binary"
 	"strings"
 
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 )
 
 // RelayExchange consists a relay request and its corresponding response
@@ -42,12 +42,11 @@ func (re RelayExchange) HashRounds() int {
 }
 
 func (rp RelayPrivateData) GetContentHashData() []byte {
-	requestBlockBytes := make([]byte, 8)
 	var metadataBytes []byte
 	for _, metadataEntry := range rp.Metadata {
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
 	}
-	binary.LittleEndian.PutUint64(requestBlockBytes, uint64(rp.RequestBlock))
+	requestBlockBytes := sigs.Encode(uint64(rp.RequestBlock))
 	msgData := bytes.Join([][]byte{metadataBytes, []byte(strings.Join(rp.Addon, "")), []byte(rp.ApiInterface), []byte(rp.ConnectionType), []byte(rp.ApiUrl), rp.Data, requestBlockBytes, rp.Salt}, nil)
 	return msgData
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 )
@@ -232,9 +233,7 @@ func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndA
 
 // GetSpecIDBytes returns the byte representation of the ID
 func GetSpecIDBytes(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return bz
+	return sigs.Encode(id)
 }
 
 // GetSpecIDFromBytes returns ID in uint64 format from a byte array
