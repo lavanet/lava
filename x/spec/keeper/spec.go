@@ -233,7 +233,7 @@ func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndA
 
 // GetSpecIDBytes returns the byte representation of the ID
 func GetSpecIDBytes(id uint64) []byte {
-	return sigs.Encode(id)
+	return sigs.EncodeUint64(id)
 }
 
 // GetSpecIDFromBytes returns ID in uint64 format from a byte array

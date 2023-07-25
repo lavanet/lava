@@ -73,7 +73,7 @@ func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	return (secp256k1.PubKey)(pk), nil
 }
 
-func Encode(val uint64) []byte {
+func EncodeUint64(val uint64) []byte {
 	encodedVal := make([]byte, 8)
 	binary.LittleEndian.PutUint64(encodedVal, val)
 	return encodedVal

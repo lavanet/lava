@@ -49,7 +49,7 @@ func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
 }
 
 func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
-	nonceBytes := sigs.Encode(value)
+	nonceBytes := sigs.EncodeUint64(value)
 	requestData.Salt = nonceBytes
 }
 

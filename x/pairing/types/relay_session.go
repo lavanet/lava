@@ -19,9 +19,9 @@ func (rs RelaySession) HashRounds() int {
 }
 
 func (rs RelaySession) CalculateHashForFinalization() []byte {
-	sessionIdBytes := sigs.Encode(rs.SessionId)
-	blockHeightBytes := sigs.Encode(uint64(rs.Epoch))
-	relayNumBytes := sigs.Encode(rs.RelayNum)
+	sessionIdBytes := sigs.EncodeUint64(rs.SessionId)
+	blockHeightBytes := sigs.EncodeUint64(uint64(rs.Epoch))
+	relayNumBytes := sigs.EncodeUint64(rs.RelayNum)
 	msgParts := [][]byte{
 		sessionIdBytes,
 		blockHeightBytes,

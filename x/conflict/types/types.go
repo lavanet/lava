@@ -36,7 +36,7 @@ const (
 )
 
 func CommitVoteData(nonce int64, dataHash []byte, providerAddress string) []byte {
-	commitData := sigs.Encode(uint64(nonce))
+	commitData := sigs.EncodeUint64(uint64(nonce))
 	commitData = append(commitData, dataHash...)
 	commitData = append(commitData, []byte(providerAddress)...)
 	commitDataHash := tendermintcrypto.Sha256(commitData)
