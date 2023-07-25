@@ -14,10 +14,12 @@ import (
 )
 
 func TestSave(t *testing.T) {
+	providerAddr := "providerAddr"
+	specId := "specId"
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB(providerAddr, specId, db)
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
+	proof := common.BuildRelayRequest(ctx, providerAddr, []byte{}, uint64(0), specId, nil)
 
 	saved, err := rs.Save("consumerAddr", "consumerKey", proof)
 	require.True(t, saved)
@@ -30,10 +32,12 @@ func TestSave(t *testing.T) {
 }
 
 func TestFindOne(t *testing.T) {
+	providerAddr := "providerAddr"
+	specId := "specId"
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB(providerAddr, specId, db)
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
+	proof := common.BuildRelayRequest(ctx, providerAddr, []byte{}, uint64(0), specId, nil)
 	proof.Epoch = 1
 
 	_, err := rs.Save("consumerAddr", "consumerKey", proof)
@@ -45,12 +49,14 @@ func TestFindOne(t *testing.T) {
 }
 
 func TestDeleteClaimedRewards(t *testing.T) {
+	providerAddr := "providerAddr"
+	specId := "specId"
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB(providerAddr, specId, db)
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
-	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
+	proof := common.BuildRelayRequest(ctx, providerAddr, []byte{}, uint64(0), specId, nil)
 	proof.Epoch = 1
 
 	sig, err := sigs.SignRelay(privKey, *proof)
@@ -69,12 +75,14 @@ func TestDeleteClaimedRewards(t *testing.T) {
 }
 
 func TestDeleteEpochRewards(t *testing.T) {
+	providerAddr := "providerAddr"
+	specId := "specId"
 	db := rewardserver.NewMemoryDB()
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB(providerAddr, specId, db)
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
-	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
+	proof := common.BuildRelayRequest(ctx, providerAddr, []byte{}, uint64(0), specId, nil)
 	proof.Epoch = 1
 
 	sig, err := sigs.SignRelay(privKey, *proof)
@@ -93,10 +101,12 @@ func TestDeleteEpochRewards(t *testing.T) {
 }
 
 func TestRewardsWithTTL(t *testing.T) {
+	providerAddr := "providerAddr"
+	specId := "specId"
 	db := rewardserver.NewMemoryDB()
 	// really really short TTL to make sure the rewards are not queryable
 	ttl := 10 * time.Microsecond
-	rs := rewardserver.NewRewardDBWithTTL(db, ttl)
+	rs := rewardserver.NewRewardDBWithTTL(providerAddr, specId, db, ttl)
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 

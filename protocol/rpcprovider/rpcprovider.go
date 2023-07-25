@@ -87,10 +87,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 	rpcp.providerStateTracker = providerStateTracker
 	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
-	// single reward server
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDBWithTTL(rewardserver.NewLocalDB(rewardStoragePath), rewardTTL))
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
-	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
+
+	localDB := rewardserver.NewLocalDB(rewardStoragePath)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -218,6 +216,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
+
+			rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDBWithTTL(addr.String(), rpcProviderEndpoint.ChainID, localDB, rewardTTL))
+			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
+			rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 
 			rpcProviderServer := &RPCProviderServer{}
 			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainRouter, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
