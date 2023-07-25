@@ -30,10 +30,9 @@ import {
   MAX_ATTEMPTS,
   createDeveloperKey,
   generateKey,
-  getKey,
+  getDeveloperKey,
   sleep,
 } from "../util/create-key";
-import axios from "axios";
 /**
  * Options for sending RPC relay.
  */
@@ -175,38 +174,45 @@ export class LavaSDK {
     console.log("✅ Key was generated successfully");
 
     try {
-      await createDeveloperKey(apiSecretKey, lavaAddress);
+      const res = await createDeveloperKey(apiSecretKey, lavaAddress);
+
+      if (res?.status !== "ok") {
+        throw new Error(
+          "Error: send request to create a developer key. " + res.message ?? ""
+        );
+      }
+
       console.log(
         "We're syncing your key with the project. It might take a few minutes."
       );
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("❌Error: ", error.response?.data.message);
-      } else {
-        console.error("❌Unknown Error: ", error);
-      }
-      return;
-    }
 
-    let developerKeyStatus: DeveloperKeyStatus;
-    let attemptsCounter = MAX_ATTEMPTS;
+      let attemptsCounter = MAX_ATTEMPTS;
 
-    while (true) {
-      const data = await getKey(apiSecretKey, lavaAddress);
-      developerKeyStatus = data.data.status;
-      if (developerKeyStatus === DeveloperKeyStatus.SYNCED) {
-        break;
-      } else {
-        attemptsCounter--;
-        if (attemptsCounter === 0) {
-          console.log("❌Error: Timeout");
-          return;
+      while (true) {
+        const data = await getDeveloperKey(apiSecretKey, lavaAddress);
+
+        if (data.status === DeveloperKeyStatus.SYNCED) {
+          console.log("✅ Key was synced successfully");
+          break;
+        } else {
+          if (data.status !== DeveloperKeyStatus.PENDING) {
+            throw new Error(
+              "Error: failed to get developer key. data returned: " +
+                JSON.stringify(data)
+            );
+          }
+          attemptsCounter--;
+          if (attemptsCounter === 0) {
+            throw new Error(
+              "Error: Timeout checking if the key was synced successfully \n Please check manually in the Gateway if the key was added"
+            );
+          }
+          await sleep(10000);
         }
-        await sleep(10000);
       }
+    } catch (error) {
+      console.error(error);
     }
-
-    console.log("✅ Key was synced successfully");
 
     return { lavaAddress, privateKey, seedPhrase: seedPhrase.toString() };
   }

@@ -12,8 +12,7 @@ import {
 } from "@cosmjs/crypto";
 import { toBech32 } from "@cosmjs/encoding";
 import elliptic from "elliptic";
-import axios from "axios";
-import { uuid } from "uuidv4";
+import { v4 } from "uuid";
 
 export const MAX_ATTEMPTS = 10;
 
@@ -35,12 +34,7 @@ export type DeveloperKeyParams = {
   name: string;
 };
 
-const GW_BACKEND_URL = "https://gateway-master.lava-cybertron.xyz/sdk";
-// const GW_BACKEND_URL = "http://127.0.0.1:4455/sdk";
-
-export const axiosInstance = axios.create({
-  baseURL: `${GW_BACKEND_URL}/api/sdk`,
-});
+const GW_BACKEND_URL_PROD = "https://gateway-master.lavanet.xyz/sdk";
 
 export const generateKey = async (): Promise<GeneratedKeyType> => {
   const prefix = "lava@";
@@ -62,37 +56,42 @@ export const generateKey = async (): Promise<GeneratedKeyType> => {
   return { address, privateHex, mnemonicChecked };
 };
 
-export async function getKey(
+export async function getDeveloperKey(
   apiAccessKey: string,
-  developerKey: string
+  developerKey: string,
+  url: string = GW_BACKEND_URL_PROD
 ): Promise<any> {
-  return await axiosInstance.get(`/developer-keys/${developerKey}`, {
-    headers: {
-      "api-access-key": apiAccessKey,
-    },
-  });
-}
-
-export async function getKeys(apiAccessKey: string): Promise<any> {
-  const { data } = await axiosInstance.get(`/developer-keys`, {
-    headers: {
-      "api-access-key": apiAccessKey,
-    },
-  });
-  return data;
+  const response = await fetch(
+    `${url}/api/sdk/developer-keys/${developerKey}`,
+    {
+      headers: {
+        "api-access-key": apiAccessKey,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return await response.json();
 }
 
 export async function createDeveloperKey(
   apiAccessKey: string,
-  developerKey: string
+  developerKey: string,
+  url: string = GW_BACKEND_URL_PROD
 ) {
   const keyParams: DeveloperKeyParams = {
     projectKey: developerKey,
-    name: `SDK Generated Key-${uuid().toLowerCase()}`,
+    name: `SDK Generated Key-${v4().toLowerCase()}`,
   };
-  return await axiosInstance.post(`/developer-keys/`, keyParams, {
-    headers: { "api-access-key": apiAccessKey },
+
+  const response = await fetch(`${url}/api/sdk/developer-keys/`, {
+    method: "POST",
+    headers: {
+      "api-access-key": apiAccessKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(keyParams),
   });
+  return await response.json();
 }
 
 export function sleep(delayMS: number) {

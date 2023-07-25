@@ -22,7 +22,6 @@ const common_1 = require("../util/common");
 const providers_1 = require("../lavaOverLava/providers");
 const default_1 = require("../config/default");
 const create_key_1 = require("../util/create-key");
-const axios_1 = __importDefault(require("axios"));
 class LavaSDK {
     /**
      * Create Lava-SDK instance
@@ -94,35 +93,34 @@ class LavaSDK {
             const { address: lavaAddress, privateHex: privateKey, mnemonicChecked: seedPhrase, } = yield (0, create_key_1.generateKey)();
             console.log("✅ Key was generated successfully");
             try {
-                yield (0, create_key_1.createDeveloperKey)(apiSecretKey, lavaAddress);
+                const res = yield (0, create_key_1.createDeveloperKey)(apiSecretKey, lavaAddress);
+                if ((res === null || res === void 0 ? void 0 : res.status) !== "ok") {
+                    throw new Error((_a = "Error: send request to create a developer key. " + res.message) !== null && _a !== void 0 ? _a : "");
+                }
                 console.log("We're syncing your key with the project. It might take a few minutes.");
+                let attemptsCounter = create_key_1.MAX_ATTEMPTS;
+                while (true) {
+                    const data = yield (0, create_key_1.getDeveloperKey)(apiSecretKey, lavaAddress);
+                    if (data.status === create_key_1.DeveloperKeyStatus.SYNCED) {
+                        console.log("✅ Key was synced successfully");
+                        break;
+                    }
+                    else {
+                        if (data.status !== create_key_1.DeveloperKeyStatus.PENDING) {
+                            throw new Error("Error: failed to get developer key. data returned: " +
+                                JSON.stringify(data));
+                        }
+                        attemptsCounter--;
+                        if (attemptsCounter === 0) {
+                            throw new Error("Error: Timeout checking if the key was synced successfully \n Please check manually in the Gateway if the key was added");
+                        }
+                        yield (0, create_key_1.sleep)(10000);
+                    }
+                }
             }
             catch (error) {
-                if (axios_1.default.isAxiosError(error)) {
-                    console.error("❌Error: ", (_a = error.response) === null || _a === void 0 ? void 0 : _a.data.message);
-                }
-                else {
-                    console.error("❌Unknown Error: ", error);
-                }
-                // return;
+                console.error(error);
             }
-            let developerKeyStatus;
-            let attemptsCounter = create_key_1.MAX_ATTEMPTS;
-            while (true) {
-                const data = yield (0, create_key_1.getKey)(apiSecretKey, lavaAddress);
-                developerKeyStatus = data.data.status;
-                if (developerKeyStatus === create_key_1.DeveloperKeyStatus.SYNCED) {
-                    break;
-                }
-                else {
-                    attemptsCounter--;
-                    if (attemptsCounter === 0) {
-                        console.log("❌Error: Timeout");
-                    }
-                    yield (0, create_key_1.sleep)(10000);
-                }
-            }
-            console.log("✅ Key was synced successfully");
             return { lavaAddress, privateKey, seedPhrase: seedPhrase.toString() };
         });
     }

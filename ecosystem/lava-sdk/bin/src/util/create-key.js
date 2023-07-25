@@ -12,13 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sleep = exports.createDeveloperKey = exports.getKeys = exports.getKey = exports.generateKey = exports.axiosInstance = exports.DeveloperKeyStatus = exports.MAX_ATTEMPTS = void 0;
+exports.sleep = exports.createDeveloperKey = exports.getDeveloperKey = exports.generateKey = exports.DeveloperKeyStatus = exports.MAX_ATTEMPTS = void 0;
 const amino_1 = require("@cosmjs/amino");
 const crypto_1 = require("@cosmjs/crypto");
 const encoding_1 = require("@cosmjs/encoding");
 const elliptic_1 = __importDefault(require("elliptic"));
-const axios_1 = __importDefault(require("axios"));
-const uuidv4_1 = require("uuidv4");
+const uuid_1 = require("uuid");
 exports.MAX_ATTEMPTS = 10;
 var DeveloperKeyStatus;
 (function (DeveloperKeyStatus) {
@@ -27,11 +26,7 @@ var DeveloperKeyStatus;
     DeveloperKeyStatus["SYNCED"] = "synced";
     DeveloperKeyStatus["DELETING"] = "deleting";
 })(DeveloperKeyStatus = exports.DeveloperKeyStatus || (exports.DeveloperKeyStatus = {}));
-const GW_BACKEND_URL = "https://gateway-master.lava-cybertron.xyz/sdk";
-// const GW_BACKEND_URL = "http://127.0.0.1:4455/sdk";
-exports.axiosInstance = axios_1.default.create({
-    baseURL: `${GW_BACKEND_URL}/api/sdk`,
-});
+const GW_BACKEND_URL_PROD = "https://gateway-master.lavanet.xyz/sdk";
 const generateKey = () => __awaiter(void 0, void 0, void 0, function* () {
     const prefix = "lava@";
     const mnemonic = crypto_1.Bip39.encode(crypto_1.Random.getBytes(32)).toString();
@@ -47,36 +42,35 @@ const generateKey = () => __awaiter(void 0, void 0, void 0, function* () {
     return { address, privateHex, mnemonicChecked };
 });
 exports.generateKey = generateKey;
-function getKey(apiAccessKey, developerKey) {
+function getDeveloperKey(apiAccessKey, developerKey, url = GW_BACKEND_URL_PROD) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield exports.axiosInstance.get(`/developer-keys/${developerKey}`, {
+        const response = yield fetch(`${url}/api/sdk/-keys/${developerKey}`, 
+        // `${url}/api/sdk/developer-keys/${developerKey}`,
+        {
             headers: {
                 "api-access-key": apiAccessKey,
+                "Content-Type": "application/json",
             },
         });
+        return yield response.json();
     });
 }
-exports.getKey = getKey;
-function getKeys(apiAccessKey) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { data } = yield exports.axiosInstance.get(`/developer-keys`, {
-            headers: {
-                "api-access-key": apiAccessKey,
-            },
-        });
-        return data;
-    });
-}
-exports.getKeys = getKeys;
-function createDeveloperKey(apiAccessKey, developerKey) {
+exports.getDeveloperKey = getDeveloperKey;
+function createDeveloperKey(apiAccessKey, developerKey, url = GW_BACKEND_URL_PROD) {
     return __awaiter(this, void 0, void 0, function* () {
         const keyParams = {
             projectKey: developerKey,
-            name: `SDK Generated Key-${(0, uuidv4_1.uuid)().toLowerCase()}`,
+            name: `SDK Generated Key-${(0, uuid_1.v4)().toLowerCase()}`,
         };
-        return yield exports.axiosInstance.post(`/developer-keys/`, keyParams, {
-            headers: { "api-access-key": apiAccessKey },
+        const response = yield fetch(`${url}/api/sdk/developer-keys/`, {
+            method: "POST",
+            headers: {
+                "api-access-key": apiAccessKey,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(keyParams),
         });
+        return yield response.json();
     });
 }
 exports.createDeveloperKey = createDeveloperKey;

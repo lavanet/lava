@@ -15,9 +15,7 @@ export declare type DeveloperKeyParams = {
     projectKey: string;
     name: string;
 };
-export declare const axiosInstance: import("axios").AxiosInstance;
 export declare const generateKey: () => Promise<GeneratedKeyType>;
-export declare function getKey(apiAccessKey: string, developerKey: string): Promise<any>;
-export declare function getKeys(apiAccessKey: string): Promise<any>;
-export declare function createDeveloperKey(apiAccessKey: string, developerKey: string): Promise<import("axios").AxiosResponse<any, any>>;
+export declare function getDeveloperKey(apiAccessKey: string, developerKey: string, url?: string): Promise<any>;
+export declare function createDeveloperKey(apiAccessKey: string, developerKey: string, url?: string): Promise<any>;
 export declare function sleep(delayMS: number): Promise<unknown>;
