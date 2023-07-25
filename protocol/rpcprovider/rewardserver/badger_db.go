@@ -44,7 +44,7 @@ func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 	return
 }
 
-func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
+func (mdb *BadgerDB) FindAll(providerAddress, specId string) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 
 	err := mdb.db.View(func(txn *badger.Txn) error {
