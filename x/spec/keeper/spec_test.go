@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -771,9 +770,14 @@ func TestCookbookSpecs(t *testing.T) {
 	ts := newTester(t)
 
 	getToTopMostPath := "../../.././cookbook/specs/"
-	proposalFile := "spec_add_ibc.json,spec_add_cosmoswasm.json,spec_add_cosmossdk.json,spec_add_cosmossdk_full.json,spec_add_ethereum.json,spec_add_cosmoshub.json,spec_add_lava.json,spec_add_osmosis.json,spec_add_fantom.json,spec_add_celo.json,spec_add_optimism.json,spec_add_arbitrum.json,spec_add_starknet.json,spec_add_aptos.json,spec_add_juno.json,spec_add_polygon.json,spec_add_evmos.json,spec_add_base.json,spec_add_canto.json,spec_add_sui.json,spec_add_solana.json,spec_add_bsc.json,spec_add_axelar.json,spec_add_avalanche.json,spec_add_fvm.json,spec_add_mantle.json"
+	//base specs needs to be proposed first
+	baseSpecs := []string{"spec_add_ibc.json", "spec_add_cosmoswasm.json", "spec_add_cosmossdk.json", "spec_add_cosmossdk_full.json", "spec_add_ethereum.json"}
 
-	for _, fileName := range strings.Split(proposalFile, ",") {
+	Specs, err := getAllFilesInDirectory(getToTopMostPath)
+	require.Nil(t, err)
+
+	Specs = append(baseSpecs, Specs...)
+	for _, fileName := range Specs {
 		proposal := utils.SpecAddProposalJSON{}
 
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
@@ -789,4 +793,23 @@ func TestCookbookSpecs(t *testing.T) {
 			require.NotNil(t, fullspec)
 		}
 	}
+}
+
+func getAllFilesInDirectory(directory string) ([]string, error) {
+	var files []string
+
+	dir, err := os.ReadDir(directory)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range dir {
+		if entry.IsDir() {
+			// Skip directories; we only want files
+			continue
+		}
+		files = append(files, entry.Name())
+	}
+
+	return files, nil
 }
