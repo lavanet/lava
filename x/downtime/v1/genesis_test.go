@@ -41,7 +41,6 @@ func TestGenesis_Validate(t *testing.T) {
 		},
 		"invalid downtime - duration": {
 			Genesis: GenesisState{
-
 				Downtimes: []*Downtime{
 					{
 						Duration: 0,
