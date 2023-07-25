@@ -32,7 +32,7 @@ type RewardEntity struct {
 }
 
 func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (bool, error) {
-	key := assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
+	key := rs.assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
 
 	re := &RewardEntity{
 		ProviderAddr: rs.providerAddr,
@@ -49,7 +49,10 @@ func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairing
 		return false, utils.LavaFormatError("failed to encode proof: %s", err)
 	}
 
-	rs.db.Save(key, buf, rs.ttl)
+	err = rs.db.Save(key, buf, rs.ttl)
+	if err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
@@ -60,7 +63,7 @@ func (rs *RewardDB) FindOne(
 	consumerKey string,
 	sessionId uint64,
 ) (*pairingtypes.RelaySession, error) {
-	key := assembleKey(epoch, consumerAddr, sessionId, consumerKey)
+	key := rs.assembleKey(epoch, consumerAddr, sessionId, consumerKey)
 
 	rawReward, err := rs.db.FindOne(key)
 	if err != nil {
@@ -124,7 +127,7 @@ func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySes
 			continue
 		}
 
-		prefix := assembleKey(uint64(claimedReward.Epoch), consumer.String(), claimedReward.SessionId, "")
+		prefix := rs.assembleKey(uint64(claimedReward.Epoch), consumer.String(), claimedReward.SessionId, "")
 		if slices.Contains(deletedPrefixes, prefix) {
 			continue
 		}
@@ -159,8 +162,9 @@ func NewRewardDBWithTTL(providerAddr string, specId string, db DB, ttl time.Dura
 	}
 }
 
-func assembleKey(epoch uint64, consumerAddr string, sessionId uint64, consumerKey string) string {
+func (rs *RewardDB) assembleKey(epoch uint64, consumerAddr string, sessionId uint64, consumerKey string) string {
 	keyParts := []string{
+		rs.providerAddr + rs.specId,
 		strconv.FormatUint(epoch, 10),
 		consumerAddr,
 		strconv.FormatUint(sessionId, 10),
