@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,29 +19,42 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	var apiInterfacesStructList []*types.ApiList
-	var interfaceList []string
+	var optionalInterfaceList []string
 	var chainID string
-	foundChain := false
 
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {
 		// get info by chain name
 		if spec.GetName() == req.GetChainName() || spec.GetIndex() == req.GetChainName() {
-			foundChain = true
-
 			// get chain ID
 			chainID = spec.GetIndex()
 
+			fullspec, err := k.ExpandSpec(ctx, spec)
+			if err != nil {
+				return nil, err
+			}
+			// get the spec's expected interfaces
+			expectedInterfaces := k.getExpectedInterfacesForSpecInner(&fullspec, map[epochstoragetypes.EndpointService]struct{}{}, true)
+
+			mandatoryInterfaceList := getInterfacesNamesFromMap(expectedInterfaces)
+
 			// get API methods (includes their interfaces)
-			apisCollections := spec.GetApiCollections()
+			apisCollections := fullspec.GetApiCollections()
 			for _, apiCollection := range apisCollections {
+				if !apiCollection.Enabled {
+					continue
+				}
 				apiInterface := apiCollection.CollectionData.ApiInterface
 
 				apiMethods := []string{}
 				// iterate over APIs
-				interfaceList = append(interfaceList, apiInterface)
-
+				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{ApiInterface: apiInterface, Addon: ""}]; !ok {
+					optionalInterfaceList = append(optionalInterfaceList, apiInterface)
+				}
 				for _, api := range apiCollection.Apis {
+					if !api.Enabled {
+						continue
+					}
 					apiMethods = append(apiMethods, api.GetName())
 				}
 				apiInterfacesStructList = append(apiInterfacesStructList, &types.ApiList{
@@ -50,14 +64,9 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 			}
 
 			// found the chain, there is no need to further iterate
-			break
+			return &types.QueryShowChainInfoResponse{ChainID: chainID, Interfaces: mandatoryInterfaceList, SupportedApisInterfaceList: apiInterfacesStructList, OptionalInterfaces: optionalInterfaceList}, nil
 		}
 	}
-
 	// Didn't find the chain
-	if !foundChain {
-		return nil, sdkerrors.Wrapf(types.ErrChainNameNotFound, "%s", req.GetChainName())
-	}
-
-	return &types.QueryShowChainInfoResponse{ChainID: chainID, Interfaces: interfaceList, SupportedApisInterfaceList: apiInterfacesStructList}, nil
+	return nil, sdkerrors.Wrapf(types.ErrChainNameNotFound, "%s", req.GetChainName())
 }

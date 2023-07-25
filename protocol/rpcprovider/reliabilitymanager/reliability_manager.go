@@ -36,7 +36,7 @@ type ReliabilityManager struct {
 	votes         map[string]*VoteData
 	txSender      TxSender
 	publicAddress string
-	chainProxy    chainlib.ChainProxy
+	chainRouter   chainlib.ChainRouter
 	chainParser   chainlib.ChainParser
 }
 
@@ -103,7 +103,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 			return utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 		}
-		reply, _, _, err := rm.chainProxy.SendNodeMsg(ctx, nil, chainMessage)
+		reply, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 		if err != nil {
 			return utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
@@ -131,13 +131,13 @@ func (rm *ReliabilityManager) GetLatestBlockNum() int64 {
 	return rm.chainTracker.GetLatestBlockNum()
 }
 
-func NewReliabilityManager(chainTracker *chaintracker.ChainTracker, txSender TxSender, publicAddress string, chainProxy chainlib.ChainProxy, chainParser chainlib.ChainParser) *ReliabilityManager {
+func NewReliabilityManager(chainTracker *chaintracker.ChainTracker, txSender TxSender, publicAddress string, chainRouter chainlib.ChainRouter, chainParser chainlib.ChainParser) *ReliabilityManager {
 	rm := &ReliabilityManager{
 		votes:         map[string]*VoteData{},
 		txSender:      txSender,
 		publicAddress: publicAddress,
 		chainTracker:  chainTracker,
-		chainProxy:    chainProxy,
+		chainRouter:   chainRouter,
 		chainParser:   chainParser,
 	}
 

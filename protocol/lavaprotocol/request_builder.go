@@ -54,7 +54,7 @@ func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	requestData.Salt = nonceBytes
 }
 
-func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata) *pairingtypes.RelayPrivateData {
+func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addons []string) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
@@ -62,6 +62,7 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 		RequestBlock:   requestBlock,
 		ApiInterface:   apiInterface,
 		Metadata:       metadata,
+		Addon:          addons,
 	}
 	guid, found := utils.GetUniqueIdentifier(ctx)
 	if !found {

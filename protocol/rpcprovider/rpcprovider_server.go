@@ -28,7 +28,7 @@ import (
 
 type RPCProviderServer struct {
 	cache                     *performance.Cache
-	chainProxy                chainlib.ChainProxy
+	chainRouter               chainlib.ChainRouter
 	privKey                   *btcec.PrivateKey
 	reliabilityManager        ReliabilityManagerInf
 	providerSessionManager    *lavasession.ProviderSessionManager
@@ -66,7 +66,8 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerSessionManager *lavasession.ProviderSessionManager,
 	reliabilityManager ReliabilityManagerInf,
 	privKey *btcec.PrivateKey,
-	cache *performance.Cache, chainProxy chainlib.ChainProxy,
+	cache *performance.Cache,
+	chainRouter chainlib.ChainRouter,
 	stateTracker StateTrackerInf,
 	providerAddress sdk.AccAddress,
 	lavaChainID string,
@@ -74,7 +75,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerMetrics *metrics.ProviderMetrics,
 ) {
 	rpcps.cache = cache
-	rpcps.chainProxy = chainProxy
+	rpcps.chainRouter = chainRouter
 	rpcps.privKey = privKey
 	rpcps.providerSessionManager = providerSessionManager
 	rpcps.reliabilityManager = reliabilityManager
@@ -179,7 +180,6 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	relayCU := chainMessage.GetApi().ComputeUnits
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
 	if err != nil {
@@ -191,7 +191,38 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	return relaySession, consumerAddress, chainMessage, nil
 }
 
-func (*RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
+// go over the request addons, makes sure the requested addon and extensions within it are supported
+func (rpcps *RPCProviderServer) VerifyAddons(addons []string, chainMessage chainlib.ChainMessage) error {
+	parsedAddon := chainMessage.GetApiCollection().CollectionData.AddOn
+	valid := false
+	extensions := map[string]struct{}{}
+	if parsedAddon == "" {
+		valid = true
+	} else {
+		for _, requestAddon := range addons {
+			if requestAddon == parsedAddon {
+				// we have found the request addon
+				valid = true
+			} else {
+				// anything that is not an addon is an extensions
+				extensions[requestAddon] = struct{}{}
+			}
+		}
+	}
+	if !valid {
+		return utils.LavaFormatError("invalid request data, addon is missing", nil, utils.Attribute{Key: "addons", Value: addons}, utils.Attribute{Key: "parsedAddon", Value: parsedAddon})
+	}
+	// now make sure all other requirements are extensions and not addons
+	supportedExtensions := rpcps.chainRouter.GetSupportedExtensions()
+	for _, supportedExtension := range supportedExtensions {
+		if _, ok := extensions[supportedExtension]; !ok {
+			return utils.LavaFormatError("invalid request data, unsupported extension", nil, utils.Attribute{Key: "extensions", Value: extensions}, utils.Attribute{Key: "supportedExtensions", Value: supportedExtensions})
+		}
+	}
+	return nil
+}
+
+func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
 	// TODO: remove this if case, the reason its here is because lava-sdk does't have data reliability + block parsing.
 	// this is a temporary solution until we have a working block parsing in lava-sdk
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
@@ -207,7 +238,8 @@ func (*RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, re
 			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
 		}
 	}
-	return nil
+	err := rpcps.VerifyAddons(request.RelayData.Addon, chainMessage)
+	return err
 }
 
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
@@ -264,7 +296,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
 	subscribeRepliesChan := make(chan interface{})
-	reply, subscriptionID, clientSub, err := rpcps.chainProxy.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage)
+	reply, subscriptionID, clientSub, err := rpcps.chainRouter.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -588,7 +620,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainProxy.SendNodeMsg(ctx, nil, chainMsg)
+		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, nil)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
