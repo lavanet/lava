@@ -776,6 +776,8 @@ func TestCookbookSpecs(t *testing.T) {
 	Specs, err := getAllFilesInDirectory(getToTopMostPath)
 	require.Nil(t, err)
 
+	// remove the base specs so there wont be a duplicate
+	Specs = removeSetFromSet(baseSpecs, Specs)
 	Specs = append(baseSpecs, Specs...)
 	for _, fileName := range Specs {
 		proposal := utils.SpecAddProposalJSON{}
@@ -812,4 +814,22 @@ func getAllFilesInDirectory(directory string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+func removeSetFromSet(set1, set2 []string) []string {
+	// Create a map to store the elements of the first set
+	elements := make(map[string]bool)
+	for _, str := range set1 {
+		elements[str] = true
+	}
+
+	// Create a new slice with elements of the second set that are not present in the first set
+	var resultSet []string
+	for _, str := range set2 {
+		if !elements[str] {
+			resultSet = append(resultSet, str)
+		}
+	}
+
+	return resultSet
 }
