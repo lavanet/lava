@@ -195,7 +195,7 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 	ts.plan.PlanPolicy.GeolocationProfile = 7
 	ts.AddPlan("mock", ts.plan)
 
-	ts.setupForPayments(1, 1, 0) // 1 provider, 0 client, default providers-to-pair
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
@@ -243,7 +243,6 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 			// the only provider is set with geolocation=1. So only geolocation that ANDs
 			// with 1 and output non-zero result, will output a provider for pairing
 			res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-			require.Nil(t, err)
 			if tt.validPairing {
 				require.Nil(t, err)
 			} else {
