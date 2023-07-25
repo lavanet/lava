@@ -73,7 +73,6 @@ type RewardServer struct {
 type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
-	GetEpochsToSave(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
@@ -128,6 +127,8 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		}
+
+		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "rewardsToClaim", Value: len(rewardsToClaim)})
 	} else {
 		utils.LavaFormatDebug("no rewards to claim")
 	}
@@ -207,7 +208,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
 	}
 
-	epochsToSave, err := rws.rewardsTxSender.GetEpochsToSave(ctx)
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochsToSave", err)
 	}
@@ -228,8 +229,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 			continue
 		}
 
-		if rws.isEpochTooOld(epoch, currentEpoch, epochsToSave) {
-			utils.LavaFormatInfo("Deleting old rewards for epoch", utils.Attribute{Key: "oldEpoch", Value: epoch})
+		if epoch < earliestSavedEpoch {
 			err := rws.rewardDB.DeleteEpochRewards(epoch)
 			if err != nil {
 				utils.LavaFormatWarning("failed deleting epoch", err, utils.Attribute{Key: "epoch", Value: epoch})
@@ -249,10 +249,6 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		}
 	}
 	return rewardsForClaim, errRet
-}
-
-func (rws *RewardServer) isEpochTooOld(rewardsEpoch, currentEpoch, epochsToSave uint64) bool {
-	return rewardsEpoch+epochsToSave < currentEpoch
 }
 
 func (rws *RewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
