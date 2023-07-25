@@ -5,16 +5,22 @@ package v1
 
 import (
 	fmt "fmt"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	_ "google.golang.org/protobuf/types/known/durationpb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -24,6 +30,9 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Params defines the parameters of the downtime module.
 type Params struct {
+	// downtime_duration defines the minimum time elapsed between blocks
+	// that we consider the chain to be down.
+	DowntimeDuration time.Duration `protobuf:"bytes,1,opt,name=downtime_duration,json=downtimeDuration,proto3,stdduration" json:"downtime_duration"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -59,22 +68,154 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
+func (m *Params) GetDowntimeDuration() time.Duration {
+	if m != nil {
+		return m.DowntimeDuration
+	}
+	return 0
+}
+
+// Downtime defines a single downtime record.
+type Downtime struct {
+	// block defines the block that took time to produce.
+	Block uint64 `protobuf:"varint,1,opt,name=block,proto3" json:"block,omitempty"`
+	// duration defines the time elapsed between the previous block and this one.
+	// this defines the effective downtime duration.
+	Duration time.Duration `protobuf:"bytes,2,opt,name=duration,proto3,stdduration" json:"duration"`
+}
+
+func (m *Downtime) Reset()         { *m = Downtime{} }
+func (m *Downtime) String() string { return proto.CompactTextString(m) }
+func (*Downtime) ProtoMessage()    {}
+func (*Downtime) Descriptor() ([]byte, []int) {
+	return fileDescriptor_62cbb07edbf8cff0, []int{1}
+}
+func (m *Downtime) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Downtime) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Downtime.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Downtime) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Downtime.Merge(m, src)
+}
+func (m *Downtime) XXX_Size() int {
+	return m.Size()
+}
+func (m *Downtime) XXX_DiscardUnknown() {
+	xxx_messageInfo_Downtime.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Downtime proto.InternalMessageInfo
+
+func (m *Downtime) GetBlock() uint64 {
+	if m != nil {
+		return m.Block
+	}
+	return 0
+}
+
+func (m *Downtime) GetDuration() time.Duration {
+	if m != nil {
+		return m.Duration
+	}
+	return 0
+}
+
+// DowntimeGarbageCollection defines when garbage collection will be performed, for a specific downtime.
+// used only in genesis.
+type DowntimeGarbageCollection struct {
+	// block defines the block that references a Downtime.
+	Block uint64 `protobuf:"varint,1,opt,name=block,proto3" json:"block,omitempty"`
+	// gc_time defines the block when garbage collection will be performed.
+	GcBlock uint64 `protobuf:"varint,2,opt,name=gc_block,json=gcBlock,proto3" json:"gc_block,omitempty"`
+}
+
+func (m *DowntimeGarbageCollection) Reset()         { *m = DowntimeGarbageCollection{} }
+func (m *DowntimeGarbageCollection) String() string { return proto.CompactTextString(m) }
+func (*DowntimeGarbageCollection) ProtoMessage()    {}
+func (*DowntimeGarbageCollection) Descriptor() ([]byte, []int) {
+	return fileDescriptor_62cbb07edbf8cff0, []int{2}
+}
+func (m *DowntimeGarbageCollection) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DowntimeGarbageCollection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DowntimeGarbageCollection.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DowntimeGarbageCollection) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DowntimeGarbageCollection.Merge(m, src)
+}
+func (m *DowntimeGarbageCollection) XXX_Size() int {
+	return m.Size()
+}
+func (m *DowntimeGarbageCollection) XXX_DiscardUnknown() {
+	xxx_messageInfo_DowntimeGarbageCollection.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DowntimeGarbageCollection proto.InternalMessageInfo
+
+func (m *DowntimeGarbageCollection) GetBlock() uint64 {
+	if m != nil {
+		return m.Block
+	}
+	return 0
+}
+
+func (m *DowntimeGarbageCollection) GetGcBlock() uint64 {
+	if m != nil {
+		return m.GcBlock
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Params)(nil), "lavanet.lava.downtime.v1.Params")
+	proto.RegisterType((*Downtime)(nil), "lavanet.lava.downtime.v1.Downtime")
+	proto.RegisterType((*DowntimeGarbageCollection)(nil), "lavanet.lava.downtime.v1.DowntimeGarbageCollection")
 }
 
 func init() { proto.RegisterFile("downtime/v1/downtime.proto", fileDescriptor_62cbb07edbf8cff0) }
 
 var fileDescriptor_62cbb07edbf8cff0 = []byte{
-	// 127 bytes of a gzipped FileDescriptorProto
+	// 294 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4a, 0xc9, 0x2f, 0xcf,
 	0x2b, 0xc9, 0xcc, 0x4d, 0xd5, 0x2f, 0x33, 0xd4, 0x87, 0xb1, 0xf5, 0x0a, 0x8a, 0xf2, 0x4b, 0xf2,
 	0x85, 0x24, 0x72, 0x12, 0xcb, 0x12, 0xf3, 0x52, 0x4b, 0xf4, 0x40, 0xb4, 0x1e, 0x5c, 0xb2, 0xcc,
-	0x50, 0x89, 0x83, 0x8b, 0x2d, 0x20, 0xb1, 0x28, 0x31, 0xb7, 0xd8, 0xc9, 0xfe, 0xc4, 0x23, 0x39,
-	0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f, 0x3c, 0x92, 0x63, 0x9c, 0xf0, 0x58, 0x8e, 0xe1, 0xc2, 0x63,
-	0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18, 0xa2, 0x54, 0xd3, 0x33, 0x4b, 0x32, 0x4a, 0x93, 0xf4, 0x92,
-	0xf3, 0x73, 0xf5, 0xa1, 0x06, 0x81, 0x69, 0xfd, 0x0a, 0x7d, 0x24, 0x3b, 0x93, 0xd8, 0xc0, 0x76,
-	0x19, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x97, 0x50, 0x36, 0x97, 0x89, 0x00, 0x00, 0x00,
+	0x50, 0x4a, 0x2e, 0x3d, 0x3f, 0x3f, 0x3d, 0x27, 0x55, 0x1f, 0xac, 0x2e, 0xa9, 0x34, 0x4d, 0x3f,
+	0xa5, 0xb4, 0x28, 0xb1, 0x24, 0x33, 0x3f, 0x0f, 0xa2, 0x53, 0x4a, 0x1e, 0x5d, 0x1e, 0xa4, 0xb1,
+	0xb8, 0x24, 0x31, 0xb7, 0x00, 0xaa, 0x40, 0x24, 0x3d, 0x3f, 0x3d, 0x1f, 0xcc, 0xd4, 0x07, 0xb1,
+	0x20, 0xa2, 0x4a, 0x51, 0x5c, 0x6c, 0x01, 0x89, 0x45, 0x89, 0xb9, 0xc5, 0x42, 0x01, 0x5c, 0x82,
+	0x30, 0xfb, 0xe2, 0x61, 0x66, 0x4b, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x1b, 0x49, 0xea, 0x41, 0x0c,
+	0xd7, 0x83, 0x19, 0xae, 0xe7, 0x02, 0x55, 0xe0, 0xc4, 0x71, 0xe2, 0x9e, 0x3c, 0xc3, 0x8c, 0xfb,
+	0xf2, 0x8c, 0x41, 0x02, 0x30, 0xdd, 0x30, 0x39, 0xa5, 0x44, 0x2e, 0x0e, 0x17, 0xa8, 0x98, 0x90,
+	0x08, 0x17, 0x6b, 0x52, 0x4e, 0x7e, 0x72, 0x36, 0xd8, 0x44, 0x96, 0x20, 0x08, 0x47, 0xc8, 0x9e,
+	0x8b, 0x03, 0x6e, 0x15, 0x13, 0xf1, 0x56, 0xc1, 0x35, 0x29, 0xf9, 0x70, 0x49, 0xc2, 0xac, 0x70,
+	0x4f, 0x2c, 0x4a, 0x4a, 0x4c, 0x4f, 0x75, 0xce, 0xcf, 0xc9, 0x49, 0x4d, 0x06, 0x49, 0xe2, 0xb0,
+	0x53, 0x92, 0x8b, 0x23, 0x3d, 0x39, 0x1e, 0x22, 0xc1, 0x04, 0x96, 0x60, 0x4f, 0x4f, 0x76, 0x02,
+	0x71, 0x9d, 0xec, 0x4f, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6,
+	0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a, 0x35, 0x3d,
+	0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x57, 0x1f, 0x1a, 0x45, 0x60, 0x5a, 0xbf, 0x42,
+	0x1f, 0x29, 0x36, 0x93, 0xd8, 0xc0, 0xae, 0x36, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xbe, 0xf0,
+	0x64, 0x7f, 0xe3, 0x01, 0x00, 0x00,
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -97,6 +238,83 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.DowntimeDuration, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.DowntimeDuration):])
+	if err1 != nil {
+		return 0, err1
+	}
+	i -= n1
+	i = encodeVarintDowntime(dAtA, i, uint64(n1))
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *Downtime) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Downtime) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Downtime) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	n2, err2 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.Duration, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.Duration):])
+	if err2 != nil {
+		return 0, err2
+	}
+	i -= n2
+	i = encodeVarintDowntime(dAtA, i, uint64(n2))
+	i--
+	dAtA[i] = 0x12
+	if m.Block != 0 {
+		i = encodeVarintDowntime(dAtA, i, uint64(m.Block))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DowntimeGarbageCollection) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DowntimeGarbageCollection) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DowntimeGarbageCollection) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.GcBlock != 0 {
+		i = encodeVarintDowntime(dAtA, i, uint64(m.GcBlock))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Block != 0 {
+		i = encodeVarintDowntime(dAtA, i, uint64(m.Block))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -117,6 +335,37 @@ func (m *Params) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.DowntimeDuration)
+	n += 1 + l + sovDowntime(uint64(l))
+	return n
+}
+
+func (m *Downtime) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Block != 0 {
+		n += 1 + sovDowntime(uint64(m.Block))
+	}
+	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.Duration)
+	n += 1 + l + sovDowntime(uint64(l))
+	return n
+}
+
+func (m *DowntimeGarbageCollection) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Block != 0 {
+		n += 1 + sovDowntime(uint64(m.Block))
+	}
+	if m.GcBlock != 0 {
+		n += 1 + sovDowntime(uint64(m.GcBlock))
+	}
 	return n
 }
 
@@ -155,6 +404,229 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: Params: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DowntimeDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDowntime
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.DowntimeDuration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDowntime(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Downtime) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDowntime
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Downtime: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Downtime: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Block", wireType)
+			}
+			m.Block = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDowntime
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Block |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Duration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDowntime
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.Duration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDowntime(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DowntimeGarbageCollection) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDowntime
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DowntimeGarbageCollection: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DowntimeGarbageCollection: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Block", wireType)
+			}
+			m.Block = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDowntime
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Block |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GcBlock", wireType)
+			}
+			m.GcBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDowntime
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.GcBlock |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDowntime(dAtA[iNdEx:])

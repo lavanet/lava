@@ -1,6 +1,7 @@
 package downtime
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -55,8 +56,8 @@ func (a AppModuleBasic) ValidateGenesis(codec codec.JSONCodec, config client.TxE
 
 func (a AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
-func (a AppModuleBasic) RegisterGRPCGatewayRoutes(context client.Context, mux *runtime.ServeMux) {
-	panic("not implemented")
+func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	_ = v1.RegisterQueryHandlerClient(context.Background(), mux, v1.NewQueryClient(clientCtx))
 }
 
 func (a AppModuleBasic) GetTxCmd() *cobra.Command { return cli.NewTxCmd() }

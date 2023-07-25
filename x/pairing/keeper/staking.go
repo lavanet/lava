@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
@@ -56,7 +57,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 		return nil
 	}
 
-	if !types.IsValidGeoEnum(int32(geolocation)) {
+	if !planstypes.IsValidGeoEnum(int32(geolocation)) {
 		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)

@@ -12,11 +12,11 @@ Policy:
     - chain_id: FTM250
       apis:
         - ftm_blockNumber
-  geolocation_profile: 1  # USC
+  geolocation_profile: USE
   total_cu_limit: 1000
   epoch_cu_limit: 100
   max_providers_to_pair: 2
-  selected_providers_mode: 2  # EXCLUSIVE
+  selected_providers_mode: EXCLUSIVE
   selected_providers:
     - lava@1kgd936x3tlz2er9untunk7texfanmaud8yp9kf
     - lava@18puklmhr7u2f9g524tttm24ttf4ud842wtfcna

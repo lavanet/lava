@@ -7,10 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	commontypes "github.com/lavanet/lava/common/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 )
 
@@ -34,9 +32,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 
 			subscriptionPolicyFilePath := args[1]
 
-			var policy planstypes.Policy
-			hooks := []mapstructure.DecodeHookFuncType{planstypes.SelectedProvidersModeHookFunc()}
-			err = commontypes.ReadYaml(subscriptionPolicyFilePath, "Policy", &policy, hooks)
+			policy, err := planstypes.ParsePolicyFromYaml(subscriptionPolicyFilePath)
 			if err != nil {
 				return err
 			}
@@ -44,7 +40,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 			msg := types.NewMsgSetSubscriptionPolicy(
 				clientCtx.GetFromAddress().String(),
 				argProjects,
-				policy,
+				*policy,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

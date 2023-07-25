@@ -96,7 +96,7 @@ const lavaSDK = await new LavaSDK({
 
 - `geolocation` is an optional field that specifies the geolocation which will be used. Default value is `1` which represents North America providers. Besides North America providers, lava supports EU providers on geolocation `2`.
 
-- `lavaChainId` is an optional field that specifies the chain id of the lava network. Default value is `lava-testnet-1` which represents Lava testnet. 
+- `lavaChainId` is an optional field that specifies the chain id of the lava network. Default value is `lava-testnet-2` which represents Lava testnet. 
 ---
 
 ### TendermintRPC / JSON-RPC interface:

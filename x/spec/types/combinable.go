@@ -81,8 +81,8 @@ func (h *Verification) GetEnabled() bool {
 // this function is used to combine combinables from the parents and the current collection and combine them into the current collection
 // it takes a map of current existing combinables, the parent combinables in mergedMap, the list of combinables from the parents, and the list of combinables in the current spec
 // toCombine and currentMap hold the same data arranged in a different set, the same for mergedMap and combineFrom
-func CombineFields[T Combinable](currentMap map[string]CurrentContainer, mergedMap map[string]interface{}, combineFrom []T, toCombine []T, allowOverwrite bool) ([]T, map[string]interface{}, error) {
-	for _, combinable := range combineFrom {
+func CombineFields[T Combinable](childCombinables map[string]CurrentContainer, parentCombinables []T, mergedMap map[string]interface{}, mergedCombinables []T, allowOverwrite bool) ([]T, map[string]interface{}, error) {
+	for _, combinable := range parentCombinables {
 		if !combinable.GetEnabled() {
 			continue
 		}
@@ -94,15 +94,15 @@ func CombineFields[T Combinable](currentMap map[string]CurrentContainer, mergedM
 					// if we don't allow overwriting by the calling collection, then a duplication is an error, but only if it's not equal
 					return nil, nil, fmt.Errorf("try overwrite existing collection combination %s", combinable.Differeniator())
 				}
-				if _, found := currentMap[combinable.Differeniator()]; !found {
+				if _, found := childCombinables[combinable.Differeniator()]; !found {
 					return nil, nil, fmt.Errorf("duplicate imported combinable: %s", combinable.Differeniator())
 				}
 			}
 		}
 		mergedMap[combinable.Differeniator()] = combinable
-		toCombine = append(toCombine, combinable)
+		mergedCombinables = append(mergedCombinables, combinable)
 	}
-	return toCombine, mergedMap, nil
+	return mergedCombinables, mergedMap, nil
 }
 
 func GetCurrentFromCombinable[T Combinable](current []T) (currentMap map[string]CurrentContainer) {
