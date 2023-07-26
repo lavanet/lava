@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -78,8 +79,8 @@ func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumer
 	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
 }
 
-func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context) {
-	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker)
+func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
+	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker, version)
 	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {
@@ -88,6 +89,6 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context) 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-func (cst *ConsumerStateTracker) CheckProtocolVersion(ctx context.Context) error {
-	return cst.stateQuery.CheckProtocolVersion(ctx)
+func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+	return cst.stateQuery.GetProtocolVersion(ctx)
 }

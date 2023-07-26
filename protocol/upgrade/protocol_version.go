@@ -1,47 +1,41 @@
 package upgrade
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
-var LavaProtocolVersion = protocoltypes.Version{
-	ProviderTarget: "0.21.0",
-	ProviderMin:    "0.21.0",
-	ConsumerTarget: "0.21.0",
-	ConsumerMin:    "0.21.0",
+type ProtocolVersion struct {
+	ConsumerVersion string
+	ProviderVersion string
 }
 
-// helper function to parse version major/middle/minor fields
-type ParsedVersion struct {
-	Major  int
-	Middle int
-	Minor  int
+var lavaProtocolVersion = ProtocolVersion{
+	ConsumerVersion: "0.21.0",
+	ProviderVersion: "0.21.0",
 }
 
-func ParseVersion(versionString string) (ParsedVersion, error) {
-	splitVersion := strings.Split(versionString, ".")
-	if len(splitVersion) != 3 {
-		return ParsedVersion{}, utils.LavaFormatError("invalid version string", nil)
+func ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+	// check min version
+	if incoming.ConsumerMin != lavaProtocolVersion.ConsumerVersion || incoming.ProviderMin != lavaProtocolVersion.ProviderVersion {
+		utils.LavaFormatPanic("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",
+			nil,
+			utils.Attribute{Key: "required (on-chain) consumer minimum version:", Value: incoming.ConsumerMin},
+			utils.Attribute{Key: "required (on-chain) provider minimum version", Value: incoming.ProviderMin},
+			utils.Attribute{Key: "binary consumer version: ", Value: lavaProtocolVersion.ConsumerVersion},
+			utils.Attribute{Key: "binary provider version: ", Value: lavaProtocolVersion.ProviderVersion},
+		)
 	}
-
-	major, err := strconv.Atoi(splitVersion[0])
-	if err != nil {
-		return ParsedVersion{}, err
+	// check target version
+	if incoming.ConsumerTarget != lavaProtocolVersion.ConsumerVersion || incoming.ProviderTarget != lavaProtocolVersion.ProviderVersion {
+		return utils.LavaFormatError("target protocol version mismatch, there is a newer version available. We highly recommend to upgrade.",
+			nil,
+			utils.Attribute{Key: "required (on-chain) consumer target version:", Value: incoming.ConsumerTarget},
+			utils.Attribute{Key: "required (on-chain) provider target version", Value: incoming.ProviderTarget},
+			utils.Attribute{Key: "binary consumer version: ", Value: lavaProtocolVersion.ConsumerVersion},
+			utils.Attribute{Key: "binary provider version: ", Value: lavaProtocolVersion.ProviderVersion},
+		)
 	}
-
-	middle, err := strconv.Atoi(splitVersion[1])
-	if err != nil {
-		return ParsedVersion{}, err
-	}
-
-	minor, err := strconv.Atoi(splitVersion[2])
-	if err != nil {
-		return ParsedVersion{}, err
-	}
-
-	return ParsedVersion{Major: major, Middle: middle, Minor: minor}, nil
+	// version is ok.
+	return nil
 }

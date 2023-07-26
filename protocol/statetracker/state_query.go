@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -57,26 +56,6 @@ func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*protocoltypes.V
 		return nil, err
 	}
 	return &param.Params.Version, nil
-}
-
-func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
-	consensusVersion, err := csq.GetProtocolVersion(ctx)
-	if err != nil {
-		return utils.LavaFormatError("could not get protocol version from network", err)
-	}
-	protocolBinaryVersion := upgrade.LavaProtocolVersion
-
-	// check min version
-	if consensusVersion.ConsumerMin != protocolBinaryVersion.ConsumerMin || consensusVersion.ProviderMin != protocolBinaryVersion.ProviderMin {
-		utils.LavaFormatPanic("minimum protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerMin:", Value: consensusVersion.ConsumerMin}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerMin: ", Value: protocolBinaryVersion.ConsumerMin},
-			utils.Attribute{Key: "consensusVersion.ProviderMin:", Value: consensusVersion.ProviderMin}, utils.Attribute{Key: "protocolBinaryVersion.ProviderMin: ", Value: protocolBinaryVersion.ProviderMin})
-	}
-	// check target version
-	if consensusVersion.ConsumerTarget != protocolBinaryVersion.ConsumerTarget || consensusVersion.ProviderTarget != protocolBinaryVersion.ProviderTarget {
-		return utils.LavaFormatError("target protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerTarget:", Value: consensusVersion.ConsumerTarget}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerTarget: ", Value: protocolBinaryVersion.ConsumerTarget},
-			utils.Attribute{Key: "consensusVersion.ProviderTarget:", Value: consensusVersion.ProviderTarget}, utils.Attribute{Key: "protocolBinaryVersion.ProviderTarget: ", Value: protocolBinaryVersion.ProviderTarget})
-	}
-	return err
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {

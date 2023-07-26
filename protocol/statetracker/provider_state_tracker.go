@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 // ProviderStateTracker PST is a class for tracking provider data from the lava blockchain, such as epoch changes.
@@ -54,8 +55,8 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context) {
-	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker)
+func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
+	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {
@@ -126,6 +127,6 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 }
 
-func (pst *ProviderStateTracker) CheckProtocolVersion(ctx context.Context) error {
-	return pst.stateQuery.CheckProtocolVersion(ctx)
+func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+	return pst.stateQuery.GetProtocolVersion(ctx)
 }

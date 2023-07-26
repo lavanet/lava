@@ -30,6 +30,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -73,13 +74,13 @@ func (s *strategyValue) Type() string {
 }
 
 type ConsumerStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress string, chainID string) (*plantypes.Policy, error)
-	CheckProtocolVersion(ctx context.Context) error
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
 type RPCConsumer struct {
@@ -135,13 +136,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 
 	// check version
-	err = consumerStateTracker.CheckProtocolVersion(ctx)
+	version, err := consumerStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
-		utils.LavaFormatError("consumer version check failed ", err)
+		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
-	utils.LavaFormatInfo("RPCConsumer version OK!")
-
-	consumerStateTracker.RegisterForVersionUpdates(ctx)
+	consumerStateTracker.RegisterForVersionUpdates(ctx, version)
 
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
