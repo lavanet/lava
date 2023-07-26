@@ -34,13 +34,13 @@ func (apic *ApiCollection) Expand(myCollections map[CollectionData]*ApiCollectio
 		}
 	}
 	// since expand is called within the same spec it needs to combine with disabled apiCollections
-	return apic.CombineWithOthers(relevantCollections, true, true, make(map[string]struct{}), make(map[string]struct{}), make(map[FUNCTION_TAG]struct{}))
+	return apic.CombineWithOthers(relevantCollections, true, true)
 }
 
 // inherit is
 func (apic *ApiCollection) Inherit(relevantCollections []*ApiCollection, dependencies map[CollectionData]struct{}) error {
 	// do not set dependencies because this mechanism protects inheritance within the same spec and inherit is inheritance between different specs so same type is allowed
-	return apic.CombineWithOthers(relevantCollections, false, true, make(map[string]struct{}), make(map[string]struct{}), make(map[FUNCTION_TAG]struct{}))
+	return apic.CombineWithOthers(relevantCollections, false, true)
 }
 
 func (apic *ApiCollection) Equals(other *ApiCollection) bool {
@@ -64,111 +64,84 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // this function combines apis, headers and parsers into the api collection from others. it does not check type compatibility
 // changes in place inside the apic
 // nil merge maps means not to combine that field
-func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool, mergedApis map[string]struct{}, mergedHeaders map[string]struct{}, mergedParsers map[FUNCTION_TAG]struct{}) error {
-	mergedHeadersList := []*Header{}
+func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool) (err error) {
+	mergedApis := map[string]interface{}{}
+	mergedHeaders := map[string]interface{}{}
+	mergedParsers := map[string]interface{}{}
+	mergedExtensions := map[string]interface{}{}
+	mergedVerifications := map[string]interface{}{}
+
 	mergedApisList := []*Api{}
-	mergedParserList := []*ParseDirective{}
-	currentApis := make(map[string]struct{}, 0)
-	currentHeaders := make(map[string]struct{}, 0)
-	currentParsers := make(map[FUNCTION_TAG]struct{}, 0)
-	if mergedApis != nil {
-		for _, api := range apic.Apis {
-			currentApis[api.Name] = struct{}{}
-		}
-	}
-	if mergedHeaders != nil {
-		for _, header := range apic.Headers {
-			currentHeaders[header.Name] = struct{}{}
-		}
-	}
-	if mergedParsers != nil {
-		for _, parser := range apic.ParseDirectives {
-			currentParsers[parser.FunctionTag] = struct{}{}
-		}
-	}
+	mergedHeadersList := []*Header{}
+	mergedParsersList := []*ParseDirective{}
+	mergedExtensionsList := []*Extension{}
+	mergedVerificationsList := []*Verification{}
+
+	currentApis := GetCurrentFromCombinable(apic.Apis)
+	currentHeaders := GetCurrentFromCombinable(apic.Headers)
+	currentParsers := GetCurrentFromCombinable(apic.ParseDirectives)
+	currentExtensions := GetCurrentFromCombinable(apic.Extensions)
+	currentVerifications := GetCurrentFromCombinable(apic.Verifications)
 
 	for _, collection := range others {
 		if !collection.Enabled && !combineWithDisabled {
 			continue
 		}
-		if mergedApis != nil {
-			for _, api := range collection.Apis {
-				if !api.Enabled {
-					continue
-				}
-				if _, ok := mergedApis[api.Name]; ok {
-					// was already existing in mergedApis
-					if !allowOverwrite {
-						// if we don't allow overwriting by the calling collection, then a duplication is an error
-						return fmt.Errorf("existing api in collection combination %s %v other collection %v", api.Name, apic, collection.CollectionData)
-					}
-					if _, found := currentApis[api.Name]; !found {
-						return fmt.Errorf("duplicate imported api: %s (in collection: %v)", api.Name, collection.CollectionData)
-					}
-				}
-				mergedApis[api.Name] = struct{}{}
-				mergedApisList = append(mergedApisList, api)
-			}
+
+		mergedApisList, mergedApis, err = CombineFields(currentApis, collection.Apis, mergedApis, mergedApisList, allowOverwrite)
+		if err != nil {
+			return fmt.Errorf("merging apis error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
-		if mergedHeaders != nil {
-			for _, header := range collection.Headers {
-				if _, ok := mergedHeaders[header.Name]; ok {
-					// was already existing in mergedHeaders
-					if !allowOverwrite {
-						// if we don't allow overwriting by the calling collection, then a duplication is an error
-						return fmt.Errorf("existing header in collection combination %s %v other collection %v", header.Name, apic, collection.CollectionData)
-					}
-					if _, found := currentHeaders[header.Name]; !found {
-						return fmt.Errorf("duplicate imported header: %s (in collection: %v)", header.Name, collection.CollectionData)
-					}
-				}
-				mergedHeaders[header.Name] = struct{}{}
-				mergedHeadersList = append(mergedHeadersList, header)
-			}
+
+		mergedHeadersList, mergedHeaders, err = CombineFields(currentHeaders, collection.Headers, mergedHeaders, mergedHeadersList, allowOverwrite)
+		if err != nil {
+			return fmt.Errorf("merging headers error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
-		if mergedParsers != nil {
-			for _, parsing := range collection.ParseDirectives {
-				if _, ok := mergedParsers[parsing.FunctionTag]; ok {
-					// was already existing in mergedParsers
-					if !allowOverwrite {
-						// if we don't allow overwriting by the calling collection, then a duplication is an error
-						return fmt.Errorf("existing parsing in collection combination %s %v other collection %v", parsing.FunctionTag, apic, collection.CollectionData)
-					}
-					if _, found := currentParsers[parsing.FunctionTag]; !found {
-						return fmt.Errorf("duplicate imported parsing: %s (in collection: %v)", parsing.FunctionTag, collection.CollectionData)
-					}
-				}
-				mergedParsers[parsing.FunctionTag] = struct{}{}
-				mergedParserList = append(mergedParserList, parsing)
-			}
+
+		mergedParsersList, mergedParsers, err = CombineFields(currentParsers, collection.ParseDirectives, mergedParsers, mergedParsersList, allowOverwrite)
+		if err != nil {
+			return fmt.Errorf("merging parse directives error %w, %v other collection %v", err, apic, collection.CollectionData)
+		}
+
+		mergedExtensionsList, mergedExtensions, err = CombineFields(currentExtensions, collection.Extensions, mergedExtensions, mergedExtensionsList, allowOverwrite)
+		if err != nil {
+			return fmt.Errorf("merging extensions error %w, %v other collection %v", err, apic, collection.CollectionData)
+		}
+
+		mergedVerificationsList, mergedVerifications, err = CombineFields(currentVerifications, collection.Verifications, mergedVerifications, mergedVerificationsList, allowOverwrite)
+		if err != nil {
+			return fmt.Errorf("merging verifications error %w, %v other collection %v", err, apic, collection.CollectionData)
 		}
 	}
 
 	// merge collected APIs into current apiCollection's APIs (unless overridden)
-	for _, api := range mergedApisList {
-		if _, found := currentApis[api.Name]; !found {
-			apic.Apis = append(apic.Apis, api)
-		} else if !allowOverwrite {
-			return fmt.Errorf("existing api in collection combination %s %v", api.Name, apic)
-		}
+	apic.Apis, err = CombineUnique(mergedApisList, apic.Apis, currentApis, allowOverwrite)
+	if err != nil {
+		return fmt.Errorf("error %w in apis combination in collection %#v", err, apic)
 	}
 
 	// merge collected headers into current apiCollection's headers (unless overridden)
-	for _, header := range mergedHeadersList {
-		if _, found := currentHeaders[header.Name]; !found {
-			apic.Headers = append(apic.Headers, header)
-		} else if !allowOverwrite {
-			return fmt.Errorf("existing header in collection combination %s %v", header.Name, apic)
-		}
+	apic.Headers, err = CombineUnique(mergedHeadersList, apic.Headers, currentHeaders, allowOverwrite)
+	if err != nil {
+		return fmt.Errorf("error %w in headers combination in collection %#v", err, apic)
+	}
+	// merge collected functionTags into current apiCollection's parsing (unless overridden)
+	apic.ParseDirectives, err = CombineUnique(mergedParsersList, apic.ParseDirectives, currentParsers, allowOverwrite)
+	if err != nil {
+		return fmt.Errorf("error %w in parse directive combination in collection %#v", err, apic)
 	}
 
-	// merge collected functionTags into current apiCollection's parsing (unless overridden)
-	for _, parser := range mergedParserList {
-		if _, found := currentParsers[parser.FunctionTag]; !found {
-			apic.ParseDirectives = append(apic.ParseDirectives, parser)
-		} else if !allowOverwrite {
-			return fmt.Errorf("existing api in collection combination %s %v", parser.FunctionTag, apic)
-		}
+	// merge collected extensions into current apiCollection's parsing (unless overridden)
+	apic.Extensions, err = CombineUnique(mergedExtensionsList, apic.Extensions, currentExtensions, allowOverwrite)
+	if err != nil {
+		return fmt.Errorf("error %w in extension combination in collection %#v", err, apic)
 	}
+
+	// merge collected verifications into current apiCollection's parsing (unless overridden)
+	apic.Verifications, err = CombineUnique(mergedVerificationsList, apic.Verifications, currentVerifications, allowOverwrite)
+	if err != nil {
+		return fmt.Errorf("error %w in verification combination in collection %#v", err, apic)
+	}
+
 	return nil
 }
