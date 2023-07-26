@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
@@ -33,24 +34,52 @@ type Pair struct {
 }
 
 func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, lavadPath string, logs *bytes.Buffer) {
+	defer func() {
+		// Delete the file directly without checking if it exists
+		os.Remove("testutil/e2e/sdk/pairingList.json")
+	}()
+
 	// Export user1 private key
 	privateKey := exportUserPrivateKey(lavadPath, "user1")
 
 	// Generate pairing list config
 	generatePairingList(grpcConn, ctx)
 
-	// Prepare command for running test
-	cmd := exec.Command("node", "./testutil/e2e/sdk/sdk.js")
+	// Get a list of all tests files in the tests folder
+	testFiles := []string{}
+	err := filepath.Walk("./testutil/e2e/sdk/tests", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(path, ".js") {
+			testFiles = append(testFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		fmt.Println("Error finding test files:", err)
+		return
+	}
 
-	// Set the environment variable for the private key.
-	cmd.Env = append(os.Environ(), "PRIVATE_KEY="+privateKey)
+	// Loop through each test file and execute it
+	for _, testFile := range testFiles {
+		// Prepare command for running test
+		cmd := exec.Command("node", testFile)
 
-	// Run the command and capture both standard output and standard error.
-	cmd.Stdout = logs
-	cmd.Stderr = logs
+		// Set the environment variable for the private key.
+		cmd.Env = append(os.Environ(), "PRIVATE_KEY="+privateKey)
 
-	// Run the test.
-	cmd.Run()
+		// Run the command and capture both standard output and standard error.
+		cmd.Stdout = logs
+		cmd.Stderr = logs
+
+		// Run the test.
+		fmt.Println("Running test:", testFile)
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("Error running test %s: %v\n", testFile, err)
+		}
+	}
 }
 
 // exportUserPrivateKey exports raw private keys from specific user

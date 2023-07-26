@@ -1,4 +1,4 @@
-const { LavaSDK } = require("../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
+const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
 
 async function main() {
     // Initialize Lava SDK
@@ -27,7 +27,7 @@ async function main() {
     try {
         await main();
     } catch (error) {
-        console.error(error.message);
+        console.error("ERR "+error.message);
         process.exit(1);
     }
 })();
