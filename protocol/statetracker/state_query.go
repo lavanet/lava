@@ -73,7 +73,6 @@ func (csq *StateQuery) CheckProtocolVersion(ctx context.Context) error {
 	}
 	// check target version
 	if consensusVersion.ConsumerTarget != protocolBinaryVersion.ConsumerTarget || consensusVersion.ProviderTarget != protocolBinaryVersion.ProviderTarget {
-		// don't return this error since we don't need to panic exit on target version mismatch
 		return utils.LavaFormatError("target protocol version mismatch!", nil, utils.Attribute{Key: "consensusVersion.ConsumerTarget:", Value: consensusVersion.ConsumerTarget}, utils.Attribute{Key: "protocolBinaryVersion.ConsumerTarget: ", Value: protocolBinaryVersion.ConsumerTarget},
 			utils.Attribute{Key: "consensusVersion.ProviderTarget:", Value: consensusVersion.ProviderTarget}, utils.Attribute{Key: "protocolBinaryVersion.ProviderTarget: ", Value: protocolBinaryVersion.ProviderTarget})
 	}
