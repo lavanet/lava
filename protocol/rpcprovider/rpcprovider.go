@@ -88,7 +88,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.providerStateTracker = providerStateTracker
 	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
 
-	localDB := rewardserver.NewLocalDB(rewardStoragePath)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -217,7 +216,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
-			rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDBWithTTL(addr.String(), rpcProviderEndpoint.ChainID, localDB, rewardTTL))
+			shardId := 0
+			rewardDB := rewardserver.NewRewardDBWithTTL(rewardserver.NewLocalDB(rewardStoragePath, addr.String(), rpcProviderEndpoint.ChainID, shardId), rewardTTL)
+			rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB)
 			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 			rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 

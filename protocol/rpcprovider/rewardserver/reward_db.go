@@ -15,15 +15,11 @@ import (
 const keySeparator = "."
 
 type RewardDB struct {
-	providerAddr string
-	specId       string
-	db           DB
-	ttl          time.Duration
+	db  DB
+	ttl time.Duration
 }
 
 type RewardEntity struct {
-	ProviderAddr string
-	SpecId       string
 	Epoch        uint64
 	ConsumerAddr string
 	ConsumerKey  string
@@ -35,8 +31,6 @@ func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairing
 	key := rs.assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
 
 	re := &RewardEntity{
-		ProviderAddr: rs.providerAddr,
-		SpecId:       rs.specId,
 		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: consumerAddr,
 		ConsumerKey:  consumerKey,
@@ -80,7 +74,7 @@ func (rs *RewardDB) FindOne(
 }
 
 func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
-	rawRewards, err := rs.db.FindAll(rs.providerAddr, rs.specId)
+	rawRewards, err := rs.db.FindAll()
 	if err != nil {
 		return nil, err
 	}
@@ -149,22 +143,19 @@ func (rs *RewardDB) DeleteEpochRewards(epoch uint64) error {
 	return rs.db.DeletePrefix(prefix)
 }
 
-func NewRewardDB(providerAddr string, specId string, db DB) *RewardDB {
-	return NewRewardDBWithTTL(providerAddr, specId, db, DefaultRewardTTL)
+func NewRewardDB(db DB) *RewardDB {
+	return NewRewardDBWithTTL(db, DefaultRewardTTL)
 }
 
-func NewRewardDBWithTTL(providerAddr string, specId string, db DB, ttl time.Duration) *RewardDB {
+func NewRewardDBWithTTL(db DB, ttl time.Duration) *RewardDB {
 	return &RewardDB{
-		providerAddr: providerAddr,
-		specId:       specId,
-		db:           db,
-		ttl:          ttl,
+		db:  db,
+		ttl: ttl,
 	}
 }
 
 func (rs *RewardDB) assembleKey(epoch uint64, consumerAddr string, sessionId uint64, consumerKey string) string {
 	keyParts := []string{
-		rs.providerAddr + rs.specId,
 		strconv.FormatUint(epoch, 10),
 		consumerAddr,
 		strconv.FormatUint(sessionId, 10),
