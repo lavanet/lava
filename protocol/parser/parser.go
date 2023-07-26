@@ -453,7 +453,7 @@ func appendInterfaceToInterfaceArray(value interface{}) []interface{} {
 // appendInterfaceToInterfaceArrayWithError appends interface to interface array
 // returns a valueNotSetError if the value is an empty string
 func appendInterfaceToInterfaceArrayWithError(value string) ([]interface{}, error) {
-	if value == "" || value == "0" {
+	if value == "" || value == "0" || value == "%!s(<nil>)" {
 		return nil, ValueNotSetError
 	}
 	return appendInterfaceToInterfaceArray(value), nil

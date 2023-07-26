@@ -45,7 +45,6 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.lock.Lock()
 	defer vu.lock.Unlock()
 	versionUpdated := vu.eventTracker.getLatestVersionEvents()
-	utils.LavaFormatDebug("Version Updated", utils.Attribute{Key: "bool", Value: versionUpdated})
 	if versionUpdated {
 		// fetch updated version from consensus
 		version, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
