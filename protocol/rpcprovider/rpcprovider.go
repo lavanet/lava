@@ -119,7 +119,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 	}
 
-	var rewardDBs sync.Map
+	rewardDBs := make(map[string]*rewardserver.BadgerDB, len(rpcProviderEndpoints))
 	var stateTrackersPerChain sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcProviderEndpoints)
@@ -219,18 +219,18 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
 			rewardServerSetup := func() *rewardserver.RewardServer {
-				chainMutexes[chainID].Lock()
-				defer chainMutexes[chainID].Unlock()
+				rpcp.lock.Lock()
+				defer rpcp.lock.Unlock()
 
 				shardID := 0
 				key := addr.String() + rpcProviderEndpoint.ChainID + strconv.Itoa(shardID)
-				localDB, found := rewardDBs.Load(key)
+				localDB, found := rewardDBs[key]
 				if !found {
 					localDB = rewardserver.NewLocalDB(rewardStoragePath, addr.String(), rpcProviderEndpoint.ChainID, 0)
-					rewardDBs.Store(key, localDB)
+					rewardDBs[key] = localDB
 				}
 
-				rewardDB := rewardserver.NewRewardDBWithTTL(localDB.(*rewardserver.BadgerDB), rewardTTL)
+				rewardDB := rewardserver.NewRewardDBWithTTL(localDB, rewardTTL)
 				rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB)
 				rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 				rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
@@ -290,14 +290,12 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 
 	// close all reward dbs
-	rewardDBs.Range(func(key, value interface{}) bool {
-		db := value.(rewardserver.DB)
+	for _, db := range rewardDBs {
 		err := db.Close()
 		if err != nil {
-			utils.LavaFormatError("failed closing reward db", err, utils.Attribute{Key: "key", Value: key})
+			utils.LavaFormatError("failed closing reward db", err)
 		}
-		return true
-	})
+	}
 
 	return nil
 }
