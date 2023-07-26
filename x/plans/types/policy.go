@@ -4,16 +4,36 @@ import (
 	"bytes"
 	"encoding/json"
 	fmt "fmt"
-	"reflect"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/mitchellh/mapstructure"
 )
 
 const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of the chains and allow all others
+
+// init policy default values (for fields that their natural zero value is not good)
+// the values were chosen in a way that they will not influence the strictest policy calculation
+var policyDefaultValues = map[string]interface{}{
+	"GeolocationProfile": uint64(Geolocation_GL),
+	"MaxProvidersToPair": uint64(math.MaxUint64),
+}
+
+func (policy *Policy) ContainsChainID(chainID string) bool {
+	if len(policy.ChainPolicies) == 0 {
+		// empty chainPolicies -> support all chains
+		return true
+	}
+
+	for _, chain := range policy.ChainPolicies {
+		if chain.ChainId == chainID {
+			return true
+		}
+	}
+	return false
+}
 
 // gets the chainPolicy if exists, null safe
 func (policy *Policy) ChainPolicy(chainID string) (chainPolicy ChainPolicy, allowed bool) {
@@ -154,31 +174,62 @@ func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// hook function to allow correct SELECTED_PROVIDERS_MODE enum read from yaml
-func SelectedProvidersModeHookFunc() mapstructure.DecodeHookFuncType {
-	return DecodeSelectedProvidersMode
+func ParsePolicyFromYaml(filePath string) (*Policy, error) {
+	var policy Policy
+	enumHooks := []commontypes.EnumDecodeHookFuncType{
+		commontypes.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
+		commontypes.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
+		// Add more enum hook functions for other enum types as needed
+	}
+
+	missingFields, err := commontypes.ReadYaml(filePath, "Policy", &policy, enumHooks, true)
+	if err != nil {
+		return &policy, err
+	}
+
+	handleMissingPolicyFields(missingFields, &policy)
+
+	return &policy, nil
 }
 
-func DecodeSelectedProvidersMode(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-	// Check that the data is string
-	if f.Kind() != reflect.String {
-		return data, nil
-	}
+// handleMissingPolicyFields sets default values to missing fields
+func handleMissingPolicyFields(missingFields []string, policy *Policy) {
+	missingFieldsDefaultValues := make(map[string]interface{})
 
-	// Check that the target type is policy
-	if t != reflect.TypeOf(SELECTED_PROVIDERS_MODE(0)) {
-		return data, nil
-	}
-
-	dataStr, ok := data.(string)
-	if ok {
-		mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
-		if found {
-			return SELECTED_PROVIDERS_MODE(mode), nil
-		} else {
-			return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
+	for _, field := range missingFields {
+		defValue, ok := policyDefaultValues[field]
+		// not checking if not ok because fields without default values can use
+		// their natural default value (it's not an error)
+		if ok {
+			missingFieldsDefaultValues[field] = defValue
 		}
 	}
 
-	return data, nil
+	commontypes.SetDefaultValues(policy, missingFieldsDefaultValues)
+}
+
+// parseEnumValue is a helper function to parse the enum value based on the provided enumType.
+func parsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, error) {
+	switch v := enumType.(type) {
+	case uint64:
+		geo, err := ParseGeoEnum(strVal)
+		if err != nil {
+			return 0, fmt.Errorf("invalid geolocation %s", strVal)
+		}
+		return geo, nil
+	case SELECTED_PROVIDERS_MODE:
+		return DecodeSelectedProvidersMode(strVal)
+	// Add cases for other enum types as needed
+	default:
+		return nil, fmt.Errorf("unsupported enum type: %T", v)
+	}
+}
+
+func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
+	mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
+	if found {
+		return SELECTED_PROVIDERS_MODE(mode), nil
+	} else {
+		return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
+	}
 }

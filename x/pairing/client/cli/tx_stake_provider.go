@@ -200,14 +200,14 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			return nil, 0, fmt.Errorf("invalid endpoint format: %s", endpointStr)
 		}
 
-		geoloc, err := types.ParseGeoEnum(split[1])
+		geoloc, err := planstypes.ParseGeoEnum(split[1])
 		if err != nil {
 			return nil, 0, fmt.Errorf("invalid endpoint format: %w, format: %s", err, strings.Join(split, ";"))
 		}
 
 		if geoloc == int32(planstypes.Geolocation_GL) {
 			// if global ("GL"), append the endpoint in all possible geolocations
-			for _, geoloc := range types.GetGeolocations() {
+			for _, geoloc := range planstypes.GetGeolocations() {
 				endpoint := epochstoragetypes.Endpoint{
 					IPPORT:      split[0],
 					Geolocation: uint64(geoloc),
@@ -220,7 +220,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			endpointsGeoloc = int32(planstypes.Geolocation_GL)
 		} else {
 			// if not global, verify the geolocation is a single region and append as is
-			if !types.IsGeoEnumSingleBit(geoloc) {
+			if !planstypes.IsGeoEnumSingleBit(geoloc) {
 				return nil, 0, fmt.Errorf("endpoint must include exactly one geolocation code: %s", split[1])
 			}
 			endpoint := epochstoragetypes.Endpoint{
@@ -236,7 +236,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 	}
 	if geoArg != "*" {
 		// handle geolocation
-		geo, err = types.ParseGeoEnum(geoArg)
+		geo, err = planstypes.ParseGeoEnum(geoArg)
 		if err != nil {
 			return nil, 0, fmt.Errorf("invalid geolocation format: %w", err)
 		}
