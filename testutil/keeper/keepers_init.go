@@ -222,7 +222,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
-	ks.Protocol.SetParams(ctx, protocoltypes.DefaultParams())
+	ks.Protocol.SetParams(ctx, protocoltypes.NewParams(protocoltypes.Version{ProviderTarget: "0.0.1", ProviderMin: "0.0.0", ConsumerTarget: "0.0.1", ConsumerMin: "0.0.0"}))
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
