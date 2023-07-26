@@ -4,5 +4,18 @@ package lavanet.lava.downtime.v1;
 
 option go_package = "github.com/lavanet/lava/x/downtime/v1";
 
+import "downtime/v1/downtime.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+
 // GenesisState is the genesis state of the downtime module.
-message GenesisState {}
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated Downtime downtimes = 2;
+  repeated DowntimeGarbageCollection downtimes_garbage_collection = 3;
+  // last_block_time keeps track of when the last block time was set.
+  // it's nullable because we might want it to be non existent.
+  // we want it to exist when we have a genesis export-import migration scenario.
+  google.protobuf.Timestamp last_block_time = 4 [(gogoproto.nullable) = true, (gogoproto.stdtime) = true];
+}
