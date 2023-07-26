@@ -95,7 +95,7 @@ func TestShowFixatedParams(t *testing.T) {
 }
 
 func TestListFixatedParams(t *testing.T) {
-	net, objs := networkWithFixatedParamsObjects(t, 5)
+	net, objs := networkWithFixatedParamsObjects(t, 6)
 
 	ctx := net.Validators[0].ClientCtx
 	request := func(next []byte, offset, limit uint64, total bool) []string {
@@ -152,7 +152,7 @@ func TestListFixatedParams(t *testing.T) {
 		var resp types.QueryAllFixatedParamsResponse
 		require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 		require.NoError(t, err)
-		require.Equal(t, len(objs), int(resp.Pagination.Total))
+		require.Equal(t, len(objs), int(resp.Pagination.Total)-4)
 		require.ElementsMatch(t,
 			nullify.Fill(objs),
 			nullify.Fill(resp.FixatedParams),
