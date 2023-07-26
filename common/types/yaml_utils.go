@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
@@ -62,9 +63,11 @@ func findMissingFields(content interface{}) []string {
 		contentValue = contentValue.Elem()
 	}
 
-	// Ensure content is a struct or a pointer to a struct
+	// panic:ok Ensure content is a struct or a pointer to a struct
 	if contentType.Kind() != reflect.Struct {
-		panic("findMissingFields was called with a non-struct type: " + contentType.Kind().String())
+		utils.LavaFormatPanic("findMissingFields was called with a non-struct type", fmt.Errorf("cannot read yaml"),
+			utils.Attribute{Key: "type", Value: contentType.Kind().String()},
+		)
 	}
 
 	// Extract the expected field names from the struct
