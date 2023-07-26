@@ -38,10 +38,7 @@ func (re RelayExchange) DataToSign() []byte {
 		[]byte(re.Request.RelayData.String()),
 		metadataBytes,
 	}
-	var totalLen int
-	for _, arr := range msgParts {
-		totalLen += len(arr)
-	}
+
 	return sigs.Join(msgParts)
 }
 
