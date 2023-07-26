@@ -18,28 +18,24 @@ type VersionStateQuery interface {
 }
 
 type VersionUpdatable interface {
-	SetProtocolVersion(*protocoltypes.Version)
 }
 
 type VersionUpdater struct {
 	lock              sync.RWMutex
 	eventTracker      *EventTracker
 	versionStateQuery VersionStateQuery
-	versionUpdatables []*VersionUpdatable
 }
 
 func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker) *VersionUpdater {
-	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, versionUpdatables: []*VersionUpdatable{}}
+	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
 	return CallbackKeyForVersionUpdate
 }
 
-func (vu *VersionUpdater) RegisterVersionUpdatable(ctx context.Context, versionUpdatable VersionUpdatable) {
-	vu.lock.Lock()
-	defer vu.lock.Unlock()
-	vu.versionUpdatables = append(vu.versionUpdatables, &versionUpdatable)
+func (vu *VersionUpdater) RegisterVersionUpdatable() {
+	// currently no behavior is needed, in case we need to add a behavior in the future
 }
 
 func (vu *VersionUpdater) Update(latestBlock int64) {

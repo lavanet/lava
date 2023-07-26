@@ -78,14 +78,14 @@ func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumer
 	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
 }
 
-func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, versionUpdatable VersionUpdatable) {
+func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context) {
 	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker)
 	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
 	}
-	versionUpdater.RegisterVersionUpdatable(ctx, versionUpdatable)
+	versionUpdater.RegisterVersionUpdatable()
 }
 
 func (cst *ConsumerStateTracker) CheckProtocolVersion(ctx context.Context) error {

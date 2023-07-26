@@ -1,70 +1,18 @@
 package upgrade
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type ProtocolVersion struct {
-	ProviderTarget string
-	ProviderMin    string
-	ConsumerTarget string
-	ConsumerMin    string
-}
-
-var LavaProtocolVersion = ProtocolVersion{
-	ProviderTarget: "0.16.0",
-	ProviderMin:    "0.16.0",
-	ConsumerTarget: "0.16.0",
-	ConsumerMin:    "0.16.0",
-}
-
-type UpgradeManager struct {
-	lock sync.RWMutex
-}
-
-// Returning a new provider session manager
-func NewUpdateManager() *UpgradeManager {
-	return &UpgradeManager{}
-}
-
-func (um *UpgradeManager) SetProtocolVersion(newVersion *protocoltypes.Version) {
-	um.lock.Lock()
-	defer um.lock.Unlock()
-	LavaProtocolVersion.ProviderMin = newVersion.ProviderMin
-	LavaProtocolVersion.ProviderTarget = newVersion.ProviderTarget
-	LavaProtocolVersion.ConsumerTarget = newVersion.ConsumerTarget
-	LavaProtocolVersion.ConsumerMin = newVersion.ConsumerMin
-}
-
-func BuildVersionFromParamChangeEvent(event terderminttypes.Event) bool {
-	var versionValue []byte
-
-	for _, attribute := range event.Attributes {
-		key := string(attribute.Key)
-		value := string(attribute.Value)
-
-		if key == "param" && value != "Version" {
-			return false
-		}
-		if key == "value" {
-			versionValue = attribute.Value
-			break
-		}
-	}
-	if versionValue == nil {
-		return false
-	}
-	var version *ProtocolVersion
-	// making sure that proposal value can be unmarshalled with ProtocolVersion type
-	err := json.Unmarshal(versionValue, &version)
-	return err == nil
+var LavaProtocolVersion = protocoltypes.Version{
+	ProviderTarget: "0.21.0",
+	ProviderMin:    "0.21.0",
+	ConsumerTarget: "0.21.0",
+	ConsumerMin:    "0.21.0",
 }
 
 // helper function to parse version major/middle/minor fields
@@ -96,27 +44,4 @@ func ParseVersion(versionString string) (ParsedVersion, error) {
 	}
 
 	return ParsedVersion{Major: major, Middle: middle, Minor: minor}, nil
-}
-
-func ParseMultipleVersions(versions []string) ([]ParsedVersion, error) {
-	parsedVersions := make([]ParsedVersion, len(versions))
-
-	for i, version := range versions {
-		parsed, err := ParseVersion(version)
-		if err != nil {
-			return nil, err
-		}
-
-		parsedVersions[i] = parsed
-	}
-
-	return parsedVersions, nil
-}
-
-func ParseLavadVersion(version string) (ParsedVersion, error) {
-	parts := strings.Split(version, "-")
-	if len(parts) == 0 {
-		return ParsedVersion{}, utils.LavaFormatError("invalid version format", nil)
-	}
-	return ParseVersion(parts[0])
 }

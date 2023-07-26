@@ -28,7 +28,6 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -47,7 +46,7 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, versionUpdatable statetracker.VersionUpdatable)
+	RegisterForVersionUpdates(ctx context.Context)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
@@ -96,8 +95,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	utils.LavaFormatInfo("RPCProvider version OK!")
 
-	upgradeManager := upgrade.NewUpdateManager()
-	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)
+	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx)
 
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)

@@ -26,7 +26,6 @@ import (
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -74,7 +73,7 @@ func (s *strategyValue) Type() string {
 }
 
 type ConsumerStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, versionUpdatable statetracker.VersionUpdatable)
+	RegisterForVersionUpdates(ctx context.Context)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
@@ -142,8 +141,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	utils.LavaFormatInfo("RPCConsumer version OK!")
 
-	upgradeManager := upgrade.NewUpdateManager()
-	consumerStateTracker.RegisterForVersionUpdates(ctx, upgradeManager)
+	consumerStateTracker.RegisterForVersionUpdates(ctx)
 
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {

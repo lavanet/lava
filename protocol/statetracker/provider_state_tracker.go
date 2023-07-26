@@ -54,14 +54,14 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, versionUpdatable VersionUpdatable) {
+func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context) {
 	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
 	}
-	versionUpdater.RegisterVersionUpdatable(ctx, versionUpdatable)
+	versionUpdater.RegisterVersionUpdatable()
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {

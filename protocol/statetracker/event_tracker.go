@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -75,10 +74,14 @@ func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 	defer et.lock.RUnlock()
 	for _, event := range et.blockResults.EndBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
-			updated = upgrade.BuildVersionFromParamChangeEvent(event)
+			for _, attribute := range event.Attributes {
+				if string(attribute.Key) == "param" && string(attribute.Value) == "Version" {
+					return true
+				}
+			}
 		}
 	}
-	return updated
+	return false
 }
 
 func (et *EventTracker) getLatestSpecModifyEvents() (updated bool) {
