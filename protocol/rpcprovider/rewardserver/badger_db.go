@@ -1,6 +1,8 @@
 package rewardserver
 
 import (
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -44,13 +46,12 @@ func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 	return
 }
 
-func (mdb *BadgerDB) FindAll(providerAddress, specId string) (map[string][]byte, error) {
+func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
 	result := make(map[string][]byte)
 
 	err := mdb.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10
-		opts.Prefix = []byte(providerAddress + specId)
 
 		it := txn.NewIterator(opts)
 		defer it.Close()
@@ -108,7 +109,9 @@ func NewMemoryDB() *BadgerDB {
 	}
 }
 
-func NewLocalDB(path string) *BadgerDB {
+func NewLocalDB(storagePath, providerAddr string, specId string, shard int) *BadgerDB {
+	shardString := strconv.Itoa(shard)
+	path := filepath.Join(storagePath, providerAddr, specId, shardString)
 	Options := badger.DefaultOptions(path)
 	Options.Logger = utils.LoggerWrapper{LoggerName: "[Badger DB]: "} // replace the logger with lava logger
 	db, err := badger.Open(Options)

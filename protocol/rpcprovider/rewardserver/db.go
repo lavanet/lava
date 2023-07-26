@@ -5,7 +5,7 @@ import "time"
 type DB interface {
 	Save(key string, data []byte, ttl time.Duration) error
 	FindOne(key string) ([]byte, error)
-	FindAll(providerAddress, specId string) (map[string][]byte, error)
+	FindAll() (map[string][]byte, error)
 	Delete(key string) error
 	DeletePrefix(prefix string) error
 	Close() error

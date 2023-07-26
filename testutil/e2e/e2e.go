@@ -334,8 +334,8 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/jsonrpcProvider%d.yml --from servicer%d --reward-server-storage %s/badger%d %s",
-			lt.protocolPath, configFolder, idx, idx, rewardServerStorage, idx, lt.lavadArgs,
+			"%s rpcprovider %s/jsonrpcProvider%d.yml --from servicer%d --reward-server-storage %s/badger %s",
+			lt.protocolPath, configFolder, idx, idx, rewardServerStorage, lt.lavadArgs,
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
@@ -509,8 +509,8 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/lavaProvider%d --from servicer%d --reward-server-storage %s/badger-lava%d %s",
-			lt.protocolPath, configFolder, idx, idx, rewardServerStorage, idx, lt.lavadArgs,
+			"%s rpcprovider %s/lavaProvider%d --from servicer%d --reward-server-storage %s/badger %s",
+			lt.protocolPath, configFolder, idx, idx, rewardServerStorage, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
 		funcName := fmt.Sprintf("startLavaProviders (provider %02d)", idx-5)
