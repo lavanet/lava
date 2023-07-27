@@ -36,7 +36,7 @@ func (ts *tester) checkProviderStaked(provider sdk.AccAddress) {
 }
 
 func TestUnresponsivenessStressTest(t *testing.T) {
-	clientsCount := 50
+	clientsCount := 100
 	providersCount := 6
 
 	ts := newTester(t)

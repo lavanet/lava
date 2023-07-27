@@ -28461,6 +28461,108 @@ paths:
                   additionalProperties: {}
       tags:
         - Query
+  /lavanet/lava/downtime/v1/params:
+    get:
+      operationId: LavanetLavaDowntimeV1QueryParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                type: object
+                properties:
+                  downtime_duration:
+                    type: string
+                    description: >-
+                      downtime_duration defines the minimum time elapsed between
+                      blocks
+
+                      that we consider the chain to be down.
+                description: Params defines the parameters of the downtime module.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      tags:
+        - Query
+  /lavanet/lava/downtime/v1/query_downtime:
+    get:
+      operationId: LavanetLavaDowntimeV1QueryDowntime
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              downtimes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    block:
+                      type: string
+                      format: uint64
+                      description: block defines the block that took time to produce.
+                    duration:
+                      type: string
+                      description: >-
+                        duration defines the time elapsed between the previous
+                        block and this one.
+
+                        this defines the effective downtime duration.
+                  description: Downtime defines a single downtime record.
+              cumulative_downtime_duration:
+                type: string
+            description: >-
+              QueryDowntimeResponse is the response type for the
+              Query/QueryDowntime RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    '@type':
+                      type: string
+                  additionalProperties: {}
+      parameters:
+        - name: start_block
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: end_block
+          in: query
+          required: false
+          type: string
+          format: uint64
+      tags:
+        - Query
   /lavanet/lava/epochstorage/epoch_details:
     get:
       summary: Queries a EpochDetails by index.
@@ -52683,6 +52785,67 @@ definitions:
             type: string
           sync:
             type: string
+  lavanet.lava.downtime.v1.Downtime:
+    type: object
+    properties:
+      block:
+        type: string
+        format: uint64
+        description: block defines the block that took time to produce.
+      duration:
+        type: string
+        description: >-
+          duration defines the time elapsed between the previous block and this
+          one.
+
+          this defines the effective downtime duration.
+    description: Downtime defines a single downtime record.
+  lavanet.lava.downtime.v1.Params:
+    type: object
+    properties:
+      downtime_duration:
+        type: string
+        description: |-
+          downtime_duration defines the minimum time elapsed between blocks
+          that we consider the chain to be down.
+    description: Params defines the parameters of the downtime module.
+  lavanet.lava.downtime.v1.QueryDowntimeResponse:
+    type: object
+    properties:
+      downtimes:
+        type: array
+        items:
+          type: object
+          properties:
+            block:
+              type: string
+              format: uint64
+              description: block defines the block that took time to produce.
+            duration:
+              type: string
+              description: >-
+                duration defines the time elapsed between the previous block and
+                this one.
+
+                this defines the effective downtime duration.
+          description: Downtime defines a single downtime record.
+      cumulative_downtime_duration:
+        type: string
+    description: >-
+      QueryDowntimeResponse is the response type for the Query/QueryDowntime RPC
+      method.
+  lavanet.lava.downtime.v1.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        type: object
+        properties:
+          downtime_duration:
+            type: string
+            description: |-
+              downtime_duration defines the minimum time elapsed between blocks
+              that we consider the chain to be down.
+        description: Params defines the parameters of the downtime module.
   lavanet.lava.epochstorage.Endpoint:
     type: object
     properties:

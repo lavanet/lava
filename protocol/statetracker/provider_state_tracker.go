@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 // ProviderStateTracker PST is a class for tracking provider data from the lava blockchain, such as epoch changes.
@@ -52,6 +53,16 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
 	}
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
+}
+
+func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
+	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version)
+	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
+	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
+	}
+	versionUpdater.RegisterVersionUpdatable()
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
@@ -114,4 +125,8 @@ func (pst *ProviderStateTracker) GetRecommendedEpochNumToCollectPayment(ctx cont
 
 func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error) {
 	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
+}
+
+func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+	return pst.stateQuery.GetProtocolVersion(ctx)
 }
