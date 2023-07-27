@@ -195,7 +195,7 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 	ts.plan.PlanPolicy.GeolocationProfile = 7
 	ts.AddPlan("mock", ts.plan)
 
-	ts.setupForPayments(1, 1, 0) // 1 provider, 0 client, default providers-to-pair
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
@@ -209,13 +209,14 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 		name                   string
 		geolocationAdminPolicy uint64
 		geolocationSubPolicy   uint64
-		success                bool
+		expectedProviderPaired int
+		validPairing           bool
 	}{
-		{"effective geo = 1", uint64(1), uint64(1), true},
-		{"effective geo = 3 (includes geo=1)", uint64(3), uint64(3), true},
-		{"effective geo = 2", uint64(3), uint64(2), false},
-		{"effective geo = 0 (planPolicy & subPolicy = 1)", uint64(2), uint64(1), false},
-		{"effective geo = 0 (planPolicy & adminPolicy = 1)", uint64(1), uint64(2), false},
+		{"effective geo = 1", uint64(1), uint64(1), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 3 (includes geo=1)", uint64(3), uint64(3), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 2", uint64(3), uint64(2), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 0 (planPolicy & subPolicy = 1)", uint64(2), uint64(1), 0, false},
+		{"effective geo = 0 (planPolicy & adminPolicy = 1)", uint64(1), uint64(2), 0, false},
 	}
 
 	for _, tt := range geolocationTestTemplates {
@@ -242,12 +243,13 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 			// the only provider is set with geolocation=1. So only geolocation that ANDs
 			// with 1 and output non-zero result, will output a provider for pairing
 			res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-			require.Nil(t, err)
-			if tt.success {
-				require.NotEqual(t, 0, len(res.Providers))
+			if tt.validPairing {
+				require.Nil(t, err)
 			} else {
-				require.Equal(t, 0, len(res.Providers))
+				require.NotNil(t, err)
+				return
 			}
+			require.Equal(t, tt.expectedProviderPaired, len(res.Providers))
 		})
 	}
 }

@@ -32415,7 +32415,7 @@ paths:
                                         - GET_BLOCK_BY_NUM
                                         - SET_LATEST_IN_METADATA
                                         - SET_LATEST_IN_BODY
-                                        - VERIFICATION
+                                        - GET_CHAIN_ID
                                       default: DISABLED
                                     function_template:
                                       type: string
@@ -32869,7 +32869,7 @@ paths:
                                       - GET_BLOCK_BY_NUM
                                       - SET_LATEST_IN_METADATA
                                       - SET_LATEST_IN_BODY
-                                      - VERIFICATION
+                                      - GET_CHAIN_ID
                                     default: DISABLED
                                   function_template:
                                     type: string
@@ -33246,7 +33246,7 @@ paths:
                                         - GET_BLOCK_BY_NUM
                                         - SET_LATEST_IN_METADATA
                                         - SET_LATEST_IN_BODY
-                                        - VERIFICATION
+                                        - GET_CHAIN_ID
                                       default: DISABLED
                                     function_template:
                                       type: string
@@ -33700,7 +33700,7 @@ paths:
                                       - GET_BLOCK_BY_NUM
                                       - SET_LATEST_IN_METADATA
                                       - SET_LATEST_IN_BODY
-                                      - VERIFICATION
+                                      - GET_CHAIN_ID
                                     default: DISABLED
                                   function_template:
                                     type: string
@@ -57842,7 +57842,7 @@ definitions:
                     - GET_BLOCK_BY_NUM
                     - SET_LATEST_IN_METADATA
                     - SET_LATEST_IN_BODY
-                    - VERIFICATION
+                    - GET_CHAIN_ID
                   default: DISABLED
                 function_template:
                   type: string
@@ -58365,7 +58365,7 @@ definitions:
                                 - GET_BLOCK_BY_NUM
                                 - SET_LATEST_IN_METADATA
                                 - SET_LATEST_IN_BODY
-                                - VERIFICATION
+                                - GET_CHAIN_ID
                               default: DISABLED
                             function_template:
                               type: string
@@ -58724,7 +58724,7 @@ definitions:
                               - GET_BLOCK_BY_NUM
                               - SET_LATEST_IN_METADATA
                               - SET_LATEST_IN_BODY
-                              - VERIFICATION
+                              - GET_CHAIN_ID
                             default: DISABLED
                           function_template:
                             type: string
@@ -59120,7 +59120,7 @@ definitions:
                           - GET_BLOCK_BY_NUM
                           - SET_LATEST_IN_METADATA
                           - SET_LATEST_IN_BODY
-                          - VERIFICATION
+                          - GET_CHAIN_ID
                         default: DISABLED
                       function_template:
                         type: string
@@ -59207,7 +59207,7 @@ definitions:
               - GET_BLOCK_BY_NUM
               - SET_LATEST_IN_METADATA
               - SET_LATEST_IN_BODY
-              - VERIFICATION
+              - GET_CHAIN_ID
             default: DISABLED
           function_template:
             type: string
@@ -59290,19 +59290,6 @@ definitions:
                   type: array
                   items:
                     type: string
-                collections:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      api_interface:
-                        type: string
-                      internal_path:
-                        type: string
-                      type:
-                        type: string
-                      add_on:
-                        type: string
           geolocation_profile:
             type: string
             format: uint64
