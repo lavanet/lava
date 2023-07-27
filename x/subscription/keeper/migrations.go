@@ -96,5 +96,5 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 // Migrate3to4 implements store migration from v3 to v4:
 // -- trigger fixation migration (v4->v5), initialize IsLatest field
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
-	return m.keeper.subsFS.MigrateVersionFrom(ctx, 4)
+	return m.keeper.subsFS.MigrateVersion(ctx)
 }

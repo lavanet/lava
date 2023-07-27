@@ -89,11 +89,11 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 // Migrate5to6 implements store migration from v5 to v6:
 // -- trigger fixation migration, deleteat and live variables
 func (m Migrator) Migrate5to6(ctx sdk.Context) error {
-	return m.keeper.plansFS.MigrateVersionFrom(ctx, 3)
+	return m.keeper.plansFS.MigrateVersion(ctx)
 }
 
 // Migrate6to7 implements store migration from v6 to v7:
 // -- trigger fixation migration (v4->v5), initialize IsLatest field
 func (m Migrator) Migrate6to7(ctx sdk.Context) error {
-	return m.keeper.plansFS.MigrateVersionFrom(ctx, 4)
+	return m.keeper.plansFS.MigrateVersion(ctx)
 }
