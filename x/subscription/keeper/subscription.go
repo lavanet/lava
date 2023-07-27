@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -40,26 +39,6 @@ func NextMonth(date time.Time) time.Time {
 		0,
 		time.UTC,
 	)
-}
-
-// ExportSubscriptions exports subscriptions data (for genesis)
-func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
-	return k.subsFS.Export(ctx)
-}
-
-// ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
-func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
-	return k.subsTS.Export(ctx)
-}
-
-// InitSubscriptions imports subscriptions data (from genesis)
-func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.subsFS.Init(ctx, data)
-}
-
-// InitSubscriptions imports subscriptions timers data (from genesis)
-func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.subsTS.Init(ctx, data)
 }
 
 // GetSubscription returns the subscription of a given consumer

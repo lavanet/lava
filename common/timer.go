@@ -140,6 +140,9 @@ func (tstore *TimerStore) Export(ctx sdk.Context) []types.RawMessage {
 }
 
 func (tstore *TimerStore) Init(ctx sdk.Context, data []types.RawMessage) {
+	// will be overwritten by below if genesis state exists
+	tstore.setVersion(ctx, TimerVersion())
+
 	store := prefix.NewStore(
 		ctx.KVStore(tstore.storeKey),
 		types.KeyPrefix(tstore.prefix))
@@ -151,12 +154,7 @@ func (tstore *TimerStore) Init(ctx sdk.Context, data []types.RawMessage) {
 
 func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
-
 	b := store.Get(types.KeyPrefix(types.TimerVersionKey))
-	if b == nil {
-		return 1
-	}
-
 	return types.DecodeKey(b)
 }
 

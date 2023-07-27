@@ -923,12 +923,7 @@ func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
 
 func (fs *FixationStore) getVersion(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
-
 	b := store.Get(types.KeyPrefix(types.FixationVersionKey))
-	if b == nil {
-		return 1
-	}
-
 	return types.DecodeKey(b)
 }
 
@@ -936,20 +931,6 @@ func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
 	b := types.EncodeKey(val)
 	store.Set(types.KeyPrefix(types.FixationVersionKey), b)
-}
-
-// NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
-	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
-
-	callback := func(ctx sdk.Context, key []byte, data []byte) {
-		fs.entryCallbackBeginBlock(ctx, key, data)
-	}
-
-	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
-	fs.tstore = *tstore
-
-	return &fs
 }
 
 func (fs *FixationStore) Export(ctx sdk.Context) []types.RawMessage {
@@ -968,6 +949,14 @@ func (fs *FixationStore) Export(ctx sdk.Context) []types.RawMessage {
 }
 
 func (fs *FixationStore) Init(ctx sdk.Context, data []types.RawMessage) {
+	// call timer-store's Init (with empty input) to trigger its setVersion() if needed;
+	// the timer-store data is stored in the same namespace/prefix as this fixation store
+	// so the loop below will restore its state too (and overwrite that Init).
+	fs.tstore.Init(ctx, nil)
+
+	// will be overwritten by below if genesis state exists
+	fs.setVersion(ctx, FixationVersion())
+
 	store := prefix.NewStore(
 		ctx.KVStore(fs.storeKey),
 		types.KeyPrefix(fs.prefix))
@@ -975,4 +964,18 @@ func (fs *FixationStore) Init(ctx sdk.Context, data []types.RawMessage) {
 	for _, data := range data {
 		store.Set(data.Key, data.Value)
 	}
+}
+
+// NewFixationStore returns a new FixationStore object
+func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
+	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
+
+	callback := func(ctx sdk.Context, key []byte, data []byte) {
+		fs.entryCallbackBeginBlock(ctx, key, data)
+	}
+
+	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
+	fs.tstore = *tstore
+
+	return &fs
 }
