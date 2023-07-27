@@ -410,18 +410,16 @@ func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLat
 			cs.QoSInfo.SyncScoreSum++
 		}
 		cs.QoSInfo.TotalSyncScore++
+		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+		if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+			utils.LavaFormatDebug("QoS Sync report",
+				utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
+				utils.Attribute{Key: "block diff", Value: blockHeightDiff},
+				utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
+				utils.Attribute{Key: "session_id", Value: blockHeightDiff},
+			)
+		}
 	} // else, we don't increase the score at all so everyone will have the same score
-
-	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
-
-	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) && shouldCalculateSyncScore {
-		utils.LavaFormatDebug("QoS Sync report",
-			utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
-			utils.Attribute{Key: "block diff", Value: blockHeightDiff},
-			utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
-			utils.Attribute{Key: "session_id", Value: blockHeightDiff},
-		)
-	}
 }
 
 // validate if this is a data reliability session
