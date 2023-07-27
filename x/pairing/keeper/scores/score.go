@@ -63,7 +63,8 @@ func init() {
 
 func GetAllReqs() []ScoreReq {
 	stakeReq := StakeReq{}
-	return []ScoreReq{&stakeReq}
+	geoReq := GeoReq{}
+	return []ScoreReq{&stakeReq, &geoReq}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
@@ -76,9 +77,9 @@ func CalcSlots(policy planstypes.Policy) []*PairingSlot {
 	for i := range slots {
 		reqMap := make(map[string]ScoreReq)
 		for _, req := range reqs {
-			active := req.Init()
+			active := req.Init(policy)
 			if active {
-				reqMap[req.GetName()] = req.GetReqForSlot(i)
+				reqMap[req.GetName()] = req.GetReqForSlot(policy, i)
 			}
 		}
 
@@ -212,5 +213,6 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		}
 		hashData = append(hashData, []byte{uint8(it)}...)
 	}
+
 	return returnedProviders
 }
