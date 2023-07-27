@@ -177,7 +177,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 
 	scoreSum := sdk.ZeroUint()
 	for _, providerScore := range scores {
-		if !providerScore.ValidForSelection {
+		if providerScore.SkipForSelection {
 			// skip index of providers already selected
 			continue
 		}
@@ -198,25 +198,24 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 	rand.Seed(seed)
 
 	for it := 0; it < groupCount; it++ {
-		randomValue := uint64(rand.Int63n(scoreSum.BigInt().Int64()))
+		randomValue := uint64(rand.Int63n(scoreSum.BigInt().Int64())) + 1
 		newScoreSum := sdk.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
-			if !scores[idx].ValidForSelection {
+			if scores[idx].SkipForSelection {
 				// skip index of providers already selected
 				continue
 			}
 			providerScore := scores[idx]
 			newScoreSum = newScoreSum.Add(providerScore.Score)
-			if randomValue < newScoreSum.Uint64() {
+			if randomValue <= newScoreSum.Uint64() {
 				// we hit our chosen provider
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
 				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
-				scores[idx].ValidForSelection = false
+				scores[idx].SkipForSelection = true
 				break
 			}
 		}
-		hashData = append(hashData, []byte{uint8(it)}...)
 	}
 	return returnedProviders
 }
