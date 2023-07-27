@@ -191,6 +191,15 @@ func (k Keeper) GarbageCollectDowntimes(ctx sdk.Context) {
 	}
 }
 
+func (k Keeper) GetDowntimeFactor(ctx sdk.Context, epoch uint64) uint64 {
+	duration, exists := k.GetDowntime(ctx, epoch)
+	if !exists {
+		return 1
+	}
+	epochDuration := k.GetParams(ctx).EpochDuration
+	return uint64(duration/epochDuration) + 1
+}
+
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	// this ensures that no matter the outcome, we will
 	// reset the last block time to the current block time.
