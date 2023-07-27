@@ -23,12 +23,3 @@ message Downtime {
   // this defines the effective downtime duration.
   google.protobuf.Duration duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
-
-// DowntimeGarbageCollection defines when garbage collection will be performed, for a specific downtime.
-// used only in genesis.
-message DowntimeGarbageCollection {
-  // block defines the block that references a Downtime.
-  uint64 block = 1;
-  // gc_time defines the block when garbage collection will be performed.
-  uint64 gc_block = 2;
-}
