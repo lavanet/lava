@@ -37,15 +37,16 @@ package scores
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
-	"math/big"
+	"math/rand"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
 var uniformStrategy ScoreStrategy
@@ -187,12 +188,17 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	for it := 0; it < groupCount; it++ {
-		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
-		bigIntHash := new(big.Int).SetBytes(hash)
-		uintHash := sdk.NewUintFromBigInt(bigIntHash)
-		modRes := uintHash.Mod(scoreSum)
+	sum256 := sha256.Sum256(hashData)
+	// Fold the SHA-256 hash into a 64-bit seed using bitwise XOR
+	var seed int64
+	for i := 0; i < len(sum256)/8; i++ {
+		seed ^= int64(binary.BigEndian.Uint64(sum256[i*8 : (i+1)*8]))
+	}
 
+	rand.Seed(seed)
+
+	for it := 0; it < groupCount; it++ {
+		randomValue := uint64(rand.Int63n(scoreSum.BigInt().Int64()))
 		newScoreSum := sdk.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
@@ -202,7 +208,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 			}
 			providerScore := scores[idx]
 			newScoreSum = newScoreSum.Add(providerScore.Score)
-			if modRes.LT(newScoreSum) {
+			if randomValue < newScoreSum.Uint64() {
 				// we hit our chosen provider
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
 				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
