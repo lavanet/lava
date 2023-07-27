@@ -4,10 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
@@ -54,33 +52,6 @@ func TestDowntime(t *testing.T) {
 	require.False(t, ok)
 }
 
-func TestHadDowntimes(t *testing.T) {
-	app, ctx := app.TestSetup()
-	keeper := app.DowntimeKeeper
-
-	// no downtime
-	has, _ := keeper.HadDowntimeBetween(ctx, 1, 2)
-	require.False(t, has)
-
-	// set downtime
-	keeper.SetDowntime(ctx, 1, 1*time.Minute)
-	// set another downtime
-	keeper.SetDowntime(ctx, 2, 1*time.Minute)
-	has, duration := keeper.HadDowntimeBetween(ctx, 1, 2)
-	require.True(t, has)
-	require.Equal(t, 2*time.Minute, duration)
-
-	// test same block
-	has, duration = keeper.HadDowntimeBetween(ctx, 1, 1)
-	require.True(t, has)
-	require.Equal(t, 1*time.Minute, duration)
-
-	// out of range
-	has, duration = keeper.HadDowntimeBetween(ctx, 1, 3)
-	require.True(t, has)
-	require.Equal(t, 2*time.Minute, duration)
-}
-
 func TestBeginBlock(t *testing.T) {
 	// anonymous function to move into next block with provided duration
 	nextBlock := func(ctx sdk.Context, elapsedTime time.Duration) sdk.Context {
@@ -88,7 +59,8 @@ func TestBeginBlock(t *testing.T) {
 	}
 
 	app, ctx := app.TestSetup()
-	app.EpochstorageKeeper.SetParams(ctx, epochstoragetypes.DefaultParams())
+	epochParams := epochstoragetypes.DefaultParams()
+	app.EpochstorageKeeper.SetParams(ctx, epochParams)
 	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(1)
 	keeper := app.DowntimeKeeper
 	keeper.SetParams(ctx, v1.DefaultParams())
@@ -123,20 +95,6 @@ func TestBeginBlock(t *testing.T) {
 	_, hadDowntimes = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()))
 	require.False(t, hadDowntimes)
 
-	// we check garbage collection by advancing blocks until the garbage collection blocks are reached
-	gcBlocks := keeper.GCBlocks(ctx)
-	for i := 0; i < int(gcBlocks); i++ {
-		ctx = nextBlock(ctx, 1*time.Second)
-		keeper.BeginBlock(ctx)
-	}
-	keeper.BeginBlock(ctx)
-
-	// now we check the garbage collection store prefix, which should be empty
-	sk := app.GetKey(types.ModuleName)
-	store := prefix.NewStore(ctx.KVStore(sk), types.DowntimeHeightGarbageKey)
-	iter := store.Iterator(nil, nil)
-	defer iter.Close()
-	require.False(t, iter.Valid())
 }
 
 func TestImportExportGenesis(t *testing.T) {

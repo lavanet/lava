@@ -12,11 +12,12 @@ import (
 	gogowellknown "github.com/gogo/protobuf/types"
 	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 type EpochStorageKeeper interface {
-	GetParams(ctx sdk.Context) (params epochstoragetypes.Params)
+	IsEpochStart(ctx sdk.Context) bool
+	GetEpochStartForBlock(ctx sdk.Context, blockHeight uint64) (epochStartBlock uint64, blocksInEpoch uint64, err error)
+	GetDeletedEpochs(ctx sdk.Context) []uint64
 }
 
 func NewKeeper(cdc codec.BinaryCodec, sk storetypes.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
@@ -60,11 +61,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 		gs.Downtimes = append(gs.Downtimes, &v1.Downtime{Block: height, Duration: downtime})
 		return false
 	})
-	// get garbage collection
-	k.IterateGarbageCollections(ctx, func(height uint64, gcBlock uint64) (stop bool) {
-		gs.DowntimesGarbageCollection = append(gs.DowntimesGarbageCollection, &v1.DowntimeGarbageCollection{Block: height, GcBlock: gcBlock})
-		return false
-	})
 
 	// get last block time, we report it only if it's set
 	lastBlockTime, ok := k.GetLastBlockTime(ctx)
@@ -81,10 +77,6 @@ func (k Keeper) ImportGenesis(ctx sdk.Context, gs *v1.GenesisState) error {
 	// set downtimes
 	for _, downtime := range gs.Downtimes {
 		k.SetDowntime(ctx, downtime.Block, downtime.Duration)
-	}
-	// set garbage collection
-	for _, gc := range gs.DowntimesGarbageCollection {
-		k.SetDowntimeGarbageCollection(ctx, gc.Block, gc.GcBlock)
 	}
 	// set last block time, only if it's present in genesis
 	// otherwise it means we don't care about it. This can
@@ -121,17 +113,17 @@ func (k Keeper) SetLastBlockTime(ctx sdk.Context, t time.Time) {
 	store.Set(types.LastBlockTimeKey, bz)
 }
 
-func (k Keeper) SetDowntime(ctx sdk.Context, height uint64, duration time.Duration) {
+func (k Keeper) SetDowntime(ctx sdk.Context, epochStartBlock uint64, duration time.Duration) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetDowntimeKey(height)
+	key := types.GetDowntimeKey(epochStartBlock)
 	value := gogowellknown.DurationProto(duration)
 	bz := k.cdc.MustMarshal(value)
 	store.Set(key, bz)
 }
 
-func (k Keeper) GetDowntime(ctx sdk.Context, height uint64) (time.Duration, bool) {
+func (k Keeper) GetDowntime(ctx sdk.Context, epochStartBlock uint64) (time.Duration, bool) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetDowntimeKey(height)
+	key := types.GetDowntimeKey(epochStartBlock)
 	bz := store.Get(key)
 	if bz == nil {
 		return 0, false
@@ -153,19 +145,6 @@ func (k Keeper) unmarshalDuration(bz []byte) time.Duration {
 		panic(err)
 	}
 	return stdDuration
-}
-
-// HadDowntimeBetween will return true if we had downtimes between the provided heights.
-// The query is inclusive on both ends. The duration returned is the total downtime duration.
-func (k Keeper) HadDowntimeBetween(ctx sdk.Context, startHeight, endHeight uint64) (bool, time.Duration) {
-	var totalDuration time.Duration
-	var hadDowntime bool
-	k.IterateDowntimes(ctx, startHeight, endHeight, func(height uint64, duration time.Duration) bool {
-		hadDowntime = true
-		totalDuration += duration
-		return false
-	})
-	return hadDowntime, totalDuration
 }
 
 // IterateDowntimes will iterate over all downtimes between the provided heights, it is inclusive on both ends.
@@ -191,59 +170,24 @@ func (k Keeper) IterateDowntimes(ctx sdk.Context, startHeight, endHeight uint64,
 	}
 }
 
-func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcBlock uint64) {
-	ctx.KVStore(k.storeKey).
-		Set(
-			types.GetDowntimeGarbageKey(gcBlock),
-			sdk.Uint64ToBigEndian(height),
-		)
-}
-
-func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height uint64, gcBlock uint64) (stop bool)) {
-	store := ctx.KVStore(k.storeKey)
-	iter := store.Iterator(types.DowntimeHeightGarbageKey, sdk.PrefixEndBytes(types.DowntimeHeightGarbageKey))
-
-	defer iter.Close()
-	for ; iter.Valid(); iter.Next() {
-		height := sdk.BigEndianToUint64(iter.Value())
-		gcBlock := types.ParseDowntimeGarbageKey(iter.Key())
-		if onResult(height, gcBlock) {
-			break
-		}
-	}
-}
-
 // ------ STATE END -------
-
-// GCBlocks returns the number of blocks a downtime should live.
-func (k Keeper) GCBlocks(ctx sdk.Context) uint64 {
-	p := k.epochStorageKeeper.GetParams(ctx)
-	return p.EpochBlocks * p.EpochsToSave
-}
 
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
-	k.SetDowntime(ctx, uint64(ctx.BlockHeight()), duration)
-	k.SetDowntimeGarbageCollection(ctx, uint64(ctx.BlockHeight()), uint64(ctx.BlockHeight())+k.GCBlocks(ctx))
+	epochStartBlock, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		// this MUST never fail
+		panic(err)
+	}
+	// get epoch identifier
+	cumulativeEpochDowntime, _ := k.GetDowntime(ctx, epochStartBlock)
+	k.SetDowntime(ctx, epochStartBlock, duration+cumulativeEpochDowntime)
 }
 
 // GarbageCollectDowntimes will garbage collect downtimes.
 func (k Keeper) GarbageCollectDowntimes(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	iter := store.Iterator(
-		types.GetDowntimeGarbageKey(0),
-		types.GetDowntimeGarbageKey(uint64(ctx.BlockHeight())+1), // NOTE: +1 because prefix end is exclusive.
-	)
-
-	defer iter.Close()
-	keysToDelete := make([][]byte, 0) // this guarantees that we don't delete keys while iterating.
-	for ; iter.Valid(); iter.Next() {
-		height := sdk.BigEndianToUint64(iter.Value())
-		k.DeleteDowntime(ctx, height) // clear downtime
-		keysToDelete = append(keysToDelete, iter.Key())
-	}
-	for _, key := range keysToDelete {
-		store.Delete(key)
+	for _, epoch := range k.epochStorageKeeper.GetDeletedEpochs(ctx) {
+		k.DeleteDowntime(ctx, epoch)
 	}
 }
 
@@ -254,7 +198,9 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 		k.SetLastBlockTime(ctx, ctx.BlockTime())
 	}()
 
-	k.GarbageCollectDowntimes(ctx)
+	if k.epochStorageKeeper.IsEpochStart(ctx) {
+		k.GarbageCollectDowntimes(ctx)
+	}
 	// we fetch the last block time
 	lastBlockTime, ok := k.GetLastBlockTime(ctx)
 	// if no last block time is known then it means that
