@@ -47,7 +47,14 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
 		for _, verification := range verifications {
-			err := cf.Verify(ctx, verification)
+			// we give several chances for starting up
+			var err error
+			for attempts := 0; attempts < 3; attempts++ {
+				err = cf.Verify(ctx, verification)
+				if err == nil {
+					break
+				}
+			}
 			if err != nil {
 				return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 			}
