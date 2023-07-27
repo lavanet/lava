@@ -3691,7 +3691,7 @@
                             {
                                 "name": "chain-id",
                                 "parse_directive": {
-                                    "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
+                                    "function_template": "",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
