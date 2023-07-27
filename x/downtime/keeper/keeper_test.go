@@ -116,6 +116,16 @@ func TestBeginBlock(t *testing.T) {
 	require.True(t, hadDowntimes)
 	require.Equal(t, 2*keeper.GetParams(ctx).DowntimeDuration, duration)
 
+	// check downtime factors
+	factor := keeper.GetDowntimeFactor(ctx, epochStartBlock(ctx))
+	require.Equal(t, uint64(1), factor)
+
+	// now let's advance the block until we have 1 entire epoch of downtime
+	ctx = nextBlock(ctx, keeper.GetParams(ctx).EpochDuration-duration)
+	keeper.BeginBlock(ctx)
+	factor = keeper.GetDowntimeFactor(ctx, epochStartBlock(ctx))
+	require.Equal(t, uint64(2), factor)
+
 	// check garbage collection was done, after forcing an epoch to pass
 	for !app.EpochstorageKeeper.IsEpochStart(ctx) {
 		ctx = nextBlock(ctx, 1*time.Second)
