@@ -779,7 +779,7 @@ func TestPairingUniformDistribution(t *testing.T) {
 	providersToPair := 3
 
 	ts := newTester(t)
-	ts.setupForPayments(providersCount, 1, providersToPair) // 200 provider, 1 client, 10 providers-to-pair
+	ts.setupForPayments(providersCount, 1, providersToPair)
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	// extend the subscription because we'll advance alot of epochs
@@ -811,7 +811,7 @@ func TestPairingUniformDistribution(t *testing.T) {
 	// Check that the count for each provider is within the margin of error of the expected count
 	for addr, count := range providerCount {
 		if count < expectedCount-marginOfError || count > expectedCount+marginOfError {
-			t.Errorf("Provider with Address %s was not picked with uniform distribution: count = %d, expected = %d",
+			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
 				addr, count, expectedCount)
 		}
 	}
@@ -826,13 +826,13 @@ func TestPairingDistributionPerStake(t *testing.T) {
 	providersToPair := 3
 
 	ts := newTester(t)
-	ts.setupForPayments(providersCount, 1, providersToPair) // 5 provider, 1 client, 2 providers-to-pair
+	ts.setupForPayments(providersCount, 1, providersToPair)
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
-	// multiply the stake of one of the providers
-	resProviders, err := ts.QueryPairingProviders(ts.spec.Index, false)
+	// double the stake of one of the providers
+	allProviders, err := ts.QueryPairingProviders(ts.spec.Index, false)
 	require.Nil(t, err)
-	doubleStakeProvider := resProviders.StakeEntry[0]
+	doubleStakeProvider := allProviders.StakeEntry[0]
 	doubleStake := doubleStakeProvider.Stake
 	doubleStake.Amount = doubleStake.Amount.MulRaw(2)
 	_, err = ts.TxPairingStakeProvider(
@@ -844,7 +844,8 @@ func TestPairingDistributionPerStake(t *testing.T) {
 		doubleStakeProvider.Moniker,
 	)
 	require.Nil(t, err)
-	resProviders, err = ts.QueryPairingProviders(ts.spec.Index, false)
+	allProviders, err = ts.QueryPairingProviders(ts.spec.Index, false)
+	require.Equal(t, providersCount, len(allProviders.StakeEntry))
 	require.Nil(t, err)
 
 	// extend the subscription because we'll advance alot of epochs
@@ -879,20 +880,17 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// Calculate the expected count for each provider based on their stakes
 	var totalStakes int64
-	for _, provider := range resProviders.StakeEntry {
+	for _, provider := range allProviders.StakeEntry {
 		totalStakes += provider.Stake.Amount.Int64()
 	}
 
 	// Check that the count for each provider aligns with their stake's probability
 	for addr, info := range providerCount {
 		// Calculate the expected count based on the provider's stake
-		expectedCount := (numIterations * providersToPair) / providersCount
-		if addr == doubleStakeProvider.Address {
-			expectedCount *= 2
-		}
+		expectedCount := providersToPair * (numIterations * int(info.stakeAmount)) / int(totalStakes)
 
 		// Define a margin of error for the count (you can adjust this based on your tolerance)
-		marginOfError := expectedCount / 10
+		marginOfError := int(math.Round(0.15 * float64(expectedCount)))
 
 		if info.count < expectedCount-marginOfError || info.count > expectedCount+marginOfError {
 			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
