@@ -53,17 +53,30 @@ func TestDowntime(t *testing.T) {
 }
 
 func TestBeginBlock(t *testing.T) {
+	app, ctx := app.TestSetup()
+	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(0)
+
+	epochParams := epochstoragetypes.DefaultParams()
+	epochParams.EpochsToSave = 1
+
+	app.EpochstorageKeeper.SetParams(ctx, epochParams)
+	app.EpochstorageKeeper.PushFixatedParams(ctx, 0, 0)
+	app.EpochstorageKeeper.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
+
+	keeper := app.DowntimeKeeper
+	keeper.SetParams(ctx, v1.DefaultParams())
+
+	app.EpochstorageKeeper.BeginBlock(ctx)
+
 	// anonymous function to move into next block with provided duration
 	nextBlock := func(ctx sdk.Context, elapsedTime time.Duration) sdk.Context {
+		app.EpochstorageKeeper.BeginBlock(ctx)
 		return ctx.WithBlockHeight(ctx.BlockHeight() + 1).WithBlockTime(ctx.BlockTime().Add(elapsedTime))
 	}
 
-	app, ctx := app.TestSetup()
-	epochParams := epochstoragetypes.DefaultParams()
-	app.EpochstorageKeeper.SetParams(ctx, epochParams)
-	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(1)
-	keeper := app.DowntimeKeeper
-	keeper.SetParams(ctx, v1.DefaultParams())
+	epochStartBlock := func(ctx sdk.Context) uint64 {
+		return app.EpochstorageKeeper.GetEpochStart(ctx)
+	}
 
 	// start with no block time recorded as of now
 	keeper.BeginBlock(ctx)
@@ -83,21 +96,33 @@ func TestBeginBlock(t *testing.T) {
 	// move into next block –– forcing a downtime
 	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
 
-	// run begin block again to check if downtime is recorded
-	/*
-		keeper.BeginBlock(ctx)
-		hadDowntimes, duration := keeper.HadDowntimeBetween(ctx, 0, uint64(ctx.BlockHeight()))
-		require.True(t, hadDowntimes)
-		require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
+	keeper.BeginBlock(ctx)
+	duration, hadDowntimes := keeper.GetDowntime(ctx, epochStartBlock(ctx))
+	require.True(t, hadDowntimes)
+	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
+	// move into next block, downtime must not increase
+	ctx = nextBlock(ctx, 1*time.Second)
+	keeper.BeginBlock(ctx)
+	duration, hadDowntimes = keeper.GetDowntime(ctx, epochStartBlock(ctx))
+	require.True(t, hadDowntimes)
+	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
-		// move into next block, it shouldn't have downtimes.
+	// move into next block, accumulating more downtime
+	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
+	keeper.BeginBlock(ctx)
+
+	duration, hadDowntimes = keeper.GetDowntime(ctx, epochStartBlock(ctx))
+	require.True(t, hadDowntimes)
+	require.Equal(t, 2*keeper.GetParams(ctx).DowntimeDuration, duration)
+
+	// check garbage collection was done, after forcing an epoch to pass
+	for !app.EpochstorageKeeper.IsEpochStart(ctx) {
 		ctx = nextBlock(ctx, 1*time.Second)
-		keeper.BeginBlock(ctx)
-		_, hadDowntimes = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()))
-		require.False(t, hadDowntimes)
-	*/
-
+	}
+	keeper.BeginBlock(ctx)
+	_, hadDowntime := keeper.GetDowntime(ctx, 0)
+	require.False(t, hadDowntime)
 }
 
 func TestImportExportGenesis(t *testing.T) {
