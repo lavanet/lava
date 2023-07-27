@@ -55,22 +55,22 @@ jobs:
     ### Run Consensus unitests
     ######################################################
     - name: lava pairing unit Tests
-      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types -v
+      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types 
       
     - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types -v
+      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types 
 
     - name: lava spec unit Tests
-      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types -v
+      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types 
 
     - name: lava conflict unit Tests
-      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types -v
+      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types 
 
     - name: lava plans unit Tests
-      run: go test ./x/plans/ ./x/plans/keeper ./x/plans/types -v
+      run: go test ./x/plans/ ./x/plans/keeper ./x/plans/types 
 
     - name: lava projects unit Tests
-      run: go test ./x/projects/... -v
+      run: go test ./x/projects/... 
 
     - name: lava subscription unit Tests
-      run: go test ./x/subscription/... -v
+      run: go test ./x/subscription/... 
