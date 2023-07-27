@@ -26,13 +26,3 @@ func GetDowntimeKey(height uint64) []byte {
 func ParseDowntimeKey(key []byte) uint64 {
 	return sdk.BigEndianToUint64(key[1:])
 }
-
-// GetDowntimeGarbageKey returns the downtime garbage storage key given the height.
-func GetDowntimeGarbageKey(block uint64) []byte {
-	return append(DowntimeHeightGarbageKey, sdk.Uint64ToBigEndian(block)...)
-}
-
-// ParseDowntimeGarbageKey returns the downtime garbage time given the key.
-func ParseDowntimeGarbageKey(key []byte) uint64 {
-	return sdk.BigEndianToUint64(key[1:])
-}
