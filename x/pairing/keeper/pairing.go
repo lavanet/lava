@@ -198,7 +198,6 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if !allowed {
 		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
-
 	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
 	if err != nil {
 		return planstypes.Policy{}, err
@@ -291,8 +290,12 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
 		if policy != nil {
-			policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
-			policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
+			if policy.EpochCuLimit != 0 {
+				policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
+			}
+			if policy.TotalCuLimit != 0 {
+				policyTotalCuLimit = append(policyTotalCuLimit, policy.GetTotalCuLimit())
+			}
 		}
 	}
 
