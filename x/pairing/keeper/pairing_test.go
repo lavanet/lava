@@ -810,11 +810,11 @@ func TestPairingUniformDistribution(t *testing.T) {
 	expectedCount := (numIterations * providersToPair) / providersCount
 
 	// Define a margin of error for the count (you can adjust this based on your tolerance)
-	marginOfError := int(math.Round(0.1 * float64(expectedCount)))
+	marginOfError := math.Round(0.1 * float64(expectedCount))
 
 	// Check that the count for each provider is within the margin of error of the expected count
 	for addr, count := range providerCount {
-		if count < expectedCount-marginOfError || count > expectedCount+marginOfError {
+		if math.Abs(float64(count-expectedCount)) > marginOfError {
 			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
 				addr, count, expectedCount)
 		}
@@ -894,9 +894,9 @@ func TestPairingDistributionPerStake(t *testing.T) {
 		expectedCount := providersToPair * (numIterations * int(info.stakeAmount)) / int(totalStakes)
 
 		// Define a margin of error for the count (you can adjust this based on your tolerance)
-		marginOfError := int(math.Round(0.15 * float64(expectedCount)))
+		marginOfError := math.Round(0.15 * float64(expectedCount))
 
-		if info.count < expectedCount-marginOfError || info.count > expectedCount+marginOfError {
+		if math.Abs(float64(info.count-expectedCount)) > marginOfError {
 			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
 				addr, info.count, expectedCount)
 		}

@@ -20,9 +20,10 @@ type PairingScore struct {
 
 func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry) *PairingScore {
 	score := PairingScore{
-		Provider:        stakeEntry,
-		Score:           sdk.OneUint(),
-		ScoreComponents: map[string]sdk.Uint{},
+		Provider:         stakeEntry,
+		Score:            sdk.OneUint(),
+		ScoreComponents:  map[string]sdk.Uint{},
+		SkipForSelection: false,
 	}
 	return &score
 }
