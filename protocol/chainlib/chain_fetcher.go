@@ -92,7 +92,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			}...)
 		}
 	}
-	utils.LavaFormatInfo("[+] verified successfully", utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: verification.Value})
+	utils.LavaFormatInfo("[+] verified successfully", utils.Attribute{Key: "endpoint", Value: cf.endpoint.String()}, utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: verification.Value}, utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey})
 	return nil
 }
 
@@ -223,7 +223,7 @@ func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage Chain
 	if customParsingMessage, ok := rpcMessage.(chainproxy.CustomParsingMessage); ok {
 		parserInput, err = customParsingMessage.NewParsableRPCInput(respData)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed creating NewParsableRPCInput from CustomParsingMessage", err)
+			return nil, utils.LavaFormatError("failed creating NewParsableRPCInput from CustomParsingMessage", err, utils.Attribute{Key: "data", Value: string(respData)})
 		}
 	} else {
 		parserInput = chainproxy.DefaultParsableRPCInput(respData)
