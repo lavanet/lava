@@ -6,7 +6,7 @@ require (
 	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/btcsuite/btcd v0.22.2
 	github.com/confio/ics23/go v0.9.0 // indirect
-	github.com/cosmos/cosmos-sdk v0.45.13
+	github.com/cosmos/cosmos-sdk v0.45.14
 	github.com/cosmos/ibc-go/v3 v3.0.1
 	github.com/ethereum/go-ethereum v1.10.18
 	github.com/gofiber/fiber/v2 v2.34.0
@@ -40,17 +40,32 @@ require (
 )
 
 require (
+	cosmossdk.io/api v0.2.6 // indirect
+	cosmossdk.io/core v0.5.1 // indirect
+	cosmossdk.io/depinject v1.0.0-alpha.3 // indirect
+	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/cloudflare/circl v1.3.1 // indirect
+	github.com/cockroachdb/errors v1.9.1 // indirect
+	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
+	github.com/cockroachdb/pebble v0.0.0-20220817183557-09c6e030a677 // indirect
+	github.com/cockroachdb/redact v1.1.3 // indirect
+	github.com/cosmos/cosmos-db v0.0.0-20221226095112-f3c38ecb5e32 // indirect
+	github.com/cosmos/cosmos-proto v1.0.0-beta.1 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
+	github.com/getsentry/sentry-go v0.17.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/gogo/googleapis v1.4.0 // indirect
+	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/glog v1.1.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
+	github.com/linxGnu/grocksdb v1.7.10 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pjbgf/sha1cd v0.2.3 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/tidwall/btree v1.5.0 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
@@ -113,7 +128,7 @@ require (
 	github.com/gogo/gateway v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/btree v1.0.0 // indirect
+	github.com/google/btree v1.1.2 // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
 	github.com/gookit/color v1.5.0 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
@@ -183,7 +198,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.37.0 // indirect
+	github.com/valyala/fasthttp v1.40.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
