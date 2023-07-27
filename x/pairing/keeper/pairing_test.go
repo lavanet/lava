@@ -12,7 +12,6 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -1113,7 +1112,7 @@ func TestNoRequiredGeo(t *testing.T) {
 func TestGeoSlotCalc(t *testing.T) {
 	geoReqName := pairingscores.GeoReq{}.GetName()
 
-	allGeos := types.GetAllGeolocations()
+	allGeos := planstypes.GetAllGeolocations()
 	maxGeo := commontypes.FindMax(allGeos)
 
 	// iterate over all possible geolocations, create a policy and calc slots
@@ -1132,7 +1131,7 @@ func TestGeoSlotCalc(t *testing.T) {
 				require.Fail(t, "slot geo req is not of GeoReq type")
 			}
 
-			if !types.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+			if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
 				require.Fail(t, "slot geo is not single bit")
 			}
 		}
@@ -1151,7 +1150,7 @@ func TestGeoSlotCalc(t *testing.T) {
 			require.Fail(t, "slot geo req is not of GeoReq type")
 		}
 
-		if !types.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+		if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
 			require.Fail(t, "slot geo is not single bit")
 		}
 	}

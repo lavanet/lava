@@ -3,7 +3,6 @@ package scores
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
@@ -30,7 +29,7 @@ func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) sdk.Uint {
 		return calculateCostFromLatency(minGeoLatency)
 	}
 
-	providerGeoEnums := types.GetGeolocationsFromUint(int32(provider.Geolocation))
+	providerGeoEnums := planstypes.GetGeolocationsFromUint(int32(provider.Geolocation))
 	_, cost := CalcGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
 
 	return cost
@@ -53,7 +52,7 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 // TODO: this function doesn't return the optimal geo reqs for the case
 // that there are more required geos than providers to pair
 func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
-	policyGeoEnums := types.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
+	policyGeoEnums := planstypes.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
 
 	return GeoReq{Geo: uint64(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }

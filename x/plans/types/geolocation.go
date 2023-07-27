@@ -64,16 +64,18 @@ func GetAllGeolocations() []int32 {
 	return allGeoEnumRegionsList
 }
 
-func GetGeolocationsFromUint(geoloc int32) []planstypes.Geolocation {
-	geoList := []planstypes.Geolocation{}
+func GetGeolocationsFromUint(geoloc int32) []Geolocation {
+	geoList := []Geolocation{}
 	allGeos := GetAllGeolocations()
 	for _, geo := range allGeos {
 		if geo&geoloc != 0 {
-			geoList = append(geoList, planstypes.Geolocation(geo))
+			geoList = append(geoList, Geolocation(geo))
 		}
 	}
 
 	return geoList
+}
+
 // allows unmarshaling parser func
 func (g Geolocation) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
