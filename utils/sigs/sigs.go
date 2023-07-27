@@ -1,3 +1,12 @@
+// Signable is an interface for objects that should be signed. For example, relay requests
+// are signed by the provider so it can prove that it's their relay.
+//
+// To create an object that satisfies the Signable interface, use relay_exchange.go as a reference
+//
+// A Signable object can use the Sign() to be signed, ExtractSignerAddress() to get the object
+// that signed it, and RecoverPubKey() to get the public key that corresponds to the object's
+// private key
+
 package sigs
 
 import (
@@ -14,7 +23,6 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
-// Signable is an interface for objects that are signed
 type Signable interface {
 	// GetSignature gets the object's signature
 	GetSignature() []byte
@@ -39,6 +47,7 @@ func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
 	return sig, nil
 }
 
+// ExtractSignerAddress extracts the signer address of data
 func ExtractSignerAddress(data Signable) (sdk.AccAddress, error) {
 	pubKey, err := RecoverPubKey(data)
 	if err != nil {
@@ -53,6 +62,7 @@ func ExtractSignerAddress(data Signable) (sdk.AccAddress, error) {
 	return extractedConsumerAddress, nil
 }
 
+// RecoverPubKey recovers the public key from data's signature
 func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	sig := data.GetSignature()
 
@@ -73,6 +83,7 @@ func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	return (secp256k1.PubKey)(pk), nil
 }
 
+// EncodeUint64 encodes a uint64 value to a byte array
 func EncodeUint64(val uint64) []byte {
 	encodedVal := make([]byte, 8)
 	binary.LittleEndian.PutUint64(encodedVal, val)
@@ -123,6 +134,7 @@ func GetPrivKey(clientCtx client.Context, keyName string) (*btcSecp256k1.Private
 	return priv, nil
 }
 
+// HashMsg hashes msgData using SHA-256
 func HashMsg(msgData []byte) []byte {
 	return tendermintcrypto.Sha256(msgData)
 }
