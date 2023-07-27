@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"testing"
@@ -848,6 +849,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 		doubleStakeProvider.Moniker,
 	)
 	require.Nil(t, err)
+	ts.AdvanceEpoch()
 	allProviders, err = ts.QueryPairingProviders(ts.spec.Index, false)
 	require.Equal(t, providersCount, len(allProviders.StakeEntry))
 	require.Nil(t, err)
@@ -892,6 +894,8 @@ func TestPairingDistributionPerStake(t *testing.T) {
 	for addr, info := range providerCount {
 		// Calculate the expected count based on the provider's stake
 		expectedCount := providersToPair * (numIterations * int(info.stakeAmount)) / int(totalStakes)
+
+		fmt.Printf("count: %d, expected: %d\n", info.count, expectedCount)
 
 		// Define a margin of error for the count (you can adjust this based on your tolerance)
 		marginOfError := math.Round(0.15 * float64(expectedCount))
