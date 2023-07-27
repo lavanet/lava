@@ -207,7 +207,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 
 		if geoloc == int32(planstypes.Geolocation_GL) {
 			// if global ("GL"), append the endpoint in all possible geolocations
-			for _, geoloc := range planstypes.GetGeolocations() {
+			for _, geoloc := range planstypes.GetAllGeolocations() {
 				endpoint := epochstoragetypes.Endpoint{
 					IPPORT:      split[0],
 					Geolocation: uint64(geoloc),
