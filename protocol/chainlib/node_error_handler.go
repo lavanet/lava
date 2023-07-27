@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/lavanet/lava/protocol/common"
@@ -31,6 +32,8 @@ func (geh *genericErrorHandler) handleConnectionError(err error) error {
 		if sysErr, ok := opErr.Err.(*os.SyscallError); ok && sysErr.Err == syscall.ECONNREFUSED {
 			return utils.LavaFormatError("Provider Side Failed Sending Message, Reason: Connection refused", nil)
 		}
+	} else if strings.Contains(err.Error(), "http: server gave HTTP response to HTTPS client") {
+		return utils.LavaFormatError("Provider Side Failed Sending Message, Reason: misconfigured http endpoint as https", nil)
 	}
 	return nil // do not return here so the caller will return the error inside the data so it reaches the user when it doesn't match any specific cases
 }
