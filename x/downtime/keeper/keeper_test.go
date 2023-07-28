@@ -57,7 +57,6 @@ func TestBeginBlock(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(0)
 
 	epochParams := epochstoragetypes.DefaultParams()
-	epochParams.EpochsToSave = 1
 
 	app.EpochstorageKeeper.SetParams(ctx, epochParams)
 	app.EpochstorageKeeper.PushFixatedParams(ctx, 0, 0)
@@ -66,12 +65,12 @@ func TestBeginBlock(t *testing.T) {
 	keeper := app.DowntimeKeeper
 	keeper.SetParams(ctx, v1.DefaultParams())
 
-	app.EpochstorageKeeper.BeginBlock(ctx)
-
 	// anonymous function to move into next block with provided duration
 	nextBlock := func(ctx sdk.Context, elapsedTime time.Duration) sdk.Context {
+		ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1).WithBlockTime(ctx.BlockTime().Add(elapsedTime))
 		app.EpochstorageKeeper.BeginBlock(ctx)
-		return ctx.WithBlockHeight(ctx.BlockHeight() + 1).WithBlockTime(ctx.BlockTime().Add(elapsedTime))
+		keeper.BeginBlock(ctx)
+		return ctx
 	}
 
 	epochStartBlock := func(ctx sdk.Context) uint64 {
@@ -79,38 +78,31 @@ func TestBeginBlock(t *testing.T) {
 	}
 
 	// start with no block time recorded as of now
-	keeper.BeginBlock(ctx)
+	ctx = nextBlock(ctx, 1*time.Second)
 	lbt, ok := keeper.GetLastBlockTime(ctx)
 	require.True(t, ok)
-	require.Equal(t, ctx.BlockTime(), lbt)
+	require.Equal(t, ctx.BlockTime().String(), lbt.String())
 
-	// move into next block
+	// move into next block, check if block time is updated
 	ctx = nextBlock(ctx, 1*time.Minute)
-
-	// run begin block again to check if block time is updated
-	keeper.BeginBlock(ctx)
 	lbt, ok = keeper.GetLastBlockTime(ctx)
 	require.True(t, ok)
-	require.Equal(t, ctx.BlockTime(), lbt)
+	require.Equal(t, ctx.BlockTime().String(), lbt.String())
 
 	// move into next block –– forcing a downtime
 	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
-
-	keeper.BeginBlock(ctx)
 	duration, hadDowntimes := keeper.GetDowntime(ctx, epochStartBlock(ctx))
 	require.True(t, hadDowntimes)
 	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
 	// move into next block, downtime must not increase
 	ctx = nextBlock(ctx, 1*time.Second)
-	keeper.BeginBlock(ctx)
 	duration, hadDowntimes = keeper.GetDowntime(ctx, epochStartBlock(ctx))
 	require.True(t, hadDowntimes)
 	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
 	// move into next block, accumulating more downtime
 	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
-	keeper.BeginBlock(ctx)
 
 	duration, hadDowntimes = keeper.GetDowntime(ctx, epochStartBlock(ctx))
 	require.True(t, hadDowntimes)
@@ -122,15 +114,17 @@ func TestBeginBlock(t *testing.T) {
 
 	// now let's advance the block until we have 1 entire epoch of downtime
 	ctx = nextBlock(ctx, keeper.GetParams(ctx).EpochDuration-duration)
-	keeper.BeginBlock(ctx)
 	factor = keeper.GetDowntimeFactor(ctx, epochStartBlock(ctx))
 	require.Equal(t, uint64(2), factor)
 
-	// check garbage collection was done, after forcing an epoch to pass
-	for !app.EpochstorageKeeper.IsEpochStart(ctx) {
-		ctx = nextBlock(ctx, 1*time.Second)
+	// check garbage collection was done, after forcing epochs to pass until
+	// the first epoch is deleted.
+	for i := 0; i < int(epochParams.EpochsToSave)+1; i++ {
+		for !app.EpochstorageKeeper.IsEpochStart(ctx) {
+			ctx = nextBlock(ctx, 1*time.Second)
+		}
+		ctx = nextBlock(ctx, 1*time.Second) // we advance one more block, otherwise IsEpochStart will return true again
 	}
-	keeper.BeginBlock(ctx)
 	_, hadDowntime := keeper.GetDowntime(ctx, 0)
 	require.False(t, hadDowntime)
 }
