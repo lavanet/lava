@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"go/build"
 	"io"
 	"math/big"
@@ -31,6 +30,7 @@ import (
 	"github.com/ignite/cli/ignite/chainconfig"
 	"github.com/ignite/cli/ignite/pkg/cache"
 	"github.com/ignite/cli/ignite/services/chain"
+	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
@@ -327,10 +327,10 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, pub
 
 	command := fmt.Sprintf("%s badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
 	logName := "01_BadgeServer"
-	funcName := fmt.Sprintf("startBadgeServer")
+	funcName := "startBadgeServer"
 	lt.execCommandWithRetry(ctx, funcName, logName, command)
 
-	lt.checkBadgeServerResponsive(ctx, fmt.Sprintf("127.0.0.1:8080"), time.Minute)
+	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:8080", time.Minute)
 }
 
 func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerAddr string, timeout time.Duration) {
@@ -338,7 +338,7 @@ func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerA
 		utils.LavaFormatInfo("Waiting for Badge Server " + badgeServerAddr)
 		nctx, cancel := context.WithTimeout(ctx, time.Second)
 
-		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithInsecure())
+		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			cancel()
 			time.Sleep(time.Second)
