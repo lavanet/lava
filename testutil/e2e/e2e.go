@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"go/build"
 	"io"
 	"math/big"
@@ -16,12 +17,11 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/lavanet/lava/testutil/e2e/sdk"
 
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
@@ -315,6 +315,40 @@ func (lt *lavaTest) checkStakeLava(
 		}
 	}
 	utils.LavaFormatInfo(successMessage)
+}
+
+// startBadgeServer starts badge server
+func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, publicKey string) {
+	badgeUserData := fmt.Sprintf(`{"alice":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}`, publicKey, privateKey)
+	err := os.Setenv("BADGE_USER_DATA", badgeUserData)
+	if err != nil {
+		panic(err)
+	}
+
+	command := fmt.Sprintf("%s badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
+	logName := "01_BadgeServer"
+	funcName := fmt.Sprintf("startBadgeServer")
+	lt.execCommandWithRetry(ctx, funcName, logName, command)
+
+	lt.checkBadgeServerResponsive(ctx, fmt.Sprintf("127.0.0.1:8080"), time.Minute)
+}
+
+func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerAddr string, timeout time.Duration) {
+	for start := time.Now(); time.Since(start) < timeout; {
+		utils.LavaFormatInfo("Waiting for Badge Server " + badgeServerAddr)
+		nctx, cancel := context.WithTimeout(ctx, time.Second)
+
+		grpcClient, err := grpc.DialContext(nctx, badgeServerAddr, grpc.WithBlock(), grpc.WithInsecure())
+		if err != nil {
+			cancel()
+			time.Sleep(time.Second)
+			continue
+		}
+		cancel()
+		grpcClient.Close()
+		return
+	}
+	panic("checkBadgeServerResponsive: Check Failed. Badge server didn't respond on " + badgeServerAddr)
 }
 
 func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
@@ -1039,6 +1073,43 @@ func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string
 	return clientAddr, providerAddr
 }
 
+// exportUserPublicKey exports public key from specific user
+func exportUserPublicKey(lavaPath string, user string) string {
+	cmdString := fmt.Sprintf("%s keys show %s ", lavaPath, user)
+	cmd := exec.Command("bash", "-c", cmdString)
+
+	out, err := cmd.Output()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(out))
+
+	// Regex to match the 'public key'
+	re := regexp.MustCompile(`address: (\S+)`)
+	match := re.FindStringSubmatch(string(out))
+
+	if len(match) < 2 {
+		panic("No public key found")
+	}
+
+	// Return the 'public key'
+	return match[1]
+}
+
+// exportUserPrivateKey exports raw private keys from specific user
+func exportUserPrivateKey(lavaPath string, user string) string {
+	cmdString := fmt.Sprintf("yes | %s keys export %s --unsafe --unarmored-hex", lavaPath, user)
+	cmd := exec.Command("bash", "-c", cmdString)
+
+	out, err := cmd.Output()
+	if err != nil {
+		panic(err)
+	}
+
+	return strings.TrimSpace(string(out))
+}
+
 func runE2E(timeout time.Duration) {
 	os.RemoveAll(logsFolder)
 	gopath := os.Getenv("GOPATH")
@@ -1104,6 +1175,15 @@ func runE2E(timeout time.Duration) {
 			f(i)
 		}
 	}
+
+	// Export user1 private key
+	privateKey := exportUserPrivateKey(lt.lavadPath, "user1")
+
+	// Export user1 public key
+	publicKey := exportUserPublicKey(lt.lavadPath, "user1")
+
+	// Start Badge server
+	lt.startBadgeServer(ctx, privateKey, publicKey)
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
@@ -1187,7 +1267,7 @@ func runE2E(timeout time.Duration) {
 
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)
-	sdk.RunSDKTests(ctx, grpcConn, lt.lavadPath, lt.logs["01_sdkTest"])
+	sdk.RunSDKTests(ctx, grpcConn, privateKey, lt.logs["01_sdkTest"])
 
 	lt.finishTestSuccessfully()
 }

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/lavanet/lava/utils"
 	"log"
 	"os"
 	"os/exec"
@@ -33,14 +33,11 @@ type Pair struct {
 	PublicAddress string `json:"publicAddress"`
 }
 
-func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, lavadPath string, logs *bytes.Buffer) {
+func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, logs *bytes.Buffer) {
 	defer func() {
 		// Delete the file directly without checking if it exists
 		os.Remove("testutil/e2e/sdk/pairingList.json")
 	}()
-
-	// Export user1 private key
-	privateKey := exportUserPrivateKey(lavadPath, "user1")
 
 	// Generate pairing list config
 	generatePairingList(grpcConn, ctx)
@@ -66,38 +63,34 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, lavadPath strin
 		// Prepare command for running test
 		cmd := exec.Command("node", testFile)
 
-		// Set the environment variable for the private key.
+		// Set the environment variable for the private key
 		cmd.Env = append(os.Environ(), "PRIVATE_KEY="+privateKey)
 
-		// Run the command and capture both standard output and standard error.
+		// Set the environment variable for badge server project id
+		cmd.Env = append(os.Environ(), "BADGE_PROJECT_ID="+"alice")
+
+		// Set the environment variable for badge server address
+		cmd.Env = append(os.Environ(), "BADGE_SERVER_ADDR="+"http://localhost:8080")
+
+		// Set the environment variable for badge server address
+		cmd.Env = append(os.Environ(), "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
+
+		// Run the command and capture both standard output and standard error
 		cmd.Stdout = logs
 		cmd.Stderr = logs
 
 		// Run the test.
-		fmt.Println("Running test:", testFile)
+		utils.LavaFormatInfo(fmt.Sprintf("Running test: %s", testFile))
 		err := cmd.Run()
 		if err != nil {
-			fmt.Printf("Error running test %s: %v\n", testFile, err)
+			panic(fmt.Sprintf("Error running test %s: %v\n", testFile, err))
 		}
 	}
 }
 
-// exportUserPrivateKey exports raw private keys from specific user
-func exportUserPrivateKey(lavaPath string, user string) string {
-	cmdString := fmt.Sprintf("yes | %s keys export %s --unsafe --unarmored-hex", lavaPath, user)
-	cmd := exec.Command("bash", "-c", cmdString)
-
-	out, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return strings.TrimSpace(string(out))
-}
-
 // generatePairingList pairing list seed file
 func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
-	c := pairingTypes.NewQueryClient(grpcConn) // Replace NewQueryClient with the actual constructor for your client
+	c := pairingTypes.NewQueryClient(grpcConn)
 
 	queryResponse, err := c.Providers(ctx, &pairingTypes.QueryProvidersRequest{ChainID: "LAV1", ShowFrozen: false})
 	if err != nil {
@@ -131,7 +124,7 @@ func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 	}
 
 	// Write to file
-	err = ioutil.WriteFile("testutil/e2e/sdk/pairingList.json", jsonData, os.ModePerm)
+	err = os.WriteFile("testutil/e2e/sdk/pairingList.json", jsonData, os.ModePerm)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

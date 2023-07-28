@@ -6,7 +6,7 @@ async function main() {
         privateKey: process.env.PRIVATE_KEY,
         chainID: "ETH1",
         lavaChainId:"lava",
-        pairingListConfig:"testutil/e2e/sdk/pairingList.json"
+        pairingListConfig:process.env.PAIRING_LIST
     });
 
     // Fetch chain id
@@ -24,7 +24,7 @@ async function main() {
     if (chainID != "0x1") {
         throw new Error(" ERR Chain ID is not equal to 0x1");
     } else{
-        console.log("Success: Fetching ETH chain ID using jsonrpc passed. Chain ID correctly matches '0x1'.");
+        console.log("Success: Fetching ETH chain ID using jsonrpc passed. Chain ID correctly matches '0x1'");
     }
 }
 

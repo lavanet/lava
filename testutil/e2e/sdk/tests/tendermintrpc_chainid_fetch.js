@@ -6,7 +6,7 @@ async function main() {
         privateKey: process.env.PRIVATE_KEY,
         chainID: "LAV1",
         lavaChainId:"lava",
-        pairingListConfig:"testutil/e2e/sdk/pairingList.json"
+        pairingListConfig:process.env.PAIRING_LIST
     });
 
     // Fetch chain id
@@ -24,7 +24,7 @@ async function main() {
     if (chainID != "lava") {
         throw new Error(" ERR Chain ID is not equal to cosmoshub-4");
     }else{
-        console.log("Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'.");
+        console.log("Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
     }
 
 }
