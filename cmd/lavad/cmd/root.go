@@ -37,6 +37,7 @@ import (
 
 	"github.com/lavanet/lava/app"
 	appparams "github.com/lavanet/lava/app/params"
+	"github.com/lavanet/lava/protocol/upgrade"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
@@ -101,9 +102,10 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   "lava-protocol",
-		Short: "Lava Protocol daemon",
-		Long:  "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
+		Use:     "lava-protocol",
+		Short:   "Lava Protocol daemon",
+		Long:    "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
+		Version: upgrade.GetLavaProtocolVersion().ProviderVersion,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
