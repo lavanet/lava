@@ -117,6 +117,7 @@ func TestBeginBlock(t *testing.T) {
 	factor = keeper.GetDowntimeFactor(ctx, epochStartBlock(ctx))
 	require.Equal(t, uint64(2), factor)
 
+	beforeAdvanceEpoch := epochStartBlock(ctx)
 	// check garbage collection was done, after forcing epochs to pass until
 	// the first epoch is deleted.
 	for i := 0; i < int(epochParams.EpochsToSave)+1; i++ {
@@ -125,7 +126,7 @@ func TestBeginBlock(t *testing.T) {
 		}
 		ctx = nextBlock(ctx, 1*time.Second) // we advance one more block, otherwise IsEpochStart will return true again
 	}
-	_, hadDowntime := keeper.GetDowntime(ctx, 0)
+	_, hadDowntime := keeper.GetDowntime(ctx, beforeAdvanceEpoch)
 	require.False(t, hadDowntime)
 }
 
