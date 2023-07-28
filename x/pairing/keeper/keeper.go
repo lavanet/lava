@@ -28,7 +28,9 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
-		badgeTimerStore    common.TimerStore
+		downtimeKeeper     types.DowntimeKeeper
+
+		badgeTimerStore common.TimerStore
 	}
 )
 
