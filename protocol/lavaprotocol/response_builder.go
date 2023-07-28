@@ -42,7 +42,7 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 	if err != nil {
 		return err
 	}
-	serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+	serverAddr, err := sdk.AccAddressFromHexUnsafe(serverKey.Address().String())
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 		return nil, nil, err
 	}
 
-	serverAddr, err := sdk.AccAddressFromHex(serverKey.Address().String())
+	serverAddr, err := sdk.AccAddressFromHexUnsafe(serverKey.Address().String())
 	if err != nil {
 		return nil, nil, err
 	}

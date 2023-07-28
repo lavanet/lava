@@ -2,20 +2,20 @@ package types
 
 import (
 	fmt "fmt"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"strings"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 const (
 	ProposalSpecAdd = "SpecAdd"
 )
 
-var _ govtypes.Content = &SpecAddProposal{}
+var _ v1beta1.Content = &SpecAddProposal{}
 
 func init() {
-	govtypes.RegisterProposalType(ProposalSpecAdd)
+	v1beta1.RegisterProposalType(ProposalSpecAdd)
 }
 
 func NewSpecAddProposal(title, description string, specs []Spec) *SpecAddProposal {
@@ -36,7 +36,7 @@ func (pcp *SpecAddProposal) ProposalType() string { return ProposalSpecAdd }
 
 // ValidateBasic validates the proposal
 func (pcp *SpecAddProposal) ValidateBasic() error {
-	err := govtypes.ValidateAbstract(pcp)
+	err := v1beta1.ValidateAbstract(pcp)
 	if err != nil {
 		return err
 	}

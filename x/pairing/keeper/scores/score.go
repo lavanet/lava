@@ -37,6 +37,7 @@ package scores
 
 import (
 	"bytes"
+	"cosmossdk.io/math"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -139,7 +140,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			}
 
 			newScoreComp := req.Score(*score.Provider)
-			if newScoreComp == sdk.ZeroUint() {
+			if newScoreComp == math.ZeroUint() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
@@ -154,7 +155,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 		}
 
 		// calc new score
-		newScore := sdk.OneUint()
+		newScore := math.OneUint()
 		for _, scoreComp := range score.ScoreComponents {
 			newScore = newScore.Mul(scoreComp)
 		}
@@ -175,7 +176,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	scoreSum := sdk.ZeroUint()
+	scoreSum := math.ZeroUint()
 	for _, providerScore := range scores {
 		if !providerScore.ValidForSelection {
 			// skip index of providers already selected
@@ -183,7 +184,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		}
 		scoreSum = scoreSum.Add(providerScore.Score)
 	}
-	if scoreSum == sdk.ZeroUint() {
+	if scoreSum == math.ZeroUint() {
 		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
 		return returnedProviders
 	}
@@ -191,10 +192,10 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 	for it := 0; it < groupCount; it++ {
 		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
 		bigIntHash := new(big.Int).SetBytes(hash)
-		uintHash := sdk.NewUintFromBigInt(bigIntHash)
+		uintHash := math.NewUintFromBigInt(bigIntHash)
 		modRes := uintHash.Mod(scoreSum)
 
-		newScoreSum := sdk.ZeroUint()
+		newScoreSum := math.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			if !scores[idx].ValidForSelection {

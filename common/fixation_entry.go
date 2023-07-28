@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/binary"
 	"fmt"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -133,7 +134,7 @@ import (
 // latest entry version would continue to work until that block and fail thereafter.
 
 type FixationStore struct {
-	storeKey sdk.StoreKey
+	storeKey storetypes.StoreKey
 	cdc      codec.BinaryCodec
 	prefix   string
 	tstore   TimerStore
@@ -895,7 +896,7 @@ func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
 }
 
 // NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
+func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
 	callback := func(ctx sdk.Context, key []byte, data []byte) {

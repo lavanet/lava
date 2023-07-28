@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"math"
 	"strings"
 
@@ -107,7 +108,7 @@ type TimerCallback func(ctx sdk.Context, key []byte, data []byte)
 
 // TimerStore represents a timer store to manager timers and timeouts
 type TimerStore struct {
-	storeKey  sdk.StoreKey
+	storeKey  storetypes.StoreKey
 	cdc       codec.BinaryCodec
 	prefix    string
 	callbacks [2]TimerCallback // as per TimerType
@@ -119,7 +120,7 @@ func TimerVersion() uint64 {
 }
 
 // NewTimerStore returns a new TimerStore object
-func NewTimerStore(storeKey sdk.StoreKey, cdc codec.BinaryCodec, prefix string) *TimerStore {
+func NewTimerStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string) *TimerStore {
 	tstore := TimerStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 	return &tstore
 }

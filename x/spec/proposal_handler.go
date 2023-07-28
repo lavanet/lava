@@ -2,12 +2,12 @@ package spec
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"log"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramkeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/utils"
@@ -18,8 +18,8 @@ import (
 
 // overwriting the params handler so we can add events and callbacks on specific params
 // NewParamChangeProposalHandler creates a new governance Handler for a ParamChangeProposal
-func NewParamChangeProposalHandler(k paramkeeper.Keeper) govtypes.Handler {
-	return func(ctx sdk.Context, content govtypes.Content) error {
+func NewParamChangeProposalHandler(k paramkeeper.Keeper) v1beta1.Handler {
+	return func(ctx sdk.Context, content v1beta1.Content) error {
 		switch c := content.(type) {
 		case *paramproposal.ParameterChangeProposal:
 			return HandleParameterChangeProposal(ctx, k, c)
@@ -72,8 +72,8 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 }
 
 // NewSpecProposalsHandler creates a new governance Handler for a Spec
-func NewSpecProposalsHandler(k keeper.Keeper) govtypes.Handler {
-	return func(ctx sdk.Context, content govtypes.Content) error {
+func NewSpecProposalsHandler(k keeper.Keeper) v1beta1.Handler {
+	return func(ctx sdk.Context, content v1beta1.Content) error {
 		switch c := content.(type) {
 		case *types.SpecAddProposal:
 			return handleSpecProposal(ctx, k, c)
