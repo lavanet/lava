@@ -82,3 +82,7 @@ type PlanKeeper interface {
 	GetAllPlanIndices(ctx sdk.Context) (val []string)
 	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
 }
+
+type DowntimeKeeper interface {
+	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
+}
