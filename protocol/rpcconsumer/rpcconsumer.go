@@ -111,10 +111,15 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 
-	var consumerAddr sdk.AccAddress
-	err = consumerAddr.Unmarshal(clientKey.GetPubKey().Address())
+	pubkey, err := clientKey.GetPubKey()
 	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
+		utils.LavaFormatFatal("failed getting public key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
+	}
+
+	var consumerAddr sdk.AccAddress
+	err = consumerAddr.Unmarshal(pubkey.Address())
+	if err != nil {
+		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubkey.Address()})
 	}
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}

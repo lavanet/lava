@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	snapshotoptions "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"io"
 	"os"
 	"path/filepath"
@@ -74,7 +75,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 
 			customAppTemplate, customAppConfig := initAppConfig()
 			return server.InterceptConfigsPreRunHandler(
-				cmd, customAppTemplate, customAppConfig,
+				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
 			)
 		},
 	}
@@ -123,7 +124,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 
 			customAppTemplate, customAppConfig := initAppConfig()
 			return server.InterceptConfigsPreRunHandler(
-				cmd, customAppTemplate, customAppConfig,
+				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
 			)
 		},
 	}
@@ -307,7 +308,7 @@ func (a appCreator) newApp(
 
 	snapshotDir := filepath.Join(
 		cast.ToString(appOpts.Get(flags.FlagHome)), "data", "snapshots")
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
 	if err != nil {
 		panic(err)
 	}
@@ -315,6 +316,11 @@ func (a appCreator) newApp(
 	if err != nil {
 		panic(err)
 	}
+
+	snapshotOptions := snapshotoptions.NewSnapshotOptions(
+		cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
+		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
+	)
 
 	return app.New(
 		logger,
@@ -334,9 +340,7 @@ func (a appCreator) newApp(
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-		baseapp.SetSnapshotStore(snapshotStore),
-		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
-		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
+		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 	)
 }
 
