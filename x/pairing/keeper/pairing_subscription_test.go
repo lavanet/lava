@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -96,7 +97,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, uint64(i), tt.cu, ts.BlockHeight(), 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
 			_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 			require.Equal(t, tt.valid, err == nil,
 				"results incorrect for usage of %d err == nil: %t", tt.cu, err == nil)
@@ -111,7 +112,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	_, dev1Addr := ts.Account("dev1")
+	dev1Acct, dev1Addr := ts.Account("dev1")
 
 	consumers := slices.Slice(client1Addr, dev1Addr)
 
@@ -153,10 +154,11 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	epochCuLimit := ts.plan.PlanPolicy.EpochCuLimit
 
 	i := 0
+
 	for ; uint64(i) < totalCuLimit/epochCuLimit; i++ {
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
-		signRelaySession(relaySession, client1Acct.SK)
-
+		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
+		require.Nil(t, err)
 		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 		require.Nil(t, err)
 
@@ -165,7 +167,8 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	// last iteration should finish the plan and subscription quota
 	relaySession := ts.newRelaySession(providerAddr, uint64(i+1), epochCuLimit, ts.BlockHeight(), uint64(i+1))
-	signRelaySession(relaySession, client1Acct.SK)
+	relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
+	require.Nil(t, err)
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.NotNil(t, err)
 
@@ -181,7 +184,8 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 
 	// try to use CU on projB. Should fail because A wasted it all
 	relaySession.SessionId += 1
-	signRelaySession(relaySession, client1Acct.SK)
+	relaySession.Sig, err = sigs.Sign(dev1Acct.SK, *relaySession)
+	require.Nil(t, err)
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.NotNil(t, err)
 }
@@ -348,7 +352,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// add a new project to the subscription just to waste the subcsription's cu
 			if tt.wasteSubscriptionCu {
-				_, waste1Addr := ts.AddAccount("waste", 0, testBalance)
+				waste1Acct, waste1Addr := ts.AddAccount("waste", 0, testBalance)
 
 				projectData := projectstypes.ProjectData{
 					Name:    "low_cu_project",
@@ -371,8 +375,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				require.NotNil(t, sub.Sub)
 
 				relaySession := ts.newRelaySession(providerAddr, 100, sub.Sub.MonthCuLeft, ts.BlockHeight(), 0)
-				signRelaySession(relaySession, client1Acct.SK)
-
+				relaySession.Sig, err = sigs.Sign(waste1Acct.SK, *relaySession)
+				require.Nil(t, err)
 				_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 				require.Nil(t, err)
 
@@ -419,8 +423,8 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					}
 
 					relaySession := ts.newRelaySession(providerAddr, uint64(i), cuSum, ts.BlockHeight(), 0)
-					signRelaySession(relaySession, client1Acct.SK)
-
+					relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
+					require.Nil(t, err)
 					_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 					require.Nil(t, err)
 
@@ -454,8 +458,8 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		providerAddr := res.Providers[0].Address
 
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
-		signRelaySession(relaySession, client1Acct.SK)
-
+		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
+		require.Nil(t, err)
 		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 		require.Nil(t, err)
 
@@ -475,7 +479,8 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		providerAddr := res.Providers[0].Address
 
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
-		signRelaySession(relaySession, client1Acct.SK)
+		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
+		require.Nil(t, err)
 
 		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 		require.NotNil(t, err)

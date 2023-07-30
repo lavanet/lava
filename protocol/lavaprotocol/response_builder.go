@@ -18,7 +18,8 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
 	// Update signature,
-	sig, err := sigs.SignRelayResponse(pkey, reply, &request)
+	relayExchange := pairingtypes.NewRelayExchange(request, *reply)
+	sig, err := sigs.Sign(pkey, relayExchange)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed signing relay response", err,
 			utils.Attribute{Key: "request", Value: request}, utils.Attribute{Key: "reply", Value: reply})
@@ -27,7 +28,8 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 
 	if signDataReliability {
 		// update sig blocks signature
-		sigBlocks, err := sigs.SignResponseFinalizationData(pkey, reply, &request, consumerAddress)
+		relayFinalization := pairingtypes.NewRelayFinalization(pairingtypes.NewRelayExchange(request, *reply), consumerAddress)
+		sigBlocks, err := sigs.Sign(pkey, relayFinalization)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed signing finalization data", err,
 				utils.Attribute{Key: "request", Value: request}, utils.Attribute{Key: "reply", Value: reply}, utils.Attribute{Key: "userAddr", Value: consumerAddress})
@@ -38,7 +40,8 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 }
 
 func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
-	serverKey, err := sigs.RecoverPubKeyFromRelayReply(reply, relayRequest)
+	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
+	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {
 		return err
 	}
@@ -54,7 +57,8 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 }
 
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock int64, blockDistanceForfinalization uint32) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
-	serverKey, err := sigs.RecoverPubKeyFromResponseFinalizationData(reply, relayRequest, consumerAcc)
+	relayFinalization := pairingtypes.NewRelayFinalization(pairingtypes.NewRelayExchange(*relayRequest, *reply), consumerAcc)
+	serverKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +82,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	if err != nil {
 		return nil, finalizationConflict, err
 	}
-	return
+	return finalizedBlocks, finalizationConflict, errRet
 }
 
 func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessionBlock int64, finalizedBlocks map[int64]string, blockDistanceForfinalization uint32, providerAddr string) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {

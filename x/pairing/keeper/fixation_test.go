@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
@@ -21,9 +22,12 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	// make payment request
 	cusum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 1, cusum, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, clientAcct.SK) // updates relayRequest
 
-	_, err := ts.TxPairingRelayPayment(providerAddr, relaySession)
+	sig, err := sigs.Sign(clientAcct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
+
+	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.Nil(t, err)
 
 	// shorten memory
@@ -36,7 +40,10 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	// make another request
 	relaySession.SessionId++
-	signRelaySession(relaySession, clientAcct.SK) // updates relayRequest
+
+	sig, err = sigs.Sign(clientAcct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.Nil(t, err)

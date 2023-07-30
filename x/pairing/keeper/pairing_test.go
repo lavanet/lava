@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"testing"
@@ -773,6 +774,136 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.True(t, slices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
 			}
 		})
+	}
+}
+
+// Test that the pairing process picks identical providers uniformly
+func TestPairingUniformDistribution(t *testing.T) {
+	numIterations := 10000
+	providersCount := 10
+	providersToPair := 3
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, 1, providersToPair)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	// extend the subscription because we'll advance alot of epochs
+	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
+	require.Nil(t, err)
+
+	// Create a map to count the occurrences of each provider
+	providerCount := make(map[string]int)
+
+	// Run the get-pairing function multiple times and count the occurrences of each provider
+	for i := 0; i < numIterations; i++ {
+		getPairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
+		require.Nil(t, err)
+
+		pairedProviders := getPairingRes.Providers
+		for _, provider := range pairedProviders {
+			providerCount[provider.Address]++
+		}
+
+		ts.AdvanceEpoch() // advance epoch to change the pairing result
+	}
+
+	// Calculate the expected count for each provider (should be nearly equal for uniform distribution)
+	expectedCount := (numIterations * providersToPair) / providersCount
+
+	// Define a margin of error for the count (you can adjust this based on your tolerance)
+	marginOfError := math.Round(0.1 * float64(expectedCount))
+
+	// Check that the count for each provider is within the margin of error of the expected count
+	for addr, count := range providerCount {
+		if math.Abs(float64(count-expectedCount)) > marginOfError {
+			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
+				addr, count, expectedCount)
+		}
+	}
+}
+
+// test to check that providers picks are aligned with their stake
+// For example: providerA with stake=100 will be picked two times more than
+// provider B with stake=50
+func TestPairingDistributionPerStake(t *testing.T) {
+	numIterations := 10000
+	providersCount := 10
+	providersToPair := 3
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, 1, providersToPair)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	// double the stake of one of the providers
+	allProviders, err := ts.QueryPairingProviders(ts.spec.Index, false)
+	require.Nil(t, err)
+	doubleStakeProvider := allProviders.StakeEntry[0]
+	doubleStake := doubleStakeProvider.Stake
+	doubleStake.Amount = doubleStake.Amount.MulRaw(2)
+	_, err = ts.TxPairingStakeProvider(
+		doubleStakeProvider.Address,
+		doubleStakeProvider.Chain,
+		doubleStake,
+		doubleStakeProvider.Endpoints,
+		doubleStakeProvider.Geolocation,
+		doubleStakeProvider.Moniker,
+	)
+	require.Nil(t, err)
+	ts.AdvanceEpoch()
+	allProviders, err = ts.QueryPairingProviders(ts.spec.Index, false)
+	require.Equal(t, providersCount, len(allProviders.StakeEntry))
+	require.Nil(t, err)
+
+	// extend the subscription because we'll advance alot of epochs
+	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
+	require.Nil(t, err)
+
+	// Create a map to count the occurrences of each provider
+	type providerInfo struct {
+		count       int
+		stakeAmount int64
+	}
+	providerCount := make(map[string]providerInfo)
+
+	// Run the get-pairing function multiple times and count the occurrences of each provider
+	for i := 0; i < numIterations; i++ {
+		getPairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
+		require.Nil(t, err)
+
+		for _, provider := range getPairingRes.Providers {
+			if _, ok := providerCount[provider.Address]; !ok {
+				info := providerInfo{count: 0, stakeAmount: provider.Stake.Amount.Int64()}
+				providerCount[provider.Address] = info
+			} else {
+				info := providerCount[provider.Address]
+				info.count++
+				providerCount[provider.Address] = info
+			}
+		}
+
+		ts.AdvanceEpoch() // advance epoch to change the pairing result
+	}
+
+	// Calculate the expected count for each provider based on their stakes
+	var totalStakes int64
+	for _, provider := range allProviders.StakeEntry {
+		totalStakes += provider.Stake.Amount.Int64()
+	}
+
+	// Check that the count for each provider aligns with their stake's probability
+	for addr, info := range providerCount {
+		// Calculate the expected count based on the provider's stake
+		expectedCount := providersToPair * (numIterations * int(info.stakeAmount)) / int(totalStakes)
+
+		fmt.Printf("count: %d, expected: %d\n", info.count, expectedCount)
+
+		// Define a margin of error for the count (you can adjust this based on your tolerance)
+		marginOfError := math.Round(0.15 * float64(expectedCount))
+
+		if math.Abs(float64(info.count-expectedCount)) > marginOfError {
+			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
+				addr, info.count, expectedCount)
+		}
 	}
 }
 
