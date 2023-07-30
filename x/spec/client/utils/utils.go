@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
@@ -26,10 +29,15 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret 
 		if err != nil {
 			return proposal, err
 		}
+		decoder := json.NewDecoder(bytes.NewReader(contents))
+		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 
-		if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
-			return proposal, err
+		if err := decoder.Decode(&proposal); err != nil {
+			return proposal, fmt.Errorf("failed in file: %s, error %w", fileName, err)
 		}
+		// if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
+		// 	return proposal, err
+		// }
 		if len(ret.Proposal.Specs) > 0 {
 			for _, spec := range proposal.Proposal.Specs {
 				if spec.Name == "" {
