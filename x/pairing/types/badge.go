@@ -30,3 +30,16 @@ func (badge Badge) IsBadgeValid(clientAddr string, lavaChainID string, epoch uin
 	}
 	return true
 }
+
+func (b Badge) GetSignature() []byte {
+	return b.ProjectSig
+}
+
+func (b Badge) DataToSign() []byte {
+	b.ProjectSig = nil
+	return []byte(b.String())
+}
+
+func (b Badge) HashRounds() int {
+	return 1
+}
