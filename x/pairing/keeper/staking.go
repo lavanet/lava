@@ -176,7 +176,6 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 			Addon:        addon,
 			Extension:    extension,
 		}
-
 	}
 
 	for idx := uint64(0); idx < geolocations; idx++ {

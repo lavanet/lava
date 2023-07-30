@@ -107,9 +107,9 @@ func (endpoint *Endpoint) GetSupportedServices() (services []EndpointService) {
 	seen := map[EndpointService]struct{}{}
 	for _, apiInterface := range endpoint.ApiInterfaces {
 		// always support the base addons
-		addons := append(endpoint.Addons, "")
+		addons := append([]string{""}, endpoint.Addons...)
 		// always support no extensions
-		extensions := append(endpoint.Extensions, "")
+		extensions := append([]string{""}, endpoint.Extensions...)
 		for _, addon := range addons {
 			if addon == apiInterface {
 				// will be used to remove an apiInterface from the base supported

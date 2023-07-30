@@ -25,7 +25,6 @@ func (f *AddonFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 					for _, extension := range requirement.Extensions {
 						requirements[requirement.Collection][extension] = struct{}{}
 					}
-
 				}
 			}
 			if len(requirements) > 0 {
