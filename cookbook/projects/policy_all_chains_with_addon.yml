@@ -12,43 +12,51 @@ Policy:
   selected_providers_mode: ALLOWED
   chain_policies:
     - chain_id: ETH1
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: FTM250
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: GTH1
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: CELO
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: POLYGON1
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: EVMOS
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: OPTM
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: CANTO
-      collections:
-        api_interface: "jsonrpc"
-        type: "POST"
-        add_on: "debug"
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
     - chain_id: "*" # allows all other chains without specifying
