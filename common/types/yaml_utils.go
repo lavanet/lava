@@ -60,7 +60,6 @@ func findMissingFields(content interface{}) []string {
 	// Get the type of the struct
 	if contentType.Kind() == reflect.Ptr {
 		contentType = contentType.Elem()
-		contentValue = contentValue.Elem()
 	}
 
 	// panic:ok Ensure content is a struct or a pointer to a struct
@@ -77,12 +76,15 @@ func findMissingFields(content interface{}) []string {
 		expectedFields[fieldName] = true
 	}
 
+	// Decode the YAML content into the yamlFields map using mapstructure tags
+	yamlFields := make(map[string]interface{})
+	if err := mapstructure.Decode(content, &yamlFields); err != nil {
+		utils.LavaFormatPanic("yaml struct does not support mapstructure tags", fmt.Errorf("cannot read yaml"))
+	}
+
 	// Check if each expected field is present in the unmarshaled content
 	for fieldName := range expectedFields {
-		fieldValue := contentValue.FieldByName(fieldName)
-
-		// note that this check will always treat zero value fields as missing (which will make them get the declared default value)
-		if !fieldValue.IsValid() || fieldValue.IsZero() {
+		if _, found := yamlFields[fieldName]; !found {
 			missingFields = append(missingFields, fieldName)
 		}
 	}
