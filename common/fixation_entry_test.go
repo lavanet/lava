@@ -181,21 +181,25 @@ func TestFixationEntryAppendFuture(t *testing.T) {
 	block0 := int64(100)
 	block1 := int64(200)
 	block2 := int64(300)
+	block3 := int64(400)
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
-		{op: "append", name: "entry #3", count: -block2, coin: 2},
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
-		{op: "getvers", name: "to check 3 versions", count: 3},
+		{op: "append", name: "entry #4", count: -block3, coin: 3},
+		{op: "append", name: "entry #3", count: -block2, coin: 2},
+		{op: "getvers", name: "to check 4 versions", count: 4},
 		{op: "get", name: "get entry #1", coin: 0},
 		{op: "block", name: "advance to block1", count: block1 - block0},
 		{op: "get", name: "get entry #2", coin: 1},
 		{op: "block", name: "advance to block2", count: block2 - block1},
 		{op: "get", name: "get entry #3", coin: 2},
-		{op: "getvers", name: "to check 3 versions", count: 3},
+		{op: "block", name: "advance to block2", count: block3 - block2},
+		{op: "get", name: "get entry #4", coin: 3},
+		{op: "getvers", name: "to check 4 versions", count: 4},
 	}
 
-	testWithFixationTemplate(t, playbook, 3, 1)
+	testWithFixationTemplate(t, playbook, 4, 1)
 }
 
 // Test append of past entries (latest and non-latest)
@@ -373,22 +377,70 @@ func TestDelEntry(t *testing.T) {
 		{op: "getall", name: "count indices before del", count: 1},
 		{op: "get", name: "entry #1", coin: 1},
 		{op: "block", name: "advance to block3", count: block2 - block1},
-		{op: "del", name: "entry #1"},
-		// second del should fail
-		{op: "del", name: "entry #1", fail: true},
-		// entry #1 now gone from: get, append should fail
+		// del an entry
+		{op: "del", name: "entry #1", count: block2 + 1},
+		{op: "getvers", name: "count versions pending del", count: 2},
+		// double del should fail
+		{op: "del", name: "entry #1", count: block2 + 2, fail: true},
+		// entry #1 stil around
+		{op: "get", name: "entry #1 almost gone", coin: 1},
+		// append beyond block2 + 1 should fail
+		{op: "append", name: "entry #1 version 2", count: -block3, fail: true},
+		// advance to the DeleteAt block
+		{op: "block", name: "advance to block2 + 1", count: 1},
+		// entry #1 now gone from: get, append not limited anymore
 		{op: "get", name: "entry #1 gone", coin: 1, fail: true},
-		{op: "append", name: "entry #1 version 2", count: block3, fail: true},
 		{op: "getall", name: "count indices after del", count: 0},
+		{op: "getvers", name: "count versions after del", count: 2},
+		// re-add the same entry
+		{op: "append", name: "entry #1 version 2 (again)", count: block3},
+		{op: "getall", name: "count indices after del + append", count: 1},
 		// entry #1 find(s) should still work
 		{op: "find", name: "entry #1 version 0", coin: 0, count: block0},
 		{op: "find", name: "entry #1 version 1", coin: 1, count: block1},
 		// entry #1 find beyond the delete should fail
-		{op: "has", name: "entry #1 version 1 (deleted)", count: block2, fail: true},
-		{op: "find", name: "entry #1 version 1 (deleted)", count: block2, fail: true},
+		{op: "has", name: "entry #1 version 1 (deleted)", count: block2 + 1, fail: true},
+		{op: "find", name: "entry #1 version 1 (deleted)", count: block2 + 1, fail: true},
 	}
 
 	testWithFixationTemplate(t, playbook, 3, 1)
+}
+
+func TestDelThenAddEntry(t *testing.T) {
+	block0 := int64(100)
+	block1 := int64(200)
+	block2 := int64(300)
+	block3 := int64(400)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1", count: block0, coin: 0},
+		{op: "append", name: "entry #2", count: -block1, coin: 1},
+		{op: "del", name: "between entry #2 and entry #3 ", count: block2 + 50},
+		// future append before the del block: allowed
+		{op: "append", name: "entry #3", count: -block2, coin: 2},
+		// future append right before the del block: allowed
+		{op: "append", name: "entry #4", count: -(block2 + 49), coin: 3},
+		// future append on or after the del block: disallowed
+		{op: "append", name: "entry #5", count: -(block2 + 50), coin: 4, fail: true},
+		{op: "append", name: "entry #5", count: -(block2 + 51), coin: 4, fail: true},
+		// advance to the del
+		{op: "block", name: "advance to block1", count: block1 - block0},
+		{op: "block", name: "advance to block2", count: block2 - block1},
+		{op: "block", name: "advance to block2+49", count: 49},
+		{op: "block", name: "advance to block2+50", count: 1},
+		// future append after del
+		{op: "append", name: "entry #5 (again)", count: -block3, coin: 4},
+		{op: "getvers", name: "to check 5 versions", count: 5},
+		// current append after del
+		{op: "append", name: "entry #6 (now)", coin: 5},
+		{op: "getvers", name: "to check 6 versions", count: 6},
+		// aadvance to trigger stales
+		{op: "block", name: "advance to block3", count: block3 - block2 - 50},
+		{op: "block", name: "advance until stale", count: types.STALE_ENTRY_TIME},
+		{op: "getvers", name: "to check 1 version", count: 1},
+	}
+
+	testWithFixationTemplate(t, playbook, 6, 1)
 }
 
 func TestDelEntryWithFuture(t *testing.T) {
@@ -403,14 +455,18 @@ func TestDelEntryWithFuture(t *testing.T) {
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
 		{op: "getvers", name: "to check 3 versions", count: 3},
 		{op: "del", name: "between entry #2 and entry #3 ", count: block1 + 50},
+		// entry #3 later than del block - should be trimmed
+		{op: "getvers", name: "to check 2 versions", count: 2},
+		// advnace until future entry matures
 		{op: "block", name: "advance to block1", count: block1 - block0},
 		// now entry #2 is latest, and should have inherited DeleteAt
 		{op: "get", name: "entry #2", coin: 1},
 		{op: "put", name: "entry #2"},
+		// advance until DeleteAt block
 		{op: "block", name: "advance to block1+50", count: 50},
-		// now entry #2 is deleted, and entry #3 discarded
+		// now entry #2 is deleted
 		{op: "get", name: "entry #2", fail: true},
-		{op: "getvers", name: "to check 3 versions", count: 2},
+		{op: "getvers", name: "to check 2 versions", count: 2},
 		{op: "block", name: "advance until entry #1 stale", count: types.STALE_ENTRY_TIME - 50},
 		{op: "block", name: "+1", count: 1},
 		{op: "getvers", name: "to check 2 version", count: 1},
@@ -434,11 +490,13 @@ func TestDelEntrySameFuture(t *testing.T) {
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
 		{op: "getvers", name: "to check 2 versions", count: 2},
 		{op: "del", name: "exactly on (future) entry #2 ", count: block1},
+		// entry #2 was trimmed, and should be gone
+		{op: "getvers", name: "to check 1 versions", count: 1},
 		{op: "block", name: "advance to block1", count: block1 - block0},
 		// now entry #2 is latest, and deleted
 		{op: "get", name: "entry #1 should fail", fail: true},
 		{op: "block", name: "advance until entry #1 stale", count: types.STALE_ENTRY_TIME},
-		{op: "getvers", name: "to check 0 version", count: 0},
+		{op: "getvers", name: "to check 1 version", count: 0},
 	}
 
 	testWithFixationTemplate(t, playbook, 2, 1)
