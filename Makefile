@@ -26,6 +26,8 @@
 #   mask_consumer_logs  - (debug) enable debug mutex
 #
 #   cleveldb, rocksdb   - (not to be used)
+# 
+#   production-log-level - build the binary with some logs set as warnings instead of errors when the error can be related to bad usage instead of a bug.
 #
 # Environment
 #   LAVA_VERSION=...    - select lava version (for 'release')
@@ -49,6 +51,9 @@
 #
 #   Build release of specific version, and generate docker image
 #     LAVA_VERSION=0.4.3 LAVA_BUILD_OPTIONS="static,release" make docker-build
+
+# in order to print lava build options set: 
+# $(info LAVA_BUILD_OPTIONS is set to: $(LAVA_BUILD_OPTIONS))
 
 # do we have .git/ directory?
 have_dot_git := $(if $(shell test -d .git && echo true),true,false)
@@ -179,6 +184,11 @@ ifeq (cleveldb,$(findstring cleveldb,$(LAVA_BUILD_OPTIONS)))
 else ifeq (rocksdb,$(findstring rocksdb,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
 endif
+
+ifeq (production-log-level,$(findstring production-log-level,$(LAVA_BUILD_OPTIONS)))
+  ldflags += -X github.com/lavanet/lava/utils.ExtendedLogLevel=production
+endif
+
 ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))
   ldflags += -w -s
 endif
