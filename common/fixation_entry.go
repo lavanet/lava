@@ -286,6 +286,15 @@ func (fs *FixationStore) AppendEntry(
 			)
 		}
 
+		// if the new entry's block is equal to the nearest-no-later entry, overwrite that
+		// entry (only possible for latest and future entries, as the previous test would
+		// exclude earlier-than-latest entries).
+
+		if block == latestEntry.Block {
+			fs.ModifyEntry(ctx, index, block, entryData)
+			return nil
+		}
+
 		// temporary: do not allow adding new entries for an index that was deleted
 		// and still not fully cleaned up (e.g. not stale or with references held)
 		if latestEntry.IsDeletedBy(block) {
@@ -294,12 +303,6 @@ func (fs *FixationStore) AppendEntry(
 				utils.Attribute{Key: "index", Value: index},
 				utils.Attribute{Key: "block", Value: block},
 			)
-		}
-
-		// if the new entry's block is equal to the latest entry, overwrite the latest entry
-		if block == latestEntry.Block {
-			fs.ModifyEntry(ctx, index, block, entryData)
-			return nil
 		}
 
 		// if the previous latest entry is marked with DeleteAt which is set to expire after
