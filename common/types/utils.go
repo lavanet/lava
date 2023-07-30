@@ -1,6 +1,8 @@
 package types
 
 import (
+	"unicode"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/exp/constraints"
 )
@@ -132,4 +134,21 @@ func UnionByFields[T ComparableByFields](arrays ...[]T) []T {
 func SafePow(base, exponent uint64) uint64 {
 	baseDec := sdk.NewDecWithPrec(int64(base), 0)
 	return baseDec.Power(exponent).TruncateInt().Uint64()
+}
+
+// CamelToSnake turns CamelString to camel_string ("snake case")
+func CamelToSnake(s string) string {
+	var result []rune
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 && (unicode.IsLower(rune(s[i-1])) || (i+1 < len(s) && unicode.IsLower(rune(s[i+1])))) {
+				// Add underscore before the uppercase letter if it's not the first letter or followed by another uppercase letter
+				result = append(result, '_')
+			}
+			// Convert the uppercase letter to lowercase
+			r = unicode.ToLower(r)
+		}
+		result = append(result, r)
+	}
+	return string(result)
 }

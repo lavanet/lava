@@ -2,12 +2,14 @@ package types
 
 import (
 	fmt "fmt"
+	"io/ioutil"
 	"path/filepath"
 	"reflect"
 
 	"github.com/lavanet/lava/utils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 func ReadYaml(filePath, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType, allowMissingFields bool) (missingFields []string, err error) {
@@ -44,13 +46,37 @@ func ReadYaml(filePath, primaryKey string, content interface{}, hooks []EnumDeco
 	}
 
 	if allowMissingFields {
-		missingFields = findMissingFields(content)
+		// Read the YAML file content
+		yamlData, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			return nil, err
+		}
+
+		// Unmarshal the YAML data into the map
+		var yamlMap map[string]interface{}
+		err = yaml.Unmarshal(yamlData, &yamlMap)
+		if err != nil {
+			return nil, err
+		}
+
+		policyMap, found := yamlMap["Policy"].(map[interface{}]interface{})
+		if !found {
+			return nil, fmt.Errorf("could not find 'Policy' section in the YAML file")
+		}
+
+		// Convert policyMap to map[string]interface{}
+		policyFieldsMap := make(map[string]interface{})
+		for k, v := range policyMap {
+			policyFieldsMap[fmt.Sprintf("%v", k)] = v
+		}
+
+		missingFields = findMissingFields(content, policyFieldsMap)
 	}
 
 	return missingFields, nil
 }
 
-func findMissingFields(content interface{}) []string {
+func findMissingFields(content interface{}, yamlMap map[string]interface{}) []string {
 	var missingFields []string
 
 	expectedFields := make(map[string]bool)
@@ -76,15 +102,10 @@ func findMissingFields(content interface{}) []string {
 		expectedFields[fieldName] = true
 	}
 
-	// Decode the YAML content into the yamlFields map using mapstructure tags
-	yamlFields := make(map[string]interface{})
-	if err := mapstructure.Decode(content, &yamlFields); err != nil {
-		utils.LavaFormatPanic("yaml struct does not support mapstructure tags", fmt.Errorf("cannot read yaml"))
-	}
-
 	// Check if each expected field is present in the unmarshaled content
 	for fieldName := range expectedFields {
-		if _, found := yamlFields[fieldName]; !found {
+		snakeFieldName := CamelToSnake(fieldName)
+		if _, found := yamlMap[snakeFieldName]; !found {
 			missingFields = append(missingFields, fieldName)
 		}
 	}
