@@ -244,6 +244,14 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 	}
 }
 
+func getExtensions(names ...string) []*spectypes.Extension {
+	extensions := []*spectypes.Extension{}
+	for _, name := range names {
+		extensions = append(extensions, &spectypes.Extension{Name: name})
+	}
+	return extensions
+}
+
 func TestStakeEndpoints(t *testing.T) {
 	ts := newTester(t)
 
@@ -258,7 +266,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "",
 				AddOn:        "",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext1", "ext2", "ext3"),
 		},
 		{
 			CollectionData: spectypes.CollectionData{
@@ -267,7 +276,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "",
 				AddOn:        "",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext2", "ext3"),
 		},
 		{
 			CollectionData: spectypes.CollectionData{
@@ -276,7 +286,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "banana",
 				AddOn:        "",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext2"),
 		},
 		{
 			CollectionData: spectypes.CollectionData{
@@ -285,7 +296,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "",
 				AddOn:        "addon",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext2"),
 		},
 		{
 			CollectionData: spectypes.CollectionData{
@@ -294,7 +306,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "",
 				AddOn:        "addon",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext2"),
 		},
 		{
 			CollectionData: spectypes.CollectionData{
@@ -303,7 +316,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "",
 				AddOn:        "unique-addon",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext1", "ext-unique"),
 		},
 		{
 			CollectionData: spectypes.CollectionData{
@@ -312,7 +326,8 @@ func TestStakeEndpoints(t *testing.T) {
 				Type:         "",
 				AddOn:        "optional",
 			},
-			Enabled: true,
+			Enabled:    true,
+			Extensions: getExtensions("ext2"),
 		},
 	}
 
@@ -320,7 +335,7 @@ func TestStakeEndpoints(t *testing.T) {
 	ts.spec.ApiCollections = apiCollections
 	ts.AddSpec("mock", ts.spec)
 
-	_, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	providerAcc, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
 
 	getEndpoint := func(
 		host string,
@@ -336,11 +351,29 @@ func TestStakeEndpoints(t *testing.T) {
 		}
 	}
 
+	getEndpointWithExt := func(
+		host string,
+		apiInterfaces []string,
+		addons []string,
+		geoloc uint64,
+		extensions []string,
+	) epochstoragetypes.Endpoint {
+		return epochstoragetypes.Endpoint{
+			IPPORT:        host,
+			Geolocation:   geoloc,
+			Addons:        addons,
+			ApiInterfaces: apiInterfaces,
+			Extensions:    extensions,
+		}
+	}
+
 	type testEndpoint struct {
 		name        string
 		endpoints   []epochstoragetypes.Endpoint
 		success     bool
 		geolocation uint64
+		addons      int
+		extensions  int
 	}
 	playbook := []testEndpoint{
 		{
@@ -421,6 +454,7 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 3,
+			addons:      1,
 		},
 		{
 			name: "empty with addon multi-geo",
@@ -430,6 +464,7 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 3,
+			addons:      2,
 		},
 		{
 			name: "empty with unique addon",
@@ -449,6 +484,7 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 3,
+			addons:      2,
 		},
 		{
 			name: "explicit with addon + unique addon partial geo",
@@ -459,12 +495,22 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 3,
+			addons:      4,
 		},
 		{
 			name: "partial explicit and full emptry with addon + unique addon",
 			endpoints: []epochstoragetypes.Endpoint{
 				getEndpoint("123", []string{"mandatory"}, []string{"addon", "unique-addon"}, 1),
 				getEndpoint("123", []string{}, []string{"addon"}, 1),
+			},
+			success:     true,
+			geolocation: 1,
+			addons:      3,
+		},
+		{
+			name: "explicit + optional",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpoint("123", []string{}, []string{"mandatory", "mandatory2", "optional"}, 1),
 			},
 			success:     true,
 			geolocation: 1,
@@ -514,6 +560,7 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 3,
+			addons:      2,
 		},
 		{
 			name: "full multi geo",
@@ -527,6 +574,114 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 3,
+			addons:      4,
+		},
+		{
+			name: "mandatory with extension - multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{}, 1, []string{"ext2"}),
+				getEndpointWithExt("123", []string{}, []string{}, 2, []string{"ext2"}),
+			},
+			success:     true,
+			geolocation: 3,
+			extensions:  2,
+		},
+		{
+			name: "mandatory as extension in addon - multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{"ext2"}, 1, []string{}),
+				getEndpointWithExt("123", []string{}, []string{"ext2"}, 2, []string{}),
+			},
+			success:     true,
+			geolocation: 3,
+			extensions:  2,
+		},
+		{
+			name: "mandatory with two extensions - multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{}, 1, []string{"ext3", "ext2"}),
+				getEndpointWithExt("123", []string{}, []string{}, 2, []string{"ext3", "ext2"}),
+			},
+			success:     true,
+			geolocation: 3,
+			extensions:  4,
+		},
+		{
+			name: "invalid ext",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{}, 1, []string{"invalid"}),
+			},
+			success:     false,
+			geolocation: 1,
+		},
+		{
+			name: "invalid ext two",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{}, 1, []string{"ext1", "invalid"}),
+			},
+			success:     false,
+			geolocation: 1,
+		},
+		{
+			name: "mandatory with unique extension",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{"mandatory"}, []string{}, 1, []string{"ext1"}),
+				getEndpointWithExt("123", []string{"mandatory2"}, []string{}, 1, []string{}),
+			},
+			success:     true,
+			geolocation: 1,
+			extensions:  1,
+		},
+		{
+			name: "mandatory with all extensions",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{"mandatory"}, []string{}, 1, []string{"ext1"}),
+				getEndpointWithExt("123", []string{}, []string{}, 1, []string{"ext3", "ext2"}),
+			},
+			success:     true,
+			geolocation: 1,
+			extensions:  3,
+		},
+		{
+			name: "mandatory with addon and extension - multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{"addon"}, 1, []string{"ext2"}),
+				getEndpointWithExt("123", []string{}, []string{"addon"}, 2, []string{"ext2"}),
+			},
+			success:     true,
+			geolocation: 3,
+			addons:      2,
+			extensions:  2,
+		},
+		{
+			name: "mandatory with addon and extension as addon - multi geo",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{"addon", "ext2"}, 1, []string{}),
+				getEndpointWithExt("123", []string{}, []string{"addon", "ext2"}, 2, []string{}),
+			},
+			success:     true,
+			geolocation: 3,
+			addons:      2,
+			extensions:  2,
+		},
+		{
+			name: "mandatory unique addon with unique ext",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{}, 1, []string{}),
+				getEndpointWithExt("123", []string{"mandatory"}, []string{"unique-addon"}, 1, []string{"ext-unique"}),
+			},
+			success:     true,
+			geolocation: 1,
+			addons:      1,
+			extensions:  1,
+		},
+		{
+			name: "explicit + optional with extension",
+			endpoints: []epochstoragetypes.Endpoint{
+				getEndpointWithExt("123", []string{}, []string{"mandatory", "mandatory2", "optional"}, 1, []string{"ext2"}),
+			},
+			success:     true,
+			geolocation: 1,
 		},
 	}
 
@@ -537,6 +692,25 @@ func TestStakeEndpoints(t *testing.T) {
 			_, err := ts.TxPairingStakeProvider(providerAddr, ts.spec.Index, amount, play.endpoints, play.geolocation, "")
 			if play.success {
 				require.NoError(t, err)
+
+				providerEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+				require.True(t, found)
+				addons := 0
+				extensions := 0
+				for _, endpoint := range providerEntry.Endpoints {
+					for _, addon := range endpoint.Addons {
+						if addon != "" {
+							addons++
+						}
+					}
+					for _, extension := range endpoint.Extensions {
+						if extension != "" {
+							extensions++
+						}
+					}
+				}
+				require.Equal(t, play.addons, addons, providerEntry)
+				require.Equal(t, play.extensions, extensions)
 			} else {
 				require.Error(t, err)
 			}
