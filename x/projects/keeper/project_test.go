@@ -671,6 +671,68 @@ func TestChargeComputeUnits(t *testing.T) {
 	require.Equal(t, uint64(0), proj.UsedCu)
 }
 
+func TestAddAfterDelKeys(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 2 dev
+
+	_, sub1Addr := ts.Account("sub1")
+	_, dev1Addr := ts.Account("dev1")
+	_, dev2Addr := ts.Account("dev2")
+
+	plan := ts.Plan("mock")
+
+	projectData1 := types.ProjectData{
+		Name:        "mockname1",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{},
+		Policy:      &plan.PlanPolicy,
+	}
+	err := ts.Keepers.Projects.CreateProject(ts.Ctx, sub1Addr, projectData1, plan)
+	require.Nil(t, err)
+
+	projectData2 := types.ProjectData{
+		Name:        "mockname2",
+		Enabled:     true,
+		ProjectKeys: []types.ProjectKey{types.ProjectDeveloperKey(dev2Addr)},
+		Policy:      &plan.PlanPolicy,
+	}
+	err = ts.Keepers.Projects.CreateProject(ts.Ctx, sub1Addr, projectData2, plan)
+	require.Nil(t, err)
+
+	ts.AdvanceBlock()
+
+	projectID1 := types.ProjectIndex(sub1Addr, projectData1.Name)
+	projectID2 := types.ProjectIndex(sub1Addr, projectData2.Name)
+
+	// add key
+	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	require.Nil(t, err)
+	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+	require.True(t, ts.isKeyInProject(projectID2, dev2Addr, types.ProjectKey_DEVELOPER))
+
+	// add same key to other project - should fail
+	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	require.NotNil(t, err)
+
+	// del key
+	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	require.Nil(t, err)
+
+	// del takes effect in next epoch
+	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+	ts.AdvanceEpoch()
+	require.False(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
+
+	// add same key to other project
+	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	require.Nil(t, err)
+	require.True(t, ts.isKeyInProject(projectID2, dev1Addr, types.ProjectKey_DEVELOPER))
+
+	res, err := ts.QueryProjectDeveloper(dev1Addr)
+	require.Nil(t, err)
+	require.Equal(t, projectID2, res.Project.Index)
+}
+
 func TestAddDelKeysSameEpoch(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(2, 2, 6) // 2 sub, 2 adm, 6 dev
