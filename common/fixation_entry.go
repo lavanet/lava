@@ -444,6 +444,8 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.Safe
 		)
 	}
 
+	entry.IsLatest = false
+
 	fs.setEntryIndex(ctx, safeIndex, false)
 	fs.putEntry(ctx, entry)
 
