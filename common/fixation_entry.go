@@ -153,10 +153,10 @@ func FixationVersion() uint64 {
 // fire in order of expiry blocks, and in order of timeout kind.
 
 const (
-	// NOTE: TimerFutureEntry should be smaller than timerDeleteEntry, to
-	// ensure that it fires first (because the latter will removes future entries,
-	// so otherwise if they both expire on the same block then the future entry
-	// callback will be surprised when it cannot find the respective entry).
+	// NOTE: timerFutureEntry should be smaller than timerDeleteEntry, to ensure
+	// that if both expire on the same block then future-entry timer fires before
+	// delete-entry timer, so that the latter would remove the brand newly matured
+	// future-entry.
 	timerFutureEntry = 0x01
 	timerDeleteEntry = 0x02
 	timerStaleEntry  = 0x03
@@ -255,7 +255,8 @@ func (fs *FixationStore) AppendEntry(
 	var latest bool
 
 	// if latest entry is not found, this is a first version entry
-	if !found {
+	// if latest entry is found but is deleted, also treat like a first version entry
+	if !found || latestEntry.IsDeleted(ctx) {
 		fs.setEntryIndex(ctx, safeIndex, true)
 		if block <= ctxBlock {
 			latest = true
@@ -295,44 +296,51 @@ func (fs *FixationStore) AppendEntry(
 			return nil
 		}
 
-		// temporary: do not allow adding new entries for an index that was deleted
-		// and still not fully cleaned up (e.g. not stale or with references held)
+		// we know the entry is not yet deleted (as tested above), so this is an attempt
+		// to append on or beyond a pending delete, which is not permitted.
+
 		if latestEntry.IsDeletedBy(block) {
 			return utils.LavaFormatWarning("AppendEntry",
-				fmt.Errorf("entry already deleted and pending cleanup"),
+				fmt.Errorf("entry disallows future version on or beyond pending delete"),
 				utils.Attribute{Key: "index", Value: index},
 				utils.Attribute{Key: "block", Value: block},
+				utils.Attribute{Key: "delete", Value: latestEntry.DeleteAt},
 			)
 		}
 
-		// if the previous latest entry is marked with DeleteAt which is set to expire after
-		// this future entry's maturity (block), then transfer this DeleteAt to the future
-		// entry, and then replace the old timer with a new timer (below)
-		// (note: deletion, if any, cannot be for the current block, since it would have been
-		// processed at the beginning of the block, and AppendEntry would fail earlier).
+		// if the previous latest entry is marked with DeleteAt, and this future entry is set
+		// to mature strictly before that DeleteAt block (and specifically not at that block),
+		// then transfer this DeleteAt to the future entry, and then replace the old timer
+		// with a new timer (see below).
 
-		if latestEntry.HasDeleteAt() { // already know !latestEntry.IsDeletedBy(block)
+		if latestEntry.HasDeleteAt() {
+			// marked for delete that would take place after this future entry - transfer
+			// the marking to this future entry (which by now we know is later)
 			deleteAt = latestEntry.DeleteAt
 			latestEntry.DeleteAt = math.MaxUint64
 			fs.setEntry(ctx, latestEntry)
 		}
+	}
 
-		// if we are superseding a previous latest entry, then drop the latter's refcount;
-		// otherwise we are a future entry version, so set a timer for when it will become
-		// the new latest entry.
+	// if we are superseding a previous latest entry, then drop the latter's refcount (but
+	// not if the latest entry is deleted, since it lost its extra reference upon deletion);
+	// otherwise, if we are a future entry version, set a timer for when it will become the
+	// new latest entry.
 
-		if block <= ctxBlock {
-			// the new entry is becoming the latest, put reference on the previous entry.
-			// (the latestEntry must be marked with IsLatest, because the test above would
-			// have returned an error otherwise.
-			latest = true
+	if block <= ctxBlock {
+		// the new entry is becoming the latest now: mark as such
+		latest = true
+		if latestEntry.IsLatest {
+			// the previous entry was the latest and will no longer be so going forward, so
+			// drop the "latest" reference from that previous entry.
 			latestEntry.IsLatest = false
-			fs.putEntry(ctx, latestEntry)
-		} else {
-			// the new entry is not yet in effect, create a timer to put reference back to the latest once this is changed
-			key := encodeForTimer(safeIndex, block, timerFutureEntry)
-			fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
+			fs.putEntry(ctx, latestEntry) // also saves updated latestEntry
 		}
+	} else {
+		// the new entry is not yet in effect, create a timer to put reference back to
+		// the latest once this is changed.
+		key := encodeForTimer(safeIndex, block, timerFutureEntry)
+		fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 	}
 
 	// marshal the new entry's data
@@ -419,7 +427,7 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.Safe
 		// because from now on it is no longer so.
 
 		latestEntry.IsLatest = false
-		fs.putEntry(ctx, latestEntry)
+		fs.putEntry(ctx, latestEntry) // also saves updated latestEntry
 	}
 
 	// we are now the latest entry - make it official by setting IsLatest
@@ -449,8 +457,8 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.Safe
 	fs.setEntryIndex(ctx, safeIndex, false)
 	fs.putEntry(ctx, entry)
 
-	// no need to trim future entries: they were trimmed at the time of DelEntry,
-	// and since then new entries (beyond DeleteAt block) could not be appended.
+	// no need to trim future entries: they were trimmed at the time of DelEntry, and
+	// since then new entries (on or beyond DeleteAt block) could not be appended.
 }
 
 func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.SafeIndex, _ uint64) {
@@ -530,7 +538,8 @@ func (fs *FixationStore) deleteStaleEntries(ctx sdk.Context, safeIndex types.Saf
 	}
 }
 
-// trimFutureEntries discards all future entries (relative to the current block)
+// trimFutureEntries discards all future entries (relative to the DeleteAt of the
+// entry version marked for deletion)
 func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry types.Entry) {
 	store := fs.getEntryStore(ctx, lastEntry.SafeIndex())
 
@@ -544,7 +553,7 @@ func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry types.Entr
 		var entry types.Entry
 		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
 
-		if entry.Block <= lastEntry.DeleteAt {
+		if entry.Block < lastEntry.DeleteAt {
 			break
 		}
 
@@ -807,7 +816,20 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 		)
 	}
 
-	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
+	// if this is a future delete, then we search for a strictly nearest-smaller
+	// previous entry (rather than nearest-no-later): if there exists an entry at
+	// that block, then we would trim it away (if we let it be, it would anyway be
+	// removed when DeleteAt is reached; and otherwise, it would make appending a
+	// new entry immediately after (and in same block) as the delete messy, since
+	// the new entry would need to overwrite a deleted previous entry (same block);
+	// thus it's simpler to not permit such future entry on the DeleteAt block.
+
+	deleteAt := block
+	if block > ctxBlock {
+		deleteAt--
+	}
+
+	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, deleteAt)
 	if !found || entry.HasDeleteAt() {
 		return sdkerrors.ErrNotFound
 	}
@@ -826,9 +848,9 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 		fs.tstore.AddTimerByBlockHeight(ctx, block, key, []byte{})
 	}
 
-	// discard all future entries beyond the DeleteAt block, since they will never
-	// become the latest; and there will be no new entries beyond DeleteAt block
-	// as AppendEntry() does not allow such additions.
+	// discard all pending future entries on or beyond the DeleteAt block, since they
+	// will never become the latest; and there will be no new entries on or beyond
+	// DeleteAt block as AppendEntry() does not allow such additions.
 
 	fs.trimFutureEntries(ctx, entry)
 
@@ -887,7 +909,7 @@ func (fs *FixationStore) getEntryVersionsFilter(ctx sdk.Context, index string, b
 		}
 	}
 
-	// reverse the result slice to return the block in ascending order
+	// reverse the result slice to return the blocks in ascending order
 	length := len(blocks)
 	for i := 0; i < length/2; i++ {
 		blocks[i], blocks[length-i-1] = blocks[length-i-1], blocks[i]
