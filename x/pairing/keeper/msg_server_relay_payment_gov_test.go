@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -80,13 +81,18 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			// to avoid double spending error (provider claims twice for same transaction)
 			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, tt.epoch, 0)
 			relaySession.QosReport = badQoS
-			signRelaySession(relaySession, client1Acct.SK)
+
+			// Sign and send the payment requests for block 0 tx
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
 
+			// Add the relay request to the Relays array (for relayPaymentMessage())
 			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true)
 		})
 	}
@@ -139,13 +145,17 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			// Create relay request dated to the test's epoch. Change session ID each iteration
 			// to avoid double spending error (provider claims twice for same transaction)
 			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, tt.epoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			// Sign and send the payment requests
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
 
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
 		})
 	}
@@ -208,13 +218,17 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			// Create relay request dated to the test's epoch. Change session ID each iteration
 			// to avoid double spending error (provider claims twice for same transaction)
 			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, tt.epoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			// Sign and send the payment requests
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
 
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
 		})
 	}
@@ -279,7 +293,10 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			// Create relay request dated to the test's epoch. Change session ID each iteration
 			// to avoid double spending error (provider claims twice for same transaction)
 			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, tt.epoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			// Sign and send the payment requests
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
@@ -346,13 +363,17 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			// Create relay request dated to the test's epoch. Change session ID each iteration
 			// to avoid double spending error (provider claims twice for same transaction)
 			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, tt.epoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			// Sign and send the payment requests
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
 
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
 		})
 	}
@@ -423,13 +444,16 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 
 			paymentEpoch := startBlock + tt.paymentEpoch
 			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, paymentEpoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
-
+			// Sign and send the payment requests
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
 
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
 		})
 	}
@@ -460,8 +484,12 @@ func TestStakePaymentUnstake(t *testing.T) {
 	// Advance an epoch to apply EpochBlocks change
 	ts.AdvanceEpoch() // blockHeight = 20
 
+	// Sign and send the payment requests for block 20 (=epochBeforeChange)
 	relaySession := ts.newRelaySession(providerAddr, 1, 10000, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
+
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
 	payment := pairingtypes.MsgRelayPayment{
 		Creator: providerAddr,
@@ -521,8 +549,11 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		// Advance an epoch to apply EpochBlocks change
 		ts.AdvanceEpoch()
 
+		// Sign the payment request
 		relaySession := ts.newRelaySession(providerAddr, 1, 10000, ts.EpochStart(), 0)
-		signRelaySession(relaySession, client1Acct.SK)
+		sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 
 		payment := pairingtypes.MsgRelayPayment{
 			Creator: providerAddr,

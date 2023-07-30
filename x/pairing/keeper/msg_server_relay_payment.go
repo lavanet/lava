@@ -40,7 +40,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			mapKey := types.CreateAddressEpochBadgeMapKey(relay.Badge.Address, relay.Badge.Epoch)
 			_, ok := addressEpochBadgeMap[mapKey]
 			if !ok {
-				badgeSigner, err := sigs.ExtractSignerAddressFromBadge(*relay.Badge)
+				badgeSigner, err := sigs.ExtractSignerAddress(*relay.Badge)
 				if err != nil {
 					return nil, utils.LavaFormatError("can't extract badge's signer from badge's project signature", err,
 						utils.Attribute{Key: "badgeUserAddress", Value: relay.Badge.Address},

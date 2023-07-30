@@ -1,11 +1,11 @@
 {
     "proposal": {
-        "title": "Add plan proposal: explorer",
-        "description": "A proposal for a new plan for a beginner user",
+        "title": "Add plan proposal: free",
+        "description": "A proposal for a new plan for a free user",
         "plans": [
             {
-                "index": "explorer",
-                "description": "Plan for the Lava explorer",
+                "index": "free",
+                "description": "Plan for the free Lava user",
                 "type": "rpc",
                 "price": {
                     "denom": "ulava",
@@ -15,7 +15,7 @@
                 "allow_overuse": false,
                 "overuse_rate": "0",
                 "plan_policy": {
-                    "geolocation_profile": "18446744073709551615",
+                    "geolocation_profile": "4",
                     "total_cu_limit": "10000000",
                     "epoch_cu_limit": "100000",
                     "max_providers_to_pair": "5"

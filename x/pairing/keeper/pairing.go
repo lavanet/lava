@@ -165,7 +165,6 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
 	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
 	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
-
 	for idx, group := range slotGroups {
 		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
@@ -175,7 +174,6 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		}
 		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData)
 		providers = append(providers, pickedProviders...)
-
 		prevGroupSlot = group
 	}
 
@@ -200,7 +198,10 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if !allowed {
 		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
-	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	if err != nil {
+		return planstypes.Policy{}, err
+	}
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
@@ -246,17 +247,25 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 	return effectiveMode, effectiveSelectedProviders
 }
 
-func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) uint64 {
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) (uint64, error) {
 	geolocation := uint64(math.MaxUint64)
 
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
 	for _, policy := range policies {
 		if policy != nil {
-			geolocation &= policy.GetGeolocationProfile()
+			geo := policy.GetGeolocationProfile()
+			if geo == uint64(planstypes.Geolocation_value["GLS"]) {
+				return uint64(planstypes.Geolocation_value["GL"]), nil
+			}
+			geolocation &= geo
 		}
 	}
 
-	return geolocation
+	if geolocation == 0 {
+		return 0, utils.LavaFormatWarning("invalid strictest geolocation", fmt.Errorf("strictest geo = 0"))
+	}
+
+	return geolocation, nil
 }
 
 func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planstypes.Policy) (uint64, error) {
