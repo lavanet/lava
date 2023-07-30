@@ -300,6 +300,10 @@ func (k Keeper) GetExpectedServicesForExpandedSpec(expandedSpec types.Spec, mand
 						Addon:        apiCollection.CollectionData.AddOn,
 						Extension:    extension.Name,
 					}
+					// if this is an optional apiInterface, we set addon as ""
+					if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
+						service.Addon = ""
+					}
 					expectedServices[service] = struct{}{}
 				}
 			}

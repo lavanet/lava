@@ -670,10 +670,8 @@ func TestStakeEndpoints(t *testing.T) {
 				getEndpointWithExt("123", []string{}, []string{}, 1, []string{}),
 				getEndpointWithExt("123", []string{"mandatory"}, []string{"unique-addon"}, 1, []string{"ext-unique"}),
 			},
-			success:     true,
+			success:     false, // we fail this because extensions that don't exist in the parent apiCollection can't work
 			geolocation: 1,
-			addons:      1,
-			extensions:  1,
 		},
 		{
 			name: "explicit + optional with extension",
@@ -682,6 +680,7 @@ func TestStakeEndpoints(t *testing.T) {
 			},
 			success:     true,
 			geolocation: 1,
+			extensions:  1,
 		},
 	}
 
