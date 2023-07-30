@@ -117,17 +117,19 @@ func TestDetection(t *testing.T) {
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.SessionId += tt.SeassionID
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = tt.Provider1.Addr.String()
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
-			sig, err := sigs.SignRelay(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
+			sig, err := sigs.Sign(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 			require.Nil(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 			reply.Data = append(reply.Data, tt.ReplyData...)
-			sig, err = sigs.SignRelayResponse(tt.Provider1.SK, reply, msg.ResponseConflict.ConflictRelayData1.Request)
+			relayExchange := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply)
+			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
 			require.Nil(t, err)
 			reply.Sig = sig
-			sigBlocks, err := sigs.SignResponseFinalizationData(tt.Provider1.SK, reply, msg.ResponseConflict.ConflictRelayData1.Request, ts.consumer.Addr)
+			relayFinalization := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply), ts.consumer.Addr)
+			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
 			require.Nil(t, err)
 			reply.SigBlocks = sigBlocks
-			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request.RelayData)
+			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			// send detection msg
 			_, err = ts.txConflictDetection(msg)
 			if tt.Valid {

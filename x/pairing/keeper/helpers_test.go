@@ -4,10 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -271,20 +269,4 @@ func (ts *tester) newRelaySession(
 		RelayNum:    relay,
 	}
 	return relaySession
-}
-
-func signRelaySession(relaySession *pairingtypes.RelaySession, key *btcSecp256k1.PrivateKey) {
-	sig, err := sigs.SignRelay(key, *relaySession)
-	if err != nil {
-		panic("signRelaySession: failed to sign request: " + err.Error())
-	}
-	relaySession.Sig = sig
-}
-
-func signBadge(badge *pairingtypes.Badge, key *btcSecp256k1.PrivateKey) {
-	sig, err := sigs.SignBadge(key, *badge)
-	if err != nil {
-		panic("signBadge: failed to sign badge: " + err.Error())
-	}
-	badge.ProjectSig = sig
 }

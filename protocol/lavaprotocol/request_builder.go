@@ -49,8 +49,7 @@ func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
 }
 
 func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
-	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, value)
+	nonceBytes := sigs.EncodeUint64(value)
 	requestData.Salt = nonceBytes
 }
 
@@ -86,7 +85,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 
 	return &pairingtypes.RelaySession{
 		SpecId:                chainID,
-		ContentHash:           sigs.CalculateContentHashForRelayData(relayRequestData),
+		ContentHash:           sigs.HashMsg(relayRequestData.GetContentHashData()),
 		SessionId:             uint64(singleConsumerSession.SessionId),
 		CuSum:                 singleConsumerSession.CuSum + singleConsumerSession.LatestRelayCu, // add the latestRelayCu which will be applied when session is returned properly,
 		Provider:              providerPublicAddress,
@@ -106,7 +105,7 @@ func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaC
 		RelayData:    relayRequestData,
 		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
 	}
-	sig, err := sigs.SignRelay(privKey, *relayRequest.RelaySession)
+	sig, err := sigs.Sign(privKey, *relayRequest.RelaySession)
 	if err != nil {
 		return nil, err
 	}

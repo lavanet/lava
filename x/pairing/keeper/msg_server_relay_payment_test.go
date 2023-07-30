@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -52,13 +53,18 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			// Create relay request for the first epoch. Change session ID each iteration to
 			// avoid double spending error (provider asks reward for the same transaction twice)
 			relaySession := ts.newRelaySession(providerAddr, sessionId, cuSum, firstEpoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			// Sign and send the payment requests
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			// Request payment (helper validates balances and verifies error through valid)
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
+
+			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
 			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
 
 			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
@@ -90,7 +96,9 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			block := int64(ts.BlockHeight()) + tt.blockTime
 
 			relaySession := ts.newRelaySession(providerAddr, 0, cuSum, uint64(block), 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
@@ -112,12 +120,14 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	maxcu := ts.plan.PlanPolicy.EpochCuLimit
 
 	relaySession := ts.newRelaySession(providerAddr, 0, maxcu*2, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
 	// TODO: currently over-use causes error and doesnt reach balance zero; uncomment when fixed.
 	// balance := ts.GetBalance(providerAddr)
 
-	_, err := ts.TxPairingRelayPayment(providerAddr, relaySession)
+	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.Error(t, err)
 
 	// TODO: currently over-use causes error and doesnt reach balance zero; uncomment when fixed.
@@ -147,7 +157,9 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData // create the complaint
-		signRelaySession(relaySession, clients[clientIndex].SK)
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 		relays = append(relays, relaySession)
 	}
 
@@ -198,8 +210,9 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData[clientIndex]
-		signRelaySession(relaySession, clients[clientIndex].SK)
-
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 		totalCu += relaySession.CuSum
 		relays = append(relays, relaySession)
 	}
@@ -230,9 +243,10 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 
 	for i := 0; i < 2; i++ {
 		relaySession := ts.newRelaySession(provider2Addr, 0, cuSum, ts.BlockHeight(), 0)
-		signRelaySession(relaySession, clients[i].SK)
-
-		_, err := ts.TxPairingRelayPayment(provider2Addr, relaySession)
+		sig, err := sigs.Sign(clients[i].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
+		_, err = ts.TxPairingRelayPayment(provider2Addr, relaySession)
 		require.Nil(t, err)
 
 		ts.AdvanceEpoch() // after payment move one epoch
@@ -245,7 +259,9 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
-		signRelaySession(relaySession, clients[clientIndex].SK)
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 		relays = append(relays, relaySession)
 	}
 
@@ -268,7 +284,9 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
 	payment := types.MsgRelayPayment{
 		Creator: providerAddr,
@@ -287,7 +305,9 @@ func TestRelayPaymentDataModification(t *testing.T) {
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
 	tests := []struct {
 		name     string
@@ -323,9 +343,11 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
-	_, err := ts.TxPairingRelayPayment(providerAddr, relaySession)
+	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.Nil(t, err)
 
 	tests := []struct {
@@ -377,7 +399,9 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, tt.sid, cuSum, block-epochBlocks*tt.epoch, 0)
-			signRelaySession(relaySession, client1Acct.SK)
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
@@ -414,6 +438,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 			providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
+
 			qos := &types.QualityOfServiceReport{
 				Latency:      tt.latency,
 				Availability: tt.availability,
@@ -422,7 +447,9 @@ func TestRelayPaymentQoS(t *testing.T) {
 
 			relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
 			relaySession.QosReport = qos
-			signRelaySession(relaySession, client1Acct.SK)
+			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
@@ -443,7 +470,9 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 
 	payment := types.MsgRelayPayment{
 		Creator: providerAddr,
@@ -504,7 +533,8 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 
 	relaySession := ts.newRelaySession(providerAddr, 0, 1, ts.BlockHeight(), 0)
 	relaySession.QosReport = &qos
-	signRelaySession(relaySession, dev1Acct.SK)
+	relaySession.Sig, err = sigs.Sign(dev1Acct.SK, *relaySession)
+	require.Nil(t, err)
 
 	// Request payment (helper validates the balances and verifies expected errors through valid)
 	relayPaymentMessage := types.MsgRelayPayment{
@@ -547,7 +577,9 @@ func TestBadgeValidation(t *testing.T) {
 
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, epochStart, 0)
 	relaySession.QosReport = qos
-	signRelaySession(relaySession, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, relaySession)
+	require.Nil(t, err)
+	relaySession.Sig = sig
 
 	// make the context's lava chain ID a non-empty string (as usually defined in most tests)
 	lavaChainID := "lavanet"
@@ -587,11 +619,14 @@ func TestBadgeValidation(t *testing.T) {
 			}
 
 			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
-			signBadge(badge, tt.badgeSigner.SK)
+			sig, err := sigs.Sign(tt.badgeSigner.SK, *badge)
+			require.Nil(t, err)
+			badge.ProjectSig = sig
 
 			relaySession.Badge = badge
 			relaySession.LavaChainId = tt.lavaChainID
-			signRelaySession(relaySession, tt.relaySigner.SK)
+			relaySession.Sig, err = sigs.Sign(tt.relaySigner.SK, *relaySession)
+			require.Nil(t, err)
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: providerAddr,
@@ -620,7 +655,9 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 	epochStart := ts.EpochStart()
 
 	badge := types.CreateBadge(10, epochStart, badgeAcct.Addr, "", []byte{})
-	signBadge(badge, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
 
 	// create 5 identical relays. Assign the badge only to the first one
 	var relays []*types.RelaySession
@@ -637,8 +674,10 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 		if i == 0 {
 			relaySession.Badge = badge
 		}
-		signRelaySession(relaySession, badgeAcct.SK)
 
+		// change session ID to avoid double spending
+		relaySession.Sig, err = sigs.Sign(badgeAcct.SK, *relaySession)
+		require.Nil(t, err)
 		relays = append(relays, relaySession)
 	}
 
@@ -669,7 +708,9 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
 	badge := types.CreateBadge(badgeCuAllocation, epochStart, badgeAcct.Addr, "", []byte{})
-	signBadge(badge, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
 
 	qos := &types.QualityOfServiceReport{
 		Latency:      sdk.NewDecWithPrec(1, 0),
@@ -696,7 +737,8 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, uint64(it), tt.cuSum, ts.BlockHeight(), 0)
 			relaySession.QosReport = qos
 			relaySession.Badge = badge
-			signRelaySession(relaySession, badgeAcct.SK)
+			relaySession.Sig, err = sigs.Sign(badgeAcct.SK, *relaySession)
+			require.Nil(t, err)
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: providerAddr,
@@ -737,7 +779,9 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
 	badge := types.CreateBadge(badgeCuAllocation, epochStart, badgeAcct.Addr, "", []byte{})
-	signBadge(badge, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
 
 	qos := &types.QualityOfServiceReport{
 		Latency:      sdk.NewDecWithPrec(1, 0),
@@ -764,7 +808,10 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 			for i := 0; i < relayNum; i++ {
 				relaySession := ts.newRelaySession(providerAddr, uint64(i), cuSum, epochStart, 0)
 				relaySession.QosReport = qos
-				signRelaySession(relaySession, badgeAcct.SK)
+				relaySession.Epoch = int64(epochStart) // BuildRelayRequest always takes the current blockHeight, which is not desirable in this test
+				relaySession.SessionId = uint64(i)
+				relaySession.Sig, err = sigs.Sign(badgeAcct.SK, *relaySession)
+				require.Nil(t, err)
 
 				if i == 0 {
 					relaySession.Badge = badge
@@ -812,7 +859,9 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit / 2
 
 	badge := types.CreateBadge(badgeCuAllocation, epochStart, badgeAcct.Addr, "", []byte{})
-	signBadge(badge, client1Acct.SK)
+	sig, err := sigs.Sign(client1Acct.SK, *badge)
+	require.Nil(t, err)
+	badge.ProjectSig = sig
 
 	qos := &types.QualityOfServiceReport{
 		Latency:      sdk.NewDecWithPrec(1, 0),
@@ -825,7 +874,8 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		relaySession := ts.newRelaySession(providers[i].Addr.String(), 0, cuSum, epochStart, 0)
 		relaySession.QosReport = qos
-		signRelaySession(relaySession, badgeAcct.SK)
+		relaySession.Sig, err = sigs.Sign(badgeAcct.SK, *relaySession)
+		require.Nil(t, err)
 		relaySession.Badge = badge
 
 		relayPaymentMessage := types.MsgRelayPayment{
