@@ -115,8 +115,10 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 		case "put":
 			fs[play.store].PutEntry(ctx, index, block)
 		case "block":
-			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + play.count)
-			fs[play.store].AdvanceBlock(ctx)
+			for i := 0; i < int(play.count); i++ {
+				ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
+				fs[play.store].AdvanceBlock(ctx)
+			}
 		case "getall":
 			indexList := fs[play.store].GetAllEntryIndices(ctx)
 			require.Equal(t, int(play.count), len(indexList), what)
