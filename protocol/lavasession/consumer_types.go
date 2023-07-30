@@ -380,8 +380,8 @@ func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLat
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
 
-	downtimePercentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
-	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+	downtimePercentage, scaledAvailabilityScore := CalculateAvailabilityScore(&cs.QoSInfo)
+	cs.QoSInfo.LastQoSReport.Availability = scaledAvailabilityScore
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
 		utils.LavaFormatInfo("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
@@ -420,6 +420,12 @@ func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLat
 			)
 		}
 	} // else, we don't increase the score at all so everyone will have the same score
+}
+
+func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet sdk.Dec, scaledAvailabilityScoreRet sdk.Dec) {
+	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
+	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+	return downtimePercentage, scaledAvailabilityScore
 }
 
 // validate if this is a data reliability session
