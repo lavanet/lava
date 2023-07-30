@@ -151,7 +151,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		}
 	}
 	if !success {
-		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
+		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult}, utils.Attribute{Key: "Number Of Retries executed", Value: idx}, utils.Attribute{Key: "Parsed Sequence", Value: sequenceNumberParsed})
 	}
 	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "result", Value: summarizedTransactionResult})
 	return nil
@@ -199,7 +199,6 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 }
 
 func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	// TODO: retry logic for sequence number mismatch
 	// TODO: make sure we are not spamming the same conflicts, previous code only detecs relay by relay, it has no state tracking wether it reported already
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
