@@ -278,7 +278,7 @@ func (fs *FixationStore) AppendEntry(
 		// appending an entry, while can happen with a past block, must not succeed if it
 		// precedes en existing latest entry.
 
-		if block <= ctxBlock && !latestEntry.IsLatest {
+		if block < ctxBlock && !latestEntry.IsLatest {
 			return utils.LavaFormatWarning("AppendEntry",
 				fmt.Errorf("entry is older than existing latest entry"),
 				utils.Attribute{Key: "index", Value: index},
