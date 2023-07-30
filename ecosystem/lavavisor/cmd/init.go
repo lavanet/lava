@@ -1,11 +1,14 @@
 package lavavisor
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/client"
+	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +39,33 @@ var cmdLavavisorInit = &cobra.Command{
 			// ToDo: handle case where user didn't set up the file
 			return fmt.Errorf("lavavisor directory does not exist at path: %s", lavavisorPath)
 		}
+
+		// 1- check lava-protocol version from consensus
+		// ...GetProtocolVersion()
+		// handle flags, pass necessary fields
+		ctx := context.Background()
+
+		clientCtx, err := client.GetClientTxContext(cmd)
+		if err != nil {
+			return err
+		}
+		clientCtx = clientCtx.WithChainID("LAV1")
+
+		sq := lvstatetracker.NewStateQuery(clientCtx)
+		protoVer, err := sq.GetProtocolVersion(ctx)
+		if err != nil {
+			return fmt.Errorf("protcol version cannot be fetched from consensus")
+		}
+		fmt.Println("protoVer: ", protoVer)
+
+		// 2- search extracted directory inside ./lavad/upgrades/<fetched_version>
+
+		// 3- if found: create a link from that binary to $(which lava-protocol)
+
+		// 4- if not found: check-auto download flag
+
+		// 5- if auto-download flag is true: initiate fetchFromGithub()
+		//		if false: alert user that binary is not exist, monitor directory constantly!,
 
 		return nil
 	},
