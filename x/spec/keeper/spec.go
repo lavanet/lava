@@ -251,8 +251,8 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 }
 
 // returns map[apiInterface][]addons
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error) {
-	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
+func (k Keeper) GetExpectedServicesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedServices map[epochstoragetypes.EndpointService]struct{}, err error) {
+
 	var spec types.Spec
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
@@ -264,14 +264,15 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, ma
 				utils.Attribute{Key: "chainID", Value: chainID},
 			)
 		}
-		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
-		return expectedInterfaces, nil
+		expectedServices = k.getExpectedServicesForSpecInner(&spec, mandatory)
+		return expectedServices, nil
 	}
-	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedInterfacesForSpec", nil,
+	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedServicesForSpec", nil,
 		utils.Attribute{Key: "chainID", Value: chainID})
 }
 
-func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
+func (k Keeper) getExpectedServicesForSpecInner(spec *types.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
+	expectedServices := make(map[epochstoragetypes.EndpointService]struct{})
 	for _, apiCollection := range spec.ApiCollections {
 		if apiCollection.Enabled && (!mandatory || apiCollection.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
 			service := epochstoragetypes.EndpointService{
@@ -282,10 +283,20 @@ func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInte
 			if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
 				service.Addon = ""
 			}
-			expectedInterfaces[service] = struct{}{}
+			expectedServices[service] = struct{}{}
+			// add extensions when not asking for mandatory
+			if !mandatory {
+				for _, extension := range apiCollection.Extensions {
+					service := epochstoragetypes.EndpointService{
+						ApiInterface: apiCollection.CollectionData.ApiInterface,
+						Addon:        extension.Name,
+					}
+					expectedServices[service] = struct{}{}
+				}
+			}
 		}
 	}
-	return expectedInterfaces
+	return expectedServices
 }
 
 func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool {

@@ -89,7 +89,7 @@ func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error
 		if specID == types.WILDCARD_CHAIN_POLICY && len(chainPolicy.Apis) == 0 && len(chainPolicy.Collections) == 0 {
 			continue // this is allowed
 		}
-		expectedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, specID, false)
+		expectedInterfaces, err := k.specKeeper.GetExpectedServicesForSpec(ctx, specID, false)
 		if err != nil {
 			return err
 		}

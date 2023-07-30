@@ -34,7 +34,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 				return nil, err
 			}
 			// get the spec's expected interfaces
-			expectedInterfaces := k.getExpectedInterfacesForSpecInner(&fullspec, map[epochstoragetypes.EndpointService]struct{}{}, true)
+			expectedInterfaces := k.getExpectedServicesForSpecInner(&fullspec, true)
 
 			mandatoryInterfaceList := getInterfacesNamesFromMap(expectedInterfaces)
 

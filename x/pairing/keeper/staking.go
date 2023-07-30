@@ -162,11 +162,11 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 }
 
 func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
-	expectedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, true)
+	expectedInterfaces, err := k.specKeeper.GetExpectedServicesForSpec(ctx, chainID, true)
 	if err != nil {
 		return nil, fmt.Errorf("expected interfaces: %w", err)
 	}
-	allowedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, false)
+	allowedInterfaces, err := k.specKeeper.GetExpectedServicesForSpec(ctx, chainID, false)
 	if err != nil {
 		return nil, fmt.Errorf("allowed interfaces: %w", err)
 	}
@@ -197,7 +197,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		}
 	}
 
-	// check all endpoints only implement expected interfaces
+	// check all endpoints only implement allowed interfaces
 	for idx, endpoint := range endpoints {
 		endpoint.SetApiInterfacesFromAddons(allowedInterfaces) // support apiInterfaces inside addons list
 		endpoint.SetDefaultApiInterfaces(expectedInterfaces)   // support empty apiInterfaces list
