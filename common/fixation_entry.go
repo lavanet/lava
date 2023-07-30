@@ -54,12 +54,15 @@ import (
 // its previous data. An entry version can be modified using ModifyEntry().
 //
 // GetEntry() returns the latest (with respect to current, not future) version of an entry. A
-// nearest-no-later (than a given block) entry version can be obtained with FindEntry().
+// nearest-no-later (than a given block) entry version can be obtained with FindEntry(); And
+// FindEntry2() is similar, but also returns the entry's version (block).
 //
 // Entry versions maintain reference count (refcount) that determine their lifetime. New entry
 // versions (appended) start with refcount 1. The refcount of the latest version is incremented
-// using GetEntry(). The refcount of any version is decremented using PutEntry(). The refcount
-// of the latest version is also decremented when a newer version is appended.
+// using GetEntry(). The refcount of the latest version is decremented when a newer version is
+// appended, or when a future version becomes in effect. References taken with GetEntry() can
+// be dropped (and the refcount decremented) by using PutEntry(). PutEntry() can also be used
+// to cancel/remove a future entry.
 //
 // When an entry's refcount reaches 0, it remains partly visible for a predefined period of
 // blocks (stale-period), and then becomes stale and fully invisible. During the stale-period
@@ -71,8 +74,7 @@ import (
 //
 // An entry can be deleted using DelEntry(), after which is will not possible to GetEntry(),
 // and calls to FindEntry() for a block beyond that time of deletion (at or later) would fail
-// too. Until the data has been fully cleaned up (i.e. no refcount and past all stale-periods),
-// calls to AppendEntry() with that entry's index will fail.
+// too. (Note that DelEntry() will also discard any pending future versions of the entry).
 //
 // The per-entry APIs are and their actions are summarized below:
 //
@@ -80,7 +82,9 @@ import (
 // o ModifyEntry() updates an existing version of an entry (could be a future version)
 // o DelEntry() deletes and entry and make it invisible to GetEntry()
 // o GetEntry() gets the latest (up to current) version of an entry, except if in stale-period
+// o HasEntry() checks for existence of a specific version of an entry
 // o FindEntry() gets the nearest-no-later version of an entry, including if in stale-period
+// o FindEntry2() same as FindEntry(), and also returns the version (block) of the entry
 // o ReadEntry() gets a specific entry version (stale or not)
 // o PutEntry() drops reference counts taken by GetEntry()
 //
@@ -128,9 +132,38 @@ import (
 // count reaches 0 it marks them for deletion. The actual deletion takes place after
 // a fixed number of epochs has passed.
 //
-// 5. When an entry (index) is deleted, a placeholder entry is a appended to mark the
-// block at which deletion took place. This ensures that FindEntry() for the previous
-// latest entry version would continue to work until that block and fail thereafter.
+// 5. When an entry (index) is deleted, it is kept as a placeholder entry to mark the
+// block at which deletion took place. This ensures that FindEntry() for that latest
+// entry version would continue to work until that block and fail thereafter.
+//
+// State invariants:
+//
+// o Refcount: tracks the reference count of entry versions
+//   - extra refcount kept for latest and future entry versions
+//   - incremented for latest entry version with GetEntry()
+//   - decremented for specific entry version with PutEntry()
+//   - every PutEntry() must match a previous GetEntry()
+//   - PutEntry() can be used to remove a specific future entry
+//   - PutEntry() is illegal to call on last refcount of latest entry
+//
+// o IsLatest: tracks the entry version which is now the latest
+//   - transferred to the next (future) entry when it matures
+//   - removed from delete entries
+//
+// o DeleteAt: tracks the block upon which the entry will be deleted
+//   - held by the latest entry version smaller then that DeleteAt
+//   - prohibits future entry versions on or beyond the DeleteAt block
+//
+// o StaleAt: tracks when a removed entry version becomes invisible
+//   - set on non-future entries that reach refcount == 0
+//
+// Note that AppendEntry() may add retroactive entry only if it does not precede an
+// existing latest entry. Also, AppendEntry() may not add future entries on or beyond
+// a DeletedAt in the future (adding a future entry maturing on a future DeleteAt is
+// permitted but useless, because it will be deleted straight away).
+//
+// Note also that DelEntry() discards all future entries on or beyond the DeletedAt
+// block (and owing to the previous rule, none will be added until deletes occurs).
 
 type FixationStore struct {
 	storeKey sdk.StoreKey
