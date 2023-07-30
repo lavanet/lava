@@ -33,7 +33,7 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 			return nil, err
 		}
 		// get the spec's expected interfaces
-		expectedInterfaces := k.getExpectedServicesForSpecInner(&fullspec, true)
+		expectedInterfaces := k.GetExpectedServicesForExpandedSpec(fullspec, true)
 
 		// TODO: print addons too
 		apiInterfacesNames := getInterfacesNamesFromMap(expectedInterfaces)

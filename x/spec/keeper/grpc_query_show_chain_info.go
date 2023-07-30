@@ -34,7 +34,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 				return nil, err
 			}
 			// get the spec's expected interfaces
-			expectedInterfaces := k.getExpectedServicesForSpecInner(&fullspec, true)
+			expectedInterfaces := k.GetExpectedServicesForExpandedSpec(fullspec, true)
 
 			mandatoryInterfaceList := getInterfacesNamesFromMap(expectedInterfaces)
 
@@ -48,7 +48,11 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 
 				apiMethods := []string{}
 				// iterate over APIs
-				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{ApiInterface: apiInterface, Addon: ""}]; !ok {
+				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{
+					ApiInterface: apiInterface,
+					Addon:        "",
+					Extension:    "",
+				}]; !ok {
 					optionalInterfaceList = append(optionalInterfaceList, apiInterface)
 				}
 				for _, api := range apiCollection.Apis {

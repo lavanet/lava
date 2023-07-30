@@ -306,20 +306,20 @@ func TestAddonPairing(t *testing.T) {
 	specId := ts.spec.Index
 
 	mandatoryChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{mandatory},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatory}},
 	}
 	mandatoryAddonChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{mandatoryAddon},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}},
 	}
 	optionalAddonChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{optional},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: optional}},
 	}
 	optionalAndMandatoryAddonChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{mandatoryAddon, optional},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}, {Collection: optional}},
 	}
 
 	templates := []struct {
@@ -551,9 +551,10 @@ func TestAddonPairing(t *testing.T) {
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
-				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Collections))
+				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Requirements))
 				addons := map[string]struct{}{}
-				for _, collection := range strictestPolicy.ChainPolicies[0].Collections {
+				for _, requirement := range strictestPolicy.ChainPolicies[0].Requirements {
+					collection := requirement.Collection
 					if collection.AddOn != "" {
 						addons[collection.AddOn] = struct{}{}
 					}

@@ -37,6 +37,11 @@ func CmdSetPolicy() *cobra.Command {
 				return err
 			}
 
+			err = verifyChainPoliciesAreCorrectlySet(clientCtx, policy)
+			if err != nil {
+				return err
+			}
+
 			msg := types.NewMsgSetPolicy(
 				clientCtx.GetFromAddress().String(),
 				projectId,
@@ -59,9 +64,9 @@ func verifyChainPoliciesAreCorrectlySet(clientCtx client.Context, policy *planst
 	specQuerier := spectypes.NewQueryClient(clientCtx)
 	var chainInfo *spectypes.QueryShowChainInfoResponse
 	for policyIdx, chainPolicy := range policy.ChainPolicies {
-		for idx, collection := range chainPolicy.Collections {
-			if collection.AddOn == "" {
-				// fix the addon for a collection on an optiona apiInterface
+		for idx, requirement := range chainPolicy.Requirements {
+			if requirement.Collection.AddOn == "" {
+				// fix the addon for a collection on an optional apiInterface
 				if chainInfo == nil {
 					var err error
 					chainInfo, err = specQuerier.ShowChainInfo(context.Background(), &spectypes.QueryShowChainInfoRequest{ChainName: chainPolicy.ChainId})
@@ -70,8 +75,8 @@ func verifyChainPoliciesAreCorrectlySet(clientCtx client.Context, policy *planst
 					}
 				}
 				for _, optionalApiInterface := range chainInfo.OptionalInterfaces {
-					if optionalApiInterface == collection.ApiInterface {
-						policy.ChainPolicies[policyIdx].Collections[idx].AddOn = optionalApiInterface
+					if optionalApiInterface == requirement.Collection.ApiInterface {
+						policy.ChainPolicies[policyIdx].Requirements[idx].Collection.AddOn = optionalApiInterface
 						continue
 					}
 				}

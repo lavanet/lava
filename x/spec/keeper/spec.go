@@ -67,6 +67,14 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 	return
 }
 
+func (k Keeper) GetExpandedSpec(ctx sdk.Context, index string) (types.Spec, error) {
+	spec, found := k.GetSpec(ctx, index)
+	if found {
+		return k.ExpandSpec(ctx, spec)
+	}
+	return types.Spec{}, fmt.Errorf("no matching spec %s", index)
+}
+
 // ExpandSpec takes a (raw) Spec and expands the "imports" field of the spec
 // -if needed, recursively- to add to the current Spec those additional APIs
 // from the imported Spec(s). It returns the expanded Spec.
@@ -252,7 +260,6 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 
 // returns map[apiInterface][]addons
 func (k Keeper) GetExpectedServicesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedServices map[epochstoragetypes.EndpointService]struct{}, err error) {
-
 	var spec types.Spec
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
@@ -264,20 +271,21 @@ func (k Keeper) GetExpectedServicesForSpec(ctx sdk.Context, chainID string, mand
 				utils.Attribute{Key: "chainID", Value: chainID},
 			)
 		}
-		expectedServices = k.getExpectedServicesForSpecInner(&spec, mandatory)
+		expectedServices = k.GetExpectedServicesForExpandedSpec(spec, mandatory)
 		return expectedServices, nil
 	}
 	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedServicesForSpec", nil,
 		utils.Attribute{Key: "chainID", Value: chainID})
 }
 
-func (k Keeper) getExpectedServicesForSpecInner(spec *types.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
+func (k Keeper) GetExpectedServicesForExpandedSpec(expandedSpec types.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
 	expectedServices := make(map[epochstoragetypes.EndpointService]struct{})
-	for _, apiCollection := range spec.ApiCollections {
+	for _, apiCollection := range expandedSpec.ApiCollections {
 		if apiCollection.Enabled && (!mandatory || apiCollection.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
 			service := epochstoragetypes.EndpointService{
 				ApiInterface: apiCollection.CollectionData.ApiInterface,
 				Addon:        apiCollection.CollectionData.AddOn,
+				Extension:    "",
 			}
 			// if this is an optional apiInterface, we set addon as ""
 			if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
@@ -289,7 +297,8 @@ func (k Keeper) getExpectedServicesForSpecInner(spec *types.Spec, mandatory bool
 				for _, extension := range apiCollection.Extensions {
 					service := epochstoragetypes.EndpointService{
 						ApiInterface: apiCollection.CollectionData.ApiInterface,
-						Addon:        extension.Name,
+						Addon:        apiCollection.CollectionData.AddOn,
+						Extension:    extension.Name,
 					}
 					expectedServices[service] = struct{}{}
 				}
