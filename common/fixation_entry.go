@@ -314,6 +314,7 @@ func (fs *FixationStore) AppendEntry(
 		if latestEntry.HasDeleteAt() { // already know !latestEntry.IsDeletedBy(block)
 			deleteAt = latestEntry.DeleteAt
 			latestEntry.DeleteAt = math.MaxUint64
+			fs.setEntry(ctx, latestEntry)
 		}
 
 		// if we are superseding a previous latest entry, then drop the latter's refcount;
