@@ -4812,12 +4812,9 @@
                         "name": "abci_query",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "2"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -4839,12 +4836,9 @@
                         "name": "block",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -4903,12 +4897,9 @@
                         "name": "block_results",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -4954,12 +4945,9 @@
                         "name": "blockchain",
                         "block_parsing": {
                             "parser_arg": [
-                                "maxHeight",
-                                "=",
-                                "1"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5103,12 +5091,9 @@
                         "name": "commit",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5130,12 +5115,9 @@
                         "name": "consensus_params",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
@@ -5481,12 +5463,9 @@
                         "name": "validators",
                         "block_parsing": {
                             "parser_arg": [
-                                "height",
-                                "=",
-                                "0"
+                                "latest"
                             ],
-                            "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
-                            "default_value": "latest"
+                            "parser_func": "DEFAULT"
                         },
                         "compute_units": "10",
                         "enabled": true,
