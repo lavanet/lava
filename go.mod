@@ -20,7 +20,7 @@ require (
 	github.com/tendermint/tendermint v0.34.23
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130 // indirect
-	google.golang.org/grpc v1.56.2
+	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -29,13 +29,12 @@ require (
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
-	github.com/ignite-hq/cli v0.22.1-0.20220610070456-1b33c09fceb7
 	github.com/jhump/protoreflect v1.15.1
 	github.com/joho/godotenv v1.3.0
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/spf13/pflag v1.0.5
 	gonum.org/v1/gonum v0.13.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20230724170836-66ad5b6ff146
+	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
 
 require (
@@ -49,7 +48,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230724170836-66ad5b6ff146 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
 )
 
 require (
