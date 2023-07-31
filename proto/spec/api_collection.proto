@@ -13,6 +13,24 @@ message ApiCollection {
   repeated Header headers = 4;
   repeated CollectionData inheritance_apis = 5; // by collectionKey
   repeated ParseDirective parse_directives = 6;
+  repeated Extension extensions = 7;
+  repeated Verification verifications = 8;
+}
+
+message Extension {
+  string name =1;
+  float cu_multiplier =2;
+}
+
+message Verification {
+  string name =1;
+  ParseDirective parse_directive =2;
+  repeated ParseValue values=3;
+}
+
+message ParseValue {
+  string extension =1;
+  string expected_value =2;
 }
 
 message CollectionData {
@@ -59,13 +77,18 @@ message BlockParser {
   string encoding =4; // used to parse byte responses: base64,hex,bech32
 }
 
+enum EXTENSION {
+  NONE = 0;
+  ARCHIVE =1;
+}
+
 enum FUNCTION_TAG {
   DISABLED = 0;
   GET_BLOCKNUM = 1;
   GET_BLOCK_BY_NUM = 2;
   SET_LATEST_IN_METADATA = 3;
   SET_LATEST_IN_BODY = 4;
-  GET_CHAIN_ID = 5;
+  VERIFICATION = 5;
 }
 
 enum PARSER_FUNC{

@@ -5,28 +5,53 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func FindMin[T constraints.Ordered](s []T) (m T) {
-	if len(s) > 0 {
-		m = s[0]
-		for _, v := range s[1:] {
-			if m > v {
-				m = v
-			}
-		}
+func FindMin[T constraints.Ordered](s []T) T {
+	ind := FindIndexOfMin(s)
+	if ind == -1 {
+		var zero T
+		return zero
 	}
-	return m
+
+	return s[ind]
 }
 
-func FindMax[T constraints.Ordered](s []T) (m T) {
-	if len(s) > 0 {
-		m = s[0]
-		for _, v := range s[1:] {
-			if m < v {
-				m = v
-			}
+func FindIndexOfMin[T constraints.Ordered](s []T) int {
+	if len(s) == 0 {
+		return -1
+	}
+	m := s[0]
+	mInd := 0
+	for i := range s {
+		if m > s[i] {
+			mInd = i
 		}
 	}
-	return m
+	return mInd
+}
+
+func FindMax[T constraints.Ordered](s []T) T {
+	ind := FindIndexOfMax(s)
+	if ind == -1 {
+		var zero T
+		return zero
+	}
+
+	return s[ind]
+}
+
+func FindIndexOfMax[T constraints.Ordered](s []T) int {
+	if len(s) == 0 {
+		return -1
+	}
+	m := s[0]
+	mInd := 0
+	for i := range s {
+		if m < s[i] {
+			m = s[i]
+			mInd = i
+		}
+	}
+	return mInd
 }
 
 func Intersection[T comparable](arrays ...[]T) []T {

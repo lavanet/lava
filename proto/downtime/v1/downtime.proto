@@ -4,5 +4,31 @@ package lavanet.lava.downtime.v1;
 
 option go_package = "github.com/lavanet/lava/x/downtime/v1";
 
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
 // Params defines the parameters of the downtime module.
-message Params {}
+message Params {
+  // downtime_duration defines the minimum time elapsed between blocks
+  // that we consider the chain to be down.
+  google.protobuf.Duration downtime_duration = 1 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+}
+
+// Downtime defines a single downtime record.
+message Downtime {
+  // block defines the block that took time to produce.
+  uint64 block = 1;
+  // duration defines the time elapsed between the previous block and this one.
+  // this defines the effective downtime duration.
+  google.protobuf.Duration duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+}
+
+// DowntimeGarbageCollection defines when garbage collection will be performed, for a specific downtime.
+// used only in genesis.
+message DowntimeGarbageCollection {
+  // block defines the block that references a Downtime.
+  uint64 block = 1;
+  // gc_time defines the block when garbage collection will be performed.
+  uint64 gc_block = 2;
+}
