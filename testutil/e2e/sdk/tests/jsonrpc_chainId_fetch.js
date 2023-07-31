@@ -32,7 +32,7 @@ async function main() {
     try {
         await main();
     } catch (error) {
-        console.error("ERR "+error.message);
+        console.error(" ERR "+error.message);
         process.exit(1);
     }
 })();
