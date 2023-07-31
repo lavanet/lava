@@ -46,7 +46,7 @@ cosmovisor start start
 # an example for a proposal with upgrade binaries with remote path to binary file. (this requires that the wont be a binary file in
 # the cosmovisor upgrade path)
 
-#  tx gov submit-proposal software-upgrade Vega \
+#  tx gov submit-legacy-proposal software-upgrade Vega \
 # --title Vega \
 # --deposit 100uatom \
 # --upgrade-height 7368420 \
