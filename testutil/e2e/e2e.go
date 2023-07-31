@@ -26,8 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ignite/cli/ignite/chainconfig"
+	"github.com/ignite/cli/ignite/config"
 	"github.com/ignite/cli/ignite/pkg/cache"
+	"github.com/ignite/cli/ignite/pkg/cliui"
+	uilog "github.com/ignite/cli/ignite/pkg/cliui/log"
 	"github.com/ignite/cli/ignite/services/chain"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -162,11 +164,11 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 		panic(err)
 	}
 
-	c, err := chain.New(absPath, chain.LogLevel(chain.LogRegular))
+	c, err := chain.New(absPath, chain.WithOutputer(cliui.New(cliui.WithVerbosity(uilog.VerbosityVerbose))))
 	if err != nil {
 		panic(err)
 	}
-	cacheRootDir, err := chainconfig.ConfigDirPath()
+	cacheRootDir, err := config.DirPath()
 	if err != nil {
 		panic(err)
 	}
