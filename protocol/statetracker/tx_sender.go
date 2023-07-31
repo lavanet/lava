@@ -199,10 +199,9 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 }
 
 func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	// TODO: make sure we are not spamming the same conflicts, previous code only detecs relay by relay, it has no state tracking wether it reported already
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
-	if err != nil {
+	if err == nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
