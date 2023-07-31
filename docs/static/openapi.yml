@@ -30369,6 +30369,16 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
       tags:
         - Query
   '/lavanet/lava/pairing/epoch_payments/{index}':
@@ -30694,6 +30704,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -31041,6 +31061,16 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -32385,7 +32415,7 @@ paths:
                                         - GET_BLOCK_BY_NUM
                                         - SET_LATEST_IN_METADATA
                                         - SET_LATEST_IN_BODY
-                                        - GET_CHAIN_ID
+                                        - VERIFICATION
                                       default: DISABLED
                                     function_template:
                                       type: string
@@ -32446,9 +32476,10 @@ paths:
                   next_key:
                     type: string
                     format: byte
-                    title: |-
+                    description: |-
                       next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently
+                      query the next page most efficiently. It will be empty if
+                      there are no more results.
                   total:
                     type: string
                     format: uint64
@@ -32839,7 +32870,7 @@ paths:
                                       - GET_BLOCK_BY_NUM
                                       - SET_LATEST_IN_METADATA
                                       - SET_LATEST_IN_BODY
-                                      - GET_CHAIN_ID
+                                      - VERIFICATION
                                     default: DISABLED
                                   function_template:
                                     type: string
@@ -33216,7 +33247,7 @@ paths:
                                         - GET_BLOCK_BY_NUM
                                         - SET_LATEST_IN_METADATA
                                         - SET_LATEST_IN_BODY
-                                        - GET_CHAIN_ID
+                                        - VERIFICATION
                                       default: DISABLED
                                     function_template:
                                       type: string
@@ -33277,9 +33308,10 @@ paths:
                   next_key:
                     type: string
                     format: byte
-                    title: |-
+                    description: |-
                       next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently
+                      query the next page most efficiently. It will be empty if
+                      there are no more results.
                   total:
                     type: string
                     format: uint64
@@ -33670,7 +33702,7 @@ paths:
                                       - GET_BLOCK_BY_NUM
                                       - SET_LATEST_IN_METADATA
                                       - SET_LATEST_IN_BODY
-                                      - GET_CHAIN_ID
+                                      - VERIFICATION
                                     default: DISABLED
                                   function_template:
                                     type: string
@@ -34582,6 +34614,10 @@ definitions:
         title: |-
           next_key is the key to be passed to PageRequest.key to
           query the next page most efficiently
+        description: |-
+          next_key is the key to be passed to PageRequest.key to
+          query the next page most efficiently. It will be empty if
+          there are no more results.
       total:
         type: string
         format: uint64
@@ -57851,7 +57887,7 @@ definitions:
                     - GET_BLOCK_BY_NUM
                     - SET_LATEST_IN_METADATA
                     - SET_LATEST_IN_BODY
-                    - GET_CHAIN_ID
+                    - VERIFICATION
                   default: DISABLED
                 function_template:
                   type: string
@@ -58374,7 +58410,7 @@ definitions:
                                 - GET_BLOCK_BY_NUM
                                 - SET_LATEST_IN_METADATA
                                 - SET_LATEST_IN_BODY
-                                - GET_CHAIN_ID
+                                - VERIFICATION
                               default: DISABLED
                             function_template:
                               type: string
@@ -58434,9 +58470,10 @@ definitions:
           next_key:
             type: string
             format: byte
-            title: |-
+            description: |-
               next_key is the key to be passed to PageRequest.key to
-              query the next page most efficiently
+              query the next page most efficiently. It will be empty if
+              there are no more results.
           total:
             type: string
             format: uint64
@@ -58733,7 +58770,7 @@ definitions:
                               - GET_BLOCK_BY_NUM
                               - SET_LATEST_IN_METADATA
                               - SET_LATEST_IN_BODY
-                              - GET_CHAIN_ID
+                              - VERIFICATION
                             default: DISABLED
                           function_template:
                             type: string
@@ -59129,7 +59166,7 @@ definitions:
                           - GET_BLOCK_BY_NUM
                           - SET_LATEST_IN_METADATA
                           - SET_LATEST_IN_BODY
-                          - GET_CHAIN_ID
+                          - VERIFICATION
                         default: DISABLED
                       function_template:
                         type: string
@@ -59216,7 +59253,7 @@ definitions:
               - GET_BLOCK_BY_NUM
               - SET_LATEST_IN_METADATA
               - SET_LATEST_IN_BODY
-              - GET_CHAIN_ID
+              - VERIFICATION
             default: DISABLED
           function_template:
             type: string
@@ -59299,6 +59336,19 @@ definitions:
                   type: array
                   items:
                     type: string
+                collections:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
           geolocation_profile:
             type: string
             format: uint64
