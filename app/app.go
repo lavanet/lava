@@ -469,6 +469,10 @@ func New(
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
+	// downtime module
+	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
+	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
+
 	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
 		appCodec,
 		keys[pairingmoduletypes.StoreKey],
@@ -482,6 +486,7 @@ func New(
 		app.ProjectsKeeper,
 		app.SubscriptionKeeper,
 		app.PlansKeeper,
+		app.DowntimeKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -506,10 +511,6 @@ func New(
 		app.GetSubspace(protocolmoduletypes.ModuleName),
 	)
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
-
-	// downtime module
-	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
-	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
