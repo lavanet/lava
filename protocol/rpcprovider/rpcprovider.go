@@ -131,15 +131,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 	}
 
-	specIds := make([]string, len(rpcProviderEndpoints))
-	for i, rpcProviderEndpoint := range rpcProviderEndpoints {
-		specIds[i] = rpcProviderEndpoint.ChainID
-	}
-	// single db for the chains specified
-	localDB := rewardserver.NewLocalDB(rewardStoragePath, addr.String(), specIds, shardID)
-
 	// single reward server
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDBWithTTL(localDB, rewardTTL))
+	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
+	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 
@@ -241,6 +235,17 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
+			rewardDBSetup := func() {
+				rpcp.lock.Lock()
+				defer rpcp.lock.Unlock()
+
+				_, found := rewardDB.GetDB(addr.String(), rpcProviderEndpoint.ChainID, shardID)
+				if !found {
+					rewardDB.AddDB(rewardserver.NewLocalDB(rewardStoragePath, addr.String(), rpcProviderEndpoint.ChainID, shardID))
+				}
+			}
+			rewardDBSetup()
+
 			rpcProviderServer := &RPCProviderServer{}
 			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainRouter, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
 			// set up grpc listener
@@ -292,7 +297,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 
 	// close all reward dbs
-	err = localDB.Close()
+	err = rewardDB.Close()
 	if err != nil {
 		utils.LavaFormatError("failed to close reward db", err)
 	}

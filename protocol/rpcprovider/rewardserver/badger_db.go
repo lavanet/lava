@@ -3,7 +3,6 @@ package rewardserver
 import (
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -11,10 +10,17 @@ import (
 )
 
 type BadgerDB struct {
-	db *badger.DB
+	providerAddr string
+	specId       string
+	shardString  string
+	db           *badger.DB
 }
 
 var _ DB = (*BadgerDB)(nil)
+
+func (mdb *BadgerDB) Key() string {
+	return mdb.specId
+}
 
 func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
 	err := mdb.db.Update(func(txn *badger.Txn) error {
@@ -99,20 +105,21 @@ func (mdb *BadgerDB) Close() error {
 	return mdb.db.Close()
 }
 
-func NewMemoryDB() *BadgerDB {
+func NewMemoryDB(specId string) *BadgerDB {
 	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
 	if err != nil {
 		panic(err)
 	}
 
 	return &BadgerDB{
-		db: db,
+		specId: specId,
+		db:     db,
 	}
 }
 
-func NewLocalDB(storagePath, providerAddr string, specIds []string, shard uint) *BadgerDB {
+func NewLocalDB(storagePath, providerAddr string, specId string, shard uint) *BadgerDB {
 	shardString := strconv.FormatUint(uint64(shard), 10)
-	path := filepath.Join(storagePath, providerAddr, strings.Join(specIds, "-"), shardString)
+	path := filepath.Join(storagePath, providerAddr, specId, shardString)
 	Options := badger.DefaultOptions(path)
 	Options.Logger = utils.LoggerWrapper{LoggerName: "[Badger DB]: "} // replace the logger with lava logger
 	db, err := badger.Open(Options)
@@ -121,6 +128,9 @@ func NewLocalDB(storagePath, providerAddr string, specIds []string, shard uint) 
 	}
 
 	return &BadgerDB{
-		db: db,
+		providerAddr: providerAddr,
+		specId:       specId,
+		shardString:  shardString,
+		db:           db,
 	}
 }
