@@ -456,6 +456,7 @@ func (ts *Tester) QueryPairingGetPairing(chainID string, client string) (*pairin
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
+// QueryPairingListEpochPayments implements 'q pairing list-epoch-payments'
 func (ts *Tester) QueryPairingListEpochPayments() (*pairingtypes.QueryAllEpochPaymentsResponse, error) {
 	msg := &pairingtypes.QueryAllEpochPaymentsRequest{}
 	return ts.Keepers.Pairing.EpochPaymentsAll(ts.GoCtx, msg)
