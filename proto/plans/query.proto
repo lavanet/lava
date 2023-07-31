@@ -28,6 +28,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/plans/info/{plan_index}";
 	}
 
+// Queries a list of Geolocations items.
+	rpc Geolocations(QueryGeolocationsRequest) returns (QueryGeolocationsResponse) {
+		option (google.api.http).get = "/lavanet/lava/plans/geolocations";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -61,5 +66,12 @@ message QueryInfoResponse {
   Plan plan_info = 1 [(gogoproto.nullable) = false];
 }
 
+
+message QueryGeolocationsRequest {
+}
+
+message QueryGeolocationsResponse {
+  repeated string geos = 1;
+}
 
 // this line is used by starport scaffolding # 3
