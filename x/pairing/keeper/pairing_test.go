@@ -1325,7 +1325,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		{
 			Enabled:        true,
 			CollectionData: mandatoryAddon,
-			Extensions:     getExtensions("ext1"),
+			Extensions:     getExtensions("ext1", "ext2"),
 		},
 	}
 
@@ -1349,30 +1349,57 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		ChainId:      specId,
 		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}, {Collection: optional}},
 	}
-	// mandatoryAndExtChainPolicy := &planstypes.ChainPolicy{
-	// 	ChainId: specId,
-	// 	Requirements: []planstypes.ChainRequirement{{
-	// 		Collection: mandatory,
-	// 		Extensions: []string{"ext1"},
-	// 	}},
-	// }
-	// mandatoryAndExtAddonChainPolicy := &planstypes.ChainPolicy{
-	// 	ChainId:      specId,
-	// 	Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}},
-	// }
-	// optionalAndExtAddonChainPolicy := &planstypes.ChainPolicy{
-	// 	ChainId:      specId,
-	// 	Requirements: []planstypes.ChainRequirement{{Collection: optional, Extensions: []string{"ext1"}}},
-	// }
-	// mandatoryExtAndOptionalChainPolicy := &planstypes.ChainPolicy{
-	// 	ChainId:      specId,
-	// 	Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}, {Collection: optional}},
-	// }
-	// extAllChainPolicy := &planstypes.ChainPolicy{
-	// 	ChainId:      specId,
-	// 	Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}, {Collection: optional, Extensions: []string{"ext1"}}},
-	// }
+	mandatoryExtChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext1"},
+		}},
+	}
+	mandatoryExt2ChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext2"},
+		}},
+	}
+	mandatoryExtBothChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext2", "ext1"},
+		}},
+	}
+	mandatoryExtBothSeparatedChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{
+			{
+				Collection: mandatory,
+				Extensions: []string{"ext2"},
+			},
+			{
+				Collection: mandatory,
+				Extensions: []string{"ext1"},
+			},
+		},
+	}
+	mandatoryExtAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}},
+	}
 
+	optionalExtAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: optional, Extensions: []string{"ext1"}}},
+	}
+	mandatoryExtOptionalChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}, {Collection: optional}},
+	}
+	allSupportingChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1", "ext2"}}, {Collection: optional}},
+	}
 	templates := []struct {
 		name                      string
 		planChainPolicy           *planstypes.ChainPolicy
@@ -1486,6 +1513,186 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			expectedStrictestPolicies: []string{"optional", "addon"},
 		},
 		// check extensions
+		{
+			name:                      "mandatory ext in plan",
+			planChainPolicy:           mandatoryExtChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mandatory ext in subsc",
+			subscChainPolicy:          mandatoryExtChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mandatory ext in proj",
+			projChainPolicy:           mandatoryExtChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mandatory ext2 in plan",
+			planChainPolicy:           mandatoryExt2ChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"ext2"},
+		},
+		{
+			name:                      "mandatory ext2 in subsc",
+			subscChainPolicy:          mandatoryExt2ChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"ext2"},
+		},
+		{
+			name:                      "mandatory ext2 in proj",
+			projChainPolicy:           mandatoryExt2ChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"ext2"},
+		},
+		{
+			name:                      "mandatory ext both in plan",
+			planChainPolicy:           mandatoryExtBothChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both in subsc",
+			subscChainPolicy:          mandatoryExtBothChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both in proj",
+			projChainPolicy:           mandatoryExtBothChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+
+		{
+			name:                      "mandatory ext both separated in plan",
+			planChainPolicy:           mandatoryExtBothSeparatedChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both separated in subsc",
+			subscChainPolicy:          mandatoryExtBothSeparatedChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both separated in proj",
+			projChainPolicy:           mandatoryExtBothSeparatedChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "addon ext in plan",
+			planChainPolicy:           mandatoryExtAddonChainPolicy,
+			subscChainPolicy:          nil,
+			projChainPolicy:           nil,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"addon", "ext1"},
+		},
+		{
+			name:                      "addon ext in subsc",
+			subscChainPolicy:          mandatoryExtAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"addon", "ext1"},
+		},
+		{
+			name:                      "addon ext in proj",
+			projChainPolicy:           mandatoryExtAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"addon", "ext1"},
+		},
+		{
+			name:                      "optional ext in plan",
+			planChainPolicy:           optionalExtAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"optional", "ext1"},
+		},
+		{
+			name:                      "optional ext in subsc",
+			subscChainPolicy:          optionalExtAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"optional", "ext1"},
+		},
+		{
+			name:                      "optional ext in proj",
+			projChainPolicy:           optionalExtAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"optional", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in plan",
+			planChainPolicy:           mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in subsc",
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in proj",
+			projChainPolicy:           mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in plan, addon ext in subsc",
+			planChainPolicy:           mandatoryExtOptionalChainPolicy,
+			subscChainPolicy:          mandatoryExtAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in subsc, addon ext in plan",
+			planChainPolicy:           mandatoryExtAddonChainPolicy,
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in subsc, addon ext in proj",
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			projChainPolicy:           mandatoryExtAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext in subsc, addon ext in proj",
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			projChainPolicy:           mandatoryExtAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "all supporting in plan",
+			planChainPolicy:           allSupportingChainPolicy,
+			expectedProviders:         2,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+		{
+			name:                      "all supporting in subsc",
+			subscChainPolicy:          allSupportingChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         2,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+		{
+			name:                      "all supporting in proj",
+			projChainPolicy:           allSupportingChainPolicy,
+			expectedProviders:         2,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
 	}
 
 	mandatorySupportingEndpoints := []epochstoragetypes.Endpoint{{
@@ -1542,6 +1749,22 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		Extensions:    []string{"ext2"},
 	}}
 
+	mandatoryExt2AddonSupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-2-addon",
+		Geolocation:   1,
+		Addons:        []string{mandatoryAddon.AddOn},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
+		Extensions:    []string{"ext2"},
+	}}
+
+	mandatoryExtBOTHSupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-both",
+		Geolocation:   1,
+		Addons:        []string{mandatory.AddOn},
+		ApiInterfaces: []string{mandatory.ApiInterface},
+		Extensions:    []string{"ext1", "ext2"},
+	}}
+
 	mandatoryExtAddonSupportingEndpoints := []epochstoragetypes.Endpoint{{
 		IPPORT:        "Ext-3",
 		Geolocation:   1,
@@ -1565,13 +1788,15 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		mandatoryExtAddonSupportingEndpoints, optionalExtSupportingEndpoints)
 
 	allExtSupportingEndpoints := slices.Concat(
-		mandatoryExtSupportingEndpoints, optionalExtAndMandatoryAddonSupportingEndpoints, mandatoryExt2SupportingEndpoint)
+		mandatoryExtSupportingEndpoints, optionalExtAndMandatoryAddonSupportingEndpoints, mandatoryExt2AddonSupportingEndpoint)
 	// mandatory
-	err := ts.addProviderEndpoints(2, mandatoryExtSupportingEndpoints)
+	err := ts.addProviderEndpoints(2, mandatoryExtSupportingEndpoints) // ext1 - 2
 	require.NoError(t, err)
 	err = ts.addProviderEndpoints(2, mandatorySupportingEndpoints)
 	require.NoError(t, err)
-	err = ts.addProviderEndpoints(2, mandatoryExt2SupportingEndpoint)
+	err = ts.addProviderEndpoints(1, mandatoryExt2SupportingEndpoint) // ext2 - 1
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(1, mandatoryExtBOTHSupportingEndpoint) // ext1 + ext2 - 1
 	require.NoError(t, err)
 	// mandatory + addon
 	err = ts.addProviderEndpoints(2, mandatoryAndMandatoryAddonSupportingEndpoints)
@@ -1596,6 +1821,17 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 	require.NoError(t, err)
 	err = ts.addProviderEndpoints(2, allExtSupportingEndpoints)
 	require.NoError(t, err)
+
+	// summary of endpoints:
+	// ext1 has 13 supporting providers
+	// ext 2 has 4 supporting providers
+	// addons have  14
+	// optional has 13
+	// addon + optional has 8
+	// addon + ext has 8
+	// optional + ext has 6
+	// all supporting one ext (ext1 addon optional) has 4
+	// all supporting (ext2 ext1 addon optional) has 2
 
 	// erroring out
 	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints) // this errors as it doesnt implement mandatory
