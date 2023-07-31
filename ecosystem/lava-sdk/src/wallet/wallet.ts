@@ -91,12 +91,20 @@ interface AccountDataWithPrivkey extends AccountData {
 interface WalletCreationResult {
   wallet: LavaWallet;
   privKey: string;
+  seedPhrase: string;
 }
 
-export async function createDynamicWallet(): Promise<WalletCreationResult> {
-  const walletWithRandomSeed = await Secp256k1HdWallet.generate(undefined, {
-    prefix: lavaPrefix,
-  });
+type MnemonicLength = 24 | 12 | 15 | 18 | 21 | undefined;
+
+export async function createDynamicWallet(
+  mnemonicLength: MnemonicLength = 24
+): Promise<WalletCreationResult> {
+  const walletWithRandomSeed = await Secp256k1HdWallet.generate(
+    mnemonicLength,
+    {
+      prefix: lavaPrefix,
+    }
+  );
   const walletPrivKey = await getWalletPrivateKey(
     walletWithRandomSeed.mnemonic
   );
@@ -104,7 +112,7 @@ export async function createDynamicWallet(): Promise<WalletCreationResult> {
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
   const wallet = await createWallet(privKey);
-  return { wallet, privKey };
+  return { wallet, privKey, seedPhrase: walletWithRandomSeed.mnemonic };
 }
 
 async function getWalletPrivateKey(

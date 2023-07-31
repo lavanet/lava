@@ -152,7 +152,7 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 			// no collections enabled to combine, we skip this
 			continue
 		}
-		err := combined.CombineWithOthers(others, false, false, make(map[string]struct{}, 0), nil, nil)
+		err := combined.CombineWithOthers(others, false, false)
 		if err != nil {
 			return err
 		}

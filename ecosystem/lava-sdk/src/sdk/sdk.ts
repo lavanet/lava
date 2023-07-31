@@ -157,6 +157,18 @@ export class LavaSDK {
     return await new LavaSDK(options);
   }
 
+  static async generateKey() {
+    const dynamicWallet = await createDynamicWallet();
+    const lavaWallet = dynamicWallet.wallet;
+    const accountData = await lavaWallet.getConsumerAccount();
+
+    return {
+      lavaAddress: accountData.address,
+      privateKey: dynamicWallet.privKey,
+      seedPhrase: dynamicWallet.seedPhrase,
+    };
+  }
+
   private debugPrint(message?: any, ...optionalParams: any[]) {
     this.debugMode && console.log(message, ...optionalParams);
   }
@@ -359,7 +371,7 @@ export class LavaSDK {
     }
     let lastRelayResponse = null;
 
-    for (let i = 0; i <= pairingList.length; i++) {
+    for (let i = 0; i < pairingList.length; i++) {
       try {
         // Send relay
         const relayResponse = await this.relayer.sendRelay(
