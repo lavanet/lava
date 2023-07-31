@@ -135,7 +135,7 @@ func TestJsonRpcChainProxy(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../")
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -146,6 +146,38 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
 	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse ErrMsg: invalid parser input format"
 	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
+	if closeServer != nil {
+		closeServer()
+	}
+}
+
+func TestAddonAndVerifications(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
+	})
+
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"debug"})
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainRouter)
+	require.NotNil(t, chainFetcher)
+
+	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	require.NoError(t, err)
+	require.NotEmpty(t, verifications)
+	for _, verification := range verifications {
+		parsing := &verification.ParseDirective
+		collectionType := verification.ConnectionType
+		chainMessage, err := CraftChainMessage(parsing, collectionType, chainParser, nil, nil)
+		require.NoError(t, err)
+		reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
+		require.NoError(t, err)
+		_, err = FormatResponseForParsing(reply, chainMessage)
+		require.NoError(t, err)
+	}
 	if closeServer != nil {
 		closeServer()
 	}
