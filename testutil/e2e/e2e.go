@@ -28,8 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ignite/cli/ignite/config"
 	"github.com/ignite/cli/ignite/pkg/cache"
-	"github.com/ignite/cli/ignite/pkg/cliui"
-	uilog "github.com/ignite/cli/ignite/pkg/cliui/log"
 	"github.com/ignite/cli/ignite/services/chain"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -164,7 +162,7 @@ func (lt *lavaTest) startLava(ctx context.Context) {
 		panic(err)
 	}
 
-	c, err := chain.New(absPath, chain.WithOutputer(cliui.New(cliui.WithVerbosity(uilog.VerbosityVerbose))))
+	c, err := chain.New(absPath)
 	if err != nil {
 		panic(err)
 	}
