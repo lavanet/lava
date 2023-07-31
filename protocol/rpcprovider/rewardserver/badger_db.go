@@ -110,8 +110,8 @@ func NewMemoryDB() *BadgerDB {
 	}
 }
 
-func NewLocalDB(storagePath, providerAddr string, specIds []string, shard int) *BadgerDB {
-	shardString := strconv.Itoa(shard)
+func NewLocalDB(storagePath, providerAddr string, specIds []string, shard uint) *BadgerDB {
+	shardString := strconv.FormatUint(uint64(shard), 10)
 	path := filepath.Join(storagePath, providerAddr, strings.Join(specIds, "-"), shardString)
 	Options := badger.DefaultOptions(path)
 	Options.Logger = utils.LoggerWrapper{LoggerName: "[Badger DB]: "} // replace the logger with lava logger
