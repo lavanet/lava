@@ -32,6 +32,10 @@ func Int63() int64 {
 	return rand.Int63()
 }
 
+func Int63n(n int64) int64 {
+	return rand.Int63n(n)
+}
+
 func NormFloat64() float64 {
 	return rand.NormFloat64()
 }
