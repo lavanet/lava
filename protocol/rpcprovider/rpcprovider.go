@@ -147,6 +147,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDBWithTTL(localDB, rewardTTL))
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
+	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 
 	var stateTrackersPerChain sync.Map
 	var wg sync.WaitGroup
