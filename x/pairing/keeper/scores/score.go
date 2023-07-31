@@ -29,23 +29,20 @@
 // and so on).
 //
 //
-// To add a new requirement, one should create a new object that satisfies the ScoreReq interface and update the
-// CalcSlots() function so the new requirement will be assigned to the pairing slots (according to some logic).
-// Lastly, append the new requirement object in the GetAllReqs() function. Use StakeReq or GeoReq as examples.
+// To add a new requirement, create an object implementing the ScoreReq interface and update CalcSlots()
+// to assign it to the pairing slots as desired. Lastly, add the new requirement in GetAllReqs().
 
 package scores
 
 import (
 	"bytes"
 	"cosmossdk.io/math"
-	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
@@ -64,9 +61,10 @@ func init() {
 }
 
 func GetAllReqs() []ScoreReq {
-	stakeReq := StakeReq{}
-	geoReq := GeoReq{}
-	return []ScoreReq{&stakeReq, &geoReq}
+	return []ScoreReq{
+		&StakeReq{},
+		&GeoReq{},
+	}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
@@ -171,7 +169,8 @@ func PrepareHashData(projectIndex string, chainID string, epochHash []byte, idx 
 	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex), []byte(strconv.Itoa(idx))}, nil)
 }
 
-// PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
+// PickProviders pick a <group-count> providers set with a pseudo-random weighted choice
+// (using the providers' score list and hashData)
 func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hashData []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
 	if len(scores) == 0 {
 		return returnedProviders
@@ -190,17 +189,10 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	sum256 := sha256.Sum256(hashData)
-	// Fold the SHA-256 hash into a 64-bit seed using bitwise XOR
-	var seed int64
-	for i := 0; i < len(sum256)/8; i++ {
-		seed ^= int64(binary.BigEndian.Uint64(sum256[i*8 : (i+1)*8]))
-	}
-
-	rand.Seed(seed)
+	rng := rand.New(hashData)
 
 	for it := 0; it < groupCount; it++ {
-		randomValue := uint64(rand.Int63n(scoreSum.BigInt().Int64())) + 1
+		randomValue := uint64(rng.Int63n(scoreSum.BigInt().Int64())) + 1
 		newScoreSum := math.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
@@ -212,8 +204,9 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 			newScoreSum = newScoreSum.Add(providerScore.Score)
 			if randomValue <= newScoreSum.Uint64() {
 				// we hit our chosen provider
+				// remove this provider from the random pool, so the sum is lower now
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
-				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
+				scoreSum = scoreSum.Sub(providerScore.Score)
 				scores[idx].SkipForSelection = true
 				break
 			}

@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/common"
-	commonTypes "github.com/lavanet/lava/common/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
@@ -63,18 +63,18 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k Keeper) ExportProjects(ctx sdk.Context) []commonTypes.RawMessage {
+func (k Keeper) ExportProjects(ctx sdk.Context) []commontypes.RawMessage {
 	return k.projectsFS.Export(ctx)
 }
 
-func (k Keeper) InitProjects(ctx sdk.Context, data []commonTypes.RawMessage) {
+func (k Keeper) InitProjects(ctx sdk.Context, data []commontypes.RawMessage) {
 	k.projectsFS.Init(ctx, data)
 }
 
-func (k Keeper) ExportDevelopers(ctx sdk.Context) []commonTypes.RawMessage {
+func (k Keeper) ExportDevelopers(ctx sdk.Context) []commontypes.RawMessage {
 	return k.developerKeysFS.Export(ctx)
 }
 
-func (k Keeper) InitDevelopers(ctx sdk.Context, data []commonTypes.RawMessage) {
+func (k Keeper) InitDevelopers(ctx sdk.Context, data []commontypes.RawMessage) {
 	k.developerKeysFS.Init(ctx, data)
 }

@@ -141,6 +141,9 @@ func (tstore *TimerStore) Export(ctx sdk.Context) []types.RawMessage {
 }
 
 func (tstore *TimerStore) Init(ctx sdk.Context, data []types.RawMessage) {
+	// will be overwritten by below if genesis state exists
+	tstore.setVersion(ctx, TimerVersion())
+
 	store := prefix.NewStore(
 		ctx.KVStore(tstore.storeKey),
 		types.KeyPrefix(tstore.prefix))
@@ -152,12 +155,16 @@ func (tstore *TimerStore) Init(ctx sdk.Context, data []types.RawMessage) {
 
 func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
-
 	b := store.Get(types.KeyPrefix(types.TimerVersionKey))
+	// TODO: TEMPORARY: in transition from an old version key (that collided with that of
+	// fixation-store) to a newer version key, we could not safely migration: due to said
+	// collision the version was that of the fixation (and thus unreliable for timer). So
+	// the version would remain uninitialized - and we force-write the current version as
+	// the new key is not found in the store yet.
 	if b == nil {
-		return 1
+		tstore.Init(ctx, nil)
+		b = store.Get(types.KeyPrefix(types.TimerVersionKey))
 	}
-
 	return types.DecodeKey(b)
 }
 

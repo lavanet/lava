@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	TimerVersionKey = "Entry_Version"
+	TimerVersionKey = "Timer_Version"
 	NextTimerPrefix = "Timer_Next_"
 	TimerPrefix     = "Timer_Value_"
 )

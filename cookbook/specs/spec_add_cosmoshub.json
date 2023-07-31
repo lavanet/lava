@@ -14,8 +14,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -24,7 +24,6 @@
                     "denom": "ulava",
                     "amount": "5000000000"
                 },
-                "apis": [],
                 "api_collections": [
                     {
                         "enabled": true,
@@ -37,20 +36,15 @@
                         "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "/node_info",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "default_value":  "cosmoshub-4"
-                                },
-                                "api_name": "/node_info"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "cosmoshub-4"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -65,20 +59,15 @@
                         "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "defaultNodeInfo",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "default_value":  "cosmoshub-4"
-                                },
-                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "cosmoshub-4"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -93,20 +82,15 @@
                         "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "default_value":  "cosmoshub-4"
-                                },
-                                "api_name": "status"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "cosmoshub-4"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -123,8 +107,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "6500",
-                "allowed_block_lag_for_qos_sync": "2",
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -145,20 +129,15 @@
                         "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "/node_info",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "default_value":  "theta-testnet-001"
-                                },
-                                "api_name": "/node_info"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "theta-testnet-001"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -173,20 +152,15 @@
                         "apis": [],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "defaultNodeInfo",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "default_value":  "theta-testnet-001"
-                                },
-                                "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "theta-testnet-001"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -198,23 +172,15 @@
                             "type": "",
                             "add_on": ""
                         },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [
+                        "parse_directives": [],
+                        "verifications": [
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                                "function_tag": "GET_CHAIN_ID",
-                                "result_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "node_info",
-                                        "network"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "default_value":  "theta-testnet-001"
-                                },
-                                "api_name": "status"
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "theta-testnet-001"
+                                    }
+                                ]
                             }
                         ]
                     }

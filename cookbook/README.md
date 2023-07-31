@@ -108,8 +108,8 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "250",
-                "allowed_block_lag_for_qos_sync": "10",
+                "average_block_time": 250,
+                "allowed_block_lag_for_qos_sync": 10,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -127,7 +127,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": 20,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -139,7 +139,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -151,7 +151,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -163,7 +163,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -175,7 +175,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -187,7 +187,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -199,7 +199,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -211,7 +211,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -223,7 +223,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -235,7 +235,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                                 },
                                 "interface": "jsonrpc",
                                 "type": "POST",
-                                "extra_compute_units": "0"
+                                "extra_compute_units": 0
                             }
                         ]
                     }
@@ -250,8 +250,8 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "250",
-                "allowed_block_lag_for_qos_sync": "10",
+                "average_block_time": 250,
+                "allowed_block_lag_for_qos_sync": 10,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
