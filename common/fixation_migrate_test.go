@@ -28,7 +28,11 @@ func TestMigrate1to2(t *testing.T) {
 	var err error
 
 	ctx, cdc := initCtx(t)
+
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix)
+	fs.Init(ctx, nil)
+	fs.setVersion(ctx, 1)
+
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
 
 	templates := []mockEntry1to2{
@@ -135,7 +139,11 @@ func TestMigrate2to3(t *testing.T) {
 	var err error
 
 	ctx, cdc := initCtx(t)
+
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix)
+	fs.Init(ctx, nil)
+	fs.setVersion(ctx, 2)
+
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
 
 	templates := []mockEntry2to3{
@@ -178,8 +186,9 @@ func TestMigrate2to3(t *testing.T) {
 	}
 
 	// verify entry count before migration
+	// (add 2 to account for fixation version and the timer version)
 	store_V2 := prefix.NewStore(ctx.KVStore(fs.storeKey), []byte{})
-	require.Equal(t, 1+numHeads+numEntries, countWithPrefix(&store_V2, ""))
+	require.Equal(t, 2+numHeads+numEntries, countWithPrefix(&store_V2, ""))
 	require.Equal(t, numHeads+numEntries, countWithPrefix(&store_V2, "Entry"))
 
 	// mock fixation version to be 3
@@ -196,9 +205,10 @@ func TestMigrate2to3(t *testing.T) {
 	require.Equal(t, uint64(3), fs.getVersion(ctx))
 
 	// verify entry count before migration
+	// (add 2 to account for fixation version and the timer version)
 	store_V3 := prefix.NewStore(ctx.KVStore(fs.storeKey), []byte{})
-	require.Equal(t, 1+numHeads+numEntries, countWithPrefix(&store_V3, ""))
-	require.Equal(t, 1+numHeads+numEntries, countWithPrefix(&store_V3, mockPrefix))
+	require.Equal(t, 2+numHeads+numEntries, countWithPrefix(&store_V3, ""))
+	require.Equal(t, 2+numHeads+numEntries, countWithPrefix(&store_V3, mockPrefix))
 
 	// verify entries after migration
 	for _, tt := range templates {

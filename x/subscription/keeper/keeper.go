@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/common"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -81,4 +82,24 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	k.subsFS.AdvanceBlock(ctx)
 	k.subsTS.Tick(ctx)
+}
+
+// ExportSubscriptions exports subscriptions data (for genesis)
+func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
+	return k.subsFS.Export(ctx)
+}
+
+// ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
+	return k.subsTS.Export(ctx)
+}
+
+// InitSubscriptions imports subscriptions data (from genesis)
+func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.subsFS.Init(ctx, data)
+}
+
+// InitSubscriptions imports subscriptions timers data (from genesis)
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.subsTS.Init(ctx, data)
 }
