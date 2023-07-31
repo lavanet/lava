@@ -61,7 +61,7 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 
 func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error {
 	err := cst.txSender.TxConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
-	if err != nil { // if conflict report succeeded, we can set this provider as reported, so we wont need to report again.
+	if err == nil { // if conflict report succeeded, we can set this provider as reported, so we wont need to report again.
 		conflictHandler.StoreConflictReported()
 	}
 	return err
