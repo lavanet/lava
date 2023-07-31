@@ -12,18 +12,18 @@ const (
 
 // PairingScore holds a provider's score with respect to a set of requirements (ScoreReq), indexed by their unique name.
 type PairingScore struct {
-	Provider         *epochstoragetypes.StakeEntry
-	Score            sdk.Uint
-	ScoreComponents  map[string]sdk.Uint
-	SkipForSelection bool
+	Provider          *epochstoragetypes.StakeEntry
+	Score             sdk.Uint
+	ScoreComponents   map[string]sdk.Uint
+	ValidForSelection bool
 }
 
 func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry) *PairingScore {
 	score := PairingScore{
-		Provider:         stakeEntry,
-		Score:            sdk.OneUint(),
-		ScoreComponents:  map[string]sdk.Uint{},
-		SkipForSelection: false,
+		Provider:          stakeEntry,
+		Score:             sdk.OneUint(),
+		ScoreComponents:   map[string]sdk.Uint{},
+		ValidForSelection: true,
 	}
 	return &score
 }

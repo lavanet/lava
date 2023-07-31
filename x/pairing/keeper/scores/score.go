@@ -37,16 +37,15 @@ package scores
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
 var uniformStrategy ScoreStrategy
@@ -178,7 +177,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 
 	scoreSum := sdk.ZeroUint()
 	for _, providerScore := range scores {
-		if providerScore.SkipForSelection {
+		if !providerScore.ValidForSelection {
 			// skip index of providers already selected
 			continue
 		}
@@ -189,34 +188,30 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	sum256 := sha256.Sum256(hashData)
-	// Fold the SHA-256 hash into a 64-bit seed using bitwise XOR
-	var seed int64
-	for i := 0; i < len(sum256)/8; i++ {
-		seed ^= int64(binary.BigEndian.Uint64(sum256[i*8 : (i+1)*8]))
-	}
-
-	rand.Seed(seed)
-
 	for it := 0; it < groupCount; it++ {
-		randomValue := uint64(rand.Int63n(scoreSum.BigInt().Int64())) + 1
+		hash := tendermintcrypto.Sha256(hashData) // TODO: we use cheaper algo for speed
+		bigIntHash := new(big.Int).SetBytes(hash)
+		uintHash := sdk.NewUintFromBigInt(bigIntHash)
+		modRes := uintHash.Mod(scoreSum)
+
 		newScoreSum := sdk.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
-			if scores[idx].SkipForSelection {
+			if !scores[idx].ValidForSelection {
 				// skip index of providers already selected
 				continue
 			}
 			providerScore := scores[idx]
 			newScoreSum = newScoreSum.Add(providerScore.Score)
-			if randomValue <= newScoreSum.Uint64() {
+			if modRes.LT(newScoreSum) {
 				// we hit our chosen provider
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
 				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
-				scores[idx].SkipForSelection = true
+				scores[idx].ValidForSelection = false
 				break
 			}
 		}
+		hashData = append(hashData, []byte{uint8(it)}...)
 	}
 
 	return returnedProviders
