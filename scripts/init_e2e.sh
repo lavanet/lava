@@ -1,5 +1,5 @@
 #!/bin/bash 
-
+killall lava-protocol
 set -e
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
