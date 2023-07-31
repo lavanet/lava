@@ -34,18 +34,15 @@ var cmdLavavisorInit = &cobra.Command{
 		dir, _ := cmd.Flags().GetString("directory")
 		dir, err := expandTilde(dir)
 		if err != nil {
-			return fmt.Errorf("unable to expand directory path: %w", err)
+			return utils.LavaFormatError("unable to expand directory path", err)
 		}
-		fmt.Println("dir: ", dir)
 		// Build path to ./lavavisor
 		lavavisorPath := filepath.Join(dir, "./.lavavisor")
-
-		fmt.Println("lavavisorPath: ", lavavisorPath)
 
 		// Check if ./lavavisor directory exists
 		if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
 			// ToDo: handle case where user didn't set up the file
-			return fmt.Errorf("lavavisor directory does not exist at path: %s", lavavisorPath)
+			return utils.LavaFormatError("lavavisor directory does not exist at path", err, utils.Attribute{Key: "lavavisorPath", Value: lavavisorPath})
 		}
 
 		// 1- check lava-protocol version from consensus
@@ -69,17 +66,11 @@ var cmdLavavisorInit = &cobra.Command{
 			ProviderTarget: protoVer.ProviderTarget,
 			ProviderMin:    protoVer.ProviderMin,
 		}
-		fmt.Println("version.ConsumerTarget: ", version.ConsumerTarget)
-		fmt.Println("version.ConsumerMin: ", version.ConsumerMin)
-		fmt.Println("version.ProviderTarget: ", version.ProviderTarget)
-		fmt.Println("version.ProviderMin: ", version.ProviderMin)
 
 		// 2- search extracted directory inside ./lavad/upgrades/<fetched_version>
 		// first check target version, then check min version
 		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version.ConsumerMin)
 		binaryPath := filepath.Join(versionDir, "lava-protocol")
-		fmt.Println("verisonDir: ", versionDir)
-		fmt.Println("binaryPath: ", binaryPath)
 
 		// check if version directory exists
 		if _, err := os.Stat(versionDir); os.IsNotExist(err) {
@@ -96,11 +87,12 @@ var cmdLavavisorInit = &cobra.Command{
 					utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 					os.Exit(1)
 				}
-				utils.LavaFormatInfo("Auto-download successful.")
 			} else {
 				utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: version.ConsumerMin})
 				os.Exit(1)
 			}
+			// ToDo: add checkLavaProtocolVersion after version flag is added to release
+			//
 		} else {
 			err = checkLavaProtocolVersion(version.ConsumerMin, binaryPath)
 			if err != nil {
@@ -116,15 +108,15 @@ var cmdLavavisorInit = &cobra.Command{
 						utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 						os.Exit(1)
 					}
-					fmt.Println("Auto-download successful.")
 				} else {
 					utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
 					os.Exit(1)
 				}
+				// ToDo: add checkLavaProtocolVersion after version flag is added to release
+				//
 			}
 		}
-
-		fmt.Println("Version check passed")
+		utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
 
 		// 3- if found: create a link from that binary to $(which lava-protocol)
 		out, err := exec.Command("which", "lava-protocol").Output()
@@ -136,7 +128,6 @@ var cmdLavavisorInit = &cobra.Command{
 			}
 
 			goBinPath := strings.TrimSpace(string(gobin)) + "/bin/"
-			fmt.Println("goBinPath: ", goBinPath)
 
 			// Check if the fetched binary is executable
 			// ToDo: change flag to "--version" once relased binaries support the flag
@@ -191,7 +182,7 @@ var cmdLavavisorInit = &cobra.Command{
 			utils.LavaFormatFatal("failed to verify symbolic link", err)
 		}
 
-		fmt.Println("Symbolic link created successfully")
+		utils.LavaFormatInfo("Symbolic link created successfully")
 
 		//		if autodownload false: alert user that binary is not exist, monitor directory constantly!,
 
@@ -205,7 +196,7 @@ func expandTilde(path string) (string, error) {
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("cannot get user home directory: %w", err)
+		return "", utils.LavaFormatError("cannot get user home directory", err)
 	}
 	return filepath.Join(home, path[1:]), nil
 }
@@ -224,23 +215,22 @@ func getBinaryVersion(binaryPath string) (string, error) {
 	cmd := exec.Command(binaryPath, "-v")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("failed to execute command: %w", err)
+		return "", utils.LavaFormatError("failed to execute command", err)
 	}
 
 	// Assume the output format is "lava-protocol version x.x.x"
 	version := strings.Split(string(output), " ")[2]
-	fmt.Println("getBinaryVersion - version: ", version)
 	return version, nil
 }
 
 func checkLavaProtocolVersion(targetVersion, binaryPath string) error {
 	binaryVersion, err := getBinaryVersion(binaryPath)
 	if err != nil {
-		return fmt.Errorf("failed to get binary version: %w", err)
+		return utils.LavaFormatError("failed to get binary version", err)
 	}
 
 	if strings.TrimSpace(binaryVersion) != strings.TrimSpace(targetVersion) {
-		return fmt.Errorf("version mismatch, expected %s but got %s", targetVersion, binaryVersion)
+		return utils.LavaFormatError("version mismatch", nil, utils.Attribute{Key: "expected", Value: targetVersion}, utils.Attribute{Key: "received", Value: binaryVersion})
 	}
 
 	return nil
@@ -249,12 +239,12 @@ func checkLavaProtocolVersion(targetVersion, binaryPath string) error {
 func Copy(src, dest string) error {
 	input, err := ioutil.ReadFile(src)
 	if err != nil {
-		return fmt.Errorf("couldn't read source file: %v", err)
+		return utils.LavaFormatError("couldn't read source file", err)
 	}
 
 	err = ioutil.WriteFile(dest, input, 0755)
 	if err != nil {
-		return fmt.Errorf("couldn't write destination file: %v", err)
+		return utils.LavaFormatError("couldn't write destination file", err)
 	}
 	return nil
 }
@@ -263,7 +253,7 @@ func fetchAndBuildFromGithub(version, versionDir string) error {
 	// Clean up the binary directory if it exists
 	err := os.RemoveAll(versionDir)
 	if err != nil {
-		return fmt.Errorf("failed to clean up binary directory: %v", err)
+		return utils.LavaFormatError("failed to clean up binary directory", err)
 	}
 	// URL might need to be updated based on the actual GitHub repository
 	url := fmt.Sprintf("https://github.com/lavanet/lava/archive/refs/tags/v%s.zip", version)
@@ -278,7 +268,7 @@ func fetchAndBuildFromGithub(version, versionDir string) error {
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad HTTP status: %s", resp.Status)
+		return utils.LavaFormatError("bad HTTP status", nil, utils.Attribute{Key: "status", Value: resp.Status})
 	}
 
 	// Prepare the path for downloaded zip
@@ -326,32 +316,33 @@ func fetchAndBuildFromGithub(version, versionDir string) error {
 	// Move the binary to binaryPath
 	err = os.Rename(filepath.Join(protocolPath, "lava-protocol"), filepath.Join(versionDir, "lava-protocol"))
 	if err != nil {
-		return fmt.Errorf("failed to move compiled binary: %v", err)
+		return utils.LavaFormatError("failed to move compiled binary", err)
 	}
 
 	// Verify the compiled binary
 	versionDir += "/lava-protocol"
 	binaryInfo, err := os.Stat(versionDir)
 	if err != nil {
-		return fmt.Errorf("failed to verify compiled binary: %v", err)
+		return utils.LavaFormatError("failed to verify compiled binary", err)
 	}
 	binaryMode := binaryInfo.Mode()
 	if binaryMode.Perm()&0111 == 0 {
-		return fmt.Errorf("compiled binary is not executable")
+		return utils.LavaFormatError("compiled binary is not executable", nil)
 	}
 	utils.LavaFormatInfo("lava-protocol binary is successfully verified!")
 
 	// Remove the source files and zip file
 	err = os.RemoveAll(srcPath)
 	if err != nil {
-		return fmt.Errorf("failed to remove source files: %v", err)
+		return utils.LavaFormatError("failed to remove source files", err)
 	}
 
 	err = os.Remove(zipPath)
 	if err != nil {
-		return fmt.Errorf("failed to remove zip file: %v", err)
+		return utils.LavaFormatError("failed to remove zip file", err)
 	}
 	utils.LavaFormatInfo("Source and zip files removed from directory.")
+	utils.LavaFormatInfo("Auto-download successful.")
 
 	return nil
 }
@@ -371,7 +362,7 @@ func unzip(src string, dest string) ([]string, error) {
 
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return filenames, fmt.Errorf("%s: illegal file path", fpath)
+			return filenames, utils.LavaFormatError("illegal file path", nil)
 		}
 
 		filenames = append(filenames, fpath)
