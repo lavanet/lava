@@ -14,11 +14,15 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
+type ConsumerTxSenderInf interface {
+	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
+}
+
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
-	txSender   *ConsumerTxSender
+	ConsumerTxSenderInf
 	*StateTracker
 }
 
@@ -31,7 +35,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), txSender: txSender}
+	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), ConsumerTxSenderInf: txSender}
 	return cst, nil
 }
 
@@ -59,8 +63,14 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }
 
-func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	err := cst.txSender.TxConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
+func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error {
+	if conflictHandler.ConflictAlreadyReported() {
+		return nil // already reported
+	}
+	err := cst.TxSenderConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
+	if err == nil { // if conflict report succeeded, we can set this provider as reported, so we wont need to report again.
+		conflictHandler.StoreConflictReported()
+	}
 	return err
 }
 

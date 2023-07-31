@@ -32,12 +32,18 @@ type RelayRequestCommonData struct {
 	ApiInterface   string `protobuf:"bytes,6,opt,name=apiInterface,proto3" json:"apiInterface,omitempty"`
 }
 
+type ConflictHandlerInterface interface {
+	ConflictAlreadyReported() bool
+	StoreConflictReported()
+}
+
 type RelayResult struct {
 	Request         *pairingtypes.RelayRequest
 	Reply           *pairingtypes.RelayReply
 	ProviderAddress string
 	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
+	ConflictHandler ConflictHandlerInterface
 }
 
 func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
