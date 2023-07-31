@@ -185,7 +185,7 @@ else ifeq (rocksdb,$(findstring rocksdb,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
 endif
 
-ifeq (production-log-level,$(findstring production-log-level,$(LAVA_BUILD_OPTIONS)))
+ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/lavanet/lava/utils.ExtendedLogLevel=production
 endif
 
