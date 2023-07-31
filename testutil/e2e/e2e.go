@@ -1083,8 +1083,6 @@ func exportUserPublicKey(lavaPath string, user string) string {
 		panic(err)
 	}
 
-	fmt.Println(string(out))
-
 	// Regex to match the 'public key'
 	re := regexp.MustCompile(`address: (\S+)`)
 	match := re.FindStringSubmatch(string(out))

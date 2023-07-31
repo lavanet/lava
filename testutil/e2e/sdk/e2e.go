@@ -54,7 +54,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		return nil
 	})
 	if err != nil {
-		fmt.Println("Error finding test files:", err)
+		utils.LavaFormatError("Error finding test files:", err)
 		return
 	}
 
