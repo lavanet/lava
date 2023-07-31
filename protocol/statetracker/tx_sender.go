@@ -198,7 +198,7 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
+func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
