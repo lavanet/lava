@@ -20,7 +20,10 @@ func TestRelayPaymentOverUseWithDowntime(t *testing.T) {
 
 	// force a downtime of factor 2
 	dtParams := ts.Keepers.Downtime.GetParams(ts.Ctx)
-	doubledCUDowntime := dtParams.EpochDuration * 2 // this gives us a downtime with factor 2
+	// this gives us a downtime with factor 2, because the downtime is equal to the
+	// estimated epoch duration, which means 2 epochs should have passed because we
+	// had one epoch of accumulated downtime.
+	doubledCUDowntime := dtParams.EpochDuration * 1
 	ts.Keepers.Downtime.RecordDowntime(ts.Ctx, doubledCUDowntime)
 
 	// we expect relay to be paid.
