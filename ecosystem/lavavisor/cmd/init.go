@@ -14,7 +14,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg"
+	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
+	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
@@ -32,7 +33,7 @@ var cmdLavavisorInit = &cobra.Command{
 		lavavisor init --directory ./custom/lavavisor/path --auto-download true`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, _ := cmd.Flags().GetString("directory")
-		dir, err := expandTilde(dir)
+		dir, err := lvutil.ExpandTilde(dir)
 		if err != nil {
 			return utils.LavaFormatError("unable to expand directory path", err)
 		}
@@ -184,30 +185,17 @@ var cmdLavavisorInit = &cobra.Command{
 
 		utils.LavaFormatInfo("Symbolic link created successfully")
 
-		//		if autodownload false: alert user that binary is not exist, monitor directory constantly!,
+		// if autodownload false: alert user that binary is not exist, monitor directory constantly!,
 
 		return nil
 	},
 }
 
-func expandTilde(path string) (string, error) {
-	if !strings.HasPrefix(path, "~") {
-		return path, nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", utils.LavaFormatError("cannot get user home directory", err)
-	}
-	return filepath.Join(home, path[1:]), nil
-}
-
 func init() {
 	// Use the log directory in flags
 	flags.AddQueryFlagsToCmd(cmdLavavisorInit)
-	cmdLavavisorInit.MarkFlagRequired(flags.FlagFrom)
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
-	cmdLavavisorInit.Flags().String("from", "", "Name or address of private key with which to sign")
 	rootCmd.AddCommand(cmdLavavisorInit)
 }
 
