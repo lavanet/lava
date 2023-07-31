@@ -3,6 +3,7 @@ package rewardserver
 import (
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -109,9 +110,9 @@ func NewMemoryDB() *BadgerDB {
 	}
 }
 
-func NewLocalDB(storagePath, providerAddr string, specId string, shard int) *BadgerDB {
+func NewLocalDB(storagePath, providerAddr string, specIds []string, shard int) *BadgerDB {
 	shardString := strconv.Itoa(shard)
-	path := filepath.Join(storagePath, providerAddr, specId, shardString)
+	path := filepath.Join(storagePath, providerAddr, strings.Join(specIds, "-"), shardString)
 	Options := badger.DefaultOptions(path)
 	Options.Logger = utils.LoggerWrapper{LoggerName: "[Badger DB]: "} // replace the logger with lava logger
 	db, err := badger.Open(Options)

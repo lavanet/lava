@@ -67,7 +67,7 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
 
-	sig, err := sigs.SignRelay(privKey, *proof)
+	sig, err := sigs.Sign(privKey, *proof)
 	require.NoError(t, err)
 	proof.Sig = sig
 
@@ -91,7 +91,7 @@ func TestDeleteEpochRewards(t *testing.T) {
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
 
-	sig, err := sigs.SignRelay(privKey, *proof)
+	sig, err := sigs.Sign(privKey, *proof)
 	require.NoError(t, err)
 	proof.Sig = sig
 
@@ -117,7 +117,7 @@ func TestRewardsWithTTL(t *testing.T) {
 	proof := common.BuildRelayRequest(ctx, "provider", []byte{}, uint64(0), "spec", nil)
 	proof.Epoch = 1
 
-	sig, err := sigs.SignRelay(privKey, *proof)
+	sig, err := sigs.Sign(privKey, *proof)
 	require.NoError(t, err)
 	proof.Sig = sig
 

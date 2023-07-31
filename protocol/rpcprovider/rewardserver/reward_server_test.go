@@ -206,7 +206,7 @@ func TestUpdateEpoch(t *testing.T) {
 			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
 			proof.Epoch = int64(epoch)
 
-			sig, err := sigs.SignRelay(privKey, *proof)
+			sig, err := sigs.Sign(privKey, *proof)
 			proof.Sig = sig
 			require.NoError(t, err)
 
@@ -234,7 +234,7 @@ func TestUpdateEpoch(t *testing.T) {
 			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
 			proof.Epoch = int64(epoch)
 
-			sig, err := sigs.SignRelay(privKey, *proof)
+			sig, err := sigs.Sign(privKey, *proof)
 			proof.Sig = sig
 			require.NoError(t, err)
 
@@ -268,7 +268,7 @@ func BenchmarkSendNewProofInMemory(b *testing.B) {
 
 func BenchmarkSendNewProofLocal(b *testing.B) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db := rewardserver.NewLocalDB("badger_test", "provider", "spec", 0)
+	db := rewardserver.NewLocalDB("badger_test", "provider", []string{"spec"}, 0)
 	defer func(db *rewardserver.BadgerDB) {
 		_ = db.Close()
 	}(db)
