@@ -797,7 +797,7 @@ func (ts *tester) verifyPairingDistribution(desc string, client string, provider
 		totalWeight += weight(provider)
 	}
 
-	// calculate calculate the histogram
+	// calculate the occurrence histogram
 	histogram := make(map[int]int64)
 	for i := 0; i < iterations; i++ {
 		res, err := ts.QueryPairingGetPairing(ts.spec.Index, client)

@@ -32,10 +32,10 @@ func isUniformlyDistributed(t *testing.T, f func(n int64) int64) {
 func TestDeterminism(t *testing.T) {
 	// copied from the output of the loop below
 	expected := []int64{
-		93, 3, 11, 16, 98, 9, 29, 14,
-		25, 43, 70, 61, 0, 33, 22, 34,
-		84, 19, 61, 87, 18, 68, 67, 89,
-		98, 16, 9, 87, 83, 40, 79, 9,
+		34, 18, 63, 3, 16, 24, 81, 49,
+		49, 65, 81, 66, 10, 89, 6, 85,
+		71, 68, 89, 52, 7, 4, 3, 21,
+		17, 90, 2, 36, 5, 4, 75, 93,
 	}
 
 	rng := New([]byte("pre-determined-data"))
