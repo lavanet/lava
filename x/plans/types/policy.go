@@ -117,6 +117,13 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		}
 		seen[addr] = true
 	}
+	for _, chainPolicy := range policy.ChainPolicies {
+		for _, requirement := range chainPolicy.GetRequirements() {
+			if requirement.Collection.ApiInterface == "" {
+				return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid requirement definition requirement must define collection with an apiInterface (%+v)", chainPolicy)
+			}
+		}
+	}
 
 	return nil
 }

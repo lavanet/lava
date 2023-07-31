@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -88,20 +89,55 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 	return selectedChainProxy.SendNodeMsg(ctx, ch, chainMessage)
 }
 
+// batch nodeUrls with the same addons together in a copy
+func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) map[RouterKey]lavasession.RPCProviderEndpoint {
+	returnedBatch := map[RouterKey]lavasession.RPCProviderEndpoint{}
+	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
+		if existingEndpoint, ok := returnedBatch[NewRouterKey(nodeUrl.Addons)]; !ok {
+			returnedBatch[NewRouterKey(nodeUrl.Addons)] = lavasession.RPCProviderEndpoint{
+				NetworkAddress: rpcProviderEndpoint.NetworkAddress,
+				ChainID:        rpcProviderEndpoint.ChainID,
+				ApiInterface:   rpcProviderEndpoint.ApiInterface,
+				Geolocation:    rpcProviderEndpoint.Geolocation,
+				NodeUrls:       []common.NodeUrl{nodeUrl}, // add existing nodeUrl to the batch
+			}
+		} else {
+			existingEndpoint.NodeUrls = append(existingEndpoint.NodeUrls, nodeUrl)
+			returnedBatch[NewRouterKey(nodeUrl.Addons)] = existingEndpoint
+		}
+	}
+	return returnedBatch
+}
+
 func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (ChainRouter, error) {
 	chainProxyRouter := map[RouterKey][]chainRouterEntry{}
 
-	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
-		addons, extensions, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
+	requiredMap := map[requirementSt]struct{}{}
+	supportedMap := map[requirementSt]struct{}{}
+	rpcProviderEndpointBatch := batchNodeUrlsByServices(rpcProviderEndpoint)
+	for _, rpcProviderEndpointEntry := range rpcProviderEndpointBatch {
+		addons, extensions, err := chainParser.SeparateAddonsExtensions(append(rpcProviderEndpointEntry.NodeUrls[0].Addons, ""))
 		if err != nil {
 			return nil, err
 		}
-		routerKey := NewRouterKey(extensions)
 		addonsSupportedMap := map[string]struct{}{}
-		for _, addon := range addons {
-			addonsSupportedMap[addon] = struct{}{}
+		// this function calculated all routing combinations and populates them for verification at the end of the function
+		updateRouteCombinations := func(extensions []string, addons []string) (fullySupportedRouterKey RouterKey) {
+			allExtensionsRouterKey := NewRouterKey(extensions)
+			requirement := requirementSt{
+				extensions: allExtensionsRouterKey,
+				addon:      "",
+			}
+			for _, addon := range addons {
+				populateRequiredForAddon(addon, extensions, requiredMap)
+				requirement.addon = addon
+				supportedMap[requirement] = struct{}{}
+				addonsSupportedMap[addon] = struct{}{}
+			}
+			return allExtensionsRouterKey
 		}
-		chainProxy, err := proxyConstructor(ctx, nConns, rpcProviderEndpoint, chainParser)
+		routerKey := updateRouteCombinations(extensions, addons)
+		chainProxy, err := proxyConstructor(ctx, nConns, rpcProviderEndpointEntry, chainParser)
 		if err != nil {
 			// TODO: allow some urls to be down
 			return nil, err
@@ -116,10 +152,43 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			chainProxyRouter[routerKey] = append(chainRouterEntries, chainRouterEntryInst)
 		}
 	}
+	if len(requiredMap) > len(supportedMap) {
+		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing extensions or addons in definitions", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "supported", Value: supportedMap})
+	}
 
 	cri := chainRouterImpl{
 		lock:             &sync.RWMutex{},
 		chainProxyRouter: chainProxyRouter,
 	}
 	return cri, nil
+}
+
+type requirementSt struct {
+	extensions RouterKey
+	addon      string
+}
+
+func populateRequiredForAddon(addon string, extensions []string, required map[requirementSt]struct{}) {
+	if len(extensions) == 0 {
+		required[requirementSt{
+			extensions: NewRouterKey([]string{}),
+			addon:      addon,
+		}] = struct{}{}
+		return
+	}
+	requirement := requirementSt{
+		extensions: NewRouterKey(extensions),
+		addon:      addon,
+	}
+	if _, ok := required[requirement]; ok {
+		// already handled
+		return
+	}
+	required[requirement] = struct{}{}
+	for i := 0; i < len(extensions); i++ {
+		extensionsWithoutI := make([]string, len(extensions)-1)
+		copy(extensionsWithoutI[:i], extensions[:i])
+		copy(extensionsWithoutI[i:], extensions[i+1:])
+		populateRequiredForAddon(addon, extensionsWithoutI, required)
+	}
 }
