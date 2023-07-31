@@ -39,6 +39,9 @@ import (
 const (
 	ChainTrackerDefaultMemory  = 100
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
+
+	ShardIDFlagName      = "shard-id"
+	DefaultShardID  uint = 0
 )
 
 var (
@@ -71,7 +74,7 @@ type RPCProvider struct {
 	lock                 sync.Mutex
 }
 
-func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string, rewardTTL time.Duration) (err error) {
+func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string, rewardTTL time.Duration, shardID uint) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -133,7 +136,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		specIds[i] = rpcProviderEndpoint.ChainID
 	}
 	// single db for the chains specified
-	localDB := rewardserver.NewLocalDB(rewardStoragePath, addr.String(), specIds, 0)
+	localDB := rewardserver.NewLocalDB(rewardStoragePath, addr.String(), specIds, shardID)
 
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardserver.NewRewardDBWithTTL(localDB, rewardTTL))
@@ -461,8 +464,9 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
+			shardID := viper.GetUint(ShardIDFlagName)
 			rpcProvider := RPCProvider{}
-			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr, rewardStoragePath, rewardTTL)
+			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr, rewardStoragePath, rewardTTL, shardID)
 			return err
 		},
 	}
@@ -481,6 +485,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCProvider.Flags().String(rewardserver.RewardServerStorageFlagName, rewardserver.DefaultRewardServerStorage, "the path to store reward server data")
 	cmdRPCProvider.Flags().Duration(rewardserver.RewardTTLFlagName, rewardserver.DefaultRewardTTL, "reward time to live")
+	cmdRPCProvider.Flags().Uint(ShardIDFlagName, DefaultShardID, "shard id")
 
 	return cmdRPCProvider
 }
