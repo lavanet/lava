@@ -63,17 +63,20 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		// Prepare command for running test
 		cmd := exec.Command("node", testFile)
 
+		// Get os environment
+		cmd.Env = os.Environ()
+
 		// Set the environment variable for the private key
-		cmd.Env = append(os.Environ(), "PRIVATE_KEY="+privateKey)
+		cmd.Env = append(cmd.Env, "PRIVATE_KEY="+privateKey)
 
 		// Set the environment variable for badge server project id
-		cmd.Env = append(os.Environ(), "BADGE_PROJECT_ID="+"alice")
+		cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")
 
 		// Set the environment variable for badge server address
-		cmd.Env = append(os.Environ(), "BADGE_SERVER_ADDR="+"http://localhost:8080")
+		cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:8080")
 
 		// Set the environment variable for badge server address
-		cmd.Env = append(os.Environ(), "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
+		cmd.Env = append(cmd.Env, "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
 
 		// Run the command and capture both standard output and standard error
 		cmd.Stdout = logs
