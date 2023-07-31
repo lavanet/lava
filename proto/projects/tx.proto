@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.projects;
 
 import "projects/project.proto";
+import "plans/policy.proto"; 
 import "gogoproto/gogo.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
@@ -10,27 +11,47 @@ option go_package = "github.com/lavanet/lava/x/projects/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc AddProjectKeys(MsgAddProjectKeys) returns (MsgAddProjectKeysResponse);
-  rpc SetProjectPolicy(MsgSetProjectPolicy) returns (MsgSetProjectPolicyResponse);
+  rpc AddKeys(MsgAddKeys) returns (MsgAddKeysResponse);
+  rpc DelKeys(MsgDelKeys) returns (MsgDelKeysResponse);
+  rpc SetPolicy(MsgSetPolicy) returns (MsgSetPolicyResponse);
+  rpc SetSubscriptionPolicy(MsgSetSubscriptionPolicy) returns (MsgSetSubscriptionPolicyResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
-message MsgAddProjectKeys {
+message MsgAddKeys {
   string creator = 1;
   string project = 2;
   repeated ProjectKey project_keys = 3 [(gogoproto.nullable) = false];
 }
 
-message MsgAddProjectKeysResponse {
+message MsgAddKeysResponse {
 }
 
-message MsgSetProjectPolicy {
+message MsgDelKeys {
   string creator = 1;
   string project = 2;
-  Policy policy = 3;
+  repeated ProjectKey project_keys = 3 [(gogoproto.nullable) = false];
 }
 
-message MsgSetProjectPolicyResponse {
+message MsgDelKeysResponse {
+}
+
+message MsgSetPolicy {
+  string creator = 1;
+  string project = 2;
+  lavanet.lava.plans.Policy policy = 3 [(gogoproto.nullable) = false];
+}
+
+message MsgSetPolicyResponse {
+}
+
+message MsgSetSubscriptionPolicy {
+  string creator = 1;
+  repeated string projects = 2;
+  lavanet.lava.plans.Policy policy = 3 [(gogoproto.nullable) = false];
+}
+
+message MsgSetSubscriptionPolicyResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

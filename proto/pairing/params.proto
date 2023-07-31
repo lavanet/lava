@@ -7,17 +7,12 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Params defines the parameters for the module.
 message Params {
-  reserved 1,2;
+  reserved 1,2,4,7,9;
   option (gogoproto.goproto_stringer) = false;
   
   
   string mintCoinsPerCU = 3 [
     (gogoproto.moretags) = "yaml:\"mint_coins_per_cu\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable)   = false
-    ];
-  string burnCoinsPerCU = 4 [
-    (gogoproto.moretags) = "yaml:\"burn_coins_per_cu\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
     ];
@@ -27,13 +22,7 @@ message Params {
     (gogoproto.nullable)   = false
     ];
   uint64 fraudSlashingAmount = 6 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
-  uint64 servicersToPairCount = 7 [(gogoproto.moretags) = "yaml:\"servicers_to_pair_count\""];
   uint64 epochBlocksOverlap = 8 [(gogoproto.moretags) = "yaml:\"epoch_blocks_overlap\""];
-  string stakeToMaxCUList = 9 [
-    (gogoproto.moretags) = "yaml:\"stake_to_computeunits_list\"",
-    (gogoproto.customtype) = "StakeToMaxCUList",
-    (gogoproto.nullable)   = false
-    ];
   string unpayLimit = 10 [
     (gogoproto.moretags) = "yaml:\"unpay_limit\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",

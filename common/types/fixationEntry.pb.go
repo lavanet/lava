@@ -29,6 +29,7 @@ type Entry struct {
 	StaleAt  uint64 `protobuf:"varint,3,opt,name=stale_at,json=staleAt,proto3" json:"stale_at,omitempty"`
 	Refcount uint64 `protobuf:"varint,4,opt,name=refcount,proto3" json:"refcount,omitempty"`
 	Data     []byte `protobuf:"bytes,5,opt,name=data,proto3" json:"data,omitempty"`
+	DeleteAt uint64 `protobuf:"varint,6,opt,name=delete_at,json=deleteAt,proto3" json:"delete_at,omitempty"`
 }
 
 func (m *Entry) Reset()         { *m = Entry{} }
@@ -99,29 +100,92 @@ func (m *Entry) GetData() []byte {
 	return nil
 }
 
+func (m *Entry) GetDeleteAt() uint64 {
+	if m != nil {
+		return m.DeleteAt
+	}
+	return 0
+}
+
+type RawMessage struct {
+	Key   []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *RawMessage) Reset()         { *m = RawMessage{} }
+func (m *RawMessage) String() string { return proto.CompactTextString(m) }
+func (*RawMessage) ProtoMessage()    {}
+func (*RawMessage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_702478ef0512c95d, []int{1}
+}
+func (m *RawMessage) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RawMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RawMessage.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RawMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RawMessage.Merge(m, src)
+}
+func (m *RawMessage) XXX_Size() int {
+	return m.Size()
+}
+func (m *RawMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_RawMessage.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RawMessage proto.InternalMessageInfo
+
+func (m *RawMessage) GetKey() []byte {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+func (m *RawMessage) GetValue() []byte {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Entry)(nil), "lavanet.lava.common.Entry")
+	proto.RegisterType((*RawMessage)(nil), "lavanet.lava.common.RawMessage")
 }
 
 func init() { proto.RegisterFile("common/fixationEntry.proto", fileDescriptor_702478ef0512c95d) }
 
 var fileDescriptor_702478ef0512c95d = []byte{
-	// 230 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4a, 0xce, 0xcf, 0xcd,
-	0xcd, 0xcf, 0xd3, 0x4f, 0xcb, 0xac, 0x48, 0x2c, 0xc9, 0xcc, 0xcf, 0x73, 0xcd, 0x2b, 0x29, 0xaa,
-	0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xce, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1,
-	0x03, 0xd1, 0x7a, 0x10, 0x85, 0x52, 0x22, 0xe9, 0xf9, 0xe9, 0xf9, 0x60, 0x79, 0x7d, 0x10, 0x0b,
-	0xa2, 0x54, 0xa9, 0x8e, 0x8b, 0x15, 0xac, 0x53, 0x48, 0x84, 0x8b, 0x35, 0x33, 0x2f, 0x25, 0xb5,
-	0x42, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08, 0xc2, 0x01, 0x89, 0x26, 0xe5, 0xe4, 0x27, 0x67,
-	0x4b, 0x30, 0x29, 0x30, 0x6a, 0xb0, 0x04, 0x41, 0x38, 0x42, 0x92, 0x5c, 0x1c, 0xc5, 0x25, 0x89,
-	0x39, 0xa9, 0xf1, 0x89, 0x25, 0x12, 0xcc, 0x60, 0x09, 0x76, 0x30, 0xdf, 0xb1, 0x44, 0x48, 0x8a,
-	0x8b, 0xa3, 0x28, 0x35, 0x2d, 0x39, 0xbf, 0x34, 0xaf, 0x44, 0x82, 0x05, 0x2c, 0x05, 0xe7, 0x0b,
-	0x09, 0x71, 0xb1, 0xa4, 0x24, 0x96, 0x24, 0x4a, 0xb0, 0x2a, 0x30, 0x6a, 0xf0, 0x04, 0x81, 0xd9,
-	0x4e, 0x76, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x84,
-	0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb, 0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10, 0xa5, 0x92, 0x9e, 0x59,
-	0x92, 0x51, 0x9a, 0x04, 0x72, 0xbe, 0x3e, 0xd4, 0x3f, 0x60, 0x5a, 0x1f, 0xea, 0xf1, 0x92, 0xca,
-	0x82, 0xd4, 0xe2, 0x24, 0x36, 0xb0, 0x37, 0x8c, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x88, 0xfc,
-	0x8b, 0xbd, 0x0f, 0x01, 0x00, 0x00,
+	// 282 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x3c, 0x90, 0x3f, 0x4f, 0xc3, 0x30,
+	0x10, 0xc5, 0x6b, 0xfa, 0x87, 0xd6, 0xca, 0x80, 0x4c, 0x87, 0x10, 0x24, 0x2b, 0xaa, 0x18, 0x32,
+	0x25, 0x03, 0xcc, 0x48, 0x45, 0x62, 0x64, 0xf1, 0xc8, 0x82, 0x9c, 0xc4, 0x0d, 0x51, 0x53, 0xbb,
+	0x4a, 0x2e, 0xa5, 0xf9, 0x16, 0xec, 0x7c, 0x21, 0xc6, 0x8e, 0x8c, 0x28, 0xf9, 0x22, 0xc8, 0xe7,
+	0x8a, 0xc9, 0xef, 0x77, 0xef, 0xce, 0x7a, 0x7a, 0x34, 0xc8, 0xcc, 0x6e, 0x67, 0x74, 0xb2, 0x29,
+	0x8f, 0x12, 0x4a, 0xa3, 0x9f, 0x35, 0xd4, 0x5d, 0xbc, 0xaf, 0x0d, 0x18, 0x76, 0x5d, 0xc9, 0x83,
+	0xd4, 0x0a, 0x62, 0xfb, 0xc6, 0x6e, 0x31, 0x58, 0x16, 0xa6, 0x30, 0xe8, 0x27, 0x56, 0xb9, 0xd5,
+	0xd5, 0x17, 0xa1, 0x53, 0x3c, 0x65, 0x4b, 0x3a, 0x2d, 0x75, 0xae, 0x8e, 0x3e, 0x09, 0x49, 0xb4,
+	0x10, 0x0e, 0xec, 0x34, 0xad, 0x4c, 0xb6, 0xf5, 0x2f, 0x42, 0x12, 0x4d, 0x84, 0x03, 0x76, 0x43,
+	0xe7, 0x0d, 0xc8, 0x4a, 0xbd, 0x49, 0xf0, 0xc7, 0x68, 0x5c, 0x22, 0xaf, 0x81, 0x05, 0x74, 0x5e,
+	0xab, 0x4d, 0x66, 0x5a, 0x0d, 0xfe, 0x04, 0xad, 0x7f, 0x66, 0x8c, 0x4e, 0x72, 0x09, 0xd2, 0x9f,
+	0x86, 0x24, 0xf2, 0x04, 0x6a, 0x76, 0x4b, 0x17, 0xb9, 0xaa, 0x14, 0xe0, 0x5f, 0x33, 0x77, 0xe0,
+	0x06, 0x6b, 0x58, 0x3d, 0x50, 0x2a, 0xe4, 0xc7, 0x8b, 0x6a, 0x1a, 0x59, 0x28, 0x76, 0x45, 0xc7,
+	0x5b, 0xd5, 0x61, 0x3e, 0x4f, 0x58, 0x69, 0xd3, 0x1d, 0x64, 0xd5, 0x2a, 0x4c, 0xe7, 0x09, 0x07,
+	0x4f, 0x8f, 0xdf, 0x3d, 0x27, 0xa7, 0x9e, 0x93, 0xdf, 0x9e, 0x93, 0xcf, 0x81, 0x8f, 0x4e, 0x03,
+	0x1f, 0xfd, 0x0c, 0x7c, 0xf4, 0x7a, 0x57, 0x94, 0xf0, 0xde, 0xa6, 0xb6, 0x92, 0xe4, 0xdc, 0x11,
+	0xbe, 0xc9, 0xb9, 0x4c, 0xe8, 0xf6, 0xaa, 0x49, 0x67, 0x58, 0xcd, 0xfd, 0x5f, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0x6b, 0x0c, 0x2f, 0x91, 0x63, 0x01, 0x00, 0x00,
 }
 
 func (m *Entry) Marshal() (dAtA []byte, err error) {
@@ -144,6 +208,11 @@ func (m *Entry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DeleteAt != 0 {
+		i = encodeVarintFixationEntry(dAtA, i, uint64(m.DeleteAt))
+		i--
+		dAtA[i] = 0x30
+	}
 	if len(m.Data) > 0 {
 		i -= len(m.Data)
 		copy(dAtA[i:], m.Data)
@@ -170,6 +239,43 @@ func (m *Entry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.Index)
 		copy(dAtA[i:], m.Index)
 		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Index)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RawMessage) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RawMessage) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RawMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Value) > 0 {
+		i -= len(m.Value)
+		copy(dAtA[i:], m.Value)
+		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Value)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Key)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -207,6 +313,26 @@ func (m *Entry) Size() (n int) {
 		n += 1 + sovFixationEntry(uint64(m.Refcount))
 	}
 	l = len(m.Data)
+	if l > 0 {
+		n += 1 + l + sovFixationEntry(uint64(l))
+	}
+	if m.DeleteAt != 0 {
+		n += 1 + sovFixationEntry(uint64(m.DeleteAt))
+	}
+	return n
+}
+
+func (m *RawMessage) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovFixationEntry(uint64(l))
+	}
+	l = len(m.Value)
 	if l > 0 {
 		n += 1 + l + sovFixationEntry(uint64(l))
 	}
@@ -369,6 +495,143 @@ func (m *Entry) Unmarshal(dAtA []byte) error {
 			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
 			if m.Data == nil {
 				m.Data = []byte{}
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteAt", wireType)
+			}
+			m.DeleteAt = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DeleteAt |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFixationEntry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RawMessage) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFixationEntry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RawMessage: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RawMessage: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = append(m.Key[:0], dAtA[iNdEx:postIndex]...)
+			if m.Key == nil {
+				m.Key = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = append(m.Value[:0], dAtA[iNdEx:postIndex]...)
+			if m.Value == nil {
+				m.Value = []byte{}
 			}
 			iNdEx = postIndex
 		default:

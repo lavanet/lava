@@ -10,26 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestGRPCMessage(t *testing.T) {
-	// Test GetParams method
-	restMessage := GrpcMessage{
-		Path: "eth_getTransactionByHash",
-		Msg:  []byte{1, 2, 3, 4, 5},
-	}
-
-	// Test GetParams method
-	params := restMessage.GetParams()
-	if params != nil {
-		t.Errorf("Expected nil, but got %v", params)
-	}
-
-	// Test GetResult method
-	result := restMessage.GetResult()
-	if result != nil {
-		t.Errorf("Expected nil, but got %v", result)
-	}
-}
-
 func TestGRPCParseBlock(t *testing.T) {
 	t.Parallel()
 
@@ -96,7 +76,7 @@ func TestReflectionSupport(t *testing.T) {
 			name: "unimplemented error",
 			err:  status.Error(codes.Unimplemented, "unimplemented"),
 			result: utils.LavaFormatError("server does not support the reflection API",
-				status.Error(codes.Unimplemented, "unimplemented"), nil),
+				status.Error(codes.Unimplemented, "unimplemented")),
 		},
 	}
 

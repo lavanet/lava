@@ -54,8 +54,8 @@ genesis:
     gov:
       deposit_params:
         min_deposit:
-        - amount: "10000000"
-          denom: "ulava"
+          - amount: "10000000"
+            denom: "ulava"
       voting_params:
         voting_period: "3s"
     staking:

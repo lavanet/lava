@@ -18,12 +18,14 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			name: "invalid address",
 			msg: MsgStakeProvider{
 				Creator: "invalid_address",
+				Moniker: "dummyMoniker",
 			},
 			err: sdkerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgStakeProvider{
 				Creator: sample.AccAddress(),
+				Moniker: "dummyMoniker",
 			},
 		},
 	}

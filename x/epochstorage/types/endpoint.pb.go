@@ -23,9 +23,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Endpoint struct {
-	IPPORT      string `protobuf:"bytes,1,opt,name=iPPORT,proto3" json:"iPPORT,omitempty"`
-	UseType     string `protobuf:"bytes,2,opt,name=useType,proto3" json:"useType,omitempty"`
-	Geolocation uint64 `protobuf:"varint,3,opt,name=geolocation,proto3" json:"geolocation,omitempty"`
+	IPPORT        string   `protobuf:"bytes,1,opt,name=iPPORT,proto3" json:"iPPORT,omitempty"`
+	Geolocation   uint64   `protobuf:"varint,3,opt,name=geolocation,proto3" json:"geolocation,omitempty"`
+	Addons        []string `protobuf:"bytes,4,rep,name=addons,proto3" json:"addons,omitempty"`
+	ApiInterfaces []string `protobuf:"bytes,5,rep,name=api_interfaces,json=apiInterfaces,proto3" json:"api_interfaces,omitempty"`
 }
 
 func (m *Endpoint) Reset()         { *m = Endpoint{} }
@@ -68,18 +69,25 @@ func (m *Endpoint) GetIPPORT() string {
 	return ""
 }
 
-func (m *Endpoint) GetUseType() string {
-	if m != nil {
-		return m.UseType
-	}
-	return ""
-}
-
 func (m *Endpoint) GetGeolocation() uint64 {
 	if m != nil {
 		return m.Geolocation
 	}
 	return 0
+}
+
+func (m *Endpoint) GetAddons() []string {
+	if m != nil {
+		return m.Addons
+	}
+	return nil
+}
+
+func (m *Endpoint) GetApiInterfaces() []string {
+	if m != nil {
+		return m.ApiInterfaces
+	}
+	return nil
 }
 
 func init() {
@@ -89,20 +97,22 @@ func init() {
 func init() { proto.RegisterFile("epochstorage/endpoint.proto", fileDescriptor_c5b1ebaa0f5cf898) }
 
 var fileDescriptor_c5b1ebaa0f5cf898 = []byte{
-	// 194 bytes of a gzipped FileDescriptorProto
+	// 229 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4e, 0x2d, 0xc8, 0x4f,
 	0xce, 0x28, 0x2e, 0xc9, 0x2f, 0x4a, 0x4c, 0x4f, 0xd5, 0x4f, 0xcd, 0x4b, 0x29, 0xc8, 0xcf, 0xcc,
 	0x2b, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x92, 0xcc, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d,
-	0xd1, 0x03, 0xd1, 0x7a, 0xc8, 0x2a, 0x95, 0xe2, 0xb8, 0x38, 0x5c, 0xa1, 0x8a, 0x85, 0xc4, 0xb8,
-	0xd8, 0x32, 0x03, 0x02, 0xfc, 0x83, 0x42, 0x24, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0xa0, 0x3c,
-	0x21, 0x09, 0x2e, 0xf6, 0xd2, 0xe2, 0xd4, 0x90, 0xca, 0x82, 0x54, 0x09, 0x26, 0xb0, 0x04, 0x8c,
-	0x2b, 0xa4, 0xc0, 0xc5, 0x9d, 0x9e, 0x9a, 0x9f, 0x93, 0x9f, 0x9c, 0x58, 0x92, 0x99, 0x9f, 0x27,
-	0xc1, 0xac, 0xc0, 0xa8, 0xc1, 0x12, 0x84, 0x2c, 0xe4, 0xe4, 0x76, 0xe2, 0x91, 0x1c, 0xe3, 0x85,
-	0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70, 0xe1, 0xb1, 0x1c, 0xc3,
-	0x8d, 0xc7, 0x72, 0x0c, 0x51, 0x3a, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49, 0x7a, 0xc9, 0xf9, 0xb9,
-	0xfa, 0x50, 0xf7, 0x81, 0x69, 0xfd, 0x0a, 0x7d, 0x14, 0xbf, 0x94, 0x54, 0x16, 0xa4, 0x16, 0x27,
-	0xb1, 0x81, 0x7d, 0x62, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x4b, 0xfd, 0x5e, 0x7a, 0xe8, 0x00,
-	0x00, 0x00,
+	0xd1, 0x03, 0xd1, 0x7a, 0xc8, 0x2a, 0x95, 0x3a, 0x19, 0xb9, 0x38, 0x5c, 0xa1, 0xaa, 0x85, 0xc4,
+	0xb8, 0xd8, 0x32, 0x03, 0x02, 0xfc, 0x83, 0x42, 0x24, 0x18, 0x15, 0x18, 0x35, 0x38, 0x83, 0xa0,
+	0x3c, 0x21, 0x05, 0x2e, 0xee, 0xf4, 0xd4, 0xfc, 0x9c, 0xfc, 0xe4, 0xc4, 0x92, 0xcc, 0xfc, 0x3c,
+	0x09, 0x66, 0x05, 0x46, 0x0d, 0x96, 0x20, 0x64, 0x21, 0x90, 0xce, 0xc4, 0x94, 0x94, 0xfc, 0xbc,
+	0x62, 0x09, 0x16, 0x05, 0x66, 0x90, 0x4e, 0x08, 0x4f, 0x48, 0x95, 0x8b, 0x2f, 0xb1, 0x20, 0x33,
+	0x3e, 0x33, 0xaf, 0x24, 0xb5, 0x28, 0x2d, 0x31, 0x39, 0xb5, 0x58, 0x82, 0x15, 0x2c, 0xcf, 0x9b,
+	0x58, 0x90, 0xe9, 0x09, 0x17, 0xf4, 0x62, 0xe1, 0x60, 0x12, 0x60, 0x76, 0x72, 0x3b, 0xf1, 0x48,
+	0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0,
+	0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x86, 0x28, 0x9d, 0xf4, 0xcc, 0x92, 0x8c, 0xd2, 0x24, 0xbd,
+	0xe4, 0xfc, 0x5c, 0x7d, 0xa8, 0x5f, 0xc0, 0xb4, 0x7e, 0x85, 0x3e, 0x8a, 0xbf, 0x4b, 0x2a, 0x0b,
+	0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xbe, 0x36, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0x62, 0x1c, 0x60,
+	0xc2, 0x14, 0x01, 0x00, 0x00,
 }
 
 func (m *Endpoint) Marshal() (dAtA []byte, err error) {
@@ -125,17 +135,28 @@ func (m *Endpoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ApiInterfaces) > 0 {
+		for iNdEx := len(m.ApiInterfaces) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ApiInterfaces[iNdEx])
+			copy(dAtA[i:], m.ApiInterfaces[iNdEx])
+			i = encodeVarintEndpoint(dAtA, i, uint64(len(m.ApiInterfaces[iNdEx])))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.Addons) > 0 {
+		for iNdEx := len(m.Addons) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Addons[iNdEx])
+			copy(dAtA[i:], m.Addons[iNdEx])
+			i = encodeVarintEndpoint(dAtA, i, uint64(len(m.Addons[iNdEx])))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
 	if m.Geolocation != 0 {
 		i = encodeVarintEndpoint(dAtA, i, uint64(m.Geolocation))
 		i--
 		dAtA[i] = 0x18
-	}
-	if len(m.UseType) > 0 {
-		i -= len(m.UseType)
-		copy(dAtA[i:], m.UseType)
-		i = encodeVarintEndpoint(dAtA, i, uint64(len(m.UseType)))
-		i--
-		dAtA[i] = 0x12
 	}
 	if len(m.IPPORT) > 0 {
 		i -= len(m.IPPORT)
@@ -168,12 +189,20 @@ func (m *Endpoint) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovEndpoint(uint64(l))
 	}
-	l = len(m.UseType)
-	if l > 0 {
-		n += 1 + l + sovEndpoint(uint64(l))
-	}
 	if m.Geolocation != 0 {
 		n += 1 + sovEndpoint(uint64(m.Geolocation))
+	}
+	if len(m.Addons) > 0 {
+		for _, s := range m.Addons {
+			l = len(s)
+			n += 1 + l + sovEndpoint(uint64(l))
+		}
+	}
+	if len(m.ApiInterfaces) > 0 {
+		for _, s := range m.ApiInterfaces {
+			l = len(s)
+			n += 1 + l + sovEndpoint(uint64(l))
+		}
 	}
 	return n
 }
@@ -245,9 +274,28 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 			}
 			m.IPPORT = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Geolocation", wireType)
+			}
+			m.Geolocation = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEndpoint
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Geolocation |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UseType", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Addons", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -275,13 +323,13 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UseType = string(dAtA[iNdEx:postIndex])
+			m.Addons = append(m.Addons, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Geolocation", wireType)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ApiInterfaces", wireType)
 			}
-			m.Geolocation = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowEndpoint
@@ -291,11 +339,24 @@ func (m *Endpoint) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Geolocation |= uint64(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEndpoint
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ApiInterfaces = append(m.ApiInterfaces, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipEndpoint(dAtA[iNdEx:])

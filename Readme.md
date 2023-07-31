@@ -29,6 +29,10 @@ make build
 
 Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
+### Add `lavad` autocomplete
+
+You can add a useful autocomplete feature to `lavad` with a simple bash [script](https://github.com/lavanet/lava/blob/update-readme-autocomplete/scripts/lavad_auto_completion_install.sh).
+
 ### Quick Start
 
 Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?utm_source=github.com&utm_medium=github&utm_campaign=readme)

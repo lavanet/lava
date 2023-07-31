@@ -1,12 +1,11 @@
 package types
 
+import math "math"
+
 const (
 	ProviderStakeEventName       = "stake_new_provider"
-	ConsumerStakeEventName       = "stake_new_consumer"
 	ProviderStakeUpdateEventName = "stake_update_provider"
-	ConsumerStakeUpdateEventName = "stake_update_consumer"
 	ProviderUnstakeEventName     = "provider_unstake_commit"
-	ConsumerUnstakeEventName     = "consumer_unstake_commit"
 
 	ConsumerInsufficientFundsToStayStakedEventName = "consumer_insufficient_funds_to_stay_staked"
 	RelayPaymentEventName                          = "relay_payment"
@@ -21,29 +20,20 @@ const (
 	UnstakeDescriptionInsufficientFunds = "client stake is below the minimum stake required"
 )
 
-func StakeNewEventName(isProvider bool) string {
-	if isProvider {
-		return ProviderStakeEventName
-	} else {
-		return ConsumerStakeEventName
-	}
-}
+const (
+	FlagMoniker     = "provider-moniker"
+	MAX_LEN_MONIKER = 50
+)
 
-func StakeUpdateEventName(isProvider bool) string {
-	if isProvider {
-		return ProviderStakeUpdateEventName
-	} else {
-		return ConsumerStakeUpdateEventName
-	}
-}
+// unresponsiveness consts
+const (
+	// Consider changing back on mainnet when providers QoS benchmarks are better // EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER uint64 = 4 // number of epochs to sum CU that the provider serviced
+	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER uint64 = 8 // number of epochs to sum CU that the provider serviced
+	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              uint64 = 2 // number of epochs to sum CU of complainers against the provider
+)
 
-func UnstakeCommitNewEventName(isProvider bool) string {
-	if isProvider {
-		return ProviderUnstakeEventName
-	} else {
-		return ConsumerUnstakeEventName
-	}
-}
+// Frozen provider block const
+const FROZEN_BLOCK = math.MaxInt64
 
 type ClientUsedCU struct {
 	TotalUsed uint64

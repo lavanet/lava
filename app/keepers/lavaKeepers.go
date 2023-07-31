@@ -17,10 +17,12 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
+	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
+	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
@@ -56,4 +58,6 @@ type LavaKeepers struct {
 	ConflictKeeper     conflictmodulekeeper.Keeper
 	ProjectsKeeper     projectsmodulekeeper.Keeper
 	PlansKeeper        plansmodulekeeper.Keeper
+	ProtocolKeeper     protocolmodulekeeper.Keeper
+	DowntimeKeeper     downtimekeeper.Keeper
 }

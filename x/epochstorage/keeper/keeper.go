@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -63,11 +64,24 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k *Keeper) AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any) {
 	if _, ok := k.fixationRegistries[fixationKey]; ok {
-		panic(fmt.Sprintf("duplicate fixation registry %s", fixationKey))
+		// panic:ok: duplicate fixation registry is severe (triggered at init time)
+		panic("duplicate fixation registry: " + fixationKey)
 	}
 	k.fixationRegistries[fixationKey] = getParamFunction
 }
 
 func (k *Keeper) GetFixationRegistries() map[string]func(sdk.Context) any {
 	return k.fixationRegistries
+}
+
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	if k.IsEpochStart(ctx) {
+		// run functions that are supposed to run in epoch start
+		k.EpochStart(ctx)
+
+		// Notify world we have a new session
+
+		details := map[string]string{"height": fmt.Sprintf("%d", ctx.BlockHeight()), "description": "New Block Epoch Started"}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), "new_epoch", details, "")
+	}
 }

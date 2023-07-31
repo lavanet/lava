@@ -15,7 +15,6 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
-// Prevent strconv unused error
 var _ = strconv.IntSize
 
 func TestEpochPaymentsQuerySingle(t *testing.T) {

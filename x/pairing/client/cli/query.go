@@ -26,13 +26,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdQueryParams())
 	cmd.AddCommand(CmdProviders())
-
-	cmd.AddCommand(CmdClients())
-
 	cmd.AddCommand(CmdGetPairing())
-
 	cmd.AddCommand(CmdVerifyPairing())
-
 	cmd.AddCommand(CmdListUniquePaymentStorageClientProvider())
 	cmd.AddCommand(CmdShowUniquePaymentStorageClientProvider())
 	cmd.AddCommand(CmdListProviderPaymentStorage())
@@ -42,6 +37,8 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdUserMaxCu())
 
 	cmd.AddCommand(CmdStaticProvidersList())
+	cmd.AddCommand(CmdAccountInfo())
+	cmd.AddCommand(CmdEffectivePolicy())
 
 	// this line is used by starport scaffolding # 1
 

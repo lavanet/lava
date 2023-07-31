@@ -9,6 +9,7 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
+	types "github.com/lavanet/lava/x/plans/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -28,24 +29,24 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type MsgAddProjectKeys struct {
+type MsgAddKeys struct {
 	Creator     string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
 	Project     string       `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
 	ProjectKeys []ProjectKey `protobuf:"bytes,3,rep,name=project_keys,json=projectKeys,proto3" json:"project_keys"`
 }
 
-func (m *MsgAddProjectKeys) Reset()         { *m = MsgAddProjectKeys{} }
-func (m *MsgAddProjectKeys) String() string { return proto.CompactTextString(m) }
-func (*MsgAddProjectKeys) ProtoMessage()    {}
-func (*MsgAddProjectKeys) Descriptor() ([]byte, []int) {
+func (m *MsgAddKeys) Reset()         { *m = MsgAddKeys{} }
+func (m *MsgAddKeys) String() string { return proto.CompactTextString(m) }
+func (*MsgAddKeys) ProtoMessage()    {}
+func (*MsgAddKeys) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b5dcbe7dfba713c0, []int{0}
 }
-func (m *MsgAddProjectKeys) XXX_Unmarshal(b []byte) error {
+func (m *MsgAddKeys) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgAddProjectKeys) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAddKeys) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgAddProjectKeys.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAddKeys.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -55,54 +56,54 @@ func (m *MsgAddProjectKeys) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *MsgAddProjectKeys) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgAddProjectKeys.Merge(m, src)
+func (m *MsgAddKeys) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAddKeys.Merge(m, src)
 }
-func (m *MsgAddProjectKeys) XXX_Size() int {
+func (m *MsgAddKeys) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgAddProjectKeys) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgAddProjectKeys.DiscardUnknown(m)
+func (m *MsgAddKeys) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAddKeys.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgAddProjectKeys proto.InternalMessageInfo
+var xxx_messageInfo_MsgAddKeys proto.InternalMessageInfo
 
-func (m *MsgAddProjectKeys) GetCreator() string {
+func (m *MsgAddKeys) GetCreator() string {
 	if m != nil {
 		return m.Creator
 	}
 	return ""
 }
 
-func (m *MsgAddProjectKeys) GetProject() string {
+func (m *MsgAddKeys) GetProject() string {
 	if m != nil {
 		return m.Project
 	}
 	return ""
 }
 
-func (m *MsgAddProjectKeys) GetProjectKeys() []ProjectKey {
+func (m *MsgAddKeys) GetProjectKeys() []ProjectKey {
 	if m != nil {
 		return m.ProjectKeys
 	}
 	return nil
 }
 
-type MsgAddProjectKeysResponse struct {
+type MsgAddKeysResponse struct {
 }
 
-func (m *MsgAddProjectKeysResponse) Reset()         { *m = MsgAddProjectKeysResponse{} }
-func (m *MsgAddProjectKeysResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgAddProjectKeysResponse) ProtoMessage()    {}
-func (*MsgAddProjectKeysResponse) Descriptor() ([]byte, []int) {
+func (m *MsgAddKeysResponse) Reset()         { *m = MsgAddKeysResponse{} }
+func (m *MsgAddKeysResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgAddKeysResponse) ProtoMessage()    {}
+func (*MsgAddKeysResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b5dcbe7dfba713c0, []int{1}
 }
-func (m *MsgAddProjectKeysResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgAddKeysResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgAddProjectKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAddKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgAddProjectKeysResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAddKeysResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -112,36 +113,36 @@ func (m *MsgAddProjectKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (m *MsgAddProjectKeysResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgAddProjectKeysResponse.Merge(m, src)
+func (m *MsgAddKeysResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAddKeysResponse.Merge(m, src)
 }
-func (m *MsgAddProjectKeysResponse) XXX_Size() int {
+func (m *MsgAddKeysResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgAddProjectKeysResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgAddProjectKeysResponse.DiscardUnknown(m)
+func (m *MsgAddKeysResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAddKeysResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgAddProjectKeysResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgAddKeysResponse proto.InternalMessageInfo
 
-type MsgSetProjectPolicy struct {
-	Creator string  `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-	Project string  `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
-	Policy  *Policy `protobuf:"bytes,3,opt,name=policy,proto3" json:"policy,omitempty"`
+type MsgDelKeys struct {
+	Creator     string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Project     string       `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
+	ProjectKeys []ProjectKey `protobuf:"bytes,3,rep,name=project_keys,json=projectKeys,proto3" json:"project_keys"`
 }
 
-func (m *MsgSetProjectPolicy) Reset()         { *m = MsgSetProjectPolicy{} }
-func (m *MsgSetProjectPolicy) String() string { return proto.CompactTextString(m) }
-func (*MsgSetProjectPolicy) ProtoMessage()    {}
-func (*MsgSetProjectPolicy) Descriptor() ([]byte, []int) {
+func (m *MsgDelKeys) Reset()         { *m = MsgDelKeys{} }
+func (m *MsgDelKeys) String() string { return proto.CompactTextString(m) }
+func (*MsgDelKeys) ProtoMessage()    {}
+func (*MsgDelKeys) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b5dcbe7dfba713c0, []int{2}
 }
-func (m *MsgSetProjectPolicy) XXX_Unmarshal(b []byte) error {
+func (m *MsgDelKeys) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSetProjectPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgDelKeys) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSetProjectPolicy.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgDelKeys.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -151,54 +152,54 @@ func (m *MsgSetProjectPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *MsgSetProjectPolicy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSetProjectPolicy.Merge(m, src)
+func (m *MsgDelKeys) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDelKeys.Merge(m, src)
 }
-func (m *MsgSetProjectPolicy) XXX_Size() int {
+func (m *MsgDelKeys) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSetProjectPolicy) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSetProjectPolicy.DiscardUnknown(m)
+func (m *MsgDelKeys) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDelKeys.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSetProjectPolicy proto.InternalMessageInfo
+var xxx_messageInfo_MsgDelKeys proto.InternalMessageInfo
 
-func (m *MsgSetProjectPolicy) GetCreator() string {
+func (m *MsgDelKeys) GetCreator() string {
 	if m != nil {
 		return m.Creator
 	}
 	return ""
 }
 
-func (m *MsgSetProjectPolicy) GetProject() string {
+func (m *MsgDelKeys) GetProject() string {
 	if m != nil {
 		return m.Project
 	}
 	return ""
 }
 
-func (m *MsgSetProjectPolicy) GetPolicy() *Policy {
+func (m *MsgDelKeys) GetProjectKeys() []ProjectKey {
 	if m != nil {
-		return m.Policy
+		return m.ProjectKeys
 	}
 	return nil
 }
 
-type MsgSetProjectPolicyResponse struct {
+type MsgDelKeysResponse struct {
 }
 
-func (m *MsgSetProjectPolicyResponse) Reset()         { *m = MsgSetProjectPolicyResponse{} }
-func (m *MsgSetProjectPolicyResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgSetProjectPolicyResponse) ProtoMessage()    {}
-func (*MsgSetProjectPolicyResponse) Descriptor() ([]byte, []int) {
+func (m *MsgDelKeysResponse) Reset()         { *m = MsgDelKeysResponse{} }
+func (m *MsgDelKeysResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgDelKeysResponse) ProtoMessage()    {}
+func (*MsgDelKeysResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b5dcbe7dfba713c0, []int{3}
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgDelKeysResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgDelKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgSetProjectPolicyResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgDelKeysResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -208,50 +209,252 @@ func (m *MsgSetProjectPolicyResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgSetProjectPolicyResponse.Merge(m, src)
+func (m *MsgDelKeysResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDelKeysResponse.Merge(m, src)
 }
-func (m *MsgSetProjectPolicyResponse) XXX_Size() int {
+func (m *MsgDelKeysResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgSetProjectPolicyResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgSetProjectPolicyResponse.DiscardUnknown(m)
+func (m *MsgDelKeysResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDelKeysResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgSetProjectPolicyResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgDelKeysResponse proto.InternalMessageInfo
+
+type MsgSetPolicy struct {
+	Creator string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Project string       `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
+	Policy  types.Policy `protobuf:"bytes,3,opt,name=policy,proto3" json:"policy"`
+}
+
+func (m *MsgSetPolicy) Reset()         { *m = MsgSetPolicy{} }
+func (m *MsgSetPolicy) String() string { return proto.CompactTextString(m) }
+func (*MsgSetPolicy) ProtoMessage()    {}
+func (*MsgSetPolicy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b5dcbe7dfba713c0, []int{4}
+}
+func (m *MsgSetPolicy) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSetPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSetPolicy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSetPolicy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetPolicy.Merge(m, src)
+}
+func (m *MsgSetPolicy) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSetPolicy) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetPolicy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSetPolicy proto.InternalMessageInfo
+
+func (m *MsgSetPolicy) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgSetPolicy) GetProject() string {
+	if m != nil {
+		return m.Project
+	}
+	return ""
+}
+
+func (m *MsgSetPolicy) GetPolicy() types.Policy {
+	if m != nil {
+		return m.Policy
+	}
+	return types.Policy{}
+}
+
+type MsgSetPolicyResponse struct {
+}
+
+func (m *MsgSetPolicyResponse) Reset()         { *m = MsgSetPolicyResponse{} }
+func (m *MsgSetPolicyResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSetPolicyResponse) ProtoMessage()    {}
+func (*MsgSetPolicyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b5dcbe7dfba713c0, []int{5}
+}
+func (m *MsgSetPolicyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSetPolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSetPolicyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSetPolicyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetPolicyResponse.Merge(m, src)
+}
+func (m *MsgSetPolicyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSetPolicyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetPolicyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSetPolicyResponse proto.InternalMessageInfo
+
+type MsgSetSubscriptionPolicy struct {
+	Creator  string       `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Projects []string     `protobuf:"bytes,2,rep,name=projects,proto3" json:"projects,omitempty"`
+	Policy   types.Policy `protobuf:"bytes,3,opt,name=policy,proto3" json:"policy"`
+}
+
+func (m *MsgSetSubscriptionPolicy) Reset()         { *m = MsgSetSubscriptionPolicy{} }
+func (m *MsgSetSubscriptionPolicy) String() string { return proto.CompactTextString(m) }
+func (*MsgSetSubscriptionPolicy) ProtoMessage()    {}
+func (*MsgSetSubscriptionPolicy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b5dcbe7dfba713c0, []int{6}
+}
+func (m *MsgSetSubscriptionPolicy) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSetSubscriptionPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSetSubscriptionPolicy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSetSubscriptionPolicy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetSubscriptionPolicy.Merge(m, src)
+}
+func (m *MsgSetSubscriptionPolicy) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSetSubscriptionPolicy) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetSubscriptionPolicy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSetSubscriptionPolicy proto.InternalMessageInfo
+
+func (m *MsgSetSubscriptionPolicy) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgSetSubscriptionPolicy) GetProjects() []string {
+	if m != nil {
+		return m.Projects
+	}
+	return nil
+}
+
+func (m *MsgSetSubscriptionPolicy) GetPolicy() types.Policy {
+	if m != nil {
+		return m.Policy
+	}
+	return types.Policy{}
+}
+
+type MsgSetSubscriptionPolicyResponse struct {
+}
+
+func (m *MsgSetSubscriptionPolicyResponse) Reset()         { *m = MsgSetSubscriptionPolicyResponse{} }
+func (m *MsgSetSubscriptionPolicyResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgSetSubscriptionPolicyResponse) ProtoMessage()    {}
+func (*MsgSetSubscriptionPolicyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b5dcbe7dfba713c0, []int{7}
+}
+func (m *MsgSetSubscriptionPolicyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgSetSubscriptionPolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgSetSubscriptionPolicyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgSetSubscriptionPolicyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgSetSubscriptionPolicyResponse.Merge(m, src)
+}
+func (m *MsgSetSubscriptionPolicyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgSetSubscriptionPolicyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgSetSubscriptionPolicyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgSetSubscriptionPolicyResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgAddProjectKeys)(nil), "lavanet.lava.projects.MsgAddProjectKeys")
-	proto.RegisterType((*MsgAddProjectKeysResponse)(nil), "lavanet.lava.projects.MsgAddProjectKeysResponse")
-	proto.RegisterType((*MsgSetProjectPolicy)(nil), "lavanet.lava.projects.MsgSetProjectPolicy")
-	proto.RegisterType((*MsgSetProjectPolicyResponse)(nil), "lavanet.lava.projects.MsgSetProjectPolicyResponse")
+	proto.RegisterType((*MsgAddKeys)(nil), "lavanet.lava.projects.MsgAddKeys")
+	proto.RegisterType((*MsgAddKeysResponse)(nil), "lavanet.lava.projects.MsgAddKeysResponse")
+	proto.RegisterType((*MsgDelKeys)(nil), "lavanet.lava.projects.MsgDelKeys")
+	proto.RegisterType((*MsgDelKeysResponse)(nil), "lavanet.lava.projects.MsgDelKeysResponse")
+	proto.RegisterType((*MsgSetPolicy)(nil), "lavanet.lava.projects.MsgSetPolicy")
+	proto.RegisterType((*MsgSetPolicyResponse)(nil), "lavanet.lava.projects.MsgSetPolicyResponse")
+	proto.RegisterType((*MsgSetSubscriptionPolicy)(nil), "lavanet.lava.projects.MsgSetSubscriptionPolicy")
+	proto.RegisterType((*MsgSetSubscriptionPolicyResponse)(nil), "lavanet.lava.projects.MsgSetSubscriptionPolicyResponse")
 }
 
 func init() { proto.RegisterFile("projects/tx.proto", fileDescriptor_b5dcbe7dfba713c0) }
 
 var fileDescriptor_b5dcbe7dfba713c0 = []byte{
-	// 333 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0x28, 0xca, 0xcf,
-	0x4a, 0x4d, 0x2e, 0x29, 0xd6, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xcd,
-	0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0x30, 0x79, 0x29, 0x31, 0xb8, 0x4a,
-	0x28, 0x03, 0xa2, 0x5c, 0x4a, 0x24, 0x3d, 0x3f, 0x3d, 0x1f, 0xcc, 0xd4, 0x07, 0xb1, 0x20, 0xa2,
-	0x4a, 0x93, 0x19, 0xb9, 0x04, 0x7d, 0x8b, 0xd3, 0x1d, 0x53, 0x52, 0x02, 0x20, 0xaa, 0xbd, 0x53,
-	0x2b, 0x8b, 0x85, 0x24, 0xb8, 0xd8, 0x93, 0x8b, 0x52, 0x13, 0x4b, 0xf2, 0x8b, 0x24, 0x18, 0x15,
-	0x18, 0x35, 0x38, 0x83, 0x60, 0x5c, 0x90, 0x0c, 0xd4, 0x58, 0x09, 0x26, 0x88, 0x0c, 0x94, 0x2b,
-	0xe4, 0xc5, 0xc5, 0x03, 0x65, 0xc6, 0x67, 0xa7, 0x56, 0x16, 0x4b, 0x30, 0x2b, 0x30, 0x6b, 0x70,
-	0x1b, 0x29, 0xea, 0x61, 0x75, 0xa5, 0x1e, 0xc2, 0x36, 0x27, 0x96, 0x13, 0xf7, 0xe4, 0x19, 0x82,
-	0xb8, 0x0b, 0x10, 0xf6, 0x2b, 0x49, 0x73, 0x49, 0x62, 0x38, 0x2a, 0x28, 0xb5, 0xb8, 0x20, 0x3f,
-	0xaf, 0x38, 0x55, 0xa9, 0x81, 0x91, 0x4b, 0xd8, 0xb7, 0x38, 0x3d, 0x38, 0xb5, 0x04, 0x2a, 0x1b,
-	0x90, 0x9f, 0x93, 0x99, 0x5c, 0x49, 0x96, 0xa3, 0x4d, 0xb9, 0xd8, 0x0a, 0xc0, 0xba, 0x25, 0x98,
-	0x15, 0x18, 0x35, 0xb8, 0x8d, 0x64, 0x71, 0x39, 0x17, 0xac, 0x28, 0x08, 0xaa, 0x58, 0x49, 0x96,
-	0x4b, 0x1a, 0x8b, 0x0b, 0x60, 0x2e, 0x34, 0x7a, 0xce, 0xc8, 0xc5, 0xec, 0x5b, 0x9c, 0x2e, 0x94,
-	0xc3, 0xc5, 0x87, 0x16, 0xb0, 0x1a, 0x38, 0xcc, 0xc7, 0xf0, 0xad, 0x94, 0x01, 0xb1, 0x2a, 0x61,
-	0xb6, 0x0a, 0x15, 0x71, 0x09, 0x60, 0x84, 0x89, 0x16, 0x6e, 0x53, 0xd0, 0xd5, 0x4a, 0x19, 0x11,
-	0xaf, 0x16, 0x66, 0xa7, 0x93, 0xd3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78,
-	0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44,
-	0x69, 0xa4, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0x43, 0xcd, 0x05, 0xd3,
-	0xfa, 0x15, 0xfa, 0x88, 0xa4, 0x5c, 0x59, 0x90, 0x5a, 0x9c, 0xc4, 0x06, 0x4e, 0x89, 0xc6, 0x80,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0x80, 0xa2, 0xf2, 0xe2, 0xe3, 0x02, 0x00, 0x00,
+	// 431 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x94, 0xbf, 0x0b, 0xd3, 0x40,
+	0x14, 0xc7, 0x73, 0x8d, 0xb4, 0xf6, 0xb5, 0x8b, 0xa1, 0x2d, 0x21, 0x43, 0x8c, 0x71, 0x89, 0x08,
+	0x09, 0xd4, 0x41, 0x57, 0x8b, 0x93, 0xa5, 0x50, 0xd2, 0x41, 0x10, 0x44, 0xd2, 0xf4, 0x88, 0xd1,
+	0x98, 0x3b, 0x72, 0x57, 0x69, 0xc0, 0xc5, 0x55, 0x1c, 0x9c, 0xfd, 0x8b, 0x3a, 0x76, 0x74, 0x12,
+	0x69, 0xff, 0x11, 0x49, 0x72, 0x97, 0x48, 0xed, 0x0f, 0x7f, 0x2c, 0x4e, 0xf7, 0xee, 0xde, 0xf7,
+	0xbe, 0xef, 0xc3, 0xbd, 0xc7, 0xc1, 0x2d, 0x9a, 0x91, 0xd7, 0x38, 0xe4, 0xcc, 0xe3, 0x1b, 0x97,
+	0x66, 0x84, 0x13, 0x6d, 0x98, 0x04, 0xef, 0x82, 0x14, 0x73, 0xb7, 0x58, 0x5d, 0x99, 0x37, 0x46,
+	0xb5, 0x52, 0x04, 0x95, 0xdc, 0xd0, 0x68, 0x12, 0xa4, 0xcc, 0xa3, 0x24, 0x89, 0xc3, 0x5c, 0x9c,
+	0x0d, 0x22, 0x12, 0x91, 0x32, 0xf4, 0x8a, 0xa8, 0x3a, 0xb5, 0x3f, 0x21, 0x80, 0x19, 0x8b, 0x1e,
+	0xaf, 0x56, 0x53, 0x9c, 0x33, 0x4d, 0x87, 0x4e, 0x98, 0xe1, 0x80, 0x93, 0x4c, 0x47, 0x16, 0x72,
+	0xba, 0xbe, 0xdc, 0x16, 0x19, 0x51, 0x43, 0x6f, 0x55, 0x19, 0xb1, 0xd5, 0x9e, 0x42, 0x5f, 0x84,
+	0x2f, 0xdf, 0xe0, 0x9c, 0xe9, 0xaa, 0xa5, 0x3a, 0xbd, 0xf1, 0x1d, 0xf7, 0x24, 0xb2, 0x3b, 0xaf,
+	0x82, 0x29, 0xce, 0x27, 0x37, 0xb6, 0xdf, 0x6e, 0x2b, 0x7e, 0x8f, 0xd6, 0x27, 0xcc, 0x1e, 0x80,
+	0xd6, 0xd0, 0xf8, 0x98, 0x51, 0x92, 0x32, 0x2c, 0x21, 0x9f, 0xe0, 0xe4, 0x3f, 0x82, 0x14, 0x34,
+	0x35, 0xe4, 0x7b, 0xe8, 0xcf, 0x58, 0xb4, 0xc0, 0x7c, 0x5e, 0xbe, 0xfa, 0x5f, 0x51, 0x3e, 0x82,
+	0x76, 0xd5, 0x33, 0x5d, 0xb5, 0x90, 0xd3, 0x1b, 0x1b, 0x47, 0x7c, 0x45, 0x57, 0xdd, 0xca, 0x5f,
+	0x80, 0x09, 0xbd, 0x3d, 0x82, 0xc1, 0xcf, 0xd5, 0x6b, 0xaa, 0x8f, 0x08, 0xf4, 0x2a, 0xb1, 0x58,
+	0x2f, 0x59, 0x98, 0xc5, 0x94, 0xc7, 0x24, 0xbd, 0x8a, 0x68, 0xc0, 0x4d, 0xf9, 0x18, 0x7a, 0xcb,
+	0x52, 0x9d, 0xae, 0x5f, 0xef, 0xff, 0x01, 0xd2, 0x06, 0xeb, 0x1c, 0x8b, 0x04, 0x1e, 0x7f, 0x51,
+	0x41, 0x9d, 0xb1, 0x48, 0x7b, 0x06, 0x1d, 0x39, 0x94, 0xe7, 0xba, 0xd4, 0x4c, 0x8a, 0x71, 0xef,
+	0xaa, 0x44, 0x16, 0x28, 0x8c, 0xe5, 0x20, 0x5d, 0x30, 0x16, 0x92, 0x4b, 0xc6, 0x47, 0x03, 0xa0,
+	0xbd, 0x80, 0x6e, 0xd3, 0xfd, 0xbb, 0xe7, 0xef, 0xd5, 0x22, 0xe3, 0xfe, 0x6f, 0x88, 0x6a, 0xfb,
+	0x0f, 0x08, 0x86, 0xa7, 0xdb, 0xe8, 0x5d, 0xb4, 0xf9, 0xf5, 0x82, 0xf1, 0xf0, 0x0f, 0x2f, 0x48,
+	0x86, 0xc9, 0x64, 0xbb, 0x37, 0xd1, 0x6e, 0x6f, 0xa2, 0xef, 0x7b, 0x13, 0x7d, 0x3e, 0x98, 0xca,
+	0xee, 0x60, 0x2a, 0x5f, 0x0f, 0xa6, 0xf2, 0xdc, 0x89, 0x62, 0xfe, 0x6a, 0xbd, 0x74, 0x43, 0xf2,
+	0xd6, 0x13, 0xe6, 0xe5, 0xea, 0x6d, 0xbc, 0xe6, 0x37, 0xcb, 0x29, 0x66, 0xcb, 0x76, 0xf9, 0xf1,
+	0x3c, 0xf8, 0x11, 0x00, 0x00, 0xff, 0xff, 0x7d, 0x8a, 0x0c, 0x80, 0xe6, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -266,8 +469,10 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	AddProjectKeys(ctx context.Context, in *MsgAddProjectKeys, opts ...grpc.CallOption) (*MsgAddProjectKeysResponse, error)
-	SetProjectPolicy(ctx context.Context, in *MsgSetProjectPolicy, opts ...grpc.CallOption) (*MsgSetProjectPolicyResponse, error)
+	AddKeys(ctx context.Context, in *MsgAddKeys, opts ...grpc.CallOption) (*MsgAddKeysResponse, error)
+	DelKeys(ctx context.Context, in *MsgDelKeys, opts ...grpc.CallOption) (*MsgDelKeysResponse, error)
+	SetPolicy(ctx context.Context, in *MsgSetPolicy, opts ...grpc.CallOption) (*MsgSetPolicyResponse, error)
+	SetSubscriptionPolicy(ctx context.Context, in *MsgSetSubscriptionPolicy, opts ...grpc.CallOption) (*MsgSetSubscriptionPolicyResponse, error)
 }
 
 type msgClient struct {
@@ -278,18 +483,36 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) AddProjectKeys(ctx context.Context, in *MsgAddProjectKeys, opts ...grpc.CallOption) (*MsgAddProjectKeysResponse, error) {
-	out := new(MsgAddProjectKeysResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/AddProjectKeys", in, out, opts...)
+func (c *msgClient) AddKeys(ctx context.Context, in *MsgAddKeys, opts ...grpc.CallOption) (*MsgAddKeysResponse, error) {
+	out := new(MsgAddKeysResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/AddKeys", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *msgClient) SetProjectPolicy(ctx context.Context, in *MsgSetProjectPolicy, opts ...grpc.CallOption) (*MsgSetProjectPolicyResponse, error) {
-	out := new(MsgSetProjectPolicyResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/SetProjectPolicy", in, out, opts...)
+func (c *msgClient) DelKeys(ctx context.Context, in *MsgDelKeys, opts ...grpc.CallOption) (*MsgDelKeysResponse, error) {
+	out := new(MsgDelKeysResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/DelKeys", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) SetPolicy(ctx context.Context, in *MsgSetPolicy, opts ...grpc.CallOption) (*MsgSetPolicyResponse, error) {
+	out := new(MsgSetPolicyResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/SetPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) SetSubscriptionPolicy(ctx context.Context, in *MsgSetSubscriptionPolicy, opts ...grpc.CallOption) (*MsgSetSubscriptionPolicyResponse, error) {
+	out := new(MsgSetSubscriptionPolicyResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Msg/SetSubscriptionPolicy", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -298,57 +521,101 @@ func (c *msgClient) SetProjectPolicy(ctx context.Context, in *MsgSetProjectPolic
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	AddProjectKeys(context.Context, *MsgAddProjectKeys) (*MsgAddProjectKeysResponse, error)
-	SetProjectPolicy(context.Context, *MsgSetProjectPolicy) (*MsgSetProjectPolicyResponse, error)
+	AddKeys(context.Context, *MsgAddKeys) (*MsgAddKeysResponse, error)
+	DelKeys(context.Context, *MsgDelKeys) (*MsgDelKeysResponse, error)
+	SetPolicy(context.Context, *MsgSetPolicy) (*MsgSetPolicyResponse, error)
+	SetSubscriptionPolicy(context.Context, *MsgSetSubscriptionPolicy) (*MsgSetSubscriptionPolicyResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) AddProjectKeys(ctx context.Context, req *MsgAddProjectKeys) (*MsgAddProjectKeysResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddProjectKeys not implemented")
+func (*UnimplementedMsgServer) AddKeys(ctx context.Context, req *MsgAddKeys) (*MsgAddKeysResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddKeys not implemented")
 }
-func (*UnimplementedMsgServer) SetProjectPolicy(ctx context.Context, req *MsgSetProjectPolicy) (*MsgSetProjectPolicyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetProjectPolicy not implemented")
+func (*UnimplementedMsgServer) DelKeys(ctx context.Context, req *MsgDelKeys) (*MsgDelKeysResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DelKeys not implemented")
+}
+func (*UnimplementedMsgServer) SetPolicy(ctx context.Context, req *MsgSetPolicy) (*MsgSetPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetPolicy not implemented")
+}
+func (*UnimplementedMsgServer) SetSubscriptionPolicy(ctx context.Context, req *MsgSetSubscriptionPolicy) (*MsgSetSubscriptionPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSubscriptionPolicy not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_AddProjectKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgAddProjectKeys)
+func _Msg_AddKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgAddKeys)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).AddProjectKeys(ctx, in)
+		return srv.(MsgServer).AddKeys(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.projects.Msg/AddProjectKeys",
+		FullMethod: "/lavanet.lava.projects.Msg/AddKeys",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).AddProjectKeys(ctx, req.(*MsgAddProjectKeys))
+		return srv.(MsgServer).AddKeys(ctx, req.(*MsgAddKeys))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_SetProjectPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgSetProjectPolicy)
+func _Msg_DelKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgDelKeys)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).SetProjectPolicy(ctx, in)
+		return srv.(MsgServer).DelKeys(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.projects.Msg/SetProjectPolicy",
+		FullMethod: "/lavanet.lava.projects.Msg/DelKeys",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).SetProjectPolicy(ctx, req.(*MsgSetProjectPolicy))
+		return srv.(MsgServer).DelKeys(ctx, req.(*MsgDelKeys))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_SetPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSetPolicy)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).SetPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.projects.Msg/SetPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SetPolicy(ctx, req.(*MsgSetPolicy))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_SetSubscriptionPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSetSubscriptionPolicy)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).SetSubscriptionPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.projects.Msg/SetSubscriptionPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SetSubscriptionPolicy(ctx, req.(*MsgSetSubscriptionPolicy))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -358,19 +625,27 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AddProjectKeys",
-			Handler:    _Msg_AddProjectKeys_Handler,
+			MethodName: "AddKeys",
+			Handler:    _Msg_AddKeys_Handler,
 		},
 		{
-			MethodName: "SetProjectPolicy",
-			Handler:    _Msg_SetProjectPolicy_Handler,
+			MethodName: "DelKeys",
+			Handler:    _Msg_DelKeys_Handler,
+		},
+		{
+			MethodName: "SetPolicy",
+			Handler:    _Msg_SetPolicy_Handler,
+		},
+		{
+			MethodName: "SetSubscriptionPolicy",
+			Handler:    _Msg_SetSubscriptionPolicy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "projects/tx.proto",
 }
 
-func (m *MsgAddProjectKeys) Marshal() (dAtA []byte, err error) {
+func (m *MsgAddKeys) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -380,12 +655,12 @@ func (m *MsgAddProjectKeys) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgAddProjectKeys) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAddKeys) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgAddProjectKeys) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAddKeys) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -421,7 +696,7 @@ func (m *MsgAddProjectKeys) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgAddProjectKeysResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgAddKeysResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -431,12 +706,12 @@ func (m *MsgAddProjectKeysResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgAddProjectKeysResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAddKeysResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgAddProjectKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAddKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -444,7 +719,7 @@ func (m *MsgAddProjectKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgSetProjectPolicy) Marshal() (dAtA []byte, err error) {
+func (m *MsgDelKeys) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -454,27 +729,29 @@ func (m *MsgSetProjectPolicy) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSetProjectPolicy) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgDelKeys) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSetProjectPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgDelKeys) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Policy != nil {
-		{
-			size, err := m.Policy.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
+	if len(m.ProjectKeys) > 0 {
+		for iNdEx := len(m.ProjectKeys) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ProjectKeys[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintTx(dAtA, i, uint64(size))
 			}
-			i -= size
-			i = encodeVarintTx(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x1a
 		}
-		i--
-		dAtA[i] = 0x1a
 	}
 	if len(m.Project) > 0 {
 		i -= len(m.Project)
@@ -493,7 +770,7 @@ func (m *MsgSetProjectPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgSetProjectPolicyResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgDelKeysResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -503,12 +780,154 @@ func (m *MsgSetProjectPolicyResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgSetProjectPolicyResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgDelKeysResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgSetProjectPolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgDelKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSetPolicy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSetPolicy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSetPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Policy.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if len(m.Project) > 0 {
+		i -= len(m.Project)
+		copy(dAtA[i:], m.Project)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Project)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSetPolicyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSetPolicyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSetPolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSetSubscriptionPolicy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSetSubscriptionPolicy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSetSubscriptionPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Policy.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if len(m.Projects) > 0 {
+		for iNdEx := len(m.Projects) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Projects[iNdEx])
+			copy(dAtA[i:], m.Projects[iNdEx])
+			i = encodeVarintTx(dAtA, i, uint64(len(m.Projects[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgSetSubscriptionPolicyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgSetSubscriptionPolicyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgSetSubscriptionPolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -527,7 +946,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgAddProjectKeys) Size() (n int) {
+func (m *MsgAddKeys) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -550,7 +969,7 @@ func (m *MsgAddProjectKeys) Size() (n int) {
 	return n
 }
 
-func (m *MsgAddProjectKeysResponse) Size() (n int) {
+func (m *MsgAddKeysResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -559,7 +978,7 @@ func (m *MsgAddProjectKeysResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgSetProjectPolicy) Size() (n int) {
+func (m *MsgDelKeys) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -573,14 +992,74 @@ func (m *MsgSetProjectPolicy) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	if m.Policy != nil {
-		l = m.Policy.Size()
-		n += 1 + l + sovTx(uint64(l))
+	if len(m.ProjectKeys) > 0 {
+		for _, e := range m.ProjectKeys {
+			l = e.Size()
+			n += 1 + l + sovTx(uint64(l))
+		}
 	}
 	return n
 }
 
-func (m *MsgSetProjectPolicyResponse) Size() (n int) {
+func (m *MsgDelKeysResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgSetPolicy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Project)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Policy.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgSetPolicyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgSetSubscriptionPolicy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if len(m.Projects) > 0 {
+		for _, s := range m.Projects {
+			l = len(s)
+			n += 1 + l + sovTx(uint64(l))
+		}
+	}
+	l = m.Policy.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgSetSubscriptionPolicyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -595,7 +1074,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgAddProjectKeys) Unmarshal(dAtA []byte) error {
+func (m *MsgAddKeys) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -618,10 +1097,10 @@ func (m *MsgAddProjectKeys) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgAddProjectKeys: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAddKeys: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgAddProjectKeys: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAddKeys: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -743,7 +1222,7 @@ func (m *MsgAddProjectKeys) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgAddProjectKeysResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgAddKeysResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -766,10 +1245,10 @@ func (m *MsgAddProjectKeysResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgAddProjectKeysResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAddKeysResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgAddProjectKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAddKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -793,7 +1272,7 @@ func (m *MsgAddProjectKeysResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
+func (m *MsgDelKeys) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -816,10 +1295,208 @@ func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSetProjectPolicy: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgDelKeys: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSetProjectPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgDelKeys: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Project", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Project = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProjectKeys", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProjectKeys = append(m.ProjectKeys, ProjectKey{})
+			if err := m.ProjectKeys[len(m.ProjectKeys)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgDelKeysResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgDelKeysResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgDelKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSetPolicy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSetPolicy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSetPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -915,8 +1592,202 @@ func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Policy == nil {
-				m.Policy = &Policy{}
+			if err := m.Policy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSetPolicyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSetPolicyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSetPolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgSetSubscriptionPolicy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgSetSubscriptionPolicy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgSetSubscriptionPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Projects", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Projects = append(m.Projects, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Policy", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
 			}
 			if err := m.Policy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -943,7 +1814,7 @@ func (m *MsgSetProjectPolicy) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgSetProjectPolicyResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgSetSubscriptionPolicyResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -966,10 +1837,10 @@ func (m *MsgSetProjectPolicyResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgSetProjectPolicyResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgSetSubscriptionPolicyResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgSetProjectPolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgSetSubscriptionPolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

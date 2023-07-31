@@ -32,8 +32,8 @@
 
 **Run Lava Node**
 
-1. Review the settings in `docker/env`. The default settings are usually
-suitable for all deployments.
+1. Review the settings in `docker/env` (sections "common setup" and "common
+runtime"). The default settings are usually suitable for all deployments.
 
 2. Use the following the commands to create/start/stop/destroy the node:
   ```
@@ -53,6 +53,9 @@ suitable for all deployments.
 
 **Run Lava Portal / Provider**
 
+This section is outdated and is temporarily removed.
+
+<!--
 1. Create a lava user and fund it.
   ```
   export LAVA_HOME='.lava'
@@ -91,3 +94,4 @@ for the 'portal' / 'provider' role.
   # to destroy the portal/provider:
   docker-compose --profile portal --env-file env -f docker-compose.yml down
   ```
+-->

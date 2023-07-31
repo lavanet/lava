@@ -15,24 +15,10 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_subscription"
+
+	// prefix for the subscription fixation store
+	SubsFixationPrefix = "subs-fs"
+
+	// prefix for the subscription fixation store
+	SubsTimerPrefix = "subs-ts"
 )
-
-const (
-	// SubscriptionKeyPrefix is the prefix to retrieve all Subscription
-	SubscriptionKeyPrefix = "Subscribe/value/"
-)
-
-func KeyPrefix(p string) []byte {
-	return []byte(p)
-}
-
-// SubscriptionKey returns the store key to retrieve a Subscription from the consumer field
-func SubscriptionKey(consumer string) []byte {
-	var key []byte
-
-	indexBytes := []byte(consumer)
-	key = append(key, indexBytes...)
-	key = append(key, []byte("/")...)
-
-	return key
-}

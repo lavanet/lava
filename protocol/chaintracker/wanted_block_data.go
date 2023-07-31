@@ -42,13 +42,13 @@ func (wbd *WantedBlocksData) New(fromBlock int64, toBlock int64, specificBlock i
 	if !ignoreSpecific {
 		fromBlockArg := LatestArgToBlockNum(specificBlock, latestBlock)
 		if wbd.rangeBlocks.IsWanted(fromBlockArg) {
-			// this means the specific block is within the range of [from-to) and there is no reason to create specific block range
+			// this means the specific block is within the range of [from-to] and there is no reason to create specific block range
 			wbd.specificBlock = nil
 		} else {
-			toBlockArg := fromBlockArg + 1
+			toBlockArg := fromBlockArg // [from,to] with only one block
 			wbd.specificBlock, err = NewBlockRange(fromBlockArg, toBlockArg, earliestBlockSaved, latestBlock)
 			if err != nil {
-				return err
+				return InvalidRequestedSpecificBlock.Wrapf("specific " + err.Error())
 			}
 		}
 	} else {
@@ -102,15 +102,15 @@ func (wbd *WantedBlocksData) String() string {
 
 func NewBlockRange(fromBlock int64, toBlock int64, earliestBlockSaved int64, latestBlock int64) (br *BlockRange, err error) {
 	if fromBlock < 0 || toBlock < 0 || earliestBlockSaved < 0 {
-		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block range: from=%d to=%d earliest=%d", fromBlock, toBlock, earliestBlockSaved)
+		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block range: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
 	}
-	if toBlock <= fromBlock { // if we don't have a range, it should be set with NOT_APPLICABLE
-		return nil, InvalidRequestedBlocks.Wrapf("invalid input block range: from=%d to=%d earliest=%d", fromBlock, toBlock, earliestBlockSaved)
+	if toBlock < fromBlock { // if we don't have a range, it should be set with NOT_APPLICABLE
+		return nil, InvalidRequestedBlocks.Wrapf("invalid input block range: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
 	}
 	if fromBlock < earliestBlockSaved {
-		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block fromBlock: from=%d to=%d earliest=%d", fromBlock, toBlock, earliestBlockSaved)
+		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block fromBlock: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
 	}
-	if toBlock > latestBlock+1 { // latest+1 to allow a range to include latest block
+	if toBlock > latestBlock {
 		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block toBlock: from=%d to=%d latest=%d", fromBlock, toBlock, latestBlock)
 	}
 	blockRange := &BlockRange{}
@@ -122,7 +122,7 @@ func NewBlockRange(fromBlock int64, toBlock int64, earliestBlockSaved int64, lat
 }
 
 func (br *BlockRange) IterationIndexes() []int {
-	indexes := make([]int, br.endIndexFromEarliest-br.startIndexFromEarliest)
+	indexes := make([]int, br.endIndexFromEarliest-br.startIndexFromEarliest+1)
 	for i := 0; i < len(indexes); i++ {
 		indexes[i] = int(br.startIndexFromEarliest) + i
 	}
@@ -136,7 +136,7 @@ func (br *BlockRange) IsWanted(blockNum int64) bool {
 	if br.fromBlock > blockNum {
 		return false
 	}
-	if br.toBlock <= blockNum {
+	if br.toBlock < blockNum {
 		return false
 	}
 	return true

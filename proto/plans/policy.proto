@@ -1,0 +1,33 @@
+syntax = "proto3";
+package lavanet.lava.plans;
+
+option go_package = "github.com/lavanet/lava/x/plans/types";
+option (gogoproto.equal_all) = true;
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "spec/api_collection.proto";
+
+// protobuf expected in YAML format: used "moretags" to simplify parsing
+message Policy {
+    repeated ChainPolicy chain_policies = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"chain_policies\""];
+    uint64 geolocation_profile = 2 [(gogoproto.moretags) = "mapstructure:\"geolocation_profile\"", (gogoproto.jsontag) = "geolocation_profile"];
+    uint64 total_cu_limit = 3 [(gogoproto.moretags) = "mapstructure:\"total_cu_limit\"", (gogoproto.jsontag) = "total_cu_limit"];
+    uint64 epoch_cu_limit = 4 [(gogoproto.moretags) = "mapstructure:\"epoch_cu_limit\"", (gogoproto.jsontag) = "epoch_cu_limit"];
+    uint64 max_providers_to_pair = 5 [(gogoproto.jsontag) = "max_providers_to_pair", (gogoproto.moretags) = "mapstructure:\"max_providers_to_pair\""];
+    SELECTED_PROVIDERS_MODE selected_providers_mode = 6 [(gogoproto.moretags) = "mapstructure:\"selected_providers_mode\"", (gogoproto.jsontag) = "selected_providers_mode"];
+    repeated string selected_providers = 7 [(gogoproto.moretags) = "mapstructure:\"selected_providers\"", (gogoproto.jsontag) = "selected_providers"];
+}
+
+message ChainPolicy {
+    string chain_id = 1 [(gogoproto.moretags) = "mapstructure:\"chain_id\"", (gogoproto.jsontag) = "chain_id"];
+    repeated string apis = 2 [(gogoproto.nullable) = false, (gogoproto.moretags) = "mapstructure:\"apis\"", (gogoproto.jsontag) = "apis"];
+    repeated  lavanet.lava.spec.CollectionData collections = 3 [(gogoproto.nullable) = false,  (gogoproto.moretags) = "mapstructure:\"collections\"", (gogoproto.jsontag) = "collections"];
+}
+
+// the enum below determines the pairing algorithm's behaviour with the selected providers feature
+enum SELECTED_PROVIDERS_MODE {
+    ALLOWED = 0;    // no providers restrictions
+    MIXED = 1;      // use the selected providers mixed with randomly chosen providers
+    EXCLUSIVE = 2;  // use only the selected providers
+    DISABLED = 3;   // selected providers feature is disabled
+}

@@ -18,7 +18,7 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, epochstoragetypes.ProviderKey, req.ChainID)
+	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, req.ChainID)
 	if !found {
 		stakeStorage = epochstoragetypes.StakeStorage{}
 	}
@@ -36,8 +36,8 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 		stakeEntries = stakeEntriesNoFrozen
 	}
 
-	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
-	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx, epochstoragetypes.ProviderKey)
+	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx)
 	if !found {
 		unstakingStakeStorage = epochstoragetypes.StakeStorage{}
 	}

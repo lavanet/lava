@@ -140,6 +140,14 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 // module-specific GRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	migrator := keeper.NewMigrator(am.keeper)
+
+	// register v2 -> v3 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.Migrate2to3); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
+	}
 }
 
 // RegisterInvariants registers the capability module's invariants.
@@ -164,14 +172,11 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 3 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	if am.keeper.IsEpochStart(ctx) {
-		// run functions that are supposed to run in epoch start
-		am.keeper.EpochStart(ctx)
-	}
+	am.keeper.BeginBlock(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It

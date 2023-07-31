@@ -4,16 +4,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
-	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool)
+	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType spectypes.Spec_ProvidersTypes)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 	GeolocationCount(ctx sdk.Context) uint64
-	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string) map[string]bool
+	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error)
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }
 
@@ -27,23 +29,22 @@ type EpochstorageKeeper interface {
 	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
 	IsEpochStart(ctx sdk.Context) (res bool)
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error)
+	BlocksToSaveRaw(ctx sdk.Context) (res uint64)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
-	PopUnstakeEntries(ctx sdk.Context, storageType string, block uint64) (value []epochstoragetypes.StakeEntry)
-	AppendUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64) error
-	ModifyUnstakeEntry(ctx sdk.Context, storageType string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
-	GetStakeStorageUnstake(ctx sdk.Context, storageType string) (epochstoragetypes.StakeStorage, bool)
-	ModifyStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
-	AppendStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	RemoveStakeEntryCurrent(ctx sdk.Context, storageType string, chainID string, idx uint64) error
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, storageType string, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
-	UnstakeEntryByAddress(ctx sdk.Context, storageType string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
-	GetStakeStorageCurrent(ctx sdk.Context, storageType string, chainID string) (epochstoragetypes.StakeStorage, bool)
-	GetEpochStakeEntries(ctx sdk.Context, block uint64, storageType string, chainID string) (entries []epochstoragetypes.StakeEntry, found bool, epochHash []byte)
+	PopUnstakeEntries(ctx sdk.Context, block uint64) (value []epochstoragetypes.StakeEntry)
+	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64) error
+	ModifyUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
+	GetStakeStorageUnstake(ctx sdk.Context) (epochstoragetypes.StakeStorage, bool)
+	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
+	AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, idx uint64) error
+	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
+	UnstakeEntryByAddress(ctx sdk.Context, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
+	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
+	GetEpochStakeEntries(ctx sdk.Context, block uint64, chainID string) (entries []epochstoragetypes.StakeEntry, found bool, epochHash []byte)
 	GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage epochstoragetypes.StakeStorage, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
-	GetStakeEntryForClientEpoch(ctx sdk.Context, chainID string, selectedClient sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
-	BypassCurrentAndAppendNewEpochStakeEntry(ctx sdk.Context, storageType string, chainID string, stakeEntry epochstoragetypes.StakeEntry) (added bool, err error)
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
@@ -66,7 +67,18 @@ type BankKeeper interface {
 }
 
 type ProjectsKeeper interface {
-	GetProjectDevelopersPolicy(ctx sdk.Context, developerKey string, blockHeight uint64) (policy projectstypes.Policy, err error)
-	AddComputeUnitsToProject(ctx sdk.Context, developerKey string, blockHeight uint64, cu uint64) (err error)
-	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, vrfpk string, errRet error)
+	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, block uint64, cu uint64) (err error)
+	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, errRet error)
+	GetProjectForBlock(ctx sdk.Context, projectID string, block uint64) (projectstypes.Project, error)
+}
+
+type SubscriptionKeeper interface {
+	GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error)
+	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block uint64, cuAmount uint64) error
+	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
+}
+
+type PlanKeeper interface {
+	GetAllPlanIndices(ctx sdk.Context) (val []string)
+	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
 }

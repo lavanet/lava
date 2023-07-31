@@ -1,78 +1,25 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
 const MONTHS_IN_YEAR = 12
 
-// SetSubscription sets a subscription (of a consumer) in the store
-func (k Keeper) SetSubscription(ctx sdk.Context, sub types.Subscription) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
-	b := k.cdc.MustMarshal(&sub)
-	store.Set(types.SubscriptionKey(sub.Consumer), b)
-}
-
-// GetSubscription returns the subscription of a given consumer
-func (k Keeper) GetSubscription(ctx sdk.Context, consumer string) (val types.Subscription, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
-
-	b := store.Get(types.SubscriptionKey(consumer))
-	if b == nil {
-		return val, false
-	}
-
-	k.cdc.MustUnmarshal(b, &val)
-	return val, true
-}
-
-// RemoveSubscription removes the subscription (of a consumer) from the store
-func (k Keeper) RemoveSubscription(ctx sdk.Context, consumer string) {
-	sub, _ := k.GetSubscription(ctx, consumer)
-
-	// (PlanIndex is empty only in testing of RemoveSubscription)
-	if sub.PlanIndex != "" {
-		k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.Block)
-	}
-
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
-	store.Delete(types.SubscriptionKey(consumer))
-}
-
-// GetAllSubscription returns all subscriptions that satisfy the condition
-func (k Keeper) GetCondSubscription(ctx sdk.Context, cond func(sub types.Subscription) bool) (list []types.Subscription) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SubscriptionKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var val types.Subscription
-		k.cdc.MustUnmarshal(iterator.Value(), &val)
-		if cond == nil || cond(val) {
-			list = append(list, val)
-		}
-	}
-
-	return
-}
-
-// GetAllSubscription returns all subscription (of all consumers)
-func (k Keeper) GetAllSubscription(ctx sdk.Context) []types.Subscription {
-	return k.GetCondSubscription(ctx, nil)
-}
-
-// nextMonth returns the date of the same day next month (assumes UTC),
+// NextMonth returns the date of the same day next month (assumes UTC),
 // adjusting for end-of-months differences if needed.
-func nextMonth(date time.Time) time.Time {
+func NextMonth(date time.Time) time.Time {
 	// End-of-month days are tricky because months differ in days counts.
 	// To avoid this complixity, we trim day-of-month greater than 28 back to
 	// day 28, which all months always have (at the cost of the user possibly
@@ -95,6 +42,36 @@ func nextMonth(date time.Time) time.Time {
 	)
 }
 
+// ExportSubscriptions exports subscriptions data (for genesis)
+func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
+	return k.subsFS.Export(ctx)
+}
+
+// ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
+	return k.subsTS.Export(ctx)
+}
+
+// InitSubscriptions imports subscriptions data (from genesis)
+func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.subsFS.Init(ctx, data)
+}
+
+// InitSubscriptions imports subscriptions timers data (from genesis)
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.subsTS.Init(ctx, data)
+}
+
+// GetSubscription returns the subscription of a given consumer
+func (k Keeper) GetSubscription(ctx sdk.Context, consumer string) (val types.Subscription, found bool) {
+	block := uint64(ctx.BlockHeight())
+
+	var sub types.Subscription
+	found = k.subsFS.FindEntry(ctx, consumer, block, &sub)
+
+	return sub, found
+}
+
 // CreateSubscription creates a subscription for a consumer
 func (k Keeper) CreateSubscription(
 	ctx sdk.Context,
@@ -102,40 +79,34 @@ func (k Keeper) CreateSubscription(
 	consumer string,
 	planIndex string,
 	duration uint64,
-	vrfpk string,
 ) error {
 	var err error
 
-	logger := k.Logger(ctx)
 	block := uint64(ctx.BlockHeight())
 
 	if _, err = sdk.AccAddressFromBech32(consumer); err != nil {
-		details := map[string]string{
-			"consumer": consumer,
-			"error":    err.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid consumer")
+		return utils.LavaFormatWarning("invalid subscription concumer address", err,
+			utils.Attribute{Key: "consumer", Value: consumer},
+		)
 	}
 
 	creatorAcct, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
-		details := map[string]string{
-			"creator": creator,
-			"error":   err.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid creator")
+		return utils.LavaFormatWarning("invalid subscription creator address", err,
+			utils.Attribute{Key: "creator", Value: creator},
+		)
 	}
 
 	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
 	if !found {
-		details := map[string]string{
-			"plan":  planIndex,
-			"block": strconv.FormatInt(int64(block), 10),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "invalid plan")
+		return utils.LavaFormatWarning("cannot create subcscription with invalid plan", err,
+			utils.Attribute{Key: "plan", Value: planIndex},
+			utils.Attribute{Key: "block", Value: block},
+		)
 	}
 
-	sub, found := k.GetSubscription(ctx, consumer)
+	var sub types.Subscription
+	found = k.subsFS.FindEntry(ctx, consumer, block, &sub)
 
 	// Subscription creation:
 	//   When: if not already exists for consumer address)
@@ -162,38 +133,32 @@ func (k Keeper) CreateSubscription(
 			PlanBlock: plan.Block,
 		}
 
-		sub.MonthCuTotal = plan.GetComputeUnits()
-		sub.MonthCuLeft = plan.GetComputeUnits()
+		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
+		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 
 		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan.ComputeUnits, plan.ComputeUnitsPerEpoch, plan.MaxProvidersToPair, vrfpk)
+		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
 		if err != nil {
-			details := map[string]string{
-				"err": err.Error(),
-			}
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, "failed to create default project")
+			return utils.LavaFormatWarning("failed to create default project", err)
 		}
 	} else {
 		// allow renewal with the same plan ("same" means both plan index,block match);
 		// otherwise, only one subscription per consumer
 		if !(plan.Index == sub.PlanIndex && plan.Block == sub.PlanBlock) {
-			details := map[string]string{"consumer": consumer}
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, "consumer has existing subscription with a different plan")
-		}
-
-		// For now, allow renewal only by the same creator.
-		// TODO: after adding fixation, we can allow different creators
-		if creator != sub.Creator {
-			details := map[string]string{"creator": consumer}
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, "existing subscription has different creator")
+			return utils.LavaFormatWarning("consumer has existing subscription with a different plan",
+				fmt.Errorf("subscription renewal failed"),
+				utils.Attribute{Key: "consumer", Value: consumer},
+			)
 		}
 
 		// The total duration may not exceed MAX_SUBSCRIPTION_DURATION, but allow an
 		// extra month to account for renwewals before the end of current subscription
 		if sub.DurationLeft+duration > types.MAX_SUBSCRIPTION_DURATION+1 {
-			details := map[string]string{"duration": strconv.FormatInt(int64(sub.DurationLeft), 10)}
-			msg := "duration would exceed limit (" + strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10) + " months)"
-			return utils.LavaError(ctx, logger, "CreateSubscription", details, msg)
+			str := strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10)
+			return utils.LavaFormatWarning("duration would exceed limit ("+str+" months)",
+				fmt.Errorf("subscription renewal failed"),
+				utils.Attribute{Key: "duration", Value: sub.DurationLeft},
+			)
 		}
 	}
 
@@ -201,18 +166,8 @@ func (k Keeper) CreateSubscription(
 	sub.DurationTotal = duration
 	sub.DurationLeft += duration
 
-	// use current block's timestamp to calculate next month's time
-	timestamp := ctx.BlockTime()
-	expiry := timestamp
-
-	for i := 0; i < int(duration); i++ {
-		expiry = nextMonth(expiry)
-	}
-
-	sub.MonthExpiryTime = uint64(expiry.Unix())
-
 	if err := sub.ValidateSubscription(); err != nil {
-		return utils.LavaError(ctx, logger, "CreateSub", nil, err.Error())
+		return utils.LavaFormatWarning("create subscription failed", err)
 	}
 
 	// subscription looks good; let's charge the creator
@@ -229,25 +184,186 @@ func (k Keeper) CreateSubscription(
 	}
 
 	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
-		details := map[string]string{
-			"creator": creator,
-			"price":   price.String(),
-			"error":   sdkerrors.ErrInsufficientFunds.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSub", details, "insufficient funds")
+		return utils.LavaFormatWarning("create subscription failed", sdkerrors.ErrInsufficientFunds,
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "price", Value: price},
+		)
 	}
 
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
 	if err != nil {
-		details := map[string]string{
-			"creator": creator,
-			"price":   price.String(),
-			"error":   err.Error(),
-		}
-		return utils.LavaError(ctx, logger, "CreateSubscription", details, "funds transfer failed")
+		return utils.LavaFormatError("create subscription failed. funds transfer failed", err,
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "price", Value: price},
+		)
 	}
 
-	k.SetSubscription(ctx, sub)
+	if !found {
+		expiry := uint64(NextMonth(ctx.BlockTime()).UTC().Unix())
+		sub.MonthExpiryTime = expiry
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
+	} else {
+		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
+	}
 
+	return err
+}
+
+func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
+	date := ctx.BlockTime()
+	block := uint64(ctx.BlockHeight())
+	consumer := string(subkey)
+
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
+		// subscription (monthly) timer has expired for an unknown subscription:
+		// either the timer was set wrongly, or the subscription was incorrectly
+		// removed; and we cannot even return an error about it.
+		utils.LavaFormatError("critical: month expiry for unknown subscription, skipping",
+			fmt.Errorf("subscription not found"),
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "block", Value: block},
+		)
+		return
+	}
+
+	if sub.DurationLeft == 0 {
+		// subscription duration has already reached zero before and should have
+		// been removed before. Extend duration by another month (without adding
+		// CUs) to allow smooth operation.
+		utils.LavaFormatError("critical: negative duration for subscription, extend by 1 month",
+			fmt.Errorf("negative duration in AdvanceMonth()"),
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+			utils.Attribute{Key: "block", Value: block},
+		)
+		// normally would panic! but can "recover" by auto-extending by 1 month
+		// (don't bother to modfy sub.MonthExpiryTime to minimize state changes)
+		expiry := uint64(NextMonth(date).UTC().Unix())
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+		return
+	}
+
+	sub.DurationLeft -= 1
+
+	if sub.DurationLeft > 0 {
+		// reset projects CU allowance for this coming month
+		k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer)
+
+		// reset subscription CU allowance for this coming month
+		sub.MonthCuLeft = sub.MonthCuTotal
+		sub.Block = block
+
+		// restart timer and append new (fixated) version of this subscription
+		expiry := uint64(NextMonth(date).UTC().Unix())
+		sub.MonthExpiryTime = expiry
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+		err := k.subsFS.AppendEntry(ctx, consumer, block, &sub)
+		if err != nil {
+			// normally would panic! but ok to ignore - the subscription remains
+			// as is with same remaining duration (but not renewed CU)
+			utils.LavaFormatError("critical: failed to recharge subscription", err,
+				utils.Attribute{Key: "consumer", Value: consumer},
+				utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+				utils.Attribute{Key: "block", Value: block},
+			)
+		}
+	} else {
+		// delete all projects before deleting
+		k.delAllProjectsFromSubscription(ctx, consumer)
+
+		// delete subscription effective now (don't wait for end of epoch)
+		k.subsFS.DelEntry(ctx, sub.Consumer, block)
+
+		details := map[string]string{"consumer": consumer}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
+	}
+}
+
+func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "consumer", Value: consumer},
+		)
+	}
+
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
+	if !found {
+		// normally would panic! but can "recover" by ignoring and returning error
+		err := utils.LavaFormatError("critical: failed to find existing subscription plan", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
+			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
+		)
+		return plan, err
+	}
+
+	return plan, nil
+}
+
+func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, projectData projectstypes.ProjectData) error {
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
+	}
+
+	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
+	if !found {
+		err := utils.LavaFormatError("critical: failed to find existing subscriptio plan", sdkerrors.ErrKeyNotFound,
+			utils.Attribute{Key: "consumer", Value: sub.Creator},
+			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
+			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
+		)
+		return err
+	}
+
+	return k.projectsKeeper.CreateProject(ctx, consumer, projectData, plan)
+}
+
+func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer string, name string) error {
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
+	}
+
+	projectID := projectstypes.ProjectIndex(consumer, name)
+	return k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+}
+
+func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string) {
+	allProjectsIDs := k.projectsKeeper.GetAllProjectsForSubscription(ctx, consumer)
+	for _, projectID := range allProjectsIDs {
+		err := k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+		if err != nil {
+			// TODO: should panic (should never fail because these are exactly the
+			// subscription's current projects)
+			utils.LavaFormatError("critical: delete project failed at subscription removal", err,
+				utils.Attribute{Key: "subscription", Value: consumer},
+				utils.Attribute{Key: "project", Value: projectID},
+				utils.Attribute{Key: "block", Value: uint64(ctx.BlockHeight())},
+			)
+		}
+	}
+}
+
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block uint64, cuAmount uint64) error {
+	var sub types.Subscription
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
+		return utils.LavaFormatError("can't charge cu to subscription",
+			fmt.Errorf("subscription not found"),
+			utils.Attribute{Key: "subscription", Value: consumer},
+			utils.Attribute{Key: "block", Value: block},
+		)
+	}
+
+	if sub.MonthCuLeft < cuAmount {
+		sub.MonthCuLeft = 0
+	} else {
+		sub.MonthCuLeft -= cuAmount
+	}
+
+	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	return nil
 }

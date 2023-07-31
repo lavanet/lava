@@ -20,14 +20,8 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		case *types.MsgStakeProvider:
 			res, err := msgServer.StakeProvider(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgStakeClient:
-			res, err := msgServer.StakeClient(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgUnstakeProvider:
 			res, err := msgServer.UnstakeProvider(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgUnstakeClient:
-			res, err := msgServer.UnstakeClient(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgRelayPayment:
 			res, err := msgServer.RelayPayment(sdk.WrapSDKContext(ctx), msg)

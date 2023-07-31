@@ -78,7 +78,7 @@ func (m *ResponseConflict) GetConflictRelayData1() *ConflictRelayData {
 
 type ConflictRelayData struct {
 	Request *types.RelayRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	Reply   *types.RelayReply   `protobuf:"bytes,2,opt,name=reply,proto3" json:"reply,omitempty"`
+	Reply   *ReplyMetadata      `protobuf:"bytes,3,opt,name=reply,proto3" json:"reply,omitempty"`
 }
 
 func (m *ConflictRelayData) Reset()         { *m = ConflictRelayData{} }
@@ -121,9 +121,85 @@ func (m *ConflictRelayData) GetRequest() *types.RelayRequest {
 	return nil
 }
 
-func (m *ConflictRelayData) GetReply() *types.RelayReply {
+func (m *ConflictRelayData) GetReply() *ReplyMetadata {
 	if m != nil {
 		return m.Reply
+	}
+	return nil
+}
+
+type ReplyMetadata struct {
+	HashAllDataHash       []byte `protobuf:"bytes,1,opt,name=hash_all_data_hash,json=hashAllDataHash,proto3" json:"hash_all_data_hash,omitempty"`
+	Sig                   []byte `protobuf:"bytes,2,opt,name=sig,proto3" json:"sig,omitempty"`
+	LatestBlock           int64  `protobuf:"varint,3,opt,name=latest_block,json=latestBlock,proto3" json:"latest_block,omitempty"`
+	FinalizedBlocksHashes []byte `protobuf:"bytes,4,opt,name=finalized_blocks_hashes,json=finalizedBlocksHashes,proto3" json:"finalized_blocks_hashes,omitempty"`
+	SigBlocks             []byte `protobuf:"bytes,5,opt,name=sig_blocks,json=sigBlocks,proto3" json:"sig_blocks,omitempty"`
+}
+
+func (m *ReplyMetadata) Reset()         { *m = ReplyMetadata{} }
+func (m *ReplyMetadata) String() string { return proto.CompactTextString(m) }
+func (*ReplyMetadata) ProtoMessage()    {}
+func (*ReplyMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d7f63a98ab02ebfa, []int{2}
+}
+func (m *ReplyMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReplyMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReplyMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReplyMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReplyMetadata.Merge(m, src)
+}
+func (m *ReplyMetadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *ReplyMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReplyMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReplyMetadata proto.InternalMessageInfo
+
+func (m *ReplyMetadata) GetHashAllDataHash() []byte {
+	if m != nil {
+		return m.HashAllDataHash
+	}
+	return nil
+}
+
+func (m *ReplyMetadata) GetSig() []byte {
+	if m != nil {
+		return m.Sig
+	}
+	return nil
+}
+
+func (m *ReplyMetadata) GetLatestBlock() int64 {
+	if m != nil {
+		return m.LatestBlock
+	}
+	return 0
+}
+
+func (m *ReplyMetadata) GetFinalizedBlocksHashes() []byte {
+	if m != nil {
+		return m.FinalizedBlocksHashes
+	}
+	return nil
+}
+
+func (m *ReplyMetadata) GetSigBlocks() []byte {
+	if m != nil {
+		return m.SigBlocks
 	}
 	return nil
 }
@@ -137,7 +213,7 @@ func (m *FinalizationConflict) Reset()         { *m = FinalizationConflict{} }
 func (m *FinalizationConflict) String() string { return proto.CompactTextString(m) }
 func (*FinalizationConflict) ProtoMessage()    {}
 func (*FinalizationConflict) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d7f63a98ab02ebfa, []int{2}
+	return fileDescriptor_d7f63a98ab02ebfa, []int{3}
 }
 func (m *FinalizationConflict) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -183,33 +259,42 @@ func (m *FinalizationConflict) GetRelayReply1() *types.RelayReply {
 func init() {
 	proto.RegisterType((*ResponseConflict)(nil), "lavanet.lava.conflict.ResponseConflict")
 	proto.RegisterType((*ConflictRelayData)(nil), "lavanet.lava.conflict.ConflictRelayData")
+	proto.RegisterType((*ReplyMetadata)(nil), "lavanet.lava.conflict.ReplyMetadata")
 	proto.RegisterType((*FinalizationConflict)(nil), "lavanet.lava.conflict.FinalizationConflict")
 }
 
 func init() { proto.RegisterFile("conflict/conflict_data.proto", fileDescriptor_d7f63a98ab02ebfa) }
 
 var fileDescriptor_d7f63a98ab02ebfa = []byte{
-	// 306 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x49, 0xce, 0xcf, 0x4b,
-	0xcb, 0xc9, 0x4c, 0x2e, 0xd1, 0x87, 0x31, 0xe2, 0x53, 0x12, 0x4b, 0x12, 0xf5, 0x0a, 0x8a, 0xf2,
-	0x4b, 0xf2, 0x85, 0x44, 0x73, 0x12, 0xcb, 0x12, 0xf3, 0x52, 0x4b, 0xf4, 0x40, 0xb4, 0x1e, 0x4c,
-	0x85, 0x94, 0x48, 0x7a, 0x7e, 0x7a, 0x3e, 0x58, 0x85, 0x3e, 0x88, 0x05, 0x51, 0x2c, 0x25, 0x5c,
-	0x90, 0x98, 0x59, 0x94, 0x99, 0x97, 0xae, 0x5f, 0x94, 0x9a, 0x93, 0x58, 0x09, 0x11, 0x54, 0x3a,
-	0xc6, 0xc8, 0x25, 0x10, 0x94, 0x5a, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0xea, 0x0c, 0xd5, 0x2f, 0x14,
-	0xc1, 0x25, 0x04, 0x33, 0x2b, 0x08, 0xa4, 0xd6, 0x25, 0xb1, 0x24, 0xd1, 0x40, 0x82, 0x51, 0x81,
-	0x51, 0x83, 0xdb, 0x48, 0x43, 0x0f, 0xab, 0x9d, 0x7a, 0xce, 0xe8, 0x1a, 0x82, 0xb0, 0x98, 0x81,
-	0xd5, 0x64, 0x43, 0x09, 0x26, 0x8a, 0x4d, 0x36, 0x54, 0xea, 0x64, 0xe4, 0x12, 0xc4, 0x50, 0x29,
-	0x64, 0xc3, 0xc5, 0x5e, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0x02, 0x75, 0xbe, 0x12, 0xaa, 0x25,
-	0xd0, 0x20, 0xd1, 0x03, 0xeb, 0x08, 0x82, 0xa8, 0x0c, 0x82, 0x69, 0x11, 0x32, 0xe3, 0x62, 0x2d,
-	0x4a, 0x2d, 0xc8, 0xa9, 0x84, 0x3a, 0x50, 0x01, 0xaf, 0xde, 0x82, 0x9c, 0xca, 0x20, 0x88, 0x72,
-	0xa5, 0x79, 0x8c, 0x5c, 0x22, 0x6e, 0x99, 0x79, 0x89, 0x39, 0x99, 0x55, 0x89, 0x25, 0x99, 0xf9,
-	0x79, 0xf0, 0x80, 0x75, 0xe2, 0xe2, 0x2e, 0x82, 0xab, 0x86, 0x85, 0x28, 0x61, 0x63, 0x91, 0x35,
-	0xa1, 0x9a, 0x61, 0x48, 0xb4, 0xd3, 0x90, 0x35, 0x39, 0x39, 0x9d, 0x78, 0x24, 0xc7, 0x78, 0xe1,
-	0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70,
-	0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x46, 0x7a, 0x66, 0x49, 0x46, 0x69, 0x92, 0x5e, 0x72, 0x7e, 0xae,
-	0x3e, 0xd4, 0x48, 0x30, 0xad, 0x5f, 0x01, 0x4f, 0x80, 0xfa, 0x25, 0x95, 0x05, 0xa9, 0xc5, 0x49,
-	0x6c, 0xe0, 0x04, 0x64, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x9b, 0x21, 0x1e, 0x57, 0xa2, 0x02,
-	0x00, 0x00,
+	// 439 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x4f, 0xeb, 0xd3, 0x30,
+	0x18, 0x5e, 0xd6, 0xcd, 0x3f, 0xd9, 0xc4, 0x19, 0x37, 0x2c, 0x43, 0xcb, 0x2c, 0x1e, 0x06, 0x42,
+	0xeb, 0x14, 0x3c, 0x88, 0x17, 0x3b, 0x91, 0x21, 0x78, 0xc9, 0x49, 0xbc, 0x94, 0xac, 0xcb, 0xda,
+	0x60, 0x6c, 0x6a, 0x93, 0x89, 0xf5, 0x53, 0x08, 0xde, 0xfd, 0x38, 0xb2, 0xe3, 0x8e, 0x1e, 0x65,
+	0xfb, 0x22, 0x92, 0xa4, 0x1d, 0x4e, 0xa7, 0x20, 0xbf, 0x53, 0xde, 0xbc, 0xef, 0xf3, 0x3c, 0xef,
+	0xc3, 0x9b, 0x37, 0xf0, 0x76, 0x22, 0xf2, 0x35, 0x67, 0x89, 0x0a, 0x9b, 0x20, 0x5e, 0x11, 0x45,
+	0x82, 0xa2, 0x14, 0x4a, 0xa0, 0x11, 0x27, 0x1f, 0x48, 0x4e, 0x55, 0xa0, 0xcf, 0xa0, 0x41, 0x8c,
+	0x87, 0xa9, 0x48, 0x85, 0x41, 0x84, 0x3a, 0xb2, 0xe0, 0xf1, 0xcd, 0x82, 0xb0, 0x92, 0xe5, 0x69,
+	0x58, 0x52, 0x4e, 0x2a, 0x9b, 0xf4, 0xbf, 0x01, 0x38, 0xc0, 0x54, 0x16, 0x22, 0x97, 0x74, 0x5e,
+	0xf3, 0xd1, 0x6b, 0x88, 0x1a, 0x2d, 0xac, 0xb1, 0xcf, 0x89, 0x22, 0x0f, 0x5c, 0x30, 0x01, 0xd3,
+	0xde, 0xc3, 0x69, 0x70, 0xb6, 0x67, 0x30, 0xff, 0x9d, 0x80, 0xcf, 0x68, 0x9c, 0x55, 0x9e, 0xb9,
+	0xed, 0x0b, 0x2b, 0xcf, 0xfc, 0x2f, 0x00, 0xde, 0xf8, 0x03, 0x89, 0x9e, 0xc2, 0xcb, 0x25, 0x7d,
+	0xbf, 0xa1, 0x52, 0xd5, 0xf6, 0xfd, 0xd3, 0x26, 0xf5, 0x48, 0x02, 0xc3, 0xc0, 0x16, 0x89, 0x1b,
+	0x0a, 0x7a, 0x02, 0xbb, 0x25, 0x2d, 0x78, 0xe5, 0x3a, 0x86, 0x7b, 0xef, 0x2f, 0x06, 0xb1, 0xc6,
+	0xbc, 0xa2, 0x8a, 0xe8, 0x97, 0xc1, 0x96, 0xf2, 0xb2, 0x73, 0xa5, 0x3d, 0x70, 0xfc, 0x2d, 0x80,
+	0xd7, 0x4e, 0xca, 0xe8, 0x3e, 0x44, 0x19, 0x91, 0x59, 0x4c, 0x38, 0x37, 0x2f, 0x19, 0xeb, 0x9b,
+	0x31, 0xd7, 0xc7, 0xd7, 0x75, 0xfc, 0x8c, 0x73, 0x6d, 0x7d, 0x41, 0x64, 0x86, 0x06, 0xd0, 0x91,
+	0x2c, 0x35, 0xf3, 0xe9, 0x63, 0x1d, 0xa2, 0xbb, 0xb0, 0xcf, 0x89, 0xa2, 0x52, 0xc5, 0x4b, 0x2e,
+	0x92, 0xb7, 0xc6, 0x99, 0x83, 0x7b, 0x36, 0x17, 0xe9, 0x14, 0x7a, 0x0c, 0x6f, 0xad, 0x59, 0x4e,
+	0x38, 0xfb, 0x44, 0x57, 0x16, 0x25, 0x4d, 0x13, 0x2a, 0xdd, 0x8e, 0x11, 0x1a, 0x1d, 0xcb, 0x86,
+	0x20, 0x17, 0xa6, 0x88, 0xee, 0x40, 0x28, 0x59, 0x5a, 0x33, 0xdc, 0xae, 0x81, 0x5e, 0x95, 0x2c,
+	0xb5, 0x20, 0xff, 0x2b, 0x80, 0xc3, 0x17, 0x96, 0x48, 0x14, 0x13, 0xf9, 0x71, 0x5b, 0x22, 0xd8,
+	0x2b, 0xed, 0xf8, 0x0a, 0x5e, 0x35, 0x6b, 0x32, 0xf9, 0xe7, 0x9c, 0x0b, 0x5e, 0xe1, 0x5f, 0x49,
+	0xa7, 0x1a, 0xcd, 0x42, 0xfc, 0x97, 0xc6, 0x2c, 0x8a, 0xb6, 0x7b, 0x0f, 0xec, 0xf6, 0x1e, 0xf8,
+	0xb1, 0xf7, 0xc0, 0xe7, 0x83, 0xd7, 0xda, 0x1d, 0xbc, 0xd6, 0xf7, 0x83, 0xd7, 0x7a, 0x33, 0x4d,
+	0x99, 0xca, 0x36, 0xcb, 0x20, 0x11, 0xef, 0xc2, 0x5a, 0xd2, 0x9c, 0xe1, 0xc7, 0xe3, 0xaf, 0x0a,
+	0x55, 0x55, 0x50, 0xb9, 0xbc, 0x64, 0x7e, 0xc5, 0xa3, 0x9f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x67,
+	0xbc, 0xfe, 0xb0, 0x77, 0x03, 0x00, 0x00,
 }
 
 func (m *ResponseConflict) Marshal() (dAtA []byte, err error) {
@@ -289,7 +374,7 @@ func (m *ConflictRelayData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintConflictData(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x1a
 	}
 	if m.Request != nil {
 		{
@@ -300,6 +385,62 @@ func (m *ConflictRelayData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i -= size
 			i = encodeVarintConflictData(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ReplyMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReplyMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ReplyMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SigBlocks) > 0 {
+		i -= len(m.SigBlocks)
+		copy(dAtA[i:], m.SigBlocks)
+		i = encodeVarintConflictData(dAtA, i, uint64(len(m.SigBlocks)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.FinalizedBlocksHashes) > 0 {
+		i -= len(m.FinalizedBlocksHashes)
+		copy(dAtA[i:], m.FinalizedBlocksHashes)
+		i = encodeVarintConflictData(dAtA, i, uint64(len(m.FinalizedBlocksHashes)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.LatestBlock != 0 {
+		i = encodeVarintConflictData(dAtA, i, uint64(m.LatestBlock))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Sig) > 0 {
+		i -= len(m.Sig)
+		copy(dAtA[i:], m.Sig)
+		i = encodeVarintConflictData(dAtA, i, uint64(len(m.Sig)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.HashAllDataHash) > 0 {
+		i -= len(m.HashAllDataHash)
+		copy(dAtA[i:], m.HashAllDataHash)
+		i = encodeVarintConflictData(dAtA, i, uint64(len(m.HashAllDataHash)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -393,6 +534,34 @@ func (m *ConflictRelayData) Size() (n int) {
 	}
 	if m.Reply != nil {
 		l = m.Reply.Size()
+		n += 1 + l + sovConflictData(uint64(l))
+	}
+	return n
+}
+
+func (m *ReplyMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HashAllDataHash)
+	if l > 0 {
+		n += 1 + l + sovConflictData(uint64(l))
+	}
+	l = len(m.Sig)
+	if l > 0 {
+		n += 1 + l + sovConflictData(uint64(l))
+	}
+	if m.LatestBlock != 0 {
+		n += 1 + sovConflictData(uint64(m.LatestBlock))
+	}
+	l = len(m.FinalizedBlocksHashes)
+	if l > 0 {
+		n += 1 + l + sovConflictData(uint64(l))
+	}
+	l = len(m.SigBlocks)
+	if l > 0 {
 		n += 1 + l + sovConflictData(uint64(l))
 	}
 	return n
@@ -608,7 +777,7 @@ func (m *ConflictRelayData) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Reply", wireType)
 			}
@@ -638,10 +807,215 @@ func (m *ConflictRelayData) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Reply == nil {
-				m.Reply = &types.RelayReply{}
+				m.Reply = &ReplyMetadata{}
 			}
 			if err := m.Reply.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipConflictData(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ReplyMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowConflictData
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReplyMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReplyMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HashAllDataHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConflictData
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HashAllDataHash = append(m.HashAllDataHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.HashAllDataHash == nil {
+				m.HashAllDataHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sig", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConflictData
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Sig = append(m.Sig[:0], dAtA[iNdEx:postIndex]...)
+			if m.Sig == nil {
+				m.Sig = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LatestBlock", wireType)
+			}
+			m.LatestBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConflictData
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LatestBlock |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FinalizedBlocksHashes", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConflictData
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FinalizedBlocksHashes = append(m.FinalizedBlocksHashes[:0], dAtA[iNdEx:postIndex]...)
+			if m.FinalizedBlocksHashes == nil {
+				m.FinalizedBlocksHashes = []byte{}
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SigBlocks", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowConflictData
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthConflictData
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SigBlocks = append(m.SigBlocks[:0], dAtA[iNdEx:postIndex]...)
+			if m.SigBlocks == nil {
+				m.SigBlocks = []byte{}
 			}
 			iNdEx = postIndex
 		default:

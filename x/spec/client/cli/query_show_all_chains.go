@@ -17,7 +17,7 @@ func CmdShowAllChains() *cobra.Command {
 		Short: "Query to show all the supported chain names",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}

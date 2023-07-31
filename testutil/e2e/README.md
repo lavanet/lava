@@ -10,7 +10,7 @@ This E2E performs the steps below to test if the system is working as expected.
 
 1. Start lava in developer mode (equivalent to running the command "ignite chain serve" ).
 2. Check if lava is done booting up by sending a GRPC request.
-3. Send Spec proposals and stake providers and clients.
+3. Send Spec and Plan proposals and stake providers and clients.
 4. Check if the proposals and stakes are properly executed.
 5. Start the JSONRPC Proxy.
 6. Start the JSONRPC Provider.

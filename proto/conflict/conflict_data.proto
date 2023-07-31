@@ -11,10 +11,18 @@ message ResponseConflict {
     ConflictRelayData conflictRelayData1 =2;
 }
 
-
 message ConflictRelayData {
     lavanet.lava.pairing.RelayRequest request = 1;
-    lavanet.lava.pairing.RelayReply  reply = 2;
+    reserved 2;
+    ReplyMetadata reply= 3;
+}
+
+message ReplyMetadata {
+    bytes hash_all_data_hash = 1 ;
+    bytes sig = 2;
+    int64 latest_block = 3;
+    bytes finalized_blocks_hashes = 4;
+    bytes sig_blocks = 5; 
 }
 
 message FinalizationConflict {

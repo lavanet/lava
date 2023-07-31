@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"crypto/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/plans"
@@ -26,6 +26,8 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	protocolkeeper "github.com/lavanet/lava/x/protocol/keeper"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -45,16 +47,18 @@ const (
 
 const BLOCK_HEADER_LEN = 32
 
+// NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
-	Epochstorage  epochstoragekeeper.Keeper
-	Spec          speckeeper.Keeper
-	Plans         planskeeper.Keeper
-	Projects      projectskeeper.Keeper
-	Subscription  subscriptionkeeper.Keeper
-	Pairing       pairingkeeper.Keeper
-	Conflict      conflictkeeper.Keeper
-	BankKeeper    mockBankKeeper
 	AccountKeeper mockAccountKeeper
+	BankKeeper    mockBankKeeper
+	Spec          speckeeper.Keeper
+	Epochstorage  epochstoragekeeper.Keeper
+	Subscription  subscriptionkeeper.Keeper
+	Conflict      conflictkeeper.Keeper
+	Pairing       pairingkeeper.Keeper
+	Projects      projectskeeper.Keeper
+	Plans         planskeeper.Keeper
+	Protocol      protocolkeeper.Keeper
 	ParamsKeeper  paramskeeper.Keeper
 	BlockStore    MockBlockStore
 }
@@ -65,8 +69,13 @@ type Servers struct {
 	PairingServer      pairingtypes.MsgServer
 	ConflictServer     conflicttypes.MsgServer
 	ProjectServer      projectstypes.MsgServer
+	ProtocolServer     protocoltypes.MsgServer
 	SubscriptionServer subscriptiontypes.MsgServer
 	PlansServer        planstypes.MsgServer
+}
+
+type KeeperBeginBlocker interface {
+	BeginBlock(ctx sdk.Context)
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
@@ -75,13 +84,35 @@ func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subsp
 	return
 }
 
-func SimulatePlansProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
-	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal for testing", plansToPropose)
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
 	err := proposal.ValidateBasic()
 	if err != nil {
 		return err
 	}
 	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
+	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
+	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
 	err = proposalHandler(ctx, proposal)
 	return err
 }
@@ -113,6 +144,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(projectsStoreKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(projectsMemStoreKey, sdk.StoreTypeMemory, nil)
 
+	protocolStoreKey := sdk.NewKVStoreKey(protocoltypes.StoreKey)
+	protocolMemStoreKey := storetypes.NewMemoryStoreKey(protocoltypes.MemStoreKey)
+	stateStore.MountStoreWithDB(protocolStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(protocolMemStoreKey, sdk.StoreTypeMemory, nil)
+
 	subscriptionStoreKey := sdk.NewKVStoreKey(subscriptiontypes.StoreKey)
 	subscriptionMemStoreKey := storetypes.NewMemoryStoreKey(subscriptiontypes.MemStoreKey)
 	stateStore.MountStoreWithDB(subscriptionStoreKey, sdk.StoreTypeIAVL, db)
@@ -139,6 +175,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(spectypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
+	paramsKeeper.Subspace(protocoltypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -146,6 +183,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	pairingparamsSubspace, _ := paramsKeeper.GetSubspace(pairingtypes.ModuleName)
 
 	specparamsSubspace, _ := paramsKeeper.GetSubspace(spectypes.ModuleName)
+
+	protocolparamsSubspace, _ := paramsKeeper.GetSubspace(protocoltypes.ModuleName)
 
 	projectsparamsSubspace, _ := paramsKeeper.GetSubspace(projectstypes.ModuleName)
 
@@ -164,12 +203,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
-	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace)
-	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace)
+	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec)
+	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
+	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
@@ -183,6 +222,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
+	protocolParams := protocoltypes.DefaultParams()
+	protocolParams.Version = protocoltypes.Version{ProviderTarget: "0.0.1", ProviderMin: "0.0.0", ConsumerTarget: "0.0.1", ConsumerMin: "0.0.0"}
+	protocoltypes.UpdateLatestParams(protocolParams)
+	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
@@ -194,12 +237,14 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.PairingServer = pairingkeeper.NewMsgServerImpl(ks.Pairing)
 	ss.ConflictServer = conflictkeeper.NewMsgServerImpl(ks.Conflict)
 	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
+	ss.ProtocolServer = protocolkeeper.NewMsgServerImpl(ks.Protocol)
 	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 	NewBlock(sdk.WrapSDKContext(ctx), &ks)
+	ctx = ctx.WithBlockTime(time.Now())
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -279,10 +324,17 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 // Make sure you save the new context
 func NewBlock(ctx context.Context, ks *Keepers) {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-	if ks.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
-		ks.Epochstorage.EpochStart(unwrapedCtx)
-		ks.Pairing.EpochStart(unwrapedCtx, pairing.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, pairing.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-	}
 
-	ks.Conflict.CheckAndHandleAllVotes(unwrapedCtx)
+	// get the value and type of the Keepers struct
+	keepersType := reflect.TypeOf(*ks)
+	keepersValue := reflect.ValueOf(*ks)
+
+	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
+	for i := 0; i < keepersType.NumField(); i++ {
+		fieldValue := keepersValue.Field(i)
+
+		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
+			beginBlocker.BeginBlock(unwrapedCtx)
+		}
+	}
 }

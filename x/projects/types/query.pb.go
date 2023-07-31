@@ -112,22 +112,22 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
-type QueryShowProjectRequest struct {
+type QueryInfoRequest struct {
 	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 }
 
-func (m *QueryShowProjectRequest) Reset()         { *m = QueryShowProjectRequest{} }
-func (m *QueryShowProjectRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryShowProjectRequest) ProtoMessage()    {}
-func (*QueryShowProjectRequest) Descriptor() ([]byte, []int) {
+func (m *QueryInfoRequest) Reset()         { *m = QueryInfoRequest{} }
+func (m *QueryInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryInfoRequest) ProtoMessage()    {}
+func (*QueryInfoRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_bebeeb088f4d9d1b, []int{2}
 }
-func (m *QueryShowProjectRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowProjectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowProjectRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryInfoRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -137,41 +137,41 @@ func (m *QueryShowProjectRequest) XXX_Marshal(b []byte, deterministic bool) ([]b
 		return b[:n], nil
 	}
 }
-func (m *QueryShowProjectRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowProjectRequest.Merge(m, src)
+func (m *QueryInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInfoRequest.Merge(m, src)
 }
-func (m *QueryShowProjectRequest) XXX_Size() int {
+func (m *QueryInfoRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowProjectRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowProjectRequest.DiscardUnknown(m)
+func (m *QueryInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInfoRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowProjectRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryInfoRequest proto.InternalMessageInfo
 
-func (m *QueryShowProjectRequest) GetProject() string {
+func (m *QueryInfoRequest) GetProject() string {
 	if m != nil {
 		return m.Project
 	}
 	return ""
 }
 
-type QueryShowProjectResponse struct {
+type QueryInfoResponse struct {
 	Project *Project `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 }
 
-func (m *QueryShowProjectResponse) Reset()         { *m = QueryShowProjectResponse{} }
-func (m *QueryShowProjectResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryShowProjectResponse) ProtoMessage()    {}
-func (*QueryShowProjectResponse) Descriptor() ([]byte, []int) {
+func (m *QueryInfoResponse) Reset()         { *m = QueryInfoResponse{} }
+func (m *QueryInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryInfoResponse) ProtoMessage()    {}
+func (*QueryInfoResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_bebeeb088f4d9d1b, []int{3}
 }
-func (m *QueryShowProjectResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowProjectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowProjectResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryInfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -181,41 +181,41 @@ func (m *QueryShowProjectResponse) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *QueryShowProjectResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowProjectResponse.Merge(m, src)
+func (m *QueryInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryInfoResponse.Merge(m, src)
 }
-func (m *QueryShowProjectResponse) XXX_Size() int {
+func (m *QueryInfoResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowProjectResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowProjectResponse.DiscardUnknown(m)
+func (m *QueryInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryInfoResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowProjectResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryInfoResponse proto.InternalMessageInfo
 
-func (m *QueryShowProjectResponse) GetProject() *Project {
+func (m *QueryInfoResponse) GetProject() *Project {
 	if m != nil {
 		return m.Project
 	}
 	return nil
 }
 
-type QueryShowDevelopersProjectRequest struct {
+type QueryDeveloperRequest struct {
 	Developer string `protobuf:"bytes,1,opt,name=developer,proto3" json:"developer,omitempty"`
 }
 
-func (m *QueryShowDevelopersProjectRequest) Reset()         { *m = QueryShowDevelopersProjectRequest{} }
-func (m *QueryShowDevelopersProjectRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryShowDevelopersProjectRequest) ProtoMessage()    {}
-func (*QueryShowDevelopersProjectRequest) Descriptor() ([]byte, []int) {
+func (m *QueryDeveloperRequest) Reset()         { *m = QueryDeveloperRequest{} }
+func (m *QueryDeveloperRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDeveloperRequest) ProtoMessage()    {}
+func (*QueryDeveloperRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_bebeeb088f4d9d1b, []int{4}
 }
-func (m *QueryShowDevelopersProjectRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryDeveloperRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowDevelopersProjectRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDeveloperRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowDevelopersProjectRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDeveloperRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -225,41 +225,41 @@ func (m *QueryShowDevelopersProjectRequest) XXX_Marshal(b []byte, deterministic 
 		return b[:n], nil
 	}
 }
-func (m *QueryShowDevelopersProjectRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowDevelopersProjectRequest.Merge(m, src)
+func (m *QueryDeveloperRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDeveloperRequest.Merge(m, src)
 }
-func (m *QueryShowDevelopersProjectRequest) XXX_Size() int {
+func (m *QueryDeveloperRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowDevelopersProjectRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowDevelopersProjectRequest.DiscardUnknown(m)
+func (m *QueryDeveloperRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDeveloperRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowDevelopersProjectRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryDeveloperRequest proto.InternalMessageInfo
 
-func (m *QueryShowDevelopersProjectRequest) GetDeveloper() string {
+func (m *QueryDeveloperRequest) GetDeveloper() string {
 	if m != nil {
 		return m.Developer
 	}
 	return ""
 }
 
-type QueryShowDevelopersProjectResponse struct {
+type QueryDeveloperResponse struct {
 	Project *Project `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
 }
 
-func (m *QueryShowDevelopersProjectResponse) Reset()         { *m = QueryShowDevelopersProjectResponse{} }
-func (m *QueryShowDevelopersProjectResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryShowDevelopersProjectResponse) ProtoMessage()    {}
-func (*QueryShowDevelopersProjectResponse) Descriptor() ([]byte, []int) {
+func (m *QueryDeveloperResponse) Reset()         { *m = QueryDeveloperResponse{} }
+func (m *QueryDeveloperResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryDeveloperResponse) ProtoMessage()    {}
+func (*QueryDeveloperResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_bebeeb088f4d9d1b, []int{5}
 }
-func (m *QueryShowDevelopersProjectResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryDeveloperResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryShowDevelopersProjectResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDeveloperResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryShowDevelopersProjectResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDeveloperResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -269,19 +269,19 @@ func (m *QueryShowDevelopersProjectResponse) XXX_Marshal(b []byte, deterministic
 		return b[:n], nil
 	}
 }
-func (m *QueryShowDevelopersProjectResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryShowDevelopersProjectResponse.Merge(m, src)
+func (m *QueryDeveloperResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDeveloperResponse.Merge(m, src)
 }
-func (m *QueryShowDevelopersProjectResponse) XXX_Size() int {
+func (m *QueryDeveloperResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryShowDevelopersProjectResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryShowDevelopersProjectResponse.DiscardUnknown(m)
+func (m *QueryDeveloperResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDeveloperResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryShowDevelopersProjectResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryDeveloperResponse proto.InternalMessageInfo
 
-func (m *QueryShowDevelopersProjectResponse) GetProject() *Project {
+func (m *QueryDeveloperResponse) GetProject() *Project {
 	if m != nil {
 		return m.Project
 	}
@@ -291,16 +291,16 @@ func (m *QueryShowDevelopersProjectResponse) GetProject() *Project {
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.projects.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.projects.QueryParamsResponse")
-	proto.RegisterType((*QueryShowProjectRequest)(nil), "lavanet.lava.projects.QueryShowProjectRequest")
-	proto.RegisterType((*QueryShowProjectResponse)(nil), "lavanet.lava.projects.QueryShowProjectResponse")
-	proto.RegisterType((*QueryShowDevelopersProjectRequest)(nil), "lavanet.lava.projects.QueryShowDevelopersProjectRequest")
-	proto.RegisterType((*QueryShowDevelopersProjectResponse)(nil), "lavanet.lava.projects.QueryShowDevelopersProjectResponse")
+	proto.RegisterType((*QueryInfoRequest)(nil), "lavanet.lava.projects.QueryInfoRequest")
+	proto.RegisterType((*QueryInfoResponse)(nil), "lavanet.lava.projects.QueryInfoResponse")
+	proto.RegisterType((*QueryDeveloperRequest)(nil), "lavanet.lava.projects.QueryDeveloperRequest")
+	proto.RegisterType((*QueryDeveloperResponse)(nil), "lavanet.lava.projects.QueryDeveloperResponse")
 }
 
 func init() { proto.RegisterFile("projects/query.proto", fileDescriptor_bebeeb088f4d9d1b) }
 
 var fileDescriptor_bebeeb088f4d9d1b = []byte{
-	// 442 bytes of a gzipped FileDescriptorProto
+	// 432 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x29, 0x28, 0xca, 0xcf,
 	0x4a, 0x4d, 0x2e, 0x29, 0xd6, 0x2f, 0x2c, 0x4d, 0x2d, 0xaa, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9,
 	0x17, 0x12, 0xcd, 0x49, 0x2c, 0x4b, 0xcc, 0x4b, 0x2d, 0xd1, 0x03, 0xd1, 0x7a, 0x30, 0x25, 0x52,
@@ -311,24 +311,23 @@ var fileDescriptor_bebeeb088f4d9d1b = []byte{
 	0x0e, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x51, 0x0a, 0xe2, 0x12, 0x46, 0x11, 0x2d, 0x2e, 0xc8,
 	0xcf, 0x2b, 0x4e, 0x15, 0xb2, 0xe6, 0x62, 0x83, 0x18, 0x2a, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x6d,
 	0x24, 0xab, 0x87, 0xd5, 0xdd, 0x7a, 0x10, 0x6d, 0x4e, 0x2c, 0x27, 0xee, 0xc9, 0x33, 0x04, 0x41,
-	0xb5, 0x28, 0x19, 0x73, 0x89, 0x83, 0xcd, 0x0c, 0xce, 0xc8, 0x2f, 0x0f, 0x80, 0xa8, 0x84, 0x5a,
-	0x27, 0x24, 0xc1, 0xc5, 0x0e, 0xd5, 0x0b, 0x36, 0x98, 0x33, 0x08, 0xc6, 0x55, 0x0a, 0xe1, 0x92,
-	0xc0, 0xd4, 0x04, 0x75, 0x8d, 0x05, 0xaa, 0x2e, 0x6e, 0x23, 0x39, 0x5c, 0xce, 0x81, 0x6a, 0x84,
-	0x9b, 0xea, 0xc8, 0xa5, 0x08, 0x37, 0xd5, 0x25, 0xb5, 0x2c, 0x35, 0x27, 0xbf, 0x20, 0xb5, 0xa8,
-	0x18, 0xcd, 0x51, 0x32, 0x5c, 0x9c, 0x29, 0x30, 0x39, 0xa8, 0xb3, 0x10, 0x02, 0x4a, 0x71, 0x5c,
-	0x4a, 0xf8, 0x8c, 0xa0, 0xd4, 0x89, 0x46, 0xdd, 0x2c, 0x5c, 0xac, 0x60, 0x0b, 0x84, 0xda, 0x18,
-	0xb9, 0xd8, 0x20, 0x01, 0x2a, 0xa4, 0x89, 0x43, 0x37, 0x66, 0x0c, 0x4a, 0x69, 0x11, 0xa3, 0x14,
-	0xe2, 0x4a, 0x25, 0xd5, 0xa6, 0xcb, 0x4f, 0x26, 0x33, 0xc9, 0x0b, 0xc9, 0xea, 0x43, 0xf5, 0x80,
-	0x69, 0x7d, 0xb4, 0x84, 0x24, 0xb4, 0x94, 0x91, 0x8b, 0x1b, 0x29, 0x1e, 0x84, 0xf4, 0xf0, 0x59,
-	0x81, 0x19, 0xcb, 0x52, 0xfa, 0x44, 0xab, 0x87, 0xba, 0xcb, 0x14, 0xec, 0x2e, 0x7d, 0x21, 0x5d,
-	0x1c, 0xee, 0x2a, 0xce, 0xc8, 0x2f, 0x8f, 0x87, 0xf2, 0xf4, 0xab, 0xa1, 0x8c, 0x5a, 0xa1, 0x0b,
-	0x8c, 0x5c, 0xa2, 0x58, 0xa3, 0x45, 0xc8, 0x82, 0x90, 0x0b, 0x70, 0x25, 0x06, 0x29, 0x4b, 0x32,
-	0x74, 0x42, 0x7d, 0xe1, 0x04, 0xf6, 0x85, 0x8d, 0x90, 0x15, 0x3e, 0x5f, 0xc0, 0x13, 0x56, 0x31,
-	0xc2, 0x43, 0x70, 0xb1, 0x5a, 0x27, 0xa7, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c,
-	0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63,
-	0x88, 0xd2, 0x48, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0x45, 0x35, 0xbf, 0x02,
-	0x61, 0x43, 0x49, 0x65, 0x41, 0x6a, 0x71, 0x12, 0x1b, 0x38, 0xc3, 0x1b, 0x03, 0x02, 0x00, 0x00,
-	0xff, 0xff, 0x65, 0x50, 0x13, 0x1c, 0x82, 0x04, 0x00, 0x00,
+	0xb5, 0x28, 0xe9, 0x70, 0x09, 0x80, 0xcd, 0xf4, 0xcc, 0x4b, 0xcb, 0x87, 0xda, 0x23, 0x24, 0xc1,
+	0xc5, 0x0e, 0xd5, 0x04, 0x36, 0x91, 0x33, 0x08, 0xc6, 0x55, 0xf2, 0xe5, 0x12, 0x44, 0x52, 0x0d,
+	0xb5, 0xdf, 0x02, 0x55, 0x39, 0xb7, 0x91, 0x1c, 0x2e, 0x07, 0x40, 0x18, 0x08, 0xe3, 0x4c, 0xb9,
+	0x44, 0xc1, 0xc6, 0xb9, 0xa4, 0x96, 0xa5, 0xe6, 0xe4, 0x17, 0xa4, 0x16, 0xc1, 0x5c, 0x20, 0xc3,
+	0xc5, 0x99, 0x02, 0x13, 0x83, 0xba, 0x01, 0x21, 0xa0, 0x14, 0xc4, 0x25, 0x86, 0xae, 0x8d, 0x52,
+	0xa7, 0x18, 0xed, 0x61, 0xe6, 0x62, 0x05, 0x1b, 0x2a, 0xd4, 0xc6, 0xc8, 0xc5, 0x06, 0x09, 0x2a,
+	0x21, 0x4d, 0x1c, 0xba, 0x31, 0xe3, 0x46, 0x4a, 0x8b, 0x18, 0xa5, 0x10, 0x57, 0x2a, 0xa9, 0x36,
+	0x5d, 0x7e, 0x32, 0x99, 0x49, 0x5e, 0x48, 0x56, 0x1f, 0xaa, 0x07, 0x4c, 0xeb, 0xa3, 0x25, 0x11,
+	0xa1, 0x0e, 0x46, 0x2e, 0x16, 0x50, 0x40, 0x0b, 0xa9, 0xe3, 0x33, 0x1b, 0x29, 0xe2, 0xa4, 0x34,
+	0x08, 0x2b, 0x84, 0x3a, 0x41, 0x17, 0xec, 0x04, 0x75, 0x21, 0x55, 0x1c, 0x4e, 0xc8, 0xcc, 0x4b,
+	0xcb, 0xd7, 0xaf, 0x86, 0x72, 0x6b, 0x85, 0xe6, 0x31, 0x72, 0x71, 0xc2, 0x43, 0x5b, 0x48, 0x07,
+	0x9f, 0x35, 0xe8, 0x71, 0x29, 0xa5, 0x4b, 0xa4, 0x6a, 0xa8, 0xcb, 0x4c, 0xc0, 0x2e, 0xd3, 0x13,
+	0xd2, 0xc1, 0xe1, 0x32, 0x78, 0x32, 0xd0, 0xaf, 0x86, 0x33, 0x6b, 0x9d, 0x9c, 0x4e, 0x3c, 0x92,
+	0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6, 0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c,
+	0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a, 0x23, 0x3d, 0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f,
+	0x39, 0x3f, 0x17, 0xd5, 0xc4, 0x0a, 0x84, 0x99, 0x25, 0x95, 0x05, 0xa9, 0xc5, 0x49, 0x6c, 0xe0,
+	0xbc, 0x67, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0xe8, 0x54, 0xf0, 0xb9, 0x0d, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -346,9 +345,9 @@ type QueryClient interface {
 	// Parameters queries the parameters of the module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// Queries a list of ShowProject items.
-	ShowProject(ctx context.Context, in *QueryShowProjectRequest, opts ...grpc.CallOption) (*QueryShowProjectResponse, error)
+	Info(ctx context.Context, in *QueryInfoRequest, opts ...grpc.CallOption) (*QueryInfoResponse, error)
 	// Queries a list of ShowDevelopersProject items.
-	ShowDevelopersProject(ctx context.Context, in *QueryShowDevelopersProjectRequest, opts ...grpc.CallOption) (*QueryShowDevelopersProjectResponse, error)
+	Developer(ctx context.Context, in *QueryDeveloperRequest, opts ...grpc.CallOption) (*QueryDeveloperResponse, error)
 }
 
 type queryClient struct {
@@ -368,18 +367,18 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
-func (c *queryClient) ShowProject(ctx context.Context, in *QueryShowProjectRequest, opts ...grpc.CallOption) (*QueryShowProjectResponse, error) {
-	out := new(QueryShowProjectResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Query/ShowProject", in, out, opts...)
+func (c *queryClient) Info(ctx context.Context, in *QueryInfoRequest, opts ...grpc.CallOption) (*QueryInfoResponse, error) {
+	out := new(QueryInfoResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Query/Info", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) ShowDevelopersProject(ctx context.Context, in *QueryShowDevelopersProjectRequest, opts ...grpc.CallOption) (*QueryShowDevelopersProjectResponse, error) {
-	out := new(QueryShowDevelopersProjectResponse)
-	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Query/ShowDevelopersProject", in, out, opts...)
+func (c *queryClient) Developer(ctx context.Context, in *QueryDeveloperRequest, opts ...grpc.CallOption) (*QueryDeveloperResponse, error) {
+	out := new(QueryDeveloperResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.projects.Query/Developer", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -391,9 +390,9 @@ type QueryServer interface {
 	// Parameters queries the parameters of the module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// Queries a list of ShowProject items.
-	ShowProject(context.Context, *QueryShowProjectRequest) (*QueryShowProjectResponse, error)
+	Info(context.Context, *QueryInfoRequest) (*QueryInfoResponse, error)
 	// Queries a list of ShowDevelopersProject items.
-	ShowDevelopersProject(context.Context, *QueryShowDevelopersProjectRequest) (*QueryShowDevelopersProjectResponse, error)
+	Developer(context.Context, *QueryDeveloperRequest) (*QueryDeveloperResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -403,11 +402,11 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
 }
-func (*UnimplementedQueryServer) ShowProject(ctx context.Context, req *QueryShowProjectRequest) (*QueryShowProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowProject not implemented")
+func (*UnimplementedQueryServer) Info(ctx context.Context, req *QueryInfoRequest) (*QueryInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Info not implemented")
 }
-func (*UnimplementedQueryServer) ShowDevelopersProject(ctx context.Context, req *QueryShowDevelopersProjectRequest) (*QueryShowDevelopersProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowDevelopersProject not implemented")
+func (*UnimplementedQueryServer) Developer(ctx context.Context, req *QueryDeveloperRequest) (*QueryDeveloperResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Developer not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -432,38 +431,38 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ShowProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryShowProjectRequest)
+func _Query_Info_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ShowProject(ctx, in)
+		return srv.(QueryServer).Info(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.projects.Query/ShowProject",
+		FullMethod: "/lavanet.lava.projects.Query/Info",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ShowProject(ctx, req.(*QueryShowProjectRequest))
+		return srv.(QueryServer).Info(ctx, req.(*QueryInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ShowDevelopersProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryShowDevelopersProjectRequest)
+func _Query_Developer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDeveloperRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ShowDevelopersProject(ctx, in)
+		return srv.(QueryServer).Developer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/lavanet.lava.projects.Query/ShowDevelopersProject",
+		FullMethod: "/lavanet.lava.projects.Query/Developer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ShowDevelopersProject(ctx, req.(*QueryShowDevelopersProjectRequest))
+		return srv.(QueryServer).Developer(ctx, req.(*QueryDeveloperRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -477,12 +476,12 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_Params_Handler,
 		},
 		{
-			MethodName: "ShowProject",
-			Handler:    _Query_ShowProject_Handler,
+			MethodName: "Info",
+			Handler:    _Query_Info_Handler,
 		},
 		{
-			MethodName: "ShowDevelopersProject",
-			Handler:    _Query_ShowDevelopersProject_Handler,
+			MethodName: "Developer",
+			Handler:    _Query_Developer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -545,7 +544,7 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowProjectRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryInfoRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -555,12 +554,12 @@ func (m *QueryShowProjectRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowProjectRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryInfoRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowProjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -575,7 +574,7 @@ func (m *QueryShowProjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowProjectResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryInfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -585,12 +584,12 @@ func (m *QueryShowProjectResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowProjectResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryInfoResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowProjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -610,7 +609,7 @@ func (m *QueryShowProjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowDevelopersProjectRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryDeveloperRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -620,12 +619,12 @@ func (m *QueryShowDevelopersProjectRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowDevelopersProjectRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDeveloperRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowDevelopersProjectRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDeveloperRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -640,7 +639,7 @@ func (m *QueryShowDevelopersProjectRequest) MarshalToSizedBuffer(dAtA []byte) (i
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryShowDevelopersProjectResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryDeveloperResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -650,12 +649,12 @@ func (m *QueryShowDevelopersProjectResponse) Marshal() (dAtA []byte, err error) 
 	return dAtA[:n], nil
 }
 
-func (m *QueryShowDevelopersProjectResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDeveloperResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryShowDevelopersProjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDeveloperResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -706,7 +705,7 @@ func (m *QueryParamsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowProjectRequest) Size() (n int) {
+func (m *QueryInfoRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -719,7 +718,7 @@ func (m *QueryShowProjectRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowProjectResponse) Size() (n int) {
+func (m *QueryInfoResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -732,7 +731,7 @@ func (m *QueryShowProjectResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowDevelopersProjectRequest) Size() (n int) {
+func (m *QueryDeveloperRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -745,7 +744,7 @@ func (m *QueryShowDevelopersProjectRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryShowDevelopersProjectResponse) Size() (n int) {
+func (m *QueryDeveloperResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -897,7 +896,7 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowProjectRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryInfoRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -920,10 +919,10 @@ func (m *QueryShowProjectRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowProjectRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryInfoRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowProjectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -979,7 +978,7 @@ func (m *QueryShowProjectRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowProjectResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryInfoResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1002,10 +1001,10 @@ func (m *QueryShowProjectResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowProjectResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryInfoResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowProjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1065,7 +1064,7 @@ func (m *QueryShowProjectResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowDevelopersProjectRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryDeveloperRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1088,10 +1087,10 @@ func (m *QueryShowDevelopersProjectRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowDevelopersProjectRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDeveloperRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowDevelopersProjectRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDeveloperRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1147,7 +1146,7 @@ func (m *QueryShowDevelopersProjectRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryShowDevelopersProjectResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryDeveloperResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1170,10 +1169,10 @@ func (m *QueryShowDevelopersProjectResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryShowDevelopersProjectResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDeveloperResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryShowDevelopersProjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDeveloperResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

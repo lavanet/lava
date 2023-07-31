@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -63,8 +61,8 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 	return
 }
 
-func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (isUnique bool, entryAddr *types.UniquePaymentStorageClientProvider) {
-	key := k.EncodeUniquePaymentKey(ctx, userAddress, providerAddress, uniqueIdentifier, chainID)
+func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (isUnique bool, entryAddr *types.UniquePaymentStorageClientProvider) {
+	key := k.EncodeUniquePaymentKey(ctx, projectID, providerAddress, uniqueIdentifier, chainID)
 	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
 	if found {
 		return false, &entry
@@ -81,20 +79,13 @@ func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider 
 	return provider
 }
 
-func maxAddressLengths() (int, int) {
-	return address.MaxAddrLen, address.MaxAddrLen
+func maxAddressLengths() int {
+	return address.MaxAddrLen
 }
 
-func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, uniqueIdentifier string, chainID string) string {
-	maxAdrLengthUser, maxAdrLengthProvider := maxAddressLengths()
-	providerLength, clientLength := len(providerAddress.String()), len(userAddress.String())
-	if providerLength > maxAdrLengthProvider {
-		panic(fmt.Sprintf("invalid providerAddress found! len(%s) != %d == %d", providerAddress.String(), maxAdrLengthProvider, len(providerAddress.String())))
-	} else if clientLength > maxAdrLengthUser {
-		panic(fmt.Sprintf("invalid userAddress found! len(%s) != %d == %d", userAddress.String(), maxAdrLengthUser, len(userAddress.String())))
-	}
-	leadingChar := asciiNumberToChar(clientLength)
-	key := string(leadingChar) + userAddress.String() + providerAddress.String() + uniqueIdentifier + chainID
+func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, chainID string) string {
+	leadingChar := asciiNumberToChar(len(projectID))
+	key := string(leadingChar) + projectID + providerAddress.String() + uniqueIdentifier + chainID
 	return key
 }
 

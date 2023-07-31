@@ -19,7 +19,7 @@ const (
 	// Proposals router keys
 	ProposalsRouterKey = "planproposals"
 
-	PlanFixationStorePrefix = ModuleName
+	PlanFixationStorePrefix = "plan-fs"
 )
 
 func KeyPrefix(p string) []byte {

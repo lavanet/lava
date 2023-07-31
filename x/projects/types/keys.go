@@ -2,7 +2,7 @@ package types
 
 const (
 	// ModuleName defines the module name
-	ModuleName = "projects"
+	ModuleName = "project"
 
 	// StoreKey defines the primary module store key
 	StoreKey = ModuleName
@@ -14,12 +14,12 @@ const (
 	QuerierRoute = ModuleName
 
 	// MemStoreKey defines the in-memory store key
-	MemStoreKey = "mem_projects"
+	MemStoreKey = "mem_project"
 
 	// prefix for the projects fixation store
 	ProjectsFixationPrefix = "prj-fs"
 
-	// prefix for the projects fixation store
+	// prefix for the developer keys fixation store
 	DeveloperKeysFixationPrefix = "dev-fs"
 )
 

@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,60 +19,54 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	var apiInterfacesStructList []*types.ApiList
-	var interfaceList []string
+	var optionalInterfaceList []string
 	var chainID string
-	foundChain := false
 
 	allSpec := k.GetAllSpec(ctx)
 	for _, spec := range allSpec {
 		// get info by chain name
-		if spec.GetName() == req.GetChainName() {
-			foundChain = true
-
+		if spec.GetName() == req.GetChainName() || spec.GetIndex() == req.GetChainName() {
 			// get chain ID
 			chainID = spec.GetIndex()
 
+			fullspec, err := k.ExpandSpec(ctx, spec)
+			if err != nil {
+				return nil, err
+			}
+			// get the spec's expected interfaces
+			expectedInterfaces := k.getExpectedInterfacesForSpecInner(&fullspec, map[epochstoragetypes.EndpointService]struct{}{}, true)
+
+			mandatoryInterfaceList := getInterfacesNamesFromMap(expectedInterfaces)
+
 			// get API methods (includes their interfaces)
-			apis := spec.GetApis()
-			for _, api := range apis {
-				apiInterfaces := api.GetApiInterfaces()
-
-				// iterate over APIs
-				for _, apiInterface := range apiInterfaces {
-					interfaceApiStructIndex := checkInterfaceExistence(apiInterfacesStructList, apiInterface.GetInterface())
-
-					// found an API with a new interface
-					if interfaceApiStructIndex == -1 {
-						interfaceList = append(interfaceList, apiInterface.GetInterface())
-						apiMethods := []string{api.GetName()}
-						tempApiInterfaceStruct := types.ApiList{Interface: apiInterface.GetInterface(), SupportedApis: apiMethods}
-						apiInterfacesStructList = append(apiInterfacesStructList, &tempApiInterfaceStruct)
-					} else {
-						// found an API with an existent interface
-						apiInterfacesStructList[interfaceApiStructIndex].SupportedApis = append(apiInterfacesStructList[interfaceApiStructIndex].SupportedApis, api.GetName())
-					}
+			apisCollections := fullspec.GetApiCollections()
+			for _, apiCollection := range apisCollections {
+				if !apiCollection.Enabled {
+					continue
 				}
+				apiInterface := apiCollection.CollectionData.ApiInterface
+
+				apiMethods := []string{}
+				// iterate over APIs
+				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{ApiInterface: apiInterface, Addon: ""}]; !ok {
+					optionalInterfaceList = append(optionalInterfaceList, apiInterface)
+				}
+				for _, api := range apiCollection.Apis {
+					if !api.Enabled {
+						continue
+					}
+					apiMethods = append(apiMethods, api.GetName())
+				}
+				apiInterfacesStructList = append(apiInterfacesStructList, &types.ApiList{
+					Interface:     apiInterface,
+					SupportedApis: apiMethods,
+				})
 			}
 
 			// found the chain, there is no need to further iterate
-			break
+			return &types.QueryShowChainInfoResponse{ChainID: chainID, Interfaces: mandatoryInterfaceList, SupportedApisInterfaceList: apiInterfacesStructList, OptionalInterfaces: optionalInterfaceList}, nil
 		}
 	}
-
 	// Didn't find the chain
-	if !foundChain {
-		return nil, sdkerrors.Wrapf(types.ErrChainNameNotFound, "%s", req.GetChainName())
-	}
-
-	return &types.QueryShowChainInfoResponse{ChainID: chainID, Interfaces: interfaceList, SupportedApisInterfaceList: apiInterfacesStructList}, nil
-}
-
-// checks if an interface is already written in one of the ApiList structs and returns the index of its incident
-func checkInterfaceExistence(apis []*types.ApiList, interfaceToCheck string) (index int) {
-	for i, api := range apis {
-		if interfaceToCheck == api.Interface {
-			return i
-		}
-	}
-	return -1
+	return nil, sdkerrors.Wrapf(types.ErrChainNameNotFound, "%s", req.GetChainName())
 }

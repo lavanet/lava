@@ -81,27 +81,30 @@ message QueryShowAllChainsRequest {
 
 message QueryShowAllChainsResponse {
   reserved 1;
-  repeated showAllChainsInfoStruct chainInfoList = 2;
+  repeated ShowAllChainsInfoStruct chainInfoList = 2;
 }
-message showAllChainsInfoStruct {
+message ShowAllChainsInfoStruct {
 	string chainName = 1;
 	string chainID = 2;
 	repeated string enabledApiInterfaces = 3;
+	uint64 api_count = 4;
 }
 
 message QueryShowChainInfoRequest {
   string chainName = 1;
 }
 
-message apiList {
+message ApiList {
 	string interface = 4;
 	repeated string supportedApis = 5;
+  string addon = 6;
 }
 
 message QueryShowChainInfoResponse {
 	string chainID = 1;
 	repeated string interfaces = 2;
-	repeated apiList supportedApisInterfaceList = 3;
+	repeated ApiList supportedApisInterfaceList = 3;
+  repeated string optional_interfaces = 4;
   }
 
 // this line is used by starport scaffolding # 3

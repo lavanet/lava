@@ -28,7 +28,7 @@ Lava has many specs and participants can add and modify specs using governance p
 | block_distance_for_finalized_data   | Blockchains like Ethereum have probabilistic finality, this threshold sets what we expect to be a safe distance from the latest block (In eth it’s 7: i.e. any block bigger in distance than 7 from the latest block we consider final).|
 | blocks_in_finalization_proof        | Number of finalized blocks the provider keeps (from the chain he provides service for, not always Lava) for data reliability.                                                                                      |
 | average_block_time                  | Average block time on this blockchain, used for estimating time of future blocks.                                       |
-| allowed_block_lag_for_qos_sync      | Lag used to calculate QoS for providers. As a rule of thumb, this should be `(1/average blocks time) * reasonable time`, beyond this distance the data is considered stale and irrelevant.                                                                             |
+| allowed_block_lag_for_qos_sync      | Lag used to calculate QoS for providers.  this should be `(10000 (10 seconds) / average_block_time) AND bigger than 1`, beyond this distance the data is considered stale and irrelevant.                                                                             |
 | block_last_updated                  | The latest block in which the spec was updated.                                                                          |
 | min_stake_provider                  | The minimum stake required by a provider to service the APIs specified in the spec.                    |
 | min_stake_client                    | The minimum stake required by a consumer to get service for the APIs specified in the spec.                    |
@@ -91,7 +91,7 @@ To ensure collaborative efforts and proper versioning, kindly submit a pull requ
 
 > Note: the "local" and "stateful" is not currently supported, so they may be set with arbitrary values.
 
-The following example is a spec proposal of Optimism mainnet and testnet. Note that Optimism imports `ETH1` since it supports all of the Ethereum API. Additional APIs are explicitly defined (like `eth_getBlockRange` and more).
+The following example is an OUTDATED spec proposal of Optimism mainnet and testnet. Note that Optimism imports `ETH1` since it supports all of the Ethereum API. Additional APIs are explicitly defined (like `eth_getBlockRange` and more).
 
 ```json
 {
@@ -108,8 +108,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "250",
-                "allowed_block_lag_for_qos_sync": "10",
+                "average_block_time": 250,
+                "allowed_block_lag_for_qos_sync": 10,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -127,7 +127,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                             ],
                             "parser_func": "PARSE_BY_ARG"
                         },
-                        "compute_units": "20",
+                        "compute_units": 20,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -138,8 +138,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
+                                "type": "POST",
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -151,7 +151,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -162,8 +162,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
+                                "type": "POST",
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -175,7 +175,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                             ],
                             "parser_func": "DEFAULT"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": true,
                         "api_interfaces": [
                             {
@@ -186,8 +186,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
+                                "type": "POST",
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -199,7 +199,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -210,8 +210,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
+                                "type": "POST",
+                                "extra_compute_units": 0
                             }
                         ]
                     },
@@ -223,7 +223,7 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                             ],
                             "parser_func": "EMPTY"
                         },
-                        "compute_units": "10",
+                        "compute_units": 10,
                         "enabled": false,
                         "api_interfaces": [
                             {
@@ -234,8 +234,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                                     "stateful": 0
                                 },
                                 "interface": "jsonrpc",
-                                "type": "GET",
-                                "extra_compute_units": "0"
+                                "type": "POST",
+                                "extra_compute_units": 0
                             }
                         ]
                     }
@@ -250,8 +250,8 @@ The following example is a spec proposal of Optimism mainnet and testnet. Note t
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": "250",
-                "allowed_block_lag_for_qos_sync": "10",
+                "average_block_time": 250,
+                "allowed_block_lag_for_qos_sync": 10,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

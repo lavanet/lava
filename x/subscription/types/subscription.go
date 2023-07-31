@@ -2,7 +2,6 @@ package types
 
 import (
 	"strings"
-	"time"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -10,15 +9,6 @@ import (
 const (
 	MAX_SUBSCRIPTION_DURATION = 12 // max duration of subscription in months
 )
-
-func (sub Subscription) IsMonthExpired(date time.Time) bool {
-	expiry := time.Unix(int64(sub.MonthExpiryTime), 0).UTC()
-	return expiry.Before(date)
-}
-
-func (sub Subscription) IsStale(block uint64) bool {
-	return sub.DurationLeft == 0 && sub.PrevExpiryBlock < block
-}
 
 // ValidateSubscription validates a subscription object fields
 func (sub Subscription) ValidateSubscription() error {

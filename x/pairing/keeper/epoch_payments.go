@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -64,11 +65,10 @@ func (k Keeper) GetAllEpochPayments(ctx sdk.Context) (list []types.EpochPayments
 }
 
 // Function to remove epochPayments objects from deleted epochs (older than the chain's memory)
-func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) (err error) {
+func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) {
 	for _, epoch := range k.epochStorageKeeper.GetDeletedEpochs(ctx) {
-		err = k.RemoveAllEpochPaymentsForBlock(ctx, epoch)
+		k.RemoveAllEpochPaymentsForBlock(ctx, epoch)
 	}
-	return
 }
 
 // Function to get the epochPayments object from a specific epoch. Note that it also returns the epochPayments object's key which is the epoch in hex representation (base 16)
@@ -79,11 +79,11 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 }
 
 // Function to add an epoch payment to the epochPayments object
-func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, userAddress sdk.AccAddress, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
+func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
 	// add a uniquePaymentStorageClientProvider object (the object that represent the actual payment) to this epoch's providerPaymentPayment object
-	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, userAddress, providerAddress, usedCU, uniqueIdentifier)
+	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, projectID, providerAddress, usedCU, uniqueIdentifier)
 	if err != nil {
-		return 0, utils.LavaFormatError("could not add epoch payment", err, &map[string]string{"userAddress": userAddress.String(), "providerAddress": providerAddress.String(), "uniqueIdentifier": uniqueIdentifier, "epoch": strconv.FormatUint(epoch, 10), "chainID": chainID})
+		return 0, utils.LavaFormatError("could not add epoch payment", err, []utils.Attribute{{Key: "userAddress", Value: projectID}, {Key: "providerAddress", Value: providerAddress}, {Key: "uniqueIdentifier", Value: uniqueIdentifier}, {Key: "epoch", Value: epoch}, {Key: "chainID", Value: chainID}}...)
 	}
 
 	// get this epoch's epochPayments object
@@ -115,13 +115,11 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, u
 }
 
 // Function to remove all epochPayments objects from a specific epoch
-func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) error {
+func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) {
 	// get the epochPayments object of blockForDelete
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, blockForDelete)
 	if !found {
-		// return fmt.Errorf("did not find any epochPayments for block %d", blockForDelete.Num)
-		// no epochPayments object -> do nothing
-		return nil
+		return
 	}
 
 	// go over the epochPayments object's providerPaymentStorageKeys
@@ -144,9 +142,14 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 
 			// validate its an old entry, for sanity
 			if uniquePaymentStorage.Block > blockForDelete {
-				errMsg := "trying to delete a new entry in epoch payments for block"
-				k.Logger(ctx).Error(errMsg)
-				panic(errMsg)
+				// this should not happen; to avoid panic we simply skip this one (thus
+				// freeze the situation so it can be investigated and orderly resolved).
+				utils.LavaFormatError("critical: failed to delete epoch payment",
+					fmt.Errorf("payment block greater than block for delete"),
+					utils.Attribute{Key: "paymentBlock", Value: uniquePaymentStorage.Block},
+					utils.Attribute{Key: "deleteBlock", Value: blockForDelete},
+				)
+				continue
 			}
 
 			// delete the uniquePaymentStorageClientProvider object
@@ -159,5 +162,4 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 
 	// after we're done deleting the providerPaymentStorage objects, delete the epochPayments object
 	k.RemoveEpochPayments(ctx, key)
-	return nil
 }

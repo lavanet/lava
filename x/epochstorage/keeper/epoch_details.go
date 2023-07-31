@@ -1,8 +1,11 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -35,7 +38,12 @@ func (k Keeper) RemoveEpochDetails(ctx sdk.Context) {
 func (k Keeper) SetEpochDetailsStart(ctx sdk.Context, block uint64) {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {
-		panic("did not find EpochDetails")
+		// panic:ok: EpochDetails is fundamental for operation
+		utils.LavaFormatPanic("critical: SetEpochDetailsStart failed",
+			fmt.Errorf("EpochDetails not found"),
+			utils.LogAttr("block", block),
+			utils.LogAttr("ctxBlock", ctx.BlockHeight()),
+		)
 	}
 	details.StartBlock = block
 	k.SetEpochDetails(ctx, details)
@@ -44,7 +52,11 @@ func (k Keeper) SetEpochDetailsStart(ctx sdk.Context, block uint64) {
 func (k Keeper) GetEpochStart(ctx sdk.Context) uint64 {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {
-		panic("did not find EpochDetails")
+		// panic:ok: EpochDetails is fundamental for operation
+		utils.LavaFormatPanic("critical: GetEpochStart failed",
+			fmt.Errorf("EpochDetails not found"),
+			utils.LogAttr("ctxBlock", ctx.BlockHeight()),
+		)
 	}
 	return details.StartBlock
 }
@@ -52,7 +64,11 @@ func (k Keeper) GetEpochStart(ctx sdk.Context) uint64 {
 func (k Keeper) GetEarliestEpochStart(ctx sdk.Context) uint64 {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {
-		panic("did not find EpochDetails")
+		// panic:ok: EpochDetails is fundamental for operation
+		utils.LavaFormatPanic("critical: GetEarliestEpochStart failed",
+			fmt.Errorf("EpochDetails not found"),
+			utils.LogAttr("ctxBlock", ctx.BlockHeight()),
+		)
 	}
 	return details.EarliestStart
 }
@@ -60,7 +76,11 @@ func (k Keeper) GetEarliestEpochStart(ctx sdk.Context) uint64 {
 func (k Keeper) GetDeletedEpochs(ctx sdk.Context) []uint64 {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {
-		panic("did not find EpochDetails")
+		// panic:ok: EpochDetails is fundamental for operation
+		utils.LavaFormatPanic("critical: GetDeletedEpochs failed",
+			fmt.Errorf("EpochDetails not found"),
+			utils.LogAttr("ctxBlock", ctx.BlockHeight()),
+		)
 	}
 	return details.DeletedEpochs
 }
@@ -68,7 +88,12 @@ func (k Keeper) GetDeletedEpochs(ctx sdk.Context) []uint64 {
 func (k Keeper) SetEarliestEpochStart(ctx sdk.Context, block uint64, deletedEpochs []uint64) {
 	details, found := k.GetEpochDetails(ctx)
 	if !found {
-		panic("did not find EpochDetails")
+		// panic:ok: EpochDetails is fundamental for operation
+		utils.LavaFormatPanic("critical: SetEarliestEpochStart failed",
+			fmt.Errorf("EpochDetails not found"),
+			utils.LogAttr("block", block),
+			utils.LogAttr("ctxBlock", ctx.BlockHeight()),
+		)
 	}
 	details.DeletedEpochs = deletedEpochs
 	details.EarliestStart = block

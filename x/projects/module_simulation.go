@@ -24,13 +24,21 @@ var (
 )
 
 const (
-	opWeightMsgAddProjectKeys = "op_weight_msg_add_project_keys"
+	opWeightMsgAddKeys = "op_weight_msg_add_keys"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgAddProjectKeys int = 100
+	defaultWeightMsgAddKeys int = 100
 
-	opWeightMsgSetProjectPolicy = "op_weight_msg_set_project_policy"
+	opWeightMsgDelKeys = "op_weight_msg_del_keys"
 	// TODO: Determine the simulation weight value
-	defaultWeightMsgSetProjectPolicy int = 100
+	defaultWeightMsgDelKeys int = 100
+
+	opWeightMsgSetPolicy = "op_weight_msg_set_admin_policy"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgSetPolicy int = 100
+
+	opWeightMsgSetSubscriptionPolicy = "op_weight_msg_set_subscription_policy"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgSetSubscriptionPolicy int = 100
 
 	// this line is used by starport scaffolding # simapp/module/const
 )
@@ -65,26 +73,48 @@ func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
 
-	var weightMsgAddProjectKeys int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddProjectKeys, &weightMsgAddProjectKeys, nil,
+	var weightMsgAddKeys int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAddKeys, &weightMsgAddKeys, nil,
 		func(_ *rand.Rand) {
-			weightMsgAddProjectKeys = defaultWeightMsgAddProjectKeys
+			weightMsgAddKeys = defaultWeightMsgAddKeys
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgAddProjectKeys,
-		projectssimulation.SimulateMsgAddProjectKeys(am.keeper),
+		weightMsgAddKeys,
+		projectssimulation.SimulateMsgAddKeys(am.keeper),
 	))
 
-	var weightMsgSetProjectPolicy int
-	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetProjectPolicy, &weightMsgSetProjectPolicy, nil,
+	var weightMsgDelKeys int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDelKeys, &weightMsgDelKeys, nil,
 		func(_ *rand.Rand) {
-			weightMsgSetProjectPolicy = defaultWeightMsgSetProjectPolicy
+			weightMsgDelKeys = defaultWeightMsgDelKeys
 		},
 	)
 	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgSetProjectPolicy,
-		projectssimulation.SimulateMsgSetProjectPolicy(am.keeper),
+		weightMsgDelKeys,
+		projectssimulation.SimulateMsgDelKeys(am.keeper),
+	))
+
+	var weightMsgSetPolicy int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetPolicy, &weightMsgSetPolicy, nil,
+		func(_ *rand.Rand) {
+			weightMsgSetPolicy = defaultWeightMsgSetPolicy
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgSetPolicy,
+		projectssimulation.SimulateMsgSetPolicy(am.keeper),
+	))
+
+	var weightMsgSetSubscriptionPolicy int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgSetSubscriptionPolicy, &weightMsgSetSubscriptionPolicy, nil,
+		func(_ *rand.Rand) {
+			weightMsgSetSubscriptionPolicy = defaultWeightMsgSetSubscriptionPolicy
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgSetSubscriptionPolicy,
+		projectssimulation.SimulateMsgSetSubscriptionPolicy(am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

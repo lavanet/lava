@@ -20,7 +20,7 @@ func CmdGetPairing() *cobra.Command {
 			reqChainID := args[0]
 			reqClient := args[1]
 
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}

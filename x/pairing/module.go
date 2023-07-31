@@ -26,11 +26,6 @@ var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-const (
-	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER uint64 = 4 // number of epochs to sum CU that the provider serviced
-	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              uint64 = 2 // number of epochs to sum CU of complainers against the provider
-)
-
 // ----------------------------------------------------------------------------
 // AppModuleBasic
 // ----------------------------------------------------------------------------
@@ -172,10 +167,7 @@ func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	if am.keeper.IsEpochStart(ctx) {
-		// run functions that are supposed to run in epoch start
-		am.keeper.EpochStart(ctx, EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER, EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
-	}
+	am.keeper.BeginBlock(ctx)
 }
 
 // EndBlock executes all ABCI EndBlock logic respective to the capability module. It

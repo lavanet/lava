@@ -1,0 +1,1 @@
+USER_DATA: "{\"default\":{\"project_public_key\":\"aabbcc\",\"private_key\":\"123456\",\"epochs_max_cu\":1},\"projectId2\":{\"project_public_key\":\"aabbccdd\",\"private_key\":\"12345678\",\"epochs_max_cu\":1}}"

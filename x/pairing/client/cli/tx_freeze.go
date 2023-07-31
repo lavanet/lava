@@ -35,7 +35,7 @@ func CmdFreeze() *cobra.Command {
 			// get the freeze reason (default value: "")
 			reason, err := cmd.Flags().GetString(types.ReasonFlagName)
 			if err != nil {
-				utils.LavaFormatFatal("failed to read freeze reason flag", err, nil)
+				utils.LavaFormatFatal("failed to read freeze reason flag", err)
 			}
 
 			msg := types.NewMsgFreeze(

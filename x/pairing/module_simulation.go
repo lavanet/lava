@@ -80,17 +80,11 @@ func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
 		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyBurnCoinsPerCU), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.BurnCoinsPerCU))
-		}),
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.FraudStakeSlashingFactor))
 		}),
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.FraudSlashingAmount))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyServicersToPairCount), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.ServicersToPairCount))
 		}),
 		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
 			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
@@ -125,10 +119,6 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 			weightMsgStakeClient = defaultWeightMsgStakeClient
 		},
 	)
-	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgStakeClient,
-		pairingsimulation.SimulateMsgStakeClient(am.accountKeeper, am.bankKeeper, am.keeper),
-	))
 
 	var weightMsgUnstakeProvider int
 	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnstakeProvider, &weightMsgUnstakeProvider, nil,
@@ -147,10 +137,6 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 			weightMsgUnstakeClient = defaultWeightMsgUnstakeClient
 		},
 	)
-	operations = append(operations, simulation.NewWeightedOperation(
-		weightMsgUnstakeClient,
-		pairingsimulation.SimulateMsgUnstakeClient(am.accountKeeper, am.bankKeeper, am.keeper),
-	))
 
 	var weightMsgRelayPayment int
 	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRelayPayment, &weightMsgRelayPayment, nil,

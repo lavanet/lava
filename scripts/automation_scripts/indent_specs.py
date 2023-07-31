@@ -2,7 +2,7 @@ import glob
 import json
 import os 
 
-all_specs = glob.glob(os.path.join(os.getcwd() + "cookbook/*.json"))
+all_specs = glob.glob(os.path.join(os.getcwd(), "cookbook/*.json"))
 
 for spec in all_specs:
     with open(spec,"r") as fr:

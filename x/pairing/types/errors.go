@@ -15,4 +15,7 @@ var (
 	NotEnoughBlocksToCalculateAverageBlockTimeError    = sdkerrors.New("NotEnoughBlocksToCalculateAverageBlockTimeError Error", 688, "There isn't enough blocks in the previous epoch to calculate average block time")
 	FreezeReasonTooLongError                           = sdkerrors.New("FreezeReasonTooLongError Error", 689, "The freeze reason is too long. Keep the freeze reason less than 50 characters")
 	FreezeStakeEntryNotFoundError                      = sdkerrors.New("FreezeStakeEntryNotFoundError Error", 690, "can't get stake entry to freeze")
+	MonikerTooLongError                                = sdkerrors.New("MonikerTooLongError Error", 691, "The provider's moniker is too long. Keep it less than 50 characters")
+	MonikerEmptyError                                  = sdkerrors.New("MonikerEmptyError Error", 692, "The provider's moniker cannot be empty")
+	GeolocationNotMatchWithEndpointsError              = sdkerrors.New("GeolocationNotMatchWithEndpointsError Error", 693, "The combination of the endpoints' geolocation does not match to the provider's geolocation")
 )

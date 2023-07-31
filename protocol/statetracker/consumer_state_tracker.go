@@ -2,25 +2,23 @@ package statetracker
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
-	consumerAddress sdk.AccAddress
-	stateQuery      *ConsumerStateQuery
-	txSender        *ConsumerTxSender
+	stateQuery *ConsumerStateQuery
+	txSender   *ConsumerTxSender
 	*StateTracker
 }
 
@@ -39,36 +37,58 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
 	// register this CSM to get the updated pairing list when a new epoch starts
-	pairingUpdater := NewPairingUpdater(cst.consumerAddress, cst.stateQuery)
+	pairingUpdater := NewPairingUpdater(cst.stateQuery)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*PairingUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", pairingUpdaterRaw)})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
 	}
-	pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
+	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
+	if err != nil {
+		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
+	}
 }
 
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
-	finalizationConsensusUpdater := NewFinalizationConsensusUpdater(cst.consumerAddress, cst.stateQuery)
+	finalizationConsensusUpdater := NewFinalizationConsensusUpdater(cst.stateQuery)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*FinalizationConsensusUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, &map[string]string{"updater": fmt.Sprintf("%+v", finalizationConsensusUpdaterRaw)})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: finalizationConsensusUpdaterRaw})
 	}
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
-}
-
-func (cst *ConsumerStateTracker) RegisterChainParserForSpecUpdates(ctx context.Context, chainParser chainlib.ChainParser, chainID string) error {
-	// TODO: handle spec changes
-	spec, err := cst.stateQuery.GetSpec(ctx, chainID)
-	if err != nil {
-		return err
-	}
-	chainParser.SetSpec(*spec)
-	return nil
 }
 
 func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
 	err := cst.txSender.TxConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
 	return err
+}
+
+func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+	// register for spec updates sets spec and updates when a spec has been modified
+	specUpdater := NewSpecUpdater(endpoint.ChainID, cst.stateQuery, cst.eventTracker)
+	specUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
+	}
+	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
+}
+
+func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress string, chainID string) (*plantypes.Policy, error) {
+	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
+}
+
+func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
+	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker, version)
+	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
+	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
+	}
+	versionUpdater.RegisterVersionUpdatable()
+}
+
+func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+	return cst.stateQuery.GetProtocolVersion(ctx)
 }

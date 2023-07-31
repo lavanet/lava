@@ -7,7 +7,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/relayer/parser"
+	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	tenderminttypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
@@ -22,6 +22,9 @@ func (cp TendermintrpcMessage) GetParams() interface{} {
 }
 
 func (cp TendermintrpcMessage) GetResult() json.RawMessage {
+	if cp.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
+	}
 	return cp.Result
 }
 
@@ -45,7 +48,7 @@ func GetTendermintRPCError(jsonError *rpcclient.JsonError) (*tenderminttypes.RPC
 		if jsonError.Data != nil {
 			errData, ok = (jsonError.Data).(string)
 			if !ok {
-				return nil, utils.LavaFormatError("(rpcMsg.Error.Data).(string) conversion failed", nil, &map[string]string{"data": fmt.Sprintf("%v", jsonError.Data)})
+				return nil, utils.LavaFormatError("(rpcMsg.Error.Data).(string) conversion failed", nil, utils.Attribute{Key: "data", Value: jsonError.Data})
 			}
 		}
 
@@ -62,7 +65,7 @@ func ConvertErrorToRPCError(errString string, code int) *tenderminttypes.RPCErro
 	var rpcError *tenderminttypes.RPCError
 	unmarshalError := json.Unmarshal([]byte(errString), &rpcError)
 	if unmarshalError != nil || (rpcError.Data == "" && rpcError.Message == "") {
-		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, &map[string]string{"err": errString})
+		utils.LavaFormatWarning("Failed unmarshalling error tendermintrpc", unmarshalError, utils.Attribute{Key: "err", Value: errString})
 		rpcError = &tenderminttypes.RPCError{
 			Code:    code,
 			Message: "Rpc Error",
@@ -92,7 +95,7 @@ func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
 	var idInterface interface{}
 	err := json.Unmarshal(rawID, &idInterface)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to unmarshal id from response", err, &map[string]string{"id": fmt.Sprintf("%v", rawID)})
+		return nil, utils.LavaFormatError("failed to unmarshal id from response", err, utils.Attribute{Key: "id", Value: rawID})
 	}
 
 	switch id := idInterface.(type) {
@@ -103,7 +106,7 @@ func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
 		return JSONRPCIntID(int(id)), nil
 	default:
 		typ := reflect.TypeOf(id)
-		return nil, utils.LavaFormatError("failed to unmarshal id not a string or float", err, &map[string]string{"id": fmt.Sprintf("%v", rawID), "id type": fmt.Sprintf("%v", typ)})
+		return nil, utils.LavaFormatError("failed to unmarshal id not a string or float", err, []utils.Attribute{{Key: "id", Value: rawID}, {Key: "id type", Value: typ}}...)
 	}
 }
 
@@ -144,7 +147,7 @@ func ConvertToTendermintError(errString string, inputInfo []byte) string {
 	if err == nil {
 		id, errId := IdFromRawMessage(msg.ID)
 		if errId != nil {
-			utils.LavaFormatError("error idFromRawMessage", errId, nil)
+			utils.LavaFormatError("error idFromRawMessage", errId)
 			return chainproxy.InternalErrorString
 		}
 		res, merr := json.Marshal(&RPCResponse{
@@ -153,11 +156,11 @@ func ConvertToTendermintError(errString string, inputInfo []byte) string {
 			Error:   ConvertErrorToRPCError(errString, chainproxy.LavaErrorCode),
 		})
 		if merr != nil {
-			utils.LavaFormatError("convertToTendermintError json.Marshal", merr, nil)
+			utils.LavaFormatError("convertToTendermintError json.Marshal", merr)
 			return chainproxy.InternalErrorString
 		}
 		return string(res)
 	}
-	utils.LavaFormatError("error convertToTendermintError", err, nil)
+	utils.LavaFormatError("error convertToTendermintError", err)
 	return chainproxy.InternalErrorString
 }
