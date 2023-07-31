@@ -31,7 +31,7 @@ require (
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
-	github.com/jhump/protoreflect v1.14.0
+	github.com/jhump/protoreflect v1.15.1
 	github.com/joho/godotenv v1.3.0
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/spf13/pflag v1.0.5
@@ -56,6 +56,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/briandowns/spinner v1.20.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
+	github.com/bufbuild/protocompile v0.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/charmbracelet/lipgloss v0.6.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
