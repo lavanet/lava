@@ -151,7 +151,7 @@ import (
 //   - removed from delete entries
 //
 // o DeleteAt: tracks the block upon which the entry will be deleted
-//   - held by the latest entry version smaller then that DeleteAt
+//   - held by the latest entry version smaller than or equal to that DeleteAt
 //   - prohibits future entry versions on or beyond the DeleteAt block
 //
 // o StaleAt: tracks when a removed entry version becomes invisible
