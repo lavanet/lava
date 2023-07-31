@@ -259,10 +259,12 @@ func TestUpdateEpoch(t *testing.T) {
 
 func BenchmarkSendNewProofInMemory(b *testing.B) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db := rewardserver.NewMemoryDB("spec")
-	rewardStore := rewardserver.NewRewardDB(db)
+	db1 := rewardserver.NewMemoryDB("spec")
+	db2 := rewardserver.NewMemoryDB("spec2")
+	rewardStore := rewardserver.NewRewardDB(db1)
+	rewardStore.AddDB(db2)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
-	proofs := generateProofs(ctx, b.N)
+	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
 	b.ResetTimer()
 	sendProofs(ctx, proofs, rws)
@@ -270,23 +272,26 @@ func BenchmarkSendNewProofInMemory(b *testing.B) {
 
 func BenchmarkSendNewProofLocal(b *testing.B) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db := rewardserver.NewLocalDB("badger_test", "provider", "spec", 0)
-	defer func(db *rewardserver.BadgerDB) {
-		_ = db.Close()
-	}(db)
-	rewardStore := rewardserver.NewRewardDB(db)
+	db1 := rewardserver.NewLocalDB("badger_test", "provider", "spec", 0)
+	db2 := rewardserver.NewLocalDB("badger_test", "provider", "spec2", 0)
+	defer func() {
+		_ = db1.Close()
+		_ = db2.Close()
+	}()
+	rewardStore := rewardserver.NewRewardDB(db1)
+	rewardStore.AddDB(db2)
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore)
 
-	proofs := generateProofs(ctx, b.N)
+	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
 	b.ResetTimer()
 	sendProofs(ctx, proofs, rws)
 }
 
-func generateProofs(ctx context.Context, n int) []*pairingtypes.RelaySession {
+func generateProofs(ctx context.Context, specs []string, n int) []*pairingtypes.RelaySession {
 	var proofs []*pairingtypes.RelaySession
 	for i := 0; i < n; i++ {
-		proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(1), uint64(0), "spec", nil)
+		proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, uint64(1), uint64(0), specs[i%2], nil)
 		proof.Epoch = 1
 		proofs = append(proofs, proof)
 	}
