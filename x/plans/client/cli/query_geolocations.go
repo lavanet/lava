@@ -17,7 +17,6 @@ func CmdGeolocations() *cobra.Command {
 		Short: "Query to show all the available geolocations",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
