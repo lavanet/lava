@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -33,8 +35,8 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
 	err := stateStore.LoadLatestVersion()
 	if err != nil {
 		return nil, sdk.Context{}, err
@@ -82,9 +84,10 @@ func GetASpec(specIndex string, getToTopMostPath string, ctxArg *sdk.Context, ke
 		if err != nil {
 			return spectypes.Spec{}, err
 		}
+		decoder := json.NewDecoder(bytes.NewReader(contents))
+		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 
-		err = codec.NewLegacyAmino().UnmarshalJSON(contents, &proposal)
-		if err != nil {
+		if err := decoder.Decode(&proposal); err != nil {
 			return spectypes.Spec{}, err
 		}
 

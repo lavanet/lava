@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
@@ -191,33 +191,19 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	return relaySession, consumerAddress, chainMessage, nil
 }
 
-// go over the request addons, makes sure the requested addon and extensions within it are supported
-func (rpcps *RPCProviderServer) VerifyAddons(addons []string, chainMessage chainlib.ChainMessage) error {
-	parsedAddon := chainMessage.GetApiCollection().CollectionData.AddOn
-	valid := false
-	extensions := map[string]struct{}{}
-	if parsedAddon == "" {
-		valid = true
-	} else {
-		for _, requestAddon := range addons {
-			if requestAddon == parsedAddon {
-				// we have found the request addon
-				valid = true
-			} else {
-				// anything that is not an addon is an extensions
-				extensions[requestAddon] = struct{}{}
-			}
+func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addons []string, extensions []string, chainMessage chainlib.ChainMessage) error {
+	// empty addons are same as [""]
+	if len(addons) > 1 {
+		return utils.LavaFormatWarning("invalid addons in relay, amount of addons is greater than 1", nil, utils.Attribute{Key: "addons", Value: addons})
+	}
+	apiCollection := chainMessage.GetApiCollection()
+	if len(addons) > 0 {
+		if apiCollection.CollectionData.AddOn != addons[0] {
+			return utils.LavaFormatWarning("invalid addon in relay, parsed addon is not the same as requested", nil, utils.Attribute{Key: "requested addon", Value: addons[0]}, utils.Attribute{Key: "parsed addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn})
 		}
 	}
-	if !valid {
-		return utils.LavaFormatError("invalid request data, addon is missing", nil, utils.Attribute{Key: "addons", Value: addons}, utils.Attribute{Key: "parsedAddon", Value: parsedAddon})
-	}
-	// now make sure all other requirements are extensions and not addons
-	supportedExtensions := rpcps.chainRouter.GetSupportedExtensions()
-	for _, supportedExtension := range supportedExtensions {
-		if _, ok := extensions[supportedExtension]; !ok {
-			return utils.LavaFormatError("invalid request data, unsupported extension", nil, utils.Attribute{Key: "extensions", Value: extensions}, utils.Attribute{Key: "supportedExtensions", Value: supportedExtensions})
-		}
+	if !rpcps.chainRouter.ExtensionsSupported(extensions) {
+		return utils.LavaFormatWarning("requested extensions are unsupported in chainRouter", nil, utils.Attribute{Key: "requested extensions", Value: extensions})
 	}
 	return nil
 }
@@ -238,8 +224,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
 		}
 	}
-	err := rpcps.VerifyAddons(request.RelayData.Addon, chainMessage)
-	return err
+	return nil
 }
 
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
@@ -418,7 +403,7 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 
 func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, relaySession *pairingtypes.RelaySession) (extractedConsumerAddress sdk.AccAddress, err error) {
 	if relaySession.Badge != nil {
-		extractedConsumerAddress, err = sigs.ExtractSignerAddressFromBadge(*relaySession.Badge)
+		extractedConsumerAddress, err = sigs.ExtractSignerAddress(*relaySession.Badge)
 		if err != nil {
 			return nil, err
 		}
@@ -520,7 +505,7 @@ func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, 
 		return utils.LavaFormatError("request had the wrong lava chain ID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
 	}
 
-	if !bytes.Equal(requestSession.ContentHash, sigs.CalculateContentHashForRelayData(relayData)) {
+	if !bytes.Equal(requestSession.ContentHash, sigs.HashMsg(relayData.GetContentHashData())) {
 		return utils.LavaFormatError("content hash mismatch between consumer and provider", nil,
 			utils.Attribute{Key: "ApiInterface", Value: relayData.ApiInterface},
 			utils.Attribute{Key: "ApiUrl", Value: relayData.ApiUrl},
@@ -547,6 +532,14 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 
 func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
 	errV := rpcps.ValidateRequest(chainMsg, request, ctx)
+	if errV != nil {
+		return nil, errV
+	}
+	addons, extensions, errV := rpcps.chainParser.SeparateAddonsExtensions(request.RelayData.Addon)
+	if errV != nil {
+		return nil, errV
+	}
+	errV = rpcps.ValidateAddonsExtensions(addons, extensions, chainMsg)
 	if errV != nil {
 		return nil, errV
 	}
@@ -620,7 +613,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, nil)
+		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}

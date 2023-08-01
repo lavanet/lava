@@ -14,9 +14,10 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
-	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
+	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
@@ -58,4 +59,5 @@ type LavaKeepers struct {
 	ProjectsKeeper     projectsmodulekeeper.Keeper
 	PlansKeeper        plansmodulekeeper.Keeper
 	ProtocolKeeper     protocolmodulekeeper.Keeper
+	DowntimeKeeper     downtimekeeper.Keeper
 }

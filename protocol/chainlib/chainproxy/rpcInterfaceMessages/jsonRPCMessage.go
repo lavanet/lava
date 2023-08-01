@@ -3,7 +3,7 @@ package rpcInterfaceMessages
 import (
 	"encoding/json"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
@@ -52,6 +52,11 @@ func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCI
 	err := json.Unmarshal(input, msg)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed unmarshaling JsonrpcMessage", err, utils.Attribute{Key: "input", Value: input})
+	}
+
+	// Make sure the response does not have an error
+	if msg.Error != nil && msg.Result == nil {
+		return nil, utils.LavaFormatError("response is an error message", msg.Error)
 	}
 	return ParsableRPCInput{Result: msg.Result}, nil
 }

@@ -1,13 +1,17 @@
 package types
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 // Function to validate a plan object fields
 func (p Plan) ValidatePlan() error {
+	// validate denom is ulava
+	if p.GetPrice().Denom != epochstoragetypes.TokenDenom {
+		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price denom is not in ulava")
+	}
 	// check that the plan's price is non-zero
 	if p.GetPrice().IsEqual(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())) {
 		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price can't be zero")

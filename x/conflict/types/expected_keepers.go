@@ -5,12 +5,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type PairingKeeper interface {
 	UnstakeEntry(ctx sdk.Context, chainID string, creator string, unstakeDescription string) error
 	CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress sdk.AccAddress, creditAmount sdk.Coin) (bool, error)
-	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, errorRet error)
+	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error)
 	VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error)
 	JailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error
 	BailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, bail sdk.Coin) error
@@ -33,7 +34,7 @@ type EpochstorageKeeper interface {
 }
 
 type SpecKeeper interface {
-	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool)
+	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType spectypes.Spec_ProvidersTypes)
 	IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool
 }
 

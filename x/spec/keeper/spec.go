@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 )
@@ -219,21 +220,20 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 }
 
 // returns whether a spec name is a valid spec in the consensus
-// first return value is found and active, second argument is found only
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool) {
+// first return value is found and active, second argument is found only, third argument is the provider's type (dynamic/static)
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType types.Spec_ProvidersTypes) {
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
 		foundAndActive = spec.Enabled
+		providersType = spec.ProvidersTypes
 	}
 	return
 }
 
 // GetSpecIDBytes returns the byte representation of the ID
 func GetSpecIDBytes(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return bz
+	return sigs.EncodeUint64(id)
 }
 
 // GetSpecIDFromBytes returns ID in uint64 format from a byte array

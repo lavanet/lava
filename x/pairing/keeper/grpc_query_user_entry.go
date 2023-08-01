@@ -35,6 +35,11 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		return nil, err
 	}
 
+	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
+	if !found {
+		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+	}
+
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
 		return nil, err
@@ -43,11 +48,9 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	planPolicy := plan.GetPlanPolicy()
 	policies := []*planstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
-	geolocation := k.CalculateEffectiveGeolocationFromPolicies(policies)
-
-	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
-	if !found {
-		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	if err != nil {
+		return nil, err
 	}
 	allowedCU, _ := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 

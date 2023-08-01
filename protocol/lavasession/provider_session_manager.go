@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -199,7 +199,7 @@ func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, provider
 func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumer) *ProviderSessionsEpochData {
 	providerSessionsWithConsumer.Lock.Lock()
 	defer providerSessionsWithConsumer.Lock.Unlock()
-	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: commontypes.FindMin([]uint64{providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation})}
+	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: slices.Min([]uint64{providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation})}
 	return providerSessionsWithConsumer.badgeEpochData[badgeUser]
 }
 

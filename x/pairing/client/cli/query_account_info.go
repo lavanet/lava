@@ -46,7 +46,11 @@ func CmdAccountInfo() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				address = clientKey.GetAddress().String()
+				addressAccount, err := clientKey.GetAddress()
+				if err != nil {
+					return err
+				}
+				address = addressAccount.String()
 			} else {
 				address = args[0]
 			}

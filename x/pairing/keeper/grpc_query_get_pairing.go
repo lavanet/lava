@@ -27,7 +27,7 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 
 	// Make sure the chain ID exists and the chain's functional
-	foundAndActive, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
+	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	// TODO: handle spec changes
 	if !foundAndActive {
 		return nil, errors.New("spec not found or not enabled")

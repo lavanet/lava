@@ -3,31 +3,20 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	testcommon "github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
-	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 // Test that the optional moniker argument in StakeProvider doesn't break anything
 func TestStakeProviderWithMoniker(t *testing.T) {
-	// Create teststruct ts
-	ts := &testStruct{
-		providers: make([]*testcommon.Account, 0),
-		clients:   make([]*testcommon.Account, 0),
-	}
-	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-	// Create a mock spec
-	ts.spec = testcommon.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	ts := newTester(t)
 
-	// define tests (valid indicates whether the test should succeed)
+	epochDetails := *epochstoragetypes.DefaultGenesis().EpochDetails
+	ts.Keepers.Epochstorage.SetEpochDetails(ts.Ctx, epochDetails)
+
 	tests := []struct {
 		name         string
 		moniker      string
@@ -36,29 +25,21 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 	}{
 		{"NormalMoniker", "exampleMoniker", true, true},
 		{"WeirdCharsMoniker", "ビッグファームへようこそ", true, true},
-		{"OversizedMoniker", "aReallyReallyReallyReallyReallyReallyReallyLongMoniker", true, false}, // validMoniker = false because moniker should be < 50 characters -> the original moniker won't be equal to the assigned one
+		{"OversizedMoniker", "aReallyReallyReallyReallyReallyReallyReallyLongMoniker", true, false}, // too long
 	}
 
-	for _, tt := range tests {
+	for it, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Advance epoch
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			ts.AdvanceEpoch()
 
-			// Stake provider with moniker
-			sk, address := sigs.GenerateFloatingKey()
-			ts.providers = append(ts.providers, &testcommon.Account{SK: sk, Addr: address})
-			err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
-			require.Nil(t, err)
-			endpoints := []epochstoragetypes.Endpoint{}
-			endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: 1})
-			_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: tt.moniker})
-			require.Nil(t, err)
+			// Note: using the same "ts" means each provider added gets a new index ("it")
+			ts.addProviderMoniker(1, tt.moniker)
+			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
 
-			// Advance epoch to apply the stake
-			ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+			ts.AdvanceEpoch()
 
 			// Get the stake entry and check the provider is staked
-			stakeEntry, foundProvider, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), address)
+			stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
 			require.Equal(t, tt.validStake, foundProvider)
 
 			// Check the assigned moniker
@@ -72,50 +53,30 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 }
 
 func TestModifyStakeProviderWithMoniker(t *testing.T) {
-	// Create teststruct ts
-	ts := &testStruct{
-		providers: make([]*testcommon.Account, 0),
-		clients:   make([]*testcommon.Account, 0),
-	}
-	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-	// Create a mock spec
-	ts.spec = testcommon.CreateMockSpec()
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
+	ts := newTester(t)
 
-	// Advance epoch
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	epochDetails := *epochstoragetypes.DefaultGenesis().EpochDetails
+	ts.Keepers.Epochstorage.SetEpochDetails(ts.Ctx, epochDetails)
+	ts.AdvanceEpoch()
 
 	moniker := "exampleMoniker"
+	ts.addProviderMoniker(1, moniker)
+	ts.AdvanceEpoch()
 
-	// Stake provider with moniker
-	sk, address := sigs.GenerateFloatingKey()
-	ts.providers = append(ts.providers, &testcommon.Account{SK: sk, Addr: address})
-	err := ts.keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ts.ctx), address, sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance))))
-	require.Nil(t, err)
-	endpoints := []epochstoragetypes.Endpoint{}
-	endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface}, Geolocation: 1})
-	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake/2)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
-	require.Nil(t, err)
-
-	// Advance epoch to apply the stake
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider, _ := ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), address)
+	stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
 	require.True(t, foundProvider)
 	require.Equal(t, moniker, stakeEntry.Moniker)
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	_, err = ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: address.String(), ChainID: ts.spec.Name, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: moniker})
-	require.Nil(t, err)
-
-	// Advance epoch to apply the stake
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
+	ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
+	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider, _ = ts.keepers.Epochstorage.GetStakeEntryByAddressCurrent(sdk.UnwrapSDKContext(ts.ctx), ts.spec.GetIndex(), address)
+	stakeEntry, foundProvider, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
 	require.True(t, foundProvider)
 
 	require.Equal(t, moniker, stakeEntry.Moniker)
@@ -127,6 +88,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		apiInterface := "jsonrpc"
 		return []string{hostip + "," + geoloc + "," + apiInterface}
 	}
+
 	testCases := []struct {
 		name        string
 		endpoints   []string
@@ -283,14 +245,10 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 }
 
 func TestStakeEndpoints(t *testing.T) {
-	ts := &testStruct{
-		providers: make([]*testcommon.Account, 0),
-		clients:   make([]*testcommon.Account, 0),
-	}
-	ts.servers, ts.keepers, ts.ctx = testkeeper.InitAllKeepers(t)
-	ts.keepers.Epochstorage.SetEpochDetails(sdk.UnwrapSDKContext(ts.ctx), *epochstoragetypes.DefaultGenesis().EpochDetails)
-	// Create a mock spec
-	ts.spec = testcommon.CreateMockSpec() // basic stuff
+	ts := newTester(t)
+
+	epochDetails := *epochstoragetypes.DefaultGenesis().EpochDetails
+	ts.Keepers.Epochstorage.SetEpochDetails(ts.Ctx, epochDetails)
 
 	apiCollections := []*spectypes.ApiCollection{
 		{
@@ -358,14 +316,18 @@ func TestStakeEndpoints(t *testing.T) {
 		},
 	}
 
+	// will overwrite the default "mock" spec
 	ts.spec.ApiCollections = apiCollections
-	ts.keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.ctx), ts.spec)
-	// Advance epoch
-	ts.ctx = testkeeper.AdvanceEpoch(ts.ctx, ts.keepers)
-	provider := testcommon.CreateNewAccount(ts.ctx, *ts.keepers, balance)
-	ts.providers = append(ts.providers, &provider)
+	ts.AddSpec("mock", ts.spec)
 
-	getEndpoint := func(host string, apiInterfaces []string, addons []string, geoloc uint64) epochstoragetypes.Endpoint {
+	_, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
+
+	getEndpoint := func(
+		host string,
+		apiInterfaces []string,
+		addons []string,
+		geoloc uint64,
+	) epochstoragetypes.Endpoint {
 		return epochstoragetypes.Endpoint{
 			IPPORT:        host,
 			Geolocation:   geoloc,
@@ -373,6 +335,7 @@ func TestStakeEndpoints(t *testing.T) {
 			ApiInterfaces: apiInterfaces,
 		}
 	}
+
 	type testEndpoint struct {
 		name        string
 		endpoints   []epochstoragetypes.Endpoint
@@ -567,9 +530,11 @@ func TestStakeEndpoints(t *testing.T) {
 		},
 	}
 
+	amount := common.NewCoin(testStake)
+
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.servers.PairingServer.StakeProvider(ts.ctx, &types.MsgStakeProvider{Creator: ts.providers[0].Addr.String(), ChainID: ts.spec.Index, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: play.geolocation, Endpoints: play.endpoints})
+			_, err := ts.TxPairingStakeProvider(providerAddr, ts.spec.Index, amount, play.endpoints, play.geolocation, "")
 			if play.success {
 				require.NoError(t, err)
 			} else {

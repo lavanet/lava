@@ -3,184 +3,115 @@ package keeper_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/utils/slices"
 	projectTypes "github.com/lavanet/lava/x/projects/types"
-	subTypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStakeClientPairingimmediately(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+	ts := newTester(t)
+	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	// init keepers state
-	var balance int64 = 10000
-	consumer := common.CreateNewAccount(ctx, *keepers, balance)
-	provider1 := common.CreateNewAccount(ctx, *keepers, balance)
-	provider2 := common.CreateNewAccount(ctx, *keepers, balance)
+	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
-	spec := common.CreateMockSpec()
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
-
-	plan := common.CreateMockPlan()
-	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
-
-	stake := balance / 10
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	common.StakeAccount(t, ctx, *keepers, *servers, provider1, spec, stake)
-	common.StakeAccount(t, ctx, *keepers, *servers, provider2, spec, stake)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-
-	common.BuySubscription(t, ctx, *keepers, *servers, consumer, plan.Index)
-
-	epoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
+	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch
-	_, err := keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr, epoch)
+	_, _, err := ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, client1Acct.Addr, epoch)
 	require.Nil(t, err)
 
-	pairing, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, consumer.Addr)
+	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
 	require.Nil(t, err)
 
-	_, err = keepers.Pairing.VerifyPairing(ctx, &types.QueryVerifyPairingRequest{ChainID: spec.Index, Client: consumer.Addr.String(), Provider: pairing[0].Address, Block: epoch})
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, pairing.Providers[0].Address, epoch)
 	require.Nil(t, err)
 }
 
 func TestCreateProjectAddKey(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+	ts := newTester(t)
+	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
+	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	// init keepers state
-	var balance int64 = 10000
-	subscriptionConsumer := common.CreateNewAccount(ctx, *keepers, balance)
-	developer := common.CreateNewAccount(ctx, *keepers, balance)
-	provider1 := common.CreateNewAccount(ctx, *keepers, balance)
-	provider2 := common.CreateNewAccount(ctx, *keepers, balance)
-
-	spec := common.CreateMockSpec()
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
-
-	plan := common.CreateMockPlan()
-	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
-
-	stake := balance / 10
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	common.StakeAccount(t, ctx, *keepers, *servers, provider1, spec, stake)
-	common.StakeAccount(t, ctx, *keepers, *servers, provider2, spec, stake)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-
-	common.BuySubscription(t, ctx, *keepers, *servers, subscriptionConsumer, plan.Index)
-	projects := keepers.Projects.GetAllProjectsForSubscription(sdk.UnwrapSDKContext(ctx), subscriptionConsumer.Addr.String())
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	dev1Acct, dev1Addr := ts.Account("dev1")
 
 	// takes effect retroactively in the current epoch
-	_, err := servers.ProjectServer.AddKeys(ctx, &projectTypes.MsgAddKeys{
-		Creator:     subscriptionConsumer.Addr.String(),
-		Project:     projects[0],
-		ProjectKeys: []projectTypes.ProjectKey{projectTypes.ProjectDeveloperKey(developer.Addr.String())},
-	})
+
+	res1, err := ts.QuerySubscriptionListProjects(client1Addr)
+	require.Nil(t, err)
+	projects := res1.Projects
+
+	err = ts.TxProjectAddKeys(projects[0], client1Addr, projectTypes.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
+	ts.AdvanceBlock()
+
+	projectData := projectTypes.ProjectData{
+		Name:        "test",
+		Enabled:     true,
+		ProjectKeys: slices.Slice(projectTypes.ProjectDeveloperKey(dev1Addr)),
+		Policy:      nil,
+	}
 
 	// should fail, the key is in use
-	_, err = servers.SubscriptionServer.AddProject(ctx,
-		&subTypes.MsgAddProject{
-			Creator: subscriptionConsumer.Addr.String(),
-			ProjectData: projectTypes.ProjectData{
-				Name:        "test",
-				Enabled:     true,
-				ProjectKeys: []projectTypes.ProjectKey{projectTypes.ProjectDeveloperKey(developer.Addr.String())},
-				Policy:      nil,
-			},
-		})
-
+	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
 	require.NotNil(t, err)
 
-	epoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
+	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch (key added retroactively to this epoch)
-	_, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr, epoch)
+	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
 	require.Nil(t, err)
 
-	pairing, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr)
+	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
 	require.Nil(t, err)
+	pairing := res2.Providers
 
-	_, err = keepers.Pairing.VerifyPairing(ctx, &types.QueryVerifyPairingRequest{ChainID: spec.Index, Client: developer.Addr.String(), Provider: pairing[0].Address, Block: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())})
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.BlockHeight())
 	require.Nil(t, err)
 }
 
 func TestAddKeyCreateProject(t *testing.T) {
-	servers, keepers, ctx := testkeeper.InitAllKeepers(t)
+	ts := newTester(t)
+	ts.SetupAccounts(0, 0, 1)    // 0 sub, 0 adm, 1 dev
+	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	// init keepers state
-	var balance int64 = 10000
-	subscriptionConsumer := common.CreateNewAccount(ctx, *keepers, balance)
-	developer := common.CreateNewAccount(ctx, *keepers, balance)
-	provider1 := common.CreateNewAccount(ctx, *keepers, balance)
-	provider2 := common.CreateNewAccount(ctx, *keepers, balance)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	dev1Acct, dev1Addr := ts.Account("dev1")
 
-	spec := common.CreateMockSpec()
-	keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ctx), spec)
+	devkey := projectTypes.ProjectDeveloperKey(dev1Addr)
 
-	plan := common.CreateMockPlan()
-	keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ctx), plan)
+	res1, err := ts.QuerySubscriptionListProjects(client1Addr)
+	require.Nil(t, err)
+	projects := res1.Projects
 
-	stake := balance / 10
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	common.StakeAccount(t, ctx, *keepers, *servers, provider1, spec, stake)
-	common.StakeAccount(t, ctx, *keepers, *servers, provider2, spec, stake)
-
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-	ctx = testkeeper.AdvanceBlock(ctx, keepers)
-
-	common.BuySubscription(t, ctx, *keepers, *servers, subscriptionConsumer, plan.Index)
-	projects := keepers.Projects.GetAllProjectsForSubscription(sdk.UnwrapSDKContext(ctx), subscriptionConsumer.Addr.String())
+	projectData := projectTypes.ProjectData{
+		Name:        "test",
+		Enabled:     true,
+		ProjectKeys: slices.Slice(devkey),
+		Policy:      nil,
+	}
 
 	// should work, the key should take effect now
-	_, err := servers.SubscriptionServer.AddProject(ctx,
-		&subTypes.MsgAddProject{
-			Creator: subscriptionConsumer.Addr.String(),
-			ProjectData: projectTypes.ProjectData{
-				Name:        "test",
-				Enabled:     true,
-				ProjectKeys: []projectTypes.ProjectKey{projectTypes.ProjectDeveloperKey(developer.Addr.String())},
-				Policy:      nil,
-			},
-		})
-
+	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
 	require.Nil(t, err)
 
 	// should fail, takes effect in the next epoch
-	_, err = servers.ProjectServer.AddKeys(ctx, &projectTypes.MsgAddKeys{
-		Creator:     subscriptionConsumer.Addr.String(),
-		Project:     projects[0],
-		ProjectKeys: []projectTypes.ProjectKey{projectTypes.ProjectDeveloperKey(developer.Addr.String())},
-	})
+	err = ts.TxProjectAddKeys(projects[0], client1Addr, devkey)
 	require.NotNil(t, err)
 
-	epoch := keepers.Epochstorage.GetEpochStart(sdk.UnwrapSDKContext(ctx))
+	epoch := ts.EpochStart()
 
-	// check pairing in the same epoch
-	ctx = testkeeper.AdvanceEpoch(ctx, keepers)
+	ts.AdvanceEpoch()
 
-	// check pairing in the next epoch
-	_, err = keepers.Pairing.VerifyPairingData(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr, epoch)
+	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
 	require.Nil(t, err)
 
-	pairing, err := keepers.Pairing.GetPairingForClient(sdk.UnwrapSDKContext(ctx), spec.Index, developer.Addr)
+	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
 	require.Nil(t, err)
+	pairing := res2.Providers
 
-	_, err = keepers.Pairing.VerifyPairing(ctx, &types.QueryVerifyPairingRequest{ChainID: spec.Index, Client: developer.Addr.String(), Provider: pairing[0].Address, Block: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())})
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.BlockHeight())
 	require.Nil(t, err)
 }

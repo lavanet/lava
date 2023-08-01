@@ -48,7 +48,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 	var dummy sdk.Coin
 
 	for i := 0; i < countObj; i++ {
-		coins = append(coins, sdk.Coin{Denom: "utest", Amount: sdk.NewInt(int64(i + 1))})
+		coins = append(coins, sdk.NewCoin("utest", sdk.NewInt(int64(i+1))))
 	}
 
 	for _, play := range playbook {

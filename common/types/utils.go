@@ -1,31 +1,57 @@
 package types
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"golang.org/x/exp/constraints"
 )
 
-func FindMin[T constraints.Ordered](s []T) (m T) {
-	if len(s) > 0 {
-		m = s[0]
-		for _, v := range s[1:] {
-			if m > v {
-				m = v
-			}
-		}
+func FindMin[T constraints.Ordered](s []T) T {
+	ind := FindIndexOfMin(s)
+	if ind == -1 {
+		var zero T
+		return zero
 	}
-	return m
+
+	return s[ind]
 }
 
-func FindMax[T constraints.Ordered](s []T) (m T) {
-	if len(s) > 0 {
-		m = s[0]
-		for _, v := range s[1:] {
-			if m < v {
-				m = v
-			}
+func FindIndexOfMin[T constraints.Ordered](s []T) int {
+	if len(s) == 0 {
+		return -1
+	}
+	m := s[0]
+	mInd := 0
+	for i := range s {
+		if m > s[i] {
+			mInd = i
 		}
 	}
-	return m
+	return mInd
+}
+
+func FindMax[T constraints.Ordered](s []T) T {
+	ind := FindIndexOfMax(s)
+	if ind == -1 {
+		var zero T
+		return zero
+	}
+
+	return s[ind]
+}
+
+func FindIndexOfMax[T constraints.Ordered](s []T) int {
+	if len(s) == 0 {
+		return -1
+	}
+	m := s[0]
+	mInd := 0
+	for i := range s {
+		if m < s[i] {
+			m = s[i]
+			mInd = i
+		}
+	}
+	return mInd
 }
 
 func Intersection[T comparable](arrays ...[]T) []T {
@@ -73,4 +99,11 @@ func Union[T comparable](arrays ...[]T) []T {
 	}
 
 	return union
+}
+
+// SafePow implements a deterministic power function
+// Go's math.Pow() doesn't guarantee determinism when executed on different hardwares
+func SafePow(base uint64, exponent uint64) uint64 {
+	baseDec := sdk.NewDecWithPrec(int64(base), 0)
+	return baseDec.Power(exponent).TruncateInt().Uint64()
 }

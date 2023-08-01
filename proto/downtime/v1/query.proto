@@ -4,5 +4,35 @@ package lavanet.lava.downtime.v1;
 
 option go_package = "github.com/lavanet/lava/x/downtime/v1";
 
+import "google/protobuf/duration.proto";
+import "downtime/v1/downtime.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+
 // Query represents the query service API for the downtime module.
-service Query {}
+service Query {
+  rpc QueryParams(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/downtime/v1/params";
+  };
+  rpc QueryDowntime(QueryDowntimeRequest) returns (QueryDowntimeResponse){
+    option (google.api.http).get = "/lavanet/lava/downtime/v1/query_downtime";
+  };
+}
+
+// QueryDowntimeRequest is the request type for the Query/QueryDowntime RPC method.
+message QueryDowntimeRequest {
+  uint64 start_block = 1;
+  uint64 end_block = 2;
+}
+
+// QueryDowntimeResponse is the response type for the Query/QueryDowntime RPC method.
+message QueryDowntimeResponse {
+  repeated Downtime downtimes = 1;
+  google.protobuf.Duration cumulative_downtime_duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+}
+
+message QueryParamsRequest {}
+message QueryParamsResponse {
+  Params params = 1;
+}

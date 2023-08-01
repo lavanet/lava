@@ -57,7 +57,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return fmt.Errorf("conflict was received outside of the allowed span, current: %d, span %d - %d", ctx.BlockHeight(), epochStart, epochStart+span)
 	}
 
-	_, err = k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
+	_, _, err = k.pairingKeeper.VerifyPairingData(ctx, chainID, clientAddr, epochStart)
 	if err != nil {
 		return err
 	}
@@ -76,11 +76,11 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		}
 	}
 	verifyClientAddrFromSignatureOnRequest := func(conflictRelayData types.ConflictRelayData) error {
-		pubKey, err := sigs.RecoverPubKeyFromRelay(*conflictRelayData.Request.RelaySession)
+		pubKey, err := sigs.RecoverPubKey(*conflictRelayData.Request.RelaySession)
 		if err != nil {
 			return fmt.Errorf("invalid consumer signature in relay request %+v , error: %s", conflictRelayData.Request, err.Error())
 		}
-		derived_clientAddr, err := sdk.AccAddressFromHex(pubKey.Address().String())
+		derived_clientAddr, err := sdk.AccAddressFromHexUnsafe(pubKey.Address().String())
 		if err != nil {
 			return fmt.Errorf("invalid consumer address from signature in relay request %+v , error: %s", conflictRelayData.Request, err.Error())
 		}
@@ -103,11 +103,11 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		if !first {
 			print_st = "second"
 		}
-		pubKey, err := sigs.RecoverPubKeyFromReplyMetadata(reply)
+		pubKey, err := sigs.RecoverPubKey(reply)
 		if err != nil {
 			return nil, fmt.Errorf("RecoverPubKeyFromReplyMetadata %s provider: %w", print_st, err)
 		}
-		providerAddress, err = sdk.AccAddressFromHex(pubKey.Address().String())
+		providerAddress, err = sdk.AccAddressFromHexUnsafe(pubKey.Address().String())
 		if err != nil {
 			return nil, fmt.Errorf("AccAddressFromHex %s provider: %w", print_st, err)
 		}
@@ -132,11 +132,12 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 			print_st = "second"
 		}
 
-		pubKey, err := sigs.RecoverPubKeyFromReplyMetadataFinalizationData(response, request, clientAddr)
+		metaData := types.NewRelayFinalizationMetaData(*response, *request, clientAddr)
+		pubKey, err := sigs.RecoverPubKey(metaData)
 		if err != nil {
 			return fmt.Errorf("RecoverPubKey %s provider ResponseFinalizationData: %w", print_st, err)
 		}
-		derived_providerAccAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
+		derived_providerAccAddress, err := sdk.AccAddressFromHexUnsafe(pubKey.Address().String())
 		if err != nil {
 			return fmt.Errorf("AccAddressFromHex %s provider ResponseFinalizationData: %w", print_st, err)
 		}

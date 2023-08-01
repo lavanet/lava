@@ -72,7 +72,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		ctx := context.Background()
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../")
+		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -154,11 +154,13 @@ func TestConsensusHashesInsertion(t *testing.T) {
 }
 
 func TestQoS(t *testing.T) {
+	decToSet, _ := sdk.NewDecFromStr("0.05") // test values fit 0.05 Availability requirements
+	lavasession.AvailabilityPercentage = decToSet
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		t.Run(chainID, func(t *testing.T) {
 			ctx := context.Background()
-			chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../")
+			chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}

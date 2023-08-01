@@ -31,6 +31,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -46,6 +47,7 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
@@ -60,6 +62,7 @@ type ProviderStateTrackerInf interface {
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
 type RPCProvider struct {
@@ -86,10 +89,18 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcp.providerStateTracker = providerStateTracker
 	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
+	// check version
+	version, err := rpcp.providerStateTracker.GetProtocolVersion(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("failed fetching protocol version from node", err)
+	}
+	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version)
+
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
+
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -100,10 +111,16 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	lavaChainID := clientCtx.ChainID
-	var addr sdk.AccAddress
-	err = addr.Unmarshal(clientKey.GetPubKey().Address())
+
+	pubKey, err := clientKey.GetPubKey()
 	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
+		return err
+	}
+
+	var addr sdk.AccAddress
+	err = addr.Unmarshal(pubKey.Address())
+	if err != nil {
+		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(rpcProviderEndpoints))})
@@ -131,6 +148,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			defer wg.Done()
 			err := rpcProviderEndpoint.Validate()
 			if err != nil {
+				disabledEndpoints <- rpcProviderEndpoint
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
 			chainID := rpcProviderEndpoint.ChainID
@@ -170,13 +188,13 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				if enabled, _ := chainParser.DataReliabilityParams(); enabled {
 					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 				} else {
-					chainFetcher = chainlib.NewDummyChainFetcher(ctx, rpcProviderEndpoint)
+					chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 				}
 
-				// Fetch and validate chain id
+				// Fetch and validate all verifications
 				err = chainFetcher.Validate(ctx)
 				if err != nil {
-					return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to fetch chain ID, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+					return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 				}
 
 				chainTrackerInf, found := stateTrackersPerChain.Load(chainID)
@@ -193,7 +211,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 					if err != nil {
 						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 					}
-
 					// Any validation needs to be before we store chain tracker for given chain id
 					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
 				} else {

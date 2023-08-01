@@ -121,6 +121,27 @@ type ConsumerSessionsWithProvider struct {
 	MaxComputeUnits   uint64
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
+	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
+	conflictFoundAndReported uint32 // 0 == not reported, 1 == reported
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
+	return atomic.LoadUint32(&cswp.conflictFoundAndReported) == 1
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicWriteConflictReported() {
+	atomic.StoreUint32(&cswp.conflictFoundAndReported, 1) // we can only set conflict to "reported".
+}
+
+// checking if this provider was reported this epoch already, as we can only report once per epoch
+func (cswp *ConsumerSessionsWithProvider) ConflictAlreadyReported() bool {
+	// returns true if reported, false if not.
+	return cswp.atomicReadConflictReported()
+}
+
+// setting this provider as conflict reported.
+func (cswp *ConsumerSessionsWithProvider) StoreConflictReported() {
+	cswp.atomicWriteConflictReported()
 }
 
 func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
@@ -380,8 +401,8 @@ func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLat
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
 
-	downtimePercentage := sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays-cs.QoSInfo.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(cs.QoSInfo.TotalRelays), 0))
-	cs.QoSInfo.LastQoSReport.Availability = sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+	downtimePercentage, scaledAvailabilityScore := CalculateAvailabilityScore(&cs.QoSInfo)
+	cs.QoSInfo.LastQoSReport.Availability = scaledAvailabilityScore
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
 		utils.LavaFormatInfo("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
@@ -402,25 +423,30 @@ func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLat
 	cs.QoSInfo.LatencyScoreList = insertSorted(cs.QoSInfo.LatencyScoreList, latencyScore)
 	cs.QoSInfo.LastQoSReport.Latency = cs.QoSInfo.LatencyScoreList[int(float64(len(cs.QoSInfo.LatencyScoreList))*PercentileToCalculateLatency)]
 
-	if int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync)) { //
+	// checking if we have enough information to calculate the sync score for the providers, if we haven't talked
+	// with enough providers we don't have enough information and we will wait to have more information before setting the sync score
+	shouldCalculateSyncScore := int64(numOfProviders) > int64(math.Ceil(float64(servicersToCount)*MinProvidersForSync))
+	if shouldCalculateSyncScore { //
 		if blockHeightDiff <= 0 { // if the diff is bigger than 0 than the block is too old (blockHeightDiff = expected - allowedLag - blockHeight) and we don't give him the score
 			cs.QoSInfo.SyncScoreSum++
 		}
-	} else {
-		cs.QoSInfo.SyncScoreSum++
-	}
-	cs.QoSInfo.TotalSyncScore++
+		cs.QoSInfo.TotalSyncScore++
+		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
+		if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
+			utils.LavaFormatDebug("QoS Sync report",
+				utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
+				utils.Attribute{Key: "block diff", Value: blockHeightDiff},
+				utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
+				utils.Attribute{Key: "session_id", Value: blockHeightDiff},
+			)
+		}
+	} // else, we don't increase the score at all so everyone will have the same score
+}
 
-	cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(cs.QoSInfo.SyncScoreSum).QuoInt64(cs.QoSInfo.TotalSyncScore)
-
-	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Sync) {
-		utils.LavaFormatDebug("QoS Sync report",
-			utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
-			utils.Attribute{Key: "block diff", Value: blockHeightDiff},
-			utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
-			utils.Attribute{Key: "session_id", Value: blockHeightDiff},
-		)
-	}
+func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet sdk.Dec, scaledAvailabilityScoreRet sdk.Dec) {
+	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
+	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+	return downtimePercentage, scaledAvailabilityScore
 }
 
 // validate if this is a data reliability session

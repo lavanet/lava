@@ -11,13 +11,18 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
+
+type ConsumerTxSenderInf interface {
+	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
+}
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
-	txSender   *ConsumerTxSender
+	ConsumerTxSenderInf
 	*StateTracker
 }
 
@@ -30,7 +35,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), txSender: txSender}
+	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), ConsumerTxSenderInf: txSender}
 	return cst, nil
 }
 
@@ -58,8 +63,14 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }
 
-func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	err := cst.txSender.TxConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
+func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error {
+	if conflictHandler.ConflictAlreadyReported() {
+		return nil // already reported
+	}
+	err := cst.TxSenderConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
+	if err == nil { // if conflict report succeeded, we can set this provider as reported, so we wont need to report again.
+		conflictHandler.StoreConflictReported()
+	}
 	return err
 }
 
@@ -76,4 +87,18 @@ func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 
 func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress string, chainID string) (*plantypes.Policy, error) {
 	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
+}
+
+func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
+	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker, version)
+	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
+	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
+	}
+	versionUpdater.RegisterVersionUpdatable()
+}
+
+func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+	return cst.stateQuery.GetProtocolVersion(ctx)
 }

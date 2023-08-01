@@ -6,18 +6,28 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	common "github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/spec"
 	"github.com/stretchr/testify/require"
 )
 
-// Prevent strconv unused error
-var _ = strconv.IntSize
+type tester struct {
+	common.Tester
+}
+
+func newTester(t *testing.T) *tester {
+	// note: use NewTesterRaw() to avoid the default AdvanceEpoch(), because hereinafter
+	// the tests expect precise control over block advancement.
+	ts := &tester{Tester: *common.NewTesterRaw(t)}
+	return ts
+}
+
+func (ts *tester) createNFixatedParams(n int) []types.FixatedParams {
+	return createNFixatedParams(&ts.Keepers.Epochstorage, ts.Ctx, n)
+}
 
 func createNFixatedParams(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.FixatedParams {
 	items := make([]types.FixatedParams, n)
@@ -27,12 +37,6 @@ func createNFixatedParams(keeper *keeper.Keeper, ctx sdk.Context, n int) []types
 		keeper.SetFixatedParams(ctx, items[i])
 	}
 	return items
-}
-
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
 }
 
 func TestFixatedParamsGet(t *testing.T) {
@@ -76,14 +80,11 @@ func TestFixatedParamsGetAll(t *testing.T) {
 func TestParamFixation(t *testing.T) {
 	// THIS TEST ASSUMES GENESIS BLOCKS IN EPOCH > 2
 
-	// AdvanceBlock(ctx context.Context, ks *Keepers)
+	ts := newTester(t)
 
-	// servers, keepers, ctx := keepertest.InitAllKeepers(t)
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	blocksInEpochInitial := ts.EpochBlocks()
+	epochsToSaveInitial := ts.EpochsToSave()
 
-	// ctx = keepertest.AdvanceEpoch(ctx, keepers)
-	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
-	epochsToSaveInitial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
 	tests := []struct {
 		name               string
 		blocksToUpdate     uint64
@@ -99,12 +100,10 @@ func TestParamFixation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for i := 0; i < int(tt.blocksToUpdate); i++ {
-				ctx = keepertest.AdvanceBlock(ctx, keepers)
-			}
-			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
-			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries()), len(allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
-			epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+			ts.AdvanceBlocks(tt.blocksToUpdate)
+			allFixatedParams := ts.Keepers.Epochstorage.GetAllFixatedParams(ts.Ctx)
+			require.Equal(t, len(ts.Keepers.Epochstorage.GetFixationRegistries()), len(allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
+			epochStart, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, ts.BlockHeight())
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedEpochStart, epochStart)
 		})
@@ -114,21 +113,18 @@ func TestParamFixation(t *testing.T) {
 func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 	// THIS TEST ASSUMES GENESIS BLOCKS IN EPOCH > 2
 
-	// AdvanceBlock(ctx context.Context, ks *Keepers)
+	ts := newTester(t)
 
-	// servers, keepers, ctx := keepertest.InitAllKeepers(t)
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	blocksInEpochInitial := ts.EpochBlocks()
+	epochsMemory_initial := ts.EpochsToSave()
 
-	// ctx = keepertest.AdvanceEpoch(ctx, keepers)
-	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
-	epochsMemory_initial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
 	newEpochBlocksValues := []uint64{17, 30, 15, 10, 11, 10}
 	type EpochCompare struct {
 		Block       uint64 // advance test to this block
 		Epoch       uint64 // expected epoch for the test
 		EpochBlocks uint64 // expected epochBlocks for the test
 	}
-	// epochsToSaveInitial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
+
 	wanted_epoch_change_details := []EpochCompare{
 		/*00*/ {1, 0, 0},
 		/*01*/ {blocksInEpochInitial + 1, blocksInEpochInitial, 0},
@@ -206,20 +202,20 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			blocksToLoop := int(wanted_epoch_change_details[ti].Block) - prevBlock
 			for i := 0; i < blocksToLoop; i++ {
-				ctx = keepertest.AdvanceBlock(ctx, keepers)
-				if keepers.Epochstorage.IsEpochStart(sdk.UnwrapSDKContext(ctx)) {
+				ts.AdvanceBlock()
+				if ts.Keepers.Epochstorage.IsEpochStart(ts.Ctx) {
 					expectedEpochBlocks = newEpochBlocksVal
 				}
 				prevBlock++
 			}
-			earliestEpochStart := keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx))
+			earliestEpochStart := ts.Keepers.Epochstorage.GetEarliestEpochStart(ts.Ctx)
 
 			// check epoch grid is correct
-			currBlock := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
-			epochStart, _, err := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), currBlock)
+			currBlock := ts.BlockHeight()
+			epochStart, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, currBlock)
 
 			require.NoError(t, err)
-			epochBlocks, err := keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ctx), currBlock)
+			epochBlocks, err := ts.Keepers.Epochstorage.EpochBlocks(ts.Ctx, currBlock)
 			require.NoError(t, err)
 
 			require.Equal(t, expectedEpochBlocks, epochBlocks)
@@ -228,16 +224,16 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 			require.Equal(t, wanted_epoch_change_details[ti].Epoch, epochStart, "GetEpochStartForBlock VS expectedEpochStart")
 
 			// check the amount of fixations
-			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
-			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries())+tt.expectedFixation-1, len(allFixatedParams), fmt.Sprintf("FixatedParamsLength VS expectedFixationLength \nEarliestEpoch start: %d\n%+v", earliestEpochStart, allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
+			allFixatedParams := ts.Keepers.Epochstorage.GetAllFixatedParams(ts.Ctx)
+			require.Equal(t, len(ts.Keepers.Epochstorage.GetFixationRegistries())+tt.expectedFixation-1, len(allFixatedParams), fmt.Sprintf("FixatedParamsLength VS expectedFixationLength \nEarliestEpoch start: %d\n%+v", earliestEpochStart, allFixatedParams)) // no matter how many epochs we want only one fixation since we didnt change the params
 
-			_, found := keepers.Epochstorage.LatestFixatedParams(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks))
+			_, found := ts.Keepers.Epochstorage.LatestFixatedParams(ts.Ctx, string(types.KeyEpochBlocks))
 			require.True(t, found)
 
 			for _, epochComapre := range pastEpochsToCompare {
 				// test past grid
-				epochStart, _, errEpochStart := keepers.Epochstorage.GetEpochStartForBlock(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
-				epochBlocks_test, errEpochBlocks := keepers.Epochstorage.EpochBlocks(sdk.UnwrapSDKContext(ctx), epochComapre.Block)
+				epochStart, _, errEpochStart := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, epochComapre.Block)
+				epochBlocks_test, errEpochBlocks := ts.Keepers.Epochstorage.EpochBlocks(ts.Ctx, epochComapre.Block)
 				if epochComapre.Block >= earliestEpochStart {
 					require.NoError(t, errEpochStart)
 					require.Equal(t, epochComapre.Epoch, epochStart, "pastEpochsToCompare: GetEpochStartForBlock VS expectedEpochStart")
@@ -245,7 +241,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 					require.NoError(t, errEpochBlocks)
 					require.Equal(t, epochComapre.EpochBlocks, epochBlocks_test)
 				} else if errEpochBlocks == nil || errEpochStart == nil {
-					fixation, err := keepers.Epochstorage.GetFixatedParamsForBlock(sdk.UnwrapSDKContext(ctx), string(types.KeyEpochBlocks), epochComapre.Block)
+					fixation, err := ts.Keepers.Epochstorage.GetFixatedParamsForBlock(ts.Ctx, string(types.KeyEpochBlocks), epochComapre.Block)
 
 					require.NoError(t, err)
 					require.True(t, fixation.FixationBlock <= epochComapre.Block)
@@ -259,7 +255,7 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 			if wanted_epoch_change_details[ti].EpochBlocks != 0 {
 				require.NotEqual(t, wanted_epoch_change_details[ti].EpochBlocks, newEpochBlocksVal)
 				newEpochBlocksVal = wanted_epoch_change_details[ti].EpochBlocks
-				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochBlocks", "\""+strconv.FormatUint(newEpochBlocksVal, 10)+"\"")
+				err := ts.TxProposalChangeParam(types.ModuleName, "EpochBlocks", "\""+strconv.FormatUint(newEpochBlocksVal, 10)+"\"")
 				require.NoError(t, err)
 			}
 		})
@@ -267,10 +263,11 @@ func TestParamFixationWithEpochBlocksChange(t *testing.T) {
 }
 
 func TestParamFixationWithEpochToSaveChange(t *testing.T) {
-	_, keepers, ctx := keepertest.InitAllKeepers(t)
+	ts := newTester(t)
 
-	blocksInEpochInitial := keepers.Epochstorage.EpochBlocksRaw(sdk.UnwrapSDKContext(ctx))
-	epochsMemory_initial := keepers.Epochstorage.EpochsToSaveRaw(sdk.UnwrapSDKContext(ctx))
+	blocksInEpochInitial := ts.EpochBlocks()
+	epochsMemory_initial := ts.EpochsToSave()
+
 	tests := []struct {
 		name          string
 		Block         uint64 // advance test to this block
@@ -289,15 +286,15 @@ func TestParamFixationWithEpochToSaveChange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.EpochsToSave != 0 {
-				err := SimulateParamChange(sdk.UnwrapSDKContext(ctx), keepers.ParamsKeeper, types.ModuleName, "EpochsToSave", "\""+strconv.FormatUint(tt.EpochsToSave, 10)+"\"")
+				err := ts.TxProposalChangeParam(types.ModuleName, "EpochsToSave", "\""+strconv.FormatUint(tt.EpochsToSave, 10)+"\"")
 				require.NoError(t, err)
 			}
 
-			ctx = keepertest.AdvanceToBlock(ctx, keepers, tt.Block)
-			require.Equal(t, tt.Block, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
-			require.Equal(t, tt.EarliestEpoch, keepers.Epochstorage.GetEarliestEpochStart(sdk.UnwrapSDKContext(ctx)))
-			allFixatedParams := keepers.Epochstorage.GetAllFixatedParams(sdk.UnwrapSDKContext(ctx))
-			require.Equal(t, len(keepers.Epochstorage.GetFixationRegistries())-1+tt.MumOfFixation, len(allFixatedParams))
+			ts.AdvanceToBlock(tt.Block)
+			require.Equal(t, tt.Block, ts.BlockHeight())
+			require.Equal(t, tt.EarliestEpoch, ts.Keepers.Epochstorage.GetEarliestEpochStart(ts.Ctx))
+			allFixatedParams := ts.Keepers.Epochstorage.GetAllFixatedParams(ts.Ctx)
+			require.Equal(t, len(ts.Keepers.Epochstorage.GetFixationRegistries())-1+tt.MumOfFixation, len(allFixatedParams))
 		})
 	}
 }

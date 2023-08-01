@@ -8,11 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	commontypes "github.com/lavanet/lava/common/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 )
 
@@ -34,21 +32,15 @@ func CmdSetPolicy() *cobra.Command {
 
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
+			policy, err := planstypes.ParsePolicyFromYaml(adminPolicyFilePath)
+			if err != nil {
+				return err
+			}
 
-			var policy planstypes.Policy
-			hooks := []mapstructure.DecodeHookFuncType{planstypes.SelectedProvidersModeHookFunc()}
-			err = commontypes.ReadYaml(adminPolicyFilePath, "Policy", &policy, hooks)
-			if err != nil {
-				return err
-			}
-			err = verifyChainPoliciesAreCorrectlySet(clientCtx, &policy)
-			if err != nil {
-				return err
-			}
 			msg := types.NewMsgSetPolicy(
 				clientCtx.GetFromAddress().String(),
 				projectId,
-				policy,
+				*policy,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
