@@ -97,32 +97,23 @@ func (g *Geolocation) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type geoInfo struct {
-	name string
-	val  int32
-}
-
 func PrintGeolocations() string {
-	var geos []geoInfo
-	for geo, geoInt := range Geolocation_value {
-		if geoInt == int32(Geolocation_GLS) {
-			continue
-		}
-		geos = append(geos, geoInfo{name: geo, val: geoInt})
+	var geos []int32
+	for _, geoInt := range Geolocation_value {
+		geos = append(geos, geoInt)
 	}
 
 	sort.Slice(geos, func(i, j int) bool {
-		return geos[i].val < geos[j].val
+		return geos[i] < geos[j]
 	})
 
-	var geosStr string
-	for _, info := range geos {
-		geosStr += info.String() + ", "
+	var geosStr []string
+	for _, geoInt := range geos {
+		if geoInt == int32(Geolocation_GLS) {
+			continue
+		}
+		geosStr = append(geosStr, Geolocation_name[geoInt]+": 0x"+strconv.FormatInt(int64(geoInt), 16))
 	}
 
-	return geosStr[:len(geosStr)-2]
-}
-
-func (gi geoInfo) String() string {
-	return gi.name + ": 0x" + strconv.FormatInt(int64(gi.val), 16)
+	return strings.Join(geosStr, ", ")
 }

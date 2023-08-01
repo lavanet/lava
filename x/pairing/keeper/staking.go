@@ -58,7 +58,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 	}
 
 	if !planstypes.IsValidGeoEnum(int32(geolocation)) {
-		return utils.LavaFormatWarning("missing or invalid geolocation", fmt.Errorf("staking failed"),
+		return utils.LavaFormatWarning(`geolocations are treated as a bitmap. To configure multiple geolocations, 
+		use the uint representation of the valid geolocations`, fmt.Errorf("missing or invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 			utils.Attribute{Key: "valid_geolocations", Value: planstypes.PrintGeolocations()},
 		)
