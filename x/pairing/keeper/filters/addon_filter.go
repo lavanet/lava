@@ -18,7 +18,7 @@ func (f *AddonFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 		if len(chainPolicy.Requirements) > 0 {
 			requirements := map[spectypes.CollectionData]map[string]struct{}{}
 			for _, requirement := range chainPolicy.Requirements {
-				if requirement.Comparable() != "" {
+				if requirement.Differentiator() != "" {
 					if _, ok := requirements[requirement.Collection]; !ok {
 						requirements[requirement.Collection] = map[string]struct{}{}
 					}

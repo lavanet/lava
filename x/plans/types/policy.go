@@ -238,6 +238,6 @@ func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 	}
 }
 
-func (cr ChainRequirement) Comparable() string {
+func (cr ChainRequirement) Differentiator() string {
 	return cr.Collection.String() + strings.Join(cr.Extensions, ",")
 }
