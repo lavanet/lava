@@ -10,13 +10,12 @@ import (
 func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankKeeper, signModeHandler signing.SignModeHandler, feegrantKeeper ante.FeegrantKeeper, sigGasConsumer ante.SignatureVerificationGasConsumer) sdk.AnteHandler {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
-		ante.NewRejectExtensionOptionsDecorator(),
-		ante.NewMempoolFeeDecorator(),
+		ante.NewExtensionOptionsDecorator(nil),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(accountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(accountKeeper),
-		ante.NewDeductFeeDecorator(accountKeeper, bankKeeper, feegrantKeeper),
+		ante.NewDeductFeeDecorator(accountKeeper, bankKeeper, feegrantKeeper, nil),
 		ante.NewSetPubKeyDecorator(accountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewValidateSigCountDecorator(accountKeeper),
 		ante.NewSigGasConsumeDecorator(accountKeeper, sigGasConsumer),

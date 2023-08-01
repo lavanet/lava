@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	mockStoreKey    *sdk.KVStoreKey     = sdk.NewKVStoreKey("storeKey")
-	mockMemStoreKey *sdk.MemoryStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
+	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
 )
 
 // Helper function to init a mock keeper and context
@@ -27,8 +27,8 @@ func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
 
-	stateStore.MountStoreWithDB(mockStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(mockMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(mockStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(mockMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 

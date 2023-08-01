@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
 )
@@ -15,26 +15,26 @@ func (k msgServer) ConflictVoteCommit(goCtx context.Context, msg *types.MsgConfl
 
 	conflictVote, found := k.GetConflictVote(ctx, msg.VoteID)
 	if !found {
-		return nil, utils.LavaFormatWarning("invalid vote id", sdkerrors.ErrKeyNotFound,
+		return nil, utils.LavaFormatWarning("invalid vote id", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "voteID", Value: msg.VoteID},
 		)
 	}
 	if conflictVote.VoteState != types.StateCommit {
-		return nil, utils.LavaFormatWarning("vote is not in commit state", sdkerrors.ErrInvalidRequest,
+		return nil, utils.LavaFormatWarning("vote is not in commit state", legacyerrors.ErrInvalidRequest,
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "voteID", Value: msg.VoteID},
 		)
 	}
 	index, ok := FindVote(&conflictVote.Votes, msg.Creator)
 	if !ok {
-		return nil, utils.LavaFormatWarning("provider is not in the voters list", sdkerrors.ErrKeyNotFound,
+		return nil, utils.LavaFormatWarning("provider is not in the voters list", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "voteID", Value: msg.VoteID},
 		)
 	}
 	if conflictVote.Votes[index].Result != types.NoVote {
-		return nil, utils.LavaFormatWarning("provider already committed", sdkerrors.ErrInvalidRequest,
+		return nil, utils.LavaFormatWarning("provider already committed", legacyerrors.ErrInvalidRequest,
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "voteID", Value: msg.VoteID},
 		)

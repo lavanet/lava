@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
