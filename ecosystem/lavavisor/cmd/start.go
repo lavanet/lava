@@ -2,8 +2,8 @@ package lavavisor
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
@@ -15,6 +15,14 @@ import (
 type Config struct {
 	ProviderServices []string `yaml:"provider-services"`
 }
+type ProviderProcess struct {
+	Name      string
+	ChainID   string
+	Cmd       *exec.Cmd
+	IsRunning bool
+}
+
+var providers []*ProviderProcess
 
 var cmdLavavisorStart = &cobra.Command{
 	Use:   "start",
@@ -32,7 +40,7 @@ var cmdLavavisorStart = &cobra.Command{
 		configPath := filepath.Join(dir+"/.lavavisor", "/config.yml")
 
 		// Read config.yaml
-		configData, err := ioutil.ReadFile(configPath)
+		configData, err := os.ReadFile(configPath)
 		if err != nil {
 			return fmt.Errorf("failed to read config.yaml: %v", err)
 		}
@@ -44,12 +52,11 @@ var cmdLavavisorStart = &cobra.Command{
 		}
 
 		// Iterate over the list of provider services and start them
-		for _, provider := range config.ProviderServices {
+		for i, provider := range config.ProviderServices {
 			fmt.Printf("Starting provider: %s\n", provider)
 			// TODO: Implement the actual starting of the providers
-
+			startProvider(provider, i+1)
 		}
-
 		return nil
 	},
 }
@@ -57,4 +64,15 @@ var cmdLavavisorStart = &cobra.Command{
 func init() {
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	rootCmd.AddCommand(cmdLavavisorStart)
+}
+
+func startProvider(provider string, servicerNumber int) {
+	providers = append(providers, &ProviderProcess{
+		Name:      provider,
+		Cmd:       nil,
+		IsRunning: true,
+	})
+
+	// ToDo: implement the actual logic
+	// ...
 }
