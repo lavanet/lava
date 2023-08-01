@@ -17,3 +17,17 @@ type UserBadgeItem struct {
 	PublicKey string
 	UserId    string
 }
+
+type IpData struct {
+	FromIp      *Ip
+	ToIP        *Ip
+	CountryCode string
+	Geolocation int
+}
+
+type Ip struct {
+	Group1 int
+	Group2 int
+	Group3 int
+	Group4 int
+}

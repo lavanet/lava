@@ -33,6 +33,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/spf13/pflag v1.0.5
+	github.com/vpxyz/xorshift v1.2.2
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
@@ -46,7 +47,6 @@ require (
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
-	github.com/vpxyz/xorshift v1.2.2 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
