@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
 	"github.com/tendermint/tendermint/libs/log"
@@ -28,7 +28,11 @@ const (
 	LAVA_LOG_PANIC
 )
 
-var JsonFormat = false
+var (
+	JsonFormat = false
+	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
+	ExtendedLogLevel = "development"
+)
 
 type Attribute struct {
 	Key   string
@@ -179,6 +183,18 @@ func LavaFormatPanic(description string, err error, attributes ...Attribute) {
 func LavaFormatFatal(description string, err error, attributes ...Attribute) {
 	attributes = append(attributes, Attribute{Key: "StackTrace", Value: debug.Stack()})
 	LavaFormatLog(description, err, attributes, LAVA_LOG_FATAL)
+}
+
+// depending on the build flag, this log function will log either a warning or an error.
+// the purpose of this function is to fail E2E tests and not allow unexpected behavior to reach main.
+// while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
+// in test environment we dont expect to have these errors and if they occur we would like to fail the test.
+func LavaFormatProduction(description string, err error, attributes ...Attribute) error {
+	if ExtendedLogLevel == "production" {
+		return LavaFormatWarning(description, err, attributes...)
+	} else {
+		return LavaFormatError(description, err, attributes...)
+	}
 }
 
 func LavaFormatError(description string, err error, attributes ...Attribute) error {

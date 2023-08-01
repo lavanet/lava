@@ -48,7 +48,10 @@ func CmdModifyProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			address := clientKey.GetAddress().String()
+			address, err := clientKey.GetAddress()
+			if err != nil {
+				return err
+			}
 
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			response, err := pairingQuerier.Providers(ctx, &types.QueryProvidersRequest{
@@ -63,7 +66,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
 			for idx, provider := range response.StakeEntry {
-				if provider.Address == address {
+				if provider.Address == address.String() {
 					providerEntry = &response.StakeEntry[idx]
 					break
 				}

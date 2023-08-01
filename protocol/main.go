@@ -46,7 +46,7 @@ func main() {
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCACertificateCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
-	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)

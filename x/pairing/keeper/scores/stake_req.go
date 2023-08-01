@@ -1,6 +1,7 @@
 package scores
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -16,7 +17,7 @@ func (sr *StakeReq) Init(policy planstypes.Policy) bool {
 }
 
 // Score calculates the the provider score as the normalized stake
-func (sr *StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry) sdk.Uint {
+func (sr *StakeReq) Score(stakeEntry epochstoragetypes.StakeEntry) math.Uint {
 	return sdk.NewUint(stakeEntry.Stake.Amount.Uint64())
 }
 

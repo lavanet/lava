@@ -6,8 +6,9 @@ import (
 	fmt "fmt"
 	"math"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -109,7 +110,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	for _, addr := range policy.SelectedProviders {
 		_, err := sdk.AccAddressFromBech32(addr)
 		if err != nil {
-			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
+			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
 		}
 
 		if seen[addr] {

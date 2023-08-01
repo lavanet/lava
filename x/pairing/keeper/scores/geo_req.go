@@ -1,6 +1,7 @@
 package scores
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -23,7 +24,7 @@ func (gr GeoReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the geo score of a provider based on preset latency data
 // Note: each GeoReq must have exactly a single geolocation (bit)
-func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) sdk.Uint {
+func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) math.Uint {
 	// check if the provider supports the required geolocation
 	if gr.Geo&^provider.Geolocation == 0 {
 		return calculateCostFromLatency(minGeoLatency)
@@ -64,7 +65,7 @@ type GeoLatency struct {
 }
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
-func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost sdk.Uint) {
+func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost math.Uint) {
 	minGeo := planstypes.Geolocation(-1)
 	minLatency := uint64(maxGeoLatency)
 	for _, pGeo := range providerGeos {
@@ -81,7 +82,7 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 	return minGeo, calculateCostFromLatency(minLatency)
 }
 
-func calculateCostFromLatency(latency uint64) sdk.Uint {
+func calculateCostFromLatency(latency uint64) math.Uint {
 	return sdk.NewUint(maxGeoLatency / latency)
 }
 

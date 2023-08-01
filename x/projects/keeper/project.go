@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -17,7 +17,7 @@ func (k Keeper) getProjectForBlock(ctx sdk.Context, projectID string, block uint
 	var project types.Project
 	block, found := k.projectsFS.FindEntry2(ctx, projectID, block, &project)
 	if !found {
-		return project, 0, sdkerrors.ErrNotFound
+		return project, 0, legacyerrors.ErrNotFound
 	}
 	return project, block, nil
 }

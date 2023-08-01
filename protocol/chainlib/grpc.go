@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
@@ -42,6 +43,25 @@ import (
 type GrpcNodeErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 	ErrorCode    uint32 `json:"error_code"`
+}
+
+type grpcDescriptorCache struct {
+	cachedDescriptors sync.Map // method name is the key, method descriptor is the value
+}
+
+func (gdc *grpcDescriptorCache) getDescriptor(methodName string) *desc.MethodDescriptor {
+	if descriptor, ok := gdc.cachedDescriptors.Load(methodName); ok {
+		converted, success := descriptor.(*desc.MethodDescriptor) // convert to a descriptor
+		if success {
+			return converted
+		}
+		utils.LavaFormatError("Failed Converting method descriptor", nil, utils.Attribute{Key: "Method", Value: methodName})
+	}
+	return nil
+}
+
+func (gdc *grpcDescriptorCache) setDescriptor(methodName string, descriptor *desc.MethodDescriptor) {
+	gdc.cachedDescriptors.Store(methodName, descriptor)
 }
 
 type GrpcChainParser struct {
@@ -230,7 +250,8 @@ func NewGrpcChainListener(
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	chainParser ChainParser) (chainListener *GrpcChainListener) {
+	chainParser ChainParser,
+) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
 		listenEndpoint,
@@ -296,9 +317,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 type GrpcChainProxy struct {
 	BaseChainProxy
-	conn grpcConnectorIf
+	conn             grpcConnectorInterface
+	descriptorsCache *grpcDescriptorCache
 }
-type grpcConnectorIf interface {
+type grpcConnectorInterface interface {
 	Close()
 	GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error)
 	ReturnRpc(rpc *grpc.ClientConn)
@@ -318,9 +340,10 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn)
 }
 
-func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorIf) (ChainProxy, error) {
+func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
+		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
+		descriptorsCache: &grpcDescriptorCache{},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -370,24 +393,31 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	// TODO: improve functionality, this is reading descriptors every send
-	// improvement would be caching the descriptors, instead of fetching them.
+
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
-	var descriptor desc.Descriptor
-	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
+
+	// check if we have method descriptor already cached.
+	methodDescriptor := cp.descriptorsCache.getDescriptor(methodName)
+	if methodDescriptor == nil { // method descriptor not cached yet, need to fetch it and add to cache
+		var descriptor desc.Descriptor
+		if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
+			return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+		serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
+		}
+		methodDescriptor = serviceDescriptor.FindMethodByName(methodName)
+		if methodDescriptor == nil {
+			return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
+		}
+
+		// add the descriptor to the chainProxy cache
+		cp.descriptorsCache.setDescriptor(methodName, methodDescriptor)
 	}
 
-	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
-	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
-	}
-	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
-	if methodDescriptor == nil {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
-	}
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
 	var reader io.Reader

@@ -7,7 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
@@ -199,10 +199,10 @@ func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, a
 func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, idx uint64) error {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
 	if !found {
-		return errors.ErrNotFound
+		return legacyerrors.ErrNotFound
 	}
 	if idx >= uint64(len(stakeStorage.StakeEntries)) {
-		return errors.ErrNotFound
+		return legacyerrors.ErrNotFound
 	}
 	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
 	k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
@@ -244,7 +244,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 	if !found {
 		// should not happen since caller is expected to validate chainID first;
 		// do nothing and return to avoid panic.
-		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", errors.ErrNotFound,
+		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", legacyerrors.ErrNotFound,
 			utils.LogAttr("chainID", chainID),
 			utils.LogAttr("stakeAddr", stakeEntry.Address),
 		)
@@ -306,7 +306,7 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry,
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx)
 	if !found {
 		// should not happen since stake storage must always exist; do nothing to avoid panic
-		utils.LavaFormatError("critical: ModifyUnstakeEntry failed to get stakeStorage", errors.ErrNotFound,
+		utils.LavaFormatError("critical: ModifyUnstakeEntry failed to get stakeStorage", legacyerrors.ErrNotFound,
 			utils.LogAttr("stakeAddr", stakeEntry.Address),
 		)
 		return
