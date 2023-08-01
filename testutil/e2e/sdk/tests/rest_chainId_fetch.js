@@ -13,13 +13,13 @@ async function main() {
     // Fetch chain id
     const result = await eth.sendRelay({
         method: "GET",
-        url: "/node_info",
+        url: "/cosmos/base/tendermint/v1beta1/node_info",
     });
 
     // Parse response
     const parsedResponse = JSON.parse(result);
 
-    const chainID = parsedResponse["node_info"].network;
+    const chainID = parsedResponse["default_node_info"].network;
 
     // Validate chainID
     if (chainID != "lava") {

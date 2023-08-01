@@ -18,6 +18,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
+
 // startBadgeServer starts badge server
 func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, publicKey string) {
 	badgeUserData := fmt.Sprintf(`{"alice":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}`, publicKey, privateKey)
@@ -29,7 +31,7 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, pub
 	command := fmt.Sprintf("%s badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
 	logName := "01_BadgeServer"
 	funcName := "startBadgeServer"
-	lt.execCommandWithRetry(ctx, funcName, logName, command)
+	lt.execCommandWithRetry(ctx, funcName, logName, command, sdkLogsFolder)
 
 	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:8080", time.Minute)
 }
@@ -70,7 +72,7 @@ func exportUserPrivateKey(lavaPath string, user string) string {
 }
 
 func runSDKE2E(timeout time.Duration) {
-	os.RemoveAll(logsFolder)
+	os.RemoveAll(sdkLogsFolder)
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
 		gopath = build.Default.GOPATH
@@ -93,15 +95,16 @@ func runSDKE2E(timeout time.Duration) {
 	// use defer to save logs in case the tests fail
 	defer func() {
 		if r := recover(); r != nil {
-			lt.saveLogs()
+			lt.saveLogs(sdkLogsFolder)
 			panic("E2E Failed")
 		} else {
-			lt.saveLogs()
+			lt.saveLogs(sdkLogsFolder)
 		}
 	}()
 
 	utils.LavaFormatInfo("Starting Lava")
-	go lt.startLava(context.Background())
+	lavaContext, cancelLava := context.WithCancel(context.Background())
+	go lt.startLava(lavaContext)
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
 	lt.compileLavaProtocol()
@@ -111,7 +114,7 @@ func runSDKE2E(timeout time.Duration) {
 	defer cancel()
 
 	utils.LavaFormatInfo("Staking Lava")
-	lt.stakeLava(ctx)
+	lt.stakeLava(ctx, sdkLogsFolder)
 
 	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
@@ -127,16 +130,22 @@ func runSDKE2E(timeout time.Duration) {
 	lt.startBadgeServer(ctx, privateKey, publicKey)
 
 	// ETH1 flow
-	lt.startJSONRPCProxy(ctx)
+	lt.startJSONRPCProxy(ctx, sdkLogsFolder)
 
-	lt.startJSONRPCProvider(ctx)
+	lt.startJSONRPCProvider(ctx, sdkLogsFolder)
 
 	// Lava Flow
-	lt.startLavaProviders(ctx)
+	lt.startLavaProviders(ctx, sdkLogsFolder)
 
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, lt.logs["01_sdkTest"])
 
 	lt.finishTestSuccessfully()
+
+	// Cancel lava network using context
+	cancelLava()
+
+	// Wait for all processes to be done
+	lt.wg.Wait()
 }
