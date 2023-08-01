@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	planstypes "github.com/lavanet/lava/x/plans/types"

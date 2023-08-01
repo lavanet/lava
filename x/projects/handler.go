@@ -3,9 +3,9 @@ package projects
 import (
 	"fmt"
 
+	legacyerrors "cosmossdk.io/errors"
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/projects/types"
 )

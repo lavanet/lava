@@ -5,10 +5,11 @@ import (
 	"log"
 	"strings"
 
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramkeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/utils"
@@ -26,7 +27,7 @@ func NewParamChangeProposalHandler(k paramkeeper.Keeper) v1beta1.Handler {
 			return HandleParameterChangeProposal(ctx, k, c)
 
 		default:
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized param proposal content type: %T", c)
+			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized param proposal content type: %T", c)
 		}
 	}
 }
@@ -81,7 +82,7 @@ func NewSpecProposalsHandler(k keeper.Keeper) v1beta1.Handler {
 
 		default:
 			log.Println("unrecognized spec proposal content")
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized spec proposal content type: %T", c)
+			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized spec proposal content type: %T", c)
 		}
 	}
 }

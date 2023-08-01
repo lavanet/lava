@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +20,7 @@ func TestMsgDelProject_ValidateBasic(t *testing.T) {
 				Creator: "invalid_address",
 				Name:    "validname",
 			},
-			err: sdkerrors.ErrInvalidAddress,
+			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgDelProject{

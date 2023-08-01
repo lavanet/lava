@@ -3,8 +3,9 @@ package plans
 import (
 	"log"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/plans/keeper"
@@ -21,7 +22,7 @@ func NewPlansProposalsHandler(k keeper.Keeper) v1beta1.Handler {
 			return handlePlansDelProposal(ctx, k, c)
 		default:
 			log.Println("unrecognized plans proposal content")
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized plans proposal content type: %T", c)
+			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized plans proposal content type: %T", c)
 		}
 	}
 }

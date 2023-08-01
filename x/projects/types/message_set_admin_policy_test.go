@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/testutil/sample"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
@@ -25,7 +25,7 @@ func TestMsgSetPolicy_ValidateBasic(t *testing.T) {
 					MaxProvidersToPair: 3,
 				},
 			},
-			err: sdkerrors.ErrInvalidAddress,
+			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgSetPolicy{

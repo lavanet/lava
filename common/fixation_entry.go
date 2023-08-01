@@ -6,11 +6,11 @@ import (
 	"math"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 )
@@ -216,7 +216,7 @@ func (fs *FixationStore) getEntry(ctx sdk.Context, safeIndex types.SafeIndex, bl
 	b := store.Get(byteKey)
 	if b == nil {
 		// panic:ok: internal API that expects the <entry, block> to exist
-		utils.LavaFormatPanic("fixation: getEntry failed (unknown entry)", sdkerrors.ErrNotFound,
+		utils.LavaFormatPanic("fixation: getEntry failed (unknown entry)", legacyerrors.ErrNotFound,
 			utils.Attribute{Key: "prefix", Value: fs.prefix},
 			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
 			utils.Attribute{Key: "block", Value: block},
@@ -791,7 +791,7 @@ func (fs *FixationStore) PutEntry(ctx sdk.Context, index string, block uint64) {
 func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) error {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
-		return sdkerrors.ErrNotFound.Wrapf("invalid non-ascii index: %s", index)
+		return legacyerrors.ErrNotFound.Wrapf("invalid non-ascii index: %s", index)
 	}
 
 	ctxBlock := uint64(ctx.BlockHeight())
@@ -805,7 +805,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
 	if !found || entry.HasDeleteAt() {
-		return sdkerrors.ErrNotFound
+		return legacyerrors.ErrNotFound
 	}
 
 	entry.DeleteAt = block

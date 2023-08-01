@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +22,7 @@ func TestMsgBuy(t *testing.T) {
 				Index:    "plan-name",
 				Duration: 1,
 			},
-			err: sdkerrors.ErrInvalidAddress,
+			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "invalid consumer addresses",
 			msg: MsgBuy{
@@ -31,7 +31,7 @@ func TestMsgBuy(t *testing.T) {
 				Index:    "plan-name",
 				Duration: 1,
 			},
-			err: sdkerrors.ErrInvalidAddress,
+			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "valid addresses",
 			msg: MsgBuy{
