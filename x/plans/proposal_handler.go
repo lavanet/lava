@@ -3,17 +3,18 @@ package plans
 import (
 	"log"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/plans/types"
 )
 
 // NewPlanProposalsHandler creates a new governance Handler for a Plan
-func NewPlansProposalsHandler(k keeper.Keeper) govtypes.Handler {
-	return func(ctx sdk.Context, content govtypes.Content) error {
+func NewPlansProposalsHandler(k keeper.Keeper) v1beta1.Handler {
+	return func(ctx sdk.Context, content v1beta1.Content) error {
 		switch c := content.(type) {
 		case *types.PlansAddProposal:
 			return handlePlansAddProposal(ctx, k, c)
@@ -21,7 +22,7 @@ func NewPlansProposalsHandler(k keeper.Keeper) govtypes.Handler {
 			return handlePlansDelProposal(ctx, k, c)
 		default:
 			log.Println("unrecognized plans proposal content")
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized plans proposal content type: %T", c)
+			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized plans proposal content type: %T", c)
 		}
 	}
 }

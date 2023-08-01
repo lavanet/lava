@@ -150,7 +150,11 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				if err != nil {
 					return err
 				}
-				address = clientKey.GetAddress().String()
+				tmpAddr, err := clientKey.GetAddress()
+				if err != nil {
+					return err
+				}
+				address = tmpAddr.String()
 			} else {
 				address = args[0]
 			}
