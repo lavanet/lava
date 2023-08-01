@@ -3,7 +3,7 @@ name: Lava E2E Tests
 on: [pull_request]
 
 jobs:
-  go:
+  test-lava-protocol:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -57,24 +57,11 @@ jobs:
         timeout_minutes: 20
         command: ignite chain build -v
 
-      # Install Node.js
-    - name: Setup Node.js environment
-      uses: actions/setup-node@v3
-      with:
-        node-version: 20
-
-      # Install dependencies and build
-    - name: Install dependencies and build
-      run: |
-        cd ecosystem/lava-sdk
-        npm install
-        npm run build
-
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
     ######################################################
     - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
-      run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
+      run: go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s # 20mins
       
     - name: Stake Lava All Logs
       if: always()
@@ -142,3 +129,4 @@ jobs:
       if: always()
       continue-on-error: true
       run: grep "" testutil/e2e/logs/06_RPCConsumer* --include="*errors*"
+
