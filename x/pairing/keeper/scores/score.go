@@ -36,9 +36,10 @@ package scores
 
 import (
 	"bytes"
-	"cosmossdk.io/math"
 	"fmt"
 	"strconv"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"

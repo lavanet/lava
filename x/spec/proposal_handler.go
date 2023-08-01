@@ -2,9 +2,10 @@ package spec
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"log"
 	"strings"
+
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
