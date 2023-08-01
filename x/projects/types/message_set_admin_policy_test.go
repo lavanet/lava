@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	sdkerrors "cosmossdk.io/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/testutil/sample"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
