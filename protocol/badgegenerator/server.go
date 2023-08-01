@@ -5,8 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"sync/atomic"
+
+	"google.golang.org/grpc/metadata"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/badgegenerator/grpc"

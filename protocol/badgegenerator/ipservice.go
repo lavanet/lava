@@ -3,11 +3,12 @@ package badgegenerator
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/lavanet/lava/utils"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/lavanet/lava/utils"
 )
 
 type IpService struct {
@@ -26,6 +27,7 @@ func InitIpService(defaultGeolocation int, countriesFilePath string, ipFilePath 
 	}
 	return &service, err
 }
+
 func (service *IpService) readCountryCsvFileData() (*map[string]int, error) {
 	countries := make(map[string]int)
 	file, err := os.Open(service.CountryCsvFilePath)
@@ -77,7 +79,6 @@ func (service *IpService) ReadIpTsvFileData() error {
 			} else {
 				return err
 			}
-
 		}
 		for _, rowData := range row {
 			ipData, err := convertRowToIpModel(rowData)
@@ -107,13 +108,13 @@ func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
 	}
 
 	for _, ip := range *service.IpCountryData {
-		//for better readability this is done in different ifs
+		// for better readability this is done in different ifs
 		if ipData.Group1 >= ip.FromIp.Group1 && ipData.Group1 <= ip.ToIP.Group1 {
-			//group 2
+			// group 2
 			if ipData.Group2 >= ip.FromIp.Group2 && ipData.Group2 <= ip.ToIP.Group2 {
-				//gr 3
+				// gr 3
 				if ipData.Group3 >= ip.FromIp.Group3 && ipData.Group3 <= ip.ToIP.Group3 {
-					//gr 4
+					// gr 4
 					if ipData.Group4 >= ip.FromIp.Group4 && ipData.Group4 <= ip.ToIP.Group4 {
 						return ip, nil
 					}
@@ -126,11 +127,10 @@ func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
 }
 
 func convertRowToIpModel(rowData string) (*IpData, error) {
-
 	convertRowWith4tabs := func(ipStringDatas []string) (*IpData, error) {
 		ipSorce := strings.Split(ipStringDatas[0], " ")
 		if len(ipSorce) != 2 {
-			return nil, fmt.Errorf("Unexpeted ip range on  tsv data format. expected 2 seperated with space(' ')")
+			return nil, fmt.Errorf("unexpeted ip range on  tsv data format. expected 2 separated with space(' ')")
 		}
 		return &IpData{
 			FromIp:      convertStringToIpModel(ipSorce[0]),
@@ -152,9 +152,8 @@ func convertRowToIpModel(rowData string) (*IpData, error) {
 	} else if len(ipStringDatas) == 5 {
 		return convertRowWith5tabs(ipStringDatas)
 	} else {
-		return nil, fmt.Errorf("Invalid tsv data format. expected 4")
+		return nil, fmt.Errorf("invalid tsv data format. expected 4")
 	}
-
 }
 
 func convertStringToIpModel(sc string) *Ip {
