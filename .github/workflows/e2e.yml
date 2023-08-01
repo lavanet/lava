@@ -74,11 +74,11 @@ jobs:
 
     - name: head -n 300 JSON Proxy Logs
       if: always()
-      run: head -n 300 testutil/protocolLogs/logs/02_jsonProxy.log
+      run: head -n 300 testutil/e2e/protocolLogs/02_jsonProxy.log
 
     - name: tail -n 300 JSON Proxy Logs
       if: always()
-      run: tail -n 300 testutil/protocolLogs/logs/02_jsonProxy.log
+      run: tail -n 300 testutil/e2e/protocolLogs/02_jsonProxy.log
 
     - name: JSON Proxy Error Only Logs
       if: always()
