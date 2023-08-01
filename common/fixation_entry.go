@@ -3,8 +3,9 @@ package common
 import (
 	"encoding/binary"
 	"fmt"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"math"
+
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"

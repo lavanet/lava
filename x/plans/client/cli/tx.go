@@ -2,9 +2,10 @@ package cli
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"strings"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	"github.com/spf13/cobra"
 

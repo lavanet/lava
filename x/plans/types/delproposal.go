@@ -2,8 +2,9 @@ package types
 
 import (
 	fmt "fmt"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"strings"
+
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"

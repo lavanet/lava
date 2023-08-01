@@ -36,9 +36,10 @@ package scores
 
 import (
 	"bytes"
-	"cosmossdk.io/math"
 	"fmt"
 	"strconv"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -145,7 +146,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
 				)
 			}
-			newScoreCompDec := sdk.NewDecFromInt(sdk.Int(newScoreComp))
+			newScoreCompDec := sdk.NewDecFromInt(math.Int(newScoreComp))
 			newScoreCompDec = newScoreCompDec.Power(weight)
 			newScoreComp = sdk.Uint(newScoreCompDec.TruncateInt())
 

@@ -2,10 +2,11 @@ package network
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/pruning/types"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/pruning/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"

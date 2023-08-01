@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"errors"
-	snapshotoptions "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	snapshotoptions "github.com/cosmos/cosmos-sdk/snapshots/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
