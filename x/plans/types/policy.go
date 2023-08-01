@@ -218,7 +218,7 @@ func parsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, err
 	case uint64:
 		geo, err := ParseGeoEnum(strVal)
 		if err != nil {
-			return 0, fmt.Errorf("invalid geolocation %s", strVal)
+			return 0, fmt.Errorf("invalid geolocation %s. Valid geolocations: %s", strVal, PrintGeolocations())
 		}
 		return geo, nil
 	case SELECTED_PROVIDERS_MODE:

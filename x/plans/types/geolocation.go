@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -94,4 +95,34 @@ func (g *Geolocation) UnmarshalJSON(b []byte) error {
 	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
 	*g = Geolocation(Geolocation_value[j])
 	return nil
+}
+
+type geoInfo struct {
+	name string
+	val  int32
+}
+
+func PrintGeolocations() string {
+	var geos []geoInfo
+	for geo, geoInt := range Geolocation_value {
+		if geoInt == int32(Geolocation_GLS) {
+			continue
+		}
+		geos = append(geos, geoInfo{name: geo, val: geoInt})
+	}
+
+	sort.Slice(geos, func(i, j int) bool {
+		return geos[i].val < geos[j].val
+	})
+
+	var geosStr string
+	for _, info := range geos {
+		geosStr += info.String() + ", "
+	}
+
+	return geosStr[:len(geosStr)-2]
+}
+
+func (gi geoInfo) String() string {
+	return gi.name + ": 0x" + strconv.FormatInt(int64(gi.val), 16)
 }

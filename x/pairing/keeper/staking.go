@@ -60,6 +60,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 	if !planstypes.IsValidGeoEnum(int32(geolocation)) {
 		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
+			utils.Attribute{Key: "valid_geolocations", Value: planstypes.PrintGeolocations()},
 		)
 	}
 
