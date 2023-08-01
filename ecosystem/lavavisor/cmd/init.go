@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -67,6 +66,7 @@ var cmdLavavisorInit = &cobra.Command{
 			ProviderTarget: protoVer.ProviderTarget,
 			ProviderMin:    protoVer.ProviderMin,
 		}
+		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: version.ConsumerMin})
 
 		// 2- search extracted directory inside ./lavad/upgrades/<fetched_version>
 		// first check target version, then check min version
@@ -225,12 +225,12 @@ func checkLavaProtocolVersion(targetVersion, binaryPath string) error {
 }
 
 func Copy(src, dest string) error {
-	input, err := ioutil.ReadFile(src)
+	input, err := os.ReadFile(src)
 	if err != nil {
 		return utils.LavaFormatError("couldn't read source file", err)
 	}
 
-	err = ioutil.WriteFile(dest, input, 0755)
+	err = os.WriteFile(dest, input, 0755)
 	if err != nil {
 		return utils.LavaFormatError("couldn't write destination file", err)
 	}
