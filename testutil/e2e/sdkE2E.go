@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/lavanet/lava/testutil/e2e/sdk"
-	"github.com/lavanet/lava/utils"
-	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	"go/build"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/lavanet/lava/testutil/e2e/sdk"
+	"github.com/lavanet/lava/utils"
+	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // startBadgeServer starts badge server
