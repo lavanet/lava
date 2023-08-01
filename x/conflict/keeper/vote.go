@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
@@ -58,14 +59,14 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	noneProviderVotes := sdk.ZeroInt()
 	var providersWithoutVote []string
 	rewardPool := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
-	rewardCount := sdk.ZeroInt()
+	rewardCount := math.ZeroInt()
 	votersStake := map[string]sdk.Int{} // this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
 	var majorityMet bool
 
 	var winner int64
 	var winnersAddr string
-	var winnerVotersStake sdk.Int
+	var winnerVotersStake math.Int
 
 	// count votes and punish jury that didnt vote
 	epochVoteStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, conflictVote.VoteStartBlock) // TODO check if we need to check for overlap
