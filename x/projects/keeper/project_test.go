@@ -665,17 +665,17 @@ func TestAddAfterDelKeys(t *testing.T) {
 	projectID2 := types.ProjectIndex(sub1Addr, projectData2.Name)
 
 	// add key
-	err = ts.addProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 	require.True(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 	require.True(t, ts.isKeyInProject(projectID2, dev2Addr, types.ProjectKey_DEVELOPER))
 
 	// add same key to other project - should fail
-	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.NotNil(t, err)
 
 	// del key
-	err = ts.delProjectKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectDelKeys(projectID1, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 
 	// del takes effect in next epoch
@@ -684,7 +684,7 @@ func TestAddAfterDelKeys(t *testing.T) {
 	require.False(t, ts.isKeyInProject(projectID1, dev1Addr, types.ProjectKey_DEVELOPER))
 
 	// add same key to other project
-	err = ts.addProjectKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
+	err = ts.TxProjectAddKeys(projectID2, sub1Addr, types.ProjectDeveloperKey(dev1Addr))
 	require.Nil(t, err)
 	require.True(t, ts.isKeyInProject(projectID2, dev1Addr, types.ProjectKey_DEVELOPER))
 
