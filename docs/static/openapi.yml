@@ -39604,6 +39604,10 @@ paths:
                                   type: array
                                   items:
                                     type: string
+                                extensions:
+                                  type: array
+                                  items:
+                                    type: string
                           geolocation:
                             type: string
                             format: uint64
@@ -39774,6 +39778,10 @@ paths:
                                 items:
                                   type: string
                               api_interfaces:
+                                type: array
+                                items:
+                                  type: string
+                              extensions:
                                 type: array
                                 items:
                                   type: string
@@ -40996,19 +41004,26 @@ paths:
                               type: array
                               items:
                                 type: string
-                            collections:
+                            requirements:
                               type: array
                               items:
                                 type: object
                                 properties:
-                                  api_interface:
-                                    type: string
-                                  internal_path:
-                                    type: string
-                                  type:
-                                    type: string
-                                  add_on:
-                                    type: string
+                                  collection:
+                                    type: object
+                                    properties:
+                                      api_interface:
+                                        type: string
+                                      internal_path:
+                                        type: string
+                                      type:
+                                        type: string
+                                      add_on:
+                                        type: string
+                                  extensions:
+                                    type: array
+                                    items:
+                                      type: string
                       geolocation_profile:
                         type: string
                         format: uint64
@@ -42133,10 +42148,9 @@ paths:
                   next_key:
                     type: string
                     format: byte
-                    description: |-
+                    title: |-
                       next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently. It will be empty if
-                      there are no more results.
+                      query the next page most efficiently
                   total:
                     type: string
                     format: uint64
@@ -42965,10 +42979,9 @@ paths:
                   next_key:
                     type: string
                     format: byte
-                    description: |-
+                    title: |-
                       next_key is the key to be passed to PageRequest.key to
-                      query the next page most efficiently. It will be empty if
-                      there are no more results.
+                      query the next page most efficiently
                   total:
                     type: string
                     format: uint64
@@ -46090,51 +46103,89 @@ definitions:
         properties:
           height:
             type: string
-            format: int64
-          round:
-            type: integer
-            format: int32
-          block_id:
-            type: object
-            properties:
-              hash:
-                type: string
-                format: byte
-              part_set_header:
-                type: object
-                properties:
-                  total:
-                    type: integer
-                    format: int64
-                  hash:
-                    type: string
-                    format: byte
-                title: PartsetHeader
-            title: BlockID
-          signatures:
-            type: array
-            items:
-              type: object
-              properties:
-                block_id_flag:
-                  type: string
-                  enum:
-                    - BLOCK_ID_FLAG_UNKNOWN
-                    - BLOCK_ID_FLAG_ABSENT
-                    - BLOCK_ID_FLAG_COMMIT
-                    - BLOCK_ID_FLAG_NIL
-                  default: BLOCK_ID_FLAG_UNKNOWN
-                  title: BlockIdFlag indicates which BlcokID the signature is for
-                validator_address:
-                  type: string
-                  format: byte
-                timestamp:
-                  type: string
-                  format: date-time
-                signature:
-                  type: string
-                  format: byte
-              description: CommitSig is a part of the Vote included in a Commit.
+            format: uint64
+    description: QueryParamsResponse is the response type for the Query/Params RPC method.
+  cosmos.base.query.v1beta1.PageRequest:
+    type: object
+    properties:
+      key:
+        type: string
+        format: byte
+        description: |-
+          key is a value returned in PageResponse.next_key to begin
+          querying the next page most efficiently. Only one of offset or key
+          should be set.
+      offset:
+        type: string
+        format: uint64
+        description: |-
+          offset is a numeric offset that can be used when key is unavailable.
+          It is less efficient than using key. Only one of offset or key should
+          be set.
+      limit:
+        type: string
+        format: uint64
+        description: >-
+          limit is the total number of results to be returned in the result
+          page.
+
+          If left empty it will default to a value to be set by each app.
+      count_total:
+        type: boolean
+        description: >-
+          count_total is set to true  to indicate that the result set should
+          include
+
+          a count of the total number of items available for pagination in UIs.
+
+          count_total is only respected when offset is used. It is ignored when
+          key
+
+          is set.
+      reverse:
+        type: boolean
+        description: >-
+          reverse is set to true if results are to be returned in the descending
+          order.
+
+
+          Since: cosmos-sdk 0.43
+    description: |-
+      message SomeRequest {
+               Foo some_parameter = 1;
+               PageRequest pagination = 2;
+       }
+    title: |-
+      PageRequest is to be embedded in gRPC request messages for efficient
+      pagination. Ex:
+  cosmos.base.query.v1beta1.PageResponse:
+    type: object
+    properties:
+      next_key:
+        type: string
+        format: byte
+        title: |-
+          next_key is the key to be passed to PageRequest.key to
+          query the next page most efficiently
+      total:
+        type: string
+        format: uint64
+        title: |-
+          total is total number of results available if PageRequest.count_total
+          was set, its value is undefined otherwise
+    description: |-
+      PageResponse is to be embedded in gRPC response messages where the
+      corresponding request message has used PageRequest.
+
+       message SomeResponse {
+               repeated Bar results = 1;
+               PageResponse page = 2;
+       }
+  google.protobuf.Any:
+    type: object
+    properties:
+      '@type':
+        type: string
         description: >-
           Commit contains the evidence that a block was committed by a set of
           validators.
@@ -70446,6 +70497,10 @@ definitions:
         type: array
         items:
           type: string
+      extensions:
+        type: array
+        items:
+          type: string
   lavanet.lava.epochstorage.EpochDetails:
     type: object
     properties:
@@ -70584,6 +70639,10 @@ definitions:
                           type: array
                           items:
                             type: string
+                        extensions:
+                          type: array
+                          items:
+                            type: string
                   geolocation:
                     type: string
                     format: uint64
@@ -70701,6 +70760,10 @@ definitions:
                         type: array
                         items:
                           type: string
+                      extensions:
+                        type: array
+                        items:
+                          type: string
                 geolocation:
                   type: string
                   format: uint64
@@ -70772,6 +70835,10 @@ definitions:
               type: array
               items:
                 type: string
+            extensions:
+              type: array
+              items:
+                type: string
       geolocation:
         type: string
         format: uint64
@@ -70824,6 +70891,10 @@ definitions:
                     items:
                       type: string
                   api_interfaces:
+                    type: array
+                    items:
+                      type: string
+                  extensions:
                     type: array
                     items:
                       type: string
@@ -71519,6 +71590,26 @@ definitions:
               type: string
             add_on:
               type: string
+      requirements:
+        type: array
+        items:
+          type: object
+          properties:
+            collection:
+              type: object
+              properties:
+                api_interface:
+                  type: string
+                internal_path:
+                  type: string
+                type:
+                  type: string
+                add_on:
+                  type: string
+            extensions:
+              type: array
+              items:
+                type: string
   lavanet.lava.plans.Policy:
     type: object
     properties:
@@ -71546,6 +71637,26 @@ definitions:
                     type: string
                   add_on:
                     type: string
+            requirements:
+              type: array
+              items:
+                type: object
+                properties:
+                  collection:
+                    type: object
+                    properties:
+                      api_interface:
+                        type: string
+                      internal_path:
+                        type: string
+                      type:
+                        type: string
+                      add_on:
+                        type: string
+                  extensions:
+                    type: array
+                    items:
+                      type: string
       geolocation_profile:
         type: string
         format: uint64
@@ -71606,6 +71717,24 @@ definitions:
         type: string
       add_on:
         type: string
+  lavanet.lava.plans.ChainRequirement:
+    type: object
+    properties:
+      collection:
+        type: object
+        properties:
+          api_interface:
+            type: string
+          internal_path:
+            type: string
+          type:
+            type: string
+          add_on:
+            type: string
+      extensions:
+        type: array
+        items:
+          type: string
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -71681,19 +71810,26 @@ definitions:
                   type: array
                   items:
                     type: string
-                collections:
+                requirements:
                   type: array
                   items:
                     type: object
                     properties:
-                      api_interface:
-                        type: string
-                      internal_path:
-                        type: string
-                      type:
-                        type: string
-                      add_on:
-                        type: string
+                      collection:
+                        type: object
+                        properties:
+                          api_interface:
+                            type: string
+                          internal_path:
+                            type: string
+                          type:
+                            type: string
+                          add_on:
+                            type: string
+                      extensions:
+                        type: array
+                        items:
+                          type: string
           geolocation_profile:
             type: string
             format: uint64
@@ -71786,19 +71922,26 @@ definitions:
                       type: array
                       items:
                         type: string
-                    collections:
+                    requirements:
                       type: array
                       items:
                         type: object
                         properties:
-                          api_interface:
-                            type: string
-                          internal_path:
-                            type: string
-                          type:
-                            type: string
-                          add_on:
-                            type: string
+                          collection:
+                            type: object
+                            properties:
+                              api_interface:
+                                type: string
+                              internal_path:
+                                type: string
+                              type:
+                                type: string
+                              add_on:
+                                type: string
+                          extensions:
+                            type: array
+                            items:
+                              type: string
               geolocation_profile:
                 type: string
                 format: uint64
@@ -73265,10 +73408,9 @@ definitions:
           next_key:
             type: string
             format: byte
-            description: |-
+            title: |-
               next_key is the key to be passed to PageRequest.key to
-              query the next page most efficiently. It will be empty if
-              there are no more results.
+              query the next page most efficiently
           total:
             type: string
             format: uint64

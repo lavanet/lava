@@ -160,3 +160,15 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 	}
 	return nil
 }
+
+func (spec *Spec) ServicesMap() (addons map[string]struct{}, extensions map[string]struct{}) {
+	addons = map[string]struct{}{}
+	extensions = map[string]struct{}{}
+	for _, apiCollection := range spec.ApiCollections {
+		addons[apiCollection.CollectionData.AddOn] = struct{}{}
+		for _, extension := range apiCollection.Extensions {
+			extensions[extension.Name] = struct{}{}
+		}
+	}
+	return
+}
