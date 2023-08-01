@@ -60,7 +60,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	var providersWithoutVote []string
 	rewardPool := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
 	rewardCount := math.ZeroInt()
-	votersStake := map[string]sdk.Int{} // this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
+	votersStake := map[string]math.Int{} // this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
 	var majorityMet bool
 
