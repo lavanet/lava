@@ -6,7 +6,6 @@ import (
 )
 
 func TestLava(t *testing.T) {
-	t.Skip("skipping lava test")
 	// default timeout same as `go test`
 	timeout := time.Minute * 10
 
