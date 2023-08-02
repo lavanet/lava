@@ -250,7 +250,8 @@ func NewGrpcChainListener(
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	chainParser ChainParser) (chainListener *GrpcChainListener) {
+	chainParser ChainParser,
+) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
 		listenEndpoint,

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"google.golang.org/grpc/codes"
@@ -21,7 +21,7 @@ func (k Keeper) ListProjects(goCtx context.Context, req *types.QueryListProjects
 
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, req.Subscription, block, &sub); !found {
-		return nil, utils.LavaFormatWarning("subscription not found", sdkerrors.ErrKeyNotFound,
+		return nil, utils.LavaFormatWarning("subscription not found", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "subscription", Value: req.Subscription},
 		)
 	}

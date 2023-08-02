@@ -119,7 +119,6 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
 	}
-
 	stakeEntries, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
 		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)

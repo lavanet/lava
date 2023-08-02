@@ -13,9 +13,10 @@ import (
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType spectypes.Spec_ProvidersTypes)
-	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
+	GetExpandedSpec(ctx sdk.Context, index string) (val spectypes.Spec, err error)
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool) // this spec is unexpanded don;t use for collections work
 	GeolocationCount(ctx sdk.Context) uint64
-	GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error)
+	GetExpectedServicesForExpandedSpec(expandedSpec spectypes.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{}
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }
 

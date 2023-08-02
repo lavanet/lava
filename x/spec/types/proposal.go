@@ -4,7 +4,7 @@ import (
 	fmt "fmt"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 )
 
 func checkSpecProposal(spec Spec) error {

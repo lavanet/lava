@@ -3,8 +3,8 @@ package keeper
 import (
 	"context"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
@@ -34,7 +34,7 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 				return nil, err
 			}
 			// get the spec's expected interfaces
-			expectedInterfaces := k.getExpectedInterfacesForSpecInner(&fullspec, map[epochstoragetypes.EndpointService]struct{}{}, true)
+			expectedInterfaces := k.GetExpectedServicesForExpandedSpec(fullspec, true)
 
 			mandatoryInterfaceList := getInterfacesNamesFromMap(expectedInterfaces)
 
@@ -48,7 +48,11 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 
 				apiMethods := []string{}
 				// iterate over APIs
-				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{ApiInterface: apiInterface, Addon: ""}]; !ok {
+				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{
+					ApiInterface: apiInterface,
+					Addon:        "",
+					Extension:    "",
+				}]; !ok {
 					optionalInterfaceList = append(optionalInterfaceList, apiInterface)
 				}
 				for _, api := range apiCollection.Apis {
