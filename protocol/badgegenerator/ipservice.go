@@ -3,8 +3,11 @@ package badgegenerator
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/praserx/ipconv"
 	"io"
+	"net"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -94,35 +97,48 @@ func (service *IpService) ReadIpTsvFileData() error {
 			result = append(result, ipData)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].FromIp < result[j].FromIp
+	})
 	service.IpCountryData = &result
 	return nil
 }
 
 func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
-	ipData := convertStringToIpModel(toSearchIp)
-	if ipData == nil {
-		return nil, fmt.Errorf("invalid ip format")
+	needle, err := convertStringToIpInt(toSearchIp)
+	if err != nil {
+		return nil, err
 	}
-	if len(*service.IpCountryData) == 0 {
-		return nil, fmt.Errorf("invalid service configuration")
-	}
+	haystack := *service.IpCountryData // for simplicity
+	low := 0
+	high := len(haystack) - 1
 
-	for _, ip := range *service.IpCountryData {
-		// for better readability this is done in different ifs
-		if ipData.Group1 >= ip.FromIp.Group1 && ipData.Group1 <= ip.ToIP.Group1 {
-			// group 2
-			if ipData.Group2 >= ip.FromIp.Group2 && ipData.Group2 <= ip.ToIP.Group2 {
-				// gr 3
-				if ipData.Group3 >= ip.FromIp.Group3 && ipData.Group3 <= ip.ToIP.Group3 {
-					// gr 4
-					if ipData.Group4 >= ip.FromIp.Group4 && ipData.Group4 <= ip.ToIP.Group4 {
-						return ip, nil
-					}
-				}
-			}
+	for low <= high {
+		median := (low + high) / 2
+		if haystack[median].FromIp < needle {
+			low = median + 1
+		} else {
+			high = median - 1
 		}
 	}
 
+	if low == len(haystack) {
+		return nil, fmt.Errorf("ip not found")
+	}
+	if needle >= haystack[low].FromIp && needle <= haystack[low].ToIP {
+		return haystack[low], nil
+	}
+	if needle >= haystack[high].FromIp && needle <= haystack[high].ToIP {
+		return haystack[high], nil
+	}
+
+	// theoretically we should never come here but, I added this to be on the safe side
+	for low <= high {
+		if needle >= haystack[low].FromIp && needle <= haystack[low].ToIP {
+			return haystack[low], nil
+		}
+		low++
+	}
 	return nil, fmt.Errorf("ip not found")
 }
 
@@ -132,16 +148,32 @@ func convertRowToIpModel(rowData string) (*IpData, error) {
 		if len(ipSorce) != 2 {
 			return nil, fmt.Errorf("unexpeted ip range on  tsv data format. expected 2 separated with space(' ')")
 		}
+		fromIpData, err := convertStringToIpInt(ipSorce[0])
+		if err != nil {
+			return nil, err
+		}
+		toIpData, err := convertStringToIpInt(ipSorce[1])
+		if err != nil {
+			return nil, err
+		}
 		return &IpData{
-			FromIp:      convertStringToIpModel(ipSorce[0]),
-			ToIP:        convertStringToIpModel(ipSorce[1]),
+			FromIp:      fromIpData,
+			ToIP:        toIpData,
 			CountryCode: ipStringDatas[2],
 		}, nil
 	}
 	convertRowWith5tabs := func(ipStringDatas []string) (*IpData, error) {
+		fromIpData, err := convertStringToIpInt(ipStringDatas[0])
+		if err != nil {
+			return nil, err
+		}
+		toIpData, err := convertStringToIpInt(ipStringDatas[1])
+		if err != nil {
+			return nil, err
+		}
 		return &IpData{
-			FromIp:      convertStringToIpModel(ipStringDatas[0]),
-			ToIP:        convertStringToIpModel(ipStringDatas[1]),
+			FromIp:      fromIpData,
+			ToIP:        toIpData,
 			CountryCode: ipStringDatas[3],
 		}, nil
 	}
@@ -156,23 +188,14 @@ func convertRowToIpModel(rowData string) (*IpData, error) {
 	}
 }
 
-func convertStringToIpModel(sc string) *Ip {
+func convertStringToIpInt(sc string) (int64, error) {
 	if len(sc) == 0 {
-		return nil
+		return 0, fmt.Errorf("invalid ip length to convert to number")
 	}
-	ipGroups := strings.Split(sc, ".")
-	if len(ipGroups) != 4 {
-		return nil
+	ip := net.ParseIP(sc)
+	if ip == nil {
+		return 0, fmt.Errorf("converting ip didn't succeed")
 	}
-	group1, _ := strconv.Atoi(ipGroups[0])
-	group2, _ := strconv.Atoi(ipGroups[1])
-	group3, _ := strconv.Atoi(ipGroups[2])
-	group4, _ := strconv.Atoi(ipGroups[3])
-
-	return &Ip{
-		Group1: group1,
-		Group2: group2,
-		Group3: group3,
-		Group4: group4,
-	}
+	number, err := ipconv.IPv4ToInt(ip)
+	return int64(number), err
 }

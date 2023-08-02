@@ -19,15 +19,8 @@ type UserBadgeItem struct {
 }
 
 type IpData struct {
-	FromIp      *Ip
-	ToIP        *Ip
+	FromIp      int64
+	ToIP        int64
 	CountryCode string
 	Geolocation int
-}
-
-type Ip struct {
-	Group1 int
-	Group2 int
-	Group3 int
-	Group4 int
 }
