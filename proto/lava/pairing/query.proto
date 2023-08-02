@@ -154,6 +154,7 @@ message QueryVerifyPairingResponse {
   bool   valid            = 1;
   uint64 paired_providers = 3;
   uint64 cu_per_epoch     = 4;
+  string projectID        = 5;
 }
 
 message QueryGetUniquePaymentStorageClientProviderRequest {

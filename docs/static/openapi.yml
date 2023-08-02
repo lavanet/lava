@@ -40000,6 +40000,8 @@ paths:
               cu_per_epoch:
                 type: string
                 format: uint64
+              projectID:
+                type: string
         default:
           description: An unexpected error response.
           schema:
@@ -69791,6 +69793,8 @@ definitions:
       cu_per_epoch:
         type: string
         format: uint64
+      projectID:
+        type: string
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object
     properties:
