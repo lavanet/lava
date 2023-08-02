@@ -3,13 +3,14 @@ package badgegenerator
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/praserx/ipconv"
 	"io"
 	"net"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/praserx/ipconv"
 
 	"github.com/lavanet/lava/utils"
 )
