@@ -176,6 +176,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, sdk.StoreTypeIAVL, db)
 
+	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
+	stateStore.MountStoreWithDB(downtimeKey, sdk.StoreTypeIAVL, db)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
