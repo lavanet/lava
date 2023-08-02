@@ -2,11 +2,11 @@ syntax = "proto3";
 package lavanet.lava.pairing;
 
 import "gogoproto/gogo.proto";
-import "pairing/params.proto";
-import "pairing/unique_payment_storage_client_provider.proto";
-import "pairing/provider_payment_storage.proto";
-import "pairing/epoch_payments.proto";
-import "common/fixationEntry.proto";
+import "lava/pairing/params.proto";
+import "lava/pairing/unique_payment_storage_client_provider.proto";
+import "lava/pairing/provider_payment_storage.proto";
+import "lava/pairing/epoch_payments.proto";
+import "lava/common/fixationEntry.proto";
 
 // this line is used by starport scaffolding # genesis/proto/import
 

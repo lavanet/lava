@@ -2,7 +2,7 @@ syntax = "proto3";
 package lavanet.lava.epochstorage;
 
 option go_package = "github.com/lavanet/lava/x/epochstorage/types";
-import "epochstorage/stake_entry.proto"; 
+import "lava/epochstorage/stake_entry.proto"; 
 import "gogoproto/gogo.proto"; 
 
 message StakeStorage {

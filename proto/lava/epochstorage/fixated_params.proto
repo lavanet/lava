@@ -3,7 +3,7 @@ package lavanet.lava.epochstorage;
 
 option go_package = "github.com/lavanet/lava/x/epochstorage/types";
 import "gogoproto/gogo.proto"; 
-import "epochstorage/params.proto";
+import "lava/epochstorage/params.proto";
 
 
 message FixatedParams {

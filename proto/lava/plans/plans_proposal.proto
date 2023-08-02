@@ -6,7 +6,7 @@ option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
 
-import "plans/plan.proto"; 
+import "lava/plans/plan.proto"; 
 
 message PlansAddProposal {
   option (gogoproto.goproto_getters)  = false;

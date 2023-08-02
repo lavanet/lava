@@ -4,7 +4,7 @@ package lavanet.lava.downtime.v1;
 
 option go_package = "github.com/lavanet/lava/x/downtime/v1";
 
-import "downtime/v1/downtime.proto";
+import "lava/downtime/v1/downtime.proto";
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 

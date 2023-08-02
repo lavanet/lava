@@ -2,8 +2,8 @@ syntax = "proto3";
 package lavanet.lava.plans;
 
 import "gogoproto/gogo.proto";
-import "plans/params.proto";
-import "common/fixationEntry.proto";
+import "lava/plans/params.proto";
+import "lava/common/fixationEntry.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/plans/types";

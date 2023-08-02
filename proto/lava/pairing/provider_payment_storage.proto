@@ -2,7 +2,7 @@ syntax = "proto3";
 package lavanet.lava.pairing;
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
-import "pairing/unique_payment_storage_client_provider.proto"; 
+import "lava/pairing/unique_payment_storage_client_provider.proto"; 
 
 message ProviderPaymentStorage {
 

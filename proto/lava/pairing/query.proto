@@ -1,199 +1,219 @@
 syntax = "proto3";
+
 package lavanet.lava.pairing;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "pairing/params.proto";
-import "pairing/epoch_payments.proto";
+import "lava/pairing/params.proto";
+import "lava/pairing/epoch_payments.proto";
+
 // this line is used by starport scaffolding # 1
-import "plans/policy.proto";
-import "pairing/provider_payment_storage.proto";
-import "pairing/unique_payment_storage_client_provider.proto";
-import "epochstorage/stake_entry.proto";
-import "subscription/subscription.proto";
-import "projects/project.proto";
+import "lava/plans/policy.proto";
+import "lava/pairing/provider_payment_storage.proto";
+import "lava/pairing/unique_payment_storage_client_provider.proto";
+import "lava/epochstorage/stake_entry.proto";
+import "lava/subscription/subscription.proto";
+import "lava/projects/project.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Query defines the gRPC querier service.
 service Query {
+  
   // Parameters queries the parameters of the module.
-  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+  rpc Params (QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/pairing/params";
+  
   }
+  
   // Queries a list of Providers items.
-	rpc Providers(QueryProvidersRequest) returns (QueryProvidersResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/providers/{chainID}";
-	}
+  rpc Providers (QueryProvidersRequest) returns (QueryProvidersResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/providers/{chainID}";
+  
+  }
+  
+  // Queries a list of GetPairing items.
+  rpc GetPairing (QueryGetPairingRequest) returns (QueryGetPairingResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
+  
+  }
+  
+  // Queries a list of VerifyPairing items.
+  rpc VerifyPairing (QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}";
+  
+  }
+  
+  // Queries a UniquePaymentStorageClientProvider by index.
+  rpc UniquePaymentStorageClientProvider (QueryGetUniquePaymentStorageClientProviderRequest) returns (QueryGetUniquePaymentStorageClientProviderResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}";
+  
+  }
+  
+  // Queries a list of UniquePaymentStorageClientProvider items.
+  rpc UniquePaymentStorageClientProviderAll (QueryAllUniquePaymentStorageClientProviderRequest) returns (QueryAllUniquePaymentStorageClientProviderResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider";
+  
+  }
+  
+  // Queries a ProviderPaymentStorage by index.
+  rpc ProviderPaymentStorage (QueryGetProviderPaymentStorageRequest) returns (QueryGetProviderPaymentStorageResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage/{index}";
+  
+  }
+  
+  // Queries a list of ProviderPaymentStorage items.
+  rpc ProviderPaymentStorageAll (QueryAllProviderPaymentStorageRequest) returns (QueryAllProviderPaymentStorageResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage";
+  
+  }
+  
+  // Queries a EpochPayments by index.
+  rpc EpochPayments (QueryGetEpochPaymentsRequest) returns (QueryGetEpochPaymentsResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments/{index}";
+  
+  }
+  
+  // Queries a list of EpochPayments items.
+  rpc EpochPaymentsAll (QueryAllEpochPaymentsRequest) returns (QueryAllEpochPaymentsResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments";
+  
+  }
+  
+  // Queries a UserEntry items.
+  rpc UserEntry (QueryUserEntryRequest) returns (QueryUserEntryResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/user_entry/{address}/{chainID}";
+  
+  }
+  
+  // Queries a list of StaticProvidersList items.
+  rpc StaticProvidersList (QueryStaticProvidersListRequest) returns (QueryStaticProvidersListResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/static_providers_list/{chainID}";
+  
+  }
+  
+  // Queries a list of EffectivePolicy items.
+  rpc EffectivePolicy (QueryEffectivePolicyRequest) returns (QueryEffectivePolicyResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}";
+  
+  }
 
-// Queries a list of GetPairing items.
-	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
-	}
-
-// Queries a list of VerifyPairing items.
-	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}";
-	}
-
-// Queries a UniquePaymentStorageClientProvider by index.
-	rpc UniquePaymentStorageClientProvider(QueryGetUniquePaymentStorageClientProviderRequest) returns (QueryGetUniquePaymentStorageClientProviderResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}";
-	}
-
-	// Queries a list of UniquePaymentStorageClientProvider items.
-	rpc UniquePaymentStorageClientProviderAll(QueryAllUniquePaymentStorageClientProviderRequest) returns (QueryAllUniquePaymentStorageClientProviderResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider";
-	}
-
-// Queries a ProviderPaymentStorage by index.
-	rpc ProviderPaymentStorage(QueryGetProviderPaymentStorageRequest) returns (QueryGetProviderPaymentStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage/{index}";
-	}
-
-	// Queries a list of ProviderPaymentStorage items.
-	rpc ProviderPaymentStorageAll(QueryAllProviderPaymentStorageRequest) returns (QueryAllProviderPaymentStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage";
-	}
-
-// Queries a EpochPayments by index.
-	rpc EpochPayments(QueryGetEpochPaymentsRequest) returns (QueryGetEpochPaymentsResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments/{index}";
-	}
-
-	// Queries a list of EpochPayments items.
-	rpc EpochPaymentsAll(QueryAllEpochPaymentsRequest) returns (QueryAllEpochPaymentsResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments";
-	}
-
-// Queries a UserEntry items.
-	rpc UserEntry(QueryUserEntryRequest) returns (QueryUserEntryResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/user_entry/{address}/{chainID}";
-	}
-
-// Queries a list of StaticProvidersList items.
-	rpc StaticProvidersList(QueryStaticProvidersListRequest) returns (QueryStaticProvidersListResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/static_providers_list/{chainID}";
-	}
-
-// Queries a list of EffectivePolicy items.
-	rpc EffectivePolicy(QueryEffectivePolicyRequest) returns (QueryEffectivePolicyResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}";
-	}
-
-// this line is used by starport scaffolding # 2
+  // this line is used by starport scaffolding # 2
+  
+  // Queries a list of SdkPairing items.
+  rpc SdkPairing (QuerySdkPairingRequest) returns (QuerySdkPairingResponse) {
+    option (google.api.http).get = "/lavanet/lava/pairing/sdk_pairing";
+  
+  }
 }
-
 // QueryParamsRequest is request type for the Query/Params RPC method.
 message QueryParamsRequest {}
 
 // QueryParamsResponse is response type for the Query/Params RPC method.
 message QueryParamsResponse {
+  
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryProvidersRequest {
-  string chainID = 1;
-  bool showFrozen = 2;
+  string chainID    = 1;
+  bool   showFrozen = 2;
 }
 
 message QueryProvidersResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1 [(gogoproto.nullable) = false];
-	string output =2;
+  repeated lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
+           string                               output     = 2;
 }
 
 message QueryGetPairingRequest {
   string chainID = 1;
-  string client = 2;
+  string client  = 2;
 }
 
 message QueryGetPairingResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
-	uint64 current_epoch = 2;
-	uint64 time_left_to_next_pairing = 3;
-	uint64 spec_last_updated_block = 4;
-	uint64 block_of_next_pairing = 5;
+  repeated lavanet.lava.epochstorage.StakeEntry providers                 = 1 [(gogoproto.nullable) = false];
+           uint64                               current_epoch             = 2;
+           uint64                               time_left_to_next_pairing = 3;
+           uint64                               spec_last_updated_block   = 4;
+           uint64                               block_of_next_pairing     = 5;
 }
 
 message QueryVerifyPairingRequest {
-  string chainID = 1;
-  string client = 2;
+  string chainID  = 1;
+  string client   = 2;
   string provider = 3;
-  uint64 block = 4;
+  uint64 block    = 4;
 }
 
 message QueryVerifyPairingResponse {
   reserved 2;
-  bool valid = 1;
+  bool   valid            = 1;
   uint64 paired_providers = 3;
-  uint64 cu_per_epoch = 4;
+  uint64 cu_per_epoch     = 4;
 }
 
 message QueryGetUniquePaymentStorageClientProviderRequest {
-	  string index = 1;
-
+  string index = 1;
 }
 
 message QueryGetUniquePaymentStorageClientProviderResponse {
-	UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
+  UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryAllUniquePaymentStorageClientProviderRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
 message QueryAllUniquePaymentStorageClientProviderResponse {
-	repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  repeated UniquePaymentStorageClientProvider     uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
+           cosmos.base.query.v1beta1.PageResponse pagination                         = 2;
 }
 
 message QueryGetProviderPaymentStorageRequest {
-	  string index = 1;
-
+  string index = 1;
 }
 
 message QueryGetProviderPaymentStorageResponse {
-	ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
+  ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryAllProviderPaymentStorageRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
 message QueryAllProviderPaymentStorageResponse {
-	repeated ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  repeated ProviderPaymentStorage                 providerPaymentStorage = 1 [(gogoproto.nullable) = false];
+           cosmos.base.query.v1beta1.PageResponse pagination             = 2;
 }
 
 message QueryGetEpochPaymentsRequest {
-	  string index = 1;
-
+  string index = 1;
 }
 
 message QueryGetEpochPaymentsResponse {
-	EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
+  EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryAllEpochPaymentsRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
 message QueryAllEpochPaymentsResponse {
-	repeated EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  repeated EpochPayments                          epochPayments = 1 [(gogoproto.nullable) = false];
+           cosmos.base.query.v1beta1.PageResponse pagination    = 2;
 }
 
 message QueryUserEntryRequest {
   string address = 1;
   string chainID = 2;
-  uint64 block = 3;
+  uint64 block   = 3;
 }
 
 message QueryUserEntryResponse {
   lavanet.lava.epochstorage.StakeEntry consumer = 1 [(gogoproto.nullable) = false];
-  uint64 maxCU =2;
+  uint64                               maxCU    = 2;
 }
 
 message QueryStaticProvidersListRequest {
@@ -201,25 +221,30 @@ message QueryStaticProvidersListRequest {
 }
 
 message QueryStaticProvidersListResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryAccountInfoResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry provider = 1 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry frozen = 2 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry consumer = 3 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry unstaked = 4 [(gogoproto.nullable) = false];
-	lavanet.lava.subscription.Subscription subscription = 5 [(gogoproto.nullable) = true];
-	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
-
+  repeated lavanet.lava.epochstorage.StakeEntry   provider     = 1 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.epochstorage.StakeEntry   frozen       = 2 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.epochstorage.StakeEntry   consumer     = 3 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.epochstorage.StakeEntry   unstaked     = 4 [(gogoproto.nullable) = false];
+           lavanet.lava.subscription.Subscription subscription = 5 [(gogoproto.nullable) = true ];
+           lavanet.lava.projects.Project          project      = 6 [(gogoproto.nullable) = true ];
 }
+
 message QueryEffectivePolicyRequest {
   string consumer = 1;
-  string specID = 2;
+  string specID   = 2;
 }
 
 message QueryEffectivePolicyResponse {
-	lavanet.lava.plans.Policy policy = 1;
+  lavanet.lava.plans.Policy policy = 1;
 }
 
+
 // this line is used by starport scaffolding # 3
+message QuerySdkPairingRequest {}
+
+message QuerySdkPairingResponse {}
+

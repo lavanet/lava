@@ -2,10 +2,10 @@ syntax = "proto3";
 package lavanet.lava.epochstorage;
 
 import "gogoproto/gogo.proto";
-import "epochstorage/params.proto";
-import "epochstorage/stake_storage.proto";
-import "epochstorage/epoch_details.proto";
-import "epochstorage/fixated_params.proto";
+import "lava/epochstorage/params.proto";
+import "lava/epochstorage/stake_storage.proto";
+import "lava/epochstorage/epoch_details.proto";
+import "lava/epochstorage/fixated_params.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/epochstorage/types";

@@ -3,10 +3,10 @@ package lavanet.lava.pairing;
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
-import "pairing/relay.proto";
+import "lava/pairing/relay.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
-import "epochstorage/stake_entry.proto";
+import "lava/epochstorage/stake_entry.proto";
 
 service BadgeGenerator {
   rpc GenerateBadge(GenerateBadgeRequest) returns (GenerateBadgeResponse) {}

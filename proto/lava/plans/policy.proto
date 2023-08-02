@@ -5,7 +5,7 @@ option go_package = "github.com/lavanet/lava/x/plans/types";
 option (gogoproto.equal_all) = true;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "spec/api_collection.proto";
+import "lava/spec/api_collection.proto";
 
 // protobuf expected in YAML format: used "moretags" to simplify parsing
 message Policy {

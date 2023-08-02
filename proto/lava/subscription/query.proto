@@ -4,9 +4,9 @@ package lavanet.lava.subscription;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "subscription/params.proto";
+import "lava/subscription/params.proto";
 // this line is used by starport scaffolding # 1
-import "subscription/subscription.proto";
+import "lava/subscription/subscription.proto";
 
 option go_package = "github.com/lavanet/lava/x/subscription/types";
 

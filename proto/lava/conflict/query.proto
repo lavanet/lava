@@ -3,8 +3,8 @@ package lavanet.lava.conflict;
 
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "conflict/params.proto";
-import "conflict/conflict_vote.proto";
+import "lava/conflict/params.proto";
+import "lava/conflict/conflict_vote.proto";
 // this line is used by starport scaffolding # 1
 import "gogoproto/gogo.proto";
 

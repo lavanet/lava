@@ -6,7 +6,7 @@ option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
 
-import "spec/spec.proto"; 
+import "lava/spec/spec.proto"; 
 
 message SpecAddProposal {
   option (gogoproto.goproto_getters)  = false;
