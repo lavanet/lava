@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -21,7 +22,12 @@ func (k Keeper) SdkPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, err
 	}
 
-	project, err := k.GetProjectData(ctx, sdk.AccAddress(req.Client), req.ChainID, uint64(ctx.BlockHeight()))
+	clientAddr, err := sdk.AccAddressFromBech32(req.Client)
+	if err != nil {
+		return nil, fmt.Errorf("invalid creator address %s error: %s", req.Client, err)
+	}
+
+	project, err := k.GetProjectData(ctx, clientAddr, req.ChainID, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, err
 	}
