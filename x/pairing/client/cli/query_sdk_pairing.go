@@ -24,7 +24,7 @@ func CmdSdkPairing() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QuerySdkPairingRequest{}
+			params := &types.QueryGetPairingRequest{}
 
 			res, err := queryClient.SdkPairing(cmd.Context(), params)
 			if err != nil {

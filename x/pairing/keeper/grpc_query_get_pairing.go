@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -19,24 +20,34 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	pairing, _, err := k.getPairing(ctx, req)
+	return pairing, err
+}
+
+func (k Keeper) getPairing(ctx sdk.Context, req *types.QueryGetPairingRequest) (*types.QueryGetPairingResponse, *spectypes.Spec, error) {
+	if req == nil {
+		return nil, nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
 	// TODO: validate chainID
 	// check client address
 	clientAddr, err := sdk.AccAddressFromBech32(req.Client)
 	if err != nil {
-		return nil, fmt.Errorf("invalid creator address %s error: %s", req.Client, err)
+		return nil, nil, fmt.Errorf("invalid creator address %s error: %s", req.Client, err)
 	}
 
 	// Make sure the chain ID exists and the chain's functional
 	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
 	// TODO: handle spec changes
 	if !foundAndActive {
-		return nil, errors.New("spec not found or not enabled")
+		return nil, nil, errors.New("spec not found or not enabled")
 	}
 
 	// Get pairing list for latest block
 	providers, err := k.GetPairingForClient(ctx, req.ChainID, clientAddr)
 	if err != nil {
-		return nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, ctx.BlockHeight(), err)
+		return nil, nil, fmt.Errorf("could not get pairing for chainID: %s, client addr: %s, blockHeight: %d, err: %s", req.ChainID, clientAddr, ctx.BlockHeight(), err)
 	}
 
 	// Calculate the time left until the new epoch (when epoch changes, new pairing is generated)
@@ -53,9 +64,8 @@ func (k Keeper) GetPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 	// Get the block in which there was the latest change for the current spec
 	spec, found := k.specKeeper.GetSpec(ctx, req.GetChainID())
 	if !found {
-		return nil, errors.New("spec not found or not enabled")
+		return nil, nil, errors.New("spec not found or not enabled")
 	}
-	specLastUpdatedBlock := spec.BlockLastUpdated
 
-	return &types.QueryGetPairingResponse{Providers: providers, CurrentEpoch: currentEpoch, TimeLeftToNextPairing: timeLeftToNextPairing, SpecLastUpdatedBlock: specLastUpdatedBlock, BlockOfNextPairing: nextPairingBlock}, nil
+	return &types.QueryGetPairingResponse{Providers: providers, CurrentEpoch: currentEpoch, TimeLeftToNextPairing: timeLeftToNextPairing, SpecLastUpdatedBlock: spec.BlockLastUpdated, BlockOfNextPairing: nextPairingBlock}, &spec, nil
 }

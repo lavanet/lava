@@ -9,15 +9,27 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) SdkPairing(goCtx context.Context, req *types.QuerySdkPairingRequest) (*types.QuerySdkPairingResponse, error) {
+func (k Keeper) SdkPairing(goCtx context.Context, req *types.QueryGetPairingRequest) (*types.QuerySdkPairingResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: Process the query
-	_ = ctx
+	pairing, spec, err := k.getPairing(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
-	return &types.QuerySdkPairingResponse{}, nil
+	project, err := k.GetProjectData(ctx, sdk.AccAddress(req.Client), req.ChainID, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return nil, err
+	}
+
+	strictestPolicy, err := k.GetProjectStrictestPolicy(ctx, project, req.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QuerySdkPairingResponse{Pairing: pairing, Spec: spec, Cu: strictestPolicy.EpochCuLimit}, err
 }
