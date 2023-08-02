@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,8 +17,9 @@ func TestRelayPaymentOverUseWithDowntime(t *testing.T) {
 
 	maxcu := ts.plan.PlanPolicy.EpochCuLimit
 	relaySession := ts.newRelaySession(providerAddr, 0, maxcu*2, ts.BlockHeight(), 0)
-	signRelaySession(relaySession, client1Acct.SK)
-
+	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
 	// force a downtime of factor 2
 	dtParams := ts.Keepers.Downtime.GetParams(ts.Ctx)
 	// this gives us a downtime with factor 2, because the downtime is equal to the
@@ -27,6 +29,6 @@ func TestRelayPaymentOverUseWithDowntime(t *testing.T) {
 	ts.Keepers.Downtime.RecordDowntime(ts.Ctx, doubledCUDowntime)
 
 	// we expect relay to be paid.
-	_, err := ts.TxPairingRelayPayment(providerAddr, relaySession)
+	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
 	require.NoError(t, err)
 }

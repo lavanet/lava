@@ -174,10 +174,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(conflictMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
-	stateStore.MountStoreWithDB(downtimeKey, sdk.StoreTypeIAVL, db)
-
-	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
-	stateStore.MountStoreWithDB(downtimeKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
