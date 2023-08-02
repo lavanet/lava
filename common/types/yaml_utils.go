@@ -2,14 +2,12 @@ package types
 
 import (
 	fmt "fmt"
-	"io/ioutil"
 	"path/filepath"
 	"reflect"
 
 	"github.com/lavanet/lava/utils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 func ReadYaml(filePath, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType, allowMissingFields bool) (missingFields []string, err error) {
@@ -37,40 +35,23 @@ func ReadYaml(filePath, primaryKey string, content interface{}, hooks []EnumDeco
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		return missingFields, err
+		return []string{}, err
 	}
 
 	err = viper.GetViper().UnmarshalKey(primaryKey, content, opts...)
 	if err != nil {
-		return missingFields, err
+		return []string{}, err
 	}
 
 	if allowMissingFields {
-		// Read the YAML file content
-		yamlData, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			return nil, err
-		}
-
 		// Unmarshal the YAML data into the map
 		var yamlMap map[string]interface{}
-		err = yaml.Unmarshal(yamlData, &yamlMap)
+		err = viper.GetViper().UnmarshalKey(primaryKey, &yamlMap, opts...)
 		if err != nil {
-			return nil, err
+			return []string{}, err
 		}
 
-		policyMap, found := yamlMap["Policy"].(map[interface{}]interface{})
-		if !found {
-			return nil, fmt.Errorf("could not find 'Policy' section in the YAML file")
-		}
-
-		// Convert policyMap to map[string]interface{}
-		policyFieldsMap := make(map[string]interface{})
-		for k, v := range policyMap {
-			policyFieldsMap[fmt.Sprintf("%v", k)] = v
-		}
-
-		missingFields = findMissingFields(content, policyFieldsMap)
+		missingFields = findMissingFields(content, yamlMap)
 	}
 
 	return missingFields, nil
