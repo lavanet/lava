@@ -64879,7 +64879,6 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-      field.
   ibc.core.client.v1.MsgCreateClientResponse:
     type: object
     description: MsgCreateClientResponse defines the Msg/CreateClient response type.
