@@ -39248,7 +39248,7 @@ paths:
                   block_of_next_pairing:
                     type: string
                     format: uint64
-              maxCU:
+              max_cu:
                 type: string
                 format: uint64
               spec:
@@ -40000,7 +40000,7 @@ paths:
               cu_per_epoch:
                 type: string
                 format: uint64
-              projectID:
+              project_id:
                 type: string
         default:
           description: An unexpected error response.
@@ -69333,7 +69333,7 @@ definitions:
           block_of_next_pairing:
             type: string
             format: uint64
-      maxCU:
+      max_cu:
         type: string
         format: uint64
       spec:
@@ -69793,7 +69793,7 @@ definitions:
       cu_per_epoch:
         type: string
         format: uint64
-      projectID:
+      project_id:
         type: string
   lavanet.lava.pairing.UniquePaymentStorageClientProvider:
     type: object

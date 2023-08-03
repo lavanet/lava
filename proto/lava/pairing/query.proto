@@ -154,7 +154,7 @@ message QueryVerifyPairingResponse {
   bool   valid            = 1;
   uint64 paired_providers = 3;
   uint64 cu_per_epoch     = 4;
-  string projectID        = 5;
+  string project_id        = 5;
 }
 
 message QueryGetUniquePaymentStorageClientProviderRequest {
@@ -250,7 +250,7 @@ message QueryEffectivePolicyResponse {
 
 message QuerySdkPairingResponse {
   QueryGetPairingResponse pairing = 1;
-  uint64 maxCU = 2;
+  uint64 max_cu = 2;
   lavanet.lava.spec.Spec spec = 3; 
 }
 
