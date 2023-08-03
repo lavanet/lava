@@ -49,13 +49,8 @@ jobs:
       run: ls -l
 
     # Pre-build with ignite
-    - name: ignite build
-      uses: nick-fields/retry@v2
-      with:
-        max_attempts: 3
-        retry_on: error
-        timeout_minutes: 20
-        command: ignite chain build -v
+    - name: lavad build
+      run: make install
 
     ######################################################
     ### Run Lava E2E Tests IGNITE VERSION:0.22.1
