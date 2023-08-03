@@ -7,8 +7,9 @@ import (
 	"math"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 )
 
@@ -121,7 +122,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	for _, addr := range policy.SelectedProviders {
 		_, err := sdk.AccAddressFromBech32(addr)
 		if err != nil {
-			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
+			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
 		}
 
 		if seen[addr] {
@@ -257,6 +258,6 @@ func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 	}
 }
 
-func (cr ChainRequirement) Comparable() string {
+func (cr ChainRequirement) Differentiator() string {
 	return cr.Collection.String() + strings.Join(cr.Extensions, ",")
 }

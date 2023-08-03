@@ -54,7 +54,7 @@ func ExtractSignerAddress(data Signable) (sdk.AccAddress, error) {
 		return nil, err
 	}
 
-	extractedConsumerAddress, err := sdk.AccAddressFromHex(pubKey.Address().String())
+	extractedConsumerAddress, err := sdk.AccAddressFromHexUnsafe(pubKey.Address().String())
 	if err != nil {
 		return nil, fmt.Errorf("get relay consumer address: %s", err.Error())
 	}
@@ -143,6 +143,6 @@ func HashMsg(msgData []byte) []byte {
 func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
 	secretKey, _ = btcSecp256k1.NewPrivateKey(btcSecp256k1.S256())
 	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
-	addr, _ = sdk.AccAddressFromHex(publicBytes.Address().String())
+	addr, _ = sdk.AccAddressFromHexUnsafe(publicBytes.Address().String())
 	return
 }

@@ -295,15 +295,7 @@ func (k Keeper) GetExpectedServicesForExpandedSpec(expandedSpec types.Spec, mand
 			// add extensions when not asking for mandatory
 			if !mandatory {
 				for _, extension := range apiCollection.Extensions {
-					service := epochstoragetypes.EndpointService{
-						ApiInterface: apiCollection.CollectionData.ApiInterface,
-						Addon:        apiCollection.CollectionData.AddOn,
-						Extension:    extension.Name,
-					}
-					// if this is an optional apiInterface, we set addon as ""
-					if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
-						service.Addon = ""
-					}
+					service.Extension = extension.Name
 					expectedServices[service] = struct{}{}
 				}
 			}

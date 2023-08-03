@@ -4,8 +4,9 @@ import (
 	fmt "fmt"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
+	sdkerrors "cosmossdk.io/errors"
 	commontypes "github.com/lavanet/lava/common/types"
 )
 
@@ -14,7 +15,7 @@ const (
 )
 
 func init() {
-	govtypes.RegisterProposalType(ProposalPlansDel)
+	v1beta1.RegisterProposalType(ProposalPlansDel)
 }
 
 func NewPlansDelProposal(title, description string, indices []string) *PlansDelProposal {
@@ -35,7 +36,7 @@ func (pcp *PlansDelProposal) ProposalType() string { return ProposalPlansDel }
 
 // ValidateBasic validates the proposal
 func (pcp *PlansDelProposal) ValidateBasic() error {
-	err := govtypes.ValidateAbstract(pcp)
+	err := v1beta1.ValidateAbstract(pcp)
 	if err != nil {
 		return err
 	}

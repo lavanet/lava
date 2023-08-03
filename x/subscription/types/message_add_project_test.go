@@ -3,7 +3,7 @@ package types
 import (
 	"testing"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/testutil/sample"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -28,7 +28,7 @@ func TestMsgAddProject_ValidateBasic(t *testing.T) {
 					},
 				},
 			},
-			err: sdkerrors.ErrInvalidAddress,
+			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgAddProject{

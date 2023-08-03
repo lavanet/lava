@@ -39,6 +39,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
@@ -138,22 +140,22 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			}
 
 			newScoreComp := req.Score(*score.Provider)
-			if newScoreComp == sdk.ZeroUint() {
+			if newScoreComp == math.ZeroUint() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
 				)
 			}
-			newScoreCompDec := sdk.NewDecFromInt(sdk.Int(newScoreComp))
+			newScoreCompDec := sdk.NewDecFromInt(math.Int(newScoreComp))
 			newScoreCompDec = newScoreCompDec.Power(weight)
-			newScoreComp = sdk.Uint(newScoreCompDec.TruncateInt())
+			newScoreComp = math.Uint(newScoreCompDec.TruncateInt())
 
 			// update the score component map
 			score.ScoreComponents[reqName] = newScoreComp
 		}
 
 		// calc new score
-		newScore := sdk.OneUint()
+		newScore := math.OneUint()
 		for _, scoreComp := range score.ScoreComponents {
 			newScore = newScore.Mul(scoreComp)
 		}
@@ -175,7 +177,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		return returnedProviders
 	}
 
-	scoreSum := sdk.ZeroUint()
+	scoreSum := math.ZeroUint()
 	for _, providerScore := range scores {
 		if providerScore.SkipForSelection {
 			// skip index of providers already selected
@@ -183,7 +185,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		}
 		scoreSum = scoreSum.Add(providerScore.Score)
 	}
-	if scoreSum == sdk.ZeroUint() {
+	if scoreSum == math.ZeroUint() {
 		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
 		return returnedProviders
 	}
@@ -192,7 +194,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 
 	for it := 0; it < groupCount; it++ {
 		randomValue := uint64(rng.Int63n(scoreSum.BigInt().Int64())) + 1
-		newScoreSum := sdk.ZeroUint()
+		newScoreSum := math.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			if scores[idx].SkipForSelection {

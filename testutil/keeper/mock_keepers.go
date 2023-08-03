@@ -103,7 +103,7 @@ func (k *mockBankKeeper) AddToBalance(addr sdk.AccAddress, amounts sdk.Coins) er
 
 func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) error {
 	if _, ok := k.balance[addr.String()]; ok {
-		k.balance[addr.String()] = k.balance[addr.String()].Sub(amounts)
+		k.balance[addr.String()] = k.balance[addr.String()].Sub(amounts...)
 	} else {
 		return fmt.Errorf("acount is empty, can't sub")
 	}

@@ -102,7 +102,7 @@ func Union[T comparable](arrays ...[]T) []T {
 }
 
 type ComparableByFields interface {
-	Comparable() string
+	Differentiator() string
 }
 
 func UnionByFields[T ComparableByFields](arrays ...[]T) []T {
@@ -114,7 +114,7 @@ func UnionByFields[T ComparableByFields](arrays ...[]T) []T {
 
 		// Populate the map with elements from the current array
 		for _, elem := range arr {
-			arrElements[elem.Comparable()] = elem
+			arrElements[elem.Differentiator()] = elem
 		}
 	}
 

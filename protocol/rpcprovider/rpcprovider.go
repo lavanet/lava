@@ -111,10 +111,16 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
 	lavaChainID := clientCtx.ChainID
-	var addr sdk.AccAddress
-	err = addr.Unmarshal(clientKey.GetPubKey().Address())
+
+	pubKey, err := clientKey.GetPubKey()
 	if err != nil {
-		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: clientKey.GetPubKey().Address()})
+		return err
+	}
+
+	var addr sdk.AccAddress
+	err = addr.Unmarshal(pubKey.Address())
+	if err != nil {
+		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: " + addr.String())
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(rpcProviderEndpoints))})

@@ -9,5 +9,5 @@ else
     killall lava-protocol
     make build-protocol
     rm -rf build
-    ignite chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e STARPORT] -e !  
+    ignite chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e IGNITE] -e !  
 fi
