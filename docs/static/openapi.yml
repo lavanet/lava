@@ -39518,6 +39518,12 @@ paths:
                               cu_multiplier:
                                 type: number
                                 format: float
+                              rule:
+                                type: object
+                                properties:
+                                  block:
+                                    type: string
+                                    format: uint64
                         verifications:
                           type: array
                           items:
@@ -41199,6 +41205,12 @@ paths:
                                 cu_multiplier:
                                   type: number
                                   format: float
+                                rule:
+                                  type: object
+                                  properties:
+                                    block:
+                                      type: string
+                                      format: uint64
                           verifications:
                             type: array
                             items:
@@ -41654,6 +41666,12 @@ paths:
                               cu_multiplier:
                                 type: number
                                 format: float
+                              rule:
+                                type: object
+                                properties:
+                                  block:
+                                    type: string
+                                    format: uint64
                         verifications:
                           type: array
                           items:
@@ -42031,6 +42049,12 @@ paths:
                                 cu_multiplier:
                                   type: number
                                   format: float
+                                rule:
+                                  type: object
+                                  properties:
+                                    block:
+                                      type: string
+                                      format: uint64
                           verifications:
                             type: array
                             items:
@@ -42486,6 +42510,12 @@ paths:
                               cu_multiplier:
                                 type: number
                                 format: float
+                              rule:
+                                type: object
+                                properties:
+                                  block:
+                                    type: string
+                                    format: uint64
                         verifications:
                           type: array
                           items:
@@ -67322,6 +67352,8 @@ definitions:
                     value:
                       type: string
               addon:
+                type: string
+              extensions:
                 type: array
                 items:
                   type: string
@@ -67790,6 +67822,8 @@ definitions:
                         value:
                           type: string
                   addon:
+                    type: string
+                  extensions:
                     type: array
                     items:
                       type: string
@@ -67913,6 +67947,8 @@ definitions:
                         value:
                           type: string
                   addon:
+                    type: string
+                  extensions:
                     type: array
                     items:
                       type: string
@@ -68017,6 +68053,8 @@ definitions:
             value:
               type: string
       addon:
+        type: string
+      extensions:
         type: array
         items:
           type: string
@@ -68150,6 +68188,8 @@ definitions:
                 value:
                   type: string
           addon:
+            type: string
+          extensions:
             type: array
             items:
               type: string
@@ -69595,6 +69635,12 @@ definitions:
                       cu_multiplier:
                         type: number
                         format: float
+                      rule:
+                        type: object
+                        properties:
+                          block:
+                            type: string
+                            format: uint64
                 verifications:
                   type: array
                   items:
@@ -70185,6 +70231,12 @@ definitions:
             cu_multiplier:
               type: number
               format: float
+            rule:
+              type: object
+              properties:
+                block:
+                  type: string
+                  format: uint64
       verifications:
         type: array
         items:
@@ -70309,6 +70361,12 @@ definitions:
       cu_multiplier:
         type: number
         format: float
+      rule:
+        type: object
+        properties:
+          block:
+            type: string
+            format: uint64
   lavanet.lava.spec.FUNCTION_TAG:
     type: string
     enum:
@@ -70432,6 +70490,12 @@ definitions:
         type: string
       expected_value:
         type: string
+  lavanet.lava.spec.Rule:
+    type: object
+    properties:
+      block:
+        type: string
+        format: uint64
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -70683,6 +70747,12 @@ definitions:
                   cu_multiplier:
                     type: number
                     format: float
+                  rule:
+                    type: object
+                    properties:
+                      block:
+                        type: string
+                        format: uint64
             verifications:
               type: array
               items:
@@ -71991,6 +72061,12 @@ definitions:
                         cu_multiplier:
                           type: number
                           format: float
+                        rule:
+                          type: object
+                          properties:
+                            block:
+                              type: string
+                              format: uint64
                   verifications:
                     type: array
                     items:
@@ -72351,6 +72427,12 @@ definitions:
                       cu_multiplier:
                         type: number
                         format: float
+                      rule:
+                        type: object
+                        properties:
+                          block:
+                            type: string
+                            format: uint64
                 verifications:
                   type: array
                   items:
