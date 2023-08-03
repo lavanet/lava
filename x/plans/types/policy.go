@@ -68,6 +68,18 @@ func (policy *Policy) GetSupportedAddons(specID string) (addons []string, err er
 	return addons, nil
 }
 
+func (policy *Policy) GetSupportedExtensions(specID string) (extensions []string, err error) {
+	chainPolicy, allowed := policy.ChainPolicy(specID)
+	if !allowed {
+		return nil, fmt.Errorf("specID %s not allowed by current policy", specID)
+	}
+	extensions = []string{""} // always allow an empty extension
+	for _, requirement := range chainPolicy.Requirements {
+		extensions = append(extensions, requirement.Extensions...)
+	}
+	return extensions, nil
+}
+
 func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	// plan policy checks
 	if isPlanPolicy {

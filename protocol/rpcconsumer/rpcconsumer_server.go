@@ -41,7 +41,7 @@ type RPCConsumerServer struct {
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	lavaChainID            string
 	consumerAddress        sdk.AccAddress
-	consumerAddons         map[string]struct{}
+	consumerServices       map[string]struct{}
 }
 
 type ConsumerTxSender interface {
@@ -80,16 +80,29 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	if err != nil {
 		return err
 	}
-	rpccs.consumerAddons = make(map[string]struct{})
-	for _, consumerAddon := range consumerAddons {
-		rpccs.consumerAddons[consumerAddon] = struct{}{}
+	consumerExtensions, err := consumerPolicy.GetSupportedExtensions(listenEndpoint.ChainID)
+	if err != nil {
+		return err
 	}
+	rpccs.consumerServices = make(map[string]struct{})
+	for _, consumerAddon := range consumerAddons {
+		rpccs.consumerServices[consumerAddon] = struct{}{}
+	}
+	for _, consumerExtension := range consumerExtensions {
+		rpccs.consumerServices[consumerExtension] = struct{}{}
+	}
+	rpccs.chainParser.SetConfiguredExtensions(consumerExtensions) // configure possible extensions as set by the policy
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
 	}
 	go chainListener.Serve(ctx)
 	return nil
+}
+
+func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
+	// TODO: use finalizationData + probe changes to get the latest block
+	return 0
 }
 
 func (rpccs *RPCConsumerServer) SendRelay(
@@ -109,14 +122,14 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
 	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata)
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getLatestBlock())
 	if err != nil {
 		return nil, nil, err
 	}
-	if _, ok := rpccs.consumerAddons[chainMessage.GetApiCollection().CollectionData.AddOn]; !ok {
+	if _, ok := rpccs.consumerServices[chainMessage.GetApiCollection().CollectionData.AddOn]; !ok {
 		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
 			utils.Attribute{Key: "addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn},
-			utils.Attribute{Key: "allowed", Value: rpccs.consumerAddons},
+			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
 

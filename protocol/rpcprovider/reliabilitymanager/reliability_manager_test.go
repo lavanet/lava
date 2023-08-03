@@ -221,7 +221,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		Name:  "banana",
 		Value: "55",
 	}
-	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue)
+	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue, 0)
 	require.NoError(t, err)
 	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/blocks/latest", []byte{}, chainMessage.RequestedBlock(), spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), nil)
 

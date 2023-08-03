@@ -176,7 +176,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		}
 	}(relaySession) // lock in the session address
 	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata())
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), 0)
 	if err != nil {
 		return nil, nil, nil, err
 	}
