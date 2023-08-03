@@ -38,16 +38,20 @@ jobs:
     - name: ls -l
       run: ls -l
 
-    # Pre-build with ignite
+    # Pre-build 
     - name: lavad build
       run: make install
 
     ######################################################
-    ### Run Lava E2E Tests IGNITE VERSION:0.22.1
+    ### Run Lava E2E Tests 
     ######################################################
-    - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
+    - name: Run Lava E2E Tests  -timeout 1200s
       run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
       
+    - name: tail -n 300 JSON Proxy Logs
+      if: always()
+      run: tail -n 300 testutil/e2e/logs/00_StartLava.log
+
     - name: Stake Lava All Logs
       if: always()
       run: cat testutil/e2e/logs/01_stakeLava.log
