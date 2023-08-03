@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	fmt "fmt"
 	"math"
+	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of the chains and allow all others
@@ -62,8 +63,8 @@ func (policy *Policy) GetSupportedAddons(specID string) (addons []string, err er
 		return nil, fmt.Errorf("specID %s not allowed by current policy", specID)
 	}
 	addons = []string{""} // always allow an empty addon
-	for _, collection := range chainPolicy.Collections {
-		addons = append(addons, collection.AddOn)
+	for _, requirement := range chainPolicy.Requirements {
+		addons = append(addons, requirement.Collection.AddOn)
 	}
 	return addons, nil
 }
@@ -109,7 +110,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	for _, addr := range policy.SelectedProviders {
 		_, err := sdk.AccAddressFromBech32(addr)
 		if err != nil {
-			return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
+			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid selected provider address (%s)", err)
 		}
 
 		if seen[addr] {
@@ -122,28 +123,28 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 }
 
 func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (chainPolicyRet ChainPolicy, allowed bool) {
-	allowedCollectionData := []spectypes.CollectionData{}
+	requirements := []ChainRequirement{}
 	for _, policy := range policies {
 		chainPolicy, allowdChain := policy.ChainPolicy(chainID)
 		if !allowdChain {
 			return ChainPolicy{}, false
 		}
 		// get the strictest collection specification, while empty is allowed
-		chainPolicyCollectionData := chainPolicy.Collections
+		chainPolicyRequirements := chainPolicy.Requirements
 		// if no collection data is specified in the policy previous allowed is stricter and no update is necessary
-		if len(chainPolicyCollectionData) == 0 {
+		if len(chainPolicyRequirements) == 0 {
 			continue
 		}
 		// this policy is limiting collection data so overwrite what is allowed
-		if len(allowedCollectionData) == 0 {
-			allowedCollectionData = chainPolicyCollectionData
+		if len(requirements) == 0 {
+			requirements = chainPolicyRequirements
 			continue
 		}
 		// previous policies and current policy change collection data, we need the union of both
-		allowedCollectionData = commontypes.Union(chainPolicyCollectionData, allowedCollectionData)
+		requirements = commontypes.UnionByFields(chainPolicyRequirements, requirements)
 	}
 
-	return ChainPolicy{ChainId: chainID, Collections: allowedCollectionData}, true
+	return ChainPolicy{ChainId: chainID, Requirements: requirements}, true
 }
 
 func VerifyTotalCuUsage(policies []*Policy, cuUsage uint64) bool {
@@ -236,4 +237,8 @@ func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 	} else {
 		return 0, fmt.Errorf("invalid selected providers mode: %s", dataStr)
 	}
+}
+
+func (cr ChainRequirement) Differentiator() string {
+	return cr.Collection.String() + strings.Join(cr.Extensions, ",")
 }

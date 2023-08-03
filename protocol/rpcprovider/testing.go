@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/slices"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -37,6 +39,28 @@ const (
 	certFlag           = "cert-pem"
 )
 
+func validatePortNumber(ipPort string) string {
+	if lavasession.AllowInsecureConnectionToProviders {
+		return "Skipped Port Validation due to Allow Insecure Connection flag"
+	}
+
+	var u *url.URL
+	var err error
+
+	u, err = url.Parse(ipPort)
+	if err != nil {
+		u, err = url.Parse("https://" + ipPort) // try again with https prefix
+		if err != nil {
+			return utils.LavaFormatError("unparsable url", err, utils.Attribute{Key: "url", Value: ipPort}).Error()
+		}
+	}
+	port := u.Port()
+	if port != "443" {
+		return ipPort
+	}
+	return ""
+}
+
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
@@ -47,12 +71,16 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 	}()
 	goodChains := []string{}
 	badChains := []string{}
+	portValidation := []string{}
 	for _, providerEntry := range providerEntries {
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(apiInterface string, addons []string) (time.Duration, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
+				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
+					portValidation = append(portValidation, portValid)
+				}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
 					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
@@ -102,7 +130,16 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 	if len(badChains) == 0 {
 		badChains = []string{"None 🎉! all tests passed ✅"}
 	}
-	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\nTests Passed:\n%s\n\nTests Failed:\n%s\n\n", strings.Join(goodChains, "; "), strings.Join(badChains, "; "))
+	if len(portValidation) == 0 {
+		portValidation = []string{"✅ All Ports are valid! ✅"}
+	} else {
+		portValidation = append([]string{
+			"Some provider ports may not be set to 443, which can lead to connection issues with your provider, as some routers might block other ports.",
+			"We recommend changing the port configuration of these URLs to 443",
+			"Misconfigured URLs:",
+		}, portValidation...)
+	}
+	fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Tests Passed:\n🔹%s\n\n🔵 Tests Failed:\n🔹%s\n\n🔵 Provider Port Validation:\n🔹%s\n\n", strings.Join(goodChains, "\n🔹"), strings.Join(badChains, "\n🔹"), strings.Join(portValidation, "\n🔹"))
 	return nil
 }
 
@@ -150,7 +187,11 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				if err != nil {
 					return err
 				}
-				address = clientKey.GetAddress().String()
+				tmpAddr, err := clientKey.GetAddress()
+				if err != nil {
+					return err
+				}
+				address = tmpAddr.String()
 			} else {
 				address = args[0]
 			}

@@ -4,6 +4,8 @@ import (
 	"math"
 	"time"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -17,7 +19,7 @@ type EpochStorageKeeper interface {
 	GetParams(ctx sdk.Context) (params epochstoragetypes.Params)
 }
 
-func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
+func NewKeeper(cdc codec.BinaryCodec, sk storetypes.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(v1.ParamKeyTable())
@@ -31,7 +33,7 @@ func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace, e
 }
 
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.BinaryCodec
 	paramstore paramtypes.Subspace
 

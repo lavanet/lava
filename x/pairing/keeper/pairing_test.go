@@ -306,20 +306,20 @@ func TestAddonPairing(t *testing.T) {
 	specId := ts.spec.Index
 
 	mandatoryChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{mandatory},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatory}},
 	}
 	mandatoryAddonChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{mandatoryAddon},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}},
 	}
 	optionalAddonChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{optional},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: optional}},
 	}
 	optionalAndMandatoryAddonChainPolicy := &planstypes.ChainPolicy{
-		ChainId:     specId,
-		Collections: []spectypes.CollectionData{mandatoryAddon, optional},
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}, {Collection: optional}},
 	}
 
 	templates := []struct {
@@ -337,18 +337,18 @@ func TestAddonPairing(t *testing.T) {
 		{
 			name:              "mandatory in plan",
 			planChainPolicy:   mandatoryChainPolicy,
-			expectedProviders: 12, // stub provider also gets picked
+			expectedProviders: 11,
 		},
 		{
 			name:              "mandatory in subsc",
 			subscChainPolicy:  mandatoryChainPolicy,
 			projChainPolicy:   nil,
-			expectedProviders: 12, // stub provider also gets picked
+			expectedProviders: 11,
 		},
 		{
 			name:              "mandatory in proj",
 			projChainPolicy:   mandatoryChainPolicy,
-			expectedProviders: 12, // stub provider also gets picked
+			expectedProviders: 11,
 		},
 		{
 			name:                      "addon in plan",
@@ -443,7 +443,7 @@ func TestAddonPairing(t *testing.T) {
 		ApiInterfaces: []string{mandatory.ApiInterface},
 	}}
 	mandatoryAddonSupportingEndpoints := []epochstoragetypes.Endpoint{{
-		IPPORT:        "123",
+		IPPORT:        "456",
 		Geolocation:   1,
 		Addons:        []string{mandatoryAddon.AddOn},
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
@@ -452,7 +452,7 @@ func TestAddonPairing(t *testing.T) {
 		mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints)
 
 	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
-		IPPORT:        "123",
+		IPPORT:        "789",
 		Geolocation:   1,
 		Addons:        []string{optional.AddOn},
 		ApiInterfaces: []string{optional.ApiInterface},
@@ -466,7 +466,7 @@ func TestAddonPairing(t *testing.T) {
 		mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints)
 
 	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
-		IPPORT:        "123",
+		IPPORT:        "444",
 		Geolocation:   1,
 		Addons:        []string{},
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface, optional.ApiInterface},
@@ -484,11 +484,12 @@ func TestAddonPairing(t *testing.T) {
 	require.NoError(t, err)
 	err = ts.addProviderEndpoints(2, allSupportingEndpoints)
 	require.NoError(t, err)
-	require.NoError(t, err)
-	// total 11 providers
-
-	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints)
+	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints) // this errors out
 	require.Error(t, err)
+
+	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
+	require.True(t, found)
+	require.Len(t, stakeStorage.StakeEntries, 12)
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
@@ -496,7 +497,7 @@ func TestAddonPairing(t *testing.T) {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
 					GeolocationProfile: math.MaxUint64,
-					MaxProvidersToPair: 12,
+					MaxProvidersToPair: 100,
 					TotalCuLimit:       math.MaxUint64,
 					EpochCuLimit:       math.MaxUint64,
 				}
@@ -551,9 +552,10 @@ func TestAddonPairing(t *testing.T) {
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
-				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Collections))
+				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Requirements))
 				addons := map[string]struct{}{}
-				for _, collection := range strictestPolicy.ChainPolicies[0].Collections {
+				for _, requirement := range strictestPolicy.ChainPolicies[0].Requirements {
+					collection := requirement.Collection
 					if collection.AddOn != "" {
 						addons[collection.AddOn] = struct{}{}
 					}
@@ -777,134 +779,94 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	}
 }
 
-// Test that the pairing process picks identical providers uniformly
-func TestPairingUniformDistribution(t *testing.T) {
-	numIterations := 10000
-	providersCount := 10
-	providersToPair := 3
+func (ts *tester) verifyPairingDistribution(desc string, client string, providersToPair int, weight func(epochstoragetypes.StakeEntry) int64) {
+	const iterations = 10000
+	const epsilon = 0.15
 
-	ts := newTester(t)
-	ts.setupForPayments(providersCount, 1, providersToPair)
-	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+	res, err := ts.QueryPairingProviders(ts.spec.Index, false)
+	require.NoError(ts.T, err, desc)
+	allProviders := res.StakeEntry
 
-	// extend the subscription because we'll advance alot of epochs
-	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
-	require.Nil(t, err)
+	// mapping from provider (address) to its index
+	mapProviders := make(map[string]int)
+	for i, provider := range allProviders {
+		mapProviders[provider.Address] = i
+	}
 
-	// Create a map to count the occurrences of each provider
-	providerCount := make(map[string]int)
+	// calculate the total expected weight
+	var totalWeight int64
+	for _, provider := range allProviders {
+		totalWeight += weight(provider)
+	}
 
-	// Run the get-pairing function multiple times and count the occurrences of each provider
-	for i := 0; i < numIterations; i++ {
-		getPairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-		require.Nil(t, err)
+	// calculate the occurrence histogram
+	histogram := make(map[int]int64)
+	for i := 0; i < iterations; i++ {
+		res, err := ts.QueryPairingGetPairing(ts.spec.Index, client)
+		require.NoError(ts.T, err, desc)
 
-		pairedProviders := getPairingRes.Providers
-		for _, provider := range pairedProviders {
-			providerCount[provider.Address]++
+		for _, provider := range res.Providers {
+			count := histogram[mapProviders[provider.Address]]
+			histogram[mapProviders[provider.Address]] = count + 1
 		}
 
-		ts.AdvanceEpoch() // advance epoch to change the pairing result
-	}
-
-	// Calculate the expected count for each provider (should be nearly equal for uniform distribution)
-	expectedCount := (numIterations * providersToPair) / providersCount
-
-	// Define a margin of error for the count (you can adjust this based on your tolerance)
-	marginOfError := math.Round(0.1 * float64(expectedCount))
-
-	// Check that the count for each provider is within the margin of error of the expected count
-	for addr, count := range providerCount {
-		if math.Abs(float64(count-expectedCount)) > marginOfError {
-			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
-				addr, count, expectedCount)
-		}
-	}
-}
-
-// test to check that providers picks are aligned with their stake
-// For example: providerA with stake=100 will be picked two times more than
-// provider B with stake=50
-func TestPairingDistributionPerStake(t *testing.T) {
-	numIterations := 10000
-	providersCount := 10
-	providersToPair := 3
-
-	ts := newTester(t)
-	ts.setupForPayments(providersCount, 1, providersToPair)
-	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
-
-	// double the stake of one of the providers
-	allProviders, err := ts.QueryPairingProviders(ts.spec.Index, false)
-	require.Nil(t, err)
-	doubleStakeProvider := allProviders.StakeEntry[0]
-	doubleStake := doubleStakeProvider.Stake
-	doubleStake.Amount = doubleStake.Amount.MulRaw(2)
-	_, err = ts.TxPairingStakeProvider(
-		doubleStakeProvider.Address,
-		doubleStakeProvider.Chain,
-		doubleStake,
-		doubleStakeProvider.Endpoints,
-		doubleStakeProvider.Geolocation,
-		doubleStakeProvider.Moniker,
-	)
-	require.Nil(t, err)
-	ts.AdvanceEpoch()
-	allProviders, err = ts.QueryPairingProviders(ts.spec.Index, false)
-	require.Equal(t, providersCount, len(allProviders.StakeEntry))
-	require.Nil(t, err)
-
-	// extend the subscription because we'll advance alot of epochs
-	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
-	require.Nil(t, err)
-
-	// Create a map to count the occurrences of each provider
-	type providerInfo struct {
-		count       int
-		stakeAmount int64
-	}
-	providerCount := make(map[string]providerInfo)
-
-	// Run the get-pairing function multiple times and count the occurrences of each provider
-	for i := 0; i < numIterations; i++ {
-		getPairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-		require.Nil(t, err)
-
-		for _, provider := range getPairingRes.Providers {
-			if _, ok := providerCount[provider.Address]; !ok {
-				info := providerInfo{count: 0, stakeAmount: provider.Stake.Amount.Int64()}
-				providerCount[provider.Address] = info
-			} else {
-				info := providerCount[provider.Address]
-				info.count++
-				providerCount[provider.Address] = info
-			}
-		}
-
-		ts.AdvanceEpoch() // advance epoch to change the pairing result
-	}
-
-	// Calculate the expected count for each provider based on their stakes
-	var totalStakes int64
-	for _, provider := range allProviders.StakeEntry {
-		totalStakes += provider.Stake.Amount.Int64()
+		// advance epoch to to switch pairing
+		ts.AdvanceEpoch()
 	}
 
 	// Check that the count for each provider aligns with their stake's probability
-	for addr, info := range providerCount {
-		// Calculate the expected count based on the provider's stake
-		expectedCount := providersToPair * (numIterations * int(info.stakeAmount)) / int(totalStakes)
-
-		fmt.Printf("count: %d, expected: %d\n", info.count, expectedCount)
-
-		// Define a margin of error for the count (you can adjust this based on your tolerance)
-		marginOfError := math.Round(0.15 * float64(expectedCount))
-
-		if math.Abs(float64(info.count-expectedCount)) > marginOfError {
-			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
-				addr, info.count, expectedCount)
-		}
+	for i, actual := range histogram {
+		// calculate expected occurrences based on weight function
+		weight := weight(allProviders[i])
+		expect := (int64(providersToPair) * weight * iterations) / totalWeight
+		require.InEpsilon(ts.T, expect, actual, epsilon,
+			desc+fmt.Sprintf(" expect/actual %d/%d", expect, actual))
 	}
+}
+
+// Test that the pairing process picks identical providers uniformly
+func TestPairingUniformDistribution(t *testing.T) {
+	providersCount := 10
+	providersToPair := 3
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, 1, providersToPair)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	// extend the subscription to accommodate many (pairing) epochs
+	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 5)
+	require.NoError(t, err)
+
+	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
+	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
+}
+
+// Test that random selection of providers is alighned with their stake
+func TestPairingDistributionPerStake(t *testing.T) {
+	providersCount := 10
+	providersToPair := 3
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, 1, providersToPair)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	allProviders, err := ts.QueryPairingProviders(ts.spec.Index, false)
+	require.NoError(t, err)
+
+	// double the stake of the first provider
+	p := allProviders.StakeEntry[0]
+	stake := p.Stake.Amount.Int64()
+	err = ts.StakeProviderExtra(p.Address, ts.spec, stake*2, p.Endpoints, p.Geolocation, p.Moniker)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	// extend the subscription to accommodate many (pairing) epochs
+	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
+	require.Nil(t, err)
+
+	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
+	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
 }
 
 func unorderedEqual(first, second []string) bool {
@@ -1284,5 +1246,650 @@ func TestGeoSlotCalc(t *testing.T) {
 		if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
 			require.Fail(t, "slot geo is not single bit")
 		}
+	}
+}
+
+func TestExtensionAndAddonPairing(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
+
+	mandatory := spectypes.CollectionData{
+		ApiInterface: "mandatory",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "",
+	}
+	mandatoryAddon := spectypes.CollectionData{
+		ApiInterface: "mandatory",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "addon",
+	}
+	optional := spectypes.CollectionData{
+		ApiInterface: "optional",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "optional",
+	}
+	ts.spec.ApiCollections = []*spectypes.ApiCollection{
+		{
+			Enabled:        true,
+			CollectionData: mandatory,
+			Extensions:     getExtensions("ext1", "ext2"),
+		},
+		{
+			Enabled:        true,
+			CollectionData: optional,
+			Extensions:     getExtensions("ext1"),
+		},
+		{
+			Enabled:        true,
+			CollectionData: mandatoryAddon,
+			Extensions:     getExtensions("ext1", "ext2"),
+		},
+	}
+
+	// will overwrite the default "mock" spec
+	ts.AddSpec("mock", ts.spec)
+	specId := ts.spec.Index
+
+	mandatoryChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatory}},
+	}
+	mandatoryAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}},
+	}
+	optionalAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: optional}},
+	}
+	optionalAndMandatoryAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon}, {Collection: optional}},
+	}
+	mandatoryExtChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext1"},
+		}},
+	}
+	mandatoryExt2ChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext2"},
+		}},
+	}
+	mandatoryExtBothChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext2", "ext1"},
+		}},
+	}
+	mandatoryExtBothSeparatedChainPolicy := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{
+			{
+				Collection: mandatory,
+				Extensions: []string{"ext2"},
+			},
+			{
+				Collection: mandatory,
+				Extensions: []string{"ext1"},
+			},
+		},
+	}
+	mandatoryExtAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}},
+	}
+
+	optionalExtAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: optional, Extensions: []string{"ext1"}}},
+	}
+	mandatoryExtOptionalChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1"}}, {Collection: optional}},
+	}
+	allSupportingChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      specId,
+		Requirements: []planstypes.ChainRequirement{{Collection: mandatoryAddon, Extensions: []string{"ext1", "ext2"}}, {Collection: optional}},
+	}
+	templates := []struct {
+		name                      string
+		planChainPolicy           *planstypes.ChainPolicy
+		subscChainPolicy          *planstypes.ChainPolicy
+		projChainPolicy           *planstypes.ChainPolicy
+		expectedProviders         int
+		expectedStrictestPolicies []string
+	}{
+		{
+			name:              "empty",
+			expectedProviders: 26,
+		},
+		{
+			name:              "mandatory in plan",
+			planChainPolicy:   mandatoryChainPolicy,
+			expectedProviders: 25,
+		},
+		{
+			name:              "mandatory in subsc",
+			subscChainPolicy:  mandatoryChainPolicy,
+			projChainPolicy:   nil,
+			expectedProviders: 25,
+		},
+		{
+			name:              "mandatory in proj",
+			projChainPolicy:   mandatoryChainPolicy,
+			expectedProviders: 25,
+		},
+		{
+			name:                      "addon in plan",
+			planChainPolicy:           mandatoryAddonChainPolicy,
+			subscChainPolicy:          nil,
+			projChainPolicy:           nil,
+			expectedProviders:         14,
+			expectedStrictestPolicies: []string{"addon"},
+		},
+		{
+			name:                      "addon in subsc",
+			subscChainPolicy:          mandatoryAddonChainPolicy,
+			expectedProviders:         14,
+			expectedStrictestPolicies: []string{"addon"},
+		},
+		{
+			name:                      "addon in proj",
+			projChainPolicy:           mandatoryAddonChainPolicy,
+			expectedProviders:         14,
+			expectedStrictestPolicies: []string{"addon"},
+		},
+		{
+			name:                      "optional in plan",
+			planChainPolicy:           optionalAddonChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"optional"},
+		},
+		{
+			name:                      "optional in subsc",
+			subscChainPolicy:          optionalAddonChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"optional"},
+		},
+		{
+			name:                      "optional in proj",
+			projChainPolicy:           optionalAddonChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"optional"},
+		},
+		{
+			name:                      "optional and addon in plan",
+			planChainPolicy:           optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		{
+			name:                      "optional and addon in subsc",
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		{
+			name:                      "optional and addon in proj",
+			projChainPolicy:           optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		{
+			name:                      "optional and addon in plan, addon in subsc",
+			planChainPolicy:           optionalAndMandatoryAddonChainPolicy,
+			subscChainPolicy:          mandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		{
+			name:                      "optional and addon in subsc, addon in plan",
+			planChainPolicy:           mandatoryAddonChainPolicy,
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		{
+			name:                      "optional and addon in subsc, addon in proj",
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			projChainPolicy:           mandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		{
+			name:                      "optional in subsc, addon in proj",
+			subscChainPolicy:          optionalAndMandatoryAddonChainPolicy,
+			projChainPolicy:           mandatoryAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"optional", "addon"},
+		},
+		// check extensions
+		{
+			name:                      "mandatory ext in plan",
+			planChainPolicy:           mandatoryExtChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mandatory ext in subsc",
+			subscChainPolicy:          mandatoryExtChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mandatory ext in proj",
+			projChainPolicy:           mandatoryExtChainPolicy,
+			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mandatory ext2 in plan",
+			planChainPolicy:           mandatoryExt2ChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"ext2"},
+		},
+		{
+			name:                      "mandatory ext2 in subsc",
+			subscChainPolicy:          mandatoryExt2ChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"ext2"},
+		},
+		{
+			name:                      "mandatory ext2 in proj",
+			projChainPolicy:           mandatoryExt2ChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"ext2"},
+		},
+		{
+			name:                      "mandatory ext both in plan",
+			planChainPolicy:           mandatoryExtBothChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both in subsc",
+			subscChainPolicy:          mandatoryExtBothChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both in proj",
+			projChainPolicy:           mandatoryExtBothChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+
+		{
+			name:                      "mandatory ext both separated in plan",
+			planChainPolicy:           mandatoryExtBothSeparatedChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both separated in subsc",
+			subscChainPolicy:          mandatoryExtBothSeparatedChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "mandatory ext both separated in proj",
+			projChainPolicy:           mandatoryExtBothSeparatedChainPolicy,
+			expectedProviders:         3,
+			expectedStrictestPolicies: []string{"ext1", "ext2"},
+		},
+		{
+			name:                      "addon ext in plan",
+			planChainPolicy:           mandatoryExtAddonChainPolicy,
+			subscChainPolicy:          nil,
+			projChainPolicy:           nil,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"addon", "ext1"},
+		},
+		{
+			name:                      "addon ext in subsc",
+			subscChainPolicy:          mandatoryExtAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"addon", "ext1"},
+		},
+		{
+			name:                      "addon ext in proj",
+			projChainPolicy:           mandatoryExtAddonChainPolicy,
+			expectedProviders:         8,
+			expectedStrictestPolicies: []string{"addon", "ext1"},
+		},
+		{
+			name:                      "optional ext in plan",
+			planChainPolicy:           optionalExtAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"optional", "ext1"},
+		},
+		{
+			name:                      "optional ext in subsc",
+			subscChainPolicy:          optionalExtAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"optional", "ext1"},
+		},
+		{
+			name:                      "optional ext in proj",
+			projChainPolicy:           optionalExtAddonChainPolicy,
+			expectedProviders:         6,
+			expectedStrictestPolicies: []string{"optional", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in plan",
+			planChainPolicy:           mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in subsc",
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in proj",
+			projChainPolicy:           mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in plan, addon ext in subsc",
+			planChainPolicy:           mandatoryExtOptionalChainPolicy,
+			subscChainPolicy:          mandatoryExtAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in subsc, addon ext in plan",
+			planChainPolicy:           mandatoryExtAddonChainPolicy,
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext and addon in subsc, addon ext in proj",
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			projChainPolicy:           mandatoryExtAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "optional ext in subsc, addon ext in proj",
+			subscChainPolicy:          mandatoryExtOptionalChainPolicy,
+			projChainPolicy:           mandatoryExtAddonChainPolicy,
+			expectedProviders:         4,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1"},
+		},
+		{
+			name:                      "all supporting in plan",
+			planChainPolicy:           allSupportingChainPolicy,
+			expectedProviders:         2,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+		{
+			name:                      "all supporting in subsc",
+			subscChainPolicy:          allSupportingChainPolicy,
+			projChainPolicy:           nil,
+			expectedProviders:         2,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+		{
+			name:                      "all supporting in proj",
+			projChainPolicy:           allSupportingChainPolicy,
+			expectedProviders:         2,
+			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+	}
+
+	mandatorySupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{mandatory.AddOn},
+		ApiInterfaces: []string{mandatory.ApiInterface},
+	}}
+	mandatoryAddonSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "456",
+		Geolocation:   1,
+		Addons:        []string{mandatoryAddon.AddOn},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
+	}}
+	mandatoryAndMandatoryAddonSupportingEndpoints := slices.Concat(
+		mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints)
+
+	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "789",
+		Geolocation:   1,
+		Addons:        []string{optional.AddOn},
+		ApiInterfaces: []string{optional.ApiInterface},
+	}}
+	optionalAndMandatorySupportingEndpoints := slices.Concat(
+		mandatorySupportingEndpoints, optionalSupportingEndpoints)
+	optionalAndMandatoryAddonSupportingEndpoints := slices.Concat(
+		mandatoryAddonSupportingEndpoints, optionalSupportingEndpoints)
+
+	allSupportingEndpoints := slices.Concat(
+		mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints)
+
+	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "444",
+		Geolocation:   1,
+		Addons:        []string{},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface, optional.ApiInterface},
+	}}
+
+	// now with extensions
+
+	mandatoryExtSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-1",
+		Geolocation:   1,
+		Addons:        []string{mandatory.AddOn},
+		ApiInterfaces: []string{mandatory.ApiInterface},
+		Extensions:    []string{"ext1"},
+	}}
+
+	mandatoryExt2SupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-2",
+		Geolocation:   1,
+		Addons:        []string{mandatory.AddOn},
+		ApiInterfaces: []string{mandatory.ApiInterface},
+		Extensions:    []string{"ext2"},
+	}}
+
+	mandatoryExt2AddonSupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-2-addon",
+		Geolocation:   1,
+		Addons:        []string{mandatoryAddon.AddOn},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
+		Extensions:    []string{"ext2"},
+	}}
+
+	mandatoryExtBOTHSupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-both",
+		Geolocation:   1,
+		Addons:        []string{mandatory.AddOn},
+		ApiInterfaces: []string{mandatory.ApiInterface},
+		Extensions:    []string{"ext1", "ext2"},
+	}}
+
+	mandatoryExtAddonSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-3",
+		Geolocation:   1,
+		Addons:        []string{mandatoryAddon.AddOn},
+		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
+		Extensions:    []string{"ext1"},
+	}}
+	mandatoryExtAndMandatoryAddonSupportingEndpoints := slices.Concat(
+		mandatoryExtSupportingEndpoints, mandatoryExtAddonSupportingEndpoints)
+
+	optionalExtSupportingEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "Ext-4",
+		Geolocation:   1,
+		Addons:        []string{optional.AddOn},
+		ApiInterfaces: []string{optional.ApiInterface},
+		Extensions:    []string{"ext1"},
+	}}
+	optionalExtAndMandatorySupportingEndpoints := slices.Concat(
+		mandatoryExtSupportingEndpoints, optionalExtSupportingEndpoints)
+	optionalExtAndMandatoryAddonSupportingEndpoints := slices.Concat(
+		mandatoryExtAddonSupportingEndpoints, optionalExtSupportingEndpoints)
+
+	allExtSupportingEndpoints := slices.Concat(
+		mandatoryExtSupportingEndpoints, optionalExtAndMandatoryAddonSupportingEndpoints, mandatoryExt2AddonSupportingEndpoint)
+	// mandatory
+	err := ts.addProviderEndpoints(2, mandatoryExtSupportingEndpoints) // ext1 - 2
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, mandatorySupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(1, mandatoryExt2SupportingEndpoint) // ext2 - 1
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(1, mandatoryExtBOTHSupportingEndpoint) // ext1 + ext2 - 1
+	require.NoError(t, err)
+	// mandatory + addon
+	err = ts.addProviderEndpoints(2, mandatoryAndMandatoryAddonSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, mandatoryExtAddonSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, mandatoryExtAndMandatoryAddonSupportingEndpoints)
+	require.NoError(t, err)
+	// mandatory + optional
+	err = ts.addProviderEndpoints(2, optionalAndMandatorySupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(1, mandatoryAndOptionalSingleEndpoint)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, optionalExtAndMandatorySupportingEndpoints)
+	require.NoError(t, err)
+	// mandatory + optional + addon
+	err = ts.addProviderEndpoints(2, optionalAndMandatoryAddonSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, allSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, optionalExtAndMandatoryAddonSupportingEndpoints)
+	require.NoError(t, err)
+	err = ts.addProviderEndpoints(2, allExtSupportingEndpoints)
+	require.NoError(t, err)
+
+	// summary of endpoints:
+	// ext1 has 13 supporting providers
+	// ext 2 has 4 supporting providers
+	// addons have  14
+	// optional has 13
+	// addon + optional has 8
+	// addon + ext has 8
+	// optional + ext has 6
+	// all supporting one ext (ext1 addon optional) has 4
+	// all supporting (ext2 ext1 addon optional) has 2
+
+	// erroring out
+	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints) // this errors as it doesnt implement mandatory
+	require.Error(t, err)
+	err = ts.addProviderEndpoints(2, optionalExtSupportingEndpoints) // this errors as it doesnt implement mandatory
+	require.Error(t, err)
+
+	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
+	require.True(t, found)
+	require.Len(t, stakeStorage.StakeEntries, 26) // one for stub and 25 others
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			defaultPolicy := func() planstypes.Policy {
+				return planstypes.Policy{
+					ChainPolicies:      []planstypes.ChainPolicy{},
+					GeolocationProfile: math.MaxUint64,
+					MaxProvidersToPair: 100,
+					TotalCuLimit:       math.MaxUint64,
+					EpochCuLimit:       math.MaxUint64,
+				}
+			}
+
+			plan := ts.plan // original mock template
+			plan.PlanPolicy = defaultPolicy()
+
+			if tt.planChainPolicy != nil {
+				plan.PlanPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.planChainPolicy}
+			}
+
+			err := ts.TxProposalAddPlans(plan)
+			require.Nil(t, err)
+
+			_, sub1Addr := ts.AddAccount("sub", 0, 10000)
+
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+			require.Nil(t, err)
+
+			// get the admin project and set its policies
+			subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
+			require.Nil(t, err)
+			require.Equal(t, 1, len(subProjects.Projects))
+
+			projectID := subProjects.Projects[0]
+
+			if tt.projChainPolicy != nil {
+				projPolicy := defaultPolicy()
+				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
+				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, projPolicy)
+				require.Nil(t, err)
+			}
+
+			// apply policy change
+			ts.AdvanceEpoch()
+
+			if tt.subscChainPolicy != nil {
+				subscPolicy := defaultPolicy()
+				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
+				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, subscPolicy)
+				require.Nil(t, err)
+			}
+
+			// apply policy change
+			ts.AdvanceEpochs(2)
+
+			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
+			require.NoError(t, err)
+
+			strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			require.NoError(t, err)
+			if len(tt.expectedStrictestPolicies) > 0 {
+				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
+				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Requirements))
+				services := map[string]struct{}{}
+				for _, requirement := range strictestPolicy.ChainPolicies[0].Requirements {
+					collection := requirement.Collection
+					if collection.AddOn != "" {
+						services[collection.AddOn] = struct{}{}
+					}
+					for _, extension := range requirement.Extensions {
+						if extension != "" {
+							services[extension] = struct{}{}
+						}
+					}
+				}
+				for _, expected := range tt.expectedStrictestPolicies {
+					_, ok := services[expected]
+					require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, strictestPolicy)
+				}
+			}
+
+			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
+			if tt.expectedProviders > 0 {
+				require.Nil(t, err)
+				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
+			} else {
+				require.Error(t, err)
+			}
+		})
 	}
 }

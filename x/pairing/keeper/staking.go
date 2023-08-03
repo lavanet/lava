@@ -9,6 +9,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
@@ -17,9 +18,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 	// TODO: basic validation for chain ID
 	specChainID := chainID
 
-	spec, found := k.specKeeper.GetSpec(ctx, specChainID)
-	if !found || !spec.Enabled {
-		return utils.LavaFormatWarning("spec not found or not active", fmt.Errorf("invalid spec ID"),
+	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
+	if err != nil || !spec.Enabled {
+		return utils.LavaFormatWarning("spec not found or not active", err,
 			utils.Attribute{Key: "spec", Value: specChainID},
 		)
 	}
@@ -65,7 +66,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 		)
 	}
 
-	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, specChainID)
+	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, spec)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid endpoints implementation for the given spec", err,
 			utils.Attribute{Key: "provider", Value: creator},
@@ -163,24 +164,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 	return err
 }
 
-func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, chainID string) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
-	expectedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, true)
-	if err != nil {
-		return nil, fmt.Errorf("expected interfaces: %w", err)
-	}
-	allowedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, chainID, false)
-	if err != nil {
-		return nil, fmt.Errorf("allowed interfaces: %w", err)
-	}
+func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, spec spectypes.Spec) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
+	expectedInterfaces := k.specKeeper.GetExpectedServicesForExpandedSpec(spec, true)
+	allowedInterfaces := k.specKeeper.GetExpectedServicesForExpandedSpec(spec, false)
 
 	geolocMapRequired := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 
-	geolocKey := func(intefaceName string, geolocation uint64, addon string) epochstoragetypes.EndpointService {
+	geolocKey := func(intefaceName string, geolocation uint64, addon string, extension string) epochstoragetypes.EndpointService {
 		return epochstoragetypes.EndpointService{
 			ApiInterface: intefaceName + "_" + strconv.FormatUint(geolocation, 10),
 			Addon:        addon,
+			Extension:    extension,
 		}
 	}
 
@@ -189,25 +185,28 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {
 			for expectedEndpointService := range expectedInterfaces {
-				key := geolocKey(expectedEndpointService.ApiInterface, geolocZone, expectedEndpointService.Addon)
+				key := geolocKey(expectedEndpointService.ApiInterface, geolocZone, expectedEndpointService.Addon, "")
 				geolocMapRequired[key] = struct{}{}
 			}
 			for expectedEndpointService := range allowedInterfaces {
-				key := geolocKey(expectedEndpointService.ApiInterface, geolocZone, expectedEndpointService.Addon)
+				key := geolocKey(expectedEndpointService.ApiInterface, geolocZone, expectedEndpointService.Addon, expectedEndpointService.Extension)
 				geolocMapAllowed[key] = struct{}{}
 			}
 		}
 	}
-
-	// check all endpoints only implement expected interfaces
+	addonsMap, extensionsMap := spec.ServicesMap()
+	// check all endpoints only implement allowed interfaces
 	for idx, endpoint := range endpoints {
-		endpoint.SetApiInterfacesFromAddons(allowedInterfaces) // support apiInterfaces inside addons list
-		endpoint.SetDefaultApiInterfaces(expectedInterfaces)   // support empty apiInterfaces list
+		err = endpoint.SetServicesFromAddons(allowedInterfaces, addonsMap, extensionsMap) // support apiInterfaces/extensions inside addons list
+		if err != nil {
+			return nil, fmt.Errorf("provider implements addons not allowed in the spec: %s, endpoint: %+v, allowed interfaces: %+v", spec.Index, endpoint, allowedInterfaces)
+		}
+		endpoint.SetDefaultApiInterfaces(expectedInterfaces) // support empty apiInterfaces list
 		endpoints[idx] = endpoint
 		for _, endpointService := range endpoint.GetSupportedServices() {
-			key := geolocKey(endpointService.ApiInterface, endpoint.Geolocation, endpointService.Addon)
+			key := geolocKey(endpointService.ApiInterface, endpoint.Geolocation, endpointService.Addon, endpointService.Extension)
 			if _, ok := geolocMapAllowed[key]; !ok {
-				return nil, fmt.Errorf("servicer implements api interfaces not allowed in the spec: %s, current allowed: %+v", key, geolocMapAllowed)
+				return nil, fmt.Errorf("provider implements api interfaces not allowed in the spec: %s, current allowed: %+v", key, geolocMapAllowed)
 			}
 		}
 	}
@@ -215,7 +214,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 	// check all expected api interfaces are implemented
 	for _, endpoint := range endpoints {
 		for _, endpointService := range endpoint.GetSupportedServices() {
-			key := geolocKey(endpointService.ApiInterface, endpoint.Geolocation, endpointService.Addon)
+			key := geolocKey(endpointService.ApiInterface, endpoint.Geolocation, endpointService.Addon, "")
 			delete(geolocMapRequired, key) // remove this from expected implementations
 		}
 	}

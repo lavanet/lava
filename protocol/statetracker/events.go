@@ -156,7 +156,11 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 					if err != nil {
 						return err
 					}
-					value = clientKey.GetAddress().String()
+					addr, err := clientKey.GetAddress()
+					if err != nil {
+						return err
+					}
+					value = addr.String()
 				}
 			}
 			eventName, err := cmd.Flags().GetString(FlagEventName)

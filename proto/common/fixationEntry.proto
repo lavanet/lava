@@ -11,6 +11,7 @@ message Entry {
     uint64 refcount = 4; // reference count
     bytes data = 5; // the data saved in the entry
     uint64 delete_at = 6; // block when the entry becomes deleted
+    bool is_latest = 7; // is this entry the latest entry now?
 }
 
 message RawMessage {

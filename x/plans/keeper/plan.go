@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commonTypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/plans/types"
@@ -73,27 +72,18 @@ func (k Keeper) GetAllPlanIndices(ctx sdk.Context) (val []string) {
 	return k.plansFS.GetAllEntryIndices(ctx)
 }
 
-// Export all plans from the KVStore
-func (k Keeper) ExportPlans(ctx sdk.Context) []commonTypes.RawMessage {
-	return k.plansFS.Export(ctx)
-}
-
-// Init all plans in the KVStore
-func (k Keeper) InitPlans(ctx sdk.Context, data []commonTypes.RawMessage) {
-	k.plansFS.Init(ctx, data)
-}
-
 func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error {
 	for _, chainPolicy := range planToAdd.PlanPolicy.ChainPolicies {
 		specID := chainPolicy.ChainId
-		if specID == types.WILDCARD_CHAIN_POLICY && len(chainPolicy.Apis) == 0 && len(chainPolicy.Collections) == 0 {
+		if specID == types.WILDCARD_CHAIN_POLICY && len(chainPolicy.Apis) == 0 && len(chainPolicy.Requirements) == 0 {
 			continue // this is allowed
 		}
-		expectedInterfaces, err := k.specKeeper.GetExpectedInterfacesForSpec(ctx, specID, false)
+		expectedInterfaces, err := k.specKeeper.GetExpectedServicesForSpec(ctx, specID, false)
 		if err != nil {
 			return err
 		}
-		for _, collection := range chainPolicy.Collections {
+		for _, requirement := range chainPolicy.Requirements {
+			collection := requirement.Collection
 			addon := collection.AddOn
 			// an addon is the same as apiInterface for optional apiInterfaces
 			if addon == collection.ApiInterface {
@@ -102,8 +92,19 @@ func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error
 			if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{
 				ApiInterface: collection.ApiInterface,
 				Addon:        addon,
+				Extension:    "",
 			}]; !ok {
 				return fmt.Errorf("policy chain policy collection %#v was not found on spec %s", collection, specID)
+			}
+
+			for _, extension := range requirement.Extensions {
+				if _, ok := expectedInterfaces[epochstoragetypes.EndpointService{
+					ApiInterface: collection.ApiInterface,
+					Addon:        addon,
+					Extension:    extension,
+				}]; !ok {
+					return fmt.Errorf("policy chain policy requirement %#v extensions were not found on spec %s", requirement, specID)
+				}
 			}
 		}
 	}
