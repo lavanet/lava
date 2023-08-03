@@ -75,6 +75,10 @@ func (bcp *BaseChainParser) SetConfiguredExtensions(extensions []string) error {
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {
 		for _, extension := range apiCollection.Extensions {
+			if extension.Name == "" {
+				// skip empty extensions
+				continue
+			}
 			if _, ok := allowedExtensions[extension.Name]; ok {
 				extensionKey := extensionslib.ExtensionKey{
 					Extension:      extension.Name,

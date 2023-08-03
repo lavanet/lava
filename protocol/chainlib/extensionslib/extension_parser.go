@@ -26,6 +26,9 @@ type ExtensionParser struct {
 }
 
 func (ep *ExtensionParser) AllowedExtension(extension string) bool {
+	if extension == "" {
+		return true
+	}
 	_, ok := ep.AllowedExtensions[extension]
 	return ok
 }
