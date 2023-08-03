@@ -115,6 +115,126 @@ func (m *Entry) GetIsLatest() bool {
 	return false
 }
 
+type Entries struct {
+	Index   string  `protobuf:"bytes,2,opt,name=index,proto3" json:"index,omitempty"`
+	IsLive  bool    `protobuf:"varint,3,opt,name=is_live,json=isLive,proto3" json:"is_live,omitempty"`
+	Entries []Entry `protobuf:"bytes,4,rep,name=entries,proto3" json:"entries"`
+}
+
+func (m *Entries) Reset()         { *m = Entries{} }
+func (m *Entries) String() string { return proto.CompactTextString(m) }
+func (*Entries) ProtoMessage()    {}
+func (*Entries) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6b613a133685a37d, []int{1}
+}
+func (m *Entries) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Entries) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Entries.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Entries) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Entries.Merge(m, src)
+}
+func (m *Entries) XXX_Size() int {
+	return m.Size()
+}
+func (m *Entries) XXX_DiscardUnknown() {
+	xxx_messageInfo_Entries.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Entries proto.InternalMessageInfo
+
+func (m *Entries) GetIndex() string {
+	if m != nil {
+		return m.Index
+	}
+	return ""
+}
+
+func (m *Entries) GetIsLive() bool {
+	if m != nil {
+		return m.IsLive
+	}
+	return false
+}
+
+func (m *Entries) GetEntries() []Entry {
+	if m != nil {
+		return m.Entries
+	}
+	return nil
+}
+
+type GenesisState struct {
+	Version    uint64       `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Entries    []Entries    `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries"`
+	Timerstore []RawMessage `protobuf:"bytes,3,rep,name=timerstore,proto3" json:"timerstore"`
+}
+
+func (m *GenesisState) Reset()         { *m = GenesisState{} }
+func (m *GenesisState) String() string { return proto.CompactTextString(m) }
+func (*GenesisState) ProtoMessage()    {}
+func (*GenesisState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6b613a133685a37d, []int{2}
+}
+func (m *GenesisState) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GenesisState.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GenesisState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GenesisState.Merge(m, src)
+}
+func (m *GenesisState) XXX_Size() int {
+	return m.Size()
+}
+func (m *GenesisState) XXX_DiscardUnknown() {
+	xxx_messageInfo_GenesisState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GenesisState proto.InternalMessageInfo
+
+func (m *GenesisState) GetVersion() uint64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *GenesisState) GetEntries() []Entries {
+	if m != nil {
+		return m.Entries
+	}
+	return nil
+}
+
+func (m *GenesisState) GetTimerstore() []RawMessage {
+	if m != nil {
+		return m.Timerstore
+	}
+	return nil
+}
+
 type RawMessage struct {
 	Key   []byte `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -124,7 +244,7 @@ func (m *RawMessage) Reset()         { *m = RawMessage{} }
 func (m *RawMessage) String() string { return proto.CompactTextString(m) }
 func (*RawMessage) ProtoMessage()    {}
 func (*RawMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6b613a133685a37d, []int{1}
+	return fileDescriptor_6b613a133685a37d, []int{3}
 }
 func (m *RawMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -169,32 +289,42 @@ func (m *RawMessage) GetValue() []byte {
 
 func init() {
 	proto.RegisterType((*Entry)(nil), "lavanet.lava.common.Entry")
+	proto.RegisterType((*Entries)(nil), "lavanet.lava.common.Entries")
+	proto.RegisterType((*GenesisState)(nil), "lavanet.lava.common.GenesisState")
 	proto.RegisterType((*RawMessage)(nil), "lavanet.lava.common.RawMessage")
 }
 
 func init() { proto.RegisterFile("lava/common/fixationEntry.proto", fileDescriptor_6b613a133685a37d) }
 
 var fileDescriptor_6b613a133685a37d = []byte{
-	// 301 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0xbf, 0x4e, 0x42, 0x31,
-	0x14, 0xc6, 0xa9, 0xfc, 0xbb, 0x34, 0x0c, 0xa6, 0x32, 0x54, 0x4c, 0xea, 0x0d, 0x71, 0xb8, 0x13,
-	0x77, 0xd0, 0xd9, 0x04, 0x13, 0x37, 0x5d, 0x3a, 0xba, 0x90, 0x02, 0x87, 0x6b, 0x43, 0x69, 0x09,
-	0x3d, 0x20, 0xbc, 0x85, 0x8f, 0xe3, 0x23, 0x38, 0x32, 0x3a, 0x1a, 0x78, 0x11, 0xd3, 0xd6, 0x18,
-	0xa7, 0x9e, 0xdf, 0xf9, 0xbe, 0xd3, 0x7c, 0xf9, 0xe8, 0xb5, 0x51, 0x5b, 0x55, 0x4e, 0xdd, 0x72,
-	0xe9, 0x6c, 0x39, 0xd7, 0x3b, 0x85, 0xda, 0xd9, 0x47, 0x8b, 0xeb, 0xfd, 0x70, 0xb5, 0x76, 0xe8,
-	0xd8, 0x45, 0x30, 0x58, 0xc0, 0x61, 0x78, 0x87, 0xc9, 0xd8, 0xef, 0x55, 0xae, 0x72, 0x51, 0x2f,
-	0xc3, 0x94, 0xac, 0x83, 0x0f, 0x42, 0x9b, 0xf1, 0x94, 0xf5, 0x68, 0x53, 0xdb, 0x19, 0xec, 0x38,
-	0xc9, 0x49, 0xd1, 0x91, 0x09, 0xc2, 0x76, 0x62, 0xdc, 0x74, 0xc1, 0xcf, 0x72, 0x52, 0x34, 0x64,
-	0x02, 0x76, 0x49, 0x33, 0x8f, 0xca, 0xc0, 0x58, 0x21, 0xaf, 0x47, 0xa1, 0x1d, 0x79, 0x84, 0xac,
-	0x4f, 0xb3, 0x35, 0xcc, 0xa7, 0x6e, 0x63, 0x91, 0x37, 0xa2, 0xf4, 0xc7, 0x8c, 0xd1, 0xc6, 0x4c,
-	0xa1, 0xe2, 0xcd, 0x9c, 0x14, 0x5d, 0x19, 0x67, 0x76, 0x45, 0x3b, 0x33, 0x30, 0x80, 0xf1, 0xaf,
-	0x56, 0x3a, 0x48, 0x8b, 0x11, 0x06, 0x51, 0xfb, 0xb1, 0x51, 0x08, 0x1e, 0x79, 0x3b, 0x27, 0x45,
-	0x26, 0x33, 0xed, 0x9f, 0x22, 0x0f, 0xee, 0x28, 0x95, 0xea, 0xed, 0x19, 0xbc, 0x57, 0x15, 0xb0,
-	0x73, 0x5a, 0x5f, 0xc0, 0x3e, 0x86, 0xef, 0xca, 0x30, 0x86, 0xe8, 0x5b, 0x65, 0x36, 0x10, 0xa3,
-	0x77, 0x65, 0x82, 0x87, 0xfb, 0xcf, 0xa3, 0x20, 0x87, 0xa3, 0x20, 0xdf, 0x47, 0x41, 0xde, 0x4f,
-	0xa2, 0x76, 0x38, 0x89, 0xda, 0xd7, 0x49, 0xd4, 0x5e, 0x6e, 0x2a, 0x8d, 0xaf, 0x9b, 0x49, 0xe8,
-	0xab, 0xfc, 0x2d, 0xb0, 0xfc, 0xdf, 0x34, 0xee, 0x57, 0xe0, 0x27, 0xad, 0xd8, 0xdb, 0xed, 0x4f,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0xbf, 0xa8, 0xf4, 0x5d, 0x85, 0x01, 0x00, 0x00,
+	// 427 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0xc1, 0x6e, 0xd3, 0x40,
+	0x14, 0xcc, 0x26, 0x4e, 0xec, 0x3e, 0x72, 0x40, 0x4b, 0x25, 0x4c, 0x40, 0x8e, 0x15, 0x71, 0xf0,
+	0xc9, 0x96, 0x80, 0x13, 0x42, 0x48, 0xad, 0x54, 0x71, 0x29, 0x97, 0xe5, 0xc6, 0xa5, 0xda, 0x24,
+	0xaf, 0x61, 0x55, 0x67, 0xb7, 0xf2, 0xbe, 0x98, 0xe6, 0x2f, 0xf8, 0x11, 0xee, 0x7c, 0x42, 0x8f,
+	0x3d, 0x72, 0x42, 0x28, 0xf9, 0x11, 0xb4, 0xbb, 0x2d, 0x89, 0x50, 0x38, 0x79, 0x67, 0xe7, 0xcd,
+	0x9b, 0xf1, 0x68, 0x61, 0x5c, 0xcb, 0x56, 0x56, 0x33, 0xb3, 0x5c, 0x1a, 0x5d, 0x5d, 0xaa, 0x1b,
+	0x49, 0xca, 0xe8, 0x33, 0x4d, 0xcd, 0xba, 0xbc, 0x6e, 0x0c, 0x19, 0xfe, 0xc4, 0x0d, 0x68, 0xa4,
+	0xd2, 0x7d, 0xcb, 0x30, 0x38, 0x3a, 0x5e, 0x98, 0x85, 0xf1, 0x7c, 0xe5, 0x4e, 0x61, 0x74, 0xf2,
+	0x83, 0x41, 0xdf, 0x4b, 0xf9, 0x31, 0xf4, 0x95, 0x9e, 0xe3, 0x4d, 0xca, 0x72, 0x56, 0x1c, 0x89,
+	0x00, 0xdc, 0xed, 0xb4, 0x36, 0xb3, 0xab, 0xb4, 0x9b, 0xb3, 0x22, 0x12, 0x01, 0xf0, 0x67, 0x90,
+	0x58, 0x92, 0x35, 0x5e, 0x48, 0x4a, 0x7b, 0x9e, 0x88, 0x3d, 0x3e, 0x21, 0x3e, 0x82, 0xa4, 0xc1,
+	0xcb, 0x99, 0x59, 0x69, 0x4a, 0x23, 0x4f, 0xfd, 0xc5, 0x9c, 0x43, 0x34, 0x97, 0x24, 0xd3, 0x7e,
+	0xce, 0x8a, 0xa1, 0xf0, 0x67, 0xfe, 0x1c, 0x8e, 0xe6, 0x58, 0x23, 0xf9, 0x5d, 0x83, 0x20, 0x08,
+	0x17, 0x27, 0xe4, 0x48, 0x65, 0x2f, 0x6a, 0x49, 0x68, 0x29, 0x8d, 0x73, 0x56, 0x24, 0x22, 0x51,
+	0xf6, 0xdc, 0xe3, 0x09, 0x41, 0xec, 0x92, 0x2b, 0xb4, 0xbb, 0xec, 0xdd, 0xfd, 0xec, 0x4f, 0x21,
+	0x76, 0x6a, 0xd5, 0xa2, 0x0f, 0x99, 0x88, 0x81, 0xb2, 0xe7, 0xaa, 0x45, 0xfe, 0x16, 0x62, 0x0c,
+	0xca, 0x34, 0xca, 0x7b, 0xc5, 0xa3, 0x57, 0xa3, 0xf2, 0x40, 0x63, 0xa5, 0xef, 0xe5, 0x34, 0xba,
+	0xfd, 0x35, 0xee, 0x88, 0x07, 0xc1, 0xe4, 0x3b, 0x83, 0xe1, 0x07, 0xd4, 0x68, 0x95, 0xfd, 0x44,
+	0x92, 0x90, 0xa7, 0x10, 0xb7, 0xd8, 0x58, 0x65, 0xb4, 0x6f, 0x2e, 0x12, 0x0f, 0x90, 0xbf, 0xdb,
+	0xd9, 0x74, 0xbd, 0xcd, 0x8b, 0xff, 0xda, 0x28, 0xb4, 0xff, 0x18, 0xf1, 0x33, 0x00, 0x52, 0x4b,
+	0x6c, 0x2c, 0x99, 0xc6, 0xfd, 0x80, 0x5b, 0x30, 0x3e, 0xb8, 0x40, 0xc8, 0xaf, 0x1f, 0xd1, 0x5a,
+	0xb9, 0xc0, 0xfb, 0x1d, 0x7b, 0xc2, 0xc9, 0x1b, 0x80, 0x1d, 0xcf, 0x1f, 0x43, 0xef, 0x0a, 0xd7,
+	0x3e, 0xe8, 0x50, 0xb8, 0xa3, 0xab, 0xae, 0x95, 0xf5, 0x0a, 0x7d, 0x75, 0x43, 0x11, 0xc0, 0xe9,
+	0xfb, 0xdb, 0x4d, 0xc6, 0xee, 0x36, 0x19, 0xfb, 0xbd, 0xc9, 0xd8, 0xb7, 0x6d, 0xd6, 0xb9, 0xdb,
+	0x66, 0x9d, 0x9f, 0xdb, 0xac, 0xf3, 0xf9, 0xe5, 0x42, 0xd1, 0x97, 0xd5, 0xd4, 0x79, 0x57, 0xf7,
+	0x61, 0xaa, 0xfd, 0xf7, 0x48, 0xeb, 0x6b, 0xb4, 0xd3, 0x81, 0x7f, 0x5d, 0xaf, 0xff, 0x04, 0x00,
+	0x00, 0xff, 0xff, 0x0a, 0x30, 0xea, 0x47, 0xab, 0x02, 0x00, 0x00,
 }
 
 func (m *Entry) Marshal() (dAtA []byte, err error) {
@@ -260,6 +390,116 @@ func (m *Entry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Index)))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Entries) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Entries) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Entries) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Entries) > 0 {
+		for iNdEx := len(m.Entries) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Entries[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintFixationEntry(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.IsLive {
+		i--
+		if m.IsLive {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Index) > 0 {
+		i -= len(m.Index)
+		copy(dAtA[i:], m.Index)
+		i = encodeVarintFixationEntry(dAtA, i, uint64(len(m.Index)))
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GenesisState) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GenesisState) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Timerstore) > 0 {
+		for iNdEx := len(m.Timerstore) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Timerstore[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintFixationEntry(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Entries) > 0 {
+		for iNdEx := len(m.Entries) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Entries[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintFixationEntry(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Version != 0 {
+		i = encodeVarintFixationEntry(dAtA, i, uint64(m.Version))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -340,6 +580,52 @@ func (m *Entry) Size() (n int) {
 	}
 	if m.IsLatest {
 		n += 2
+	}
+	return n
+}
+
+func (m *Entries) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Index)
+	if l > 0 {
+		n += 1 + l + sovFixationEntry(uint64(l))
+	}
+	if m.IsLive {
+		n += 2
+	}
+	if len(m.Entries) > 0 {
+		for _, e := range m.Entries {
+			l = e.Size()
+			n += 1 + l + sovFixationEntry(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GenesisState) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Version != 0 {
+		n += 1 + sovFixationEntry(uint64(m.Version))
+	}
+	if len(m.Entries) > 0 {
+		for _, e := range m.Entries {
+			l = e.Size()
+			n += 1 + l + sovFixationEntry(uint64(l))
+		}
+	}
+	if len(m.Timerstore) > 0 {
+		for _, e := range m.Timerstore {
+			l = e.Size()
+			n += 1 + l + sovFixationEntry(uint64(l))
+		}
 	}
 	return n
 }
@@ -558,6 +844,279 @@ func (m *Entry) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.IsLatest = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFixationEntry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Entries) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFixationEntry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Entries: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Entries: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Index = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsLive", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsLive = bool(v != 0)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Entries = append(m.Entries, Entry{})
+			if err := m.Entries[len(m.Entries)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipFixationEntry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GenesisState) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowFixationEntry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GenesisState: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GenesisState: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			m.Version = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Version |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Entries = append(m.Entries, Entries{})
+			if err := m.Entries[len(m.Entries)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timerstore", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowFixationEntry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthFixationEntry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Timerstore = append(m.Timerstore, RawMessage{})
+			if err := m.Timerstore[len(m.Timerstore)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipFixationEntry(dAtA[iNdEx:])

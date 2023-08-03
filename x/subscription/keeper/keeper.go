@@ -87,7 +87,7 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 }
 
 // ExportSubscriptions exports subscriptions data (for genesis)
-func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportSubscriptions(ctx sdk.Context) commontypes.GenesisState {
 	return k.subsFS.Export(ctx)
 }
 
@@ -97,8 +97,8 @@ func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMess
 }
 
 // InitSubscriptions imports subscriptions data (from genesis)
-func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.subsFS.Init(ctx, data)
+func (k Keeper) InitSubscriptions(ctx sdk.Context, gs commontypes.GenesisState) {
+	k.subsFS.Init(ctx, gs)
 }
 
 // InitSubscriptions imports subscriptions timers data (from genesis)
