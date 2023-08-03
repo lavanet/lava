@@ -76,14 +76,14 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface string, addons []string) (time.Duration, error) {
+			checkOneProvider := func(apiInterface string, addon string) (time.Duration, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
 				}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
-					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				defer conn.Close()
 				relayerClient := *relayerClientPt
@@ -91,24 +91,24 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				relaySentTime := time.Now()
 				returned, err := relayerClient.Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
 				if err != nil {
-					return 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				relayLatency := time.Since(relaySentTime)
 				if guid != returned.Value {
-					return 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: returned.Value}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: returned.Value}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
 					RelaySession: &pairingtypes.RelaySession{SpecId: providerEntry.Chain},
-					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: apiInterface, Addon: addons},
+					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: apiInterface, Addon: addon},
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {
-					return 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				code := status.Code(err)
 				if code != codes.Code(lavasession.EpochMismatchError.ABCICode()) {
-					return 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				return relayLatency, nil
 			}
@@ -117,7 +117,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			for _, endpointService := range endpointServices {
-				probeLatency, err := checkOneProvider(endpointService.ApiInterface, []string{endpointService.Addon})
+				probeLatency, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
 					continue
@@ -151,7 +151,7 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 need to provider either provider_address or --from wallet_name
 optional flag: --endpoints in order to validate provider process before submitting a stake command
 endpoints is a space separated list of endpoint,
-each endpoint is: listen-ip:listen-port(the url),[optional: the api interfaces and addons to check],spec-id(the spec identifier to test)`,
+each endpoint is: listen-ip:listen-port(the url),[optional: the api interfaces and addon to check],spec-id(the spec identifier to test)`,
 		Example: `rpcprovider lava@myprovideraddress
 rpcprovider --from providerWallet
 rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,

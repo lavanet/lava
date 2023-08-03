@@ -132,11 +132,14 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
-
+	extensions := []string{}
+	for _, extension := range chainMessage.GetExtensions() {
+		extensions = append(extensions, extension.Name)
+	}
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), []string{chainMessage.GetApiCollection().CollectionData.AddOn})
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, extensions)
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
@@ -509,7 +512,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), []string{chainMessage.GetApiCollection().CollectionData.AddOn})
+	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
 	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}

@@ -39,18 +39,18 @@ func (ep *ExtensionParser) ExtensionParsing(extensionsChainMessage ExtensionsCha
 		return
 	}
 
-	for extensionKey, extension := range ep.configuredExtensions {
-		extensionParserRule := NewExtensionParserRule(extensionKey)
+	for _, extension := range ep.configuredExtensions {
+		extensionParserRule := NewExtensionParserRule(extension)
 		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)
 		}
 	}
 }
 
-func NewExtensionParserRule(extensionKey ExtensionKey) ExtensionParserRule {
-	switch extensionKey.Extension {
+func NewExtensionParserRule(extension *spectypes.Extension) ExtensionParserRule {
+	switch extension.Name {
 	case "archive":
-		return ArchiveParserRule{}
+		return ArchiveParserRule{extension: extension}
 	default:
 		// unsupported rule
 		return nil

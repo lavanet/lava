@@ -20,6 +20,11 @@ message ApiCollection {
 message Extension {
   string name =1;
   float cu_multiplier =2;
+  Rule rule =3;
+}
+
+message Rule {
+  uint64 block=1;
 }
 
 message Verification {
