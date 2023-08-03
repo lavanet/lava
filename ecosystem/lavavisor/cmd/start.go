@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
@@ -18,7 +19,6 @@ type Config struct {
 type ProviderProcess struct {
 	Name      string
 	ChainID   string
-	Cmd       *exec.Cmd
 	IsRunning bool
 }
 
@@ -52,10 +52,10 @@ var cmdLavavisorStart = &cobra.Command{
 		}
 
 		// Iterate over the list of provider services and start them
-		for i, provider := range config.ProviderServices {
+		for _, provider := range config.ProviderServices {
 			fmt.Printf("Starting provider: %s\n", provider)
 			// TODO: Implement the actual starting of the providers
-			startProvider(provider, i+1)
+			startProvider(provider)
 		}
 		return nil
 	},
@@ -65,14 +65,40 @@ func init() {
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	rootCmd.AddCommand(cmdLavavisorStart)
 }
+func startProvider(provider string) {
+	// Extract the chain id from the provider string
+	chainID := strings.Split(provider, "-")[1]
+	fmt.Println("chainId: ", chainID)
 
-func startProvider(provider string, servicerNumber int) {
+	// Create command list
+	cmds := []*exec.Cmd{
+		exec.Command("sudo", "systemctl", "daemon-reload"),
+		exec.Command("sudo", "systemctl", "enable", provider+".service"),
+		exec.Command("sudo", "systemctl", "restart", provider+".service"),
+		exec.Command("sudo", "systemctl", "status", provider+".service"),
+	}
+
+	// Start the command in a separate goroutine so that it doesn't block the main thread
+	go func() {
+		fmt.Printf("Starting provider: %s\n", provider)
+
+		// Run the commands and capture their output
+		for _, cmd := range cmds {
+			if output, err := cmd.CombinedOutput(); err != nil {
+				fmt.Printf("Failed to run command: %s, Error: %s\n", cmd, err)
+				fmt.Printf("Command Output: \n%s\n", output)
+			} else {
+				fmt.Printf("Successfully run command: %s\n", cmd)
+				fmt.Printf("Command Output: \n%s\n", output)
+			}
+		}
+
+	}()
+
+	// Add to the list of providers
 	providers = append(providers, &ProviderProcess{
 		Name:      provider,
-		Cmd:       nil,
+		ChainID:   chainID,
 		IsRunning: true,
 	})
-
-	// ToDo: implement the actual logic
-	// ...
 }
