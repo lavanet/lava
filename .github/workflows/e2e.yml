@@ -48,7 +48,7 @@ jobs:
     - name: Run Lava E2E Tests  -timeout 1200s
       run: go test ./testutil/e2e/ -v -timeout 1200s # 20mins
       
-    - name: tail -n 300 JSON Proxy Logs
+    - name: tail -n 300 Lavad Logs
       if: always()
       run: tail -n 300 testutil/e2e/logs/00_StartLava.log
 
