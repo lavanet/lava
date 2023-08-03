@@ -132,10 +132,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
-	extensions := []string{}
-	for _, extension := range chainMessage.GetExtensions() {
-		extensions = append(extensions, extension.Name)
-	}
+	extensions := common.GetExtensionNames(chainMessage.GetExtensions())
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
@@ -251,7 +248,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock(), chainMessage.GetApiCollection().CollectionData.AddOn)
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock(), chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions())
 	if err != nil {
 		return &lavaprotocol.RelayResult{ProviderAddress: ""}, err
 	}

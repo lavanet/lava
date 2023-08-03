@@ -2,8 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"sort"
-	"strings"
 	"sync"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
@@ -11,10 +9,6 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-)
-
-const (
-	sep = "|"
 )
 
 type chainRouterEntry struct {
@@ -34,29 +28,13 @@ func (cre *chainRouterEntry) isSupporting(addon string) bool {
 
 type chainRouterImpl struct {
 	lock             *sync.RWMutex
-	chainProxyRouter map[RouterKey][]chainRouterEntry
-}
-
-type RouterKey string
-
-func NewRouterKey(extensions []string) RouterKey {
-	// make sure addons have no repetitions
-	uniqueExtensions := map[string]struct{}{}
-	for _, extension := range extensions {
-		uniqueExtensions[extension] = struct{}{}
-	}
-	uniqueExtensionsSlice := []string{}
-	for addon := range uniqueExtensions { // we are sorting this anyway so we don't have to keep order
-		uniqueExtensionsSlice = append(uniqueExtensionsSlice, addon)
-	}
-	sort.Strings(uniqueExtensionsSlice)
-	return RouterKey(sep + strings.Join(uniqueExtensionsSlice, sep) + sep)
+	chainProxyRouter map[lavasession.RouterKey][]chainRouterEntry
 }
 
 func (cri *chainRouterImpl) getChainProxySupporting(addon string, extensions []string) (ChainProxy, error) {
 	cri.lock.RLock()
 	defer cri.lock.RUnlock()
-	wantedRouterKey := NewRouterKey(extensions)
+	wantedRouterKey := lavasession.NewRouterKey(extensions)
 	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
 		for _, chainRouterEntry := range chainProxyEntries {
 			if chainRouterEntry.isSupporting(addon) {
@@ -74,7 +52,7 @@ func (cri *chainRouterImpl) getChainProxySupporting(addon string, extensions []s
 }
 
 func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
-	routerKey := NewRouterKey(extensions)
+	routerKey := lavasession.NewRouterKey(extensions)
 	_, ok := cri.chainProxyRouter[routerKey]
 	return ok
 }
@@ -90,11 +68,11 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 }
 
 // batch nodeUrls with the same addons together in a copy
-func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) map[RouterKey]lavasession.RPCProviderEndpoint {
-	returnedBatch := map[RouterKey]lavasession.RPCProviderEndpoint{}
+func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) map[lavasession.RouterKey]lavasession.RPCProviderEndpoint {
+	returnedBatch := map[lavasession.RouterKey]lavasession.RPCProviderEndpoint{}
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
-		if existingEndpoint, ok := returnedBatch[NewRouterKey(nodeUrl.Addons)]; !ok {
-			returnedBatch[NewRouterKey(nodeUrl.Addons)] = lavasession.RPCProviderEndpoint{
+		if existingEndpoint, ok := returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)]; !ok {
+			returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)] = lavasession.RPCProviderEndpoint{
 				NetworkAddress: rpcProviderEndpoint.NetworkAddress,
 				ChainID:        rpcProviderEndpoint.ChainID,
 				ApiInterface:   rpcProviderEndpoint.ApiInterface,
@@ -103,14 +81,14 @@ func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint
 			}
 		} else {
 			existingEndpoint.NodeUrls = append(existingEndpoint.NodeUrls, nodeUrl)
-			returnedBatch[NewRouterKey(nodeUrl.Addons)] = existingEndpoint
+			returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)] = existingEndpoint
 		}
 	}
 	return returnedBatch
 }
 
 func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (ChainRouter, error) {
-	chainProxyRouter := map[RouterKey][]chainRouterEntry{}
+	chainProxyRouter := map[lavasession.RouterKey][]chainRouterEntry{}
 
 	requiredMap := map[requirementSt]struct{}{}
 	supportedMap := map[requirementSt]struct{}{}
@@ -122,8 +100,8 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 		addonsSupportedMap := map[string]struct{}{}
 		// this function calculated all routing combinations and populates them for verification at the end of the function
-		updateRouteCombinations := func(extensions []string, addons []string) (fullySupportedRouterKey RouterKey) {
-			allExtensionsRouterKey := NewRouterKey(extensions)
+		updateRouteCombinations := func(extensions []string, addons []string) (fullySupportedRouterKey lavasession.RouterKey) {
+			allExtensionsRouterKey := lavasession.NewRouterKey(extensions)
 			requirement := requirementSt{
 				extensions: allExtensionsRouterKey,
 				addon:      "",
@@ -164,20 +142,20 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 }
 
 type requirementSt struct {
-	extensions RouterKey
+	extensions lavasession.RouterKey
 	addon      string
 }
 
 func populateRequiredForAddon(addon string, extensions []string, required map[requirementSt]struct{}) {
 	if len(extensions) == 0 {
 		required[requirementSt{
-			extensions: NewRouterKey([]string{}),
+			extensions: lavasession.NewRouterKey([]string{}),
 			addon:      addon,
 		}] = struct{}{}
 		return
 	}
 	requirement := requirementSt{
-		extensions: NewRouterKey(extensions),
+		extensions: lavasession.NewRouterKey(extensions),
 		addon:      addon,
 	}
 	if _, ok := required[requirement]; ok {

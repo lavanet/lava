@@ -78,7 +78,8 @@ type Endpoint struct {
 	Client             *pairingtypes.RelayerClient
 	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
-	Addons             []string
+	Addons             map[string]struct{}
+	Extensions         map[string]struct{}
 }
 
 type SessionWithProvider struct {
@@ -151,11 +152,26 @@ func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
 		return true
 	}
 	for _, endpoint := range cswp.Endpoints {
-		for _, addonSupported := range endpoint.Addons {
-			if addonSupported == addon {
-				return true
+		if _, ok := endpoint.Addons[addon]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (cswp *ConsumerSessionsWithProvider) IsSupportingExtensions(extensions []string) bool {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+endpointLoop:
+	for _, endpoint := range cswp.Endpoints {
+		for _, extension := range extensions {
+			if _, ok := endpoint.Extensions[extension]; !ok {
+				// doesn;t support the extension required, continue to next endpoint
+				continue endpointLoop
 			}
 		}
+		// get here only if all extensions are supported in the endpoint
+		return true
 	}
 	return false
 }
