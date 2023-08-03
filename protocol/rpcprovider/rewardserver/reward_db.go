@@ -120,7 +120,7 @@ func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
 		}
 	}
 
-	return nil, utils.LavaFormatDebug("reward not found")
+	return nil, fmt.Errorf("reward not found for key: %s", key)
 }
 
 func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
@@ -221,7 +221,7 @@ func (rs *RewardDB) deletePrefix(prefix string) error {
 	return nil
 }
 
-func (rs *RewardDB) AddDB(db DB) error {
+func (rs *RewardDB) AddDB(specId string, db DB) error {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
@@ -235,7 +235,7 @@ func (rs *RewardDB) AddDB(db DB) error {
 	return nil
 }
 
-func (rs *RewardDB) GetDB(providerAddr string, specId string, shardId uint) (DB, bool) {
+func (rs *RewardDB) GetDB(specId string) (DB, bool) {
 	rs.lock.RLock()
 	defer rs.lock.RUnlock()
 
@@ -257,9 +257,8 @@ func (rs *RewardDB) Close() error {
 	return nil
 }
 
-func NewRewardDB(db DB) *RewardDB {
+func NewRewardDB() *RewardDB {
 	rdb := NewRewardDBWithTTL(DefaultRewardTTL)
-	rdb.AddDB(db)
 	return rdb
 }
 
