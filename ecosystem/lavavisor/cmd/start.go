@@ -65,6 +65,7 @@ func init() {
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	rootCmd.AddCommand(cmdLavavisorStart)
 }
+
 func startProvider(provider string) {
 	// Extract the chain id from the provider string
 	chainID := strings.Split(provider, "-")[1]
@@ -78,22 +79,19 @@ func startProvider(provider string) {
 		exec.Command("sudo", "systemctl", "status", provider+".service"),
 	}
 
-	// Start the command in a separate goroutine so that it doesn't block the main thread
-	go func() {
-		fmt.Printf("Starting provider: %s\n", provider)
-
-		// Run the commands and capture their output
-		for _, cmd := range cmds {
-			if output, err := cmd.CombinedOutput(); err != nil {
-				fmt.Printf("Failed to run command: %s, Error: %s\n", cmd, err)
-				fmt.Printf("Command Output: \n%s\n", output)
-			} else {
-				fmt.Printf("Successfully run command: %s\n", cmd)
-				fmt.Printf("Command Output: \n%s\n", output)
-			}
+	// Run the commands and capture their output
+	for _, cmd := range cmds {
+		fmt.Printf("Running command: %s\n", strings.Join(cmd.Args, " "))
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("Failed to run command: %s, Error: %s\n", cmd, err)
+			fmt.Printf("Command Output: \n%s\n", output)
+			return
+		} else {
+			fmt.Printf("Successfully run command: %s\n", cmd)
+			fmt.Printf("Command Output: \n%s\n", output)
 		}
-
-	}()
+	}
 
 	// Add to the list of providers
 	providers = append(providers, &ProviderProcess{
