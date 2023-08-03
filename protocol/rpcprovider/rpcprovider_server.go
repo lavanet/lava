@@ -101,6 +101,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
+		utils.Attribute{Key: "relay addon", Value: request.RelayData.Addon},
+		utils.Attribute{Key: "relay extensions", Value: request.RelayData.GetExtensions()},
 	)
 
 	// Init relay
