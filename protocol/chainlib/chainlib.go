@@ -57,7 +57,7 @@ type ChainParser interface {
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons []string, extensions []string, err error)
-	SetConfiguredExtensions([]string) error
+	SetConfiguredExtensions(extensions map[string]struct{}) error
 }
 
 type ChainMessage interface {

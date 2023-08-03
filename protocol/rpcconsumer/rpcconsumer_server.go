@@ -89,9 +89,12 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 		rpccs.consumerServices[consumerAddon] = struct{}{}
 	}
 	for _, consumerExtension := range consumerExtensions {
-		rpccs.consumerServices[consumerExtension] = struct{}{}
+		// store only relevant apiInterface extensions
+		if consumerExtension.ApiInterface == listenEndpoint.ApiInterface {
+			rpccs.consumerServices[consumerExtension.Extension] = struct{}{}
+		}
 	}
-	rpccs.chainParser.SetConfiguredExtensions(consumerExtensions) // configure possible extensions as set by the policy
+	rpccs.chainParser.SetConfiguredExtensions(rpccs.consumerServices) // configure possible extensions as set by the policy
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err

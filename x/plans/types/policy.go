@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of the chains and allow all others
@@ -69,14 +70,28 @@ func (policy *Policy) GetSupportedAddons(specID string) (addons []string, err er
 	return addons, nil
 }
 
-func (policy *Policy) GetSupportedExtensions(specID string) (extensions []string, err error) {
+func (policy *Policy) GetSupportedExtensions(specID string) (extensions []epochstoragetypes.EndpointService, err error) {
 	chainPolicy, allowed := policy.ChainPolicy(specID)
 	if !allowed {
 		return nil, fmt.Errorf("specID %s not allowed by current policy", specID)
 	}
-	extensions = []string{""} // always allow an empty extension
+	extensions = []epochstoragetypes.EndpointService{}
 	for _, requirement := range chainPolicy.Requirements {
-		extensions = append(extensions, requirement.Extensions...)
+		// always allow an empty extension
+		emptyExtension := epochstoragetypes.EndpointService{
+			ApiInterface: requirement.Collection.ApiInterface,
+			Addon:        requirement.Collection.AddOn,
+			Extension:    "",
+		}
+		extensions = append(extensions, emptyExtension)
+		for _, extension := range requirement.Extensions {
+			extensionServiceToAdd := epochstoragetypes.EndpointService{
+				ApiInterface: requirement.Collection.ApiInterface,
+				Addon:        requirement.Collection.AddOn,
+				Extension:    extension,
+			}
+			extensions = append(extensions, extensionServiceToAdd)
+		}
 	}
 	return extensions, nil
 }

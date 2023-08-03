@@ -61,15 +61,13 @@ func (bcp *BaseChainParser) isExtension(extension string) bool {
 	return bcp.extensionParser.AllowedExtension(extension)
 }
 
-func (bcp *BaseChainParser) SetConfiguredExtensions(extensions []string) error {
+func (bcp *BaseChainParser) SetConfiguredExtensions(extensions map[string]struct{}) error {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
-	allowedExtensions := map[string]struct{}{}
-	for _, extension := range extensions {
+	for extension := range extensions {
 		if !bcp.isExtension(extension) {
 			return utils.LavaFormatError("configured extensions contain an extension that is not allowed in the spec", nil, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "configured extensions", Value: extensions}, utils.Attribute{Key: "allowed extensions", Value: bcp.extensionParser.AllowedExtensions})
 		}
-		allowedExtensions[extension] = struct{}{}
 	}
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
@@ -79,7 +77,7 @@ func (bcp *BaseChainParser) SetConfiguredExtensions(extensions []string) error {
 				// skip empty extensions
 				continue
 			}
-			if _, ok := allowedExtensions[extension.Name]; ok {
+			if _, ok := extensions[extension.Name]; ok {
 				extensionKey := extensionslib.ExtensionKey{
 					Extension:      extension.Name,
 					ConnectionType: collectionKey.ConnectionType,
