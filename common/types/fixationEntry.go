@@ -70,7 +70,7 @@ func (entry Entry) IsDeleted(ctx sdk.Context) bool {
 	return entry.IsDeletedBy(uint64(ctx.BlockHeight()))
 }
 
-// IsMarkedDeleted tests whether an entry is marked for deletion, i.e. has
+// HasDeleteAt tests whether an entry is marked for deletion, i.e. has
 // entry.Deleted != math.MaxUint64.
 func (entry Entry) HasDeleteAt() bool {
 	return entry.DeleteAt < math.MaxUint64
