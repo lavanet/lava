@@ -363,8 +363,8 @@ export class LavaProviders {
       (item) => item.MaxComputeUnits > item.UsedComputeUnits
     );
 
-    if (validProviders.length === 0) {
-      return validProviders; // returning an empty array.
+    if (validProviders.length <= 1) {
+      return validProviders; // returning the array as it is.
     }
 
     // Fisher-Yates shuffle
