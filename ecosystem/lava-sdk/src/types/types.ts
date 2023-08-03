@@ -1,15 +1,18 @@
 export class SessionManager {
   PairingList: ConsumerSessionWithProvider[];
+  PairingListExtended: ConsumerSessionWithProvider[]; // this list contains other geo-locations, and used if failed using pairing list
   NextEpochStart: Date;
   Apis: Map<string, number>;
 
   constructor(
     pairingList: ConsumerSessionWithProvider[],
+    pairingListExtended: ConsumerSessionWithProvider[],
     nextEpochStart: Date,
     apis: Map<string, number>
   ) {
     this.NextEpochStart = nextEpochStart;
     this.PairingList = pairingList;
+    this.PairingListExtended = pairingListExtended;
     this.Apis = apis;
   }
 

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"math/rand"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -40,25 +39,15 @@ const (
 )
 
 func validatePortNumber(ipPort string) string {
+	utils.LavaFormatDebug("validating iport " + ipPort)
 	if lavasession.AllowInsecureConnectionToProviders {
 		return "Skipped Port Validation due to Allow Insecure Connection flag"
 	}
-
-	var u *url.URL
-	var err error
-
-	u, err = url.Parse(ipPort)
-	if err != nil {
-		u, err = url.Parse("https://" + ipPort) // try again with https prefix
-		if err != nil {
-			return utils.LavaFormatError("unparsable url", err, utils.Attribute{Key: "url", Value: ipPort}).Error()
-		}
+	// provider-test.lava-cybertron.xyz:443
+	if strings.HasSuffix(ipPort, ":443") {
+		return ""
 	}
-	port := u.Port()
-	if port != "443" {
-		return ipPort
-	}
-	return ""
+	return ipPort
 }
 
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
