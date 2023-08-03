@@ -8,7 +8,7 @@ lavad config broadcast-mode block
 lavad config keyring-backend test
 
 # Specify the file path, field to edit, and new value
-path='/home/user/.lava/config/'
+path="$HOME/.lava/config/"
 genesis='genesis.json'
 config='config.toml'
 app='app.toml'
@@ -54,6 +54,6 @@ for user in "${users[@]}"; do
     lavad add-genesis-account "$user" 50000000000000ulava
 done
 
-lavad gentx alice 100000000000ulava --chain-id lava 
+lavad gentx alice 100000000000ulava --chain-id lava
 lavad collect-gentxs
 lavad start
