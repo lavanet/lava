@@ -12,9 +12,9 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -188,13 +188,19 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 	}
 	client := *endpoint.Client
-	probeResp, err := client.Probe(connectCtx, &wrapperspb.UInt64Value{Value: guid})
+	probeReq := &pairingtypes.ProbeRequest{
+		Guid:         guid,
+		SpecId:       csm.rpcEndpoint.ChainID,
+		ApiInterface: csm.rpcEndpoint.ApiInterface,
+	}
+	probeResp, err := client.Probe(connectCtx, probeReq)
 	relayLatency := time.Since(relaySentTime)
 	if err != nil {
 		return 0, providerAddress, utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})
 	}
-	if probeResp.Value != guid {
-		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil)
+	providerGuid := probeResp.GetGuid()
+	if providerGuid != guid {
+		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil, utils.Attribute{Key: "providerGuid", Value: providerGuid}, utils.Attribute{Key: "incoming", Value: guid})
 	}
 	// public lava address is a value that is not changing, so it's thread safe
 	utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress})

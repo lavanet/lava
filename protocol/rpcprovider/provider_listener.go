@@ -15,7 +15,6 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type ProviderListener struct {
@@ -100,35 +99,38 @@ type relayServer struct {
 type RelayReceiver interface {
 	Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error)
 	RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error
+	Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error)
 }
 
 func (rs *relayServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatError("invalid relay request, internal fields are nil", nil)
 	}
-	relayReceiver, err := rs.findReceiver(request)
+	relayReceiver, err := rs.findReceiver(request.RelayData.ApiInterface, request.RelaySession.SpecId)
 	if err != nil {
 		return nil, err
 	}
 	return relayReceiver.Relay(ctx, request)
 }
 
-func (rs *relayServer) Probe(ctx context.Context, probeReq *wrapperspb.UInt64Value) (*wrapperspb.UInt64Value, error) {
-	return probeReq, nil
+func (rs *relayServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
+	relayReceiver, err := rs.findReceiver(probeReq.ApiInterface, probeReq.SpecId)
+	if err != nil {
+		return nil, err
+	}
+	return relayReceiver.Probe(ctx, probeReq)
 }
 
 func (rs *relayServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
-	relayReceiver, err := rs.findReceiver(request)
+	relayReceiver, err := rs.findReceiver(request.RelayData.ApiInterface, request.RelaySession.SpecId)
 	if err != nil {
 		return err
 	}
 	return relayReceiver.RelaySubscribe(request, srv)
 }
 
-func (rs *relayServer) findReceiver(request *pairingtypes.RelayRequest) (RelayReceiver, error) {
-	apiInterface := request.RelayData.ApiInterface
-	chainID := request.RelaySession.SpecId
-	endpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
+func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayReceiver, error) {
+	endpoint := lavasession.RPCEndpoint{ChainID: specID, ApiInterface: apiInterface}
 	rs.lock.RLock()
 	defer rs.lock.RUnlock()
 	relayReceiver, ok := rs.relayReceivers[endpoint.Key()]

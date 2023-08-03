@@ -669,3 +669,13 @@ func (rpcps *RPCProviderServer) processUnsubscribe(ctx context.Context, apiName 
 	}
 	return rpcps.providerSessionManager.ProcessUnsubscribe(apiName, subscriptionID, consumerAddr.String(), epoch)
 }
+
+func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
+	probeReply := &pairingtypes.ProbeReply{
+		Guid:                  probeReq.GetGuid(),
+		LatestBlock:           rpcps.reliabilityManager.GetLatestBlockNum(),
+		FinalizedBlocksHashes: []byte{},
+		LavaEpoch:             uint64(rpcps.stateTracker.LatestBlock()),
+	}
+	return probeReply, nil
+}
