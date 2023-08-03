@@ -110,7 +110,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		for _, endpoint := range providerEndpoints {
 			// only take into account endpoints that use the same api interface and the same geolocation
 			for _, endpointApiInterface := range endpoint.ApiInterfaces {
-				if endpointApiInterface == rpcEndpoint.ApiInterface && endpoint.Geolocation == rpcEndpoint.Geolocation {
+				if endpointApiInterface == rpcEndpoint.ApiInterface { // we take all geolocations provided by the chain. the provider optimizer will prioritize the relevant ones
 					relevantEndpoints = append(relevantEndpoints, endpoint)
 					break
 				}
