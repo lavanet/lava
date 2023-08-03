@@ -2,7 +2,6 @@
 // file: lava/pairing/relay.proto
 
 import * as lava_pairing_relay_pb from "../../lava/pairing/relay_pb";
-import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
 import {grpc} from "@improbable-eng/grpc-web";
 
 type RelayerRelay = {
@@ -28,8 +27,8 @@ type RelayerProbe = {
   readonly service: typeof Relayer;
   readonly requestStream: false;
   readonly responseStream: false;
-  readonly requestType: typeof google_protobuf_wrappers_pb.UInt64Value;
-  readonly responseType: typeof google_protobuf_wrappers_pb.UInt64Value;
+  readonly requestType: typeof lava_pairing_relay_pb.ProbeRequest;
+  readonly responseType: typeof lava_pairing_relay_pb.ProbeReply;
 };
 
 export class Relayer {
@@ -82,13 +81,13 @@ export class RelayerClient {
   ): UnaryResponse;
   relaySubscribe(requestMessage: lava_pairing_relay_pb.RelayRequest, metadata?: grpc.Metadata): ResponseStream<lava_pairing_relay_pb.RelayReply>;
   probe(
-    requestMessage: google_protobuf_wrappers_pb.UInt64Value,
+    requestMessage: lava_pairing_relay_pb.ProbeRequest,
     metadata: grpc.Metadata,
-    callback: (error: ServiceError|null, responseMessage: google_protobuf_wrappers_pb.UInt64Value|null) => void
+    callback: (error: ServiceError|null, responseMessage: lava_pairing_relay_pb.ProbeReply|null) => void
   ): UnaryResponse;
   probe(
-    requestMessage: google_protobuf_wrappers_pb.UInt64Value,
-    callback: (error: ServiceError|null, responseMessage: google_protobuf_wrappers_pb.UInt64Value|null) => void
+    requestMessage: lava_pairing_relay_pb.ProbeRequest,
+    callback: (error: ServiceError|null, responseMessage: lava_pairing_relay_pb.ProbeReply|null) => void
   ): UnaryResponse;
 }
 

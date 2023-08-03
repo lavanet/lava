@@ -5,6 +5,68 @@ import * as jspb from "google-protobuf";
 import * as gogoproto_gogo_pb from "../../gogoproto/gogo_pb";
 import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
 
+export class ProbeRequest extends jspb.Message {
+  getGuid(): number;
+  setGuid(value: number): void;
+
+  getSpecId(): string;
+  setSpecId(value: string): void;
+
+  getApiInterface(): string;
+  setApiInterface(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ProbeRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ProbeRequest): ProbeRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ProbeRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ProbeRequest;
+  static deserializeBinaryFromReader(message: ProbeRequest, reader: jspb.BinaryReader): ProbeRequest;
+}
+
+export namespace ProbeRequest {
+  export type AsObject = {
+    guid: number,
+    specId: string,
+    apiInterface: string,
+  }
+}
+
+export class ProbeReply extends jspb.Message {
+  getGuid(): number;
+  setGuid(value: number): void;
+
+  getLatestBlock(): number;
+  setLatestBlock(value: number): void;
+
+  getFinalizedBlocksHashes(): Uint8Array | string;
+  getFinalizedBlocksHashes_asU8(): Uint8Array;
+  getFinalizedBlocksHashes_asB64(): string;
+  setFinalizedBlocksHashes(value: Uint8Array | string): void;
+
+  getLavaEpoch(): number;
+  setLavaEpoch(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ProbeReply.AsObject;
+  static toObject(includeInstance: boolean, msg: ProbeReply): ProbeReply.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ProbeReply, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ProbeReply;
+  static deserializeBinaryFromReader(message: ProbeReply, reader: jspb.BinaryReader): ProbeReply;
+}
+
+export namespace ProbeReply {
+  export type AsObject = {
+    guid: number,
+    latestBlock: number,
+    finalizedBlocksHashes: Uint8Array | string,
+    lavaEpoch: number,
+  }
+}
+
 export class RelaySession extends jspb.Message {
   getSpecId(): string;
   setSpecId(value: string): void;
