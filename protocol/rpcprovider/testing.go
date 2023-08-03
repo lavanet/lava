@@ -64,7 +64,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface, addon string) (time.Duration, int64, error) {
+			checkOneProvider := func(apiInterface string, addon string) (time.Duration, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
