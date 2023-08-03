@@ -239,9 +239,10 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 				rpcp.lock.Lock()
 				defer rpcp.lock.Unlock()
 
-				_, found := rewardDB.GetDB(addr.String(), rpcProviderEndpoint.ChainID, shardID)
+				specId := rpcProviderEndpoint.ChainID
+				_, found := rewardDB.GetDB(specId)
 				if !found {
-					rewardDB.AddDB(rewardserver.NewLocalDB(rewardStoragePath, addr.String(), rpcProviderEndpoint.ChainID, shardID))
+					rewardDB.AddDB(specId, rewardserver.NewLocalDB(rewardStoragePath, addr.String(), rpcProviderEndpoint.ChainID, shardID))
 				}
 			}
 			rewardDBSetup()

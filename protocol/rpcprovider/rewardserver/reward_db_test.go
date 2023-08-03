@@ -15,7 +15,8 @@ import (
 
 func TestSave(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB()
+	rs.AddDB("specId", db)
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
@@ -31,7 +32,8 @@ func TestSave(t *testing.T) {
 
 func TestFindAll(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB()
+	rs.AddDB("specId", db)
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
@@ -45,7 +47,8 @@ func TestFindAll(t *testing.T) {
 
 func TestFindOne(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB()
+	rs.AddDB("specId", db)
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
@@ -60,7 +63,8 @@ func TestFindOne(t *testing.T) {
 
 func TestDeleteClaimedRewards(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB()
+	rs.AddDB("specId", db)
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
@@ -84,7 +88,8 @@ func TestDeleteClaimedRewards(t *testing.T) {
 
 func TestDeleteEpochRewards(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
-	rs := rewardserver.NewRewardDB(db)
+	rs := rewardserver.NewRewardDB()
+	rs.AddDB("specId", db)
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
@@ -109,9 +114,9 @@ func TestDeleteEpochRewards(t *testing.T) {
 func TestRewardsWithTTL(t *testing.T) {
 	db := rewardserver.NewMemoryDB("spec")
 	// really really short TTL to make sure the rewards are not queryable
-	ttl := 10 * time.Microsecond
+	ttl := 1 * time.Nanosecond
 	rs := rewardserver.NewRewardDBWithTTL(ttl)
-	rs.AddDB(db)
+	rs.AddDB("spec", db)
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
