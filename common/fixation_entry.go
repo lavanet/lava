@@ -1022,6 +1022,12 @@ func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
 	return gs
 }
 
+func DefaultGenesis() *types.GenesisState {
+	return &types.GenesisState{
+		Version: FixationVersion(),
+	}
+}
+
 func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 	// call timer-store's Init (with empty input) to trigger its setVersion() if needed;
 	// the timer-store data is stored in the same namespace/prefix as this fixation store
