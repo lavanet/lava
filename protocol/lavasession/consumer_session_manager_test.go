@@ -103,9 +103,9 @@ func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*C
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
 	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0}
-	pairingEndpointsWithAddon := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": struct{}{}}}}
-	pairingEndpointsWithExtension := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": struct{}{}}, Extensions: map[string]struct{}{"ext1": struct{}{}}}}
-	pairingEndpointsWithExtensions := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": struct{}{}}, Extensions: map[string]struct{}{"ext1": struct{}{}, "ext2": struct{}{}}}}
+	pairingEndpointsWithAddon := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}}}
+	pairingEndpointsWithExtension := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}}}}
+	pairingEndpointsWithExtensions := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}, "ext2": {}}}}
 	for p := 0; p < numberOfProviders; p++ {
 		var endpoints []*Endpoint
 		switch p {
