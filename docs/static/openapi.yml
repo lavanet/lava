@@ -39248,7 +39248,7 @@ paths:
                   block_of_next_pairing:
                     type: string
                     format: uint64
-              cu:
+              maxCU:
                 type: string
                 format: uint64
               spec:
@@ -69333,7 +69333,7 @@ definitions:
           block_of_next_pairing:
             type: string
             format: uint64
-      cu:
+      maxCU:
         type: string
         format: uint64
       spec:

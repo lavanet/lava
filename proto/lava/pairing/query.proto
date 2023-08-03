@@ -250,7 +250,7 @@ message QueryEffectivePolicyResponse {
 
 message QuerySdkPairingResponse {
   QueryGetPairingResponse pairing = 1;
-  uint64 cu = 2;
-  lavanet.lava.spec.Spec spec = 3;
+  uint64 maxCU = 2;
+  lavanet.lava.spec.Spec spec = 3; 
 }
 
