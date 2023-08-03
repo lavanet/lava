@@ -64879,6 +64879,11 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
+    description: >-
+      ConsensusStateWithHeight defines a consensus state with an additional
+      height
+
+      field.
   ibc.core.client.v1.MsgCreateClientResponse:
     type: object
     description: MsgCreateClientResponse defines the Msg/CreateClient response type.
@@ -67277,6 +67282,15 @@ definitions:
                   project_sig:
                     type: string
                     format: byte
+              qos_excellence_report:
+                type: object
+                properties:
+                  latency:
+                    type: string
+                  availability:
+                    type: string
+                  sync:
+                    type: string
           relay_data:
             type: object
             properties:
@@ -67307,6 +67321,10 @@ definitions:
                       type: string
                     value:
                       type: string
+              addon:
+                type: array
+                items:
+                  type: string
       reply:
         type: object
         properties:
@@ -67732,6 +67750,15 @@ definitions:
                       project_sig:
                         type: string
                         format: byte
+                  qos_excellence_report:
+                    type: object
+                    properties:
+                      latency:
+                        type: string
+                      availability:
+                        type: string
+                      sync:
+                        type: string
               relay_data:
                 type: object
                 properties:
@@ -67762,6 +67789,10 @@ definitions:
                           type: string
                         value:
                           type: string
+                  addon:
+                    type: array
+                    items:
+                      type: string
           reply:
             type: object
             properties:
@@ -67842,6 +67873,15 @@ definitions:
                       project_sig:
                         type: string
                         format: byte
+                  qos_excellence_report:
+                    type: object
+                    properties:
+                      latency:
+                        type: string
+                      availability:
+                        type: string
+                      sync:
+                        type: string
               relay_data:
                 type: object
                 properties:
@@ -67872,6 +67912,10 @@ definitions:
                           type: string
                         value:
                           type: string
+                  addon:
+                    type: array
+                    items:
+                      type: string
           reply:
             type: object
             properties:
@@ -72484,8 +72528,6 @@ definitions:
                   type: array
                   items:
                     type: string
-<<<<<<< HEAD
-=======
                 requirements:
                   type: array
                   items:
@@ -72506,7 +72548,6 @@ definitions:
                         type: array
                         items:
                           type: string
->>>>>>> main
           geolocation_profile:
             type: string
             format: uint64
