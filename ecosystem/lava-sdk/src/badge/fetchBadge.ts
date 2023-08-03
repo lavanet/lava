@@ -1,8 +1,8 @@
-import { BadgeGenerator } from "../grpc_web_services/pairing/badges_pb_service";
+import { BadgeGenerator } from "../grpc_web_services/lava/pairing/badges_pb_service";
 import {
   GenerateBadgeRequest,
   GenerateBadgeResponse,
-} from "../grpc_web_services/pairing/badges_pb";
+} from "../grpc_web_services/lava/pairing/badges_pb";
 import { grpc } from "@improbable-eng/grpc-web";
 import transport from "../util/browser";
 
