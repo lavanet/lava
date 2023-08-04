@@ -21,13 +21,20 @@ vue/dist
 
 # Logs and debug
 scripts/automation_scripts/automation_results*
-testutil/e2e/logs/
+testutil/e2e/protocolLogs/
+testutil/e2e/sdkLogs/
 testutil/debugging/
 
 # Misc
 scripts/vars/
 rpcprovider.yml
 rpcconsumer.yml
+
+# Node modules
+**/node_modules
+
+# Pairing lsit
+**/pairingList.json
 
 # Lava SDK ignores 
 ecosystem/lava-sdk/node_modules/*

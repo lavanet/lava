@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 type EndpointService struct {
 	ApiInterface string
@@ -64,6 +67,7 @@ func (endpoint *Endpoint) SetDefaultApiInterfaces(requiredServices map[EndpointS
 		}
 		endpoint.ApiInterfaces = append(endpoint.ApiInterfaces, endpointService.ApiInterface)
 	}
+	sort.Strings(endpoint.ApiInterfaces)
 }
 
 // users are allowed to send apiInterfaces inside the addons list, this code supports that

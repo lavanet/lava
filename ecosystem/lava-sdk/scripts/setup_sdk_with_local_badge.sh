@@ -1,7 +1,7 @@
-#!/bin/bash 
+#!/bin/bash
 
 # This is a script used for development and testing locally.
-# Make sure you dont push the changes after this script ran. 
+# Make sure you dont push the changes after this script ran.
 
 echo "Buying subscription for user1"
 GASPRICE="0.000000001ulava"
@@ -73,6 +73,7 @@ echo "$json_content" > pairingList.json
 signer=$(lavad keys show user1 -a)
 echo "signer address: $signer"
 PROJECT_ID="sampleProjectId"
+GEOLOCATION="1"
 
 cp examples/jsonRPC_badge.ts examples/jsonRPC_badge_test.ts
 
@@ -82,7 +83,7 @@ sed -i 's|badgeServerAddress:.*|badgeServerAddress: "http://localhost:8080",|g' 
 sed -i "s|projectId:.*|projectId: \"$PROJECT_ID\",|g" examples/jsonRPC_badge_test.ts
 
 
-BADGE_USER_DATA="{\"$PROJECT_ID\":{\"project_public_key\":\"$signer\",\"private_key\":\"$privateKey\",\"epochs_max_cu\":2233333333}}" lavad badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava
+BADGE_USER_DATA="{\"$GEOLOCATION\":{\"$PROJECT_ID\":{\"project_public_key\":\"$signer\",\"private_key\":\"$privateKey\",\"epochs_max_cu\":2233333333}}}" lavad badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava
 
 badgeResponse=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"badge_address\": \"user1\", \"project_id\": \"$PROJECT_ID\"}" http://localhost:8080/lavanet.lava.pairing.BadgeGenerator/GenerateBadge)
 
@@ -93,4 +94,4 @@ fi
 
 echo "$badgeResponse"
 
-echo "Done." 
+echo "Done."

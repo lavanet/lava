@@ -67364,8 +67364,6 @@ definitions:
                     value:
                       type: string
               addon:
-                type: string
-              extensions:
                 type: array
                 items:
                   type: string
@@ -67834,8 +67832,6 @@ definitions:
                         value:
                           type: string
                   addon:
-                    type: string
-                  extensions:
                     type: array
                     items:
                       type: string
@@ -67959,8 +67955,6 @@ definitions:
                         value:
                           type: string
                   addon:
-                    type: string
-                  extensions:
                     type: array
                     items:
                       type: string
@@ -68065,7 +68059,9 @@ definitions:
             value:
               type: string
       addon:
-        type: string
+        type: array
+        items:
+          type: string
       extensions:
         type: array
         items:
@@ -68200,7 +68196,9 @@ definitions:
                 value:
                   type: string
           addon:
-            type: string
+            type: array
+            items:
+              type: string
           extensions:
             type: array
             items:

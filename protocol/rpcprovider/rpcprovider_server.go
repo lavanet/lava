@@ -443,7 +443,8 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, pairedProviders, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
 			if verifyPairingError != nil {
-				return nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError,
+				return nil, utils.LavaFormatInfo("Failed to VerifyPairing after ConsumerNotRegisteredYet",
+					utils.Attribute{Key: "Error", Value: verifyPairingError},
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
