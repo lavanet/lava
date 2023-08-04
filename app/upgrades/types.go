@@ -1,7 +1,7 @@
 package upgrades
 
 import (
-	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/proto/tendermint/types"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -10,8 +10,8 @@ import (
 )
 
 type BaseAppParamManager interface {
-	GetConsensusParams(ctx sdk.Context) *abci.ConsensusParams
-	StoreConsensusParams(ctx sdk.Context, cp *abci.ConsensusParams)
+	GetConsensusParams(ctx sdk.Context) *types.ConsensusParams
+	StoreConsensusParams(ctx sdk.Context, cp *types.ConsensusParams)
 }
 
 type Upgrade struct {

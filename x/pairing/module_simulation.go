@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/lavanet/lava/testutil/sample"
 	pairingsimulation "github.com/lavanet/lava/x/pairing/simulation"
@@ -72,27 +73,37 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 	return nil
 }
 
-// RandomizedParams creates randomized  param changes for the simulator
-func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
-	pairingParams := types.DefaultParams()
-	return []simtypes.ParamChange{
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
+// TODO: Add weighted proposals
+func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedProposalMsg {
+	return []simtypes.WeightedProposalMsg{
+		simulation.NewWeightedProposalMsg("op_weight_msg_update_params", 100, func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) sdk.Msg {
+			return &types2.MsgUpdateParams{}
 		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.FraudStakeSlashingFactor))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.FraudSlashingAmount))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
-		}),
+		//nolint:gosec,
 	}
 }
+
+//// RandomizedParams creates randomized  param changes for the simulator
+//func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+//	pairingParams := types.DefaultParams()
+//	return []simtypes.ParamChange{
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.FraudStakeSlashingFactor))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.FraudSlashingAmount))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
+//		}),
+//	}
+//}
 
 // RegisterStoreDecoder registers a decoder
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}

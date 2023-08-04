@@ -3,15 +3,12 @@ package downtime
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/lavanet/lava/x/downtime/client/cli"
 	"github.com/lavanet/lava/x/downtime/keeper"
@@ -53,8 +50,6 @@ func (a AppModuleBasic) ValidateGenesis(codec codec.JSONCodec, config client.TxE
 	codec.MustUnmarshalJSON(message, gs)
 	return gs.Validate()
 }
-
-func (a AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	_ = v1.RegisterQueryHandlerClient(context.Background(), mux, v1.NewQueryClient(clientCtx))
@@ -98,22 +93,6 @@ func (a AppModule) ExportGenesis(context sdk.Context, jsonCodec codec.JSONCodec)
 }
 
 func (a AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
-
-func (a AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.ModuleName, func(ctx sdk.Context, _ sdk.Msg) (*sdk.Result, error) {
-		return nil, fmt.Errorf("legacy router should not be used")
-	})
-}
-
-func (a AppModule) QuerierRoute() string {
-	return types.ModuleName
-}
-
-func (a AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
-	return func(_ sdk.Context, _ []string, _ abci.RequestQuery) ([]byte, error) {
-		return nil, fmt.Errorf("legacy querier should not be used")
-	}
-}
 
 func (a AppModule) RegisterServices(configurator module.Configurator) {
 	v1.RegisterQueryServer(configurator.QueryServer(), keeper.NewQueryServer(a.k))

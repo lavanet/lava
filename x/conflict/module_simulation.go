@@ -2,6 +2,7 @@ package conflict
 
 import (
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
+	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -51,20 +52,25 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&conflictGenesis)
 }
 
-// ProposalContents doesn't return any content functions for governance proposals
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return nil
-}
-
-// RandomizedParams creates randomized  param changes for the simulator
-func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
-	conflictParams := types.DefaultParams()
-	return []simtypes.ParamChange{
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMajorityPercent), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(conflictParams.MajorityPercent))
+// TODO: Add weighted proposals
+func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedProposalMsg {
+	return []simtypes.WeightedProposalMsg{
+		simulation.NewWeightedProposalMsg("op_weight_msg_update_params", 100, func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) sdk.Msg {
+			return &types2.MsgUpdateParams{}
 		}),
+		//nolint:gosec,
 	}
 }
+
+//// RandomizedParams creates randomized  param changes for the simulator
+//func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+//	conflictParams := types.DefaultParams()
+//	return []simtypes.ParamChange{
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMajorityPercent), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(conflictParams.MajorityPercent))
+//		}),
+//	}
+//}
 
 // RegisterStoreDecoder registers a decoder
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}

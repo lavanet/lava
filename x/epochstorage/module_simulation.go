@@ -2,6 +2,7 @@ package epochstorage
 
 import (
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
+	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -44,21 +45,31 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 	return nil
 }
 
-// RandomizedParams creates randomized  param changes for the simulator
-func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
-	epochstorageParams := types.DefaultParams()
-	return []simtypes.ParamChange{
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyUnstakeHoldBlocks), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(epochstorageParams.UnstakeHoldBlocks))
+// TODO: Add weighted proposals
+func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedProposalMsg {
+	return []simtypes.WeightedProposalMsg{
+		simulation.NewWeightedProposalMsg("op_weight_msg_update_params", 100, func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) sdk.Msg {
+			return &types2.MsgUpdateParams{}
 		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocks), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(epochstorageParams.EpochBlocks))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochsToSave), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(epochstorageParams.EpochsToSave))
-		}),
+		//nolint:gosec,
 	}
 }
+
+//// RandomizedParams creates randomized  param changes for the simulator
+//func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+//	epochstorageParams := types.DefaultParams()
+//	return []simtypes.ParamChange{
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyUnstakeHoldBlocks), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(epochstorageParams.UnstakeHoldBlocks))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocks), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(epochstorageParams.EpochBlocks))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochsToSave), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(epochstorageParams.EpochsToSave))
+//		}),
+//	}
+//}
 
 // RegisterStoreDecoder registers a decoder
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}

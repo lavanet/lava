@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"os"
 	"testing"
 	"time"
@@ -64,7 +65,7 @@ func BenchmarkSimulation(b *testing.B) {
 		app.DefaultNodeHome,
 		0,
 		encoding,
-		simapp.EmptyAppOptions{},
+		sims.EmptyAppOptions{},
 	)
 
 	// Run randomized simulations
