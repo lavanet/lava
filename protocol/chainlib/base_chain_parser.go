@@ -314,6 +314,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						Name:            verification.Name,
 						ParseDirective:  *verification.ParseDirective,
 						Value:           parseValue.ExpectedValue,
+						LatestDistance:  parseValue.LatestDistance,
 						VerificationKey: verificationKey,
 					}
 
