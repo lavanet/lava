@@ -9,10 +9,10 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 const (

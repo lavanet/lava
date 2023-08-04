@@ -9,13 +9,13 @@ import (
 	"sync"
 	"sync/atomic"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
 type PaymentRequest struct {

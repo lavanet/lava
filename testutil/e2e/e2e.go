@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	tmclient "github.com/cometbft/cometbft/rpc/client/http"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -35,7 +36,6 @@ import (
 	planTypes "github.com/lavanet/lava/x/plans/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
-	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

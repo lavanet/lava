@@ -5,10 +5,10 @@ import (
 	"math"
 	"time"
 
+	"github.com/cometbft/cometbft/rpc/core"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/tendermint/tendermint/rpc/core"
 )
 
 const (

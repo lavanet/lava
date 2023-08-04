@@ -1,10 +1,10 @@
 package types
 
 import (
+	tendermintcrypto "github.com/cometbft/cometbft/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
 )
 
 type RelayFinalizationMetaData struct {
