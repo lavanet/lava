@@ -13,10 +13,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	version_montior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 )
 
@@ -60,17 +60,12 @@ var cmdLavavisorInit = &cobra.Command{
 		if err != nil {
 			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
 		}
-		version := protocoltypes.Version{
-			ConsumerTarget: protoVer.ConsumerTarget,
-			ConsumerMin:    protoVer.ConsumerMin,
-			ProviderTarget: protoVer.ProviderTarget,
-			ProviderMin:    protoVer.ProviderMin,
-		}
-		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: version.ConsumerMin})
+
+		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protoVer.ConsumerMin})
 
 		// 2- search extracted directory inside ./lavad/upgrades/<fetched_version>
 		// first check target version, then check min version
-		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version.ConsumerMin)
+		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protoVer.ConsumerMin)
 		binaryPath := filepath.Join(versionDir, "lava-protocol")
 
 		// check if version directory exists
@@ -83,19 +78,19 @@ var cmdLavavisorInit = &cobra.Command{
 			if autoDownload {
 				utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
 				os.MkdirAll(versionDir, os.ModePerm) // before downloading, ensure version directory exists
-				err = fetchAndBuildFromGithub(version.ConsumerMin, versionDir)
+				err = fetchAndBuildFromGithub(protoVer.ConsumerMin, versionDir)
 				if err != nil {
 					utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 					os.Exit(1)
 				}
 			} else {
-				utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: version.ConsumerMin})
+				utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: protoVer.ConsumerMin})
 				os.Exit(1)
 			}
 			// ToDo: add checkLavaProtocolVersion after version flag is added to release
 			//
 		} else {
-			err = checkLavaProtocolVersion(version.ConsumerMin, binaryPath)
+			err = version_montior.ValidateProtocolBinaryVersion(protoVer, binaryPath)
 			if err != nil {
 				// binary not found or version mismatch, check auto-download flag
 				autoDownload, err := cmd.Flags().GetBool("auto-download")
@@ -104,7 +99,7 @@ var cmdLavavisorInit = &cobra.Command{
 				}
 				if autoDownload {
 					utils.LavaFormatInfo("Version mismatch or binary not found, but auto-download is enabled. Attempting to download binary from GitHub...")
-					err = fetchAndBuildFromGithub(version.ConsumerMin, versionDir)
+					err = fetchAndBuildFromGithub(protoVer.ConsumerMin, versionDir)
 					if err != nil {
 						utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 						os.Exit(1)
@@ -197,31 +192,6 @@ func init() {
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	rootCmd.AddCommand(cmdLavavisorInit)
-}
-
-func getBinaryVersion(binaryPath string) (string, error) {
-	cmd := exec.Command(binaryPath, "-v")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", utils.LavaFormatError("failed to execute command", err)
-	}
-
-	// Assume the output format is "lava-protocol version x.x.x"
-	version := strings.Split(string(output), " ")[2]
-	return version, nil
-}
-
-func checkLavaProtocolVersion(targetVersion, binaryPath string) error {
-	binaryVersion, err := getBinaryVersion(binaryPath)
-	if err != nil {
-		return utils.LavaFormatError("failed to get binary version", err)
-	}
-
-	if strings.TrimSpace(binaryVersion) != strings.TrimSpace(targetVersion) {
-		return utils.LavaFormatError("version mismatch", nil, utils.Attribute{Key: "expected", Value: targetVersion}, utils.Attribute{Key: "received", Value: binaryVersion})
-	}
-
-	return nil
 }
 
 func Copy(src, dest string) error {
