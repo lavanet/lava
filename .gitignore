@@ -24,6 +24,7 @@ scripts/automation_scripts/automation_results*
 testutil/e2e/protocolLogs/
 testutil/e2e/sdkLogs/
 testutil/debugging/
+testutil/e2e/logs/
 
 # Misc
 scripts/vars/
