@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 const (
@@ -20,11 +19,6 @@ type StateTracker struct {
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
 	eventTracker         *EventTracker
-}
-
-type LavavisorStateTracker struct {
-	stateQuery *StateQuery
-	*StateTracker
 }
 
 type Updater interface {
@@ -72,28 +66,4 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 		existingUpdater = updater
 	}
 	return existingUpdater
-}
-
-// LavaVisor state tracker & version updater
-const (
-	CallbackKeyForVersionUpdate = "version-update"
-)
-
-type VersionStateQuery interface {
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
-}
-
-type VersionUpdater struct {
-	lock              sync.RWMutex
-	eventTracker      *EventTracker
-	versionStateQuery VersionStateQuery
-	lastKnownVersion  *protocoltypes.Version
-}
-
-func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version) *VersionUpdater {
-	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version}
-}
-
-func (vu *VersionUpdater) UpdaterKey() string {
-	return CallbackKeyForVersionUpdate
 }
