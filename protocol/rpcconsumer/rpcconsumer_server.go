@@ -138,9 +138,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
-	utils.LavaFormatDebug("used extensions0", utils.Attribute{"get_extensions", chainMessage.GetExtensions()})
 	extensions := common.GetExtensionNames(chainMessage.GetExtensions())
-	utils.LavaFormatDebug("used extensions", utils.Attribute{"extensions", extensions})
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
