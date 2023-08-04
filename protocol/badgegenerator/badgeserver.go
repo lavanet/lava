@@ -2,10 +2,11 @@ package badgegenerator
 
 import (
 	"context"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"google.golang.org/grpc/health/grpc_health_v1"
 

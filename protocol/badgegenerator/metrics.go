@@ -40,5 +40,4 @@ func (service *MetricsService) AddRequest(isSuccessful bool) {
 			}
 		}()
 	}
-
 }
