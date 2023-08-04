@@ -158,7 +158,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		tenderMsg.Path = url // add path
 	}
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &tenderMsg, apiCollection)
-	apip.BaseChainParser.ExtensionParsing(nodeMsg, latestBlock)
+	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 

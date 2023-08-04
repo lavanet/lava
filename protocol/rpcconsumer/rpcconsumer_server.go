@@ -104,7 +104,10 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	// TODO: use finalizationData + probe changes to get the latest block
+	latestKnownBlock, numProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
+	if numProviders > 0 && latestKnownBlock > 0 {
+		return uint64(latestKnownBlock)
+	}
 	return 0
 }
 
@@ -135,7 +138,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
+	utils.LavaFormatDebug("used extensions0", utils.Attribute{"get_extensions", chainMessage.GetExtensions()})
 	extensions := common.GetExtensionNames(chainMessage.GetExtensions())
+	utils.LavaFormatDebug("used extensions", utils.Attribute{"extensions", extensions})
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM

@@ -118,7 +118,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, msg, apiCollection)
-	apip.BaseChainParser.ExtensionParsing(nodeMsg, latestBlock)
+	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 

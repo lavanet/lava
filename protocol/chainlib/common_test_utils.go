@@ -64,9 +64,25 @@ func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tm
 	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: int64(num)}}}, nil
 }
 
+func generateCombinations(arr []string) [][]string {
+	if len(arr) == 0 {
+		return [][]string{{}}
+	}
+
+	first, rest := arr[0], arr[1:]
+	combinationsWithoutFirst := generateCombinations(rest)
+	var combinationsWithFirst [][]string
+
+	for _, c := range combinationsWithoutFirst {
+		combinationsWithFirst = append(combinationsWithFirst, append(c, first))
+	}
+
+	return append(combinationsWithoutFirst, combinationsWithFirst...)
+}
+
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, addons []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, services []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
@@ -89,6 +105,11 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		Geolocation:    1,
 		NodeUrls:       []common.NodeUrl{},
 	}
+	addons, extensions, err := chainParser.SeparateAddonsExtensions(services)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	if apiInterface == spectypes.APIInterfaceGrpc {
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
@@ -97,6 +118,10 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			return nil, nil, nil, closeServer, err
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: addons})
+		allCombinations := generateCombinations(extensions)
+		for _, extensionsList := range allCombinations {
+			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)})
+		}
 		go func() {
 			service := myServiceImplementation{serverCallback: serverCallback}
 			tmservice.RegisterServiceServer(grpcServer, service)

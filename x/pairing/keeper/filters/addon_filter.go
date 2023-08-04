@@ -2,7 +2,6 @@ package filters
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -48,13 +47,6 @@ func (f *AddonFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.Stak
 }
 
 func isRequirementSupported(requirements map[spectypes.CollectionData]map[string]struct{}, services []epochstoragetypes.EndpointService) bool {
-	utils.LavaFormatDebug("DEBUG", utils.Attribute{
-		Key:   "requirements",
-		Value: requirements,
-	}, utils.Attribute{
-		Key:   "services",
-		Value: services,
-	})
 requirementsLoop:
 	for requirement, requiredExtensions := range requirements {
 		supportedExtensions := map[string]struct{}{}

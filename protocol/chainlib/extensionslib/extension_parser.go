@@ -37,12 +37,16 @@ func (ep *ExtensionParser) SetConfiguredExtensions(configuredExtensions map[Exte
 	ep.configuredExtensions = configuredExtensions
 }
 
-func (ep *ExtensionParser) ExtensionParsing(extensionsChainMessage ExtensionsChainMessage, latestBlock uint64) {
+func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage ExtensionsChainMessage, latestBlock uint64) {
 	if len(ep.configuredExtensions) == 0 {
 		return
 	}
 
-	for _, extension := range ep.configuredExtensions {
+	for extensionKey, extension := range ep.configuredExtensions {
+		if extensionKey.Addon != addon {
+			// this extension is not relevant for this api
+			continue
+		}
 		extensionParserRule := NewExtensionParserRule(extension)
 		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)
