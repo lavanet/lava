@@ -284,8 +284,8 @@ func New(
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
-		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
+		govtypes.StoreKey, paramstypes.StoreKey, consensusparamtypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
+		evidencetypes.StoreKey, crisistypes.StoreKey, ibctransfertypes.StoreKey, ibcexported.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
 		epochstoragemoduletypes.StoreKey,
 		subscriptionmoduletypes.StoreKey,
@@ -595,6 +595,7 @@ func New(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
@@ -622,6 +623,7 @@ func New(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
@@ -654,6 +656,7 @@ func New(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		subscriptionmoduletypes.ModuleName,
@@ -914,6 +917,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable())
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
+	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	paramsKeeper.Subspace(subscriptionmoduletypes.ModuleName)

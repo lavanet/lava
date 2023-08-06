@@ -50,6 +50,7 @@ func New(t *testing.T, configs ...network.Config) *network.Network {
 // genesis and single validator. All other parameters are inherited from cosmos-sdk/testutil/network.DefaultConfig
 func DefaultConfig() network.Config {
 	encoding := app.MakeEncodingConfig()
+	chainID := "chain-" + tmrand.NewRand().Str(6)
 	return network.Config{
 		Codec:             encoding.Marshaler,
 		TxConfig:          encoding.TxConfig,
@@ -63,11 +64,12 @@ func DefaultConfig() network.Config {
 				sims.EmptyAppOptions{},
 				baseapp.SetPruning(types.NewPruningOptionsFromString(val.GetAppConfig().Pruning)),
 				baseapp.SetMinGasPrices(val.GetAppConfig().MinGasPrices),
+				baseapp.SetChainID(chainID),
 			)
 		},
 		GenesisState:    app.ModuleBasics.DefaultGenesis(encoding.Marshaler),
 		TimeoutCommit:   2 * time.Second,
-		ChainID:         "chain-" + tmrand.NewRand().Str(6),
+		ChainID:         chainID,
 		NumValidators:   1,
 		BondDenom:       sdk.DefaultBondDenom,
 		MinGasPrices:    fmt.Sprintf("0.000006%s", sdk.DefaultBondDenom),
