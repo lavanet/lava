@@ -110,7 +110,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		for _, endpoint := range providerEndpoints {
 			// only take into account endpoints that use the same api interface and the same geolocation
 			for _, endpointApiInterface := range endpoint.ApiInterfaces {
-				if endpointApiInterface == rpcEndpoint.ApiInterface && endpoint.Geolocation == rpcEndpoint.Geolocation {
+				if endpointApiInterface == rpcEndpoint.ApiInterface { // we take all geolocations provided by the chain. the provider optimizer will prioritize the relevant ones
 					relevantEndpoints = append(relevantEndpoints, endpoint)
 					break
 				}
@@ -128,7 +128,15 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 		//
 		pairingEndpoints := make([]*lavasession.Endpoint, len(relevantEndpoints))
 		for idx, relevantEndpoint := range relevantEndpoints {
-			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: relevantEndpoint.Addons}
+			addons := map[string]struct{}{}
+			extensions := map[string]struct{}{}
+			for _, addon := range relevantEndpoint.Addons {
+				addons[addon] = struct{}{}
+			}
+			for _, extension := range relevantEndpoint.Extensions {
+				extensions[extension] = struct{}{}
+			}
+			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
 			pairingEndpoints[idx] = endp
 		}
 

@@ -101,6 +101,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
+		utils.Attribute{Key: "relay addon", Value: request.RelayData.Addon},
+		utils.Attribute{Key: "relay extensions", Value: request.RelayData.GetExtensions()},
 	)
 
 	// Init relay
@@ -176,7 +178,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		}
 	}(relaySession) // lock in the session address
 	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata())
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), 0)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -191,16 +193,15 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	return relaySession, consumerAddress, chainMessage, nil
 }
 
-func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addons []string, extensions []string, chainMessage chainlib.ChainMessage) error {
-	// empty addons are same as [""]
-	if len(addons) > 1 {
-		return utils.LavaFormatWarning("invalid addons in relay, amount of addons is greater than 1", nil, utils.Attribute{Key: "addons", Value: addons})
+func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extensions []string, chainMessage chainlib.ChainMessage) error {
+	// this validates all of the values are handled by chainParser
+	_, _, err := rpcps.chainParser.SeparateAddonsExtensions(append(extensions, addon))
+	if err != nil {
+		return err
 	}
 	apiCollection := chainMessage.GetApiCollection()
-	if len(addons) > 0 {
-		if apiCollection.CollectionData.AddOn != addons[0] {
-			return utils.LavaFormatWarning("invalid addon in relay, parsed addon is not the same as requested", nil, utils.Attribute{Key: "requested addon", Value: addons[0]}, utils.Attribute{Key: "parsed addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn})
-		}
+	if apiCollection.CollectionData.AddOn != addon {
+		return utils.LavaFormatWarning("invalid addon in relay, parsed addon is not the same as requested", nil, utils.Attribute{Key: "requested addon", Value: addon[0]}, utils.Attribute{Key: "parsed addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn})
 	}
 	if !rpcps.chainRouter.ExtensionsSupported(extensions) {
 		return utils.LavaFormatWarning("requested extensions are unsupported in chainRouter", nil, utils.Attribute{Key: "requested extensions", Value: extensions})
@@ -442,7 +443,8 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, pairedProviders, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
 			if verifyPairingError != nil {
-				return nil, utils.LavaFormatError("Failed to VerifyPairing after ConsumerNotRegisteredYet", verifyPairingError,
+				return nil, utils.LavaFormatInfo("Failed to VerifyPairing after ConsumerNotRegisteredYet",
+					utils.Attribute{Key: "Error", Value: verifyPairingError},
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
@@ -535,11 +537,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	if errV != nil {
 		return nil, errV
 	}
-	addons, extensions, errV := rpcps.chainParser.SeparateAddonsExtensions(request.RelayData.Addon)
-	if errV != nil {
-		return nil, errV
-	}
-	errV = rpcps.ValidateAddonsExtensions(addons, extensions, chainMsg)
+
+	errV = rpcps.ValidateAddonsExtensions(request.RelayData.Addon, request.RelayData.Extensions, chainMsg)
 	if errV != nil {
 		return nil, errV
 	}
@@ -613,7 +612,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		// cache miss or invalid
-		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, extensions)
+		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}

@@ -6,6 +6,8 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/pairing/params.proto";
 import "lavanet/lava/pairing/epoch_payments.proto";
+import "lavanet/lava/spec/spec.proto";
+
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/plans/policy.proto";
 import "lavanet/lava/pairing/provider_payment_storage.proto";
@@ -18,6 +20,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Query defines the gRPC querier service.
 service Query {
+
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/pairing/params";
@@ -95,18 +98,18 @@ message QueryParamsResponse {
 }
 
 message QueryProvidersRequest {
-  string chainID = 1;
-  bool showFrozen = 2;
+  string chainID    = 1;
+  bool   showFrozen = 2;
 }
 
 message QueryProvidersResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry stakeEntry =1 [(gogoproto.nullable) = false];
-	string output =2;
+  repeated lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
+           string                               output     = 2;
 }
 
 message QueryGetPairingRequest {
   string chainID = 1;
-  string client = 2;
+  string client  = 2;
 }
 
 message QueryGetPairingResponse {
@@ -188,12 +191,12 @@ message QueryAllEpochPaymentsResponse {
 message QueryUserEntryRequest {
   string address = 1;
   string chainID = 2;
-  uint64 block = 3;
+  uint64 block   = 3;
 }
 
 message QueryUserEntryResponse {
   lavanet.lava.epochstorage.StakeEntry consumer = 1 [(gogoproto.nullable) = false];
-  uint64 maxCU =2;
+  uint64                               maxCU    = 2;
 }
 
 message QueryStaticProvidersListRequest {
@@ -223,3 +226,10 @@ message QueryEffectivePolicyResponse {
 }
 
 // this line is used by starport scaffolding # 3
+
+message QuerySdkPairingResponse {
+  QueryGetPairingResponse pairing = 1;
+  uint64 max_cu = 2;
+  lavanet.lava.spec.Spec spec = 3; 
+}
+

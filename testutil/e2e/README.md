@@ -1,9 +1,25 @@
 # Lava E2E
 
-Run using the following command
+Run all our E2E using the following command (from the root)
 
 ```
+yarn --cwd ./ecosystem/lava-sdk/ build
 go test ./testutil/e2e/ -v -timeout 1200s
+```
+
+If you wish you can also run E2E tests independently:
+
+1. Lava Protocol E2:
+
+```
+go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
+```
+
+2. Lava SDK E2E:
+
+```
+yarn --cwd ./ecosystem/lava-sdk/ build
+go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
 ```
 
 This E2E performs the steps below to test if the system is working as expected.
