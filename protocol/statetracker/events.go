@@ -3,7 +3,6 @@ package statetracker
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
@@ -19,6 +18,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/abci/types"
 )

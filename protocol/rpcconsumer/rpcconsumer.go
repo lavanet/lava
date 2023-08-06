@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strconv"
@@ -31,6 +30,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

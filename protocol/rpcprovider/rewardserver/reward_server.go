@@ -3,11 +3,11 @@ package rewardserver
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -15,7 +15,15 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	terderminttypes "github.com/tendermint/tendermint/abci/types"
+)
+
+const (
+	RewardServerStorageFlagName = "reward-server-storage"
+	DefaultRewardServerStorage  = ".storage/rewardserver"
+	RewardTTLFlagName           = "reward-ttl"
+	DefaultRewardTTL            = 24 * 60 * time.Minute
 )
 
 type PaymentRequest struct {
@@ -54,12 +62,12 @@ type EpochRewards struct {
 type RewardServer struct {
 	rewardsTxSender  RewardsTxSender
 	lock             sync.RWMutex
-	rewards          map[uint64]*EpochRewards
 	serverID         uint64
 	expectedPayments []PaymentRequest
 	totalCUServiced  uint64
 	totalCUPaid      uint64
 	providerMetrics  *metrics.ProviderMetricsManager
+	rewardDB         *RewardDB
 }
 
 type RewardsTxSender interface {
@@ -69,37 +77,19 @@ type RewardsTxSender interface {
 }
 
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
-	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
-	defer rws.lock.Unlock()
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
-	epochRewards, ok := rws.rewards[epoch]
-	if !ok {
-		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
-		consumerRewardsMap := map[string]*ConsumerRewards{consumerRewardsKey: {epoch: epoch, consumer: consumerAddr, proofs: proofs}}
-		rws.rewards[epoch] = &EpochRewards{epoch: epoch, consumerRewards: consumerRewardsMap}
+
+	savedProof, saved, err := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
+	if err != nil {
+		utils.LavaFormatError("failed saving proof", err, utils.Attribute{Key: "proof", Value: proof})
+		return 0, false
+	}
+
+	if saved {
 		return 0, true
 	}
-	consumerRewards, ok := epochRewards.consumerRewards[consumerRewardsKey]
-	if !ok {
-		proofs := map[uint64]*pairingtypes.RelaySession{proof.SessionId: proof}
-		consumerRewards := &ConsumerRewards{epoch: epoch, consumer: consumerAddr, proofs: proofs}
-		epochRewards.consumerRewards[consumerRewardsKey] = consumerRewards
-		return 0, true
-	}
-	relayProof, ok := consumerRewards.proofs[proof.SessionId]
-	if !ok {
-		consumerRewards.proofs[proof.SessionId] = proof
-		return 0, true
-	}
-	cuSumStored := relayProof.CuSum
-	if cuSumStored >= proof.CuSum {
-		return cuSumStored, false
-	}
-	if relayProof.Badge != nil && proof.Badge == nil {
-		proof.Badge = relayProof.Badge
-	}
-	consumerRewards.proofs[proof.SessionId] = proof
-	return 0, true
+
+	return savedProof.CuSum, false
 }
 
 func (rws *RewardServer) UpdateEpoch(epoch uint64) {
@@ -128,6 +118,13 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		if err != nil {
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
+
+		err = rws.rewardDB.DeleteClaimedRewards(rewardsToClaim)
+		if err != nil {
+			utils.LavaFormatWarning("failed deleting claimed rewards", err)
+		}
+
+		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "rewardsToClaim", Value: len(rewardsToClaim)})
 	} else {
 		utils.LavaFormatDebug("no rewards to claim")
 	}
@@ -202,34 +199,49 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 }
 
 func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, errRet error) {
-	rws.lock.Lock()
-	defer rws.lock.Unlock()
 	blockDistanceForEpochValidity, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
+	}
+
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
+	if err != nil {
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochsToSave", err)
 	}
 
 	if blockDistanceForEpochValidity > currentEpoch {
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
 	}
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
-	for epoch, epochRewards := range rws.rewards {
+
+	rewards, err := rws.rewardDB.FindAll()
+	if err != nil {
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to FindAll", err)
+	}
+
+	for epoch, epochRewards := range rewards {
 		if lavasession.IsEpochValidForUse(epoch, activeEpochThreshold) {
 			// Epoch is still active so we don't claim the rewards yet.
 			continue
 		}
 
-		for consumerAddr, rewards := range epochRewards.consumerRewards {
-			claimables, err := rewards.PrepareRewardsForClaim()
+		if epoch < earliestSavedEpoch {
+			err := rws.rewardDB.DeleteEpochRewards(epoch)
+			if err != nil {
+				utils.LavaFormatWarning("failed deleting epoch", err, utils.Attribute{Key: "epoch", Value: epoch})
+			}
+
+			// Epoch is too old, we can't claim the rewards anymore.
+			continue
+		}
+
+		for _, consumerRewards := range epochRewards.consumerRewards {
+			claimables, err := consumerRewards.PrepareRewardsForClaim()
 			if err != nil {
 				// can't claim this now
 				continue
 			}
 			rewardsForClaim = append(rewardsForClaim, claimables...)
-			delete(epochRewards.consumerRewards, consumerAddr)
-		}
-		if len(epochRewards.consumerRewards) == 0 {
-			delete(rws.rewards, epoch)
 		}
 	}
 	return rewardsForClaim, errRet
@@ -272,20 +284,19 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 		go rws.providerMetrics.AddPayment(payment.ChainID, payment.CU)
 		removedPayment := rws.RemoveExpectedPayment(payment.CU, payment.Client, payment.BlockHeightDeadline, payment.UniqueIdentifier, payment.ChainID)
 		if !removedPayment {
-			utils.LavaFormatWarning("tried removing payment that wasn;t expected", nil, utils.Attribute{Key: "payment", Value: payment})
+			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
 		}
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager) *RewardServer {
-	//
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
 	rws.expectedPayments = []PaymentRequest{}
-	// TODO: load this from persistency
-	rws.rewards = map[uint64]*EpochRewards{}
 	rws.providerMetrics = providerMetrics
+	rws.rewardDB = rewardDB
+
 	return rws
 }
 

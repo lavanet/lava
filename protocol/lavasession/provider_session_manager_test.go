@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/rand"
 	"github.com/stretchr/testify/require"
 )
 

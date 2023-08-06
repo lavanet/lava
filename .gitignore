@@ -22,6 +22,7 @@ vue/dist
 # Logs and debug
 scripts/automation_scripts/automation_results*
 testutil/e2e/logs/
+testutil/e2e/rewardServerStorage/
 testutil/debugging/
 
 # Misc
@@ -64,3 +65,7 @@ ecosystem/lava-sdk/bin/src/wallet
 ecosystem/lava-sdk/dist/*
 
 # But don't ignore the specific folder inside the bin folder
+
+# Reward server ignores
+.storage/
+badger_test

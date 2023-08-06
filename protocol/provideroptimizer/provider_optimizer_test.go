@@ -1,12 +1,12 @@
 package provideroptimizer
 
 import (
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )

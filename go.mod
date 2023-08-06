@@ -1,9 +1,9 @@
 module github.com/lavanet/lava
 
-go 1.19
+go 1.20
 
 require (
-	github.com/99designs/keyring v1.2.1 // indirect
+	github.com/99designs/keyring v1.2.1 // indirect; indirect // indirect
 	github.com/btcsuite/btcd v0.22.2
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.46.12
@@ -29,6 +29,7 @@ require (
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-beta.4
+	github.com/dgraph-io/badger/v4 v4.1.0
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
@@ -38,7 +39,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/vpxyz/xorshift v1.2.2
 	gonum.org/v1/gonum v0.13.0
-	google.golang.org/api v0.126.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
 
@@ -72,6 +72,7 @@ require (
 	github.com/goccy/go-json v0.9.11 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/glog v1.1.0 // indirect
+	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -104,6 +105,7 @@ require (
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	golang.org/x/tools v0.7.0 // indirect
+	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
 	gotest.tools/v3 v3.4.0 // indirect
