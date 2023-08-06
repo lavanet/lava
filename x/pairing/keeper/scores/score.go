@@ -46,7 +46,6 @@ import (
 	"github.com/lavanet/lava/utils/rand"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	"github.com/lavanet/lava/x/rand"
 )
 
 var uniformStrategy ScoreStrategy
