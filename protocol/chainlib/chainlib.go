@@ -48,7 +48,7 @@ func NewChainListener(
 }
 
 type ChainParser interface {
-	ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error)
+	ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error)
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32)
@@ -57,12 +57,14 @@ type ChainParser interface {
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons []string, extensions []string, err error)
+	SetConfiguredExtensions(extensions map[string]struct{}) error
 }
 
 type ChainMessage interface {
 	RequestedBlock() int64
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
+	GetExtensions() []*spectypes.Extension
 	ChainMessageForSend
 }
 

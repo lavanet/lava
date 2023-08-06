@@ -7,9 +7,9 @@ import {
   RelayReply,
   RelaySession,
   RelayPrivateData,
-} from "../grpc_web_services/pairing/relay_pb";
-import { Relayer as RelayerService } from "../grpc_web_services/pairing/relay_pb_service";
-import { Badge } from "../grpc_web_services/pairing/relay_pb";
+} from "../grpc_web_services/lava/pairing/relay_pb";
+import { Relayer as RelayerService } from "../grpc_web_services/lava/pairing/relay_pb_service";
+import { Badge } from "../grpc_web_services/lava/pairing/relay_pb";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 

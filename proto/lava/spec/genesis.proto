@@ -1,0 +1,18 @@
+syntax = "proto3";
+package lavanet.lava.spec;
+
+import "gogoproto/gogo.proto";
+import "lava/spec/params.proto";
+import "lava/spec/spec.proto";
+
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/spec/types";
+
+// GenesisState defines the spec module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  repeated Spec specList = 2 [(gogoproto.nullable) = false];
+  uint64 specCount = 3;
+  // this line is used by starport scaffolding # genesis/proto/state
+}
