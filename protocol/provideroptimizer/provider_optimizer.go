@@ -10,10 +10,10 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/score"
 	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/rand"
 	"gonum.org/v1/gonum/mathext"
 )
 

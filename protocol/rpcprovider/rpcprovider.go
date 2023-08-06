@@ -28,10 +28,10 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	"github.com/lavanet/lava/x/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -456,7 +456,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			}
 
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
-			rand.Seed(time.Now().UnixNano())
+			rand.InitRandomSeed()
 			var cache *performance.Cache = nil
 			cacheAddr := viper.GetString(performance.CacheFlagName)
 			if cacheAddr != "" {

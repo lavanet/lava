@@ -18,11 +18,11 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingcli "github.com/lavanet/lava/x/pairing/client/cli"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -189,7 +189,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
-			rand.Seed(time.Now().UnixNano())
+			rand.InitRandomSeed()
 			resultStatus, err := clientCtx.Client.Status(ctx)
 			if err != nil {
 				return err

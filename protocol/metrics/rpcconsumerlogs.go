@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rand"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"google.golang.org/grpc/metadata"
 )

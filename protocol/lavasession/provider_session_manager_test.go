@@ -9,8 +9,8 @@ import (
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/rand"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,7 +84,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 	// Get unique badgeUser for each goroutine
 	badgeUser := fmt.Sprintf("sampleUser%d", badgeSessionIndex)
 	// Get random BadgeCuAllocation between 100 and 5000
-	rand.Seed(time.Now().UnixNano())
+	rand.InitRandomSeed()
 	badgeCuAllocation := rand.Intn(4901) + 100
 
 	badge.CuAllocation = uint64(badgeCuAllocation)
@@ -248,7 +248,7 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 
 	// Set the seed for the random number generator
 	seed := time.Now().UnixNano()
-	rand.Seed(seed)
+	rand.SetSpecificSeed(seed)
 	utils.LavaFormatInfo("started test with randomness, to reproduce use seed", utils.Attribute{Key: "seed", Value: seed})
 
 	// A channel to track goroutine completion
@@ -816,7 +816,7 @@ func TestPSMUsageSync(t *testing.T) {
 		NodeUrls:       []common.NodeUrl{{Url: "http://localhost:666"}, {Url: "ws://localhost:666/websocket"}},
 	}, 20)
 	seed := time.Now().UnixNano()
-	rand.Seed(seed)
+	rand.SetSpecificSeed(seed)
 	utils.LavaFormatInfo("started test with randomness, to reproduce use seed", utils.Attribute{Key: "seed", Value: seed})
 	consumerAddress := "stub-consumer"
 	maxCuForConsumer := uint64(math.MaxInt64)

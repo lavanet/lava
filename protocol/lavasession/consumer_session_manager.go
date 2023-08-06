@@ -11,7 +11,7 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rand"
+	"github.com/lavanet/lava/utils/rand"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )

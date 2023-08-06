@@ -222,15 +222,18 @@ func (rs *RewardDB) deletePrefix(prefix string) error {
 }
 
 func (rs *RewardDB) AddDB(specId string, db DB) error {
+	// reading key before lock to avoid double locking.
+	dbKey := db.Key()
+
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
-	_, found := rs.dbs[db.Key()]
+	_, found := rs.dbs[dbKey]
 	if found {
-		return fmt.Errorf("db already exists for key: %s", db.Key())
+		return fmt.Errorf("db already exists for key: %s", dbKey)
 	}
 
-	rs.dbs[db.Key()] = db
+	rs.dbs[dbKey] = db
 
 	return nil
 }

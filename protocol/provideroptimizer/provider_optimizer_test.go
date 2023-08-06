@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rand"
+	"github.com/lavanet/lava/utils/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -410,7 +410,7 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 		sampleTime = sampleTime.Add(time.Millisecond * 5)
 	}
 	seed := time.Now().UnixNano() // constant seed.
-	rand.Seed(seed)
+	rand.SetSpecificSeed(seed)
 	utils.LavaFormatDebug("rand seed", utils.Attribute{Key: "seed", Value: seed})
 	same := 0
 	pickFaults := 0

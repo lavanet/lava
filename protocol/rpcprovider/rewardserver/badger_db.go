@@ -24,6 +24,8 @@ var _ DB = (*BadgerDB)(nil)
 const persistThreshold = 100
 
 func (mdb *BadgerDB) Key() string {
+	mdb.lock.RLock()
+	defer mdb.lock.RUnlock()
 	return mdb.specId
 }
 
