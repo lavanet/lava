@@ -981,6 +981,10 @@ func (fs *FixationStore) createEntryStoreKey(index string) string {
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
+	err := fs.MigrateVersion(ctx)
+	if err != nil {
+		utils.LavaFormatPanic("fixation migration failed", err, utils.Attribute{Key: "fixation", Value: fs.prefix})
+	}
 	fs.tstore.Tick(ctx)
 }
 
