@@ -71,7 +71,7 @@ func TestGRPChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
-	apip.ParseMsg("", []byte{}, "", nil)
+	apip.ParseMsg("", []byte{}, "", nil, 0)
 }
 
 func TestGRPCGetSupportedApi(t *testing.T) {
@@ -120,7 +120,7 @@ func TestGRPCParseMessage(t *testing.T) {
 		},
 	}
 
-	msg, err := apip.ParseMsg("API1", []byte("test message"), connectionType_test, nil)
+	msg, err := apip.ParseMsg("API1", []byte("test message"), connectionType_test, nil, 0)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
@@ -207,7 +207,7 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata)
+			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
 			require.NoError(t, err)
 
@@ -274,7 +274,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata)
+			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
 			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the request only if it's latest

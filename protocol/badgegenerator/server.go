@@ -24,6 +24,7 @@ type Server struct {
 	grpcFetcher           *grpc.GRPCFetcher
 	ChainId               string
 	IpService             *IpService
+	metrics               *MetricsService
 }
 
 func NewServer(ipService *IpService, grpcUrl string, chainId string, userData string) (*Server, error) {
@@ -46,6 +47,7 @@ func NewServer(ipService *IpService, grpcUrl string, chainId string, userData st
 		return nil, err
 	}
 	server.grpcFetcher = grpcFetch
+	server.metrics = InitMetrics()
 	return server, nil
 }
 
@@ -67,6 +69,7 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 	}
 	projectData, err := s.validateRequest(ipAddress, req)
 	if err != nil {
+		s.metrics.AddRequest(false)
 		return nil, err
 	}
 	badge := pairingtypes.Badge{
@@ -83,13 +86,16 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 
 	err = s.addPairingListToResponse(req, projectData, &result)
 	if err != nil {
+		s.metrics.AddRequest(false)
 		return nil, err
 	}
 
 	err = signTheResponse(projectData.ProjectPrivateKey, &result)
 	if err != nil {
+		s.metrics.AddRequest(false)
 		return nil, err
 	}
+	s.metrics.AddRequest(true)
 	return &result, nil
 }
 

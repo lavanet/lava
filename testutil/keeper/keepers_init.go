@@ -15,6 +15,7 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/lavanet/lava/common/types"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
@@ -227,7 +228,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	protocoltypes.UpdateLatestParams(protocolParams)
 	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
-
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
 	ss := Servers{}
@@ -243,8 +243,15 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
-	NewBlock(sdk.WrapSDKContext(ctx), &ks)
+
+	ks.Plans.InitPlans(ctx, []types.RawMessage{})
+	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
+	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
+	ks.Projects.InitProjects(ctx, []types.RawMessage{})
+
+	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())
+
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -258,7 +265,7 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	rand.Read(headerHash)
 	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
 
-	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	NewBlock(unwrapedCtx, ks)
 
 	if len(customBlockTime) > 0 {
 		ks.BlockStore.AdvanceBlock(customBlockTime[0])
@@ -322,9 +329,7 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 }
 
 // Make sure you save the new context
-func NewBlock(ctx context.Context, ks *Keepers) {
-	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-
+func NewBlock(ctx sdk.Context, ks *Keepers) {
 	// get the value and type of the Keepers struct
 	keepersType := reflect.TypeOf(*ks)
 	keepersValue := reflect.ValueOf(*ks)
@@ -334,7 +339,7 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		fieldValue := keepersValue.Field(i)
 
 		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
-			beginBlocker.BeginBlock(unwrapedCtx)
+			beginBlocker.BeginBlock(ctx)
 		}
 	}
 }

@@ -98,11 +98,12 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		// we need to send a commit, first we need to use the chainProxy and get the response
 		// TODO: implement code that verified the requested block is finalized and if its not waits and tries again
 		ctx := context.Background()
-		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil)
+		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil, 0)
 		if err != nil {
 			return utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 		}
+		// TODO: get extensions and addons from the request
 		reply, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 		if err != nil {
 			return utils.LavaFormatError("vote relay send has failed", err,

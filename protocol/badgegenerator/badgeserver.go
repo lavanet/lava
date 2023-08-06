@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -75,6 +77,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 	cmd.Flags().String("grpc-url", "", "--grpc-url=127.0.0.1:9090")
 	cmd.Flags().Int("epoch-interval", 30, "--epoch-interval=30")
 	cmd.Flags().String("port", "8080", "--port=8080")
+	cmd.Flags().String("metrics-port", "8081", "--metrics-port=8081")
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmd.Flags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
 
@@ -148,6 +151,11 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	httpServer := http.Server{
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
+	go func() {
+		metricsPort := v.GetString(MetricsPortEnvironmentVariable)
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":"+metricsPort, nil)
+	}()
 	if err := httpServer.Serve(listener); err != nil {
 		utils.LavaFormatFatal("Http Server failed to start", err)
 	}
