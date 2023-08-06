@@ -224,9 +224,9 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_QueryParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"lavanet", "lava", "downtime", "v1", "params"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"lavanet", "lava", "downtime", "v1", "params"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_QueryDowntime_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"lavanet", "lava", "downtime", "v1", "query_downtime"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_QueryDowntime_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"lavanet", "lava", "downtime", "v1", "query_downtime"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
