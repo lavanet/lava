@@ -31,13 +31,11 @@ func InitMetrics() *MetricsService {
 
 func (service *MetricsService) AddRequest(isSuccessful bool) {
 	if service != nil {
-		go func() { // maybe it's not needed but since this is an external library we don't want to add delay to the request unnecessarily
-			service.TotalRequests.Inc()
-			if isSuccessful {
-				service.SuccessfulRequests.Inc()
-			} else {
-				service.FailedRequests.Inc()
-			}
-		}()
+		service.TotalRequests.Inc()
+		if isSuccessful {
+			service.SuccessfulRequests.Inc()
+		} else {
+			service.FailedRequests.Inc()
+		}
 	}
 }
