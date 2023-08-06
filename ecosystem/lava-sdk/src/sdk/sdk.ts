@@ -2,13 +2,13 @@ import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
 import Relayer from "../relayer/relayer";
-import { RelayReply } from "../grpc_web_services/pairing/relay_pb";
+import { RelayReply } from "../grpc_web_services/lava/pairing/relay_pb";
 import {
   TimoutFailureFetchingBadgeError as TimeoutFailureFetchingBadgeError,
   BadgeOptions,
   BadgeManager,
 } from "../badge/fetchBadge";
-import { Badge } from "../grpc_web_services/pairing/relay_pb";
+import { Badge } from "../grpc_web_services/lava/pairing/relay_pb";
 import { SessionManager, ConsumerSessionWithProvider } from "../types/types";
 import {
   isValidChainID,
@@ -24,7 +24,7 @@ import {
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
 import { QueryShowAllChainsResponse } from "../codec/spec/query";
-import { GenerateBadgeResponse } from "../grpc_web_services/pairing/badges_pb";
+import { GenerateBadgeResponse } from "../grpc_web_services/lava/pairing/badges_pb";
 /**
  * Options for sending RPC relay.
  */

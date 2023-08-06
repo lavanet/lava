@@ -38,6 +38,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/vpxyz/xorshift v1.2.2
 	gonum.org/v1/gonum v0.13.0
+	google.golang.org/api v0.126.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
 
@@ -103,7 +104,6 @@ require (
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	golang.org/x/tools v0.7.0 // indirect
-	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
 	gotest.tools/v3 v3.4.0 // indirect
