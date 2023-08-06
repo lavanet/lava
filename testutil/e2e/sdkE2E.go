@@ -31,7 +31,7 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, pub
 	command := fmt.Sprintf("%s badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
 	logName := "01_BadgeServer"
 	funcName := "startBadgeServer"
-	lt.execCommandWithRetry(ctx, funcName, logName, command, sdkLogsFolder)
+	lt.execCommandWithRetry(ctx, funcName, logName, command)
 
 	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:8080", time.Minute)
 }
@@ -91,14 +91,15 @@ func runSDKE2E(timeout time.Duration) {
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
+		logPath:      sdkLogsFolder,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
 		if r := recover(); r != nil {
-			lt.saveLogs(sdkLogsFolder)
+			lt.saveLogs()
 			panic("E2E Failed")
 		} else {
-			lt.saveLogs(sdkLogsFolder)
+			lt.saveLogs()
 		}
 	}()
 
@@ -114,7 +115,7 @@ func runSDKE2E(timeout time.Duration) {
 	defer cancel()
 
 	utils.LavaFormatInfo("Staking Lava")
-	lt.stakeLava(ctx, sdkLogsFolder)
+	lt.stakeLava(ctx)
 
 	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
@@ -130,12 +131,12 @@ func runSDKE2E(timeout time.Duration) {
 	lt.startBadgeServer(ctx, privateKey, publicKey)
 
 	// ETH1 flow
-	lt.startJSONRPCProxy(ctx, sdkLogsFolder)
+	lt.startJSONRPCProxy(ctx)
 
-	lt.startJSONRPCProvider(ctx, sdkLogsFolder)
+	lt.startJSONRPCProvider(ctx)
 
 	// Lava Flow
-	lt.startLavaProviders(ctx, sdkLogsFolder)
+	lt.startLavaProviders(ctx)
 
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)

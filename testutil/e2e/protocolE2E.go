@@ -67,6 +67,7 @@ type lavaTest struct {
 	commands             map[string]*exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
 	wg                   sync.WaitGroup
+	logPath              string
 }
 
 var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
@@ -83,7 +84,7 @@ func init() {
 	fmt.Println("Test Directory", dir)
 }
 
-func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string, logPath string) {
+func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
 	utils.LavaFormatDebug("Executing command " + command)
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -110,17 +111,17 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 					retries++
 
 					utils.LavaFormatInfo(fmt.Sprintln("Restarting goroutine for startJSONRPCProvider. Remaining retries: ", maxRetries-retries))
-					go lt.execCommandWithRetry(ctx, funcName, logName, command, logPath)
+					go lt.execCommandWithRetry(ctx, funcName, logName, command)
 				} else {
 					panic(errors.New("maximum number of retries exceeded"))
 				}
 			}
 		}()
-		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName, logPath)
+		lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
 	}()
 }
 
-func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool, logPath string) {
+func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -141,12 +142,12 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	} else {
 		lt.commands[logName] = cmd
 		go func() {
-			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName, logPath)
+			lt.listenCmdCommand(cmd, funcName+" process returned unexpectedly", funcName)
 		}()
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string, logPath string) {
+func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
 	err := cmd.Wait()
 	if err != nil && !lt.testFinishedProperly {
 		utils.LavaFormatError(functionName+" cmd wait err", err)
@@ -154,7 +155,7 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 	if lt.testFinishedProperly {
 		return
 	}
-	lt.saveLogs(logPath)
+	lt.saveLogs()
 	panic(panicReason)
 }
 
@@ -223,12 +224,12 @@ func (lt *lavaTest) compileLavaProtocol() {
 	cmd.Wait()
 }
 
-func (lt *lavaTest) stakeLava(ctx context.Context, logPath string) {
+func (lt *lavaTest) stakeLava(ctx context.Context) {
 	command := "./scripts/init_e2e.sh"
 	logName := "01_stakeLava"
 	funcName := "stakeLava"
 
-	lt.execCommand(ctx, funcName, logName, command, true, logPath)
+	lt.execCommand(ctx, funcName, logName, command, true)
 	utils.LavaFormatInfo(funcName + " OK")
 }
 
@@ -340,7 +341,7 @@ func (lt *lavaTest) checkBadgeServerResponsive(ctx context.Context, badgeServerA
 	panic("checkBadgeServerResponsive: Check Failed. Badge server didn't respond on " + badgeServerAddr)
 }
 
-func (lt *lavaTest) startJSONRPCProxy(ctx context.Context, logPath string) {
+func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	goExecutablePath, err := exec.LookPath("go")
 	if err != nil {
 		panic("Could not find go executable path")
@@ -351,11 +352,11 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context, logPath string) {
 	logName := "02_jsonProxy"
 	funcName := "startJSONRPCProxy"
 
-	lt.execCommand(ctx, funcName, logName, command, false, logPath)
+	lt.execCommand(ctx, funcName, logName, command, false)
 	utils.LavaFormatInfo(funcName + " OK")
 }
 
-func (lt *lavaTest) startJSONRPCProvider(ctx context.Context, logPath string) {
+func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/jsonrpcProvider%d.yml --from servicer%d %s",
@@ -363,7 +364,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context, logPath string) {
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
-		lt.execCommandWithRetry(ctx, funcName, logName, command, logPath)
+		lt.execCommandWithRetry(ctx, funcName, logName, command)
 	}
 
 	// validate all providers are up
@@ -374,7 +375,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context, logPath string) {
 	utils.LavaFormatInfo("startJSONRPCProvider OK")
 }
 
-func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context, logPath string) {
+func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/ethConsumer%d.yml --from %s %s",
@@ -382,7 +383,7 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context, logPath string) {
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startJSONRPCConsumer (consumer %02d)", idx+1)
-		lt.execCommand(ctx, funcName, logName, command, false, logPath)
+		lt.execCommand(ctx, funcName, logName, command, false)
 	}
 	utils.LavaFormatInfo("startJSONRPCConsumer OK")
 }
@@ -530,7 +531,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	return nil
 }
 
-func (lt *lavaTest) startLavaProviders(ctx context.Context, logPath string) {
+func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/lavaProvider%d --from servicer%d %s",
@@ -538,7 +539,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context, logPath string) {
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
 		funcName := fmt.Sprintf("startLavaProviders (provider %02d)", idx-5)
-		lt.execCommand(ctx, funcName, logName, command, false, logPath)
+		lt.execCommand(ctx, funcName, logName, command, false)
 	}
 
 	// validate all providers are up
@@ -549,7 +550,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context, logPath string) {
 	utils.LavaFormatInfo("startLavaProviders OK")
 }
 
-func (lt *lavaTest) startLavaConsumer(ctx context.Context, logPath string) {
+func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumer%d.yml --from %s %s",
@@ -557,7 +558,7 @@ func (lt *lavaTest) startLavaConsumer(ctx context.Context, logPath string) {
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCConsumer (consumer %02d)", idx+1)
-		lt.execCommand(ctx, funcName, logName, command, false, logPath)
+		lt.execCommand(ctx, funcName, logName, command, false)
 	}
 	utils.LavaFormatInfo("startRPCConsumer OK")
 }
@@ -631,10 +632,10 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 }
 
 // This would submit a proposal, vote then stake providers and clients for that network over lava
-func (lt *lavaTest) lavaOverLava(ctx context.Context, logPath string) {
+func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	utils.LavaFormatInfo("Starting Lava over Lava Tests")
 	command := "./scripts/init_e2e_lava_over_lava.sh"
-	lt.execCommand(ctx, "startJSONRPCConsumer", "07_lavaOverLava", command, true, logPath)
+	lt.execCommand(ctx, "startJSONRPCConsumer", "07_lavaOverLava", command, true)
 
 	// scripts/init_e2e.sh will:
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
@@ -759,9 +760,9 @@ func (lt *lavaTest) finishTestSuccessfully() {
 	}
 }
 
-func (lt *lavaTest) saveLogs(path string) {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		err = os.MkdirAll(path, os.ModePerm)
+func (lt *lavaTest) saveLogs() {
+	if _, err := os.Stat(lt.logPath); errors.Is(err, os.ErrNotExist) {
+		err = os.MkdirAll(lt.logPath, os.ModePerm)
 		if err != nil {
 			panic(err)
 		}
@@ -770,7 +771,7 @@ func (lt *lavaTest) saveLogs(path string) {
 	errorFiles := []string{}
 	errorPrint := make(map[string]string)
 	for fileName, logBuffer := range lt.logs {
-		file, err := os.Create(path + fileName + ".log")
+		file, err := os.Create(lt.logPath + fileName + ".log")
 		if err != nil {
 			panic(err)
 		}
@@ -804,7 +805,7 @@ func (lt *lavaTest) saveLogs(path string) {
 
 		// dump all errors into the log file
 		errors := strings.Join(errorLines, "\n")
-		errFile, err := os.Create(path + fileName + "_errors.log")
+		errFile, err := os.Create(lt.logPath + fileName + "_errors.log")
 		if err != nil {
 			panic(err)
 		}
@@ -1082,14 +1083,15 @@ func runProtocolE2E(timeout time.Duration) {
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
+		logPath:      protocolLogsFolder,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
 		if r := recover(); r != nil {
-			lt.saveLogs(protocolLogsFolder)
+			lt.saveLogs()
 			panic("E2E Failed")
 		} else {
-			lt.saveLogs(protocolLogsFolder)
+			lt.saveLogs()
 		}
 	}()
 
@@ -1106,7 +1108,7 @@ func runProtocolE2E(timeout time.Duration) {
 	defer cancel()
 
 	utils.LavaFormatInfo("Staking Lava")
-	lt.stakeLava(ctx, protocolLogsFolder)
+	lt.stakeLava(ctx)
 
 	// scripts/init_e2e.sh will:
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
@@ -1131,10 +1133,10 @@ func runProtocolE2E(timeout time.Duration) {
 	}
 
 	// ETH1 flow
-	lt.startJSONRPCProxy(ctx, protocolLogsFolder)
+	lt.startJSONRPCProxy(ctx)
 	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
-	lt.startJSONRPCProvider(ctx, protocolLogsFolder)
-	lt.startJSONRPCConsumer(ctx, protocolLogsFolder)
+	lt.startJSONRPCProvider(ctx)
+	lt.startJSONRPCConsumer(ctx)
 
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:333%d/1", n)
@@ -1143,8 +1145,8 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	// Lava Flow
-	lt.startLavaProviders(ctx, protocolLogsFolder)
-	lt.startLavaConsumer(ctx, protocolLogsFolder)
+	lt.startLavaProviders(ctx)
+	lt.startLavaConsumer(ctx)
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
@@ -1183,7 +1185,7 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 	utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK")
 
-	lt.lavaOverLava(ctx, protocolLogsFolder)
+	lt.lavaOverLava(ctx)
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
