@@ -143,10 +143,9 @@
                                 "name": "starknet_getBlockWithTxHashes",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "block_number"
+                                        "3"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL",
+                                    "parser_func": "PARSE_BY_ARG",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
