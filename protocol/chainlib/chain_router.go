@@ -7,115 +7,119 @@ import (
 	"sync"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 const (
-	sep = "/"
+	sep = "|"
 )
+
+type chainRouterEntry struct {
+	ChainProxy
+	addonsSupported map[string]struct{}
+}
+
+func (cre *chainRouterEntry) isSupporting(addon string) bool {
+	if addon == "" {
+		return true
+	}
+	if _, ok := cre.addonsSupported[addon]; ok {
+		return true
+	}
+	return false
+}
 
 type chainRouterImpl struct {
 	lock             *sync.RWMutex
-	chainProxyRouter map[string]ChainProxy
+	chainProxyRouter map[RouterKey][]chainRouterEntry
 }
 
-func (cri *chainRouterImpl) routerKey(addons []string) string {
-	if len(addons) == 0 {
-		return sep + sep
+type RouterKey string
+
+func NewRouterKey(extensions []string) RouterKey {
+	// make sure addons have no repetitions
+	uniqueExtensions := map[string]struct{}{}
+	for _, extension := range extensions {
+		uniqueExtensions[extension] = struct{}{}
 	}
-	sort.Strings(addons)
-	if addons[0] != "" {
-		// add support for empty addon in all routers
-		addons = append([]string{""}, addons...)
+	uniqueExtensionsSlice := []string{}
+	for addon := range uniqueExtensions { // we are sorting this anyway so we don't have to keep order
+		uniqueExtensionsSlice = append(uniqueExtensionsSlice, addon)
 	}
-	return sep + strings.Join(addons, sep) + sep
+	sort.Strings(uniqueExtensionsSlice)
+	return RouterKey(sep + strings.Join(uniqueExtensionsSlice, sep) + sep)
 }
 
-func (cri *chainRouterImpl) getChainProxySupporting(addons []string) ChainProxy {
+func (cri *chainRouterImpl) getChainProxySupporting(addon string, extensions []string) (ChainProxy, error) {
 	cri.lock.RLock()
 	defer cri.lock.RUnlock()
-	wantedRouterKey := cri.routerKey(addons)
-	if chainProxyRet, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
-		return chainProxyRet
-	}
-	type selection struct {
-		chainProxy ChainProxy
-		routerKey  string
-	}
-	selected := selection{}
-	// check for the best endpoint that supports the requested addons
-possibilitiesLoop:
-	for routerKey, chainProxy := range cri.chainProxyRouter {
-		for _, addon := range addons {
-			addonToSearch := sep + addon + sep
-			if !strings.Contains(routerKey, addonToSearch) {
-				if debug {
-					utils.LavaFormatDebug("chainProxy not supporting", utils.Attribute{Key: "routerKey", Value: routerKey}, utils.Attribute{Key: "addonToSearch", Value: addonToSearch})
-				}
-				continue possibilitiesLoop
+	wantedRouterKey := NewRouterKey(extensions)
+	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
+		for _, chainRouterEntry := range chainProxyEntries {
+			if chainRouterEntry.isSupporting(addon) {
+				return chainRouterEntry.ChainProxy, nil
+			}
+			if debug {
+				utils.LavaFormatDebug("chainProxy supporting extensions but not supporting addon", utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "wantedRouterKey", Value: wantedRouterKey})
 			}
 		}
-		// if we have a selection that fits and is more precise than what we need
-		if strings.Count(selected.routerKey, sep) < strings.Count(routerKey, sep) && selected.routerKey != "" {
-			continue
-		}
-		// means the current routerKey supports all of the addons requested
-		selected.chainProxy = chainProxy
-		selected.routerKey = routerKey
+		// no support for this addon
+		return nil, utils.LavaFormatError("no chain proxy supporting requested addon", nil, utils.Attribute{Key: "addon", Value: addon})
 	}
-	return selected.chainProxy
+	// no support for these extensions
+	return nil, utils.LavaFormatError("no chain proxy supporting requested extensions", nil, utils.Attribute{Key: "extensions", Value: extensions})
 }
 
-func (cri chainRouterImpl) GetSupportedExtensions() []string {
-	return nil
+func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
+	routerKey := NewRouterKey(extensions)
+	_, ok := cri.chainProxyRouter[routerKey]
+	return ok
 }
 
-func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, addons []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// add the parsed addon from the apiCollection
 	addon := chainMessage.GetApiCollection().CollectionData.AddOn
-	if addons == nil {
-		addons = []string{addon}
-	} else {
-		addons = append(addons, addon)
-	}
-	selectedChainProxy := cri.getChainProxySupporting(addons)
-	if selectedChainProxy == nil {
-		return nil, "", nil, utils.LavaFormatError("no chain proxy supporting requested addons", nil, utils.Attribute{
-			Key:   "addons",
-			Value: strings.Join(addons, "/"),
-		})
+	selectedChainProxy, err := cri.getChainProxySupporting(addon, extensions)
+	if err != nil {
+		return nil, "", nil, err
 	}
 	return selectedChainProxy.SendNodeMsg(ctx, ch, chainMessage)
 }
 
 func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (ChainRouter, error) {
-	cri := chainRouterImpl{
-		lock:             &sync.RWMutex{},
-		chainProxyRouter: map[string]ChainProxy{},
-	}
-	routerProxies := map[string][]common.NodeUrl{}
+	chainProxyRouter := map[RouterKey][]chainRouterEntry{}
+
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
-		routerKey := cri.routerKey(nodeUrl.Addons)
-		var nodeUrls []common.NodeUrl
-		var ok bool
-		if nodeUrls, ok = routerProxies[routerKey]; !ok {
-			nodeUrls = []common.NodeUrl{}
+		addons, extensions, err := chainParser.SeparateAddonsExtensions(nodeUrl.Addons)
+		if err != nil {
+			return nil, err
 		}
-		routerProxies[routerKey] = append(nodeUrls, nodeUrl)
-	}
-	// now we know which unique chainProxies we need based on addons, create them
-	for routerKey, nodeUrls := range routerProxies {
-		// chainProxyConstructor will get only it's relevant nodeUrls
-		rpcProviderEndpoint.NodeUrls = nodeUrls
+		routerKey := NewRouterKey(extensions)
+		addonsSupportedMap := map[string]struct{}{}
+		for _, addon := range addons {
+			addonsSupportedMap[addon] = struct{}{}
+		}
 		chainProxy, err := proxyConstructor(ctx, nConns, rpcProviderEndpoint, chainParser)
 		if err != nil {
 			// TODO: allow some urls to be down
 			return nil, err
 		}
-		cri.chainProxyRouter[routerKey] = chainProxy
+		chainRouterEntryInst := chainRouterEntry{
+			ChainProxy:      chainProxy,
+			addonsSupported: addonsSupportedMap,
+		}
+		if chainRouterEntries, ok := chainProxyRouter[routerKey]; !ok {
+			chainProxyRouter[routerKey] = []chainRouterEntry{chainRouterEntryInst}
+		} else {
+			chainProxyRouter[routerKey] = append(chainRouterEntries, chainRouterEntryInst)
+		}
+	}
+
+	cri := chainRouterImpl{
+		lock:             &sync.RWMutex{},
+		chainProxyRouter: chainProxyRouter,
 	}
 	return cri, nil
 }

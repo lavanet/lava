@@ -6,11 +6,12 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.RelayPrivateData) *types.ReplyMetadata {
+func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) *types.ReplyMetadata {
 	if reply == nil || req == nil {
 		return nil
 	}
-	allDataHash := sigs.AllDataHash(reply, *req)
+	relayExchange := pairingtypes.NewRelayExchange(*req, *reply)
+	allDataHash := sigs.HashMsg(relayExchange.DataToSign())
 	res := &types.ReplyMetadata{
 		HashAllDataHash:       sigs.HashMsg(allDataHash),
 		Sig:                   reply.Sig,
@@ -22,5 +23,5 @@ func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.Re
 }
 
 func ConstructConflictRelayData(reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) *types.ConflictRelayData {
-	return &types.ConflictRelayData{Reply: ConstructReplyMetadata(reply, req.RelayData), Request: req}
+	return &types.ConflictRelayData{Reply: ConstructReplyMetadata(reply, req), Request: req}
 }

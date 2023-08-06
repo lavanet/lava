@@ -92,7 +92,7 @@ func (gm GrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInpu
 	}
 	msg := msgFactory.NewMessage(gm.methodDesc.GetOutputType())
 	if err := proto.Unmarshal(input, msg); err != nil {
-		return nil, utils.LavaFormatError("failed to unmarshal GetResult", err)
+		return nil, utils.LavaFormatError("failed to unmarshal input", err)
 	}
 
 	formattedInput, err := gm.formatter(msg)

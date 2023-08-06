@@ -2,8 +2,10 @@ package rewardserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lavanet/lava/utils"
@@ -15,8 +17,9 @@ import (
 const keySeparator = "."
 
 type RewardDB struct {
-	db  DB
-	ttl time.Duration
+	lock sync.RWMutex
+	dbs  map[string]DB // key is spec id
+	ttl  time.Duration
 }
 
 type RewardEntity struct {
@@ -27,8 +30,11 @@ type RewardEntity struct {
 	Proof        *pairingtypes.RelaySession
 }
 
-func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (bool, error) {
-	key := assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
+func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (*pairingtypes.RelaySession, bool, error) {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+
+	key := rs.assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
 
 	re := &RewardEntity{
 		Epoch:        uint64(proof.Epoch),
@@ -38,12 +44,39 @@ func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairing
 		Proof:        proof,
 	}
 
+	prevReward, err := rs.findOne(key)
+	if err != nil {
+		saved, err := rs.save(key, re)
+		return proof, saved, err
+	}
+
+	if prevReward.Proof.CuSum < proof.CuSum {
+		if prevReward.Proof.Badge != nil && proof.Badge == nil {
+			proof.Badge = prevReward.Proof.Badge
+		}
+
+		saved, err := rs.save(key, re)
+		return proof, saved, err
+	}
+
+	return prevReward.Proof, false, nil
+}
+
+func (rs *RewardDB) save(key string, re *RewardEntity) (bool, error) {
 	buf, err := json.Marshal(re)
 	if err != nil {
 		return false, utils.LavaFormatError("failed to encode proof: %s", err)
 	}
 
-	rs.db.Save(key, buf, rs.ttl)
+	db, found := rs.dbs[re.Proof.SpecId]
+	if !found {
+		return false, fmt.Errorf("reward_db: db not found for spec id: %s", re.Proof.SpecId)
+	}
+
+	err = db.Save(key, buf, rs.ttl)
+	if err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
@@ -54,62 +87,96 @@ func (rs *RewardDB) FindOne(
 	consumerKey string,
 	sessionId uint64,
 ) (*pairingtypes.RelaySession, error) {
-	key := assembleKey(epoch, consumerAddr, sessionId, consumerKey)
+	rs.lock.RLock()
+	defer rs.lock.RUnlock()
 
-	rawReward, err := rs.db.FindOne(key)
-	if err != nil {
-		return nil, utils.LavaFormatDebug("reward not found")
-	}
+	key := rs.assembleKey(epoch, consumerAddr, sessionId, consumerKey)
 
-	var re RewardEntity
-	err = json.Unmarshal(rawReward, &re)
+	re, err := rs.findOne(key)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed to decode proof: %s", err)
+		return nil, err
 	}
 
 	return re.Proof, nil
 }
 
-func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
-	rawRewards, err := rs.db.FindAll()
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(map[uint64]*EpochRewards, len(rawRewards))
-	for _, rewards := range rawRewards {
-		re := RewardEntity{}
-		err := json.Unmarshal(rewards, &re)
+func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
+	for _, db := range rs.dbs {
+		reward, err := db.FindOne(key)
+		// if not found, continue to next db
 		if err != nil {
-			utils.LavaFormatError("failed to decode proof: %s", err)
 			continue
 		}
 
-		epochRewards, ok := result[re.Epoch]
+		if reward != nil {
+			re := RewardEntity{}
+			err := json.Unmarshal(reward, &re)
+			if err != nil {
+				utils.LavaFormatError("failed to decode proof: %s", err)
+				return nil, err
+			}
+
+			return &re, nil
+		}
+	}
+
+	return nil, fmt.Errorf("reward not found for key: %s", key)
+}
+
+func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
+	rs.lock.RLock()
+	defer rs.lock.RUnlock()
+
+	rawRewards := make(map[string]*RewardEntity)
+	for _, db := range rs.dbs {
+		raw, err := db.FindAll()
+		if err != nil {
+			return nil, err
+		}
+
+		for key, reward := range raw {
+			re := RewardEntity{}
+			err := json.Unmarshal(reward, &re)
+			if err != nil {
+				utils.LavaFormatError("failed to decode proof: %s", err)
+				continue
+			}
+
+			rawRewards[key] = &re
+		}
+	}
+
+	result := make(map[uint64]*EpochRewards)
+	for _, reward := range rawRewards {
+		epochRewards, ok := result[reward.Epoch]
 		if !ok {
-			proofs := map[uint64]*pairingtypes.RelaySession{re.SessionId: re.Proof}
-			consumerRewards := map[string]*ConsumerRewards{re.ConsumerKey: {epoch: re.Epoch, consumer: re.ConsumerAddr, proofs: proofs}}
-			result[re.Epoch] = &EpochRewards{epoch: re.Epoch, consumerRewards: consumerRewards}
+			proofs := map[uint64]*pairingtypes.RelaySession{reward.SessionId: reward.Proof}
+			consumerRewards := map[string]*ConsumerRewards{reward.ConsumerKey: {epoch: reward.Epoch, consumer: reward.ConsumerAddr, proofs: proofs}}
+			result[reward.Epoch] = &EpochRewards{epoch: reward.Epoch, consumerRewards: consumerRewards}
 			continue
 		}
 
-		consumerRewards, ok := epochRewards.consumerRewards[re.ConsumerKey]
+		consumerRewards, ok := epochRewards.consumerRewards[reward.ConsumerKey]
 		if !ok {
-			proofs := map[uint64]*pairingtypes.RelaySession{re.SessionId: re.Proof}
-			epochRewards.consumerRewards[re.ConsumerKey] = &ConsumerRewards{epoch: re.Epoch, consumer: re.ConsumerAddr, proofs: proofs}
+			proofs := map[uint64]*pairingtypes.RelaySession{reward.SessionId: reward.Proof}
+			epochRewards.consumerRewards[reward.ConsumerKey] = &ConsumerRewards{epoch: reward.Epoch, consumer: reward.ConsumerAddr, proofs: proofs}
 			continue
 		}
 
-		_, ok = consumerRewards.proofs[re.SessionId]
+		_, ok = consumerRewards.proofs[reward.SessionId]
 		if !ok {
-			consumerRewards.proofs[re.SessionId] = re.Proof
+			consumerRewards.proofs[reward.SessionId] = reward.Proof
 			continue
 		}
 	}
+
 	return result, nil
 }
 
 func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+
 	var deletedPrefixes []string
 	for _, claimedReward := range claimedRewards {
 		consumer, err := sigs.ExtractSignerAddress(claimedReward)
@@ -118,12 +185,12 @@ func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySes
 			continue
 		}
 
-		prefix := assembleKey(uint64(claimedReward.Epoch), consumer.String(), claimedReward.SessionId, "")
+		prefix := rs.assembleKey(uint64(claimedReward.Epoch), consumer.String(), claimedReward.SessionId, "")
 		if slices.Contains(deletedPrefixes, prefix) {
 			continue
 		}
 
-		err = rs.db.DeletePrefix(prefix)
+		err = rs.deletePrefix(prefix)
 		if err != nil {
 			utils.LavaFormatError("failed to delete rewards: %s", err)
 			continue
@@ -136,22 +203,73 @@ func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySes
 }
 
 func (rs *RewardDB) DeleteEpochRewards(epoch uint64) error {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+
 	prefix := strconv.FormatUint(epoch, 10)
-	return rs.db.DeletePrefix(prefix)
+	return rs.deletePrefix(prefix)
 }
 
-func NewRewardDB(db DB) *RewardDB {
-	return NewRewardDBWithTTL(db, DefaultRewardTTL)
+func (rs *RewardDB) deletePrefix(prefix string) error {
+	for _, db := range rs.dbs {
+		err := db.DeletePrefix(prefix)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func NewRewardDBWithTTL(db DB, ttl time.Duration) *RewardDB {
+func (rs *RewardDB) AddDB(specId string, db DB) error {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+
+	_, found := rs.dbs[db.Key()]
+	if found {
+		return fmt.Errorf("db already exists for key: %s", db.Key())
+	}
+
+	rs.dbs[db.Key()] = db
+
+	return nil
+}
+
+func (rs *RewardDB) GetDB(specId string) (DB, bool) {
+	rs.lock.RLock()
+	defer rs.lock.RUnlock()
+
+	db, found := rs.dbs[specId]
+	return db, found
+}
+
+func (rs *RewardDB) Close() error {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+
+	for _, db := range rs.dbs {
+		err := db.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func NewRewardDB() *RewardDB {
+	rdb := NewRewardDBWithTTL(DefaultRewardTTL)
+	return rdb
+}
+
+func NewRewardDBWithTTL(ttl time.Duration) *RewardDB {
 	return &RewardDB{
-		db:  db,
+		dbs: map[string]DB{},
 		ttl: ttl,
 	}
 }
 
-func assembleKey(epoch uint64, consumerAddr string, sessionId uint64, consumerKey string) string {
+func (rs *RewardDB) assembleKey(epoch uint64, consumerAddr string, sessionId uint64, consumerKey string) string {
 	keyParts := []string{
 		strconv.FormatUint(epoch, 10),
 		consumerAddr,

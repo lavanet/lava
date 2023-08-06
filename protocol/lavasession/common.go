@@ -37,7 +37,7 @@ const (
 	BLOCKING_PROBE_TIMEOUT                           = time.Minute             // maximum time to wait for probe to complete before updating pairing
 )
 
-var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(5, 2) // TODO move to params pairing
+var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
 const (
 	PercentileToCalculateLatency = 0.9
 	MinProvidersForSync          = 0.6

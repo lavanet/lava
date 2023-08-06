@@ -1,13 +1,18 @@
 package keeper_test
 
 import (
+	"fmt"
 	"math"
+	"sort"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -769,5 +774,515 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.True(t, slices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
 			}
 		})
+	}
+}
+
+// Test that the pairing process picks identical providers uniformly
+func TestPairingUniformDistribution(t *testing.T) {
+	numIterations := 10000
+	providersCount := 10
+	providersToPair := 3
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, 1, providersToPair)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	// extend the subscription because we'll advance alot of epochs
+	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
+	require.Nil(t, err)
+
+	// Create a map to count the occurrences of each provider
+	providerCount := make(map[string]int)
+
+	// Run the get-pairing function multiple times and count the occurrences of each provider
+	for i := 0; i < numIterations; i++ {
+		getPairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
+		require.Nil(t, err)
+
+		pairedProviders := getPairingRes.Providers
+		for _, provider := range pairedProviders {
+			providerCount[provider.Address]++
+		}
+
+		ts.AdvanceEpoch() // advance epoch to change the pairing result
+	}
+
+	// Calculate the expected count for each provider (should be nearly equal for uniform distribution)
+	expectedCount := (numIterations * providersToPair) / providersCount
+
+	// Define a margin of error for the count (you can adjust this based on your tolerance)
+	marginOfError := math.Round(0.1 * float64(expectedCount))
+
+	// Check that the count for each provider is within the margin of error of the expected count
+	for addr, count := range providerCount {
+		if math.Abs(float64(count-expectedCount)) > marginOfError {
+			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
+				addr, count, expectedCount)
+		}
+	}
+}
+
+// test to check that providers picks are aligned with their stake
+// For example: providerA with stake=100 will be picked two times more than
+// provider B with stake=50
+func TestPairingDistributionPerStake(t *testing.T) {
+	numIterations := 10000
+	providersCount := 10
+	providersToPair := 3
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, 1, providersToPair)
+	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	// double the stake of one of the providers
+	allProviders, err := ts.QueryPairingProviders(ts.spec.Index, false)
+	require.Nil(t, err)
+	doubleStakeProvider := allProviders.StakeEntry[0]
+	doubleStake := doubleStakeProvider.Stake
+	doubleStake.Amount = doubleStake.Amount.MulRaw(2)
+	_, err = ts.TxPairingStakeProvider(
+		doubleStakeProvider.Address,
+		doubleStakeProvider.Chain,
+		doubleStake,
+		doubleStakeProvider.Endpoints,
+		doubleStakeProvider.Geolocation,
+		doubleStakeProvider.Moniker,
+	)
+	require.Nil(t, err)
+	ts.AdvanceEpoch()
+	allProviders, err = ts.QueryPairingProviders(ts.spec.Index, false)
+	require.Equal(t, providersCount, len(allProviders.StakeEntry))
+	require.Nil(t, err)
+
+	// extend the subscription because we'll advance alot of epochs
+	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
+	require.Nil(t, err)
+
+	// Create a map to count the occurrences of each provider
+	type providerInfo struct {
+		count       int
+		stakeAmount int64
+	}
+	providerCount := make(map[string]providerInfo)
+
+	// Run the get-pairing function multiple times and count the occurrences of each provider
+	for i := 0; i < numIterations; i++ {
+		getPairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
+		require.Nil(t, err)
+
+		for _, provider := range getPairingRes.Providers {
+			if _, ok := providerCount[provider.Address]; !ok {
+				info := providerInfo{count: 0, stakeAmount: provider.Stake.Amount.Int64()}
+				providerCount[provider.Address] = info
+			} else {
+				info := providerCount[provider.Address]
+				info.count++
+				providerCount[provider.Address] = info
+			}
+		}
+
+		ts.AdvanceEpoch() // advance epoch to change the pairing result
+	}
+
+	// Calculate the expected count for each provider based on their stakes
+	var totalStakes int64
+	for _, provider := range allProviders.StakeEntry {
+		totalStakes += provider.Stake.Amount.Int64()
+	}
+
+	// Check that the count for each provider aligns with their stake's probability
+	for addr, info := range providerCount {
+		// Calculate the expected count based on the provider's stake
+		expectedCount := providersToPair * (numIterations * int(info.stakeAmount)) / int(totalStakes)
+
+		fmt.Printf("count: %d, expected: %d\n", info.count, expectedCount)
+
+		// Define a margin of error for the count (you can adjust this based on your tolerance)
+		marginOfError := math.Round(0.15 * float64(expectedCount))
+
+		if math.Abs(float64(info.count-expectedCount)) > marginOfError {
+			t.Errorf("Provider with address %s was not picked with the expected weight: count = %d, expected = %d",
+				addr, info.count, expectedCount)
+		}
+	}
+}
+
+func unorderedEqual(first, second []string) bool {
+	if len(first) != len(second) {
+		return false
+	}
+	exists := make(map[string]bool)
+	for _, value := range first {
+		exists[value] = true
+	}
+	for _, value := range second {
+		if !exists[value] {
+			return false
+		}
+	}
+	return true
+}
+
+func IsSubset(subset, superset []string) bool {
+	// Create a map to store the elements of the superset
+	elements := make(map[string]bool)
+
+	// Populate the map with elements from the superset
+	for _, elem := range superset {
+		elements[elem] = true
+	}
+
+	// Check each element of the subset against the map
+	for _, elem := range subset {
+		if !elements[elem] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func TestGeolocationPairingScores(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 3, 1)
+
+	// for convinience
+	GL := uint64(planstypes.Geolocation_value["GL"])
+	USE := uint64(planstypes.Geolocation_value["USE"])
+	EU := uint64(planstypes.Geolocation_value["EU"])
+	AS := uint64(planstypes.Geolocation_value["AS"])
+	AF := uint64(planstypes.Geolocation_value["AF"])
+	AU := uint64(planstypes.Geolocation_value["AU"])
+	USC := uint64(planstypes.Geolocation_value["USC"])
+	USW := uint64(planstypes.Geolocation_value["USW"])
+	USE_EU := USE + EU
+
+	freePlanPolicy := planstypes.Policy{
+		GeolocationProfile: 4, // USE
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 5,
+	}
+
+	basicPlanPolicy := planstypes.Policy{
+		GeolocationProfile: 0, // GLS
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 14,
+	}
+
+	premiumPlanPolicy := planstypes.Policy{
+		GeolocationProfile: 65535, // GL
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 14,
+	}
+
+	// propose all plans and buy subscriptions
+	freePlan := planstypes.Plan{
+		Index:      "free",
+		Block:      ts.BlockHeight(),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: freePlanPolicy,
+	}
+
+	basicPlan := planstypes.Plan{
+		Index:      "basic",
+		Block:      ts.BlockHeight(),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: basicPlanPolicy,
+	}
+
+	premiumPlan := planstypes.Plan{
+		Index:      "premium",
+		Block:      ts.BlockHeight(),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: premiumPlanPolicy,
+	}
+
+	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	require.Nil(t, err)
+
+	freeAcct, freeAddr := ts.GetAccount(common.CONSUMER, 0)
+	basicAcct, basicAddr := ts.GetAccount(common.CONSUMER, 1)
+	premiumAcct, premiumAddr := ts.GetAccount(common.CONSUMER, 2)
+
+	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1)
+	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1)
+	ts.TxSubscriptionBuy(premiumAddr, premiumAddr, premiumPlan.Index, 1)
+
+	for geoName, geo := range planstypes.Geolocation_value {
+		if geoName != "GL" && geoName != "GLS" {
+			err = ts.addProviderGeolocation(5, uint64(geo))
+			require.Nil(t, err)
+		}
+	}
+
+	templates := []struct {
+		name         string
+		dev          common.Account
+		planPolicy   planstypes.Policy
+		changePolicy bool
+		newGeo       uint64
+		expectedGeo  []uint64
+	}{
+		// free plan (cannot change geolocation - verified in another test)
+		{"default free plan", freeAcct, freePlanPolicy, false, 0, []uint64{USE}},
+
+		// basic plan (cannot change geolocation - verified in another test)
+		{"default basic plan", basicAcct, basicPlanPolicy, false, 0, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+
+		// premium plan (geolocation can change)
+		{"default premium plan", premiumAcct, premiumPlanPolicy, false, 0, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+		{"premium plan - set policy regular geo", premiumAcct, premiumPlanPolicy, true, EU, []uint64{EU}},
+		{"premium plan - set policy multiple geo", premiumAcct, premiumPlanPolicy, true, USE_EU, []uint64{EU, USE}},
+		{"premium plan - set policy global geo", premiumAcct, premiumPlanPolicy, true, GL, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+	}
+
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			devResponse, err := ts.QueryProjectDeveloper(tt.dev.Addr.String())
+			require.Nil(t, err)
+
+			projIndex := devResponse.Project.Index
+			policies := []*planstypes.Policy{&tt.planPolicy}
+
+			newPolicy := planstypes.Policy{}
+			if tt.changePolicy {
+				newPolicy = tt.planPolicy
+				newPolicy.GeolocationProfile = tt.newGeo
+				_, err = ts.TxProjectSetPolicy(projIndex, tt.dev.Addr.String(), newPolicy)
+				require.Nil(t, err)
+				policies = append(policies, &newPolicy)
+			}
+
+			ts.AdvanceEpoch() // apply the new policy
+
+			providersRes, err := ts.QueryPairingProviders(ts.spec.Name, false)
+			require.Nil(t, err)
+			stakeEntries := providersRes.StakeEntry
+			providerScores := []*pairingscores.PairingScore{}
+			for i := range stakeEntries {
+				providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
+				providerScores = append(providerScores, providerScore)
+			}
+
+			effectiveGeo, err := ts.Keepers.Pairing.CalculateEffectiveGeolocationFromPolicies(policies)
+			require.Nil(t, err)
+
+			slots := pairingscores.CalcSlots(planstypes.Policy{
+				GeolocationProfile: effectiveGeo,
+				MaxProvidersToPair: tt.planPolicy.MaxProvidersToPair,
+			})
+
+			geoSeen := map[uint64]bool{}
+			for _, geo := range tt.expectedGeo {
+				geoSeen[geo] = false
+			}
+
+			// calc scores and verify the scores are as expected
+			for _, slot := range slots {
+				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot)
+				require.Nil(t, err)
+
+				ok := verifyGeoScoreForTesting(providerScores, slot, geoSeen)
+				require.True(t, ok)
+			}
+
+			// verify that the slots have all the expected geos
+			for _, found := range geoSeen {
+				require.True(t, found)
+			}
+		})
+	}
+}
+
+func isGeoInList(geo uint64, geoList []uint64) bool {
+	for _, geoElem := range geoList {
+		if geoElem == geo {
+			return true
+		}
+	}
+	return false
+}
+
+// verifyGeoScoreForTesting is used to testing purposes only!
+// it verifies that the max geo score are for providers that exactly match the geo req
+// this function assumes that all the other reqs are equal (for example, stake req)
+func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot *pairingscores.PairingSlot, expectedGeoSeen map[uint64]bool) bool {
+	if slot == nil || len(providerScores) == 0 {
+		return false
+	}
+
+	sort.Slice(providerScores, func(i, j int) bool {
+		return providerScores[i].Score.GT(providerScores[j].Score)
+	})
+
+	geoReqObject := pairingscores.GeoReq{}
+	geoReq, ok := slot.Reqs[geoReqObject.GetName()].(pairingscores.GeoReq)
+	if !ok {
+		return false
+	}
+
+	// verify that the geo is part of the expected geo
+	_, ok = expectedGeoSeen[geoReq.Geo]
+	if !ok {
+		return false
+	}
+	expectedGeoSeen[geoReq.Geo] = true
+
+	// verify that only providers that match with req geo have max score
+	maxScore := providerScores[0].Score
+	for _, score := range providerScores {
+		if score.Provider.Geolocation == geoReq.Geo {
+			if !score.Score.Equal(maxScore) {
+				return false
+			}
+		} else {
+			if score.Score.Equal(maxScore) {
+				return false
+			} else {
+				break
+			}
+		}
+	}
+
+	return true
+}
+
+func TestDuplicateProviders(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 1)
+
+	basicPlanPolicy := planstypes.Policy{
+		GeolocationProfile: 0, // GLS
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 14,
+	}
+
+	basicPlan := planstypes.Plan{
+		Index:      "basic",
+		Block:      ts.BlockHeight(),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: basicPlanPolicy,
+	}
+
+	_, basicAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{basicPlan})
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1)
+
+	for geoName, geo := range planstypes.Geolocation_value {
+		if geoName != "GL" && geoName != "GLS" {
+			err := ts.addProviderGeolocation(5, uint64(geo))
+			require.Nil(t, err)
+		}
+	}
+
+	ts.AdvanceEpoch()
+
+	for i := 0; i < 100; i++ {
+		pairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, basicAddr)
+		require.Nil(t, err)
+		providerSeen := map[string]struct{}{}
+		for _, provider := range pairingRes.Providers {
+			_, found := providerSeen[provider.Address]
+			require.False(t, found)
+			providerSeen[provider.Address] = struct{}{}
+		}
+	}
+}
+
+// TestNoRequiredGeo checks that if no providers have the required geo, we still get a pairing list
+func TestNoRequiredGeo(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 5)
+
+	freePlanPolicy := planstypes.Policy{
+		GeolocationProfile: 4, // USE
+		TotalCuLimit:       10,
+		EpochCuLimit:       2,
+		MaxProvidersToPair: 5,
+	}
+
+	freePlan := planstypes.Plan{
+		Index:      "free",
+		Block:      ts.BlockHeight(),
+		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		PlanPolicy: freePlanPolicy,
+	}
+
+	_, freeAddr := ts.GetAccount(common.CONSUMER, 0)
+
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{freePlan})
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1)
+
+	// add 5 more providers that are not in US-E (the only allowed providers in the free plan)
+	err = ts.addProviderGeolocation(5, uint64(planstypes.Geolocation_value["AS"]))
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	pairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, freeAddr)
+	require.Nil(t, err)
+	require.Equal(t, freePlanPolicy.MaxProvidersToPair, uint64(len(pairingRes.Providers)))
+	for _, provider := range pairingRes.Providers {
+		require.NotEqual(t, freePlanPolicy.GeolocationProfile, provider.Geolocation)
+	}
+}
+
+// TestGeoSlotCalc checks that the calculated slots always hold a single bit geo req
+func TestGeoSlotCalc(t *testing.T) {
+	geoReqName := pairingscores.GeoReq{}.GetName()
+
+	allGeos := planstypes.GetAllGeolocations()
+	maxGeo := commontypes.FindMax(allGeos)
+
+	// iterate over all possible geolocations, create a policy and calc slots
+	// not checking 0 because there can never be a policy with geo=0
+	for i := 1; i <= int(maxGeo); i++ {
+		policy := planstypes.Policy{
+			GeolocationProfile: uint64(i),
+			MaxProvidersToPair: 14,
+		}
+
+		slots := pairingscores.CalcSlots(policy)
+		for _, slot := range slots {
+			geoReqFromMap := slot.Reqs[geoReqName]
+			geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
+			if !ok {
+				require.Fail(t, "slot geo req is not of GeoReq type")
+			}
+
+			if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+				require.Fail(t, "slot geo is not single bit")
+			}
+		}
+	}
+
+	// make sure the geo "GL" also works
+	policy := planstypes.Policy{
+		GeolocationProfile: uint64(planstypes.Geolocation_GL),
+		MaxProvidersToPair: 14,
+	}
+	slots := pairingscores.CalcSlots(policy)
+	for _, slot := range slots {
+		geoReqFromMap := slot.Reqs[geoReqName]
+		geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
+		if !ok {
+			require.Fail(t, "slot geo req is not of GeoReq type")
+		}
+
+		if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+			require.Fail(t, "slot geo is not single bit")
+		}
 	}
 }

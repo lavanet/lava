@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/rand"
@@ -36,7 +37,7 @@ func (ts *tester) checkProviderStaked(provider sdk.AccAddress) {
 }
 
 func TestUnresponsivenessStressTest(t *testing.T) {
-	clientsCount := 50
+	clientsCount := 100
 	providersCount := 6
 
 	ts := newTester(t)
@@ -80,8 +81,9 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 
 		relaySession := ts.newRelaySession(providerAddress, 0, cuSum, relayEpoch, 0)
 		relaySession.UnresponsiveProviders = unresponsiveDataList[clientIndex%unresponsiveCount]
-		signRelaySession(relaySession, clients[clientIndex].SK)
-
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: providerAddress,
 			Relays:  slices.Slice(relaySession),
@@ -150,8 +152,9 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 
 		relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
-		signRelaySession(relaySession, clients[clientIndex].SK)
-
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),
 			Relays:  slices.Slice(relaySession),
@@ -224,8 +227,9 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 
 	relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
 	relaySession.UnresponsiveProviders = unresponsiveProvidersData
-	signRelaySession(relaySession, clients[0].SK)
-
+	sig, err := sigs.Sign(clients[0].SK, *relaySession)
+	relaySession.Sig = sig
+	require.Nil(t, err)
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider0_addr.String(),
 		Relays:  slices.Slice(relaySession),
@@ -249,7 +253,9 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider0_addr.String(), 2, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
-		signRelaySession(relaySession, clients[clientIndex].SK)
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),
@@ -318,7 +324,9 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 
 		relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
-		signRelaySession(relaySession, clients[clientIndex].SK)
+		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
 
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),

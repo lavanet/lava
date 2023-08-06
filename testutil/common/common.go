@@ -82,9 +82,10 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 		ApiInterface:   "",
 		Salt:           []byte{1},
 	}
+
 	msg.ResponseConflict.ConflictRelayData0.Request.RelaySession = &types.RelaySession{
 		Provider:    provider0.Addr.String(),
-		ContentHash: sigs.CalculateContentHashForRelayData(msg.ResponseConflict.ConflictRelayData0.Request.RelayData),
+		ContentHash: sigs.HashMsg(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.GetContentHashData()),
 		SessionId:   uint64(1),
 		SpecId:      spec.Index,
 		CuSum:       0,
@@ -93,7 +94,7 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 		QosReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}
 
-	sig, err := sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession)
+	sig, err := sigs.Sign(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession)
 	if err != nil {
 		return msg, nil, nil, err
 	}
@@ -105,7 +106,7 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 	msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
 	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = provider1.Addr.String()
 	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
-	sig, err = sigs.SignRelay(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
+	sig, err = sigs.Sign(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
 	if err != nil {
 		return msg, nil, nil, err
 	}
@@ -120,12 +121,15 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 		SigBlocks:             sig,
 		Metadata:              []types.Metadata{},
 	}
-	sig, err = sigs.SignRelayResponse(provider0.SK, reply, msg.ResponseConflict.ConflictRelayData0.Request)
+	relayExchange := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData0.Request, *reply)
+	sig, err = sigs.Sign(provider0.SK, relayExchange)
 	if err != nil {
 		return msg, nil, nil, err
 	}
 	reply.Sig = sig
-	sigBlocks, err := sigs.SignResponseFinalizationData(provider0.SK, reply, msg.ResponseConflict.ConflictRelayData0.Request, consumer.Addr)
+
+	relayFinalization := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData0.Request, *reply), consumer.Addr)
+	sigBlocks, err := sigs.Sign(provider0.SK, relayFinalization)
 	if err != nil {
 		return msg, nil, nil, err
 	}
@@ -136,12 +140,14 @@ func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Acc
 	reply2 = &types.RelayReply{}
 	reply2.Unmarshal(temp)
 	reply2.Data = append(reply2.Data, []byte("DIFF")...)
-	sig, err = sigs.SignRelayResponse(provider1.SK, reply2, msg.ResponseConflict.ConflictRelayData1.Request)
+	relayExchange2 := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply2)
+	sig, err = sigs.Sign(provider1.SK, relayExchange2)
 	if err != nil {
 		return msg, nil, nil, err
 	}
 	reply2.Sig = sig
-	sigBlocks, err = sigs.SignResponseFinalizationData(provider1.SK, reply2, msg.ResponseConflict.ConflictRelayData1.Request, consumer.Addr)
+	relayFinalization2 := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply2), consumer.Addr)
+	sigBlocks, err = sigs.Sign(provider1.SK, relayFinalization2)
 	if err != nil {
 		return msg, nil, nil, err
 	}

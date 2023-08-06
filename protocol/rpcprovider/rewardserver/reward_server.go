@@ -73,28 +73,23 @@ type RewardServer struct {
 type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
-	GetEpochsToSave(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
 
-	prevProof, err := rws.rewardDB.FindOne(epoch, consumerAddr, consumerRewardsKey, proof.SessionId)
+	savedProof, saved, err := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
 	if err != nil {
-		saved, _ := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
-		return 0, saved
+		utils.LavaFormatError("failed saving proof", err, utils.Attribute{Key: "proof", Value: proof})
+		return 0, false
 	}
 
-	if prevProof.CuSum < proof.CuSum {
-		if prevProof.Badge != nil && proof.Badge == nil {
-			proof.Badge = prevProof.Badge
-		}
-		saved, _ := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
-		return 0, saved
+	if saved {
+		return 0, true
 	}
 
-	return prevProof.CuSum, false
+	return savedProof.CuSum, false
 }
 
 func (rws *RewardServer) UpdateEpoch(epoch uint64) {
@@ -128,6 +123,8 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		}
+
+		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "rewardsToClaim", Value: len(rewardsToClaim)})
 	} else {
 		utils.LavaFormatDebug("no rewards to claim")
 	}
@@ -207,7 +204,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
 	}
 
-	epochsToSave, err := rws.rewardsTxSender.GetEpochsToSave(ctx)
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochsToSave", err)
 	}
@@ -228,8 +225,7 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 			continue
 		}
 
-		if rws.isEpochTooOld(epoch, currentEpoch, epochsToSave) {
-			utils.LavaFormatInfo("Deleting old rewards for epoch", utils.Attribute{Key: "oldEpoch", Value: epoch})
+		if epoch < earliestSavedEpoch {
 			err := rws.rewardDB.DeleteEpochRewards(epoch)
 			if err != nil {
 				utils.LavaFormatWarning("failed deleting epoch", err, utils.Attribute{Key: "epoch", Value: epoch})
@@ -249,10 +245,6 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		}
 	}
 	return rewardsForClaim, errRet
-}
-
-func (rws *RewardServer) isEpochTooOld(rewardsEpoch, currentEpoch, epochsToSave uint64) bool {
-	return rewardsEpoch+epochsToSave < currentEpoch
 }
 
 func (rws *RewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {

@@ -1,0 +1,27 @@
+{
+    "proposal": {
+        "title": "Add plan proposal: Premium",
+        "description": "A proposal for a new plan for a premium user",
+        "plans": [
+            {
+                "index": "premium",
+                "description": "Plan for the premium Lava user",
+                "type": "rpc",
+                "price": {
+                    "denom": "ulava",
+                    "amount": "600000000000"
+                },
+                "annual_discount_percentage": "0",
+                "allow_overuse": false,
+                "overuse_rate": "0",
+                "plan_policy": {
+                    "geolocation_profile": "65535",
+                    "total_cu_limit": "9223372036854775807",
+                    "epoch_cu_limit": "9223372036854775807",
+                    "max_providers_to_pair": "14"
+                }
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}

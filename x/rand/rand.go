@@ -2,9 +2,15 @@ package rand
 
 import (
 	gorand "math/rand"
+	"time"
 )
 
 var rand *gorand.Rand
+
+func init() {
+	seed := time.Now().UnixNano()
+	rand = gorand.New(gorand.NewSource(seed))
+}
 
 func Seed(seed int64) {
 	rand = gorand.New(gorand.NewSource(seed))
@@ -24,6 +30,10 @@ func Uint32() uint32 {
 
 func Int63() int64 {
 	return rand.Int63()
+}
+
+func Int63n(n int64) int64 {
+	return rand.Int63n(n)
 }
 
 func NormFloat64() float64 {
