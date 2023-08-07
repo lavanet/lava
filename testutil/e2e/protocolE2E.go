@@ -1074,15 +1074,14 @@ func runProtocolE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("Starting Lava")
 
-	lavaContext, _ := context.WithCancel(context.Background())
-	go lt.startLava(lavaContext)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	go lt.startLava(ctx)
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
 	lt.compileLavaProtocol()
 	utils.LavaFormatInfo("Compiling Protocol OK")
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
