@@ -275,7 +275,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				break
 			}
-			dappID := c.Locals("dappId").(string)
+			dappID, ok := c.Locals("dappId").(string)
+			if !ok {
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC)
+			}
 
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())

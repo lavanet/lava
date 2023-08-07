@@ -192,7 +192,10 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 
 	webSocketCallback := websocket.New(func(websockConn *websocket.Conn) {
 		mt, _, _ := websockConn.ReadMessage()
-		dappID := websockConn.Locals("dappId").(string)
+		dappID, ok := websockConn.Locals("dappId").(string)
+		if !ok {
+			t.Fatalf("Unable to extract dappID")
+		}
 		websockConn.WriteMessage(mt, []byte(dappID))
 	})
 
@@ -247,7 +250,7 @@ func TestExtractDappIDFromFiberContext(t *testing.T) {
 		{
 			name:     "dappId does not exist in headers",
 			headers:  map[string]string{},
-			expected: "NewDappID",
+			expected: "NoDappID",
 		},
 	}
 

@@ -245,7 +245,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
 				break
 			}
-			dappID := websockConn.Locals("dappId").(string)
+			dappID, ok := websockConn.Locals("dappId").(string)
+			if !ok {
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC)
+			}
 
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())

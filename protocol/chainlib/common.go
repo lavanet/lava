@@ -73,7 +73,7 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 
 func generateNewDappID() string {
 	// TODO generate new dappID
-	return "NewDappID"
+	return "NoDappID"
 }
 
 func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
