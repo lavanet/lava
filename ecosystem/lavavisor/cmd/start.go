@@ -1,17 +1,34 @@
 package lavavisor
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+
+	"os/signal"
 	"path/filepath"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/tx"
+	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
+
+type LavavisorStateTrackerInf interface {
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, binaryPath string)
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+}
+
+type LavaVisor struct {
+	lavavisorStateTracker LavavisorStateTrackerInf
+}
 
 type Config struct {
 	ProviderServices []string `yaml:"provider-services"`
@@ -24,6 +41,47 @@ type ProviderProcess struct {
 
 var providers []*ProviderProcess
 
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string) (err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	defer func() {
+		signal.Stop(signalChan)
+		cancel()
+	}()
+
+	// initialize state tracker
+	lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavavisorChainFetcher)
+	if err != nil {
+		return err
+	}
+	lv.lavavisorStateTracker = lavavisorStateTracker
+	//  register version updater
+	protocolConsensusVersion, err := lv.lavavisorStateTracker.GetProtocolVersion(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("failed fetching protocol version from node", err)
+	}
+
+	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ConsumerMin)
+	if _, err := os.Stat(versionDir); os.IsNotExist(err) {
+		utils.LavaFormatFatal("version directory does not exist", err)
+	}
+	binaryPath := filepath.Join(versionDir, "lava-protocol")
+
+	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, binaryPath)
+
+	// tearing down
+	select {
+	case <-ctx.Done():
+		utils.LavaFormatInfo("Lavavisor ctx.Done")
+	case <-signalChan:
+		utils.LavaFormatInfo("Lavavisor signalChan")
+	}
+
+	return nil
+}
+
 var cmdLavavisorStart = &cobra.Command{
 	Use:   "start",
 	Short: "A command that will start provider processes given with config.yml",
@@ -32,14 +90,15 @@ var cmdLavavisorStart = &cobra.Command{
     and starts them with the linked 'which lava-protocol' binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, _ := cmd.Flags().GetString("directory")
-		dir, err := lvutil.ExpandTilde(dir)
-		if err != nil {
-			return utils.LavaFormatError("unable to expand directory path", err)
-		}
+
 		// Build path to ./lavavisor
-		configPath := filepath.Join(dir+"/.lavavisor", "/config.yml")
+		lavavisorPath, err := lvutil.GetLavavisorPath(dir)
+		if err != nil {
+			return err
+		}
 
 		// Read config.yaml
+		configPath := filepath.Join(lavavisorPath, "/config.yml")
 		configData, err := os.ReadFile(configPath)
 		if err != nil {
 			return fmt.Errorf("failed to read config.yaml: %v", err)
@@ -57,7 +116,20 @@ var cmdLavavisorStart = &cobra.Command{
 			// TODO: Implement the actual starting of the providers
 			startProvider(provider)
 		}
-		return nil
+
+		// Providers will run on their own go routine
+		// Now we'll create a go routine for LavaVisor & start monitoring for version changes constantly
+		// tracker initialization
+		ctx := context.Background()
+		clientCtx, err := client.GetClientQueryContext(cmd)
+		if err != nil {
+			return err
+		}
+		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+
+		lavavisor := LavaVisor{}
+		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath)
+		return err
 	},
 }
 
