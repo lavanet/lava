@@ -18,13 +18,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
-const countriesCsvFile = "./config/badge/countries.csv"
-const ipTsvFile = "./config/badge/ip2asn-v4.tsv"
+const (
+	sdkLogsFolder    = "./testutil/e2e/sdkLogs/"
+	countriesCsvFile = "./config/badge/countries.csv"
+	ipTsvFile        = "./config/badge/ip2asn-v4.tsv"
+)
 
 // startBadgeServer starts badge server
 func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, publicKey string) {
-	badgeUserData := fmt.Sprintf(`{"1":{"dfault":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}},"2":{"dfault":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}}`, publicKey, privateKey, publicKey, privateKey)
+	badgeUserData := fmt.Sprintf(`{"1":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}},"2":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}}`, publicKey, privateKey, publicKey, privateKey)
 	err := os.Setenv("BADGE_USER_DATA", badgeUserData)
 	if err != nil {
 		panic(err)
