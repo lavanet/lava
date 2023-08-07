@@ -22,7 +22,7 @@ type StateQuery struct {
 	ProtocolClient protocoltypes.QueryClient
 }
 
-func NewStateQuery(clientCtx client.Context) *StateQuery {
+func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	sq := &StateQuery{}
 	sq.ProtocolClient = protocoltypes.NewQueryClient(clientCtx)
 	return sq
