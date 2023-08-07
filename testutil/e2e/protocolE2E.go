@@ -156,11 +156,6 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 }
 
 func (lt *lavaTest) startLava(ctx context.Context) {
-	defer lt.wg.Done() // Decrements the counter when the goroutine completes.
-
-	// We will need to wait for this thread to finish so add wait group
-	lt.wg.Add(1)
-
 	command := "./scripts/init_chain.sh"
 	logName := "00_StartLava"
 	funcName := "startLava"
@@ -1079,7 +1074,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("Starting Lava")
 
-	lavaContext, cancelLava := context.WithCancel(context.Background())
+	lavaContext, _ := context.WithCancel(context.Background())
 	go lt.startLava(lavaContext)
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
@@ -1195,10 +1190,4 @@ func runProtocolE2E(timeout time.Duration) {
 	lt.checkQoS()
 
 	lt.finishTestSuccessfully()
-
-	// Cancel lava network using context
-	cancelLava()
-
-	// Wait for all processes to be done
-	lt.wg.Wait()
 }
