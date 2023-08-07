@@ -13,9 +13,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/tx"
 	version_montior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
 )
@@ -45,18 +47,23 @@ var cmdLavavisorInit = &cobra.Command{
 			return utils.LavaFormatError("lavavisor directory does not exist at path", err, utils.Attribute{Key: "lavavisorPath", Value: lavavisorPath})
 		}
 
-		// 1- check lava-protocol version from consensus
-		// ...GetProtocolVersion()
-		// handle flags, pass necessary fields
+		// tracker initialization
 		ctx := context.Background()
-
 		clientCtx, err := client.GetClientQueryContext(cmd)
 		if err != nil {
 			return err
 		}
+		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 
-		sq := lvstatetracker.NewStateQuery(clientCtx)
-		protoVer, err := sq.GetProtocolVersion(ctx)
+		// initialize lavavisor state tracker
+		lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+		lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavavisorChainFetcher)
+		if err != nil {
+			return err
+		}
+
+		// 1- check lava-protocol version from consensus
+		protoVer, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 		if err != nil {
 			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
 		}
