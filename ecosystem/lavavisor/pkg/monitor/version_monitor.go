@@ -28,7 +28,7 @@ func ValidateProtocolBinaryVersion(incoming *protocoltypes.Version, binaryPath s
 
 	// check min version
 	if incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion {
-		utils.LavaFormatPanic("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",
+		utils.LavaFormatError("minimum protocol version mismatch!",
 			nil,
 			utils.Attribute{Key: "required (on-chain) consumer minimum version:", Value: incoming.ConsumerMin},
 			utils.Attribute{Key: "required (on-chain) provider minimum version", Value: incoming.ProviderMin},
@@ -38,7 +38,7 @@ func ValidateProtocolBinaryVersion(incoming *protocoltypes.Version, binaryPath s
 	}
 	// check target version
 	if incoming.ConsumerTarget != binaryVersion || incoming.ProviderTarget != binaryVersion {
-		return utils.LavaFormatError("target protocol version mismatch, there is a newer version available. We highly recommend to upgrade.",
+		return utils.LavaFormatError("target protocol version mismatch!",
 			nil,
 			utils.Attribute{Key: "required (on-chain) consumer target version:", Value: incoming.ConsumerTarget},
 			utils.Attribute{Key: "required (on-chain) provider target version", Value: incoming.ProviderTarget},
