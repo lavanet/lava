@@ -184,7 +184,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 			name:     "dappId does not exist in params",
 			route:    "/ws",
 			headers:  map[string][]string{},
-			expected: "NewDappID",
+			expected: "NoDappID",
 		},
 	}
 
