@@ -167,7 +167,7 @@ jobs:
       ######################################################
       ### Run Lava E2E Tests 
       ######################################################
-      - name: Run Lava E2E Tests -timeout 1200s
+      - name: Run Lava E2E Tests  -timeout 1200s
         run: go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s # 20mins
 
       - name: Stake Lava All Logs
