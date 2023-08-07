@@ -25,8 +25,8 @@ type VersionUpdater struct {
 	binaryPath        string
 }
 
-func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version) *VersionUpdater {
-	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version}
+func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, binaryPath string) *VersionUpdater {
+	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version, binaryPath: binaryPath}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
