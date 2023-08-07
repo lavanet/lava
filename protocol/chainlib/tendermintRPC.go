@@ -254,7 +254,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 
 	app.Use(favicon.New())
 
-	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
+	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -275,7 +275,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				break
 			}
-			dappID := extractDappIDFromWebsocketConnection(c)
+			dappID := c.Locals("dappId").(string)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -328,10 +328,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		}
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
-	app.Get("/ws/:dappId", websocketCallbackWithDappID)
-	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
+	app.Get("/ws", websocketCallbackWithDappID)
+	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
-	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(c *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -368,7 +368,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		return c.SendString(string(reply.Data))
 	})
 
-	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
+	app.Get("/*", func(c *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 

@@ -220,7 +220,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 
 	app.Use(favicon.New())
 
-	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
+	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -245,7 +245,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
 				break
 			}
-			dappID := extractDappIDFromWebsocketConnection(websockConn)
+			dappID := websockConn.Locals("dappId").(string)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -299,10 +299,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		}
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
-	app.Get("/ws/:dappId", websocketCallbackWithDappID)
-	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
+	app.Get("/ws", websocketCallbackWithDappID)
+	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
-	app.Post("/:dappId/*", func(fiberCtx *fiber.Ctx) error {
+	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()

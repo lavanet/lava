@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -64,30 +63,34 @@ type BaseChainProxy struct {
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	dappID = c.Params("dappId")
+	// Read the dappID from the headers
+	dappID = c.Get("dappId")
 	if dappID == "" {
-		dappID = "NoDappID"
+		dappID = generateNewDappID()
 	}
 	return dappID
+}
+
+func generateNewDappID() string {
+	// TODO generate new dappID
+	return "NewDappID"
 }
 
 func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
+		// Extract dappID from headers
+		dappID := extractDappIDFromFiberContext(c)
+
+		// Store dappID in the local context
+		c.Locals("dappId", dappID)
+
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
-}
-
-func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappId := c.Params("dappId")
-	if dappId == "" {
-		dappId = "NoDappID"
-	}
-	return dappId
 }
 
 func convertToJsonError(errorMsg string) string {

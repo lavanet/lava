@@ -171,32 +171,32 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 	testCases := []struct {
 		name     string
 		route    string
+		headers  map[string][]string
 		expected string
 	}{
 		{
 			name:     "dappId exists in params",
-			route:    "/ws/DappID123",
+			route:    "/ws",
+			headers:  map[string][]string{"dappId": {"DappID123"}},
 			expected: "DappID123",
 		},
 		{
 			name:     "dappId does not exist in params",
-			route:    "/",
-			expected: "NoDappID",
+			route:    "/ws",
+			headers:  map[string][]string{},
+			expected: "NewDappID",
 		},
 	}
 
 	app := fiber.New()
-	app.Get("/ws/:dappId", websocket.New(func(c *websocket.Conn) {
-		mt, _, _ := c.ReadMessage()
-		dappID := extractDappIDFromWebsocketConnection(c)
-		c.WriteMessage(mt, []byte(dappID))
-	}))
 
-	app.Get("/", websocket.New(func(c *websocket.Conn) {
-		mt, _, _ := c.ReadMessage()
-		dappID := extractDappIDFromWebsocketConnection(c)
-		c.WriteMessage(mt, []byte(dappID))
-	}))
+	webSocketCallback := websocket.New(func(websockConn *websocket.Conn) {
+		mt, _, _ := websockConn.ReadMessage()
+		dappID := websockConn.Locals("dappId").(string)
+		websockConn.WriteMessage(mt, []byte(dappID))
+	})
+
+	app.Get("/ws", constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, false))
 
 	go app.Listen("127.0.0.1:3000")
 	defer func() {
@@ -209,7 +209,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			url := "ws://localhost:3000" + testCase.route
 			dialer := &websocket2.Dialer{}
-			conn, _, err := dialer.Dial(url, nil)
+			conn, _, err := dialer.Dial(url, testCase.headers)
 			if err != nil {
 				t.Fatalf("Error dialing websocket connection: %s", err)
 			}
@@ -234,32 +234,24 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 }
 
 func TestExtractDappIDFromFiberContext(t *testing.T) {
-	t.Parallel()
-
 	testCases := []struct {
 		name     string
-		route    string
+		headers  map[string]string
 		expected string
 	}{
 		{
-			name:     "dappId exists in params",
-			route:    "/DappID123/hello",
+			name:     "dappId exists in headers",
+			headers:  map[string]string{"dappId": "DappID123"},
 			expected: "DappID123",
 		},
 		{
-			name:     "dappId does not exist in params",
-			route:    "/",
-			expected: "NoDappID",
+			name:     "dappId does not exist in headers",
+			headers:  map[string]string{},
+			expected: "NewDappID",
 		},
 	}
 
 	app := fiber.New()
-
-	// Create route with GET method for test
-	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
-		dappID := extractDappIDFromFiberContext(c)
-		return c.SendString(dappID)
-	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		dappID := extractDappIDFromFiberContext(c)
@@ -267,41 +259,18 @@ func TestExtractDappIDFromFiberContext(t *testing.T) {
 	})
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			// Create a new http request with the route from the test case
-			req := httptest.NewRequest("GET", testCase.route, nil)
-
-			resp, _ := app.Test(req, 1)
+			req := httptest.NewRequest("GET", "/", nil)
+			for key, value := range testCase.headers {
+				req.Header.Set(key, value)
+			}
+			resp, _ := app.Test(req)
 			body, _ := io.ReadAll(resp.Body)
 			responseString := string(body)
 			if responseString != testCase.expected {
 				t.Errorf("Expected %s but got %s", testCase.expected, responseString)
 			}
 		})
-	}
-}
-
-func TestConstructFiberCallbackWithDappIDExtraction(t *testing.T) {
-	var gotCtx *fiber.Ctx
-
-	callbackToBeCalled := func(c *fiber.Ctx) error {
-		gotCtx = c
-		return nil
-	}
-
-	handler := constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled, false)
-	ctx := &fiber.Ctx{}
-
-	err := handler(ctx)
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	if gotCtx != ctx {
-		t.Errorf("Expected ctx %v, but got %v", ctx, gotCtx)
 	}
 }
 
