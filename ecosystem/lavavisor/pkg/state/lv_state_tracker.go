@@ -3,10 +3,11 @@ package lvstatetracker
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/protocol/chaintracker"
+	lvchaintracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state/chaintracker"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -16,6 +17,7 @@ const (
 )
 
 type StateTracker struct {
+	chainTracker         *lvchaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
 	eventTracker         *EventTracker
@@ -26,7 +28,7 @@ type Updater interface {
 	UpdaterKey() string
 }
 
-func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
+func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher lvchaintracker.ChainFetcher) (ret *StateTracker, err error) {
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
@@ -42,6 +44,17 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, err
 	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
+	resultConsensusParams, err := clientCtx.Client.ConsensusParams(ctx, nil) // nil returns latest
+	if err != nil {
+		return nil, err
+	}
+	chainTrackerConfig := lvchaintracker.ChainTrackerConfig{
+		NewLatestCallback: cst.newLavaBlock,
+		BlocksToSave:      BlocksToSaveLavaChainTracker,
+		AverageBlockTime:  time.Duration(resultConsensusParams.ConsensusParams.Block.TimeIotaMs) * time.Millisecond,
+		ServerBlockMemory: BlocksToSaveLavaChainTracker,
+	}
+	cst.chainTracker, err = lvchaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 	return cst, err
 }
 
