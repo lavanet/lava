@@ -34,17 +34,11 @@ var cmdLavavisorInit = &cobra.Command{
 		lavavisor init --directory ./custom/lavavisor/path --auto-download true`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, _ := cmd.Flags().GetString("directory")
-		dir, err := lvutil.ExpandTilde(dir)
-		if err != nil {
-			return utils.LavaFormatError("unable to expand directory path", err)
-		}
-		// Build path to ./lavavisor
-		lavavisorPath := filepath.Join(dir, "./.lavavisor")
 
-		// Check if ./lavavisor directory exists
-		if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
-			// ToDo: handle case where user didn't set up the file
-			return utils.LavaFormatError("lavavisor directory does not exist at path", err, utils.Attribute{Key: "lavavisorPath", Value: lavavisorPath})
+		// Build path to ./lavavisor
+		lavavisorPath, err := lvutil.GetLavavisorPath(dir)
+		if err != nil {
+			return err
 		}
 
 		// tracker initialization
@@ -63,16 +57,16 @@ var cmdLavavisorInit = &cobra.Command{
 		}
 
 		// 1- check lava-protocol version from consensus
-		protoVer, err := lavavisorStateTracker.GetProtocolVersion(ctx)
+		protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 		if err != nil {
 			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
 		}
 
-		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protoVer.ConsumerMin})
+		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ConsumerMin})
 
 		// 2- search extracted directory inside ./lavad/upgrades/<fetched_version>
 		// first check target version, then check min version
-		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protoVer.ConsumerMin)
+		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ConsumerMin)
 		binaryPath := filepath.Join(versionDir, "lava-protocol")
 
 		// check if version directory exists
@@ -85,19 +79,19 @@ var cmdLavavisorInit = &cobra.Command{
 			if autoDownload {
 				utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
 				os.MkdirAll(versionDir, os.ModePerm) // before downloading, ensure version directory exists
-				err = fetchAndBuildFromGithub(protoVer.ConsumerMin, versionDir)
+				err = fetchAndBuildFromGithub(protocolConsensusVersion.ConsumerMin, versionDir)
 				if err != nil {
 					utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 					os.Exit(1)
 				}
 			} else {
-				utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: protoVer.ConsumerMin})
+				utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: protocolConsensusVersion.ConsumerMin})
 				os.Exit(1)
 			}
 			// ToDo: add checkLavaProtocolVersion after version flag is added to release
 			//
 		} else {
-			err = version_montior.ValidateProtocolBinaryVersion(protoVer, binaryPath)
+			err = version_montior.ValidateProtocolBinaryVersion(protocolConsensusVersion, binaryPath)
 			if err != nil {
 				// binary not found or version mismatch, check auto-download flag
 				autoDownload, err := cmd.Flags().GetBool("auto-download")
@@ -106,7 +100,7 @@ var cmdLavavisorInit = &cobra.Command{
 				}
 				if autoDownload {
 					utils.LavaFormatInfo("Version mismatch or binary not found, but auto-download is enabled. Attempting to download binary from GitHub...")
-					err = fetchAndBuildFromGithub(protoVer.ConsumerMin, versionDir)
+					err = fetchAndBuildFromGithub(protocolConsensusVersion.ConsumerMin, versionDir)
 					if err != nil {
 						utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 						os.Exit(1)
