@@ -42,6 +42,16 @@ func (vu *VersionUpdater) RegisterVersionUpdatable() {
 	}
 }
 
+// upon detecting a protocol version change event, Lavavisor should:
+//  1. detect if it's a minimum or target version mismatch.
+//  2. if min. version mismatch -> provider is already stopped, need immediate action
+//     -> execute lavavisor init -> ToDo: add auto-download flag to start command as well
+//     -> fetches new binary from local or github (if auto-download true)
+//     -> removes old link & creates a new link
+//     -> start the protocol again with the new linked binary
+//  3. if target. version mismatch -> provider is running but lavavisor needs to upgrade in background
+//     -> do the exact same steps for min. mismatch case
+//     -> after creating the new link, gracefully kill old process & start the new process with linked binary
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.lock.Lock()
 	defer vu.lock.Unlock()
@@ -62,6 +72,11 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	// monitor protocol version on each new block
 	err := version_montior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.binaryPath)
 	if err != nil {
-		utils.LavaFormatError("Validate Protocol Version Error", err)
+		// version change detected, lavavisor needs to handle
+
+		// 1. detect min or target version mismatch
+
+		// 2.
+		utils.LavaFormatError("Lavavisor updater detected a version mismatch", err)
 	}
 }
