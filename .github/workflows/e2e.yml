@@ -172,7 +172,7 @@ jobs:
 
       - name: tail -n 300 Lavad Logs
         if: always()
-        run: tail -n 300 testutil/e2e/sdkLogs/logs/00_StartLava.log
+        run: tail -n 300 testutil/e2e/sdkLogs/00_StartLava.log
 
       - name: Stake Lava All Logs
         if: always()
