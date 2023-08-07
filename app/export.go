@@ -13,6 +13,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// ExportAppStateAndValidators(
+//
+//		forZeroHeight bool, jailAllowedAddrs []string,
+//	) (types.ExportedApp, error)
+//
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
 func (app *LavaApp) ExportAppStateAndValidators(

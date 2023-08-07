@@ -1,10 +1,11 @@
 package app_test
 
 import (
-	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -75,13 +76,13 @@ func BenchmarkSimulation(b *testing.B) {
 		app.BaseApp,
 		simapp.AppStateFn(app.AppCodec(), app.SimulationManager()),
 		simulationtypes.RandomAccounts,
-		simapp.SimulationOperations(app, app.AppCodec(), config),
+		sims.SimulationOperations(app, app.AppCodec(), config),
 		app.ModuleAccountAddrs(),
 		config,
 		app.AppCodec(),
 	)
 
-	err = simapp.CheckExportSimulation(app, config, simParams)
+	err = sims.CheckExportSimulation(app, config, simParams)
 	require.NoError(b, err)
 	require.NoError(b, simErr)
 

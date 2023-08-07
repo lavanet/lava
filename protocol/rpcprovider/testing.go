@@ -187,7 +187,11 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			utils.LavaFormatInfo("RPCProvider Test started", utils.Attribute{Key: "address", Value: address})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to create txFactory", err)
+			}
+
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
 			resultStatus, err := clientCtx.Client.Status(ctx)

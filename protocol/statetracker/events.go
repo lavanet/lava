@@ -55,7 +55,11 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, f
 	}
 
 	readEventsFromBlock := func(block int64, hash string) {
-		blockResults, err := clientCtx.Client.BlockResults(ctx, &block)
+		brp, err := tryIntoTendermintRPC(clientCtx.Client)
+		if err != nil {
+			utils.LavaFormatFatal("invalid blockResults provider", err)
+		}
+		blockResults, err := brp.BlockResults(ctx, &block)
 		if err != nil {
 			utils.LavaFormatError("invalid blockResults status", err)
 			return
@@ -194,7 +198,10 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blocks})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			_ = tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			_, err = tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
 			ctx, cancel := context.WithTimeout(ctx, timeout)

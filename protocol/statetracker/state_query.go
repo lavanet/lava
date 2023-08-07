@@ -200,7 +200,11 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress string, chainID string, 
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	blockResults, err := psq.clientCtx.Client.BlockResults(ctx, &latestBlock)
+	brp, err := tryIntoTendermintRPC(psq.clientCtx.Client)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed to get block result provider", err)
+	}
+	blockResults, err := brp.BlockResults(ctx, &latestBlock)
 	if err != nil {
 		return nil, err
 	}

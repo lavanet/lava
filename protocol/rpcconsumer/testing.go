@@ -137,7 +137,10 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to create txFactory", err)
+			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)

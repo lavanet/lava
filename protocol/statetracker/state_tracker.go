@@ -46,14 +46,10 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, err
 	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
-	resultConsensusParams, err := clientCtx.Client.ConsensusParams(ctx, nil) // nil returns latest
-	if err != nil {
-		return nil, err
-	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(resultConsensusParams.ConsensusParams.Block.TimeIotaMs) * time.Millisecond,
+		AverageBlockTime:  1 * time.Second, // NOTE: not used by tendermint anymore
 		ServerBlockMemory: BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

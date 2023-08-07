@@ -69,7 +69,7 @@ func TestPayments(t *testing.T) {
 	eventAttrs := []terderminttypes.EventAttribute{}
 	for _, attributes := range attributesList {
 		for key, val := range attributes {
-			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: []byte(key), Value: []byte(val)})
+			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: key, Value: val})
 		}
 	}
 	event := terderminttypes.Event{Type: utils.EventPrefix + pairingtypes.RelayPaymentEventName, Attributes: eventAttrs}
