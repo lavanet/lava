@@ -15,8 +15,11 @@ func CmdSdkPairing() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sdk-pairing",
 		Short: "Query sdk-pairing",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			reqChainID := args[0]
+			reqClient := args[1]
+
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
@@ -24,7 +27,10 @@ func CmdSdkPairing() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QuerySdkPairingRequest{}
+			params := &types.QueryGetPairingRequest{
+				ChainID: reqChainID,
+				Client:  reqClient,
+			}
 
 			res, err := queryClient.SdkPairing(cmd.Context(), params)
 			if err != nil {

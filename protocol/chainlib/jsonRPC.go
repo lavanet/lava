@@ -51,7 +51,7 @@ func (apip *JsonRPCChainParser) getSupportedApi(name string, connectionType stri
 
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata)
+		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, 0)
 		chainMessage.AppendHeader(metadata)
 		return chainMessage, err
 	}
@@ -75,7 +75,7 @@ func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, 
 }
 
 // this func parses message data into chain message object
-func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
+func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("JsonRPCChainParser not defined")
@@ -118,6 +118,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, msg, apiCollection)
+	apip.BaseChainParser.ExtensionParsing(nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 

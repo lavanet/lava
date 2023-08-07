@@ -21,6 +21,7 @@ type Server struct {
 	epoch                 uint64
 	grpcFetcher           *grpc.GRPCFetcher
 	ChainId               string
+	metrics               *MetricsService
 }
 
 func NewServer(grpcUrl string, chainId string, userData string) (*Server, error) {
@@ -42,6 +43,7 @@ func NewServer(grpcUrl string, chainId string, userData string) (*Server, error)
 		return nil, err
 	}
 	server.grpcFetcher = grpcFetch
+	server.metrics = InitMetrics()
 	return server, nil
 }
 
@@ -57,6 +59,7 @@ func (s *Server) GetEpoch() uint64 {
 func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBadgeRequest) (*pairingtypes.GenerateBadgeResponse, error) {
 	projectData, err := s.validateRequest(req)
 	if err != nil {
+		s.metrics.AddRequest(false)
 		return nil, err
 	}
 	badge := pairingtypes.Badge{
@@ -73,13 +76,16 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 
 	err = s.addPairingListToResponse(req, projectData, &result)
 	if err != nil {
+		s.metrics.AddRequest(false)
 		return nil, err
 	}
 
 	err = signTheResponse(projectData.ProjectPrivateKey, &result)
 	if err != nil {
+		s.metrics.AddRequest(false)
 		return nil, err
 	}
+	s.metrics.AddRequest(true)
 	return &result, nil
 }
 
