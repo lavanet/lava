@@ -201,7 +201,7 @@ func Copy(src, dest string) error {
 		return utils.LavaFormatError("couldn't read source file", err)
 	}
 
-	err = os.WriteFile(dest, input, 0755)
+	err = os.WriteFile(dest, input, 0o755)
 	if err != nil {
 		return utils.LavaFormatError("couldn't write destination file", err)
 	}
@@ -236,7 +236,7 @@ func fetchAndBuildFromGithub(version, versionDir string) error {
 	// Make sure the directory exists
 	dir := filepath.Dir(zipPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0755)
+		err = os.MkdirAll(dir, 0o755)
 		if err != nil {
 			return err
 		}
@@ -285,7 +285,7 @@ func fetchAndBuildFromGithub(version, versionDir string) error {
 		return utils.LavaFormatError("failed to verify compiled binary", err)
 	}
 	binaryMode := binaryInfo.Mode()
-	if binaryMode.Perm()&0111 == 0 {
+	if binaryMode.Perm()&0o111 == 0 {
 		return utils.LavaFormatError("compiled binary is not executable", nil)
 	}
 	utils.LavaFormatInfo("lava-protocol binary is successfully verified!")

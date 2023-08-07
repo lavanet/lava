@@ -34,5 +34,4 @@ func GetLavavisorPath(dir string) (lavavisorPath string, err error) {
 	}
 
 	return lavavisorPath, nil
-
 }
