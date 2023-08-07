@@ -10,7 +10,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -175,7 +175,7 @@ func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (chainPo
 			continue
 		}
 		// previous policies and current policy change collection data, we need the union of both
-		requirements = commontypes.UnionByFields(chainPolicyRequirements, requirements)
+		requirements = slices.UnionByFunc(chainPolicyRequirements, requirements)
 	}
 
 	return ChainPolicy{ChainId: chainID, Requirements: requirements}, true
