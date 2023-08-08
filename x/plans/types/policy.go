@@ -201,31 +201,55 @@ func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	// Note that if the string cannot be found then the zero value is used ('Created' in this case)
 	*s = SELECTED_PROVIDERS_MODE(SELECTED_PROVIDERS_MODE_value[j])
 	return nil
 }
 
-func ParsePolicyFromYaml(filePath string) (*Policy, error) {
+func ParsePolicyFromYamlString(input string) (*Policy, error) {
+	return parsePolicyFromYaml(input, false)
+}
+
+func ParsePolicyFromYamlPath(path string) (*Policy, error) {
+	return parsePolicyFromYaml(path, true)
+}
+
+func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 	var policy Policy
 	enumHooks := slices.Slice(
 		yaml.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
 		yaml.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
 		// Add more enum hook functions for other enum types as needed
+	)
+
+	var (
+		unused []string
+		unset  []string
+		err    error
+	)
+
+	if isPath {
+		err = yaml.DecodeFile(from, "Policy", &policy, enumHooks, &unset, &unused)
+	} else {
+		err = yaml.Decode(from, "Policy", &policy, enumHooks, &unset, &unused)
 	}
 
-	err = yaml.DecodeFile(from, "Policy", &policy, enumHooks, &missingFields, nil)
 	if err != nil {
 		return &policy, err
 	}
 
-	handleMissingPolicyFields(missingFields, &policy)
+	if len(unused) != 0 {
+		return &policy, fmt.Errorf("invalid policy: unknown field(s): %v", unused)
+	}
+	if len(unset) != 0 {
+		handleUnsetPolicyFields(unset, &policy)
+	}
 
 	return &policy, nil
 }
 
 // handleMissingPolicyFields sets default values to missing fields
-func handleMissingPolicyFields(missingFields []string, policy *Policy) {
+func handleUnsetPolicyFields(unset []string, policy *Policy) {
 	defaultValues := make(map[string]interface{})
 
 	for _, field := range unset {

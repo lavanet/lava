@@ -32,7 +32,7 @@ func CmdSetPolicy() *cobra.Command {
 
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
-			policy, err := planstypes.ParsePolicyFromYaml(adminPolicyFilePath)
+			policy, err := planstypes.ParsePolicyFromYamlPath(adminPolicyFilePath)
 			if err != nil {
 				return err
 			}

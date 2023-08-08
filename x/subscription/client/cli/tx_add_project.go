@@ -53,7 +53,7 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if policyFilePath != "" {
-				policy, err = planstypes.ParsePolicyFromYaml(policyFilePath)
+				policy, err = planstypes.ParsePolicyFromYamlPath(policyFilePath)
 				if err != nil {
 					return err
 				}
