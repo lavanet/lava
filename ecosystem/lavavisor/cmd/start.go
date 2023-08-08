@@ -21,7 +21,7 @@ import (
 )
 
 type LavavisorStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, binaryPath string)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, binaryPath string, autoDownload bool)
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
@@ -40,7 +40,7 @@ type ProviderProcess struct {
 
 var providers []*ProviderProcess
 
-func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string) (err error) {
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -68,7 +68,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	}
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
-	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, binaryPath)
+	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, binaryPath, autoDownload)
 
 	// tearing down
 	select {
@@ -126,14 +126,19 @@ var cmdLavavisorStart = &cobra.Command{
 		}
 		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 
+		// auto-download
+		autoDownload, err := cmd.Flags().GetBool("auto-download")
+
+		// Start lavavisor version monitor process
 		lavavisor := LavaVisor{}
-		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath)
+		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload)
 		return err
 	},
 }
 
 func init() {
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
+	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	rootCmd.AddCommand(cmdLavavisorStart)
 }
 

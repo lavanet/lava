@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	version_montior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
+	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -23,10 +24,11 @@ type VersionUpdater struct {
 	versionStateQuery VersionStateQuery
 	lastKnownVersion  *protocoltypes.Version
 	binaryPath        string
+	autoDownload      bool
 }
 
-func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, binaryPath string) *VersionUpdater {
-	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version, binaryPath: binaryPath}
+func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, binaryPath string, autoDownload bool) *VersionUpdater {
+	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version, binaryPath: binaryPath, autoDownload: autoDownload}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
@@ -72,9 +74,18 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	// monitor protocol version on each new block
 	err := version_montior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.binaryPath)
 	if err != nil {
-		// version change detected, lavavisor needs to handle
-
 		// 1. detect min or target version mismatch
+		switch err {
+		case lvutil.MinVersionMismatchError:
+			// handle minimum version mismatch
+
+		case lvutil.TargetVersionMismatchError:
+			// handle target version mismatch
+
+		default:
+			// handle other errors
+			utils.LavaFormatError("Unexpected error during version validation", err)
+		}
 
 		// 2.
 		utils.LavaFormatError("Lavavisor updater detected a version mismatch", err)
