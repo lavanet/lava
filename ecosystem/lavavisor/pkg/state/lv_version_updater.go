@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	versionmontior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
@@ -18,12 +19,12 @@ const (
 	CallbackKeyForVersionUpdate = "version-update"
 )
 
-type ProviderListener interface {
-	GetProviders() []*lvutil.ProviderProcess
-}
-
 type VersionStateQuery interface {
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+}
+
+type ProviderListener interface {
+	GetProviders() []*lvutil.ProviderProcess
 }
 
 type VersionUpdater struct {
@@ -74,10 +75,12 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	// check version on each new block
 	// if there is no version upgrades, we expect this check to pass
 	// if mismatch detected, lavavisor will start upgrade
+	var mismatchType error
 	err := versionmontior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.currentBinary)
 	if err != nil {
 		// 1. detect min or target version mismatch
 		var versionToFetch string
+		mismatchType = err // set mismatch type (min or target)
 		switch err {
 		case lvutil.MinVersionMismatchError:
 			versionToFetch = vu.lastKnownVersion.ProviderMin
@@ -129,10 +132,18 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	}
 	utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
 
-	// 1. check if provider process is already stopped (min version mismatch)
-	// 2. create the new link and reboot provider processes
-	// 3.
-
+	// re-create link, reboot the protocol processes
+	if versionUpdated {
+		if mismatchType == lvutil.MinVersionMismatchError {
+			vu.stopProviders() // make sure all provider process is stopped
+		}
+		vu.updateBinaryLink()
+		providerList := vu.providers.GetProviders()
+		for _, provider := range providerList {
+			fmt.Printf("Reboting provider: %s\n", provider.Name)
+			lvutil.StartProvider(&providerList, provider.Name)
+		}
+	}
 }
 
 func (vu *VersionUpdater) stopProviders() {
@@ -151,13 +162,70 @@ func (vu *VersionUpdater) stopProviders() {
 	}
 }
 
-func (vu *VersionUpdater) createNewLink(target, linkName string) error {
-	// Remove the old symbolic link if it exists
-	err := os.Remove(linkName)
-	if err != nil && !os.IsNotExist(err) {
-		return err
+func (vu *VersionUpdater) updateBinaryLink() {
+	// 3- if found: create a link from that binary to $(which lava-protocol)
+	out, err := exec.Command("which", "lava-protocol").Output()
+	if err != nil {
+		// if "which" command fails, copy binary to system path
+		gobin, err := exec.Command("go", "env", "GOPATH").Output()
+		if err != nil {
+			utils.LavaFormatFatal("couldn't determine Go binary path", err)
+		}
+
+		goBinPath := strings.TrimSpace(string(gobin)) + "/bin/"
+
+		// Check if the fetched binary is executable
+		// ToDo: change flag to "--version" once relased binaries support the flag
+		_, err = exec.Command(vu.currentBinary, "--help").Output()
+		if err != nil {
+			utils.LavaFormatFatal("binary is not a valid executable: ", err)
+		}
+
+		// Check if the link already exists and remove it
+		lavaLinkPath := goBinPath + "lava-protocol"
+		if _, err := os.Lstat(lavaLinkPath); err == nil {
+			utils.LavaFormatInfo("Discovered an existing link. Attempting to refresh.")
+			err = os.Remove(lavaLinkPath)
+			if err != nil {
+				utils.LavaFormatFatal("couldn't remove existing link", err)
+			}
+		} else if !os.IsNotExist(err) {
+			// other error
+			utils.LavaFormatFatal("unexpected error when checking for existing link", err)
+		}
+		utils.LavaFormatInfo("Old binary link successfully removed. Attempting to create the updated link.")
+
+		err = lvutil.Copy(vu.currentBinary, goBinPath+"lava-protocol")
+		if err != nil {
+			utils.LavaFormatFatal("couldn't copy binary to system path", err)
+		}
+
+		// try "which" command again
+		out, err = exec.Command("which", "lava-protocol").Output()
+		if err != nil {
+			utils.LavaFormatFatal("couldn't extract binary at the system path", err)
+		}
+	}
+	dest := strings.TrimSpace(string(out))
+
+	if _, err := os.Lstat(dest); err == nil {
+		// if destination file exists, remove it
+		err = os.Remove(dest)
+		if err != nil {
+			utils.LavaFormatFatal("couldn't remove existing link", err)
+		}
 	}
 
-	// Create a new symbolic link
-	return os.Symlink(target, linkName)
+	err = os.Symlink(vu.currentBinary, dest)
+	if err != nil {
+		utils.LavaFormatFatal("couldn't create symbolic link", err)
+	}
+
+	// check that the link has been established
+	link, err := os.Readlink(dest)
+	if err != nil || link != vu.currentBinary {
+		utils.LavaFormatFatal("failed to verify symbolic link", err)
+	}
+
+	utils.LavaFormatInfo("Symbolic link created successfully")
 }
