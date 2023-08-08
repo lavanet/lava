@@ -118,6 +118,13 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 }
 
 func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			lt.saveLogs()
+			panic(fmt.Sprintf("Panic happened with command: %s", command))
+		}
+	}()
+
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
