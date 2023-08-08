@@ -80,12 +80,11 @@ func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedPropo
 		simulation.NewWeightedProposalMsg("op_weight_msg_update_params", 100, func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) sdk.Msg {
 			return &types2.MsgUpdateParams{}
 		}),
-		//nolint:gosec,
 	}
 }
 
 //// RandomizedParams creates randomized  param changes for the simulator
-//func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+// func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 //	pairingParams := types.DefaultParams()
 //	return []simtypes.ParamChange{
 //		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
@@ -104,7 +103,7 @@ func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedPropo
 //			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
 //		}),
 //	}
-//}
+// }
 
 // RegisterStoreDecoder registers a decoder
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}

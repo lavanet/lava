@@ -369,8 +369,8 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName, event.Type)
 	require.True(t, func() bool {
 		for _, attr := range event.Attributes {
-			if string(attr.Key) == "winner" {
-				require.Equal(t, provider_address.String(), string(attr.Value))
+			if attr.Key == "winner" {
+				require.Equal(t, provider_address.String(), attr.Value)
 				return true
 			}
 		}

@@ -49,7 +49,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	printEvent := func(event types.Event) string {
 		st := event.Type + ": "
 		for _, attr := range event.Attributes {
-			st += fmt.Sprintf("- %s = %s; ", string(attr.Key), string(attr.Value))
+			st += fmt.Sprintf("- %s = %s; ", attr.Key, attr.Value)
 		}
 		return st
 	}
@@ -70,7 +70,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 			for _, event := range events {
 				if eventName == "" || event.Type == eventName {
 					for _, attribute := range event.Attributes {
-						if value == "" || string(attribute.Value) == value {
+						if value == "" || attribute.Value == value {
 							utils.LavaFormatInfo("Found a matching event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
 						}
 					}

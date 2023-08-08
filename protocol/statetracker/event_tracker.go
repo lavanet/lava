@@ -80,7 +80,7 @@ func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 	for _, event := range et.blockResults.EndBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
-				if string(attribute.Key) == "param" && string(attribute.Value) == "Version" {
+				if attribute.Key == "param" && attribute.Value == "Version" {
 					return true
 				}
 			}

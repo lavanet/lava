@@ -37,8 +37,8 @@ func (ts *tester) setupForCommit() (string, conflicttypes.MsgDetection, *pairing
 
 	var voteID string
 	for _, attr := range LastEvent.Attributes {
-		if string(attr.Key) == "voteID" {
-			voteID = string(attr.GetValue())
+		if attr.Key == "voteID" {
+			voteID = attr.GetValue()
 		}
 	}
 	require.NotEmpty(ts.T, voteID)

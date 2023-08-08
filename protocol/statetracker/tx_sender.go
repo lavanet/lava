@@ -45,12 +45,12 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	for _, txEvent := range txEvents {
 		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 			for _, attribute := range txEvent.Attributes {
-				eventStr := string(attribute.Key)
+				eventStr := attribute.Key
 				eventStr = strings.SplitN(eventStr, ".", 2)[0]
 				if eventStr == "BasePay" {
-					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
+					lavaRewardTemp, err := sdk.ParseCoinNormalized(attribute.Value)
 					if err != nil {
-						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: string(attribute.Value)})
+						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: attribute.Value})
 					}
 					lavaReward = lavaReward.Add(lavaRewardTemp)
 					break
