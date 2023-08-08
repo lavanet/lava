@@ -21,7 +21,7 @@ import (
 )
 
 type LavavisorStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, lavavisorPath string, currentBinary string, autoDownload bool)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, lavavisorPath string, currentBinary string, autoDownload bool, providers lvstatetracker.ProviderListener)
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
@@ -32,15 +32,15 @@ type LavaVisor struct {
 type Config struct {
 	ProviderServices []string `yaml:"provider-services"`
 }
-type ProviderProcess struct {
-	Name      string
-	ChainID   string
-	IsRunning bool
+
+var providers []*lvutil.ProviderProcess
+
+// GetProviders returns the list of providers.
+func (lv *LavaVisor) GetProviders() []*lvutil.ProviderProcess {
+	return providers
 }
 
-var providers []*ProviderProcess
-
-func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool) (err error) {
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, providers lvstatetracker.ProviderListener) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -68,7 +68,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	}
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
-	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, lavavisorPath, binaryPath, autoDownload)
+	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, lavavisorPath, binaryPath, autoDownload, providers)
 
 	// tearing down
 	select {
@@ -134,7 +134,7 @@ var cmdLavavisorStart = &cobra.Command{
 
 		// Start lavavisor version monitor process
 		lavavisor := LavaVisor{}
-		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload)
+		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, &lavavisor)
 		return err
 	},
 }
@@ -173,7 +173,7 @@ func startProvider(provider string) {
 	}
 
 	// Add to the list of providers
-	providers = append(providers, &ProviderProcess{
+	providers = append(providers, &lvutil.ProviderProcess{
 		Name:      provider,
 		ChainID:   chainID,
 		IsRunning: true,

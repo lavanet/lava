@@ -2,9 +2,13 @@ package lvstatetracker
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sync"
 
-	version_montior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
+	versionmontior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
@@ -13,6 +17,10 @@ import (
 const (
 	CallbackKeyForVersionUpdate = "version-update"
 )
+
+type ProviderListener interface {
+	GetProviders() []*lvutil.ProviderProcess
+}
 
 type VersionStateQuery interface {
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
@@ -23,12 +31,14 @@ type VersionUpdater struct {
 	eventTracker      *EventTracker
 	versionStateQuery VersionStateQuery
 	lastKnownVersion  *protocoltypes.Version
-	binaryPath        string
+	lavavisorPath     string
+	currentBinary     string
 	autoDownload      bool
+	providers         ProviderListener
 }
 
-func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, binaryPath string, autoDownload bool) *VersionUpdater {
-	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version, binaryPath: binaryPath, autoDownload: autoDownload}
+func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, lavavisorPath string, currentBinary string, autoDownload bool, providers ProviderListener) *VersionUpdater {
+	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version, lavavisorPath: lavavisorPath, currentBinary: currentBinary, autoDownload: autoDownload, providers: providers}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
@@ -38,22 +48,12 @@ func (vu *VersionUpdater) UpdaterKey() string {
 func (vu *VersionUpdater) RegisterVersionUpdatable() {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-	err := version_montior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.binaryPath)
+	err := versionmontior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.currentBinary)
 	if err != nil {
 		utils.LavaFormatError("Protocol Version Error", err)
 	}
 }
 
-// upon detecting a protocol version change event, Lavavisor should:
-//  1. detect if it's a minimum or target version mismatch.
-//  2. if min. version mismatch -> provider is already stopped, need immediate action
-//     -> execute lavavisor init -> ToDo: add auto-download flag to start command as well
-//     -> fetches new binary from local or github (if auto-download true)
-//     -> removes old link & creates a new link
-//     -> start the protocol again with the new linked binary
-//  3. if target. version mismatch -> provider is running but lavavisor needs to upgrade in background
-//     -> do the exact same steps for min. mismatch case
-//     -> after creating the new link, gracefully kill old process & start the new process with linked binary
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.lock.Lock()
 	defer vu.lock.Unlock()
@@ -70,24 +70,74 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 			utils.Attribute{Key: "new_version", Value: version})
 		// if no error, set the last known version.
 		vu.lastKnownVersion = version
+		// set the new binary path that lavavisor
+		versionDir := filepath.Join(vu.lavavisorPath, "upgrades", "v"+vu.lastKnownVersion.ProviderMin)
+		vu.currentBinary = filepath.Join(versionDir, "lava-protocol")
 	}
-	// monitor protocol version on each new block
-	err := version_montior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.binaryPath)
+	// check version on each new block
+	// if there is no version upgrades, we expect this check to pass
+	// if mismatch detected, lavavisor will start upgrade
+	err := versionmontior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.currentBinary)
 	if err != nil {
 		// 1. detect min or target version mismatch
+		var versionToFetch string
 		switch err {
 		case lvutil.MinVersionMismatchError:
-			// handle minimum version mismatch
-
+			versionToFetch = vu.lastKnownVersion.ProviderMin
 		case lvutil.TargetVersionMismatchError:
-			// handle target version mismatch
-
+			versionToFetch = vu.lastKnownVersion.ProviderTarget
 		default:
-			// handle other errors
 			utils.LavaFormatError("Unexpected error during version validation", err)
 		}
 
-		// 2.
-		utils.LavaFormatError("Lavavisor updater detected a version mismatch", err)
+		utils.LavaFormatInfo("Lavavisor detected a version upgrade. Initiating the fetching process...")
+
+		versionDir := filepath.Join(vu.lavavisorPath, "upgrades", "v"+vu.lastKnownVersion.ProviderMin)
+		{
+			if vu.autoDownload {
+				utils.LavaFormatInfo("Version mismatch or binary not found, but auto-download is enabled. Attempting to download binary from GitHub...")
+				err = versionmontior.FetchAndBuildFromGithub(versionToFetch, versionDir)
+				if err != nil {
+					utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
+					os.Exit(1)
+				}
+			} else {
+				utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
+				os.Exit(1)
+			}
+		}
 	}
+	utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
+
+	// 1. check if provider process is already stopped (min version mismatch)
+	// 2. create the new link and reboot provider processes
+	// 3.
+
+}
+
+func (vu *VersionUpdater) stopProviders() {
+	for _, provider := range vu.providers.GetProviders() {
+		if provider.IsRunning {
+			cmd := exec.Command("sudo", "systemctl", "stop", provider.Name+".service")
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Failed to stop provider: %s, Error: %s\n", cmd, err)
+				fmt.Printf("Command Output: \n%s\n", output)
+			} else {
+				fmt.Printf("Successfully stopped provider: %s\n", cmd)
+				fmt.Printf("Command Output: \n%s\n", output)
+			}
+		}
+	}
+}
+
+func (vu *VersionUpdater) createNewLink(target, linkName string) error {
+	// Remove the old symbolic link if it exists
+	err := os.Remove(linkName)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	// Create a new symbolic link
+	return os.Symlink(target, linkName)
 }

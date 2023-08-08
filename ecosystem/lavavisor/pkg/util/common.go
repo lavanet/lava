@@ -8,6 +8,12 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
+type ProviderProcess struct {
+	Name      string
+	ChainID   string
+	IsRunning bool
+}
+
 func ExpandTilde(path string) (string, error) {
 	if !strings.HasPrefix(path, "~") {
 		return path, nil
