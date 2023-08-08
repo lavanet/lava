@@ -25,8 +25,8 @@ func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientC
 	return lst, nil
 }
 
-func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, binaryPath string, autoDownload bool) {
-	versionUpdater := NewVersionUpdater(lst.stateQuery, lst.eventTracker, version, binaryPath, autoDownload)
+func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, lavavisorPath string, currentBinary string, autoDownload bool) {
+	versionUpdater := NewVersionUpdater(lst.stateQuery, lst.eventTracker, version, lavavisorPath, currentBinary, autoDownload)
 	versionUpdaterRaw := lst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {

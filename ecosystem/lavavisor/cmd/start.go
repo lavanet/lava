@@ -21,7 +21,7 @@ import (
 )
 
 type LavavisorStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, binaryPath string, autoDownload bool)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, lavavisorPath string, currentBinary string, autoDownload bool)
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
@@ -62,13 +62,13 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 
-	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ConsumerMin)
+	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ProviderMin)
 	if _, err := os.Stat(versionDir); os.IsNotExist(err) {
-		utils.LavaFormatFatal("version directory does not exist", err)
+		utils.LavaFormatFatal("expected version directory does not exist, might be deleted!", err)
 	}
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
-	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, binaryPath, autoDownload)
+	lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, lavavisorPath, binaryPath, autoDownload)
 
 	// tearing down
 	select {
