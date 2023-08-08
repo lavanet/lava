@@ -3,7 +3,7 @@ package types
 import (
 	"bytes"
 	"encoding/json"
-	fmt "fmt"
+	"fmt"
 	"math"
 	"strings"
 
@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/yaml"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -207,13 +208,13 @@ func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
 
 func ParsePolicyFromYaml(filePath string) (*Policy, error) {
 	var policy Policy
-	enumHooks := []commontypes.EnumDecodeHookFuncType{
-		commontypes.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
-		commontypes.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
+	enumHooks := slices.Slice(
+		yaml.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
+		yaml.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
 		// Add more enum hook functions for other enum types as needed
 	}
 
-	missingFields, err := commontypes.ReadYaml(filePath, "Policy", &policy, enumHooks, true)
+	err = yaml.DecodeFile(from, "Policy", &policy, enumHooks, &missingFields, nil)
 	if err != nil {
 		return &policy, err
 	}
@@ -225,18 +226,16 @@ func ParsePolicyFromYaml(filePath string) (*Policy, error) {
 
 // handleMissingPolicyFields sets default values to missing fields
 func handleMissingPolicyFields(missingFields []string, policy *Policy) {
-	missingFieldsDefaultValues := make(map[string]interface{})
+	defaultValues := make(map[string]interface{})
 
-	for _, field := range missingFields {
-		defValue, ok := policyDefaultValues[field]
-		// not checking if not ok because fields without default values can use
-		// their natural default value (it's not an error)
-		if ok {
-			missingFieldsDefaultValues[field] = defValue
+	for _, field := range unset {
+		// fields without explicit default values use their natural default value
+		if defValue, ok := policyDefaultValues[field]; ok {
+			defaultValues[field] = defValue
 		}
 	}
 
-	commontypes.SetDefaultValues(policy, missingFieldsDefaultValues)
+	yaml.SetDefaultValues(defaultValues, policy)
 }
 
 // parseEnumValue is a helper function to parse the enum value based on the provided enumType.
