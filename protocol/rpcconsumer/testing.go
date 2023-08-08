@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chaintracker"
@@ -153,7 +152,6 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCConsumer)
-	cmdTestRPCConsumer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdTestRPCConsumer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	return cmdTestRPCConsumer
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -283,7 +282,6 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCProvider)
-	cmdTestRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdTestRPCProvider.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider

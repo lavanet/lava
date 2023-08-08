@@ -395,7 +395,6 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
-	cmdRPCConsumer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdRPCConsumer.Flags().Uint64(commonlib.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCConsumer.Flags().Uint(commonlib.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCConsumer.MarkFlagRequired(commonlib.GeolocationFlag)

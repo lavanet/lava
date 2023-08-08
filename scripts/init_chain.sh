@@ -37,9 +37,7 @@ sed -i "$path$config" \
     -e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' 
 
 # Edit app.toml file
-sed -i "$path$app" \
-    -e 's/enable = .*/enable = true/' 
-
+sed -i '' -e "s/enable = .*/enable = true/" "$path$app"
 
 # Add users
 users=("alice" "bob" "user1" "user2" "user3" "user4" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")

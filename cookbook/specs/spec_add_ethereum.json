@@ -1063,10 +1063,7 @@
                         "extensions": [
                             {
                                 "name": "archive",
-                                "cu_multiplier": 1.5,
-                                "rule": {
-                                    "block":254
-                                }
+                                "cu_multiplier": 1.5
                             }
                         ]
                     },
@@ -1303,10 +1300,7 @@
                         "extensions": [
                             {
                                 "name": "archive",
-                                "cu_multiplier": 1.5,
-                                "rule": {
-                                    "block":254
-                                }
+                                "cu_multiplier": 1.5
                             }
                         ]
                     }
