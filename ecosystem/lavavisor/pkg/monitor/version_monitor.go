@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"strings"
 
+	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -28,23 +29,11 @@ func ValidateProtocolBinaryVersion(incoming *protocoltypes.Version, binaryPath s
 
 	// check min version
 	if incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion {
-		utils.LavaFormatError("minimum protocol version mismatch!",
-			nil,
-			utils.Attribute{Key: "required (on-chain) consumer minimum version:", Value: incoming.ConsumerMin},
-			utils.Attribute{Key: "required (on-chain) provider minimum version", Value: incoming.ProviderMin},
-			utils.Attribute{Key: "binary consumer version: ", Value: binaryVersion},
-			utils.Attribute{Key: "binary provider version: ", Value: binaryVersion},
-		)
+		return lvutil.MinVersionMismatchError
 	}
 	// check target version
 	if incoming.ConsumerTarget != binaryVersion || incoming.ProviderTarget != binaryVersion {
-		return utils.LavaFormatError("target protocol version mismatch!",
-			nil,
-			utils.Attribute{Key: "required (on-chain) consumer target version:", Value: incoming.ConsumerTarget},
-			utils.Attribute{Key: "required (on-chain) provider target version", Value: incoming.ProviderTarget},
-			utils.Attribute{Key: "binary consumer version: ", Value: binaryVersion},
-			utils.Attribute{Key: "binary provider version: ", Value: binaryVersion},
-		)
+		return lvutil.TargetVersionMismatchError
 	}
 	// version is ok.
 	return nil
