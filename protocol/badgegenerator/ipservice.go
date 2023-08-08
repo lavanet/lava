@@ -34,6 +34,10 @@ func InitIpService(defaultGeolocation int, countriesFilePath string, ipFilePath 
 
 func (service *IpService) readCountryCsvFileData() (*map[string]int, error) {
 	countries := make(map[string]int)
+	if len(service.CountryCsvFilePath) == 0 {
+		utils.LavaFormatWarning("badge is not configured correctly- missing country csv file path.", nil)
+		return &countries, nil
+	}
 	file, err := os.Open(service.CountryCsvFilePath)
 	if err != nil {
 		utils.LavaFormatError("error opening country file", err)
@@ -62,6 +66,11 @@ func (service *IpService) ReadIpTsvFileData() error {
 	if err != nil {
 		utils.LavaFormatError("error reading country data.", err)
 		return err
+	}
+	if len(service.IpTsvFilePath) == 0 {
+		utils.LavaFormatWarning("badge is not configured correctly- missing ip tsv file path.", nil)
+		service.IpCountryData = &[]*IpData{}
+		return nil
 	}
 	file, err := os.Open(service.IpTsvFilePath)
 	if err != nil {
@@ -106,6 +115,9 @@ func (service *IpService) ReadIpTsvFileData() error {
 }
 
 func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
+	if len(*service.IpCountryData) == 0 {
+		return nil, fmt.Errorf("ip servive not configured correctly")
+	}
 	needle, err := convertStringToIpInt(toSearchIp)
 	if err != nil {
 		return nil, err

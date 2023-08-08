@@ -18,11 +18,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const (
-	sdkLogsFolder    = "./testutil/e2e/sdkLogs/"
-	countriesCsvFile = "./config/badge/countries.csv"
-	ipTsvFile        = "./config/badge/ip2asn-v4.tsv"
-)
+const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
 
 // startBadgeServer starts badge server
 func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, publicKey string) {
@@ -32,14 +28,6 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, pub
 		panic(err)
 	}
 	err = os.Setenv("BADGE_DEFAULT_GEOLOCATION", "1")
-	if err != nil {
-		panic(err)
-	}
-	err = os.Setenv("BADGE_COUNTRIES_FILE_PATH", countriesCsvFile)
-	if err != nil {
-		panic(err)
-	}
-	err = os.Setenv("BADGE_IP_FILE_PATH", ipTsvFile)
 	if err != nil {
 		panic(err)
 	}
