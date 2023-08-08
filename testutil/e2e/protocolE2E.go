@@ -124,7 +124,11 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command 
 	cmd.Args = strings.Fields(command)
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
-	cmd.Stderr = io.MultiWriter(lt.logs[logName], os.Stderr)
+	cmd.Stderr = lt.logs[logName]
+	if funcName == "stakeLava" {
+		cmd.Stdout = io.MultiWriter(lt.logs[logName], os.Stderr)
+		cmd.Stderr = io.MultiWriter(lt.logs[logName], os.Stderr)
+	}
 
 	err := cmd.Start()
 	if err != nil {
