@@ -73,7 +73,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")
 
 		// Set the environment variable for badge server address
-		cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:8080")
+		cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:7070")
 
 		// Set the environment variable for badge server address
 		cmd.Env = append(cmd.Env, "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
