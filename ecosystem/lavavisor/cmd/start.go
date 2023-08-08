@@ -143,7 +143,7 @@ var cmdLavavisorStart = &cobra.Command{
 
 func init() {
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
-	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
+	cmdLavavisorStart.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	rootCmd.AddCommand(cmdLavavisorStart)
 }
 
