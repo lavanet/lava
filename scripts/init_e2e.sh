@@ -74,6 +74,7 @@ wait_next_block
 lavad tx subscription add-project "myproject1" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx subscription add-project "myproject" --policy-file ./cookbook/projects/example_policy.yml -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+wait_next_block
 
 count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
 if [ "$count" -ne 3 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 3"; exit 1; fi
