@@ -181,16 +181,8 @@ func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (chainPo
 	return ChainPolicy{ChainId: chainID, Requirements: requirements}, true
 }
 
-func VerifyTotalCuUsage(policies []*Policy, cuUsage uint64) bool {
-	for _, policy := range policies {
-		if policy != nil {
-			if cuUsage >= policy.GetTotalCuLimit() {
-				return false
-			}
-		}
-	}
-
-	return true
+func VerifyTotalCuUsage(effectiveTotalCu uint64, cuUsage uint64) bool {
+	return cuUsage < effectiveTotalCu
 }
 
 // allows unmarshaling parser func
