@@ -2,6 +2,7 @@ package lvstatetracker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -20,8 +21,14 @@ type EventTracker struct {
 func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	ctx := context.Background()
 	var blockResults *ctypes.ResultBlockResults
+	fmt.Println("latestBlock: ", latestBlock)
+	fmt.Println("et.ClientCtx: ", et.clientCtx)
+
 	if latestBlock == 0 {
 		res, err := et.clientCtx.Client.Status(ctx)
+		fmt.Println("res: ", res)
+		fmt.Println("err: ", err)
+
 		if err != nil {
 			return utils.LavaFormatWarning("could not get latest block height and requested latestBlock = 0", err)
 		}
