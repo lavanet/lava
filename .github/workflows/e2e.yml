@@ -12,17 +12,6 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: 1.20.5
-    
-    # Install Ignite
-    - name: ignite install
-      run: git clone --depth 1 --branch v0.26.1 https://github.com/ignite/cli && cd cli && make install
-      # run: curl https://get.ignite.com/cli! | bash
-    - name: ignite version
-      run:  ignite version
-    # - name: starport install
-    #   run: curl https://get.starport.network/starport@v0.19.2! | bash
-    # - name: starport version
-    #   run:  starport version
 
     # Setup Paths
     - name: home
@@ -48,21 +37,20 @@ jobs:
     - name: ls -l
       run: ls -l
 
-    # Pre-build with ignite
-    - name: ignite build
-      uses: nick-fields/retry@v2
-      with:
-        max_attempts: 3
-        retry_on: error
-        timeout_minutes: 20
-        command: ignite chain build -v
+    # Pre-build 
+    - name: lavad build
+      run: make install
 
     ######################################################
-    ### Run Lava E2E Tests IGNITE VERSION:0.22.1
+    ### Run Lava E2E Tests 
     ######################################################
-    - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
+    - name: Run Lava E2E Tests -timeout 1200s
       run: go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s # 20mins
       
+    - name: tail -n 300 Lavad Logs
+      if: always()
+      run: tail -n 300 testutil/e2e/protocolLogs/00_StartLava.log
+
     - name: Stake Lava All Logs
       if: always()
       run: cat testutil/e2e/protocolLogs/01_stakeLava.log
@@ -139,17 +127,6 @@ jobs:
         with:
           go-version: 1.20.5
 
-      # Install Ignite
-      - name: ignite install
-        run: git clone --depth 1 --branch v0.26.1 https://github.com/ignite/cli && cd cli && make install
-        # run: curl https://get.ignite.com/cli! | bash
-      - name: ignite version
-        run: ignite version
-      # - name: starport install
-      #   run: curl https://get.starport.network/starport@v0.19.2! | bash
-      # - name: starport version
-      #   run:  starport version
-
       # Setup Paths
       - name: home
         run: pwd && ls -l
@@ -174,14 +151,9 @@ jobs:
       - name: ls -l
         run: ls -l
 
-      # Pre-build with ignite
-      - name: ignite build
-        uses: nick-fields/retry@v2
-        with:
-          max_attempts: 3
-          retry_on: error
-          timeout_minutes: 20
-          command: ignite chain build -v
+      # Pre-build
+      - name: lavad build
+        run: make install
 
       # Install Node.js
       - name: Setup Node.js environment
@@ -197,10 +169,14 @@ jobs:
           npm run build
 
       ######################################################
-      ### Run Lava E2E Tests IGNITE VERSION:0.22.1
+      ### Run Lava E2E Tests 
       ######################################################
-      - name: Run Lava E2E Tests IGNITE VERSION:0.22.1 -timeout 1200s
+      - name: Run Lava E2E Tests  -timeout 1200s
         run: go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s # 20mins
+
+      - name: tail -n 300 Lavad Logs
+        if: always()
+        run: tail -n 300 testutil/e2e/sdkLogs/00_StartLava.log
 
       - name: Stake Lava All Logs
         if: always()

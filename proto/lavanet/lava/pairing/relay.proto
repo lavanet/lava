@@ -10,7 +10,20 @@ import "google/protobuf/wrappers.proto";
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
     rpc RelaySubscribe (RelayRequest) returns (stream RelayReply) {}
-    rpc Probe (google.protobuf.UInt64Value) returns (google.protobuf.UInt64Value) {}
+    rpc Probe (ProbeRequest) returns (ProbeReply) {}
+}
+
+message ProbeRequest {
+    uint64 guid = 1;
+    string spec_id = 2;
+    string api_interface = 3;
+}
+
+message ProbeReply {
+    uint64 guid =1;
+    int64 latest_block = 2;
+    bytes finalized_blocks_hashes = 3;
+    uint64 lava_epoch = 4;
 }
 
 message RelaySession {

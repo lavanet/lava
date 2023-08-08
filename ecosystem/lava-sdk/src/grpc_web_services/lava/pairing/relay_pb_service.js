@@ -2,7 +2,6 @@
 // file: lava/pairing/relay.proto
 
 var lava_pairing_relay_pb = require("../../lava/pairing/relay_pb");
-var google_protobuf_wrappers_pb = require("google-protobuf/google/protobuf/wrappers_pb");
 var grpc = require("@improbable-eng/grpc-web").grpc;
 
 var Relayer = (function () {
@@ -34,8 +33,8 @@ Relayer.Probe = {
   service: Relayer,
   requestStream: false,
   responseStream: false,
-  requestType: google_protobuf_wrappers_pb.UInt64Value,
-  responseType: google_protobuf_wrappers_pb.UInt64Value
+  requestType: lava_pairing_relay_pb.ProbeRequest,
+  responseType: lava_pairing_relay_pb.ProbeReply
 };
 
 exports.Relayer = Relayer;

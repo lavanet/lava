@@ -22,18 +22,22 @@ const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
 
 // startBadgeServer starts badge server
 func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, publicKey string) {
-	badgeUserData := fmt.Sprintf(`{"alice":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}`, publicKey, privateKey)
+	badgeUserData := fmt.Sprintf(`{"1":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}},"2":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}}`, publicKey, privateKey, publicKey, privateKey)
 	err := os.Setenv("BADGE_USER_DATA", badgeUserData)
 	if err != nil {
 		panic(err)
 	}
 
-	command := fmt.Sprintf("%s badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
+	command := fmt.Sprintf("%s badgegenerator --port=7070 --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
+	err = os.Setenv("BADGE_DEFAULT_GEOLOCATION", "1")
+	if err != nil {
+		panic(err)
+	}
 	logName := "01_BadgeServer"
 	funcName := "startBadgeServer"
 	lt.execCommandWithRetry(ctx, funcName, logName, command)
 
-	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:8080", time.Minute)
+	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:7070", time.Minute)
 }
 
 // exportUserPublicKey exports public key from specific user
