@@ -15,6 +15,7 @@ type AggregatedMetric struct {
 	TotalLatency uint64
 	RelaysCount  int64
 	SuccessCount int64
+	TotalCu      uint64
 	TimeStamp    time.Time
 }
 
@@ -104,6 +105,7 @@ func prepareArrayForProject(projectData map[string]map[string]map[RelaySource]*A
 					RelayCounts:  data.RelaysCount,
 					SuccessCount: data.SuccessCount,
 					Source:       sourceKey,
+					TotalCu:      data.TotalCu,
 					Timestamp:    data.TimeStamp.Format(time.RFC3339), // pls note that this is the timestamp of the first record and is not updated afterward
 				})
 			}
@@ -161,6 +163,7 @@ func (m *MetricService) storeAggregatedData(data RelayMetrics) error {
 						RelaysCount:  1,
 						SuccessCount: successCount,
 						TimeStamp:    data.Timestamp,
+						TotalCu:      data.ComputeUnits,
 					},
 				},
 			},
@@ -182,6 +185,7 @@ func (m *MetricService) storeChainIdData(projectData map[string]map[string]map[R
 					RelaysCount:  1,
 					SuccessCount: successCount,
 					TimeStamp:    data.Timestamp,
+					TotalCu:      data.ComputeUnits,
 				},
 			},
 		}
@@ -200,6 +204,7 @@ func (m *MetricService) storeApiTypeData(chainIdData map[string]map[RelaySource]
 				RelaysCount:  1,
 				SuccessCount: successCount,
 				TimeStamp:    data.Timestamp,
+				TotalCu:      data.ComputeUnits,
 			},
 		}
 	}
@@ -210,6 +215,7 @@ func (m *MetricService) storeSourceData(sourceData map[RelaySource]*AggregatedMe
 	if exists {
 		existingData.TotalLatency += successLatencyValue
 		existingData.SuccessCount += successCount
+		existingData.TotalCu += data.ComputeUnits
 		existingData.RelaysCount += 1
 	} else {
 		(*m.AggregatedMetricMap)[data.ProjectHash][data.ChainID][data.APIType][data.Source] = &AggregatedMetric{
@@ -217,6 +223,7 @@ func (m *MetricService) storeSourceData(sourceData map[RelaySource]*AggregatedMe
 			RelaysCount:  1,
 			SuccessCount: successCount,
 			TimeStamp:    data.Timestamp,
+			TotalCu:      data.ComputeUnits,
 		}
 	}
 }

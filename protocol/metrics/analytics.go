@@ -31,6 +31,7 @@ type RelayAnalyticsDTO struct {
 	Latency      uint64
 	SuccessCount int64
 	RelayCounts  int64
+	TotalCu      uint64
 	Source       RelaySource
 }
 
