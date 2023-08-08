@@ -139,7 +139,7 @@ var cmdLavavisorInit = &cobra.Command{
 			}
 			utils.LavaFormatInfo("Old binary link successfully removed. Attempting to create the updated link.")
 
-			err = Copy(binaryPath, goBinPath+"lava-protocol")
+			err = lvutil.Copy(binaryPath, goBinPath+"lava-protocol")
 			if err != nil {
 				utils.LavaFormatFatal("couldn't copy binary to system path", err)
 			}
@@ -185,17 +185,4 @@ func init() {
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	rootCmd.AddCommand(cmdLavavisorInit)
-}
-
-func Copy(src, dest string) error {
-	input, err := os.ReadFile(src)
-	if err != nil {
-		return utils.LavaFormatError("couldn't read source file", err)
-	}
-
-	err = os.WriteFile(dest, input, 0o755)
-	if err != nil {
-		return utils.LavaFormatError("couldn't write destination file", err)
-	}
-	return nil
 }
