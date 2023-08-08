@@ -3,9 +3,21 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { UInt64Value } from "../../google/protobuf/wrappers";
 
 export const protobufPackage = "lavanet.lava.pairing";
+
+export interface ProbeRequest {
+  guid: Long;
+  specId: string;
+  apiInterface: string;
+}
+
+export interface ProbeReply {
+  guid: Long;
+  latestBlock: Long;
+  finalizedBlocksHashes: Uint8Array;
+  lavaEpoch: Long;
+}
 
 export interface RelaySession {
   specId: string;
@@ -71,6 +83,196 @@ export interface QualityOfServiceReport {
   availability: string;
   sync: string;
 }
+
+function createBaseProbeRequest(): ProbeRequest {
+  return { guid: Long.UZERO, specId: "", apiInterface: "" };
+}
+
+export const ProbeRequest = {
+  encode(message: ProbeRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (!message.guid.isZero()) {
+      writer.uint32(8).uint64(message.guid);
+    }
+    if (message.specId !== "") {
+      writer.uint32(18).string(message.specId);
+    }
+    if (message.apiInterface !== "") {
+      writer.uint32(26).string(message.apiInterface);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProbeRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProbeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.guid = reader.uint64() as Long;
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.specId = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.apiInterface = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProbeRequest {
+    return {
+      guid: isSet(object.guid) ? Long.fromValue(object.guid) : Long.UZERO,
+      specId: isSet(object.specId) ? String(object.specId) : "",
+      apiInterface: isSet(object.apiInterface) ? String(object.apiInterface) : "",
+    };
+  },
+
+  toJSON(message: ProbeRequest): unknown {
+    const obj: any = {};
+    message.guid !== undefined && (obj.guid = (message.guid || Long.UZERO).toString());
+    message.specId !== undefined && (obj.specId = message.specId);
+    message.apiInterface !== undefined && (obj.apiInterface = message.apiInterface);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProbeRequest>, I>>(base?: I): ProbeRequest {
+    return ProbeRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProbeRequest>, I>>(object: I): ProbeRequest {
+    const message = createBaseProbeRequest();
+    message.guid = (object.guid !== undefined && object.guid !== null) ? Long.fromValue(object.guid) : Long.UZERO;
+    message.specId = object.specId ?? "";
+    message.apiInterface = object.apiInterface ?? "";
+    return message;
+  },
+};
+
+function createBaseProbeReply(): ProbeReply {
+  return { guid: Long.UZERO, latestBlock: Long.ZERO, finalizedBlocksHashes: new Uint8Array(), lavaEpoch: Long.UZERO };
+}
+
+export const ProbeReply = {
+  encode(message: ProbeReply, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (!message.guid.isZero()) {
+      writer.uint32(8).uint64(message.guid);
+    }
+    if (!message.latestBlock.isZero()) {
+      writer.uint32(16).int64(message.latestBlock);
+    }
+    if (message.finalizedBlocksHashes.length !== 0) {
+      writer.uint32(26).bytes(message.finalizedBlocksHashes);
+    }
+    if (!message.lavaEpoch.isZero()) {
+      writer.uint32(32).uint64(message.lavaEpoch);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProbeReply {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProbeReply();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.guid = reader.uint64() as Long;
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.latestBlock = reader.int64() as Long;
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.finalizedBlocksHashes = reader.bytes();
+          continue;
+        case 4:
+          if (tag != 32) {
+            break;
+          }
+
+          message.lavaEpoch = reader.uint64() as Long;
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProbeReply {
+    return {
+      guid: isSet(object.guid) ? Long.fromValue(object.guid) : Long.UZERO,
+      latestBlock: isSet(object.latestBlock) ? Long.fromValue(object.latestBlock) : Long.ZERO,
+      finalizedBlocksHashes: isSet(object.finalizedBlocksHashes)
+        ? bytesFromBase64(object.finalizedBlocksHashes)
+        : new Uint8Array(),
+      lavaEpoch: isSet(object.lavaEpoch) ? Long.fromValue(object.lavaEpoch) : Long.UZERO,
+    };
+  },
+
+  toJSON(message: ProbeReply): unknown {
+    const obj: any = {};
+    message.guid !== undefined && (obj.guid = (message.guid || Long.UZERO).toString());
+    message.latestBlock !== undefined && (obj.latestBlock = (message.latestBlock || Long.ZERO).toString());
+    message.finalizedBlocksHashes !== undefined &&
+      (obj.finalizedBlocksHashes = base64FromBytes(
+        message.finalizedBlocksHashes !== undefined ? message.finalizedBlocksHashes : new Uint8Array(),
+      ));
+    message.lavaEpoch !== undefined && (obj.lavaEpoch = (message.lavaEpoch || Long.UZERO).toString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProbeReply>, I>>(base?: I): ProbeReply {
+    return ProbeReply.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProbeReply>, I>>(object: I): ProbeReply {
+    const message = createBaseProbeReply();
+    message.guid = (object.guid !== undefined && object.guid !== null) ? Long.fromValue(object.guid) : Long.UZERO;
+    message.latestBlock = (object.latestBlock !== undefined && object.latestBlock !== null)
+      ? Long.fromValue(object.latestBlock)
+      : Long.ZERO;
+    message.finalizedBlocksHashes = object.finalizedBlocksHashes ?? new Uint8Array();
+    message.lavaEpoch = (object.lavaEpoch !== undefined && object.lavaEpoch !== null)
+      ? Long.fromValue(object.lavaEpoch)
+      : Long.UZERO;
+    return message;
+  },
+};
 
 function createBaseRelaySession(): RelaySession {
   return {
@@ -996,7 +1198,7 @@ export const QualityOfServiceReport = {
 export interface Relayer {
   Relay(request: RelayRequest): Promise<RelayReply>;
   RelaySubscribe(request: RelayRequest): Observable<RelayReply>;
-  Probe(request: UInt64Value): Promise<UInt64Value>;
+  Probe(request: ProbeRequest): Promise<ProbeReply>;
 }
 
 export class RelayerClientImpl implements Relayer {
@@ -1021,10 +1223,10 @@ export class RelayerClientImpl implements Relayer {
     return result.pipe(map((data) => RelayReply.decode(_m0.Reader.create(data))));
   }
 
-  Probe(request: UInt64Value): Promise<UInt64Value> {
-    const data = UInt64Value.encode(request).finish();
+  Probe(request: ProbeRequest): Promise<ProbeReply> {
+    const data = ProbeRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "Probe", data);
-    return promise.then((data) => UInt64Value.decode(_m0.Reader.create(data)));
+    return promise.then((data) => ProbeReply.decode(_m0.Reader.create(data)));
   }
 }
 

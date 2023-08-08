@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -607,7 +606,7 @@ func TestGrpcClientHang(t *testing.T) {
 	require.NoError(t, err)
 	err = conn.Close()
 	require.Error(t, err)
-	_, err = client.Probe(ctx, &wrapperspb.UInt64Value{})
+	_, err = client.Probe(ctx, &pairingtypes.ProbeRequest{})
 	fmt.Println(err)
 	require.Error(t, err)
 }

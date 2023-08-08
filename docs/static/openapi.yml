@@ -68874,6 +68874,21 @@ definitions:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
+  lavanet.lava.pairing.ProbeReply:
+    type: object
+    properties:
+      guid:
+        type: string
+        format: uint64
+      latest_block:
+        type: string
+        format: int64
+      finalized_blocks_hashes:
+        type: string
+        format: byte
+      lava_epoch:
+        type: string
+        format: uint64
   lavanet.lava.pairing.ProviderPaymentStorage:
     type: object
     properties:
