@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	lvchaintracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state/chaintracker"
-	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -29,15 +28,6 @@ type Updater interface {
 }
 
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher lvchaintracker.ChainFetcher) (ret *StateTracker, err error) {
-	// validate chainId
-	status, err := clientCtx.Client.Status(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if txFactory.ChainID() != status.NodeInfo.Network {
-		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
-	}
-
 	eventTracker := &EventTracker{clientCtx: clientCtx}
 	err = eventTracker.updateBlockResults(0)
 	if err != nil {
