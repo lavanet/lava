@@ -71,6 +71,7 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
+// extractDappIDFromGrpcHeader extracts dappID from GRPC header
 func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
 	dappId := generateNewDappID()
 	if values, ok := metadataValues["dapp-id"]; ok && len(values) > 0 {
@@ -79,6 +80,8 @@ func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
 	return dappId
 }
 
+// generateNewDappID generates default dappID
+// In future we can also implement unique dappID generation
 func generateNewDappID() string {
 	return "DefaultDappID"
 }

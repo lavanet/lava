@@ -278,9 +278,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
+
+		// Extract dappID from grpc header
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
-		fmt.Println("USAOOO ", dappID)
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
