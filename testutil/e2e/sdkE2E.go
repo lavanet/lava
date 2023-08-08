@@ -27,16 +27,17 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, pub
 	if err != nil {
 		panic(err)
 	}
+
+	command := fmt.Sprintf("%s badgegenerator --port=7070 --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
 	err = os.Setenv("BADGE_DEFAULT_GEOLOCATION", "1")
 	if err != nil {
 		panic(err)
 	}
-	command := fmt.Sprintf("%s badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
 	logName := "01_BadgeServer"
 	funcName := "startBadgeServer"
 	lt.execCommandWithRetry(ctx, funcName, logName, command)
 
-	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:8080", time.Minute)
+	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:7070", time.Minute)
 }
 
 // exportUserPublicKey exports public key from specific user
