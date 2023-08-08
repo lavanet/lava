@@ -278,11 +278,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
+		dappID := extractDappIDFromGrpcHeader(metadataValues)
+
+		fmt.Println("USAOOO ", dappID)
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
-		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, grpcHeaders)
+		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, metricsData, grpcHeaders)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {

@@ -71,9 +71,16 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	return dappID
 }
 
+func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
+	dappId := generateNewDappID()
+	if values, ok := metadataValues["dapp-id"]; ok && len(values) > 0 {
+		dappId = values[0]
+	}
+	return dappId
+}
+
 func generateNewDappID() string {
-	// TODO generate new dappID
-	return "NoDappID"
+	return "DefaultDappID"
 }
 
 func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {

@@ -184,7 +184,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 			name:     "dappId does not exist in params",
 			route:    "/ws",
 			headers:  map[string][]string{},
-			expected: "NoDappID",
+			expected: "DefaultDappID",
 		},
 	}
 
@@ -250,7 +250,7 @@ func TestExtractDappIDFromFiberContext(t *testing.T) {
 		{
 			name:     "dappId does not exist in headers",
 			headers:  map[string]string{},
-			expected: "NoDappID",
+			expected: "DefaultDappID",
 		},
 	}
 
