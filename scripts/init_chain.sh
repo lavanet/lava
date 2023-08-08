@@ -37,8 +37,19 @@ sed -i "$path$config" \
     -e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' 
 
 # Edit app.toml file
-sed -i '' -e "s/enable = .*/enable = true/" "$path$app"
+os_name=$(uname)
 
+# Check if the OS is macOS or Linux and apply the correct sed command
+if [ "$os_name" = "Darwin" ]; then
+    # For macOS
+    sed -i '' -e "s/enable = .*/enable = true/" "$path$app"
+elif [ "$os_name" = "Linux" ]; then
+    # For Linux
+    sed -i -e "s/enable = .*/enable = true/" "$path$app"
+else
+    echo "Unsupported OS: $os_name"
+    exit 1
+fi
 # Add users
 users=("alice" "bob" "user1" "user2" "user3" "user4" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")
 
