@@ -70,9 +70,6 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 			utils.Attribute{Key: "new_version", Value: version})
 		// if no error, set the last known version.
 		vu.lastKnownVersion = version
-		// set the new binary path that lavavisor
-		versionDir := filepath.Join(vu.lavavisorPath, "upgrades", "v"+vu.lastKnownVersion.ProviderMin)
-		vu.currentBinary = filepath.Join(versionDir, "lava-protocol")
 	}
 	// check version on each new block
 	// if there is no version upgrades, we expect this check to pass
@@ -92,18 +89,41 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 
 		utils.LavaFormatInfo("Lavavisor detected a version upgrade. Initiating the fetching process...")
 
+		// set the new binary path that lavavisor
 		versionDir := filepath.Join(vu.lavavisorPath, "upgrades", "v"+vu.lastKnownVersion.ProviderMin)
-		{
+		vu.currentBinary = filepath.Join(versionDir, "lava-protocol")
+		// check if version directory exists
+		if _, err := os.Stat(versionDir); os.IsNotExist(err) {
 			if vu.autoDownload {
-				utils.LavaFormatInfo("Version mismatch or binary not found, but auto-download is enabled. Attempting to download binary from GitHub...")
+				utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
+				os.MkdirAll(versionDir, os.ModePerm) // before downloading, ensure version directory exists
 				err = versionmontior.FetchAndBuildFromGithub(versionToFetch, versionDir)
 				if err != nil {
 					utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 					os.Exit(1)
 				}
 			} else {
-				utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
+				utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: versionToFetch})
 				os.Exit(1)
+			}
+			// ToDo: add checkLavaProtocolVersion after version flag is added to release
+			//
+		} else {
+			err = versionmontior.ValidateProtocolBinaryVersion(vu.lastKnownVersion, vu.currentBinary) // validate with newly set binary
+			if err != nil {
+				if vu.autoDownload {
+					utils.LavaFormatInfo("Version mismatch or binary not found, but auto-download is enabled. Attempting to download binary from GitHub...")
+					err = versionmontior.FetchAndBuildFromGithub(versionToFetch, versionDir)
+					if err != nil {
+						utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
+						os.Exit(1)
+					}
+				} else {
+					utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
+					os.Exit(1)
+				}
+				// ToDo: add checkLavaProtocolVersion after version flag is added to release
+				//
 			}
 		}
 	}
