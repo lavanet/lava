@@ -779,7 +779,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	}
 }
 
-func (ts *tester) verifyPairingDistribution(desc string, client string, providersToPair int, weight func(epochstoragetypes.StakeEntry) int64) {
+func (ts *tester) verifyPairingDistribution(desc, client string, providersToPair int, weight func(epochstoragetypes.StakeEntry) int64) {
 	const iterations = 10000
 	const epsilon = 0.15
 

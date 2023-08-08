@@ -76,14 +76,14 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
-func (apip *GrpcChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *GrpcChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
 	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
-func (apip *GrpcChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *GrpcChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -222,7 +222,7 @@ func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
+func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0

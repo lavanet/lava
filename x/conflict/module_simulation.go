@@ -1,9 +1,10 @@
 package conflict
 
 import (
+	"math/rand"
+
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"

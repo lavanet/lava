@@ -79,7 +79,7 @@ type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
 	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
 	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
 	return

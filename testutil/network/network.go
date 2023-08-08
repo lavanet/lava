@@ -2,9 +2,10 @@ package network
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"testing"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 
 	"github.com/stretchr/testify/require"
 

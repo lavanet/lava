@@ -229,7 +229,7 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 
 // returns whether a spec name is a valid spec in the consensus
 // first return value is found and active, second argument is found only, third argument is the provider's type (dynamic/static)
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType types.Spec_ProvidersTypes) {
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive, found bool, providersType types.Spec_ProvidersTypes) {
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
@@ -304,7 +304,7 @@ func (k Keeper) GetExpectedServicesForExpandedSpec(expandedSpec types.Spec, mand
 	return expectedServices
 }
 
-func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool {
+func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock, latestBlock int64) bool {
 	spec, found := k.GetSpec(ctx, chainID)
 	if !found {
 		return false

@@ -128,7 +128,7 @@ func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock 
 	return nodeMsg
 }
 
-func (apip *RestChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *RestChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
@@ -136,7 +136,7 @@ func (apip *RestChainParser) getApiCollection(connectionType string, internalPat
 }
 
 // overwrites the base class match for a supported api
-func (apip *RestChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
@@ -196,7 +196,7 @@ func (apip *RestChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
+func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0

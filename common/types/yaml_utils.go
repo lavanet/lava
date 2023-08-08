@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func ReadYaml(filePath string, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType, allowMissingFields bool) (missingFields []string, err error) {
+func ReadYaml(filePath, primaryKey string, content interface{}, hooks []EnumDecodeHookFuncType, allowMissingFields bool) (missingFields []string, err error) {
 	configPath, configName := filepath.Split(filePath)
 	if configPath == "" {
 		configPath = "."
@@ -114,14 +114,14 @@ func SetDefaultValues(content interface{}, defaultValues map[string]interface{})
 }
 
 // EnumDecodeHookFuncType represents the signature of enum decode hook functions.
-type EnumDecodeHookFuncType func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error)
+type EnumDecodeHookFuncType func(f, t reflect.Type, data interface{}) (interface{}, error)
 
 // EnumParseFunc represents the signature of enum parse functions.
 type EnumParseFunc func(enumType interface{}, strVal string) (interface{}, error)
 
 // EnumDecodeHook decodes an enum value based on the provided enumType.
 func EnumDecodeHook(enumType interface{}, enumParser EnumParseFunc) EnumDecodeHookFuncType {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	return func(f, t reflect.Type, data interface{}) (interface{}, error) {
 		if t == reflect.TypeOf(enumType) {
 			strVal, ok := data.(string)
 			if !ok {

@@ -271,7 +271,7 @@ func (ts *Tester) VotePeriod() uint64 {
 
 // proposals, transactions, queries
 
-func (ts *Tester) TxProposalChangeParam(module string, paramKey string, paramVal string) error {
+func (ts *Tester) TxProposalChangeParam(module, paramKey, paramVal string) error {
 	return testkeeper.SimulateParamChange(ts.Ctx, ts.Keepers.ParamsKeeper, module, paramKey, paramVal)
 }
 
@@ -288,7 +288,7 @@ func (ts *Tester) TxProposalAddSpecs(specs ...spectypes.Spec) error {
 }
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
-func (ts *Tester) TxSubscriptionBuy(creator, consumer string, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
+func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
 		Creator:  creator,
 		Consumer: consumer,
@@ -309,7 +309,7 @@ func (ts *Tester) TxSubscriptionAddProject(creator string, pd projectstypes.Proj
 }
 
 // TxSubscriptionAddProject: implement 'tx subscription del-project'
-func (ts *Tester) TxSubscriptionDelProject(creator string, projectID string) error {
+func (ts *Tester) TxSubscriptionDelProject(creator, projectID string) error {
 	msg := &subscriptiontypes.MsgDelProject{
 		Creator: creator,
 		Name:    projectID,
@@ -341,7 +341,7 @@ func (ts *Tester) TxProjectDelKeys(projectID, creator string, projectKeys ...pro
 }
 
 // TxProjectSetSubscriptionPolicy: implement 'tx project set-subscription-policy'
-func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetSubscriptionPolicyResponse, error) {
+func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetSubscriptionPolicyResponse, error) {
 	msg := &projectstypes.MsgSetSubscriptionPolicy{
 		Creator:  subkey,
 		Policy:   policy,
@@ -351,7 +351,7 @@ func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID string, subkey string
 }
 
 // TxProjectSetPolicy: implement 'tx project set-policy'
-func (ts *Tester) TxProjectSetPolicy(projectID string, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
+func (ts *Tester) TxProjectSetPolicy(projectID, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
 	msg := &projectstypes.MsgSetPolicy{
 		Creator: subkey,
 		Policy:  policy,
@@ -402,7 +402,7 @@ func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySe
 }
 
 // TxPairingFreezeProvider: implement 'tx pairing freeze'
-func (ts *Tester) TxPairingFreezeProvider(addr string, chainID string) (*pairingtypes.MsgFreezeProviderResponse, error) {
+func (ts *Tester) TxPairingFreezeProvider(addr, chainID string) (*pairingtypes.MsgFreezeProviderResponse, error) {
 	msg := &pairingtypes.MsgFreezeProvider{
 		Creator:  addr,
 		ChainIds: slices.Slice(chainID),
@@ -411,7 +411,7 @@ func (ts *Tester) TxPairingFreezeProvider(addr string, chainID string) (*pairing
 }
 
 // TxPairingUnfreezeProvider: implement 'tx pairing unfreeze'
-func (ts *Tester) TxPairingUnfreezeProvider(addr string, chainID string) (*pairingtypes.MsgUnfreezeProviderResponse, error) {
+func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes.MsgUnfreezeProviderResponse, error) {
 	msg := &pairingtypes.MsgUnfreezeProvider{
 		Creator:  addr,
 		ChainIds: slices.Slice(chainID),
@@ -448,7 +448,7 @@ func (ts *Tester) QueryProjectDeveloper(devkey string) (*projectstypes.QueryDeve
 }
 
 // QueryPairingGetPairing implements 'q pairing get-pairing'
-func (ts *Tester) QueryPairingGetPairing(chainID string, client string) (*pairingtypes.QueryGetPairingResponse, error) {
+func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.QueryGetPairingResponse, error) {
 	msg := &pairingtypes.QueryGetPairingRequest{
 		ChainID: chainID,
 		Client:  client,
@@ -472,7 +472,7 @@ func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingty
 }
 
 // QueryPairingVerifyPairing implements 'q pairing verfy-pairing'
-func (ts *Tester) QueryPairingVerifyPairing(chainID string, client string, provider string, block uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
+func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, block uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	msg := &pairingtypes.QueryVerifyPairingRequest{
 		ChainID:  chainID,
 		Client:   client,

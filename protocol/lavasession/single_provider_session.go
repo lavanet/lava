@@ -113,7 +113,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 }
 
 // if this errors out the caller needs to unlock the session, this is not implemented inside because code between getting the session and this needs the same behavior
-func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec uint64, relayRequestTotalCU uint64, allowedThreshold float64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec, relayRequestTotalCU uint64, allowedThreshold float64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
@@ -214,7 +214,7 @@ func (sps *SingleProviderSession) DisbandSession() error {
 	return nil
 }
 
-func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU uint64, maxCu uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU, maxCu uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
 	for {
 		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
 		if badgeUsedCu+currentCU > maxCu {
@@ -239,7 +239,7 @@ func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, ba
 	}
 }
 
-func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU uint64, maxCu uint64) error {
+func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU, maxCu uint64) error {
 	for {
 		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
 		if usedCu+currentCU > maxCu {

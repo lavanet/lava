@@ -29,7 +29,7 @@ const (
 	FlagEventName = "event"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, fromBlock int64, eventName string, value string) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)

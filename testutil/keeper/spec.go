@@ -66,7 +66,7 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	return k, ctx, nil
 }
 
-func GetASpec(specIndex string, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
 		keeper, ctx, err = specKeeper()

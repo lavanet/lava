@@ -3,6 +3,7 @@ package downtime
 import (
 	"context"
 	"encoding/json"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"

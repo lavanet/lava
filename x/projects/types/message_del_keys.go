@@ -10,7 +10,7 @@ const TypeMsgDelKeys = "del_keys"
 
 var _ sdk.Msg = &MsgDelKeys{}
 
-func NewMsgDelKeys(creator string, projectID string, projectKeys []ProjectKey) *MsgDelKeys {
+func NewMsgDelKeys(creator, projectID string, projectKeys []ProjectKey) *MsgDelKeys {
 	return &MsgDelKeys{
 		Creator:     creator,
 		Project:     projectID,

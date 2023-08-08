@@ -1,8 +1,9 @@
 package projects
 
 import (
-	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"math/rand"
+
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"

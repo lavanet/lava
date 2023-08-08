@@ -22,7 +22,7 @@ func (k Keeper) FixatedParamsAll(c context.Context, req *types.QueryAllFixatedPa
 	store := ctx.KVStore(k.storeKey)
 	fixatedParamsStore := prefix.NewStore(store, types.KeyPrefix(types.FixatedParamsKeyPrefix))
 
-	pageRes, err := query.Paginate(fixatedParamsStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(fixatedParamsStore, req.Pagination, func(key, value []byte) error {
 		var fixatedParams types.FixatedParams
 		if err := k.cdc.Unmarshal(value, &fixatedParams); err != nil {
 			return err

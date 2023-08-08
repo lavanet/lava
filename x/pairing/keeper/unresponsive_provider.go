@@ -11,7 +11,7 @@ import (
 )
 
 // Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
-func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64) {
+func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64) {
 	// check the epochsNum consts
 	if epochsNumToCheckCUForComplainers <= 0 || epochsNumToCheckCUForUnresponsiveProvider <= 0 {
 		utils.LavaFormatError("epoch to check CU for unresponsive provider or for complainer is zero",
@@ -108,7 +108,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 }
 
 // getBlockEpochsAgo returns the block numEpochs back from the given blockHeight
-func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight uint64, numEpochs uint64) (uint64, error) {
+func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight, numEpochs uint64) (uint64, error) {
 	for counter := 0; counter < int(numEpochs); counter++ {
 		var err error
 		blockHeight, err = k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, blockHeight)
@@ -121,7 +121,7 @@ func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight uint64, numEpochs
 }
 
 // Function to count the CU serviced by the unresponsive provider and the CU of the complainers. The function returns a list of the found providerPaymentStorageKey
-func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch uint64, epochsNumToCheckCUForUnresponsiveProvider uint64, epochsNumToCheckCUForComplainers uint64, providerStakeEntry epochstoragetypes.StakeEntry) ([]string, error) {
+func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64, providerStakeEntry epochstoragetypes.StakeEntry) ([]string, error) {
 	epochTemp := epoch
 	providerServicedCu := uint64(0)
 	complainersCu := uint64(0)
@@ -205,7 +205,7 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 }
 
 // Function that punishes providers. Current punishment is unstake
-func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, providerPaymentStorageKeyList []string, providerAddress string, chainID string) error {
+func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, providerPaymentStorageKeyList []string, providerAddress, chainID string) error {
 	// Get provider's sdk.Account address
 	sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(providerAddress)
 	if err != nil {

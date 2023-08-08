@@ -22,7 +22,7 @@ func (k Keeper) doSpecAll(c context.Context, req *types.QueryAllSpecRequest, raw
 	store := ctx.KVStore(k.storeKey)
 	specStore := prefix.NewStore(store, types.KeyPrefix(types.SpecKeyPrefix))
 
-	pageRes, err := query.Paginate(specStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(specStore, req.Pagination, func(key, value []byte) error {
 		var spec types.Spec
 
 		if err := k.cdc.Unmarshal(value, &spec); err != nil {

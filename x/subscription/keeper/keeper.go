@@ -67,7 +67,7 @@ func NewKeeper(
 		subsFS: fs,
 	}
 
-	subsTimerCallback := func(ctx sdk.Context, subkey []byte, _ []byte) {
+	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
 		keeper.advanceMonth(ctx, subkey)
 	}
 

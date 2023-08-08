@@ -232,7 +232,7 @@ func TestSpecGetAll(t *testing.T) {
 
 // setupSpecsForSpecInheritance returns a slice of Spec according to the
 // template therein, to simulate collection of existing Spec(s) on the chain.
-func (ts *tester) setupSpecsForSpecInheritance(apis []*types.Api, apisDiff []*types.Api) {
+func (ts *tester) setupSpecsForSpecInheritance(apis, apisDiff []*types.Api) {
 	template := []struct {
 		name    string
 		enabled bool

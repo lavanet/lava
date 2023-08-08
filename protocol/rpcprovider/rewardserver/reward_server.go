@@ -68,7 +68,7 @@ type RewardsTxSender interface {
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
-func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
+func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
@@ -295,7 +295,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		index      int
 	}
 	attributesList := []*mapCont{}
-	appendToAttributeList := func(idx int, key string, value string) {
+	appendToAttributeList := func(idx int, key, value string) {
 		var mapContToChange *mapCont
 		for _, mapCont := range attributesList {
 			if mapCont.index != idx {
@@ -388,6 +388,6 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	return payments, nil
 }
 
-func getKeyForConsumerRewards(specId string, apiInterface string, consumerAddress string) string {
+func getKeyForConsumerRewards(specId, apiInterface, consumerAddress string) string {
 	return specId + apiInterface + consumerAddress
 }

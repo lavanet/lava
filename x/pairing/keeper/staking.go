@@ -12,7 +12,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
 	logger := k.Logger(ctx)
 
 	// TODO: basic validation for chain ID
@@ -172,7 +172,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 
-	geolocKey := func(intefaceName string, geolocation uint64, addon string, extension string) epochstoragetypes.EndpointService {
+	geolocKey := func(intefaceName string, geolocation uint64, addon, extension string) epochstoragetypes.EndpointService {
 		return epochstoragetypes.EndpointService{
 			ApiInterface: intefaceName + "_" + strconv.FormatUint(geolocation, 10),
 			Addon:        addon,

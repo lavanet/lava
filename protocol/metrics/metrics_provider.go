@@ -67,7 +67,7 @@ func (pm *ProviderMetrics) AddError() {
 	pm.totalErroredMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(1)
 }
 
-func NewProviderMetrics(specID string, apiInterface string, totalCUServicedMetric *prometheus.CounterVec,
+func NewProviderMetrics(specID, apiInterface string, totalCUServicedMetric *prometheus.CounterVec,
 	totalCUPaidMetric *prometheus.CounterVec,
 	totalRelaysServicedMetric *prometheus.CounterVec,
 	totalErroredMetric *prometheus.CounterVec,

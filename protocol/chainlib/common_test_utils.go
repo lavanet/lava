@@ -66,7 +66,7 @@ func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tm
 
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, addons []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
+func CreateChainLibMocks(ctx context.Context, specIndex, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, addons []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
@@ -136,7 +136,7 @@ type TestStruct struct {
 	Consumer  testcommon.Account
 }
 
-func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
+func SetupForTests(t *testing.T, numOfProviders int, specID, getToTopMostPath string) TestStruct {
 	ts := TestStruct{}
 	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
 	// init keepers state

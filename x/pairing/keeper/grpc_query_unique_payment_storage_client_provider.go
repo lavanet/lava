@@ -22,7 +22,7 @@ func (k Keeper) UniquePaymentStorageClientProviderAll(c context.Context, req *ty
 	store := ctx.KVStore(k.storeKey)
 	uniquePaymentStorageClientProviderStore := prefix.NewStore(store, types.KeyPrefix(types.UniquePaymentStorageClientProviderKeyPrefix))
 
-	pageRes, err := query.Paginate(uniquePaymentStorageClientProviderStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(uniquePaymentStorageClientProviderStore, req.Pagination, func(key, value []byte) error {
 		var uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider
 		if err := k.cdc.Unmarshal(value, &uniquePaymentStorageClientProvider); err != nil {
 			return err

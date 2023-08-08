@@ -1,6 +1,8 @@
 package pairing
 
 import (
+	"math/rand"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +13,6 @@ import (
 	"github.com/lavanet/lava/testutil/sample"
 	pairingsimulation "github.com/lavanet/lava/x/pairing/simulation"
 	"github.com/lavanet/lava/x/pairing/types"
-	"math/rand"
 )
 
 // avoid unused import issue

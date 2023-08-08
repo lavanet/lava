@@ -101,7 +101,7 @@ func convertToJsonError(errorMsg string) string {
 	return string(jsonResponse)
 }
 
-func addAttributeToError(key string, value string, errorMessage string) string {
+func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
@@ -120,7 +120,7 @@ func verifyRPCEndpoint(endpoint string) {
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint common.NodeUrl, httpEndpoint common.NodeUrl) {
+func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, httpEndpoint common.NodeUrl) {
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(endpoint.Url)
 		if err != nil {
@@ -158,7 +158,7 @@ func ListenWithRetry(app *fiber.App, address string) {
 	}
 }
 
-func GetListenerWithRetryGrpc(protocol string, addr string) net.Listener {
+func GetListenerWithRetryGrpc(protocol, addr string) net.Listener {
 	for {
 		lis, err := net.Listen(protocol, addr)
 		if err == nil {

@@ -22,7 +22,7 @@ func (k Keeper) ConflictVoteAll(c context.Context, req *types.QueryAllConflictVo
 	store := ctx.KVStore(k.storeKey)
 	conflictVoteStore := prefix.NewStore(store, types.KeyPrefix(types.ConflictVoteKeyPrefix))
 
-	pageRes, err := query.Paginate(conflictVoteStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(conflictVoteStore, req.Pagination, func(key, value []byte) error {
 		var conflictVote types.ConflictVote
 		if err := k.cdc.Unmarshal(value, &conflictVote); err != nil {
 			return err

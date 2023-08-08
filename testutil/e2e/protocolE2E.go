@@ -80,7 +80,7 @@ func init() {
 	fmt.Println("Test Directory", dir)
 }
 
-func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
+func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName, logName, command string) {
 	utils.LavaFormatDebug("Executing command " + command)
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -117,7 +117,7 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, l
 	}()
 }
 
-func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
+func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command string, wait bool) {
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -143,7 +143,7 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
+func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason, functionName string) {
 	err := cmd.Wait()
 	if err != nil && !lt.testFinishedProperly {
 		utils.LavaFormatError(functionName+" cmd wait err", err)
@@ -903,7 +903,7 @@ func (lt *lavaTest) checkQoS() error {
 	return nil
 }
 
-func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL string, grpcConsumerURL string) error {
+func (lt *lavaTest) checkResponse(tendermintConsumerURL, restConsumerURL, grpcConsumerURL string) error {
 	utils.LavaFormatInfo("Starting Relay Response Integrity Tests")
 
 	// TENDERMINT:
@@ -1030,7 +1030,7 @@ func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uin
 	return providerCU, nil
 }
 
-func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
+func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr, providerAddr string) {
 	firstIndex := strings.Index(inputStr, "lava@")
 	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
 

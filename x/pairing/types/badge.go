@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func CreateBadge(cuAllocation uint64, epoch uint64, address sdk.AccAddress, lavaChainID string, sig []byte) *Badge {
+func CreateBadge(cuAllocation, epoch uint64, address sdk.AccAddress, lavaChainID string, sig []byte) *Badge {
 	badge := Badge{
 		CuAllocation: cuAllocation,
 		Epoch:        epoch,
@@ -23,7 +23,7 @@ func CreateAddressEpochBadgeMapKey(address string, epoch uint64) string {
 }
 
 // check badge's basic attributes compared to the same traits from the relay request
-func (badge Badge) IsBadgeValid(clientAddr string, lavaChainID string, epoch uint64) bool {
+func (badge Badge) IsBadgeValid(clientAddr, lavaChainID string, epoch uint64) bool {
 	if badge.Address != clientAddr || badge.LavaChainId != lavaChainID ||
 		badge.Epoch != epoch {
 		return false
