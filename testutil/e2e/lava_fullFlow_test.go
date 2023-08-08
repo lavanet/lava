@@ -6,7 +6,6 @@ import (
 )
 
 func TestLavaProtocol(t *testing.T) {
-	t.Skip("temp skip")
 	// default timeout same as `go test`
 	timeout := time.Minute * 0
 
