@@ -608,10 +608,10 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 	utils.LavaFormatInfo("Starting TENDERMINTRPC URI Tests")
 	errors := []string{}
 	mostImportantApisToTest := map[string]bool{
-		"/health":                              true,
-		"/status":                              true,
-		"/block?height=1":                      true,
-		"/blockchain?minHeight=0&maxHeight=10": true,
+		"%s/health":                              true,
+		"%s/status":                              true,
+		"%s/block?height=1":                      true,
+		"%s/blockchain?minHeight=0&maxHeight=10": true,
 		// "%s/dial_peers?persistent=true&unconditional=true&private=true": false, // this is a rpc affecting query and is not available on the spec so it should fail
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
@@ -663,12 +663,12 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	utils.LavaFormatInfo("Starting REST Tests")
 	errors := []string{}
 	mostImportantApisToTest := []string{
-		"/blocks/latest",
-		"/lavanet/lava/pairing/providers/LAV1",
-		"/lavanet/lava/pairing/clients/LAV1",
-		"/cosmos/gov/v1beta1/proposals",
-		"/lavanet/lava/spec/spec",
-		"/blocks/1",
+		"%s/blocks/latest",
+		"%s/lavanet/lava/pairing/providers/LAV1",
+		"%s/lavanet/lava/pairing/clients/LAV1",
+		"%s/cosmos/gov/v1beta1/proposals",
+		"%s/lavanet/lava/spec/spec",
+		"%s/blocks/1",
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for _, api := range mostImportantApisToTest {
