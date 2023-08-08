@@ -107,11 +107,18 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("Error in open listener", err)
 	}
+	defaultGeolocation := v.GetInt(DefaultGeolocationEnvironmentVariable)
+	countriesFilePath := v.GetString(CountriesFilePathEnvironmentVariable)
+	ipFilePath := v.GetString(IpFilePathEnvironmentVariable)
+	ipService, err := InitIpService(defaultGeolocation, countriesFilePath, ipFilePath)
+	if err != nil {
+		utils.LavaFormatFatal("Error initializing ip service", err)
+	}
 	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
 	chainId := v.GetString(LavaChainIDEnvironmentVariable)
 	userData := v.GetString(UserDataEnvironmentVariable)
 
-	server, err := NewServer(grpcUrl, chainId, userData)
+	server, err := NewServer(ipService, grpcUrl, chainId, userData)
 	if err != nil {
 		utils.LavaFormatFatal("Error in server creation", err)
 	}
