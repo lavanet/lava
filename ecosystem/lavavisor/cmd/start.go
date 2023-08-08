@@ -128,6 +128,9 @@ var cmdLavavisorStart = &cobra.Command{
 
 		// auto-download
 		autoDownload, err := cmd.Flags().GetBool("auto-download")
+		if err != nil {
+			return err
+		}
 
 		// Start lavavisor version monitor process
 		lavavisor := LavaVisor{}
