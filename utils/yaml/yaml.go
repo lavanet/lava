@@ -11,7 +11,7 @@ import (
 )
 
 func DecodeFile(path string, key string, result interface{}, hooks []mapstructure.DecodeHookFunc, unset, unused *[]string) error {
-	input, err := os.ReadFile(path + ".yml")
+	input, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -31,24 +31,14 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 		return fmt.Errorf("yaml: empty input")
 	}
 
-	// key may be nested, as in: "Policy.chain_policies", so need to dig the
-	// correct "entry-point" into the map.
-	for _, elem := range strings.Split(key, ".") {
-		if config == nil {
-			return fmt.Errorf("yaml: key not found: %q (of %q)", elem, key)
-		}
-		value, ok := config[elem]
-		if !ok {
-			return fmt.Errorf("yaml: key not found: %q (of %q)", elem, key)
-		}
-		config, ok = value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("yaml: key not found: %q (of %q)", elem, key)
-		}
+	// get the desired section in the yaml/config per the given key
+	config, result, err = configByKey(key, config, result)
+	if err != nil {
+		return err
 	}
 
-	decoderHookFunc := mapstructure.ComposeDecodeHookFunc(hooks...)
 	var decoderMetadata mapstructure.Metadata
+	decoderHookFunc := mapstructure.ComposeDecodeHookFunc(hooks...)
 
 	decoderConfig := mapstructure.DecoderConfig{
 		DecodeHook: decoderHookFunc,
@@ -74,6 +64,52 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 	}
 
 	return nil
+}
+
+func configByKey(key string, config map[string]interface{}, result interface{}) (map[string]interface{}, interface{}, error) {
+	// key may be nested, as in: "Policy.chain_policies", so need to dig the
+	// correct "entry-point" into the map.
+
+	split := strings.Split(key, ".")
+
+	for i, elem := range split {
+		value, ok := config[elem]
+		if !ok {
+			return nil, nil, fmt.Errorf("yaml: key not found: %q (of %q)", elem, key)
+		}
+
+		// typically the next component is a nested map[string]interface{}; if not then
+		// a) this must be the last component, b) it match the type of "result"
+		config, ok = value.(map[string]interface{})
+		if !ok {
+			// this must be the last component
+			if i < len(split)-1 {
+				return nil, nil, fmt.Errorf("yaml: key not found: %q (of %q)", elem, key)
+			}
+
+			kind := reflect.ValueOf(value).Kind()
+
+			// must match the type of "result"
+			if kind != reflect.ValueOf(result).Elem().Kind() {
+				return nil, nil, fmt.Errorf("yaml: key type mismatch: %q", key)
+			}
+
+			if kind == reflect.Slice {
+				config = map[string]interface{}{
+					"Result": value,
+				}
+				result = &struct {
+					Result interface{}
+				}{
+					Result: result,
+				}
+			} else {
+				return nil, nil, fmt.Errorf("yaml: unsupported type %v", kind)
+			}
+		}
+	}
+
+	return config, result, nil
 }
 
 func SetDefaultValues(input map[string]interface{}, result interface{}) error {
