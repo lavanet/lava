@@ -737,9 +737,6 @@ func New(
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
-	for _, msg := range app.interfaceRegistry.ListImplementations(sdk.MsgInterfaceProtoName) {
-		fmt.Fprintf(os.Stderr, "msg: %s\n", msg)
-	}
 	return app
 }
 
