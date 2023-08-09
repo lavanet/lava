@@ -5,10 +5,8 @@ set -e
 
 GASPRICE="0.000000001ulava"
 NODE="http://127.0.0.1:3340/1"
-
-sleep 4
-
 STAKE="500000000000ulava"
+
 # Goerli providers
 lavad tx pairing stake-provider "GTH1" $STAKE "127.0.0.1:2121,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --node $NODE
 wait_next_block
