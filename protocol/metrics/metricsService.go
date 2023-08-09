@@ -106,7 +106,7 @@ func prepareArrayForProject(projectData map[string]map[string]map[RelaySource]*A
 					SuccessCount: data.SuccessCount,
 					Source:       sourceKey,
 					TotalCu:      data.TotalCu,
-					Timestamp:    data.TimeStamp.Format(time.RFC3339), // pls note that this is the timestamp of the first record and is not updated afterward
+					Timestamp:    data.TimeStamp.UTC().Format(time.RFC3339),
 				})
 			}
 		}
