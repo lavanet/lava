@@ -1,3 +1,2 @@
 #!/bin/bash 
-make build-protocol
-rm -rf build
+make install-lavad-protocol

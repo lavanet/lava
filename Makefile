@@ -3,14 +3,22 @@
 # Usage: and targets:
 #   [LAVA_BUILD_OPTIONS=...] [ENV...] make [TARGET...]
 #
-# Targets:
+# Binaries:
+#   lavad               - binary to run for nodes and validators
+#   lava-protocol       - binary to run for providers
 #
-#   build               - local build (output: `build/lavad`)
-#   docker-build        - docker build (output: `build/lavad`) with docker image
+# Targets:
+#   (the output of builds goes to $(BUILD_DIR), by default: build/*)
+#
+#   build-[BIN]         - local build of select binary; [BIN] is one of "Binaries" (or "all")
+#   build               - equivalent to build-$(LAVA_BINARY) if set (if not set: error)
+#
+#   docker-build-[BIN]  - docker build of select binary; [BIN] is one of "Binaries" (or "all")
+#   docker-build        - equivalent to docket-build-$(LAVA_BINARY) if set (if not set: error)
 #
 #   build-images        - build both amd64,arm64 lavad(s) and docker image(s)
-#   build-image-amd64   - docker build (output: `build/lavad-linux-amd64`) with docker image
-#   build-image-arm64   - docker build (output: `build/lavad-linux-arm64`) with docker image
+#   build-image-amd64   - docker build (output: `$(BUILD_DIR)/*-linux-amd64`) with docker image
+#   build-image-arm64   - docker build (output: `$(BUILD_DIR)/*-linux-arm64`) with docker image
 #
 #   test                - run unit-tests
 #   lint                - run the linter
@@ -27,10 +35,11 @@
 #
 #   cleveldb, rocksdb   - (not to be used)
 # 
-#   production-log-level - build the binary with some logs set as warnings instead of errors when the error can be related to bad usage instead of a bug.
+#   production-log-level - logs for errros related to bad usage (rather than bugs) set as warnings
 #
 # Environment
 #   LAVA_VERSION=...    - select lava version (for 'release')
+#   LAVA_BINARY=...     - select binary to build: "lavad", "lava-protocol", or "all"
 #   BUILDDIR=...        - select local directory for build output
 #   LEDGER_ENABLED      - (not to be used)
 #
@@ -39,7 +48,7 @@
 #   Build locally and run unit tests
 #     make test build
 #
-#   Build locally a static binary (runs on any distributions and in containers)
+#   Build locally a static binaries (runs on any distributions and in containers)
 #     LAVA_BUILD_OPTIONS="static" make build
 #
 #   Build and generate docker image
@@ -153,6 +162,7 @@ endif
 build_tags += $(BUILD_TAGS)
 build_tags := $(strip $(build_tags))
 
+# trick: whitespace hold a single whitespace
 null :=
 whitespace += $(null) $(null)
 comma := ,
@@ -202,18 +212,52 @@ ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
+LAVA_ALL_BINARIES := lavad lava-protocol
+
+# helper target/build functions
+
+# return prefix of $2 before first occurence of $1
+# example: $(call prefix -,hello-world) yields "hello"
+define prefix
+$(word 1,$(subst $1,$(whitespace),$2))
+endef
+
+# generate a dependency of each of (matrix) $1-$2: $3 (where $1 is a list)
+# example: $(call makedep,x y,suffix,depends) yields "x-suffix y-suffix: depends"
+define makedep
+$(strip $(foreach t,$1,$(t)-$(2) )): $3
+endef
+
 ###############################################################################
 ###                                  Build                                  ###
 ###############################################################################
 
 all: lint test
 
-BUILD_TARGETS := build install
+# targets build,install only possible if LAVA_BINARY is defined
+# (otherwise throw an error)
+ifneq (,$(LAVA_BINARY))
+build: build-$(LAVA_BINARY)
+install: install-$(LAVA_BINARY)
+else
+build install:
+	$(error "target '$@' requires env 'LAVA_BINARY'")
+endif
 
-build: BUILD_ARGS=-o $(BUILDDIR)/
+# generate: target-binary: BUILD_SOURCE=[...]
+$(call makedep,build install,lavad,BUILD_SOURCE=./...)
+$(call makedep,build install,lava-protocol,BUILD_SOURCE=./protocol)
 
-$(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./...
+build-%: BUILD_ARGS=-o $(BUILDDIR)/
+build-% install-%: $(BUILDDIR)/
+	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) $(BUILD_SOURCE)
+
+# dummy rule to prevent the above wildcard from catching {build,install}-all
+$(call makedep,build install,all,)
+	@echo -n
+
+build-all: $(foreach binary,$(LAVA_ALL_BINARIES),build-$(binary))
+install-all: $(foreach binary,$(LAVA_ALL_BINARIES),install-$(binary))
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
@@ -287,22 +331,8 @@ lint:
 	@echo "--> Running linter"
 	golangci-lint run --config .golangci.yml
 
-build-protocol:
-	@echo "--> Building protocol"
-	@go build -o $(BUILDDIR)/lava-protocol ./protocol
-	@if [ -n "$$(which lava-protocol)" ]; then \
-		echo "Replacing existing lava-protocol binary at: $$(which lava-protocol)"; \
-		cp $(BUILDDIR)/lava-protocol $$(dirname $$(which lava-protocol)); \
-	elif [ -n "$$(which lavad)" ]; then \
-		echo "Copying lava-protocol binary to the folder location of lavad at: $$(which lavad)"; \
-		cp $(BUILDDIR)/lava-protocol $$(dirname $$(which lavad)); \
-	elif [ -z "$$(which lavad)" ]; then \
-		echo "Copying lava-protocol binary to GOPATH/bin at: $(GOPATH)/bin"; \
-		cp $(BUILDDIR)/lava-protocol $(GOPATH)/bin; \
-	fi
-  
-.PHONY: all build docker-build install lint test \
+.PHONY: all docker-build lint test \
+	build build-all install install-all \
 	go-mod-cache go.sum draw-deps \
 	build-docker-helper build-docker-copier \
-        build-images build-image-amd64 build-image-arm64 \
-
+	build-images build-image-amd64 build-image-arm64

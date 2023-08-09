@@ -1,5 +1,5 @@
 #!/bin/bash
-# make install
+# make install-lavad
 
 rm -rf ~/.lava
 lavad init validator
