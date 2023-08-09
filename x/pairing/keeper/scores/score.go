@@ -92,8 +92,8 @@ func CalcSlots(policy planstypes.Policy) []*PairingSlot {
 }
 
 // group the slots
-func GroupSlots(slots []*PairingSlot) []*PairingSlot {
-	uniqueSlots := []*PairingSlot{}
+func GroupSlots(slots []*PairingSlot) []*PairingSlotGroup {
+	uniqueSlots := []*PairingSlotGroup{}
 
 	if len(slots) == 0 {
 		panic("no pairing slots available")
@@ -111,8 +111,8 @@ func GroupSlots(slots []*PairingSlot) []*PairingSlot {
 		}
 
 		if isUnique {
-			uniqueSlot := *slots[k]
-			uniqueSlots = append(uniqueSlots, &uniqueSlot)
+			uniqueSlot := NewPairingSlotGroup(slots[k])
+			uniqueSlots = append(uniqueSlots, uniqueSlot)
 		}
 	}
 
@@ -127,10 +127,10 @@ func GetStrategy() ScoreStrategy {
 // CalcPairingScore calculates the final pairing score for a pairing slot (with strategy)
 // For efficiency purposes, we calculate the score on a diff slot which represents the diff reqs of the current slot
 // and the previous slot
-func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot) error {
+func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot PairingSlotInf) error {
 	// calculate the score for each req for each provider
 	for _, score := range scores {
-		for _, req := range diffSlot.Reqs {
+		for _, req := range diffSlot.Requirements() {
 			reqName := req.GetName()
 			weight, ok := strategy[reqName]
 			if !ok {
