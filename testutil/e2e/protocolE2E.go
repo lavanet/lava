@@ -118,13 +118,18 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName, logName,
 }
 
 func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command string, wait bool) {
+	fmt.Fprintf(os.Stderr, "executing command: %s, %s\n", funcName, logName)
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
 	cmd.Args = strings.Fields(command)
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
-	cmd.Stderr = io.MultiWriter(lt.logs[logName], os.Stderr)
+	cmd.Stderr = lt.logs[logName]
+	if funcName == "letseee" {
+		cmd.Stdout = io.MultiWriter(lt.logs[logName], os.Stderr)
+		cmd.Stderr = io.MultiWriter(lt.logs[logName], os.Stderr)
+	}
 
 	err := cmd.Start()
 	if err != nil {
@@ -286,8 +291,8 @@ func (lt *lavaTest) checkStakeLava(
 			panic(err)
 		}
 		if len(providerQueryRes.StakeEntry) != providerCount {
-			fmt.Println("ProviderQueryRes: ", providerQueryRes)
-			panic("Staking Failed PROVIDER")
+			fmt.Println("ProviderQueryRes: ", providerQueryRes.String())
+			panic(fmt.Errorf("staking Failed PROVIDER count %d, wanted %d", len(providerQueryRes.StakeEntry), providerCount))
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
 			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
