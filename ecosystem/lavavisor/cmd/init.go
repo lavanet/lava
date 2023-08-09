@@ -10,7 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	versionmontior "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
+	"github.com/lavanet/lava/app"
+	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -76,7 +77,7 @@ var cmdLavavisorInit = &cobra.Command{
 			if autoDownload {
 				utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
 				os.MkdirAll(versionDir, os.ModePerm) // before downloading, ensure version directory exists
-				err = versionmontior.FetchAndBuildFromGithub(protocolConsensusVersion.ProviderMin, versionDir)
+				err = processmanager.FetchAndBuildFromGithub(protocolConsensusVersion.ProviderMin, versionDir)
 				if err != nil {
 					utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 					os.Exit(1)
@@ -88,11 +89,14 @@ var cmdLavavisorInit = &cobra.Command{
 			// ToDo: add checkLavaProtocolVersion after version flag is added to release
 			//
 		} else {
-			err = versionmontior.ValidateProtocolBinaryVersion(protocolConsensusVersion, binaryPath)
+			vm := processmanager.VersionMonitor{
+				BinaryPath: binaryPath, // adjust this to the path you want
+			}
+			err = vm.ValidateProtocolVersion(protocolConsensusVersion)
 			if err != nil {
 				if autoDownload {
 					utils.LavaFormatInfo("Version mismatch or binary not found, but auto-download is enabled. Attempting to download binary from GitHub...")
-					err = versionmontior.FetchAndBuildFromGithub(protocolConsensusVersion.ProviderMin, versionDir)
+					err = processmanager.FetchAndBuildFromGithub(protocolConsensusVersion.ProviderMin, versionDir)
 					if err != nil {
 						utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 						os.Exit(1)
@@ -184,5 +188,6 @@ func init() {
 	flags.AddQueryFlagsToCmd(cmdLavavisorInit)
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
+	cmdLavavisorInit.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	rootCmd.AddCommand(cmdLavavisorInit)
 }
