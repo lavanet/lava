@@ -527,6 +527,102 @@
                                 "extra_compute_units": "0"
                             }
                         ]
+                    },
+                    {
+                        "name": "starknet_addInvokeTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_addDeclareTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_addDeployAccountTransaction",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "starknet_estimateMessageFee",
+                        "block_parsing": {
+                            "parser_arg": [
+                                "latest"
+                            ],
+                            "parser_func": "DEFAULT"
+                        },
+                        "compute_units": "1",
+                        "enabled": true,
+                        "api_interfaces": [
+                            {
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "interface": "jsonrpc",
+                                "type": "POST",
+                                "extra_compute_units": "0"
+                            }
+                        ]
                     }
                 ]
             },
