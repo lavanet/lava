@@ -17,11 +17,11 @@ How to run
 ## Env Variables explained
 
 1. BADGE_DEFAULT_GEOLOCATION
-    >this is really important because if for some reason we don't find which country the users is calling from than we use the default value. 
+    >this is really important because if for some reason we don't find which country the users is calling from then we use the default value. 
         this value should be on the BADGE_USER_DATA json.
 2. BADGE_COUNTRIES_FILE_PATH
     >this is a csv file with all countries and lava-geolocation link for example.
-    It contains four colums country-code;country-name,continent code,lava-geolocation  
+    It contains four columns country-code;country-name,continent code,lava-geolocation  
     for example: 
     ```
     AD;Andorra;EU;2
@@ -35,7 +35,7 @@ How to run
 3. BADGE_IP_FILE_PATH
     >this is a tsv file with all ip ranges and country code that they belong.
     it can be downloaded from here [ip](https://iptoasn.com/) pls download  ip2asn-v4.tsv 
-    It contains 4/5 colums range_start;range_end;AS_number;country_code AS_description  
+    It contains 4/5 columns range_start;range_end;AS_number;country_code AS_description  
     for example: 
     ```
     1.0.0.0 1.0.0.255	13335	US	CLOUDFLARENET
