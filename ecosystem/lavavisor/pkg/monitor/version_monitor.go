@@ -1,4 +1,4 @@
-package version_montior
+package processmanager
 
 import (
 	"archive/zip"
@@ -15,6 +15,10 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
+type VersionMonitor struct {
+	BinaryPath string
+}
+
 func getBinaryVersion(binaryPath string) (string, error) {
 	cmd := exec.Command(binaryPath, "-v")
 	output, err := cmd.Output()
@@ -27,8 +31,9 @@ func getBinaryVersion(binaryPath string) (string, error) {
 	return version, nil
 }
 
-func ValidateProtocolBinaryVersion(incoming *protocoltypes.Version, binaryPath string) error {
-	binaryVersion, err := getBinaryVersion(binaryPath)
+// ToDo: we will implement trigger logic here!
+func (vm VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+	binaryVersion, err := getBinaryVersion(vm.BinaryPath)
 	if err != nil {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
