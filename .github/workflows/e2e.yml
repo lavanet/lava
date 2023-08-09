@@ -39,9 +39,9 @@ jobs:
 
     # Pre-build 
     - name: lavad build
-      run: make install
+      run: make install-lavad
     - name: protocol build
-      run: make build-protocol
+      run: make install-lava-protocol
 
     ######################################################
     ### Run Lava E2E Tests 
@@ -155,7 +155,7 @@ jobs:
 
       # Pre-build
       - name: lavad build
-        run: make install
+        run: make install-lavad
 
       # Install Node.js
       - name: Setup Node.js environment

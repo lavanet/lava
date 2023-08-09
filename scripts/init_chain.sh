@@ -1,6 +1,8 @@
 #!/bin/bash
-# make install
+
+# make install-lavad
 killall -9 lavad
+
 rm -rf ~/.lava
 lavad init validator --chain-id lava
 lavad config broadcast-mode sync
