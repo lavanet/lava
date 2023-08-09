@@ -40,6 +40,8 @@ jobs:
     # Pre-build 
     - name: lavad build
       run: make install
+    - name: protocol build
+      run: make build-protocol
 
     ######################################################
     ### Run Lava E2E Tests 
