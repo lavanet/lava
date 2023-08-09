@@ -45,11 +45,18 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: fix average block time.
+	averageBlockTime := 1
+	if utils.ExtendedLogLevel == "production" {
+		averageBlockTime = 30
+	}
+
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  1 * time.Second, // NOTE: not used by tendermint anymore
+		AverageBlockTime:  time.Duration(averageBlockTime) * time.Second,
 		ServerBlockMemory: BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
