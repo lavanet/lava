@@ -104,7 +104,10 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	// TODO: use finalizationData + probe changes to get the latest block
+	latestKnownBlock, numProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
+	if numProviders > 0 && latestKnownBlock > 0 {
+		return uint64(latestKnownBlock)
+	}
 	return 0
 }
 

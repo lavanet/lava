@@ -80,7 +80,7 @@ func init() {
 	fmt.Println("Test Directory", dir)
 }
 
-func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName, logName, command string) {
+func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
 	utils.LavaFormatDebug("Executing command " + command)
 	lt.logs[logName] = new(bytes.Buffer)
 
@@ -117,8 +117,14 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName, logName,
 	}()
 }
 
-func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command string, wait bool) {
-	fmt.Fprintf(os.Stderr, "executing command: %s, %s\n", funcName, logName)
+func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName string, command string, wait bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			lt.saveLogs()
+			panic(fmt.Sprintf("Panic happened with command: %s", command))
+		}
+	}()
+
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
@@ -126,10 +132,6 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command 
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
 	cmd.Stderr = lt.logs[logName]
-	if funcName == "letseee" {
-		cmd.Stdout = io.MultiWriter(lt.logs[logName], os.Stderr)
-		cmd.Stderr = io.MultiWriter(lt.logs[logName], os.Stderr)
-	}
 
 	err := cmd.Start()
 	if err != nil {
@@ -148,7 +150,7 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command 
 	}
 }
 
-func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason, functionName string) {
+func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, functionName string) {
 	err := cmd.Wait()
 	if err != nil && !lt.testFinishedProperly {
 		utils.LavaFormatError(functionName+" cmd wait err", err)
@@ -908,7 +910,7 @@ func (lt *lavaTest) checkQoS() error {
 	return nil
 }
 
-func (lt *lavaTest) checkResponse(tendermintConsumerURL, restConsumerURL, grpcConsumerURL string) error {
+func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL string, grpcConsumerURL string) error {
 	utils.LavaFormatInfo("Starting Relay Response Integrity Tests")
 
 	// TENDERMINT:
@@ -1035,7 +1037,7 @@ func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uin
 	return providerCU, nil
 }
 
-func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr, providerAddr string) {
+func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
 	firstIndex := strings.Index(inputStr, "lava@")
 	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
 

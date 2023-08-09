@@ -41284,6 +41284,9 @@ paths:
                                         type: string
                                       expected_value:
                                         type: string
+                                      latest_distance:
+                                        type: string
+                                        format: uint64
               pagination:
                 type: object
                 properties:
@@ -41745,6 +41748,9 @@ paths:
                                       type: string
                                     expected_value:
                                       type: string
+                                    latest_distance:
+                                      type: string
+                                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -42128,6 +42134,9 @@ paths:
                                         type: string
                                       expected_value:
                                         type: string
+                                      latest_distance:
+                                        type: string
+                                        format: uint64
               pagination:
                 type: object
                 properties:
@@ -42589,6 +42598,9 @@ paths:
                                       type: string
                                     expected_value:
                                       type: string
+                                    latest_distance:
+                                      type: string
+                                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -70319,6 +70331,9 @@ definitions:
                     type: string
                   expected_value:
                     type: string
+                  latest_distance:
+                    type: string
+                    format: uint64
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -70503,6 +70518,9 @@ definitions:
         type: string
       expected_value:
         type: string
+      latest_distance:
+        type: string
+        format: uint64
   lavanet.lava.spec.Rule:
     type: object
     properties:
@@ -70835,6 +70853,9 @@ definitions:
                           type: string
                         expected_value:
                           type: string
+                        latest_distance:
+                          type: string
+                          format: uint64
   lavanet.lava.spec.Spec.ProvidersTypes:
     type: string
     enum:
@@ -70922,6 +70943,9 @@ definitions:
               type: string
             expected_value:
               type: string
+            latest_distance:
+              type: string
+              format: uint64
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -72152,6 +72176,9 @@ definitions:
                                 type: string
                               expected_value:
                                 type: string
+                              latest_distance:
+                                type: string
+                                format: uint64
       pagination:
         type: object
         properties:
@@ -72518,6 +72545,9 @@ definitions:
                               type: string
                             expected_value:
                               type: string
+                            latest_distance:
+                              type: string
+                              format: uint64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:
