@@ -25,12 +25,13 @@ type RelayMetrics struct {
 
 type RelayAnalyticsDTO struct {
 	ProjectHash  string
-	Timestamp    time.Time
+	Timestamp    string
 	ChainID      string
 	APIType      string
 	Latency      uint64
 	SuccessCount int64
 	RelayCounts  int64
+	TotalCu      uint64
 	Source       RelaySource
 }
 
