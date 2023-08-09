@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -178,6 +179,57 @@ func TestAddonAndVerifications(t *testing.T) {
 		_, err = FormatResponseForParsing(reply, chainMessage)
 		require.NoError(t, err)
 	}
+	if closeServer != nil {
+		closeServer()
+	}
+}
+
+func TestExtensions(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
+	})
+
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"archive"})
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainRouter)
+	require.NotNil(t, chainFetcher)
+	configuredExtensions := map[string]struct{}{
+		"archive": {},
+	}
+	chainParser.SetConfiguredExtensions(configuredExtensions)
+	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	require.True(t, ok)
+	latestTemplate := strings.Replace(parsingForCrafting.FunctionTemplate, "0x%x", "%s", 1)
+	latestReq := []byte(fmt.Sprintf(latestTemplate, "latest"))
+	reqSpecific := []byte(fmt.Sprintf(parsingForCrafting.FunctionTemplate, 99))
+	// with latest block not set
+	chainMessage, err := chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 0)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Empty(t, chainMessage.GetExtensions())
+
+	// with latest block set
+	chainMessage, err = chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 100)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Empty(t, chainMessage.GetExtensions())
+
+	// with latest block not set
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 0)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Len(t, chainMessage.GetExtensions(), 1)
+
+	// with latest block set
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 100)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Len(t, chainMessage.GetExtensions(), 1)
+	require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
 	if closeServer != nil {
 		closeServer()
 	}

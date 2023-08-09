@@ -200,7 +200,10 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	}
 	providerGuid := probeResp.GetGuid()
 	if providerGuid != guid {
-		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil, utils.Attribute{Key: "providerGuid", Value: providerGuid}, utils.Attribute{Key: "incoming", Value: guid})
+		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "provider Guid", Value: providerGuid}, utils.Attribute{Key: "sent guid", Value: guid})
+	}
+	if probeResp.LatestBlock == 0 {
+		return 0, providerAddress, utils.LavaFormatWarning("provider returned 0 latest block", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "sent guid", Value: guid})
 	}
 	// public lava address is a value that is not changing, so it's thread safe
 	utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress})

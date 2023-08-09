@@ -10,7 +10,7 @@ func (arp ArchiveParserRule) isPassingRule(extensionChainMessage ExtensionsChain
 	requestedBlock := extensionChainMessage.RequestedBlock()
 	if requestedBlock < 0 {
 		// if asking for the latest block, or an api that doesn't have a specific block requested then it's not archive
-		return false
+		return requestedBlock == spectypes.EARLIEST_BLOCK // only earliest should go to archive
 	}
 	if latestBlock == 0 {
 		return true

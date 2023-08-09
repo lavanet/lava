@@ -36,6 +36,7 @@ message Verification {
 message ParseValue {
   string extension =1;
   string expected_value =2;
+  uint64 latest_distance = 3;
 }
 
 message CollectionData {

@@ -33,6 +33,7 @@ type VerificationContainer struct {
 	Name           string
 	ParseDirective spectypes.ParseDirective
 	Value          string
+	LatestDistance uint64
 	VerificationKey
 }
 

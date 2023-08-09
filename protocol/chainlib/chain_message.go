@@ -58,6 +58,12 @@ func (pm *parsedMessage) GetExtensions() []*spectypes.Extension {
 
 func (pm *parsedMessage) SetExtension(extension *spectypes.Extension) {
 	if len(pm.extensions) > 0 {
+		for _, ext := range pm.extensions {
+			if ext.Name == extension.Name {
+				// already existing, no need to add
+				return
+			}
+		}
 		pm.extensions = append(pm.extensions, extension)
 	} else {
 		pm.extensions = []*spectypes.Extension{extension}

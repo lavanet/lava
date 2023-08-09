@@ -175,10 +175,10 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	return val.Parsing, &val.ApiCollection.CollectionData, ok
 }
 
-func (bcp *BaseChainParser) ExtensionParsing(parsedMessageArg *parsedMessage, latestBlock uint64) {
+func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *parsedMessage, latestBlock uint64) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
-	bcp.extensionParser.ExtensionParsing(parsedMessageArg, latestBlock)
+	bcp.extensionParser.ExtensionParsing(addon, parsedMessageArg, latestBlock)
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -314,6 +314,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						Name:            verification.Name,
 						ParseDirective:  *verification.ParseDirective,
 						Value:           parseValue.ExpectedValue,
+						LatestDistance:  parseValue.LatestDistance,
 						VerificationKey: verificationKey,
 					}
 
