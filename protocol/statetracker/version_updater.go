@@ -39,7 +39,6 @@ func (vu *VersionUpdater) UpdaterKey() string {
 func (vu *VersionUpdater) RegisterVersionUpdatable() {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-	// err := upgrade.ValidateProtocolVersion(vu.lastKnownVersion)
 	err := vu.ValidateProtocolVersion(vu.lastKnownVersion)
 	if err != nil {
 		utils.LavaFormatError("Protocol Version Error", err)
@@ -64,7 +63,6 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 		vu.lastKnownVersion = version
 	}
 	// monitor protocol version on each new block
-	// err := upgrade.ValidateProtocolVersion(vu.lastKnownVersion)
 	err := vu.ValidateProtocolVersion(vu.lastKnownVersion)
 	if err != nil {
 		utils.LavaFormatError("Validate Protocol Version Error", err)
