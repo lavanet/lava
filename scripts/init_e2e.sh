@@ -34,8 +34,8 @@ wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 STAKE="500000000000ulava"
-# Ethereum providers
-wait_next_block
+sleep_until_next_epoch
+# wait_next_block
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2222,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2222,1" 1 -y --from servicer2 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

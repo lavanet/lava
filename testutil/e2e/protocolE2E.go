@@ -118,6 +118,7 @@ func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName, logName,
 }
 
 func (lt *lavaTest) execCommand(ctx context.Context, funcName, logName, command string, wait bool) {
+	fmt.Fprintf(os.Stderr, "executing command: %s, %s\n", funcName, logName)
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
