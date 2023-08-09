@@ -79,8 +79,8 @@ func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumer
 	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
 }
 
-func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
-	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker, version)
+func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
+	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker, version, versionValidator)
 	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {

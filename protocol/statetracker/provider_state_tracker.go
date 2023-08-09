@@ -55,8 +55,8 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
-	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version)
+func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
+	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version, versionValidator)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {

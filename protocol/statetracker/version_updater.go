@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -17,15 +16,20 @@ type VersionStateQuery interface {
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
-type VersionUpdater struct {
-	lock              sync.RWMutex
-	eventTracker      *EventTracker
-	versionStateQuery VersionStateQuery
-	lastKnownVersion  *protocoltypes.Version
+type VersionValidationInf interface {
+	ValidateProtocolVersion(lastKnownVersion *protocoltypes.Version) error
 }
 
-func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version) *VersionUpdater {
-	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version}
+type VersionUpdater struct {
+	lock                 sync.RWMutex
+	eventTracker         *EventTracker
+	versionStateQuery    VersionStateQuery
+	lastKnownVersion     *protocoltypes.Version
+	VersionValidationInf // embedding the interface, this tells: VersionUpdater has ValidateProtocolVersion method
+}
+
+func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, versionValidator VersionValidationInf) *VersionUpdater {
+	return &VersionUpdater{versionStateQuery: versionStateQuery, eventTracker: eventTracker, lastKnownVersion: version, VersionValidationInf: versionValidator}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
@@ -35,7 +39,8 @@ func (vu *VersionUpdater) UpdaterKey() string {
 func (vu *VersionUpdater) RegisterVersionUpdatable() {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-	err := upgrade.ValidateProtocolVersion(vu.lastKnownVersion)
+	// err := upgrade.ValidateProtocolVersion(vu.lastKnownVersion)
+	err := vu.ValidateProtocolVersion(vu.lastKnownVersion)
 	if err != nil {
 		utils.LavaFormatError("Protocol Version Error", err)
 	}
@@ -59,7 +64,8 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 		vu.lastKnownVersion = version
 	}
 	// monitor protocol version on each new block
-	err := upgrade.ValidateProtocolVersion(vu.lastKnownVersion)
+	// err := upgrade.ValidateProtocolVersion(vu.lastKnownVersion)
+	err := vu.ValidateProtocolVersion(vu.lastKnownVersion)
 	if err != nil {
 		utils.LavaFormatError("Validate Protocol Version Error", err)
 	}
