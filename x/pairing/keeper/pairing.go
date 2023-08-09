@@ -139,20 +139,23 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	filters := pairingfilters.GetAllFilters()
+	// create the pairing slots with assigned reqs
+	slots := pairingscores.CalcSlots(strictestPolicy)
+	// group identical slots (in terms of reqs types)
+	slotGroups := pairingscores.GroupSlots(slots) // TODO: send policy, add to slotGroup it's modified policy, with the modified number of requested providers, and return the universal policy for filtering on all slots
+	// TODO: save stake entries per policy in a map
 
+	//TODO: filter based on universal slot policy
 	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, "", err
 	}
 
-	// create the pairing slots with assigned reqs
-	slots := pairingscores.CalcSlots(strictestPolicy)
-	if len(slots) >= len(stakeEntries) {
+	// TODO: compare universal slot policy filtered entries before continuing
+
+	if len(slots) >= len(stakeEntries) { // TODO: also in the loop of groups check
 		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
-
-	// group identical slots (in terms of reqs types)
-	slotGroups := pairingscores.GroupSlots(slots)
 
 	// create providerScore array with all possible providers
 	providerScores := []*pairingscores.PairingScore{}
@@ -162,8 +165,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
-	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
+	prevGroupSlot := pairingscores.NewPairingSlotGroup(pairingscores.NewPairingSlot()) // init dummy slot to compare to
 	for idx, group := range slotGroups {
 		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
