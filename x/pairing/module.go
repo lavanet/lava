@@ -35,6 +35,10 @@ type AppModuleBasic struct {
 	cdc codec.BinaryCodec
 }
 
+func NewAppModuleBasic(cdc codec.BinaryCodec) AppModuleBasic {
+	return AppModuleBasic{cdc: cdc}
+}
+
 // Name returns the capability module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
@@ -106,9 +110,10 @@ func NewAppModule(
 	bankKeeper types.BankKeeper,
 ) AppModule {
 	return AppModule{
-		keeper:        keeper,
-		accountKeeper: accountKeeper,
-		bankKeeper:    bankKeeper,
+		AppModuleBasic: NewAppModuleBasic(cdc),
+		keeper:         keeper,
+		accountKeeper:  accountKeeper,
+		bankKeeper:     bankKeeper,
 	}
 }
 
