@@ -16,6 +16,16 @@ import (
 
 const keySeparator = "."
 
+type DB interface {
+	Key() string
+	Save(key string, data []byte, ttl time.Duration) error
+	FindOne(key string) ([]byte, error)
+	FindAll() (map[string][]byte, error)
+	Delete(key string) error
+	DeletePrefix(prefix string) error
+	Close() error
+}
+
 type RewardDB struct {
 	lock sync.RWMutex
 	dbs  map[string]DB // key is spec id
@@ -46,7 +56,7 @@ func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairing
 
 	prevReward, err := rs.findOne(key)
 	if err != nil {
-		saved, err := rs.save(key, re)
+		saved, err := rs.saveInner(key, re)
 		return proof, saved, err
 	}
 
@@ -55,14 +65,14 @@ func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairing
 			proof.Badge = prevReward.Proof.Badge
 		}
 
-		saved, err := rs.save(key, re)
+		saved, err := rs.saveInner(key, re)
 		return proof, saved, err
 	}
 
 	return prevReward.Proof, false, nil
 }
 
-func (rs *RewardDB) save(key string, re *RewardEntity) (bool, error) {
+func (rs *RewardDB) saveInner(key string, re *RewardEntity) (bool, error) {
 	buf, err := json.Marshal(re)
 	if err != nil {
 		return false, utils.LavaFormatError("failed to encode proof: %s", err)
@@ -81,6 +91,7 @@ func (rs *RewardDB) save(key string, re *RewardEntity) (bool, error) {
 	return true, nil
 }
 
+// currently unused
 func (rs *RewardDB) FindOne(
 	epoch uint64,
 	consumerAddr string,
@@ -91,7 +102,6 @@ func (rs *RewardDB) FindOne(
 	defer rs.lock.RUnlock()
 
 	key := rs.assembleKey(epoch, consumerAddr, sessionId, consumerKey)
-
 	re, err := rs.findOne(key)
 	if err != nil {
 		return nil, err
@@ -119,7 +129,6 @@ func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
 			return &re, nil
 		}
 	}
-
 	return nil, fmt.Errorf("reward not found for key: %s", key)
 }
 
@@ -217,7 +226,6 @@ func (rs *RewardDB) deletePrefix(prefix string) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -232,9 +240,7 @@ func (rs *RewardDB) AddDB(specId string, db DB) error {
 	if found {
 		return fmt.Errorf("db already exists for key: %s", dbKey)
 	}
-
 	rs.dbs[dbKey] = db
-
 	return nil
 }
 

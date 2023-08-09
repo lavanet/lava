@@ -60,14 +60,15 @@ type EpochRewards struct {
 }
 
 type RewardServer struct {
-	rewardsTxSender  RewardsTxSender
-	lock             sync.RWMutex
-	serverID         uint64
-	expectedPayments []PaymentRequest
-	totalCUServiced  uint64
-	totalCUPaid      uint64
-	providerMetrics  *metrics.ProviderMetricsManager
-	rewardDB         *RewardDB
+	rewardsTxSender   RewardsTxSender
+	lock              sync.RWMutex
+	serverID          uint64
+	expectedPayments  []PaymentRequest
+	totalCUServiced   uint64
+	totalCUPaid       uint64
+	providerMetrics   *metrics.ProviderMetricsManager
+	rewardDB          *RewardDB
+	rewardStoragePath string
 }
 
 type RewardsTxSender interface {
@@ -269,6 +270,21 @@ func (rws *RewardServer) updateCUPaid(cu uint64) {
 	atomic.StoreUint64(&rws.totalCUPaid, currentCU+cu)
 }
 
+func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string, shardID uint) {
+	// the db itself doesn't need locks. as it self manages locks inside.
+	// but opening a db can race. (NewLocalDB) so we lock this method.
+	rws.lock.Lock()
+	defer rws.lock.Unlock()
+	_, found := rws.rewardDB.GetDB(specId)
+	if !found {
+		rws.rewardDB.AddDB(specId, NewLocalDB(rws.rewardStoragePath, providerPublicAddress, specId, shardID))
+	}
+}
+
+func (rws *RewardServer) CloseAllDataBases() error {
+	return rws.rewardDB.Close()
+}
+
 func (rws *RewardServer) Description() string {
 	return strconv.FormatUint(rws.serverID, 10)
 }
@@ -289,14 +305,14 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB, rewardStoragePath string) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
 	rws.expectedPayments = []PaymentRequest{}
 	rws.providerMetrics = providerMetrics
 	rws.rewardDB = rewardDB
-
+	rws.rewardStoragePath = rewardStoragePath
 	return rws
 }
 

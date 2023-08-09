@@ -139,7 +139,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 	// single reward server
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB)
+	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB, rewardStoragePath)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 
@@ -241,17 +241,8 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
 			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
 
-			rewardDBSetup := func() {
-				rpcp.lock.Lock()
-				defer rpcp.lock.Unlock()
-
-				specId := rpcProviderEndpoint.ChainID
-				_, found := rewardDB.GetDB(specId)
-				if !found {
-					rewardDB.AddDB(specId, rewardserver.NewLocalDB(rewardStoragePath, addr.String(), rpcProviderEndpoint.ChainID, shardID))
-				}
-			}
-			rewardDBSetup()
+			// add a database for this chainID if does not exist.
+			rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, addr.String(), shardID)
 
 			rpcProviderServer := &RPCProviderServer{}
 			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainRouter, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
@@ -304,7 +295,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 
 	// close all reward dbs
-	err = rewardDB.Close()
+	err = rewardServer.CloseAllDataBases()
 	if err != nil {
 		utils.LavaFormatError("failed to close reward db", err)
 	}
