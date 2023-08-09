@@ -21,7 +21,7 @@ import (
 const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
 
 // startBadgeServer starts badge server
-func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, publicKey string) {
+func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey, publicKey string) {
 	badgeUserData := fmt.Sprintf(`{"1":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}},"2":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}}`, publicKey, privateKey, publicKey, privateKey)
 	err := os.Setenv("BADGE_USER_DATA", badgeUserData)
 	if err != nil {
@@ -41,7 +41,7 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey string, pub
 }
 
 // exportUserPublicKey exports public key from specific user
-func exportUserPublicKey(lavaPath string, user string) string {
+func exportUserPublicKey(lavaPath, user string) string {
 	cmdString := fmt.Sprintf("%s keys show %s ", lavaPath, user)
 	cmd := exec.Command("bash", "-c", cmdString)
 
@@ -63,7 +63,7 @@ func exportUserPublicKey(lavaPath string, user string) string {
 }
 
 // exportUserPrivateKey exports raw private keys from specific user
-func exportUserPrivateKey(lavaPath string, user string) string {
+func exportUserPrivateKey(lavaPath, user string) string {
 	cmdString := fmt.Sprintf("yes | %s keys export %s --unsafe --unarmored-hex", lavaPath, user)
 	cmd := exec.Command("bash", "-c", cmdString)
 

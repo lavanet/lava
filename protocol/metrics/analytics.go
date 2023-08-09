@@ -35,7 +35,7 @@ type RelayAnalyticsDTO struct {
 	Source       RelaySource
 }
 
-func NewRelayAnalytics(projectHash string, chainId string, apiType string) *RelayMetrics {
+func NewRelayAnalytics(projectHash, chainId, apiType string) *RelayMetrics {
 	return &RelayMetrics{
 		Timestamp:   time.Now(),
 		ProjectHash: projectHash,

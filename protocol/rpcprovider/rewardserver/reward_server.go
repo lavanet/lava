@@ -9,13 +9,13 @@ import (
 	"sync"
 	"sync/atomic"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
 type PaymentRequest struct {
@@ -68,7 +68,7 @@ type RewardsTxSender interface {
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 }
 
-func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
+func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
@@ -295,7 +295,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		index      int
 	}
 	attributesList := []*mapCont{}
-	appendToAttributeList := func(idx int, key string, value string) {
+	appendToAttributeList := func(idx int, key, value string) {
 		var mapContToChange *mapCont
 		for _, mapCont := range attributesList {
 			if mapCont.index != idx {
@@ -311,7 +311,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		mapContToChange.attributes[key] = value
 	}
 	for _, attribute := range event.Attributes {
-		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
+		splittedAttrs := strings.SplitN(attribute.Key, ".", 2)
 		attrKey := splittedAttrs[0]
 		index := 0
 		if len(splittedAttrs) > 1 {
@@ -324,7 +324,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
 			}
 		}
-		appendToAttributeList(index, attrKey, string(attribute.Value))
+		appendToAttributeList(index, attrKey, attribute.Value)
 	}
 	payments := []*PaymentRequest{}
 	for idx, mapCont := range attributesList {
@@ -388,6 +388,6 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	return payments, nil
 }
 
-func getKeyForConsumerRewards(specId string, apiInterface string, consumerAddress string) string {
+func getKeyForConsumerRewards(specId, apiInterface, consumerAddress string) string {
 	return specId + apiInterface + consumerAddress
 }

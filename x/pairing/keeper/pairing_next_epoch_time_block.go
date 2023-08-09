@@ -5,10 +5,10 @@ import (
 	"math"
 	"time"
 
+	"github.com/cometbft/cometbft/rpc/core"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"github.com/tendermint/tendermint/rpc/core"
 )
 
 const (
@@ -96,7 +96,7 @@ type blockHeightAndTime struct {
 }
 
 // Function to get a list of the timestamps of the blocks in the previous epoch of the input (so it'll be deterministic)
-func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch uint64, sampleStep uint64) ([]blockHeightAndTime, error) {
+func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch, sampleStep uint64) ([]blockHeightAndTime, error) {
 	// Check for special cases:
 	// 1. no previous epoch - we're on the first epoch / after a fork. Since there is no previous epoch to calculate average time on, return an empty slice and no error
 	// 2. start of previous epoch is block 0 - we're on the second epoch. To get the block's header using the "core" module, the block height can't be zero (causes panic). In this case, we also return an empty slice and no error

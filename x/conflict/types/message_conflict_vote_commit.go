@@ -10,7 +10,7 @@ const TypeMsgConflictVoteCommit = "conflict_vote_commit"
 
 var _ sdk.Msg = &MsgConflictVoteCommit{}
 
-func NewMsgConflictVoteCommit(creator string, voteID string, hash []byte) *MsgConflictVoteCommit {
+func NewMsgConflictVoteCommit(creator, voteID string, hash []byte) *MsgConflictVoteCommit {
 	return &MsgConflictVoteCommit{
 		Creator: creator,
 		VoteID:  voteID,

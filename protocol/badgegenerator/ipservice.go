@@ -22,7 +22,7 @@ type IpService struct {
 	IpCountryData      *[]*IpData
 }
 
-func InitIpService(defaultGeolocation int, countriesFilePath string, ipFilePath string) (*IpService, error) {
+func InitIpService(defaultGeolocation int, countriesFilePath, ipFilePath string) (*IpService, error) {
 	service := IpService{DefaultGeolocation: defaultGeolocation, CountryCsvFilePath: countriesFilePath, IpTsvFilePath: ipFilePath}
 
 	err := service.ReadIpTsvFileData()

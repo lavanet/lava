@@ -1,5 +1,4 @@
-#!/bin/bash 
-
+#!/bin/bash
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
 LOGS_DIR=${__dir}/../testutil/debugging/logs
@@ -10,11 +9,13 @@ echo "---------------Setup Providers------------------"
 killall screen
 screen -wipe
 
+EXTRA_PROVIDER_FLAGS="$EXTRA_PROVIDER_FLAGS --chain-id=lava"
+EXTRA_PORTAL_FLAGS="$EXTRA_PORTAL_FLAGS --chain-id=lava"
+
 PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
-#ETH providers
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \

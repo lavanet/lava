@@ -97,7 +97,7 @@ func (s *Header_HeaderType) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func IsFinalizedBlock(requestedBlock int64, latestBlock int64, finalizationCriteria uint32) bool {
+func IsFinalizedBlock(requestedBlock, latestBlock int64, finalizationCriteria uint32) bool {
 	switch requestedBlock {
 	case NOT_APPLICABLE:
 		return false

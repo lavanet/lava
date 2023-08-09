@@ -5,7 +5,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-func (k Keeper) JailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, jailStartBlock uint64, jailBlocks uint64, bail sdk.Coin) error {
+func (k Keeper) JailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, jailStartBlock, jailBlocks uint64, bail sdk.Coin) error {
 	// todo - provider will not get pairing and payment for this period
 	return nil
 }

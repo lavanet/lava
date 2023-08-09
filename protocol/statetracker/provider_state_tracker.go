@@ -103,11 +103,11 @@ func (pst *ProviderStateTracker) LatestBlock() int64 {
 	return pst.StateTracker.chainTracker.GetLatestBlockNum()
 }
 
-func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epoch uint64) (maxCu uint64, err error) {
+func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
 	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
-func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
+func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
 	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 

@@ -422,7 +422,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 // parseArrayOfInterfaces returns value of item with specified prop name
 // If it doesn't exist return nil
-func parseArrayOfInterfaces(data []interface{}, propName string, innerSeparator string) []interface{} {
+func parseArrayOfInterfaces(data []interface{}, propName, innerSeparator string) []interface{} {
 	// Iterate over unmarshalled data
 	for _, val := range data {
 		if prop, ok := val.(string); ok {

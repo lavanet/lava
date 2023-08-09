@@ -301,6 +301,19 @@ build-protocol:
 		cp $(BUILDDIR)/lava-protocol $(GOPATH)/bin; \
 	fi
   
+PROJECT_NAME = $(shell git remote get-url origin | xargs basename -s .git)
+
+protoVer=0.13.5
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+containerProtoGen=$(PROJECT_NAME)-proto-gen-$(protoVer)
+containerProtoFmt=$(PROJECT_NAME)-proto-fmt-$(protoVer)
+
+proto-gen:
+	@echo "Generating Protobuf files"
+	if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); \
+	else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
+		sh ./scripts/protocgen.sh; fi
+
 .PHONY: all build docker-build install lint test \
 	go-mod-cache go.sum draw-deps \
 	build-docker-helper build-docker-copier \

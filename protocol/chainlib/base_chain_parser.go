@@ -93,7 +93,7 @@ func (bcp *BaseChainParser) SetConfiguredExtensions(extensions map[string]struct
 }
 
 // this function errors if it meets a value that is neither a n addon or an extension
-func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons []string, extensions []string, err error) {
+func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error) {
 	checked := map[string]struct{}{}
 	for _, supportedToCheck := range supported {
 		// ignore repeated occurrences
@@ -182,7 +182,7 @@ func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *par
 }
 
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -212,7 +212,7 @@ func (apip *BaseChainParser) getSupportedApi(name string, connectionType string)
 }
 
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -332,7 +332,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 }
 
 // matchSpecApiByName returns service api which match given name
-func matchSpecApiByName(name string, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
+func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
 		re, err := regexp.Compile("^" + apiName.Name + "$")

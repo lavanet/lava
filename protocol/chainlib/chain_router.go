@@ -100,7 +100,7 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 		addonsSupportedMap := map[string]struct{}{}
 		// this function calculated all routing combinations and populates them for verification at the end of the function
-		updateRouteCombinations := func(extensions []string, addons []string) (fullySupportedRouterKey lavasession.RouterKey) {
+		updateRouteCombinations := func(extensions, addons []string) (fullySupportedRouterKey lavasession.RouterKey) {
 			allExtensionsRouterKey := lavasession.NewRouterKey(extensions)
 			requirement := requirementSt{
 				extensions: allExtensionsRouterKey,

@@ -33,7 +33,7 @@ func (endpoint *Endpoint) isSupportedExtension(extension string) bool {
 	return false
 }
 
-func (endpoint *Endpoint) IsSupportedService(apiInterface string, addon string, extension string) bool {
+func (endpoint *Endpoint) IsSupportedService(apiInterface, addon, extension string) bool {
 	for _, endpointApiInterface := range endpoint.ApiInterfaces {
 		// always support the base addons
 		if addon == "" && endpointApiInterface == apiInterface {
@@ -71,7 +71,7 @@ func (endpoint *Endpoint) SetDefaultApiInterfaces(requiredServices map[EndpointS
 }
 
 // users are allowed to send apiInterfaces inside the addons list, this code supports that
-func (endpoint *Endpoint) SetServicesFromAddons(allowedServices map[EndpointService]struct{}, addons map[string]struct{}, extensions map[string]struct{}) error {
+func (endpoint *Endpoint) SetServicesFromAddons(allowedServices map[EndpointService]struct{}, addons, extensions map[string]struct{}) error {
 	newAddons := []string{}
 	newExtensions := []string{}
 	existingApiInterfaces := map[string]struct{}{}
@@ -136,7 +136,7 @@ func (endpoint *Endpoint) GetSupportedServices() (services []EndpointService) {
 }
 
 // can be used for both addon and a single extension
-func (stakeEntry *StakeEntry) GetEndpointsSupportingService(apiInterface string, addon string, extension string) (endpoints []*Endpoint) {
+func (stakeEntry *StakeEntry) GetEndpointsSupportingService(apiInterface, addon, extension string) (endpoints []*Endpoint) {
 	for idx, endpoint := range stakeEntry.Endpoints {
 		if endpoint.IsSupportedService(apiInterface, addon, extension) {
 			endpoints = append(endpoints, &stakeEntry.Endpoints[idx])

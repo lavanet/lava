@@ -39,7 +39,7 @@ type providerDataContainer struct {
 	// TODO:: keep relay request for conflict reporting
 }
 
-func GetLatestFinalizedBlock(latestBlock int64, blockDistanceForFinalizedData int64) int64 {
+func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) int64 {
 	finalization_criteria := blockDistanceForFinalizedData
 	return latestBlock - finalization_criteria
 }
@@ -253,7 +253,7 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	return providersMedianOfLatestBlock - allowedBlockLagForQosSync, len(mapExpectedBlockHeights)
 }
 
-func InterpolateBlocks(timeNow time.Time, latestBlockTime time.Time, averageBlockTime time.Duration) int64 {
+func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time.Duration) int64 {
 	if timeNow.Before(latestBlockTime) {
 		return 0
 	}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"testing"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -21,7 +22,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
 type mockFilter struct{}
@@ -369,8 +369,8 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName, event.Type)
 	require.True(t, func() bool {
 		for _, attr := range event.Attributes {
-			if string(attr.Key) == "winner" {
-				require.Equal(t, provider_address.String(), string(attr.Value))
+			if attr.Key == "winner" {
+				require.Equal(t, provider_address.String(), attr.Value)
 				return true
 			}
 		}

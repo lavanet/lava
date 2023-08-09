@@ -406,7 +406,7 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 // before considering the subscriber dead. The subscription Err channel will receive
 // ErrSubscriptionQueueOverflow. Use a sufficiently large buffer on the channel or ensure
 // that the channel usually has at least one reader to prevent this issue.
-func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method string, channel interface{}, params interface{}) (*ClientSubscription, *JsonrpcMessage, error) {
+func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method string, channel, params interface{}) (*ClientSubscription, *JsonrpcMessage, error) {
 	// Check type of channel first.
 	chanVal := reflect.ValueOf(channel)
 	if chanVal.Kind() != reflect.Chan || chanVal.Type().ChanDir()&reflect.SendDir == 0 {

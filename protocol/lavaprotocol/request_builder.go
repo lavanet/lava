@@ -59,7 +59,7 @@ func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	requestData.Salt = nonceBytes
 }
 
-func NewRelayData(ctx context.Context, connectionType string, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
+func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
@@ -78,7 +78,7 @@ func NewRelayData(ctx context.Context, connectionType string, apiUrl string, dat
 	return relayData
 }
 
-func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID string, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
+func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
 	copyQoSServiceReport := func(reportToCopy *pairingtypes.QualityOfServiceReport) *pairingtypes.QualityOfServiceReport {
 		if reportToCopy != nil {
 			QOS := *reportToCopy
@@ -107,7 +107,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 	}
 }
 
-func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID string, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
+func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:    relayRequestData,
 		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
@@ -125,7 +125,7 @@ func UpdateRequestedBlock(request *pairingtypes.RelayPrivateData, response *pair
 	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
 }
 
-func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
+func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 	switch requestedBlock {
 	case spectypes.LATEST_BLOCK:
 		return latestBlock
@@ -139,7 +139,7 @@ func ReplaceRequestedBlock(requestedBlock int64, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func VerifyReliabilityResults(ctx context.Context, originalResult *RelayResult, dataReliabilityResult *RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
+func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
 	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, *originalResult.Reply, *originalResult.Request, *dataReliabilityResult.Reply, *dataReliabilityResult.Request, apiCollection, headerFilterer)
 	if conflict_now {
 		return detectionMessage

@@ -105,7 +105,7 @@ func (k Keeper) FixateParams(ctx sdk.Context, block uint64) {
 	}
 }
 
-func (k Keeper) PushFixatedParams(ctx sdk.Context, block uint64, limit uint64) {
+func (k Keeper) PushFixatedParams(ctx sdk.Context, block, limit uint64) {
 	for fixationKey, fixationGetParam := range k.fixationRegistries {
 		currentParam := utils.Serialize(fixationGetParam(ctx))                // get the current param with the pointer function and serialize, TODO: usually getparam gets from the param store so we unmarshal than serialize, maybe we cam skip save one cast here
 		currentFixatedParam, found := k.LatestFixatedParams(ctx, fixationKey) // get the fixater param and compare

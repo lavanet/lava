@@ -27,7 +27,7 @@ type Server struct {
 	metrics               *MetricsService
 }
 
-func NewServer(ipService *IpService, grpcUrl string, chainId string, userData string) (*Server, error) {
+func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server, error) {
 	server := &Server{
 		ProjectsConfiguration: map[string]map[string]*ProjectConfiguration{},
 		ChainId:               chainId,

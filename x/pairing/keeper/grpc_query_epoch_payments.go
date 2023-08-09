@@ -22,7 +22,7 @@ func (k Keeper) EpochPaymentsAll(c context.Context, req *types.QueryAllEpochPaym
 	store := ctx.KVStore(k.storeKey)
 	epochPaymentsStore := prefix.NewStore(store, types.KeyPrefix(types.EpochPaymentsKeyPrefix))
 
-	pageRes, err := query.Paginate(epochPaymentsStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(epochPaymentsStore, req.Pagination, func(key, value []byte) error {
 		var epochPayments types.EpochPayments
 		if err := k.cdc.Unmarshal(value, &epochPayments); err != nil {
 			return err
