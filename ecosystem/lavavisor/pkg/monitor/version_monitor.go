@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
@@ -16,7 +17,10 @@ import (
 )
 
 type VersionMonitor struct {
-	BinaryPath string
+	BinaryPath      string
+	updateTriggered bool
+	mismatchType    lvutil.MismatchType
+	mu              sync.Mutex
 }
 
 func getBinaryVersion(binaryPath string) (string, error) {
@@ -32,7 +36,10 @@ func getBinaryVersion(binaryPath string) (string, error) {
 }
 
 // ToDo: we will implement trigger logic here!
-func (vm VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+	vm.mu.Lock()
+	defer vm.mu.Unlock()
+
 	binaryVersion, err := getBinaryVersion(vm.BinaryPath)
 	if err != nil {
 		return utils.LavaFormatError("failed to get binary version", err)
@@ -40,10 +47,14 @@ func (vm VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version
 	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: binaryVersion})
 	// check min version
 	if incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion {
-		return lvutil.MinVersionMismatchError
+		vm.updateTriggered = true
+		vm.mismatchType = lvutil.MinVersionMismatch
+		// return lvutil.MinVersionMismatchError
 	}
 	// check target version
 	if incoming.ConsumerTarget != binaryVersion || incoming.ProviderTarget != binaryVersion {
+		vm.updateTriggered = true
+		vm.mismatchType = lvutil.TargetVersionMismatch
 		return lvutil.TargetVersionMismatchError
 	}
 	// version is ok.
