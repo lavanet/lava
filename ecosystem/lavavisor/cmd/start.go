@@ -78,8 +78,13 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version.ProviderMin)
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
-	fmt.Println("Binary Path - start cmd: ", binaryPath)
-	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, &processmanager.VersionMonitor{BinaryPath: binaryPath}) // I will pass here a lavavisor type which implements VersionValidationInf interface
+
+	versionMonitor := processmanager.NewVersionMonitor(binaryPath)
+
+	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
+
+	// start a goroutine that checks for process manager's trigger flag!
+	versionMonitor.MonitorVersionUpdates(ctx)
 
 	// tearing down
 	select {
