@@ -142,26 +142,19 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// create the pairing slots with assigned reqs
 	slots := pairingscores.CalcSlots(strictestPolicy)
 	// group identical slots (in terms of reqs types)
-	slotGroups, strictestPolicy := pairingscores.GroupSlots(slots, strictestPolicy)
-
-	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, *strictestPolicy, epoch)
+	slotGroups := pairingscores.GroupSlots(slots)
+	// filter relevant providers and add slotFiltering for mix filters
+	providerScores, err := pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots))
 	if err != nil {
 		return nil, 0, "", err
 	}
 
-	if len(slots) >= len(stakeEntries) { // TODO: also in the loop of groups check
+	if len(slots) >= len(providerScores) {
 		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
 
-	// create providerScore array with all possible providers
-	providerScores := []*pairingscores.PairingScore{}
-	for i := range stakeEntries {
-		providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
-		providerScores = append(providerScores, providerScore)
-	}
-
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevGroupSlot := pairingscores.NewPairingSlotGroup(pairingscores.NewPairingSlot()) // init dummy slot to compare to
+	prevGroupSlot := pairingscores.NewPairingSlotGroup(pairingscores.NewPairingSlot(-1)) // init dummy slot to compare to
 	for idx, group := range slotGroups {
 		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
@@ -169,7 +162,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		if err != nil {
 			return nil, 0, "", err
 		}
-		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData)
+		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Indexes(), hashData)
 		providers = append(providers, pickedProviders...)
 		prevGroupSlot = group
 	}

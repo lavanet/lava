@@ -8,8 +8,12 @@ type PairingSlotInf interface {
 }
 
 type PairingSlotGroup struct {
-	Reqs  map[string]ScoreReq
-	Count int
+	Reqs    map[string]ScoreReq
+	indexes []int
+}
+
+func (s PairingSlotGroup) Indexes() []int {
+	return s.indexes
 }
 
 func (s PairingSlotGroup) Requirements() map[string]ScoreReq {
@@ -17,14 +21,18 @@ func (s PairingSlotGroup) Requirements() map[string]ScoreReq {
 }
 
 func NewPairingSlotGroup(pairingSlot *PairingSlot) *PairingSlotGroup {
-	return &PairingSlotGroup{Count: 1, Reqs: pairingSlot.Reqs}
+	return &PairingSlotGroup{indexes: []int{pairingSlot.Index}, Reqs: pairingSlot.Reqs}
+}
+
+func (psg *PairingSlotGroup) AddToGroup(pairingSlot *PairingSlot) {
+	psg.indexes = append(psg.indexes, pairingSlot.Index)
 }
 
 // Subtract generates a diff slot that contains the reqs that are in the slot receiver but not in the "other" slot
-func (s PairingSlotGroup) Subtract(other *PairingSlotGroup) *PairingSlot {
+func (psg PairingSlotGroup) Subtract(other *PairingSlotGroup) *PairingSlot {
 	reqsDiff := make(map[string]ScoreReq)
-	for key := range s.Reqs {
-		req := s.Reqs[key]
+	for key := range psg.Reqs {
+		req := psg.Reqs[key]
 		otherReq, found := other.Reqs[key]
 		if !found {
 			reqsDiff[key] = req
@@ -33,22 +41,24 @@ func (s PairingSlotGroup) Subtract(other *PairingSlotGroup) *PairingSlot {
 		}
 	}
 
-	diffSlot := NewPairingSlot() // we set new.Subtract(old)
+	diffSlot := NewPairingSlot(-1) // we set new.Subtract(old)
 	diffSlot.Reqs = reqsDiff
 	return diffSlot
 }
 
 type PairingSlot struct {
-	Reqs map[string]ScoreReq
+	Reqs  map[string]ScoreReq
+	Index int
 }
 
 func (s PairingSlot) Requirements() map[string]ScoreReq {
 	return s.Reqs
 }
 
-func NewPairingSlot() *PairingSlot {
+func NewPairingSlot(slotIndex int) *PairingSlot {
 	return &PairingSlot{
-		Reqs: map[string]ScoreReq{},
+		Reqs:  map[string]ScoreReq{},
+		Index: slotIndex,
 	}
 }
 

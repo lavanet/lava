@@ -10,6 +10,10 @@ type SelectedProvidersFilter struct {
 	selectedProviders []string
 }
 
+func (f *SelectedProvidersFilter) IsMix() bool {
+	return false
+}
+
 func (f *SelectedProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	switch strictestPolicy.SelectedProvidersMode {
 	case planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, planstypes.SELECTED_PROVIDERS_MODE_MIXED:

@@ -83,7 +83,7 @@ func CalcSlots(policy *planstypes.Policy) []*PairingSlot {
 			}
 		}
 
-		slots[i] = NewPairingSlot()
+		slots[i] = NewPairingSlot(i)
 		slots[i].Reqs = reqMap
 	}
 
@@ -91,7 +91,7 @@ func CalcSlots(policy *planstypes.Policy) []*PairingSlot {
 }
 
 // group the slots
-func GroupSlots(slots []*PairingSlot, strictestPolicy *planstypes.Policy) ([]*PairingSlotGroup, *planstypes.Policy) {
+func GroupSlots(slots []*PairingSlot) []*PairingSlotGroup {
 	uniqueSlots := []*PairingSlotGroup{}
 
 	if len(slots) == 0 {
@@ -103,7 +103,7 @@ func GroupSlots(slots []*PairingSlot, strictestPolicy *planstypes.Policy) ([]*Pa
 
 		for i := range uniqueSlots {
 			if slots[k].Equal(uniqueSlots[i]) {
-				uniqueSlots[i].Count += 1
+				uniqueSlots[i].AddToGroup(slots[k])
 				isUnique = false
 				break
 			}
@@ -115,9 +115,7 @@ func GroupSlots(slots []*PairingSlot, strictestPolicy *planstypes.Policy) ([]*Pa
 		}
 	}
 
-	// TODO: return the universal policy for filtering on all slots
-
-	return uniqueSlots, strictestPolicy
+	return uniqueSlots
 }
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy
@@ -173,7 +171,7 @@ func PrepareHashData(projectIndex, chainID string, epochHash []byte, idx int) []
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice
 // (using the providers' score list and hashData)
-func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hashData []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
+func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, hashData []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
 	if len(scores) == 0 {
 		return returnedProviders
 	}
@@ -193,12 +191,13 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 
 	rng := rand.New(hashData)
 
-	for it := 0; it < groupCount; it++ {
+	for _, groupIndex := range groupIndexes {
 		randomValue := uint64(rng.Int63n(scoreSum.BigInt().Int64())) + 1
 		newScoreSum := math.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
-			if scores[idx].SkipForSelection {
+			_, ok := scores[idx].SlotFiltering[groupIndex]
+			if scores[idx].SkipForSelection || ok {
 				// skip index of providers already selected
 				continue
 			}

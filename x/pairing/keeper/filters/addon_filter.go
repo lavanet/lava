@@ -11,6 +11,10 @@ type AddonFilter struct {
 	requirements map[spectypes.CollectionData]map[string]struct{} // key is collectionData value is a map of required extensions
 }
 
+func (f *AddonFilter) IsMix() bool {
+	return false
+}
+
 func (f *AddonFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	if len(strictestPolicy.ChainPolicies) > 0 {
 		chainPolicy := strictestPolicy.ChainPolicies[0] // only the specific spec chain policy is there
