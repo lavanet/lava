@@ -56,11 +56,11 @@
 #     LAVA_BUILD_OPTIONS="static" make build-all
 #
 #   Build and generate docker image
-#     LAVA_BUILD_OPTIONS="static" make docker-build
+#     LAVA_BUILD_OPTIONS="static" make docker-build-all
 #
 #   Build release [and optionally generate docker image]
 #     LAVA_BUILD_OPTIONS="static,release" make build-all
-#     LAVA_BUILD_OPTIONS="static,release" make docker-build
+#     LAVA_BUILD_OPTIONS="static,release" make docker-build-all
 #
 #   Build release of specific version, and generate docker image
 #     LAVA_VERSION=0.4.3 LAVA_BUILD_OPTIONS="static,release" make docker-build
@@ -172,6 +172,12 @@ whitespace += $(null) $(null)
 comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
+# trick: newline hold a single newline (Makefile ignores first newline)
+define newline
+
+
+endef
+
 # process linker flags
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=lava \
@@ -239,6 +245,19 @@ endef
 
 all: lint test
 
+# test that $(LAVA_BINARY) is valid: wrap valid values within ":" to avoid
+# sub-matches (and explicitly rule out the full combo of all valid binaries
+# as a single string).
+
+valid_binaries := :$(subst $(whitespace),:,$(LAVA_ALL_BINARIES)):all:
+
+define validate_binary
+# arg should not contain ":"
+$(if $(findstring :,$1),$(error $2),)
+# :arg: should appear in valid_binaries
+$(if $(findstring :$1:,$(valid_binaries)),,$(error $2))
+endef
+
 # targets "build","install" (standalone) are only possible if LAVA_BINARY is
 # defined - either one of available binaries in $(LAVA_ALL_BINARIES) or "all";
 # otherwise it is an error.
@@ -247,20 +266,11 @@ ifeq (,$(LAVA_BINARY))
 LAVA_BINARY := bad
 # these will be called if target is "build" or "install" and $(LAVA_BINARY)
 # remains undefined.
-build-bad install-bad:
+build-bad install-bad docker-build-bad:
 	$(error "target '$(call prefix,-,$@)' requires valid env 'LAVA_BINARY'")
 else
-  # test that $(LAVA_BINARY) is valid: wrap valid values within ":" to avoid
-  # sub-matches (and explicitly rule out the full combo of all valid binaries
-  # as a single string).
-  valid_binaries := :$(subst $(whitespace),:,$(LAVA_ALL_BINARIES)):all:
-  $(info $(valid_binaries))
-  ifeq (:,$(findstring :,$(LAVA_BINARY)))
-    $(error "targets 'build', 'install' require valid env 'LAVA_BINARY'")
-  endif
-  ifeq (,$(findstring :$(LAVA_BINARY):,$(valid_binaries)))
-    $(error "target 'build', 'install' require valid env 'LAVA_BINARY'")
-  endif
+$(call validate_binary,$(LAVA_BINARY),\
+  "targets 'build'(comma) 'install' require valid env 'LAVA_BINARY'")
 endif
 
 build: build-$(LAVA_BINARY)
@@ -268,6 +278,7 @@ install: install-$(LAVA_BINARY)
 
 build-%: BUILD_ARGS=-o $(BUILDDIR)/
 build-% install-%: $(BUILDDIR)/
+	$(call validate_binary,$*,"No rule to make target '$@'")
 	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/$*
 
 # dummy rule to prevent the above wildcard from catching {build,install}-all
@@ -280,19 +291,22 @@ install-all: $(foreach binary,$(LAVA_ALL_BINARIES),install-$(binary))
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
+docker-build: docker-build-$(LAVA_BINARY)
+
 # build lavad within docker (reproducible) and docker image
-docker-build: build-docker-helper build-docker-copier
+docker-build-%: build-docker-helper-% build-docker-copier-%
+	@echo -n
 
 # build lavad within docker (repducible) for both archs
 build-images: build-image_amd64 build-image-arm64
 
 # build lavad-linux-amd64 within docker (reproducible) and docker image
 build-image-amd64: TARGETARCH=amd64
-build-image-amd64: build-docker-helper build-docker-copier
+build-image-amd64: build-docker-helper-all build-docker-copier-all
 
 # build lavad-linux-arm64 within docker (reproducible) and docker image
 build-image-arm64: TARGETARCH=arm64
-build-image-arm64: build-docker-helper build-docker-copier
+build-image-arm64: build-docker-helper-all build-docker-copier-all
 
 RUNNER_IMAGE_DEBIAN := debian:11-slim
 
@@ -301,7 +315,8 @@ $(if $(TARGETARCH),$(TARGETARCH),$(shell GOARCH= go env GOARCH))
 endef
 
 # Note: this target expects TARGETARCH to be defined
-build-docker-helper: $(BUILDDIR)/
+build-docker-helper-%: $(BUILDDIR)/
+	$(call validate_binary,$*,"No rule to make target '$@'")
 	$(DOCKER) buildx create --name lavabuilder || true
 	$(DOCKER) buildx use lavabuilder
 	$(DOCKER) buildx build \
@@ -311,6 +326,7 @@ build-docker-helper: $(BUILDDIR)/
 		--build-arg GIT_CLONE=$(GIT_CLONE) \
 		--build-arg BUILD_OPTIONS=$(LAVA_BUILD_OPTIONS) \
 		--build-arg RUNNER_IMAGE=$(RUNNER_IMAGE_DEBIAN) \
+		--build-arg LAVA_BINARY=$* \
 		--platform linux/$(call autogen_targetarch) \
 		-t lava:$(VERSION) \
 		--load \
@@ -321,12 +337,18 @@ define autogen_extraver
 $(if $(TARGETARCH),-linux-$(TARGETARCH),)
 endef
 
+define expand_lava_binary
+$(subst all,$(LAVA_ALL_BINARIES),$1)
+endef
+
 # Note: this target expects TARGETARCH to be defined
-build-docker-copier: $(BUILDDIR)/
-	$(DOCKER) rm -f lavabinary 2> /dev/null || true
-	$(DOCKER) create -ti --name lavabinary lava:$(VERSION)
-	$(DOCKER) cp lavabinary:/bin/lavad $(BUILDDIR)/lavad$(call autogen_extraver)
-	$(DOCKER) rm -f lavabinary
+build-docker-copier-%: $(BUILDDIR)/
+	$(call validate_binary,$*,"No rule to make target '$@'")
+	@$(DOCKER) rm -f lavabinary 2> /dev/null || true
+	@$(DOCKER) create -ti --name lavabinary lava:$(VERSION) > /dev/null
+	$(foreach binary,$(call expand_lava_binary,$*),\
+	  $(DOCKER) cp lavabinary:/bin/$(binary) $(BUILDDIR)/$(binary)$(call autogen_extraver) $(newline))
+	@$(DOCKER) rm -f lavabinary > /dev/null
 
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
@@ -370,5 +392,4 @@ $(BUILDDIR)/proto-gen: $(call rwildcard,proto/,*.proto)
 .PHONY: all docker-build lint test proto-gen \
 	go-mod-cache go.sum draw-deps \
 	build build-all install install-all \
-	build-docker-helper build-docker-copier \
 	build-images build-image-amd64 build-image-arm64

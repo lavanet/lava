@@ -41,9 +41,15 @@ ARG TARGETARCH
 # (useful to compile a specific version, combined with GIT_VERSION).
 ARG GIT_CLONE=false
 
-# set LAVA_BUILD_OPTIONS to control the Makefile behavior (see there).
+# set LAVA_BUILD_OPTIONS to control the Makefile behavior.
+# (this controls the build options - see there)
 ARG BUILD_OPTIONS
 ENV LAVA_BUILD_OPTIONS=${BUILD_OPTIONS}
+
+# set LAVA_BINARY to control Makefile behavior.
+# (this controls which binaries will be generated - see there)
+ARG LAVA_BINARY
+ENV LAVA_BINARY=${LAVA_BINARY}
 
 # Download go dependencies
 WORKDIR /lava
@@ -123,8 +129,9 @@ RUN apt-get update \
 
 FROM runner-base
 
-COPY --from=cosmovisor /go/bin/cosmovisor /bin/cosmovisor
-COPY --from=builder /lava/build/lavad /bin/lavad
+ARG LAVA_BINARY
+COPY --from=cosmovisor --chown=0:0 --chmod=755 /go/bin/cosmovisor /bin/
+COPY --from=builder --chown=0:0 --chmod=755 /lava/build/* /bin/
 
 ENV HOME /lava
 WORKDIR $HOME
