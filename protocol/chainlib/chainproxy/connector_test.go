@@ -156,8 +156,8 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 		rpc, err := conn.GetRpc(ctx, true)
 		require.Nil(t, err)
 		rpcList[i] = rpc
-		response := &pb_pkg.QueryShowChainInfoResponse{}
-		err = grpc.Invoke(ctx, "lavanet.lava.spec.Query/ShowChainInfo", &pb_pkg.QueryShowChainInfoRequest{}, response, rpc)
+		queryClient := pb_pkg.NewQueryClient(rpc)
+		response, err := queryClient.ShowChainInfo(ctx, &pb_pkg.QueryShowChainInfoRequest{})
 		require.Equal(t, "Test", response.ChainID)
 		require.Nil(t, err)
 	}
