@@ -16,6 +16,7 @@ type PairingScore struct {
 	Score            math.Uint
 	ScoreComponents  map[string]math.Uint
 	SkipForSelection bool
+	SlotFiltering    map[int]struct{} // slot indexes here are skipped
 }
 
 func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry) *PairingScore {

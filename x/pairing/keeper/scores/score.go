@@ -69,8 +69,7 @@ func GetAllReqs() []ScoreReq {
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
-// TODO: this function should be changed in the future since it only supports stake reqs
-func CalcSlots(policy planstypes.Policy) []*PairingSlot {
+func CalcSlots(policy *planstypes.Policy) []*PairingSlot {
 	// init slot array (should be as the number of providers to pair)
 	slots := make([]*PairingSlot, policy.MaxProvidersToPair)
 
@@ -78,9 +77,9 @@ func CalcSlots(policy planstypes.Policy) []*PairingSlot {
 	for i := range slots {
 		reqMap := make(map[string]ScoreReq)
 		for _, req := range reqs {
-			active := req.Init(policy)
+			active := req.Init(*policy)
 			if active {
-				reqMap[req.GetName()] = req.GetReqForSlot(policy, i)
+				reqMap[req.GetName()] = req.GetReqForSlot(*policy, i)
 			}
 		}
 
@@ -92,7 +91,7 @@ func CalcSlots(policy planstypes.Policy) []*PairingSlot {
 }
 
 // group the slots
-func GroupSlots(slots []*PairingSlot) []*PairingSlotGroup {
+func GroupSlots(slots []*PairingSlot, strictestPolicy *planstypes.Policy) ([]*PairingSlotGroup, *planstypes.Policy) {
 	uniqueSlots := []*PairingSlotGroup{}
 
 	if len(slots) == 0 {
@@ -116,7 +115,9 @@ func GroupSlots(slots []*PairingSlot) []*PairingSlotGroup {
 		}
 	}
 
-	return uniqueSlots
+	// TODO: return the universal policy for filtering on all slots
+
+	return uniqueSlots, strictestPolicy
 }
 
 // TODO: currently we'll use weight=1 for all reqs. In the future, we'll get it from policy

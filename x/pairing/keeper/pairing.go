@@ -113,7 +113,7 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, projectID string, errorRet error) {
-	var strictestPolicy planstypes.Policy
+	var strictestPolicy *planstypes.Policy
 
 	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
@@ -129,7 +129,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
+	*strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
@@ -142,16 +142,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// create the pairing slots with assigned reqs
 	slots := pairingscores.CalcSlots(strictestPolicy)
 	// group identical slots (in terms of reqs types)
-	slotGroups := pairingscores.GroupSlots(slots) // TODO: send policy, add to slotGroup it's modified policy, with the modified number of requested providers, and return the universal policy for filtering on all slots
-	// TODO: save stake entries per policy in a map
+	slotGroups, strictestPolicy := pairingscores.GroupSlots(slots, strictestPolicy)
 
-	//TODO: filter based on universal slot policy
-	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch)
+	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, *strictestPolicy, epoch)
 	if err != nil {
 		return nil, 0, "", err
 	}
-
-	// TODO: compare universal slot policy filtered entries before continuing
 
 	if len(slots) >= len(stakeEntries) { // TODO: also in the loop of groups check
 		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil

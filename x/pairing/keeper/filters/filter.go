@@ -40,6 +40,10 @@ func initFilters(filters []Filter, strictestPolicy planstypes.Policy) []Filter {
 func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy planstypes.Policy, currentEpoch uint64) ([]epochstoragetypes.StakeEntry, error) {
 	filters = initFilters(filters, strictestPolicy)
 
+	if len(filters) == 0 {
+		return providers, nil
+	}
+
 	var filtersResult [][]bool
 
 	for _, filter := range filters {

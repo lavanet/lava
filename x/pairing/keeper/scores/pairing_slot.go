@@ -33,7 +33,7 @@ func (s PairingSlotGroup) Subtract(other *PairingSlotGroup) *PairingSlot {
 		}
 	}
 
-	diffSlot := NewPairingSlot()
+	diffSlot := NewPairingSlot() // we set new.Subtract(old)
 	diffSlot.Reqs = reqsDiff
 	return diffSlot
 }
