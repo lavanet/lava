@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	tmclient "github.com/cometbft/cometbft/rpc/client/http"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,7 +33,6 @@ import (
 	planTypes "github.com/lavanet/lava/x/plans/types"
 	specTypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
-	tmclient "github.com/tendermint/tendermint/rpc/client/http"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -293,8 +293,8 @@ func (lt *lavaTest) checkStakeLava(
 			panic(err)
 		}
 		if len(providerQueryRes.StakeEntry) != providerCount {
-			fmt.Println("ProviderQueryRes: ", providerQueryRes)
-			panic("Staking Failed PROVIDER")
+			fmt.Println("ProviderQueryRes: ", providerQueryRes.String())
+			panic(fmt.Errorf("staking Failed PROVIDER count %d, wanted %d", len(providerQueryRes.StakeEntry), providerCount))
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
 			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
@@ -340,7 +340,7 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/jsonrpcProvider%d.yml --from servicer%d %s",
+			"%s rpcprovider %s/jsonrpcProvider%d.yml --chain-id=lava --from servicer%d %s",
 			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
@@ -359,7 +359,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
-			"%s rpcconsumer %s/ethConsumer%d.yml --from %s %s",
+			"%s rpcconsumer %s/ethConsumer%d.yml --chain-id=lava --from %s %s",
 			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
@@ -515,7 +515,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/lavaProvider%d --from servicer%d %s",
+			"%s rpcprovider %s/lavaProvider%d --chain-id=lava --from servicer%d %s",
 			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
@@ -534,7 +534,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
-			"%s rpcconsumer %s/lavaConsumer%d.yml --from %s %s",
+			"%s rpcconsumer %s/lavaConsumer%d.yml --chain-id=lava --from %s %s",
 			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
@@ -15,7 +16,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -124,7 +124,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 	}
 }
 
-func (rm *ReliabilityManager) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
+func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
 	return rm.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
@@ -177,7 +177,7 @@ func (vp *VoteParams) GetCloseVote() bool {
 func BuildBaseVoteDataFromEvent(event terderminttypes.Event) (voteID string, voteDeadline uint64, err error) {
 	attributes := map[string]string{}
 	for _, attribute := range event.Attributes {
-		attributes[string(attribute.Key)] = string(attribute.Value)
+		attributes[attribute.Key] = attribute.Value
 	}
 	voteID, ok := attributes["voteID"]
 	if !ok {
@@ -197,7 +197,7 @@ func BuildBaseVoteDataFromEvent(event terderminttypes.Event) (voteID string, vot
 func BuildVoteParamsFromDetectionEvent(event terderminttypes.Event) (*VoteParams, error) {
 	attributes := map[string]string{}
 	for _, attribute := range event.Attributes {
-		attributes[string(attribute.Key)] = string(attribute.Value)
+		attributes[attribute.Key] = attribute.Value
 	}
 	voteID, ok := attributes["voteID"]
 	if !ok {

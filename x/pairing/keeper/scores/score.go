@@ -166,7 +166,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 }
 
 // PrepareHashData prepares the hash needed in the pseudo-random choice of providers
-func PrepareHashData(projectIndex string, chainID string, epochHash []byte, idx int) []byte {
+func PrepareHashData(projectIndex, chainID string, epochHash []byte, idx int) []byte {
 	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex), []byte(strconv.Itoa(idx))}, nil)
 }
 

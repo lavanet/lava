@@ -83,7 +83,7 @@ func maxAddressLengths() int {
 	return address.MaxAddrLen
 }
 
-func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, chainID string) string {
+func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier, chainID string) string {
 	leadingChar := asciiNumberToChar(len(projectID))
 	key := string(leadingChar) + projectID + providerAddress.String() + uniqueIdentifier + chainID
 	return key

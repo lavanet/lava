@@ -400,7 +400,7 @@ func (fs *FixationStore) AppendEntry(
 	return nil
 }
 
-func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, data []byte) {
+func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key, data []byte) {
 	safeIndex, block, kind := decodeFromTimer(key)
 
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
@@ -1037,7 +1037,7 @@ func (fs *FixationStore) Init(ctx sdk.Context, data []types.RawMessage) {
 func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
-	callback := func(ctx sdk.Context, key []byte, data []byte) {
+	callback := func(ctx sdk.Context, key, data []byte) {
 		fs.entryCallbackBeginBlock(ctx, key, data)
 	}
 

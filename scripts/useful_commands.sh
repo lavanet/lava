@@ -16,3 +16,17 @@ function sleep_until_next_epoch {
     fi
     done
 }
+
+function wait_next_block {
+  current=$( lavad q block | jq .block.header.height)
+  echo "Waiting for next block $current"
+  while true; do
+    sleep 0.5
+    new=$( lavad q block | jq .block.header.height)
+    if [[ $current != $new ]]
+    then
+      echo "finished waiting for block $new"
+        break
+    fi
+  done
+}

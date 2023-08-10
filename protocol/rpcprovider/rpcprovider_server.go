@@ -43,20 +43,20 @@ type RPCProviderServer struct {
 }
 
 type ReliabilityManagerInf interface {
-	GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error)
+	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error)
 	GetLatestBlockNum() int64
 }
 
 type RewardServerInf interface {
-	SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool)
+	SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr, apiInterface string) (existingCU uint64, updatedWithProof bool)
 	SubscribeStarted(consumer string, epoch uint64, subscribeID string)
 	SubscribeEnded(consumer string, epoch uint64, subscribeID string)
 }
 
 type StateTrackerInf interface {
 	LatestBlock() int64
-	GetMaxCuForUser(ctx context.Context, consumerAddress string, chainID string, epocu uint64) (maxCu uint64, err error)
-	VerifyPairing(ctx context.Context, consumerAddress string, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error)
+	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
+	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error)
 }
 
 func (rpcps *RPCProviderServer) ServeRPCRequests(

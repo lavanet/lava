@@ -39,7 +39,7 @@ jobs:
 
     # Pre-build 
     - name: lavad build
-      run: make install-lavad
+      run: make install-all
 
     ######################################################
     ### Run Lava E2E Tests 

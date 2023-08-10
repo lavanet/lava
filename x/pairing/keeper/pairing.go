@@ -51,7 +51,7 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress
 	return requestedEpochStart, providersType, nil
 }
 
-func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block uint64, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
+func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
 	verifiedUser := false
 
 	// we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
@@ -284,7 +284,7 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planst
 	return providersToPair, nil
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject uint64, cuLeftInSubscription uint64) (allowedCUThisEpoch uint64, allowedCUTotal uint64) {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject, cuLeftInSubscription uint64) (allowedCUThisEpoch, allowedCUTotal uint64) {
 	var policyEpochCuLimit []uint64
 	var policyTotalCuLimit []uint64
 	for _, policy := range policies {
@@ -307,7 +307,7 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU uint64, pairedProviders uint64, projectID string, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU, pairedProviders uint64, projectID string, errorRet error) {
 	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, epoch)
 	if err != nil {
 		return false, allowedCU, 0, "", err

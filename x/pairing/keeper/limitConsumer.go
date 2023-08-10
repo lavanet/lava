@@ -9,7 +9,7 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
-func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU uint64, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) error {
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) error {
 	project, err := k.GetProjectData(ctx, clientAddr, chainID, epoch)
 	// if client is not legacy (works through a project), the CU verification is different
 	if err == nil {

@@ -60,7 +60,7 @@ func getDomain(s string) (domain string) {
 
 var current *proxyProcess
 
-func main(host *string, port *string) {
+func main(host, port *string) {
 	// CLI ARGS
 	fmt.Println("Proxy Main")
 	// host := flag.String("host", "", "HOST (required) - Which host do you wish to proxy\nUsage Example:\n	$ go run proxy.go http://google.com/")
@@ -196,7 +196,7 @@ func startEpochUpdate(noSave bool) {
 	}()
 }
 
-func fakeResult(val string, fake string) string {
+func fakeResult(val, fake string) string {
 	parts := strings.Split(val, ",")
 	found := -1
 	for i, part := range parts {

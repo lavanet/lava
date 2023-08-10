@@ -110,7 +110,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 
 // DeleteProject deletes a project from a subscription
 // (takes effect at the beginning of next epoch)
-func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
+func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	// project deletion takes effect at the beginning of the next epoch

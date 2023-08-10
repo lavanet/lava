@@ -196,6 +196,7 @@ else ifeq (rocksdb,$(findstring rocksdb,$(LAVA_BUILD_OPTIONS)))
 endif
 
 ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
+  $(info Building With Production Flag)
   ldflags += -X github.com/lavanet/lava/utils.ExtendedLogLevel=production
 endif
 
@@ -331,8 +332,21 @@ lint:
 	@echo "--> Running linter"
 	golangci-lint run --config .golangci.yml
 
+PROJECT_NAME = $(shell git remote get-url origin | xargs basename -s .git)
+protoVer=0.13.5
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+containerProtoGen=$(PROJECT_NAME)-proto-gen-$(protoVer)
+containerProtoFmt=$(PROJECT_NAME)-proto-fmt-$(protoVer)
+
+proto-gen:
+	@echo "Generating Protobuf files"
+	if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); \
+	else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
+		sh ./scripts/protocgen.sh; fi
+
 .PHONY: all docker-build lint test \
 	build build-all install install-all \
 	go-mod-cache go.sum draw-deps \
 	build-docker-helper build-docker-copier \
 	build-images build-image-amd64 build-image-arm64
+

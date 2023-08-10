@@ -10,7 +10,7 @@ const TypeMsgConflictVoteReveal = "conflict_vote_reveal"
 
 var _ sdk.Msg = &MsgConflictVoteReveal{}
 
-func NewMsgConflictVoteReveal(creator string, voteID string, nonce int64, hash []byte) *MsgConflictVoteReveal {
+func NewMsgConflictVoteReveal(creator, voteID string, nonce int64, hash []byte) *MsgConflictVoteReveal {
 	return &MsgConflictVoteReveal{
 		Creator: creator,
 		VoteID:  voteID,

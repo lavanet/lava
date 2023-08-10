@@ -41,7 +41,7 @@ type fixationTemplate struct {
 }
 
 // helper to automate testing operations
-func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countObj int, countVS int) {
+func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countObj, countVS int) {
 	ctx, fs := initCtxAndFixationStores(t, countVS)
 
 	var coins []sdk.Coin

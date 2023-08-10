@@ -2,8 +2,10 @@ package statetracker
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
@@ -11,7 +13,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 const (
@@ -35,7 +36,11 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 		}
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
-	blockResults, err = et.clientCtx.Client.BlockResults(ctx, &latestBlock)
+	brp, err := tryIntoTendermintRPC(et.clientCtx.Client)
+	if err != nil {
+		return utils.LavaFormatError("could not get block result provider", err)
+	}
+	blockResults, err = brp.BlockResults(ctx, &latestBlock)
 	if err != nil {
 		return err
 	}
@@ -75,7 +80,7 @@ func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 	for _, event := range et.blockResults.EndBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
-				if string(attribute.Key) == "param" && string(attribute.Value) == "Version" {
+				if attribute.Key == "param" && attribute.Value == "Version" {
 					return true
 				}
 			}
@@ -140,4 +145,23 @@ func (et *EventTracker) getLatestVoteEvents() (votes []*reliabilitymanager.VoteP
 	}
 
 	return votes, err
+}
+
+type tendermintRPC interface {
+	BlockResults(
+		ctx context.Context,
+		height *int64,
+	) (*ctypes.ResultBlockResults, error)
+	ConsensusParams(
+		ctx context.Context,
+		height *int64,
+	) (*ctypes.ResultConsensusParams, error)
+}
+
+func tryIntoTendermintRPC(cl client.TendermintRPC) (tendermintRPC, error) {
+	brp, ok := cl.(tendermintRPC)
+	if !ok {
+		return nil, fmt.Errorf("client does not implement tendermintRPC: %T", cl)
+	}
+	return brp, nil
 }

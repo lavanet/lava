@@ -55,7 +55,7 @@ type ChainTracker struct {
 // it supports requests for [spectypes.LATEST_BLOCK-distance1, spectypes.LATEST_BLOCK-distance2)
 // spectypes.NOT_APPLICABLE in fromBlock or toBlock results in only returning specific block.
 // if specific block is spectypes.NOT_APPLICABLE it is ignored
-func (cs *ChainTracker) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, err error) {
+func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, err error) {
 	cs.blockQueueMu.RLock()
 	defer cs.blockQueueMu.RUnlock()
 
@@ -143,7 +143,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock 
 	return latestHash, nil
 }
 
-func (cs *ChainTracker) replaceBlocksQueue(latestBlock int64, newQueueStartIndex int64, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newBlocksQueue []BlockStore, blocksCopied int64) (int64, uint64, string) {
+func (cs *ChainTracker) replaceBlocksQueue(latestBlock, newQueueStartIndex, blocksQueueStartIndex, blocksQueueEndIndex int64, newBlocksQueue []BlockStore, blocksCopied int64) (int64, uint64, string) {
 	cs.blockQueueMu.Lock()
 	defer cs.blockQueueMu.Unlock()
 	cs.setLatestBlockNum(latestBlock)
@@ -160,7 +160,7 @@ func (cs *ChainTracker) replaceBlocksQueue(latestBlock int64, newQueueStartIndex
 	return blocksCopied, blocksQueueLen, latestHash
 }
 
-func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newQueueStartIndex int64, readIndexDiff int64, newBlocksQueue []BlockStore) (int64, int64, int64, error) {
+func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex, readIndexDiff int64, newBlocksQueue []BlockStore) (int64, int64, int64, error) {
 	cs.blockQueueMu.RLock()
 	defer cs.blockQueueMu.RUnlock()
 	// loop through our block queue and compare new hashes to previous ones to find when to stop reading
@@ -185,7 +185,7 @@ func (cs *ChainTracker) readHashes(latestBlock int64, ctx context.Context, block
 
 // this function finds if there is an existing block data by hash at the existing data, this allows us to stop querying for further data backwards since when there is a match all former blocks are the same
 // it goes over the list backwards looking for a match. when one is found it returns how many blocks are needed from the memory in order to get the required length of queue
-func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff int64, newQueueIdx int64, fetchedBlockNum int64, newHashForBlock string) (foundOverlap bool, blocksQueueStartIndex int64, blocksQueueEndIndex int64, newQueueStartIndex int64) {
+func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff, newQueueIdx, fetchedBlockNum int64, newHashForBlock string) (foundOverlap bool, blocksQueueStartIndex, blocksQueueEndIndex, newQueueStartIndex int64) {
 	savedBlocks := int64(len(cs.blocksQueue))
 	if readIndexDiff >= savedBlocks {
 		// we are too far ahead, there is no overlap for sure
@@ -439,7 +439,7 @@ func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
 	return backoff
 }
 
-func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock int64, toBlock int64, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesMapRet map[int64]interface{}) {
+func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock, toBlock, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesMapRet map[int64]interface{}) {
 	for _, block := range requestedHashes {
 		if block.Block == requestBlock {
 			requestedBlockHash = []byte(block.Hash)
