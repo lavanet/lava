@@ -176,7 +176,7 @@ func validateUnstakeHoldBlocksStatic(v interface{}) error {
 // validateUnstakeHoldBlocks validates the UnstakeHoldBlocks param
 func validateBlocksParams(unstakeHoldBlocks, unstakeHoldBlocksStatic, blocksToSave uint64) error {
 	if !(unstakeHoldBlocksStatic > unstakeHoldBlocks && unstakeHoldBlocks > blocksToSave) {
-		return fmt.Errorf("parameters do not follow the rule of: unstakeHoldBlocksStatic >  unstakeHoldBlocks > blocksToSave", unstakeHoldBlocksStatic, unstakeHoldBlocks, blocksToSave)
+		return fmt.Errorf("parameters do not follow the rule of: unstakeHoldBlocksStatic >  unstakeHoldBlocks > blocksToSave")
 	}
 
 	return nil
