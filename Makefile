@@ -20,6 +20,7 @@
 #   build-image-amd64   - docker build (output: `$(BUILD_DIR)/*-linux-amd64`) with docker image
 #   build-image-arm64   - docker build (output: `$(BUILD_DIR)/*-linux-arm64`) with docker image
 #
+#   proto-gen           - (re)generate protobuf file
 #   test                - run unit-tests
 #   lint                - run the linter
 #
@@ -332,20 +333,26 @@ lint:
 	@echo "--> Running linter"
 	golangci-lint run --config .golangci.yml
 
-PROJECT_NAME = $(shell git remote get-url origin | xargs basename -s .git)
+# protobuf generation
+
+define rwildcard
+  $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+endef
 
 protoVer=0.13.5
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-containerProtoGen=$(PROJECT_NAME)-proto-gen-$(protoVer)
-containerProtoFmt=$(PROJECT_NAME)-proto-fmt-$(protoVer)
+containerProtoGen=lava-proto-gen-$(protoVer)
+containerProtoFmt=lava-proto-fmt-$(protoVer)
 
-proto-gen:
-	@echo "Generating Protobuf files"
-	if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); \
-	else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
-		sh ./scripts/protocgen.sh; fi
+proto-gen: $(BUILDDIR)/proto-gen
 
-.PHONY: all docker-build lint test \
+$(BUILDDIR)/proto-gen: $(call rwildcard,proto/,*.proto)
+	@echo "Generating protobuf files"
+	docker run --rm -v $(CURDIR):/workspace --workdir /workspace \
+		$(protoImageName) sh ./scripts/protocgen.sh
+	@touch $@
+
+.PHONY: all docker-build lint test proto-gen \
 	build build-all install install-all \
 	go-mod-cache go.sum draw-deps \
 	build-docker-helper build-docker-copier \
