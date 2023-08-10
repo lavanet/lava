@@ -2,7 +2,7 @@ import json
 
 # Specify the file path, field to edit, and new value
 path = '/home/user/go/lava/scripts/genesis/'
-genesis_org = 'stg_genesis.100723.json'
+genesis_org = 'stg_genesis.100823.json'
 genesis = 'genesis.json'
 genesis_specs = 'genesis_specs.json'
 
@@ -10,8 +10,9 @@ genesis_specs = 'genesis_specs.json'
 with open(path + genesis_org, 'r') as file:
     data = json.load(file)
 
-data["consensus_params"]["block"]["time_iota_ms"] = '1'
 data["app_state"]["gov"]["proposals"] = []
+
+data["app_state"]["staking"]["params"]["min_commission_rate"] = "0.000000000000000000"
 
 # give providers back their money
 for spec in data["app_state"]["spec"]["specList"]:
@@ -24,8 +25,13 @@ for spec in data["app_state"]["spec"]["specList"]:
                        data["app_state"]["bank"]["supply"][0]["amount"] = str(int(data["app_state"]["bank"]["supply"][0]["amount"]) + int(entry["stake"]["amount"]))
                        break
 
+data["app_state"]["protocol"]["params"]["version"]["consumer_min"] = "0.21.0"
+data["app_state"]["protocol"]["params"]["version"]["consumer_target"] = "0.21.0"
+data["app_state"]["protocol"]["params"]["version"]["provider_min"] = "0.21.0"
+data["app_state"]["protocol"]["params"]["version"]["provider_target"] = "0.21.0"
+
 data["app_state"]["epochstorage"]["stakeStorageList"] = []
-data["app_state"]["epochstorage"]["params"]["epochBlocks"] = "60"
+data["app_state"]["epochstorage"]["params"]["epochBlocks"] = "30"
 data["app_state"]["epochstorage"]["params"]["unstakeHoldBlocks"] = "3020"
 data["app_state"]["epochstorage"]["params"]["unstakeHoldBlocksStatic"] = "3100"
 data["app_state"]["epochstorage"]["params"]["latestParamChange"] = data["initial_height"] # fixate the params on start
@@ -37,7 +43,7 @@ data["app_state"]["pairing"]["epochPaymentsList"] = []
 data["app_state"]["pairing"]["providerPaymentStorageList"] = []
 data["app_state"]["pairing"]["uniquePaymentStorageClientProviderList"] = []
 
-data["chain_id"] = "lava-testnet-2"
+data["chain_id"] = "lava-staging-4"
 
 
 with open(path + genesis_specs, 'r') as file:
