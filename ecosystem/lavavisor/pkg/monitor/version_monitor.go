@@ -28,7 +28,7 @@ func getBinaryVersion(binaryPath string) (string, error) {
 
 	// output format is "lava-protocol version x.x.x"
 	version := strings.Split(string(output), " ")[2]
-	return version, nil
+	return strings.TrimSpace(version), nil
 }
 
 // ToDo: we will implement trigger logic here!
