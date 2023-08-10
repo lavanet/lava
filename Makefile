@@ -13,6 +13,9 @@
 #   build-[BIN]         - local build of select binary; [BIN] is one of "Binaries" (or "all")
 #   build               - equivalent to build-$(LAVA_BINARY) if set (if not set: error)
 #
+#   install-[BIN]       - local install of select binary; [BIN] is one of "Binaries" (or "all")
+#   install             - equivalent to install-$(LAVA_BINARY) if set (if not set: error)
+#
 #   docker-build-[BIN]  - docker build of select binary; [BIN] is one of "Binaries" (or "all")
 #   docker-build        - equivalent to docket-build-$(LAVA_BINARY) if set (if not set: error)
 #
@@ -49,14 +52,14 @@
 #   Build locally and run unit tests
 #     make test build
 #
-#   Build locally a static binaries (runs on any distributions and in containers)
-#     LAVA_BUILD_OPTIONS="static" make build
+#   Build locally static binaries (runs on any distributions and in containers)
+#     LAVA_BUILD_OPTIONS="static" make build-all
 #
 #   Build and generate docker image
 #     LAVA_BUILD_OPTIONS="static" make docker-build
 #
 #   Build release [and optionally generate docker image]
-#     LAVA_BUILD_OPTIONS="static,release" make build
+#     LAVA_BUILD_OPTIONS="static,release" make build-all
 #     LAVA_BUILD_OPTIONS="static,release" make docker-build
 #
 #   Build release of specific version, and generate docker image
@@ -236,23 +239,36 @@ endef
 
 all: lint test
 
-# targets build,install only possible if LAVA_BINARY is defined
-# (otherwise throw an error)
-ifneq (,$(LAVA_BINARY))
-build: build-$(LAVA_BINARY)
-install: install-$(LAVA_BINARY)
+# targets "build","install" (standalone) are only possible if LAVA_BINARY is
+# defined - either one of available binaries in $(LAVA_ALL_BINARIES) or "all";
+# otherwise it is an error.
+
+ifeq (,$(LAVA_BINARY))
+LAVA_BINARY := bad
+# these will be called if target is "build" or "install" and $(LAVA_BINARY)
+# remains undefined.
+build-bad install-bad:
+	$(error "target '$(call prefix,-,$@)' requires valid env 'LAVA_BINARY'")
 else
-build install:
-	$(error "target '$@' requires env 'LAVA_BINARY'")
+  # test that $(LAVA_BINARY) is valid: wrap valid values within ":" to avoid
+  # sub-matches (and explicitly rule out the full combo of all valid binaries
+  # as a single string).
+  valid_binaries := :$(subst $(whitespace),:,$(LAVA_ALL_BINARIES)):all:
+  $(info $(valid_binaries))
+  ifeq (:,$(findstring :,$(LAVA_BINARY)))
+    $(error "targets 'build', 'install' require valid env 'LAVA_BINARY'")
+  endif
+  ifeq (,$(findstring :$(LAVA_BINARY):,$(valid_binaries)))
+    $(error "target 'build', 'install' require valid env 'LAVA_BINARY'")
+  endif
 endif
 
-# generate: target-binary: BUILD_SOURCE=[...]
-$(call makedep,build install,lavad,BUILD_SOURCE=./...)
-$(call makedep,build install,lava-protocol,BUILD_SOURCE=./lava-protocol)
+build: build-$(LAVA_BINARY)
+install: install-$(LAVA_BINARY)
 
 build-%: BUILD_ARGS=-o $(BUILDDIR)/
 build-% install-%: $(BUILDDIR)/
-	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) $(BUILD_SOURCE)
+	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/$*
 
 # dummy rule to prevent the above wildcard from catching {build,install}-all
 $(call makedep,build install,all,)
@@ -333,16 +349,26 @@ lint:
 	@echo "--> Running linter"
 	golangci-lint run --config .golangci.yml
 
-PROJECT_NAME = $(shell git remote get-url origin | xargs basename -s .git)
+# protobuf generation
+
+define rwildcard
+  $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+endef
+
 protoVer=0.13.5
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
 containerProtoGen=lava-proto-gen-$(protoVer)
 containerProtoFmt=lava-proto-fmt-$(protoVer)
 
 proto-gen: $(BUILDDIR)/proto-gen
+$(BUILDDIR)/proto-gen: $(call rwildcard,proto/,*.proto)
+	@echo "Generating protobuf files"
+	docker run --rm -v $(CURDIR):/workspace --workdir /workspace \
+		$(protoImageName) sh ./scripts/protocgen.sh
+	@touch $@
 
-.PHONY: all docker-build lint test \
-	build build-all install install-all \
+.PHONY: all docker-build lint test proto-gen \
 	go-mod-cache go.sum draw-deps \
+	build build-all install install-all \
 	build-docker-helper build-docker-copier \
 	build-images build-image-amd64 build-image-arm64
