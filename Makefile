@@ -251,6 +251,7 @@ $(call makedep,build install,lava-protocol,BUILD_SOURCE=./protocol)
 
 build-%: BUILD_ARGS=-o $(BUILDDIR)/
 build-% install-%: $(BUILDDIR)/
+# this is not a great solution. fix it in the future. or change repo name.
 	@mv $(GOPATH)/bin/lava-protocol $(GOPATH)/bin/protocol 2>/dev/null || true
 	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) $(BUILD_SOURCE)
 	@mv $(GOPATH)/bin/protocol $(GOPATH)/bin/lava-protocol 2>/dev/null || true
