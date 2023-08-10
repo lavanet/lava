@@ -1,5 +1,5 @@
 #!/bin/bash
-# make install-lavad
+# make install-all
 killall -9 lavad
 rm -rf ~/.lava
 lavad init validator --chain-id lava

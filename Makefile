@@ -251,7 +251,9 @@ $(call makedep,build install,lava-protocol,BUILD_SOURCE=./protocol)
 
 build-%: BUILD_ARGS=-o $(BUILDDIR)/
 build-% install-%: $(BUILDDIR)/
+	@mv $(GOPATH)/bin/lava-protocol $(GOPATH)/bin/protocol 2>/dev/null || true
 	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) $(BUILD_SOURCE)
+	@mv $(GOPATH)/bin/protocol $(GOPATH)/bin/lava-protocol 2>/dev/null || true
 
 # dummy rule to prevent the above wildcard from catching {build,install}-all
 $(call makedep,build install,all,)

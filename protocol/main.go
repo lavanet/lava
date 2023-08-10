@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	_ "net/http/pprof"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +25,8 @@ const (
 func main() {
 	rootCmd := cmd.NewLavaProtocolRootCmd()
 
+	// version cobra command
+	cmdVersion := versionCommand()
 	// rpc consumer cobra command
 	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
 	// rpc provider cobra command
@@ -30,6 +34,8 @@ func main() {
 	// badge generator cobra command
 	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
 
+	// Add Version Command
+	rootCmd.AddCommand(cmdVersion)
 	// Add RPC Consumer Command
 	rootCmd.AddCommand(cmdRPCConsumer)
 	// Add RPC Provider Command
@@ -54,5 +60,17 @@ func main() {
 		default:
 			os.Exit(1)
 		}
+	}
+}
+
+func versionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			// Print the lava-protocol version
+			version := upgrade.GetCurrentVersion()
+			fmt.Println(version.ProviderVersion) // currently we have only one version.
+		},
 	}
 }
