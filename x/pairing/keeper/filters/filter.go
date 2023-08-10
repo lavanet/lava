@@ -96,7 +96,7 @@ func CalculateMixFilterSlots(mixFilters []Filter, slotCount int) (mixFiltersInde
 	mixFiltersIndexes = map[Filter][]int{}
 	mixFiltersCount := len(mixFilters)
 	if slotCount <= 1 || len(mixFilters) == 0 {
-		return
+		return mixFiltersIndexes
 	}
 	filtersInBatch := 1
 
@@ -124,5 +124,5 @@ func CalculateMixFilterSlots(mixFilters []Filter, slotCount int) (mixFiltersInde
 			}
 		}
 	}
-	return
+	return mixFiltersIndexes
 }
