@@ -20,6 +20,7 @@
 #   build-image-amd64   - docker build (output: `$(BUILD_DIR)/*-linux-amd64`) with docker image
 #   build-image-arm64   - docker build (output: `$(BUILD_DIR)/*-linux-arm64`) with docker image
 #
+#   proto-gen           - (re)generate protobuf file
 #   test                - run unit-tests
 #   lint                - run the linter
 #
@@ -338,18 +339,13 @@ lint:
 PROJECT_NAME = $(shell git remote get-url origin | xargs basename -s .git)
 protoVer=0.13.5
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-containerProtoGen=$(PROJECT_NAME)-proto-gen-$(protoVer)
-containerProtoFmt=$(PROJECT_NAME)-proto-fmt-$(protoVer)
+containerProtoGen=lava-proto-gen-$(protoVer)
+containerProtoFmt=lava-proto-fmt-$(protoVer)
 
-proto-gen:
-	@echo "Generating Protobuf files"
-	if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); \
-	else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
-		sh ./scripts/protocgen.sh; fi
+proto-gen: $(BUILDDIR)/proto-gen
 
 .PHONY: all docker-build lint test \
 	build build-all install install-all \
 	go-mod-cache go.sum draw-deps \
 	build-docker-helper build-docker-copier \
 	build-images build-image-amd64 build-image-arm64
-
