@@ -673,7 +673,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVote",
+                                "name": "lava.conflict.Query/ConflictVote",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -691,7 +691,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/ConflictVoteAll",
+                                "name": "lava.conflict.Query/ConflictVoteAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -709,7 +709,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.conflict.Query/Params",
+                                "name": "lava.conflict.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -727,7 +727,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/EpochDetails",
+                                "name": "lava.epochstorage.Query/EpochDetails",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -745,7 +745,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParams",
+                                "name": "lava.epochstorage.Query/FixatedParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -763,7 +763,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/FixatedParamsAll",
+                                "name": "lava.epochstorage.Query/FixatedParamsAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -781,7 +781,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/Params",
+                                "name": "lava.epochstorage.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -799,7 +799,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorage",
+                                "name": "lava.epochstorage.Query/StakeStorage",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -817,7 +817,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.epochstorage.Query/StakeStorageAll",
+                                "name": "lava.epochstorage.Query/StakeStorageAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -835,7 +835,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Clients",
+                                "name": "lava.pairing.Query/Clients",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -853,7 +853,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPayments",
+                                "name": "lava.pairing.Query/EpochPayments",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -871,7 +871,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/EpochPaymentsAll",
+                                "name": "lava.pairing.Query/EpochPaymentsAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -889,7 +889,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/GetPairing",
+                                "name": "lava.pairing.Query/GetPairing",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -907,7 +907,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Params",
+                                "name": "lava.pairing.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -925,7 +925,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorage",
+                                "name": "lava.pairing.Query/ProviderPaymentStorage",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -943,7 +943,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/ProviderPaymentStorageAll",
+                                "name": "lava.pairing.Query/ProviderPaymentStorageAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -961,7 +961,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/Providers",
+                                "name": "lava.pairing.Query/Providers",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -979,7 +979,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProvider",
+                                "name": "lava.pairing.Query/UniquePaymentStorageClientProvider",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -997,7 +997,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UniquePaymentStorageClientProviderAll",
+                                "name": "lava.pairing.Query/UniquePaymentStorageClientProviderAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1015,7 +1015,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/UserEntry",
+                                "name": "lava.pairing.Query/UserEntry",
                                 "block_parsing": {
                                     "parser_arg": [
                                         ""
@@ -1033,7 +1033,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.pairing.Query/VerifyPairing",
+                                "name": "lava.pairing.Query/VerifyPairing",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "block",
@@ -1053,7 +1053,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Chain",
+                                "name": "lava.spec.Query/Chain",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1071,7 +1071,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Params",
+                                "name": "lava.spec.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1089,7 +1089,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowAllChains",
+                                "name": "lava.spec.Query/ShowAllChains",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1107,7 +1107,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/ShowChainInfo",
+                                "name": "lava.spec.Query/ShowChainInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1125,7 +1125,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/Spec",
+                                "name": "lava.spec.Query/Spec",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1143,7 +1143,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "lavanet.lava.spec.Query/SpecAll",
+                                "name": "lava.spec.Query/SpecAll",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
