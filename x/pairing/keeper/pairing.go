@@ -129,7 +129,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	*strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
+	strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
@@ -170,10 +170,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
-func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (*planstypes.Policy, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return planstypes.Policy{}, err
+		return nil, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -186,27 +186,27 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
 	if !allowed {
-		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
+		return nil, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
 	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, err
+		return nil, err
 	}
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, err
+		return nil, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return planstypes.Policy{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
-	strictestPolicy := planstypes.Policy{
+	strictestPolicy := &planstypes.Policy{
 		GeolocationProfile:    geolocation,
 		MaxProvidersToPair:    providersToPair,
 		SelectedProvidersMode: selectedProvidersMode,
