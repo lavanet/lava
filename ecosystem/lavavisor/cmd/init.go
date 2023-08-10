@@ -112,7 +112,7 @@ var cmdLavavisorInit = &cobra.Command{
 		utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
 
 		// 3- if found: create a link from that binary to $(which lava-protocol)
-		out, err := exec.Command("which", "lava-protocol").Output()
+		out, err := exec.LookPath("lava-protocol")
 		if err != nil {
 			// if "which" command fails, copy binary to system path
 			gobin, err := exec.Command("go", "env", "GOPATH").Output()
@@ -149,9 +149,11 @@ var cmdLavavisorInit = &cobra.Command{
 			}
 
 			// try "which" command again
-			out, err = exec.Command("which", "lava-protocol").Output()
+			path, err := exec.LookPath("lava-protocol")
 			if err != nil {
-				utils.LavaFormatFatal("couldn't extract binary at the system path", err)
+				utils.LavaFormatFatal("couldn't find the binary in the system path", err)
+			} else {
+				utils.LavaFormatInfo("Found binary at:", utils.Attribute{Key: "Path", Value: path})
 			}
 		}
 		dest := strings.TrimSpace(string(out))
