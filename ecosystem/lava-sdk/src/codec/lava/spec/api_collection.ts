@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 
-export const protobufPackage = "lavanet.lava.spec";
+export const protobufPackage = "lava.spec";
 
 export enum EXTENSION {
   NONE = 0,
@@ -187,6 +187,7 @@ export interface Verification {
 export interface ParseValue {
   extension: string;
   expectedValue: string;
+  latestDistance: Long;
 }
 
 export interface CollectionData {
@@ -704,7 +705,7 @@ export const Verification = {
 };
 
 function createBaseParseValue(): ParseValue {
-  return { extension: "", expectedValue: "" };
+  return { extension: "", expectedValue: "", latestDistance: Long.UZERO };
 }
 
 export const ParseValue = {
@@ -714,6 +715,9 @@ export const ParseValue = {
     }
     if (message.expectedValue !== "") {
       writer.uint32(18).string(message.expectedValue);
+    }
+    if (!message.latestDistance.isZero()) {
+      writer.uint32(24).uint64(message.latestDistance);
     }
     return writer;
   },
@@ -739,6 +743,13 @@ export const ParseValue = {
 
           message.expectedValue = reader.string();
           continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.latestDistance = reader.uint64() as Long;
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -752,6 +763,7 @@ export const ParseValue = {
     return {
       extension: isSet(object.extension) ? String(object.extension) : "",
       expectedValue: isSet(object.expectedValue) ? String(object.expectedValue) : "",
+      latestDistance: isSet(object.latestDistance) ? Long.fromValue(object.latestDistance) : Long.UZERO,
     };
   },
 
@@ -759,6 +771,7 @@ export const ParseValue = {
     const obj: any = {};
     message.extension !== undefined && (obj.extension = message.extension);
     message.expectedValue !== undefined && (obj.expectedValue = message.expectedValue);
+    message.latestDistance !== undefined && (obj.latestDistance = (message.latestDistance || Long.UZERO).toString());
     return obj;
   },
 
@@ -770,6 +783,9 @@ export const ParseValue = {
     const message = createBaseParseValue();
     message.extension = object.extension ?? "";
     message.expectedValue = object.expectedValue ?? "";
+    message.latestDistance = (object.latestDistance !== undefined && object.latestDistance !== null)
+      ? Long.fromValue(object.latestDistance)
+      : Long.UZERO;
     return message;
   },
 };

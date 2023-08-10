@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { ConflictVote } from "./conflict_vote";
 import { Params } from "./params";
 
-export const protobufPackage = "lavanet.lava.conflict";
+export const protobufPackage = "lava.conflict";
 
 /** GenesisState defines the conflict module's genesis state. */
 export interface GenesisState {

@@ -6,7 +6,7 @@ import { FixatedParams } from "./fixated_params";
 import { Params } from "./params";
 import { StakeStorage } from "./stake_storage";
 
-export const protobufPackage = "lavanet.lava.epochstorage";
+export const protobufPackage = "lava.epochstorage";
 
 /** GenesisState defines the epochstorage module's genesis state. */
 export interface GenesisState {

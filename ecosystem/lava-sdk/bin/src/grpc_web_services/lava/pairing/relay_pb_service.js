@@ -1,4 +1,4 @@
-// package: lavanet.lava.pairing
+// package: lava.pairing
 // file: lava/pairing/relay.proto
 
 var lava_pairing_relay_pb = require("../../lava/pairing/relay_pb");
@@ -6,7 +6,7 @@ var grpc = require("@improbable-eng/grpc-web").grpc;
 
 var Relayer = (function () {
   function Relayer() {}
-  Relayer.serviceName = "lavanet.lava.pairing.Relayer";
+  Relayer.serviceName = "lava.pairing.Relayer";
   return Relayer;
 }());
 

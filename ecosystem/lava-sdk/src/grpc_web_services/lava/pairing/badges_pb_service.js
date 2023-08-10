@@ -1,4 +1,4 @@
-// package: lavanet.lava.pairing
+// package: lava.pairing
 // file: lava/pairing/badges.proto
 
 var lava_pairing_badges_pb = require("../../lava/pairing/badges_pb");
@@ -6,7 +6,7 @@ var grpc = require("@improbable-eng/grpc-web").grpc;
 
 var BadgeGenerator = (function () {
   function BadgeGenerator() {}
-  BadgeGenerator.serviceName = "lavanet.lava.pairing.BadgeGenerator";
+  BadgeGenerator.serviceName = "lava.pairing.BadgeGenerator";
   return BadgeGenerator;
 }());
 

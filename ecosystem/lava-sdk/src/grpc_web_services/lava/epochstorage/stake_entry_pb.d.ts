@@ -1,4 +1,4 @@
-// package: lavanet.lava.epochstorage
+// package: lava.epochstorage
 // file: lava/epochstorage/stake_entry.proto
 
 import * as jspb from "google-protobuf";

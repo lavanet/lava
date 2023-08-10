@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { CollectionData } from "../spec/api_collection";
 
-export const protobufPackage = "lavanet.lava.plans";
+export const protobufPackage = "lava.plans";
 
 /** the enum below determines the pairing algorithm's behaviour with the selected providers feature */
 export enum selectedProvidersMode {

@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Params } from "./params";
 import { Subscription } from "./subscription";
 
-export const protobufPackage = "lavanet.lava.subscription";
+export const protobufPackage = "lava.subscription";
 
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -662,7 +662,7 @@ export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.subscription.Query";
+    this.service = opts?.service || "lava.subscription.Query";
     this.rpc = rpc;
     this.Params = this.Params.bind(this);
     this.Current = this.Current.bind(this);

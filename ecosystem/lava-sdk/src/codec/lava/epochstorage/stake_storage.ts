@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { StakeEntry } from "./stake_entry";
 
-export const protobufPackage = "lavanet.lava.epochstorage";
+export const protobufPackage = "lava.epochstorage";
 
 export interface StakeStorage {
   index: string;

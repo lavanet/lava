@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 
-export const protobufPackage = "lavanet.lava.projects";
+export const protobufPackage = "lava.projects";
 
 /** Params defines the parameters for the module. */
 export interface Params {

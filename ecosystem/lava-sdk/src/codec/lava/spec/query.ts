@@ -5,7 +5,7 @@ import { PageRequest, PageResponse } from "../../cosmos/base/query/v1beta1/pagin
 import { Params } from "./params";
 import { Spec } from "./spec";
 
-export const protobufPackage = "lavanet.lava.spec";
+export const protobufPackage = "lava.spec";
 
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -908,7 +908,7 @@ export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.spec.Query";
+    this.service = opts?.service || "lava.spec.Query";
     this.rpc = rpc;
     this.Params = this.Params.bind(this);
     this.Spec = this.Spec.bind(this);

@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { FinalizationConflict, ResponseConflict } from "./conflict_data";
 
-export const protobufPackage = "lavanet.lava.conflict";
+export const protobufPackage = "lava.conflict";
 
 /** TODO:: change coin type to another proto (define proto in another file int this directory) */
 export interface MsgDetection {
@@ -474,7 +474,7 @@ export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.conflict.Msg";
+    this.service = opts?.service || "lava.conflict.Msg";
     this.rpc = rpc;
     this.Detection = this.Detection.bind(this);
     this.ConflictVoteCommit = this.ConflictVoteCommit.bind(this);

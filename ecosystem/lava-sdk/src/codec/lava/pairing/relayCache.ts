@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../../google/protobuf/empty";
 import { RelayReply, RelayRequest } from "./relay";
 
-export const protobufPackage = "lavanet.lava.pairing";
+export const protobufPackage = "lava.pairing";
 
 export interface CacheUsage {
   CacheHits: Long;
@@ -380,7 +380,7 @@ export class RelayerCacheClientImpl implements RelayerCache {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.pairing.RelayerCache";
+    this.service = opts?.service || "lava.pairing.RelayerCache";
     this.rpc = rpc;
     this.GetRelay = this.GetRelay.bind(this);
     this.SetRelay = this.SetRelay.bind(this);

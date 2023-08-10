@@ -1,3 +1,3 @@
-// package: lavanet.lava.epochstorage
+// package: lava.epochstorage
 // file: lava/epochstorage/endpoint.proto
 

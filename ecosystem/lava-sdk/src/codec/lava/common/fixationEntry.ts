@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 
-export const protobufPackage = "lavanet.lava.common";
+export const protobufPackage = "lava.common";
 
 export interface Entry {
   /** unique entry index (i.e. list key) */

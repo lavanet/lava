@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { RawMessage } from "../common/fixationEntry";
 import { Params } from "./params";
 
-export const protobufPackage = "lavanet.lava.subscription";
+export const protobufPackage = "lava.subscription";
 
 /** GenesisState defines the subscription module's genesis state. */
 export interface GenesisState {

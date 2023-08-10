@@ -7,7 +7,7 @@ import { Params } from "./params";
 import { ProviderPaymentStorage } from "./provider_payment_storage";
 import { UniquePaymentStorageClientProvider } from "./unique_payment_storage_client_provider";
 
-export const protobufPackage = "lavanet.lava.pairing";
+export const protobufPackage = "lava.pairing";
 
 export interface BadgeUsedCu {
   badgeUsedCuKey: Uint8Array;

@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-export const protobufPackage = "lavanet.lava.plans";
+export const protobufPackage = "lava.plans";
 
 /** Msg defines the Msg service. */
 export interface Msg {
@@ -10,7 +10,7 @@ export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.plans.Msg";
+    this.service = opts?.service || "lava.plans.Msg";
     this.rpc = rpc;
   }
 }

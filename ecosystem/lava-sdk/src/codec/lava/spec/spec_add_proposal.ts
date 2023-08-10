@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Spec } from "./spec";
 
-export const protobufPackage = "lavanet.lava.spec";
+export const protobufPackage = "lava.spec";
 
 export interface SpecAddProposal {
   title: string;

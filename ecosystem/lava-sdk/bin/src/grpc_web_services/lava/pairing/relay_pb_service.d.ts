@@ -1,4 +1,4 @@
-// package: lavanet.lava.pairing
+// package: lava.pairing
 // file: lava/pairing/relay.proto
 
 import * as lava_pairing_relay_pb from "../../lava/pairing/relay_pb";

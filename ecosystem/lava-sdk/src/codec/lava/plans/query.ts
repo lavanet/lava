@@ -5,7 +5,7 @@ import { Coin } from "../../cosmos/base/v1beta1/coin";
 import { Params } from "./params";
 import { Plan } from "./plan";
 
-export const protobufPackage = "lavanet.lava.plans";
+export const protobufPackage = "lava.plans";
 
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -458,7 +458,7 @@ export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.plans.Query";
+    this.service = opts?.service || "lava.plans.Query";
     this.rpc = rpc;
     this.Params = this.Params.bind(this);
     this.List = this.List.bind(this);

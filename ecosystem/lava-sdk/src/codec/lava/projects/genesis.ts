@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { RawMessage } from "../common/fixationEntry";
 import { Params } from "./params";
 
-export const protobufPackage = "lavanet.lava.projects";
+export const protobufPackage = "lava.projects";
 
 /** GenesisState defines the projects module's genesis state. */
 export interface GenesisState {

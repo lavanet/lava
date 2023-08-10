@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { StakeEntry } from "../epochstorage/stake_entry";
 import { Badge } from "./relay";
 
-export const protobufPackage = "lavanet.lava.pairing";
+export const protobufPackage = "lava.pairing";
 
 export interface GenerateBadgeRequest {
   badgeAddress: string;
@@ -198,7 +198,7 @@ export class BadgeGeneratorClientImpl implements BadgeGenerator {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.pairing.BadgeGenerator";
+    this.service = opts?.service || "lava.pairing.BadgeGenerator";
     this.rpc = rpc;
     this.GenerateBadge = this.GenerateBadge.bind(this);
   }

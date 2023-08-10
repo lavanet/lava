@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Params } from "./params";
 import { Spec } from "./spec";
 
-export const protobufPackage = "lavanet.lava.spec";
+export const protobufPackage = "lava.spec";
 
 /** GenesisState defines the spec module's genesis state. */
 export interface GenesisState {

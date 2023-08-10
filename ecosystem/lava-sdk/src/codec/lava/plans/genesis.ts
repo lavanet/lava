@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { RawMessage } from "../common/fixationEntry";
 import { Params } from "./params";
 
-export const protobufPackage = "lavanet.lava.plans";
+export const protobufPackage = "lava.plans";
 
 /** GenesisState defines the plan module's genesis state. */
 export interface GenesisState {

@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 
-export const protobufPackage = "lavanet.lava.pairing";
+export const protobufPackage = "lava.pairing";
 
 export interface EpochPayments {
   index: string;

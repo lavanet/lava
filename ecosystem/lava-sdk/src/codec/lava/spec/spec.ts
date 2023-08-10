@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Coin } from "../../cosmos/base/v1beta1/coin";
 import { ApiCollection } from "./api_collection";
 
-export const protobufPackage = "lavanet.lava.spec";
+export const protobufPackage = "lava.spec";
 
 export interface Spec {
   index: string;

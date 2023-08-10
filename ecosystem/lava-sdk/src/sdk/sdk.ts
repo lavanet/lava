@@ -23,7 +23,7 @@ import {
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
-import { QueryShowAllChainsResponse } from "../codec/spec/query";
+import { QueryShowAllChainsResponse } from "../codec/lava/spec/query";
 import { GenerateBadgeResponse } from "../grpc_web_services/lava/pairing/badges_pb";
 /**
  * Options for sending RPC relay.

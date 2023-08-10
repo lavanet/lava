@@ -7,7 +7,7 @@ import { FixatedParams } from "./fixated_params";
 import { Params } from "./params";
 import { StakeStorage } from "./stake_storage";
 
-export const protobufPackage = "lavanet.lava.epochstorage";
+export const protobufPackage = "lava.epochstorage";
 
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
@@ -797,7 +797,7 @@ export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.epochstorage.Query";
+    this.service = opts?.service || "lava.epochstorage.Query";
     this.rpc = rpc;
     this.Params = this.Params.bind(this);
     this.StakeStorage = this.StakeStorage.bind(this);

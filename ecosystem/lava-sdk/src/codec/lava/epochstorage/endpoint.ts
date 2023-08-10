@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 
-export const protobufPackage = "lavanet.lava.epochstorage";
+export const protobufPackage = "lava.epochstorage";
 
 export interface Endpoint {
   iPPORT: string;

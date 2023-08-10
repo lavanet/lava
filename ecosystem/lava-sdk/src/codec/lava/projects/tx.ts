@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Policy } from "../plans/policy";
 import { ProjectKey } from "./project";
 
-export const protobufPackage = "lavanet.lava.projects";
+export const protobufPackage = "lava.projects";
 
 export interface MsgAddKeys {
   creator: string;
@@ -587,7 +587,7 @@ export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.projects.Msg";
+    this.service = opts?.service || "lava.projects.Msg";
     this.rpc = rpc;
     this.AddKeys = this.AddKeys.bind(this);
     this.DelKeys = this.DelKeys.bind(this);

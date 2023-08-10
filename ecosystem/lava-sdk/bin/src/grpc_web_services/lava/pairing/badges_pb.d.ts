@@ -1,4 +1,4 @@
-// package: lavanet.lava.pairing
+// package: lava.pairing
 // file: lava/pairing/badges.proto
 
 import * as jspb from "google-protobuf";

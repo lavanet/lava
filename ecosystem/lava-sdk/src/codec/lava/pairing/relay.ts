@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 
-export const protobufPackage = "lavanet.lava.pairing";
+export const protobufPackage = "lava.pairing";
 
 export interface ProbeRequest {
   guid: Long;
@@ -1205,7 +1205,7 @@ export class RelayerClientImpl implements Relayer {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.pairing.Relayer";
+    this.service = opts?.service || "lava.pairing.Relayer";
     this.rpc = rpc;
     this.Relay = this.Relay.bind(this);
     this.RelaySubscribe = this.RelaySubscribe.bind(this);

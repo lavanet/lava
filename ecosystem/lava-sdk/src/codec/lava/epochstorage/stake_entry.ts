@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Coin } from "../../cosmos/base/v1beta1/coin";
 import { Endpoint } from "./endpoint";
 
-export const protobufPackage = "lavanet.lava.epochstorage";
+export const protobufPackage = "lava.epochstorage";
 
 export interface StakeEntry {
   stake?: Coin;

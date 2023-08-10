@@ -5,7 +5,7 @@ import { Coin } from "../../cosmos/base/v1beta1/coin";
 import { Endpoint } from "../epochstorage/endpoint";
 import { RelaySession } from "./relay";
 
-export const protobufPackage = "lavanet.lava.pairing";
+export const protobufPackage = "lava.pairing";
 
 export interface MsgStakeProvider {
   creator: string;
@@ -740,7 +740,7 @@ export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.pairing.Msg";
+    this.service = opts?.service || "lava.pairing.Msg";
     this.rpc = rpc;
     this.StakeProvider = this.StakeProvider.bind(this);
     this.UnstakeProvider = this.UnstakeProvider.bind(this);

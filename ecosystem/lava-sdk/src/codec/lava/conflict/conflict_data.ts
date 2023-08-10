@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { RelayReply, RelayRequest } from "../pairing/relay";
 
-export const protobufPackage = "lavanet.lava.conflict";
+export const protobufPackage = "lava.conflict";
 
 export interface ResponseConflict {
   conflictRelayData0?: ConflictRelayData;

@@ -4,7 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Coin } from "../../cosmos/base/v1beta1/coin";
 import { Policy } from "./policy";
 
-export const protobufPackage = "lavanet.lava.plans";
+export const protobufPackage = "lava.plans";
 
 /**
  * The geolocation values are encoded as bits in a bitmask, with two special values:

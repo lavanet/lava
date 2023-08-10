@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Policy } from "../plans/policy";
 
-export const protobufPackage = "lavanet.lava.projects";
+export const protobufPackage = "lava.projects";
 
 export interface Project {
   /** unique id that will be the combination of subscription address and project name, cannot be changed once created */

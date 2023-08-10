@@ -3,7 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { ProjectData } from "../projects/project";
 
-export const protobufPackage = "lavanet.lava.subscription";
+export const protobufPackage = "lava.subscription";
 
 export interface MsgBuy {
   creator: string;
@@ -420,7 +420,7 @@ export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || "lavanet.lava.subscription.Msg";
+    this.service = opts?.service || "lava.subscription.Msg";
     this.rpc = rpc;
     this.Buy = this.Buy.bind(this);
     this.AddProject = this.AddProject.bind(this);
