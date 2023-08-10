@@ -163,7 +163,7 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 }
 
 func (lt *lavaTest) startLava(ctx context.Context) {
-	command := "./scripts/init_chain.sh"
+	command := "./scripts/start_env_dev.sh"
 	logName := "00_StartLava"
 	funcName := "startLava"
 
@@ -187,22 +187,6 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 		}
 	}
 	panic("Lava Check Failed")
-}
-
-func (lt *lavaTest) compileLavaProtocol() {
-	buildCommand := "./scripts/build_env_e2e.sh"
-	lt.logs["01_buildProtocol"] = new(bytes.Buffer)
-	cmd := exec.Cmd{
-		Path:   buildCommand,
-		Args:   strings.Split(buildCommand, " "),
-		Stdout: lt.logs["01_buildProtocol"],
-		Stderr: lt.logs["01_buildProtocol"],
-	}
-	err := cmd.Start()
-	if err != nil {
-		panic("compileLavaProtocol Failed " + err.Error())
-	}
-	cmd.Wait()
 }
 
 func (lt *lavaTest) stakeLava(ctx context.Context) {
@@ -1087,8 +1071,6 @@ func runProtocolE2E(timeout time.Duration) {
 	go lt.startLava(ctx)
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
-	lt.compileLavaProtocol()
-	utils.LavaFormatInfo("Compiling Protocol OK")
 
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
