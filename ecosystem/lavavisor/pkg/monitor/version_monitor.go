@@ -37,7 +37,7 @@ func (vm VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version
 	if err != nil {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
-
+	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: binaryVersion})
 	// check min version
 	if incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion {
 		return lvutil.MinVersionMismatchError
