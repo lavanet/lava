@@ -28,6 +28,10 @@ jobs:
         check-latest: true
         cache: true
 
+    - name: Set Environment Variable
+      run: |
+        echo "LAVA_BUILD_OPTIONS=\"release\"" >> $GITHUB_ENV
+
     - name: Build
       run: |
         make build

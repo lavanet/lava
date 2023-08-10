@@ -186,6 +186,7 @@ else ifeq (rocksdb,$(findstring rocksdb,$(LAVA_BUILD_OPTIONS)))
 endif
 
 ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
+  $(info Building With Production Flag)
   ldflags += -X github.com/lavanet/lava/utils.ExtendedLogLevel=production
 endif
 
