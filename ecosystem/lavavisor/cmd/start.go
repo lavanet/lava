@@ -11,9 +11,10 @@ import (
 	"path/filepath"
 
 	// "strings"
-
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/lavanet/lava/app"
 	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
@@ -58,6 +59,11 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 	// spawn up LavaVisor
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+
+	fmt.Println("start- clientCtx: ", clientCtx)
+	fmt.Println("start- txFactory: ", txFactory)
+	fmt.Println("start- lavaChainFetcher: ", lavaChainFetcher)
+
 	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
 	if err != nil {
 		return err
@@ -69,7 +75,11 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
-	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, &processmanager.VersionMonitor{}) // I will pass here a lavavisor type which implements VersionValidationInf interface
+
+	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version.ProviderMin)
+	binaryPath := filepath.Join(versionDir, "lava-protocol")
+	fmt.Println("Binary Path - start cmd: ", binaryPath)
+	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, &processmanager.VersionMonitor{BinaryPath: binaryPath}) // I will pass here a lavavisor type which implements VersionValidationInf interface
 
 	// tearing down
 	select {
@@ -82,31 +92,6 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	return nil
 }
 
-// spawn up LavavisorStateTracker
-
-// // initialize state tracker
-// lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-// lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavavisorChainFetcher)
-// if err != nil {
-// 	return err
-// }
-// lv.lavavisorStateTracker = lavavisorStateTracker
-// //  register version updater
-// protocolConsensusVersion, err := lv.lavavisorStateTracker.GetProtocolVersion(ctx)
-// if err != nil {
-// 	utils.LavaFormatFatal("failed fetching protocol version from node", err)
-// }
-
-// versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ProviderMin)
-// if _, err := os.Stat(versionDir); os.IsNotExist(err) {
-// 	utils.LavaFormatFatal("expected version directory does not exist, might be deleted!", err)
-// }
-// binaryPath := filepath.Join(versionDir, "lava-protocol")
-
-// lv.lavavisorStateTracker.RegisterForVersionUpdates(ctx, protocolConsensusVersion, lavavisorPath, binaryPath, autoDownload, providers)
-
-// }
-
 var cmdLavavisorStart = &cobra.Command{
 	Use:   "start",
 	Short: "A command that will start provider processes given with config.yml",
@@ -115,9 +100,30 @@ var cmdLavavisorStart = &cobra.Command{
     and starts them with the linked 'which lava-protocol' binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, _ := cmd.Flags().GetString("directory")
+		fmt.Println("start- dir: ", dir)
 
 		// Build path to ./lavavisor
 		lavavisorPath, err := lvutil.GetLavavisorPath(dir)
+		if err != nil {
+			return err
+		}
+		fmt.Println("start- lavavisorPath: ", lavavisorPath)
+
+		// tracker initialization
+		ctx := context.Background()
+		fmt.Println("start- ctx: ", ctx)
+		clientCtx, err := client.GetClientQueryContext(cmd)
+		if err != nil {
+			fmt.Println("start- clientCtxerr: ", err)
+			return err
+		}
+		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+
+		fmt.Println("startcmd- clientCtx: ", clientCtx)
+		fmt.Println("startcmd- txFactory: ", txFactory)
+
+		// auto-download
+		autoDownload, err := cmd.Flags().GetBool("auto-download")
 		if err != nil {
 			return err
 		}
@@ -141,31 +147,17 @@ var cmdLavavisorStart = &cobra.Command{
 			processmanager.StartProvider(&providers, provider)
 		}
 
-		// // Providers will run on their own go routine
-		// // Now we'll create a go routine for LavaVisor & start monitoring for version changes constantly
-		// // tracker initialization
-		// ctx := context.Background()
-		// clientCtx, err := client.GetClientQueryContext(cmd)
-		// if err != nil {
-		// 	return err
-		// }
-		// txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-
-		// // auto-download
-		// autoDownload, err := cmd.Flags().GetBool("auto-download")
-		// if err != nil {
-		// 	return err
-		// }
-
-		// // Start lavavisor version monitor process
-		// lavavisor := LavaVisor{}
-		// err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, &lavavisor)
+		// Start lavavisor version monitor process
+		lavavisor := LavaVisor{}
+		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload)
 		return err
 	},
 }
 
 func init() {
+	flags.AddQueryFlagsToCmd(cmdLavavisorStart)
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorStart.Flags().Bool("auto-download", false, "Automatically download missing binaries")
+	cmdLavavisorStart.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	rootCmd.AddCommand(cmdLavavisorStart)
 }
