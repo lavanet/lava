@@ -1,0 +1,41 @@
+syntax = "proto3";
+package lava.plans;
+
+option go_package = "github.com/lavanet/lava/x/plans/types";
+option (gogoproto.equal_all) = true;
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "lava/spec/api_collection.proto";
+import "lava/plans/policy.proto";
+
+message Plan {
+    reserved 10;
+    string index = 1;
+    reserved 2; // deprecated "duration"
+    uint64 block = 3; // the epoch that this plan was created
+    cosmos.base.v1beta1.Coin price = 4 [(gogoproto.nullable) = false]; // plan price (in ulava)
+    reserved 5; // max CU for the whole plan duration
+    reserved 6; // max CU per epoch for the whole plan duration
+    reserved 7; // max providers to be paired in an epoch
+    bool allow_overuse = 8; // allow CU overuse flag
+    uint64 overuse_rate = 9; // price of CU overuse
+    string description = 11; // plan description (for humans)
+    string type = 12; // plan type
+    uint64 annual_discount_percentage = 13; // discount for buying the plan for a year
+    Policy plan_policy = 14 [(gogoproto.nullable) = false];
+}
+
+// The geolocation values are encoded as bits in a bitmask, with two special values:
+// GLS is set to 0 so it will be restrictive with the AND operator.
+// GL is set to -1 so it will be permissive with the AND operator.
+enum Geolocation {
+    GLS = 0; // Global-strict
+    USC = 0x1; // US-Center
+    EU = 0x2;
+    USE = 0x4; // US-East
+    USW = 0x8; // US-West	
+    AF = 0x10;
+    AS = 0x20;
+    AU = 0x40;  // (includes NZ)
+    GL = 0xFFFF; // Global
+}

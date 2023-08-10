@@ -1,0 +1,79 @@
+syntax = "proto3";
+package lava.subscription;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "lava/subscription/params.proto";
+// this line is used by starport scaffolding # 1
+import "lava/subscription/subscription.proto";
+
+option go_package = "github.com/lavanet/lava/x/subscription/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/params";
+  }
+  // Queries a list of Current items.
+	rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
+	}
+
+// Queries a list of ListProjects items.
+	rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
+	}
+
+// Queries a list of List items.
+	rpc List(QueryListRequest) returns (QueryListResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/list";
+	}
+
+// this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryCurrentRequest {
+  string consumer = 1;
+}
+
+message QueryCurrentResponse {
+  Subscription sub = 1 [(gogoproto.nullable) = true];
+}
+
+message QueryListProjectsRequest {
+  string subscription = 1;
+}
+
+message QueryListProjectsResponse {
+  repeated string projects = 1;
+}
+
+message QueryListRequest {
+}
+
+message QueryListResponse {
+  repeated ListInfoStruct subs_info = 1 [(gogoproto.nullable) = false];
+}
+
+message ListInfoStruct {
+  string consumer = 1; // beneficiary consumer
+  string plan = 2; // plan assosiated with the subscription
+  uint64 duration_total = 3; // total duration in months (purchase/renewal)
+  uint64 duration_left = 4; // remaining duration in months
+  uint64 month_expiry = 5; // upcoming expiry (of current month) in unix time
+  uint64 month_cu_total = 6; // total CU allowance per month
+  uint64 month_cu_left = 7; // remaining CU allowance this month
+}
+
+// this line is used by starport scaffolding # 3

@@ -1,0 +1,47 @@
+syntax = "proto3";
+package lava.pairing;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+// Params defines the parameters for the module.
+message Params {
+  reserved 1,2,4,7,9;
+  option (gogoproto.goproto_stringer) = false;
+  
+  
+  string mintCoinsPerCU = 3 [
+    (gogoproto.moretags) = "yaml:\"mint_coins_per_cu\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string fraudStakeSlashingFactor = 5 [
+    (gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  uint64 fraudSlashingAmount = 6 [(gogoproto.moretags) = "yaml:\"fraud_slashing_amount\""];
+  uint64 epochBlocksOverlap = 8 [(gogoproto.moretags) = "yaml:\"epoch_blocks_overlap\""];
+  string unpayLimit = 10 [
+    (gogoproto.moretags) = "yaml:\"unpay_limit\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string slashLimit   = 11 [
+    (gogoproto.moretags) = "yaml:\"slash_limit\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+  string dataReliabilityReward   = 12 [
+    (gogoproto.moretags) = "yaml:\"data_reliability_reward\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
+    string QoSWeight   = 13 [
+      (gogoproto.moretags) = "yaml:\"data_reliability_reward\"",
+      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+      (gogoproto.nullable)   = false
+      ];
+    uint64 recommendedEpochNumToCollectPayment = 14 [(gogoproto.moretags) = "yaml:\"recommended_epoch_num_to_collect_payment\""];
+}

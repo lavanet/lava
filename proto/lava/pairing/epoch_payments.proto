@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+message EpochPayments {
+  string index = 1; 
+  reserved 2;
+  repeated string providerPaymentStorageKeys = 3; 
+}
+
