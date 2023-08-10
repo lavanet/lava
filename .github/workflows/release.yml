@@ -118,9 +118,9 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          github.rest.repos.updateRelease({
+          const { data } = await github.rest.repos.updateRelease({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            release_id: ${{ github.event.release.id }},
+            release_id: context.payload.release.id,
             body: ${{ steps.existing_checksum.outputs.NEW_BODY }}
-          })
+          });
