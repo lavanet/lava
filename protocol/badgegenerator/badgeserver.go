@@ -2,6 +2,7 @@ package badgegenerator
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -110,6 +111,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	defaultGeolocation := v.GetInt(DefaultGeolocationEnvironmentVariable)
 	countriesFilePath := v.GetString(CountriesFilePathEnvironmentVariable)
 	ipFilePath := v.GetString(IpFilePathEnvironmentVariable)
+	utils.LavaFormatInfo(fmt.Sprintf("defaultgeolocation: '%d' countries: '%s' ipFilePath: '%s'", defaultGeolocation, countriesFilePath, ipFilePath))
 	ipService, err := InitIpService(defaultGeolocation, countriesFilePath, ipFilePath)
 	if err != nil {
 		utils.LavaFormatFatal("Error initializing ip service", err)
@@ -117,7 +119,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
 	chainId := v.GetString(LavaChainIDEnvironmentVariable)
 	userData := v.GetString(UserDataEnvironmentVariable)
-
+	utils.LavaFormatInfo(fmt.Sprintf("userData: '%s'", userData))
 	server, err := NewServer(ipService, grpcUrl, chainId, userData)
 	if err != nil {
 		utils.LavaFormatFatal("Error in server creation", err)
