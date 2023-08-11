@@ -90,7 +90,7 @@ var cmdLavavisorInit = &cobra.Command{
 			//
 		} else {
 			vm := processmanager.VersionMonitor{
-				BinaryPath: binaryPath, // adjust this to the path you want
+				BinaryPath: binaryPath,
 			}
 			err = vm.ValidateProtocolVersion(protocolConsensusVersion)
 			if err != nil {
@@ -149,11 +149,11 @@ var cmdLavavisorInit = &cobra.Command{
 			}
 
 			// try "which" command again
-			path, err := exec.LookPath("lava-protocol")
+			out, err = exec.LookPath("lava-protocol")
 			if err != nil {
 				utils.LavaFormatFatal("couldn't find the binary in the system path", err)
 			} else {
-				utils.LavaFormatInfo("Found binary at:", utils.Attribute{Key: "Path", Value: path})
+				utils.LavaFormatInfo("Found binary at:", utils.Attribute{Key: "Path", Value: out})
 			}
 		}
 		dest := strings.TrimSpace(string(out))
@@ -177,7 +177,7 @@ var cmdLavavisorInit = &cobra.Command{
 			utils.LavaFormatFatal("failed to verify symbolic link", err)
 		}
 
-		utils.LavaFormatInfo("Symbolic link created successfully")
+		utils.LavaFormatInfo("Symbolic link created successfully.", utils.Attribute{Key: "Linked binary path", Value: dest})
 
 		// ToDo: if autodownload false: alert user that binary is not exist, monitor directory constantly!,
 
