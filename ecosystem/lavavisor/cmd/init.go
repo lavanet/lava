@@ -90,7 +90,8 @@ var cmdLavavisorInit = &cobra.Command{
 			//
 		} else {
 			vm := processmanager.VersionMonitor{
-				BinaryPath: binaryPath,
+				BinaryPath:    binaryPath,
+				LavavisorPath: lavavisorPath,
 			}
 			err = vm.ValidateProtocolVersion(protocolConsensusVersion)
 			if err != nil {

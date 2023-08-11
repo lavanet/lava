@@ -69,10 +69,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 
-	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version.ProviderMin)
-	binaryPath := filepath.Join(versionDir, "lava-protocol")
-
-	versionMonitor := processmanager.NewVersionMonitor(binaryPath, providers)
+	versionMonitor := processmanager.NewVersionMonitor(version.ProviderMin, lavavisorPath, providers)
 
 	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
 
