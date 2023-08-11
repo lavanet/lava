@@ -12,7 +12,7 @@ type ProviderProcess struct {
 	IsRunning bool
 }
 
-func StartProvider(providers *[]*ProviderProcess, provider string) {
+func StartProvider(providers []*ProviderProcess, provider string) []*ProviderProcess {
 	// Extract the chain id from the provider string
 	chainID := strings.Split(provider, "-")[1]
 
@@ -31,7 +31,7 @@ func StartProvider(providers *[]*ProviderProcess, provider string) {
 		if err != nil {
 			fmt.Printf("Failed to run command: %s, Error: %s\n", cmd, err)
 			fmt.Printf("Command Output: \n%s\n", output)
-			return
+			return nil
 		} else {
 			fmt.Printf("Successfully run command: %s\n", cmd)
 			fmt.Printf("Command Output: \n%s\n", output)
@@ -39,9 +39,10 @@ func StartProvider(providers *[]*ProviderProcess, provider string) {
 	}
 
 	// Add to the list of providers
-	*providers = append(*providers, &ProviderProcess{
+	providers = append(providers, &ProviderProcess{
 		Name:      provider,
 		ChainID:   chainID,
 		IsRunning: true,
 	})
+	return providers
 }

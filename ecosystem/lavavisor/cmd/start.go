@@ -41,14 +41,7 @@ type Config struct {
 	ProviderServices []string `yaml:"provider-services"`
 }
 
-var providers []*processmanager.ProviderProcess
-
-// GetProviders returns the list of providers.
-func (lv *LavaVisor) GetProviders() []*processmanager.ProviderProcess {
-	return providers
-}
-
-func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool) (err error) {
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, providers []*processmanager.ProviderProcess) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -79,7 +72,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version.ProviderMin)
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
-	versionMonitor := processmanager.NewVersionMonitor(binaryPath)
+	versionMonitor := processmanager.NewVersionMonitor(binaryPath, providers)
 
 	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
 
@@ -147,14 +140,15 @@ var cmdLavavisorStart = &cobra.Command{
 		}
 
 		// Iterate over the list of provider services and start them
+		var providers []*processmanager.ProviderProcess
 		for _, provider := range config.ProviderServices {
 			fmt.Printf("Starting provider: %s\n", provider)
-			processmanager.StartProvider(&providers, provider)
+			providers = processmanager.StartProvider(providers, provider)
 		}
 
 		// Start lavavisor version monitor process
 		lavavisor := LavaVisor{}
-		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload)
+		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, providers)
 		return err
 	},
 }

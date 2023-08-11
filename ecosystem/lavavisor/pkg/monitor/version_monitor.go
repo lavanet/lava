@@ -20,12 +20,14 @@ type VersionMonitor struct {
 	BinaryPath      string
 	updateTriggered chan bool
 	mismatchType    lvutil.MismatchType
+	providers       []*ProviderProcess
 }
 
-func NewVersionMonitor(binaryPath string) *VersionMonitor {
+func NewVersionMonitor(binaryPath string, providers []*ProviderProcess) *VersionMonitor {
 	return &VersionMonitor{
 		BinaryPath:      binaryPath,
 		updateTriggered: make(chan bool),
+		providers:       providers,
 	}
 }
 
