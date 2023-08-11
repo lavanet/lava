@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/lavanet/lava/utils"
 )
 
 type ProviderProcess struct {
@@ -45,4 +47,16 @@ func StartProvider(providers []*ProviderProcess, provider string) []*ProviderPro
 		IsRunning: true,
 	})
 	return providers
+}
+
+func getBinaryVersion(binaryPath string) (string, error) {
+	cmd := exec.Command(binaryPath, "-v")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", utils.LavaFormatError("failed to execute command", err)
+	}
+
+	// output format is "lava-protocol version x.x.x"
+	version := strings.Split(string(output), " ")[2]
+	return strings.TrimSpace(version), nil
 }
