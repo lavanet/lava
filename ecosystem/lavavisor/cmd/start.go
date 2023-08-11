@@ -15,7 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/app"
-	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/monitor"
+	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 
