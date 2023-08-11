@@ -65,7 +65,7 @@ var cmdLavavisorInit = &cobra.Command{
 		processmanager.FetchAndLinkProtocolBinary(versionDir, autoDownload, protocolConsensusVersion)
 		// linker
 		processmanager.CreateLink(binaryPath)
-		utils.LavaFormatInfo("Symbolic link created successfully.", utils.Attribute{Key: "Linked binary path", Value: binaryPath})
+
 		// ToDo: if autodownload false: alert user that binary is not exist, monitor directory constantly!,
 		return nil
 	},

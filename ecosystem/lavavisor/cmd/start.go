@@ -2,7 +2,6 @@ package lavavisor
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 
@@ -52,11 +51,6 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 	// spawn up LavaVisor
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-
-	fmt.Println("start- clientCtx: ", clientCtx)
-	fmt.Println("start- txFactory: ", txFactory)
-	fmt.Println("start- lavaChainFetcher: ", lavaChainFetcher)
-
 	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
 	if err != nil {
 		return err
@@ -69,11 +63,11 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 
-	versionMonitor := processmanager.NewVersionMonitor(version.ProviderMin, lavavisorPath, providers)
+	versionMonitor := processmanager.NewVersionMonitor(version.ProviderMin, lavavisorPath, providers, autoDownload)
 
 	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
 
-	// start a goroutine that checks for process manager's trigger flag!
+	// A goroutine that checks for process manager's trigger flag!
 	versionMonitor.MonitorVersionUpdates(ctx)
 
 	// tearing down
@@ -95,27 +89,19 @@ var cmdLavavisorStart = &cobra.Command{
     and starts them with the linked 'which lava-protocol' binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, _ := cmd.Flags().GetString("directory")
-		fmt.Println("start- dir: ", dir)
-
 		// Build path to ./lavavisor
 		lavavisorPath, err := lvutil.GetLavavisorPath(dir)
 		if err != nil {
 			return err
 		}
-		fmt.Println("start- lavavisorPath: ", lavavisorPath)
 
-		// tracker initialization
+		// initialize lavavisor state tracker
 		ctx := context.Background()
-		fmt.Println("start- ctx: ", ctx)
 		clientCtx, err := client.GetClientQueryContext(cmd)
 		if err != nil {
-			fmt.Println("start- clientCtxerr: ", err)
 			return err
 		}
 		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-
-		fmt.Println("startcmd- clientCtx: ", clientCtx)
-		fmt.Println("startcmd- txFactory: ", txFactory)
 
 		// auto-download
 		autoDownload, err := cmd.Flags().GetBool("auto-download")
@@ -127,19 +113,19 @@ var cmdLavavisorStart = &cobra.Command{
 		configPath := filepath.Join(lavavisorPath, "/config.yml")
 		configData, err := os.ReadFile(configPath)
 		if err != nil {
-			return fmt.Errorf("failed to read config.yaml: %v", err)
+			return utils.LavaFormatError("failed to read config.yaml: %v", err)
 		}
 
 		var config Config
 		err = yaml.Unmarshal(configData, &config)
 		if err != nil {
-			return fmt.Errorf("failed to unmarshal config.yaml: %v", err)
+			return utils.LavaFormatError("failed to unmarshal config.yaml: %v", err)
 		}
 
 		// Iterate over the list of provider services and start them
 		var providers []*processmanager.ProviderProcess
 		for _, provider := range config.ProviderServices {
-			fmt.Printf("Starting provider: %s\n", provider)
+			utils.LavaFormatInfo("Starting provider: %s\n", utils.Attribute{Key: "Provider", Value: provider})
 			providers = processmanager.StartProvider(providers, provider)
 		}
 
