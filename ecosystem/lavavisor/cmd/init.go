@@ -34,7 +34,6 @@ var cmdLavavisorInit = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		// initialize lavavisor state tracker
 		ctx := context.Background()
 		clientCtx, err := client.GetClientQueryContext(cmd)
@@ -48,40 +47,31 @@ var cmdLavavisorInit = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		// fetch lava-protocol version from consensus
 		protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 		if err != nil {
 			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
 		}
 		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
-
 		// search extracted directory inside ./lavad/upgrades/<fetched_version>
 		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ProviderMin)
 		binaryPath := filepath.Join(versionDir, "lava-protocol")
-
 		// check auto-download flag
 		autoDownload, err := cmd.Flags().GetBool("auto-download")
 		if err != nil {
 			return err
 		}
-
 		// fetcher
 		processmanager.FetchAndLinkProtocolBinary(versionDir, autoDownload, protocolConsensusVersion)
-
 		// linker
 		processmanager.CreateLink(binaryPath)
-
 		utils.LavaFormatInfo("Symbolic link created successfully.", utils.Attribute{Key: "Linked binary path", Value: binaryPath})
-
 		// ToDo: if autodownload false: alert user that binary is not exist, monitor directory constantly!,
-
 		return nil
 	},
 }
 
 func init() {
-	// Use the log directory in flags
 	flags.AddQueryFlagsToCmd(cmdLavavisorInit)
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
