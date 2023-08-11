@@ -61,10 +61,8 @@ func Unzip(src string, dest string) ([]string, error) {
 	defer r.Close()
 
 	for _, f := range r.File {
-		// Store filename/path for returning and using later on
 		fpath := filepath.Join(dest, f.Name)
 
-		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
 			return filenames, utils.LavaFormatError("illegal file path", nil)
 		}
@@ -72,12 +70,10 @@ func Unzip(src string, dest string) ([]string, error) {
 		filenames = append(filenames, fpath)
 
 		if f.FileInfo().IsDir() {
-			// Make Folder
 			os.MkdirAll(fpath, os.ModePerm)
 			continue
 		}
 
-		// Make File
 		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
 			return filenames, err
 		}
