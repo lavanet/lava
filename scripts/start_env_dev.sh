@@ -1,13 +1,12 @@
 #!/bin/bash 
 
 if [ -n "$1" ]; then
-    killall lava-protocol
-    make build-protocol
-    ignite chain build; lavad start
+    killall lavad lava-protocol
+    make install-all
+    lavad start 2>&1 | grep -e "- address:" | grep -e lava_ | grep -e ERR_
 else
     echo "dont use this script with vscode debugger"
-    killall lava-protocol
-    make build-protocol
-    rm -rf build
-    ignite chain serve -v -r 2>&1 | grep -e lava_ -e ERR_ -e IGNITE] -e !  
+    killall lavad lava-protocol
+    make install-all
+    ./scripts/init_chain.sh 2>&1 | grep -e "- address:" | grep -e lava_ | grep -e ERR_
 fi

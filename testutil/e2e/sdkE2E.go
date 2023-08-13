@@ -112,8 +112,6 @@ func runSDKE2E(timeout time.Duration) {
 	go lt.startLava(lavaContext)
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
-	lt.compileLavaProtocol()
-	utils.LavaFormatInfo("Compiling Protocol OK")
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()

@@ -37,12 +37,6 @@ jobs:
     - name: ls -l
       run: ls -l
 
-    # Pre-build 
-    - name: lavad build
-      run: make install
-    - name: protocol build
-      run: make build-protocol
-
     ######################################################
     ### Run Lava E2E Tests 
     ######################################################
@@ -152,10 +146,6 @@ jobs:
         run: tree
       - name: ls -l
         run: ls -l
-
-      # Pre-build
-      - name: lavad build
-        run: make install
 
       # Install Node.js
       - name: Setup Node.js environment
