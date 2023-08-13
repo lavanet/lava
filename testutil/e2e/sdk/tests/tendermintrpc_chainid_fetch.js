@@ -8,12 +8,16 @@ async function main() {
         lavaChainId:"lava",
         pairingListConfig:process.env.PAIRING_LIST, 
         allowInsecureTransport: true,
+    }).catch(e => {
+        throw new Error(" ERR failed setting lava-sdk tendermint test");
     });
 
     // Fetch chain id
     const result = await lavaSDKTendermint.sendRelay({
         method: "status",
         params: [],
+    }).catch(e => {
+        throw new Error(" ERR failed sending relay tendermint test");
     });
 
     // Parse response

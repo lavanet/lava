@@ -9,12 +9,16 @@ async function main() {
         rpcInterface:"rest",
         pairingListConfig:process.env.PAIRING_LIST,
         allowInsecureTransport: true,
+    }).catch(e => {
+        throw new Error(" ERR failed initializing lava-sdk rest test");
     });
 
     // Fetch chain id
     const result = await lavaSdkRest.sendRelay({
         method: "GET",
         url: "/cosmos/base/tendermint/v1beta1/node_info",
+    }).catch(e => {
+        throw new Error(" ERR failed sending relay rest test");
     });
 
     // Parse response
