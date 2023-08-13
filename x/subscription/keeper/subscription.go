@@ -105,15 +105,17 @@ func (k Keeper) CreateSubscription(
 	if !found {
 		// creeate new subscription with this plan
 		sub = types.Subscription{
-			Creator:   creator,
-			Consumer:  consumer,
-			Block:     block,
-			PlanIndex: planIndex,
-			PlanBlock: plan.Block,
+			Creator:       creator,
+			Consumer:      consumer,
+			Block:         block,
+			PlanIndex:     planIndex,
+			PlanBlock:     plan.Block,
+			DurationTotal: 0,
 		}
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
+		sub.Cluster = types.GetCluster(sub)
 
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
@@ -258,6 +260,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		details := map[string]string{"consumer": consumer}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
 	}
+
+	sub.DurationTotal += 1
+	sub.Cluster = types.GetCluster(sub)
 }
 
 func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
