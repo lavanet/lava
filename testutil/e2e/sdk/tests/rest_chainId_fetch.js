@@ -2,16 +2,17 @@ const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
 
 async function main() {
     // Initialize Lava SDK
-    const eth = await new LavaSDK({
+    const lavaSdkRest = await new LavaSDK({
         privateKey: process.env.PRIVATE_KEY,
         chainID: "LAV1",
         lavaChainId:"lava",
         rpcInterface:"rest",
-        pairingListConfig:process.env.PAIRING_LIST
+        pairingListConfig:process.env.PAIRING_LIST,
+        allowInsecureTransport: true,
     });
 
     // Fetch chain id
-    const result = await eth.sendRelay({
+    const result = await lavaSdkRest.sendRelay({
         method: "GET",
         url: "/cosmos/base/tendermint/v1beta1/node_info",
     });
@@ -23,7 +24,7 @@ async function main() {
 
     // Validate chainID
     if (chainID != "lava") {
-        throw new Error(" ERR Chain ID is not equal to 0x1");
+        throw new Error(" ERR Chain ID is not equal to lava");
     }else{
         console.log("Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
     }

@@ -9,7 +9,8 @@ async function main() {
         },
         chainID: "ETH1",
         lavaChainId:"lava",
-        pairingListConfig:process.env.PAIRING_LIST
+        pairingListConfig:process.env.PAIRING_LIST, 
+        allowInsecureTransport: true,
     });
 
     // Fetch chain id
