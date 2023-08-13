@@ -251,10 +251,10 @@ all: lint test
 
 valid_binaries := :$(subst $(whitespace),:,$(LAVA_ALL_BINARIES)):all:
 
-define validate_binary
 # arg should not contain ":"
-$(if $(findstring :,$1),$(error $2),)
 # :arg: should appear in valid_binaries
+define validate_binary
+$(if $(findstring :,$1),$(error $2),)
 $(if $(findstring :$1:,$(valid_binaries)),,$(error $2))
 endef
 
