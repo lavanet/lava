@@ -13,10 +13,10 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     --ts_out="service=grpc-web:$OUT_DIR" \
     --proto_path="$COSMOS_PROTO_DIR" \
     --proto_path="$THIRD_PARTY_PROTO_DIR" \
-    "$THIRD_PARTY_PROTO_DIR/lava/pairing/relay.proto" \
-    "$THIRD_PARTY_PROTO_DIR/lava/pairing/badges.proto" \
-    "$THIRD_PARTY_PROTO_DIR/lava/epochstorage/stake_entry.proto" \
-    "$THIRD_PARTY_PROTO_DIR/lava/epochstorage/endpoint.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/relay.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/badges.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
