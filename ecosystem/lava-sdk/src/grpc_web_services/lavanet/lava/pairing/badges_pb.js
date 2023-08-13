@@ -64,9 +64,9 @@ proto.lavanet.lava.pairing.GenerateBadgeRequest.prototype.toObject = function(op
  */
 proto.lavanet.lava.pairing.GenerateBadgeRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    badgeAddress: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    projectId: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    specId: jspb.Message.getFieldWithDefault(msg, 3, "")
+    badge_address: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    project_id: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    spec_id: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -268,9 +268,9 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.toObject = function(o
 proto.lavanet.lava.pairing.GenerateBadgeResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
     badge: (f = msg.getBadge()) && lavanet_lava_pairing_relay_pb.Badge.toObject(includeInstance, f),
-    pairingListList: jspb.Message.toObjectList(msg.getPairingListList(),
+    pairing_list_list: jspb.Message.toObjectList(msg.getPairingListList(),
     lavanet_lava_epochstorage_stake_entry_pb.StakeEntry.toObject, includeInstance),
-    badgeSignerAddress: jspb.Message.getFieldWithDefault(msg, 3, "")
+    badge_signer_address: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {

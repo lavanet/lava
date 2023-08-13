@@ -26,6 +26,9 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
 # rm -rf ./src/proto
 # mv ./src/pairing ./src/proto
 
+echo "running fix_grpc_web_camel_case.py"
+python3 ./scripts/fix_grpc_web_camel_case.py
+
 cp -r $OUT_DIR ./bin/src/.
 
 echo "-------------------- CHANGE NEEDED --------------"

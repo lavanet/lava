@@ -70,8 +70,8 @@ proto.lavanet.lava.pairing.ProbeRequest.prototype.toObject = function(opt_includ
 proto.lavanet.lava.pairing.ProbeRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
     guid: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    specId: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    apiInterface: jspb.Message.getFieldWithDefault(msg, 3, "")
+    spec_id: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    api_interface: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -266,9 +266,9 @@ proto.lavanet.lava.pairing.ProbeReply.prototype.toObject = function(opt_includeI
 proto.lavanet.lava.pairing.ProbeReply.toObject = function(includeInstance, msg) {
   var f, obj = {
     guid: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    latestBlock: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    finalizedBlocksHashes: msg.getFinalizedBlocksHashes_asB64(),
-    lavaEpoch: jspb.Message.getFieldWithDefault(msg, 4, 0)
+    latest_block: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    finalized_blocks_hashes: msg.getFinalizedBlocksHashes_asB64(),
+    lava_epoch: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -512,19 +512,19 @@ proto.lavanet.lava.pairing.RelaySession.prototype.toObject = function(opt_includ
  */
 proto.lavanet.lava.pairing.RelaySession.toObject = function(includeInstance, msg) {
   var f, obj = {
-    specId: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    contentHash: msg.getContentHash_asB64(),
-    sessionId: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    cuSum: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    spec_id: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    content_hash: msg.getContentHash_asB64(),
+    session_id: jspb.Message.getFieldWithDefault(msg, 3, 0),
+    cu_sum: jspb.Message.getFieldWithDefault(msg, 4, 0),
     provider: jspb.Message.getFieldWithDefault(msg, 5, ""),
-    relayNum: jspb.Message.getFieldWithDefault(msg, 6, 0),
-    qosReport: (f = msg.getQosReport()) && proto.lavanet.lava.pairing.QualityOfServiceReport.toObject(includeInstance, f),
+    relay_num: jspb.Message.getFieldWithDefault(msg, 6, 0),
+    qos_report: (f = msg.getQosReport()) && proto.lavanet.lava.pairing.QualityOfServiceReport.toObject(includeInstance, f),
     epoch: jspb.Message.getFieldWithDefault(msg, 8, 0),
-    unresponsiveProviders: msg.getUnresponsiveProviders_asB64(),
-    lavaChainId: jspb.Message.getFieldWithDefault(msg, 10, ""),
+    unresponsive_providers: msg.getUnresponsiveProviders_asB64(),
+    lava_chain_id: jspb.Message.getFieldWithDefault(msg, 10, ""),
     sig: msg.getSig_asB64(),
     badge: (f = msg.getBadge()) && proto.lavanet.lava.pairing.Badge.toObject(includeInstance, f),
-    qosExcellenceReport: (f = msg.getQosExcellenceReport()) && proto.lavanet.lava.pairing.QualityOfServiceReport.toObject(includeInstance, f)
+    qos_excellence_report: (f = msg.getQosExcellenceReport()) && proto.lavanet.lava.pairing.QualityOfServiceReport.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -1101,11 +1101,11 @@ proto.lavanet.lava.pairing.Badge.prototype.toObject = function(opt_includeInstan
  */
 proto.lavanet.lava.pairing.Badge.toObject = function(includeInstance, msg) {
   var f, obj = {
-    cuAllocation: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    cu_allocation: jspb.Message.getFieldWithDefault(msg, 1, 0),
     epoch: jspb.Message.getFieldWithDefault(msg, 2, 0),
     address: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    lavaChainId: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    projectSig: msg.getProjectSig_asB64()
+    lava_chain_id: jspb.Message.getFieldWithDefault(msg, 4, ""),
+    project_sig: msg.getProjectSig_asB64()
   };
 
   if (includeInstance) {
@@ -1382,16 +1382,16 @@ proto.lavanet.lava.pairing.RelayPrivateData.prototype.toObject = function(opt_in
  */
 proto.lavanet.lava.pairing.RelayPrivateData.toObject = function(includeInstance, msg) {
   var f, obj = {
-    connectionType: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    apiUrl: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    connection_type: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    api_url: jspb.Message.getFieldWithDefault(msg, 2, ""),
     data: msg.getData_asB64(),
-    requestBlock: jspb.Message.getFieldWithDefault(msg, 4, 0),
-    apiInterface: jspb.Message.getFieldWithDefault(msg, 5, ""),
+    request_block: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    api_interface: jspb.Message.getFieldWithDefault(msg, 5, ""),
     salt: msg.getSalt_asB64(),
-    metadataList: jspb.Message.toObjectList(msg.getMetadataList(),
+    metadata_list: jspb.Message.toObjectList(msg.getMetadataList(),
     proto.lavanet.lava.pairing.Metadata.toObject, includeInstance),
     addon: jspb.Message.getFieldWithDefault(msg, 8, ""),
-    extensionsList: jspb.Message.getRepeatedField(msg, 9)
+    extensions_list: jspb.Message.getRepeatedField(msg, 9)
   };
 
   if (includeInstance) {
@@ -1990,8 +1990,8 @@ proto.lavanet.lava.pairing.RelayRequest.prototype.toObject = function(opt_includ
  */
 proto.lavanet.lava.pairing.RelayRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-    relaySession: (f = msg.getRelaySession()) && proto.lavanet.lava.pairing.RelaySession.toObject(includeInstance, f),
-    relayData: (f = msg.getRelayData()) && proto.lavanet.lava.pairing.RelayPrivateData.toObject(includeInstance, f)
+    relay_session: (f = msg.getRelaySession()) && proto.lavanet.lava.pairing.RelaySession.toObject(includeInstance, f),
+    relay_data: (f = msg.getRelayData()) && proto.lavanet.lava.pairing.RelayPrivateData.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -2202,10 +2202,10 @@ proto.lavanet.lava.pairing.RelayReply.toObject = function(includeInstance, msg) 
   var f, obj = {
     data: msg.getData_asB64(),
     sig: msg.getSig_asB64(),
-    latestBlock: jspb.Message.getFieldWithDefault(msg, 4, 0),
-    finalizedBlocksHashes: msg.getFinalizedBlocksHashes_asB64(),
-    sigBlocks: msg.getSigBlocks_asB64(),
-    metadataList: jspb.Message.toObjectList(msg.getMetadataList(),
+    latest_block: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    finalized_blocks_hashes: msg.getFinalizedBlocksHashes_asB64(),
+    sig_blocks: msg.getSigBlocks_asB64(),
+    metadata_list: jspb.Message.toObjectList(msg.getMetadataList(),
     proto.lavanet.lava.pairing.Metadata.toObject, includeInstance)
   };
 
