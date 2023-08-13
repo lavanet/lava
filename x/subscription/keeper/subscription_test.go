@@ -215,7 +215,7 @@ func TestRenewSubscription(t *testing.T) {
 	require.True(t, found)
 
 	require.Equal(t, uint64(12), sub.DurationLeft)
-	require.Equal(t, uint64(9), sub.DurationTotal)
+	require.Equal(t, uint64(9), sub.DurationBought)
 
 	// edit the subscription's plan (allow more CU)
 	cuPerEpoch := plan.PlanPolicy.EpochCuLimit
@@ -229,7 +229,7 @@ func TestRenewSubscription(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
 	require.NotNil(t, err)
 	require.Equal(t, uint64(12), sub.DurationLeft)
-	require.Equal(t, uint64(9), sub.DurationTotal)
+	require.Equal(t, uint64(9), sub.DurationBought)
 
 	// get the subscription's plan and make sure it uses the old plan
 	plan, found = ts.FindPlan(sub.PlanIndex, sub.PlanBlock)
@@ -341,7 +341,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			ts.AdvanceMonths(1).AdvanceEpoch()
 			sub, found = ts.getSubscription(sub1Addr)
 			require.True(t, found)
-			require.Equal(t, sub.DurationTotal-uint64(ti+1), sub.DurationLeft)
+			require.Equal(t, sub.DurationBought-uint64(ti+1), sub.DurationLeft)
 
 			block3 := ts.BlockHeight()
 
@@ -412,7 +412,7 @@ func TestExpiryTime(t *testing.T) {
 
 			sub, found := ts.getSubscription(sub1Addr)
 			require.True(t, found)
-			require.Equal(t, uint64(tt.months), sub.DurationTotal)
+			require.Equal(t, uint64(tt.months), sub.DurationBought)
 
 			// will expire and remove
 			ts.AdvanceMonths(tt.months).AdvanceEpoch()

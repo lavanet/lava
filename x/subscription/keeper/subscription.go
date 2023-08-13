@@ -142,7 +142,7 @@ func (k Keeper) CreateSubscription(
 	}
 
 	// update total (last requested) duration and remaining duration
-	sub.DurationTotal = duration
+	sub.DurationBought = duration
 	sub.DurationLeft += duration
 
 	if err := sub.ValidateSubscription(); err != nil {
