@@ -41,7 +41,7 @@ wait_next_block
 # lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # MANTLE
-CHAINS="ETH1,GTH1,COS3,FTM250,CELO,LAV1,COS4,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COS5,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM"
+CHAINS="ETH1,GTH1,OSMO,FTM250,CELO,LAV1,OSMOT,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COSHUB,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM"
 # stake providers on all chains
 lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
