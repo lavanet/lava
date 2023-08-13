@@ -23,7 +23,7 @@ import {
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
-import { QueryShowAllChainsResponse } from "../codec/spec/query";
+import { QueryShowAllChainsResponse } from "../codec/lava/spec/query";
 import { GenerateBadgeResponse } from "../grpc_web_services/lava/pairing/badges_pb";
 /**
  * Options for sending RPC relay.
@@ -117,10 +117,9 @@ export class LavaSDK {
     // Initialize local attributes
     this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
     this.secure = options.secure !== undefined ? options.secure : true;
-    this.allowInsecureTransport =
-      options.allowInsecureTransport !== undefined
-        ? options.allowInsecureTransport
-        : true;
+    this.allowInsecureTransport = options.allowInsecureTransport
+      ? options.allowInsecureTransport
+      : false;
     this.debugPrint(
       "secure",
       this.secure,
