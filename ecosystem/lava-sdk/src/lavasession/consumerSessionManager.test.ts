@@ -8,17 +8,34 @@ import {
 
 const NUMBER_OF_PROVIDERS = 10;
 const FIRST_EPOCH_HEIGHT = 20;
+const CU_FOR_FIRST_REQUEST = 10;
+const SERVICED_BLOCK_NUMBER = 30;
 
 describe("ConsumerSessionManager", () => {
   describe("getSessions", () => {
-    it("will return an array with one entry", () => {
+    it("happy flow", () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
+      const pairingList = createPairingList("", true);
+      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      const sessions = cm.getSessions(0, {}, 0, "");
-      expect(Object.keys(sessions).length).toEqual(1);
+      const consumerSessions = cm.getSessions(
+        CU_FOR_FIRST_REQUEST,
+        {},
+        SERVICED_BLOCK_NUMBER,
+        "",
+        []
+      );
+      expect(Object.keys(consumerSessions).length).toBeGreaterThan(0);
+
+      for (const consumerSession of Object.values(consumerSessions)) {
+        expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          CU_FOR_FIRST_REQUEST
+        );
+      }
     });
   });
 

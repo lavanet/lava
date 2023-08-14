@@ -18,7 +18,7 @@ export class ConsumerSessionManager {
 
   private pairingAddresses: Map<number, string> = new Map<number, string>();
 
-  private validAddresses: string[] = [];
+  public validAddresses: string[] = [];
   private addonAddresses: Map<string, string[]> = new Map<string, string[]>();
   private addedToPurgeAndReport: Map<string, any> = new Map<string, any>();
 
@@ -38,6 +38,10 @@ export class ConsumerSessionManager {
 
   public getRpcEndpoint(): any {
     return this.rpcEndpoint;
+  }
+
+  public getCurrentEpoch(): number {
+    return this.currentEpoch;
   }
 
   public getPairingAddressesLength(): number {
@@ -100,7 +104,8 @@ export class ConsumerSessionManager {
     cuNeededForSession: number,
     initUnwantedProviders: Record<string, any>,
     requestedBlock: number,
-    addon: string
+    addon: string,
+    extensions: string[]
   ): ConsumerSessionsMap {
     return {};
   }
