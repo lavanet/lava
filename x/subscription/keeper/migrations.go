@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
+	v4 "github.com/lavanet/lava/x/subscription/migrations/v4"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -97,4 +98,40 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 // -- trigger fixation migration (v4->v5), initialize IsLatest field
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	return m.keeper.subsFS.MigrateVersion(ctx)
+}
+
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate 4->5: subscriptions")
+
+	keeper := m.keeper
+	indices := keeper.subsFS.AllEntryIndicesFilter(ctx, "", nil)
+	for _, ind := range indices {
+		blocks := keeper.subsFS.GetAllEntryVersions(ctx, ind)
+
+		for _, block := range blocks {
+			var sub_V4 v4.SubscriptionV4
+			keeper.subsFS.ReadEntry(ctx, ind, block, &sub_V4)
+			utils.LavaFormatDebug("migrate:",
+				utils.Attribute{Key: "subscription", Value: sub_V4.Consumer})
+
+			sub_V5 := types.Subscription{
+				Creator:         sub_V4.Creator,
+				Consumer:        sub_V4.Consumer,
+				Block:           sub_V4.Block,
+				PlanIndex:       sub_V4.PlanIndex,
+				PlanBlock:       sub_V4.PlanBlock,
+				DurationTotal:   0,
+				DurationLeft:    sub_V4.DurationLeft,
+				MonthExpiryTime: sub_V4.MonthExpiryTime,
+				MonthCuTotal:    sub_V4.MonthCuTotal,
+				MonthCuLeft:     sub_V4.MonthCuLeft,
+				DurationBought:  sub_V4.DurationTotal,
+			}
+
+			sub_V5.Cluster = types.GetCluster(sub_V5)
+
+			keeper.subsFS.ModifyEntry(ctx, ind, block, &sub_V5)
+		}
+	}
+	return nil
 }
