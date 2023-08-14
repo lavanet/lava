@@ -577,6 +577,21 @@ func TestAddonPairing(t *testing.T) {
 	}
 }
 
+func countSelectedAddresses(selected []string, expected []string) int {
+	count := 0
+	countPossibilities := map[string]struct{}{}
+	for _, possibility := range expected {
+		countPossibilities[possibility] = struct{}{}
+	}
+	for _, selectedProvider := range selected {
+		_, ok := countPossibilities[selectedProvider]
+		if ok {
+			count++
+		}
+	}
+	return count
+}
+
 func TestSelectedProvidersPairing(t *testing.T) {
 	ts := newTester(t)
 
@@ -743,21 +758,6 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			providerAddresses2 := []string{}
 			for _, provider := range pairing.Providers {
 				providerAddresses2 = append(providerAddresses2, provider.Address)
-			}
-
-			countSelectedAddresses := func(selected []string, expected []string) int {
-				count := 0
-				countPossibilities := map[string]struct{}{}
-				for _, possibility := range expected {
-					countPossibilities[possibility] = struct{}{}
-				}
-				for _, selectedProvider := range selected {
-					_, ok := countPossibilities[selectedProvider]
-					if ok {
-						count++
-					}
-				}
-				return count
 			}
 
 			// check pairings
@@ -1988,4 +1988,157 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
+	specEth, err := testkeeper.GetASpec("ETH1", "../../../", nil, nil)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	ts.spec.ApiCollections = specEth.ApiCollections
+
+	// will overwrite the default "mock" spec
+	ts.AddSpec("mock", ts.spec)
+	specId := ts.spec.Index
+	mandatoryExtChainPolicyMix := planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: spectypes.CollectionData{
+				ApiInterface: "jsonrpc",
+				InternalPath: "",
+				Type:         "POST",
+				AddOn:        "",
+			},
+			Extensions: []string{"archive"},
+			Mixed:      true,
+		}},
+	}
+
+	regularEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{},
+		ApiInterfaces: []string{},
+	}}
+	archiveEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{"archive"},
+		ApiInterfaces: []string{},
+	}}
+
+	// mandatory
+	err = ts.addProviderEndpoints(200, regularEndpoints) // ext1 - 2
+	require.NoError(t, err)
+
+	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	_, p3 := ts.GetAccount(common.PROVIDER, 2)
+	_, p4 := ts.GetAccount(common.PROVIDER, 3)
+	_, p5 := ts.GetAccount(common.PROVIDER, 4)
+	selectedProviders := []string{p1, p2, p3, p4, p5}
+	err = ts.addProviderEndpoints(10, archiveEndpoints) // ext1 - 2
+	require.NoError(t, err)
+
+	t.Run("archive selected providers mixed test", func(t *testing.T) {
+		defaultPolicy := func() planstypes.Policy {
+			return planstypes.Policy{
+				ChainPolicies:      []planstypes.ChainPolicy{},
+				GeolocationProfile: math.MaxUint64,
+				MaxProvidersToPair: 30,
+				TotalCuLimit:       math.MaxUint64,
+				EpochCuLimit:       math.MaxUint64,
+			}
+		}
+
+		plan := ts.plan // original mock template
+		plan.PlanPolicy = defaultPolicy()
+		plan.PlanPolicy.SelectedProvidersMode = planstypes.SELECTED_PROVIDERS_MODE_MIXED
+		plan.PlanPolicy.SelectedProviders = selectedProviders
+
+		plan.PlanPolicy.ChainPolicies = []planstypes.ChainPolicy{mandatoryExtChainPolicyMix}
+
+		expectedProviders := plan.PlanPolicy.MaxProvidersToPair
+
+		err := ts.TxProposalAddPlans(plan)
+		require.Nil(t, err)
+
+		_, sub1Addr := ts.AddAccount("sub", 0, 10000)
+
+		_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+		require.Nil(t, err)
+
+		// get the admin project and set its policies
+		subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(subProjects.Projects))
+
+		projectID := subProjects.Projects[0]
+
+		// apply policy change
+		ts.AdvanceEpoch()
+
+		// apply policy change
+		ts.AdvanceEpochs(2)
+
+		project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
+		require.NoError(t, err)
+
+		strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+		require.NoError(t, err)
+
+		require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
+		require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Requirements))
+		services := map[string]struct{}{}
+		for _, requirement := range strictestPolicy.ChainPolicies[0].Requirements {
+			collection := requirement.Collection
+			if collection.AddOn != "" {
+				services[collection.AddOn] = struct{}{}
+			}
+			for _, extension := range requirement.Extensions {
+				if extension != "" {
+					services[extension] = struct{}{}
+				}
+			}
+		}
+		for _, expected := range []string{"archive"} {
+			_, ok := services[expected]
+			require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, strictestPolicy)
+		}
+
+		pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
+		require.Nil(t, err)
+		require.Equal(t, expectedProviders, uint64(len(pairing.Providers)), "received providers %#v", pairing)
+
+		servicesCount := map[string]int{}
+		for _, provider := range pairing.GetProviders() {
+			for _, endpoint := range provider.Endpoints {
+				for _, addon := range endpoint.Addons {
+					servicesCount[addon] = servicesCount[addon] + 1
+				}
+				for _, extension := range endpoint.Extensions {
+					servicesCount[extension] = servicesCount[extension] + 1
+				}
+				for _, apiInterface := range endpoint.ApiInterfaces {
+					servicesCount[apiInterface] = servicesCount[apiInterface] + 1
+				}
+			}
+
+		}
+		for _, expected := range []string{"archive"} {
+			count, ok := servicesCount[expected]
+			require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, services)
+			require.GreaterOrEqual(t, count, len(pairing.Providers)/3) // we expect at least third of the providers to support the expected api interface
+		}
+		// verify selected providers mix count
+		addresses := []string{}
+		for _, provider := range pairing.Providers {
+			addresses = append(addresses, provider.Address)
+		}
+		count := countSelectedAddresses(addresses, selectedProviders)
+		require.Equal(t, count, len(selectedProviders))
+	})
+
 }
