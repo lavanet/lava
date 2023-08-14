@@ -1363,6 +1363,14 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			Extensions: []string{"ext1"},
 		}},
 	}
+	mandatoryExtChainPolicyMix := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext1"},
+			Mixed:      true,
+		}},
+	}
 	mandatoryExt2ChainPolicy := &planstypes.ChainPolicy{
 		ChainId: specId,
 		Requirements: []planstypes.ChainRequirement{{
@@ -1537,6 +1545,25 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			name:                      "mandatory ext in proj",
 			projChainPolicy:           mandatoryExtChainPolicy,
 			expectedProviders:         13,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mixed mandatory ext in plan",
+			planChainPolicy:           mandatoryExtChainPolicyMix,
+			expectedProviders:         26,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mixed mandatory ext in subsc",
+			subscChainPolicy:          mandatoryExtChainPolicyMix,
+			projChainPolicy:           nil,
+			expectedProviders:         26,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mixed mandatory ext in proj",
+			projChainPolicy:           mandatoryExtChainPolicyMix,
+			expectedProviders:         26,
 			expectedStrictestPolicies: []string{"ext1"},
 		},
 		{
@@ -1934,6 +1961,28 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			if tt.expectedProviders > 0 {
 				require.Nil(t, err)
 				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
+				if len(tt.expectedStrictestPolicies) > 0 {
+					services := map[string]int{}
+					for _, provider := range pairing.GetProviders() {
+						for _, endpoint := range provider.Endpoints {
+							for _, addon := range endpoint.Addons {
+								services[addon] = services[addon] + 1
+							}
+							for _, extension := range endpoint.Extensions {
+								services[extension] = services[extension] + 1
+							}
+							for _, apiInterface := range endpoint.ApiInterfaces {
+								services[apiInterface] = services[apiInterface] + 1
+							}
+						}
+
+					}
+					for _, expected := range tt.expectedStrictestPolicies {
+						count, ok := services[expected]
+						require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, services)
+						require.GreaterOrEqual(t, count, len(pairing.Providers)/2) // we expect at least half of the providers to support the expected api interface (for mix it's half)
+					}
+				}
 			} else {
 				require.Error(t, err)
 			}
