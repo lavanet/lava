@@ -1,5 +1,13 @@
 import BigNumber from "bignumber.js";
-import { AVAILABILITY_PERCENTAGE } from "./common";
+import {
+  AVAILABILITY_PERCENTAGE,
+  MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER,
+  MAX_SESSIONS_ALLOWED_PER_PROVIDER,
+} from "./common";
+import {
+  MaximumNumberOfBlockListedSessionsError,
+  MaximumNumberOfSessionsExceededError,
+} from "./errors";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -99,6 +107,29 @@ export class SingleConsumerSession {
   };
   public blockListed = false;
   public consecutiveNumberOfFailures = 0;
+  private locked = false;
+
+  public constructor(
+    sessionId: number,
+    client: ConsumerSessionsWithProvider,
+    endpoint: Endpoint
+  ) {
+    this.sessionId = sessionId;
+    this.client = client;
+    this.endpoint = endpoint;
+  }
+
+  public isLocked(): boolean {
+    return this.locked;
+  }
+
+  public lock(): void {
+    this.locked = true;
+  }
+
+  public unlock(): void {
+    this.locked = false;
+  }
 
   public calculateExpectedLatency(timeoutGivenToRelay: number): number {
     return timeoutGivenToRelay / 2;
@@ -187,8 +218,8 @@ export class ConsumerSessionsWithProvider {
   public sessions: Record<number, SingleConsumerSession>;
   public maxComputeUnits: number;
   public usedComputeUnits = 0;
-  private pairingEpoch: number;
-  private conflictFoundAndReported = 0; // 0 == not reported, 1 == reported
+  private readonly pairingEpoch: number;
+  private conflictFoundAndReported = false; // 0 == not reported, 1 == reported
 
   public constructor(
     publicLavaAddress: string,
@@ -205,11 +236,11 @@ export class ConsumerSessionsWithProvider {
   }
 
   public conflictAlreadyReported(): boolean {
-    return false;
+    return this.conflictFoundAndReported;
   }
 
   public storeConflictReported(): void {
-    return;
+    this.conflictFoundAndReported = true;
   }
 
   public isSupportingAddon(addon: string): boolean {
@@ -249,14 +280,49 @@ export class ConsumerSessionsWithProvider {
     singleConsumerSession: SingleConsumerSession;
     pairingEpoch: number;
   } {
+    const maximumBlockSessionsAllowed =
+      MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER * (numberOfResets + 1);
+
+    let numberOfBlockedSessions = 0;
+    for (const session of Object.values(this.sessions)) {
+      if (session.endpoint != endpoint) {
+        continue;
+      }
+
+      if (numberOfBlockedSessions >= maximumBlockSessionsAllowed) {
+        throw new MaximumNumberOfBlockListedSessionsError();
+      }
+
+      if (!session.isLocked()) {
+        if (session.blockListed) {
+          numberOfBlockedSessions++;
+          continue;
+        }
+
+        return {
+          singleConsumerSession: session,
+          pairingEpoch: this.pairingEpoch,
+        };
+      }
+    }
+
+    if (Object.keys(this.sessions).length > MAX_SESSIONS_ALLOWED_PER_PROVIDER) {
+      throw new MaximumNumberOfSessionsExceededError();
+    }
+
+    // TODO: change Math.random to something else
+    const randomSessionId = Math.random();
+    const session = new SingleConsumerSession(randomSessionId, this, endpoint);
+    session.lock();
+
     return {
-      singleConsumerSession: {} as unknown as SingleConsumerSession,
+      singleConsumerSession: session,
       pairingEpoch: this.pairingEpoch,
     };
   }
 
   public calculatedExpectedLatency(timeoutGivenToRelay: number): number {
-    return 0;
+    return timeoutGivenToRelay / 2;
   }
 
   public calculateQoS(
