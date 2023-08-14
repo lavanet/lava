@@ -150,7 +150,11 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	if len(slots) >= len(providerScores) {
-		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
+		filteredEntries := []epochstoragetypes.StakeEntry{}
+		for _, score := range providerScores {
+			filteredEntries = append(filteredEntries, *score.Provider)
+		}
+		return filteredEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
