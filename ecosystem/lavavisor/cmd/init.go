@@ -27,46 +27,7 @@ var cmdLavavisorInit = &cobra.Command{
 		lavavisor init --directory ./custom/lavavisor/path 
 		lavavisor init --directory ./custom/lavavisor/path --auto-download true`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, _ := cmd.Flags().GetString("directory")
-		// Build path to ./lavavisor
-		lavavisorPath, err := lvutil.GetLavavisorPath(dir)
-		if err != nil {
-			return err
-		}
-		// check auto-download flag
-		autoDownload, err := cmd.Flags().GetBool("auto-download")
-		if err != nil {
-			return err
-		}
-		// initialize lavavisor state tracker
-		ctx := context.Background()
-		clientCtx, err := client.GetClientQueryContext(cmd)
-		if err != nil {
-			return err
-		}
-		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-
-		lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-		lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavavisorChainFetcher)
-		if err != nil {
-			return err
-		}
-		// fetch lava-protocol version from consensus
-		protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
-		if err != nil {
-			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
-		}
-		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
-
-		// fetcher - must return binaryPath (according to selected min or target)
-		binaryPath, err := processmanager.FetchProtocolBinary(lavavisorPath, autoDownload, protocolConsensusVersion)
-		if err != nil {
-			return utils.LavaFormatError("Protocol binary couldn't be fetched", nil)
-		}
-		// linker
-		processmanager.CreateLink(binaryPath)
-
-		return nil
+		return LavavisorInit(cmd)
 	},
 }
 
@@ -76,4 +37,47 @@ func init() {
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	cmdLavavisorInit.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	rootCmd.AddCommand(cmdLavavisorInit)
+}
+
+func LavavisorInit(cmd *cobra.Command) error {
+	dir, _ := cmd.Flags().GetString("directory")
+	// Build path to ./lavavisor
+	lavavisorPath, err := lvutil.GetLavavisorPath(dir)
+	if err != nil {
+		return err
+	}
+	// check auto-download flag
+	autoDownload, err := cmd.Flags().GetBool("auto-download")
+	if err != nil {
+		return err
+	}
+	// initialize lavavisor state tracker
+	ctx := context.Background()
+	clientCtx, err := client.GetClientQueryContext(cmd)
+	if err != nil {
+		return err
+	}
+	txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+
+	lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavavisorChainFetcher)
+	if err != nil {
+		return err
+	}
+	// fetch lava-protocol version from consensus
+	protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
+	if err != nil {
+		return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
+	}
+	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
+
+	// fetcher - must return binaryPath (according to selected min or target)
+	binaryPath, err := processmanager.FetchProtocolBinary(lavavisorPath, autoDownload, protocolConsensusVersion)
+	if err != nil {
+		return utils.LavaFormatError("Protocol binary couldn't be fetched", nil)
+	}
+	// linker
+	processmanager.CreateLink(binaryPath)
+
+	return nil
 }

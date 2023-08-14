@@ -88,51 +88,7 @@ var cmdLavavisorStart = &cobra.Command{
     lavavisor listening process. It reads config.yaml, checks the list of provider-services, 
     and starts them with the linked 'which lava-protocol' binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, _ := cmd.Flags().GetString("directory")
-		// Build path to ./lavavisor
-		lavavisorPath, err := lvutil.GetLavavisorPath(dir)
-		if err != nil {
-			return err
-		}
-
-		// initialize lavavisor state tracker
-		ctx := context.Background()
-		clientCtx, err := client.GetClientQueryContext(cmd)
-		if err != nil {
-			return err
-		}
-		txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-
-		// auto-download
-		autoDownload, err := cmd.Flags().GetBool("auto-download")
-		if err != nil {
-			return err
-		}
-
-		// Read config.yaml
-		configPath := filepath.Join(lavavisorPath, "/config.yml")
-		configData, err := os.ReadFile(configPath)
-		if err != nil {
-			return utils.LavaFormatError("failed to read config.yaml: %v", err)
-		}
-
-		var config Config
-		err = yaml.Unmarshal(configData, &config)
-		if err != nil {
-			return utils.LavaFormatError("failed to unmarshal config.yaml: %v", err)
-		}
-
-		// Iterate over the list of provider services and start them
-		var providers []*processmanager.ProviderProcess
-		for _, provider := range config.ProviderServices {
-			utils.LavaFormatInfo("Starting provider: %s\n", utils.Attribute{Key: "Provider", Value: provider})
-			providers = processmanager.StartProvider(providers, provider)
-		}
-
-		// Start lavavisor version monitor process
-		lavavisor := LavaVisor{}
-		err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, providers)
-		return err
+		return LavavisorStart(cmd)
 	},
 }
 
@@ -142,4 +98,51 @@ func init() {
 	cmdLavavisorStart.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	cmdLavavisorStart.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	rootCmd.AddCommand(cmdLavavisorStart)
+}
+
+func LavavisorStart(cmd *cobra.Command) error {
+	dir, _ := cmd.Flags().GetString("directory")
+	// Build path to ./lavavisor
+	lavavisorPath, err := lvutil.GetLavavisorPath(dir)
+	if err != nil {
+		return err
+	}
+	// initialize lavavisor state tracker
+	ctx := context.Background()
+	clientCtx, err := client.GetClientQueryContext(cmd)
+	if err != nil {
+		return err
+	}
+	txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+
+	// auto-download
+	autoDownload, err := cmd.Flags().GetBool("auto-download")
+	if err != nil {
+		return err
+	}
+
+	// Read config.yaml
+	configPath := filepath.Join(lavavisorPath, "/config.yml")
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return utils.LavaFormatError("failed to read config.yaml: %v", err)
+	}
+
+	var config Config
+	err = yaml.Unmarshal(configData, &config)
+	if err != nil {
+		return utils.LavaFormatError("failed to unmarshal config.yaml: %v", err)
+	}
+
+	// Iterate over the list of provider services and start them
+	var providers []*processmanager.ProviderProcess
+	for _, provider := range config.ProviderServices {
+		utils.LavaFormatInfo("Starting provider: %s\n", utils.Attribute{Key: "Provider", Value: provider})
+		providers = processmanager.StartProvider(providers, provider)
+	}
+
+	// Start lavavisor version monitor process
+	lavavisor := LavaVisor{}
+	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, providers)
+	return err
 }
