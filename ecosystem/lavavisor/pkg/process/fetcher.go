@@ -13,26 +13,36 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
-func FetchProtocolBinary(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) error {
-	return checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion)
+func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
+	versions := []string{protocolConsensusVersion.ProviderTarget, protocolConsensusVersion.ProviderMin}
+
+	for _, version := range versions {
+		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version)
+		selectedBinaryPath, err = checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion)
+		if err == nil {
+			return selectedBinaryPath, nil
+		}
+	}
+
+	return "", utils.LavaFormatError("failed to fetch protocol binary for both target and min versions", err)
 }
 
-func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) error {
+func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
 	if dirExists(versionDir) {
 		err := handleExistingDir(versionDir, autoDownload, protocolConsensusVersion, binaryPath)
 		if err != nil {
-			return err
+			return "", err
 		}
 	} else {
 		err := handleMissingDir(versionDir, autoDownload, protocolConsensusVersion)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 	utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
-	return nil
+	return selectedBinaryPath, nil
 }
 
 func dirExists(versionDir string) bool {

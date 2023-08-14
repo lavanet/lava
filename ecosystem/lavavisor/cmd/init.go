@@ -3,7 +3,6 @@ package lavavisor
 import (
 	"context"
 	"os"
-	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -58,14 +57,15 @@ var cmdLavavisorInit = &cobra.Command{
 			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
 		}
 		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
-		// ./lavad/upgrades/<fetched_version>
-		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ProviderMin)
-		// fetcher
-		processmanager.FetchProtocolBinary(versionDir, autoDownload, protocolConsensusVersion)
-		// linker
-		processmanager.CreateLink(versionDir)
 
-		// ToDo: if autodownload false: alert user that binary is not exist, monitor directory constantly!,
+		// fetcher - must return binaryPath (according to selected min or target)
+		binaryPath, err := processmanager.FetchProtocolBinary(lavavisorPath, autoDownload, protocolConsensusVersion)
+		if err != nil {
+			return utils.LavaFormatError("protcol binary couldn't fetched", err)
+		}
+		// linker
+		processmanager.CreateLink(binaryPath)
+
 		return nil
 	},
 }
