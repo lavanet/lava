@@ -55,7 +55,7 @@ func validateBinaryExecutable(path string) {
 	if err != nil {
 		utils.LavaFormatFatal("binary is not a valid executable: ", err)
 	}
-	utils.LavaFormatInfo("Executable binary validated.", utils.Attribute{Key: "version", Value: version})
+	utils.LavaFormatInfo("Executable binary validated.", utils.Attribute{Key: "version", Value: strings.TrimSpace(string(version))})
 }
 
 func removeExistingLink(linkPath string) {

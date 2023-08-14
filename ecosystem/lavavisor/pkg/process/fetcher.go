@@ -25,7 +25,7 @@ func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsen
 		}
 	}
 
-	return "", utils.LavaFormatError("failed to fetch protocol binary for both target and min versions", err)
+	return "", utils.LavaFormatError("Failed to fetch protocol binary for both target and min versions", nil)
 }
 
 func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
