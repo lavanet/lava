@@ -171,34 +171,32 @@ func PrepareHashData(projectIndex, chainID string, epochHash []byte, idx int) []
 
 // PickProviders pick a <group-count> providers set with a pseudo-random weighted choice
 // (using the providers' score list and hashData)
+// selection is done by adding all of the scores in the sorted list and generating a random value
 func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, hashData []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
-	if len(scores) == 0 {
+	// skip index of providers already selected
+	totalScore, slotIndexScore, err := CalculateTotalScoresForGroup(scores, groupIndexes)
+	if err != nil {
 		return returnedProviders
 	}
-
-	scoreSum := math.ZeroUint()
-	for _, providerScore := range scores {
-		if providerScore.SkipForSelection {
-			// skip index of providers already selected
-			continue
-		}
-		scoreSum = scoreSum.Add(providerScore.Score)
-	}
-	if scoreSum == math.ZeroUint() {
-		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
-		return returnedProviders
-	}
-
 	rng := rand.New(hashData)
-
 	for _, groupIndex := range groupIndexes {
-		randomValue := uint64(rng.Int63n(scoreSum.BigInt().Int64())) + 1
+		if totalScore.IsZero() {
+			// no more possible selections
+			return returnedProviders
+		}
+		// effective score is the total score subtracted by the negative score
+		effectiveScore := totalScore.Sub(slotIndexScore[groupIndex])
+		if effectiveScore.IsZero() {
+			// no possible providers for this slot filter, by setting a slot that doesn't exist we disable mix filters and allow all providers not selected yet
+			groupIndex = -1
+			effectiveScore = totalScore
+		}
+		randomValue := uint64(rng.Int63n(effectiveScore.BigInt().Int64())) + 1
 		newScoreSum := math.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
-			_, ok := scores[idx].SlotFiltering[groupIndex]
-			if scores[idx].SkipForSelection || ok {
-				// skip index of providers already selected
+			if !scores[idx].IsValidForSelection(groupIndex) {
+				// skip index of providers that are filtered or already selected
 				continue
 			}
 			providerScore := scores[idx]
@@ -206,13 +204,61 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, 
 			if randomValue <= newScoreSum.Uint64() {
 				// we hit our chosen provider
 				// remove this provider from the random pool, so the sum is lower now
+
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
-				scoreSum = scoreSum.Sub(providerScore.Score)
-				scores[idx].SkipForSelection = true
+				totalScore, slotIndexScore = AddProviderToSelection(providerScore, groupIndexes, totalScore, slotIndexScore)
 				break
 			}
 		}
 	}
 
 	return returnedProviders
+}
+
+// this function calculates the total score, and negative score modifiers for each slot.
+// the negative score modifiers contain the total stake of providers that are not allowed
+// so if a provider is not allowed in slot X, it will be added to the total score but will have slotIndexScore[X]+= providerStake
+// and during the selection of slot X we will have the selection effective sum as: totalScore - slotIndexScore[X], and that provider that is not allowed can't be selected
+func CalculateTotalScoresForGroup(scores []*PairingScore, groupIndexes []int) (totalScore math.Uint, slotIndexScore map[int]math.Uint, err error) {
+	if len(scores) == 0 {
+		return math.ZeroUint(), nil, fmt.Errorf("invalid scores length")
+	}
+	totalScore = math.ZeroUint()
+	slotIndexScore = map[int]math.Uint{}
+	for _, groupIndex := range groupIndexes {
+		slotIndexScore[groupIndex] = math.ZeroUint()
+	}
+	// all all providers to selection possibilities
+	for _, providerScore := range scores {
+		totalScore, slotIndexScore = AddProviderToSelection(providerScore, groupIndexes, totalScore, slotIndexScore)
+	}
+
+	if totalScore == math.ZeroUint() {
+		return math.ZeroUint(), nil, utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
+	}
+	return totalScore, slotIndexScore, nil
+}
+
+func AddProviderToSelection(providerScore *PairingScore, groupIndexes []int, totalScore math.Uint, slotIndexScore map[int]math.Uint) (math.Uint, map[int]math.Uint) {
+	if providerScore.SkipForSelection {
+		return totalScore, slotIndexScore
+	}
+	totalScore = totalScore.Add(providerScore.Score)
+	// whenever a provider is not valid in a specific filter we add it's score to the slotIndexScore so we can subtract it
+	for _, groupIndex := range providerScore.InvalidIndexes(groupIndexes) {
+		slotIndexScore[groupIndex] = slotIndexScore[groupIndex].Add(providerScore.Score)
+	}
+	return totalScore, slotIndexScore
+}
+
+func RemoveProviderFromSelection(providerScore *PairingScore, groupIndexes []int, totalScore math.Uint, slotIndexScore map[int]math.Uint) (math.Uint, map[int]math.Uint) {
+	// remove this provider from the total score
+	totalScore = totalScore.Sub(providerScore.Score)
+	// remove this provider for the subtraction scores as well
+	for _, groupIndex := range providerScore.InvalidIndexes(groupIndexes) {
+		slotIndexScore[groupIndex] = slotIndexScore[groupIndex].Sub(providerScore.Score)
+	}
+	// after modifying the score make sure this provider can't be selected again
+	providerScore.SkipForSelection = true
+	return totalScore, slotIndexScore
 }
