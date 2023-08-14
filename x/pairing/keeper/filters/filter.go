@@ -79,7 +79,6 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 					// filter is a mandatory filter that didn't pass so we skip this provider
 					result = false
 					break
-
 				}
 			}
 		}
