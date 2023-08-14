@@ -548,7 +548,7 @@ func TestAddonPairing(t *testing.T) {
 			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
 
-			strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
@@ -1025,8 +1025,12 @@ func TestGeolocationPairingScores(t *testing.T) {
 			require.Nil(t, err)
 			stakeEntries := providersRes.StakeEntry
 			providerScores := []*pairingscores.PairingScore{}
+
+			_, cluster, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, *devResponse.Project, ts.spec.Index)
+
 			for i := range stakeEntries {
-				providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
+				qos := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
+				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
 				providerScores = append(providerScores, providerScore)
 			}
 
@@ -1860,7 +1864,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
 
-			strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))

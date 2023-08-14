@@ -129,10 +129,12 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	strictestPolicy, err = k.GetProjectStrictestPolicy(ctx, project, chainID)
+	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
+
+	providerQosMap := k.GetProviderQosMap(ctx, chainID, cluster)
 
 	if providersType == spectypes.Spec_static {
 		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
@@ -144,7 +146,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
 	// filter relevant providers and add slotFiltering for mix filters
-	providerScores, err := pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots))
+	providerScores, err := pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), providerQosMap)
 	if err != nil {
 		return nil, 0, "", err
 	}
@@ -174,10 +176,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
-func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (*planstypes.Policy, error) {
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (*planstypes.Policy, string, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -190,21 +192,21 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
 	if !allowed {
-		return nil, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
+		return nil, "", fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
 	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return nil, "", fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
@@ -220,7 +222,7 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		TotalCuLimit:          allowedCUTotal,
 	}
 
-	return strictestPolicy, nil
+	return strictestPolicy, sub.Cluster, nil
 }
 
 func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Policy) (planstypes.SELECTED_PROVIDERS_MODE, []string) {

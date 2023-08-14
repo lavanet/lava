@@ -32,7 +32,7 @@ func (k Keeper) SdkPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, err
 	}
 
-	strictestPolicy, err := k.GetProjectStrictestPolicy(ctx, project, req.ChainID)
+	strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, req.ChainID)
 	if err != nil {
 		return nil, err
 	}

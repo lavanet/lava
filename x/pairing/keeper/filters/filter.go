@@ -7,6 +7,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
@@ -39,7 +40,7 @@ func initFilters(filters []Filter, strictestPolicy planstypes.Policy) []Filter {
 	return activeFilters
 }
 
-func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int) ([]*pairingscores.PairingScore, error) {
+func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, providerQosMap map[string]pairingtypes.QualityOfServiceReport) ([]*pairingscores.PairingScore, error) {
 	filters = initFilters(filters, *strictestPolicy)
 
 	var filtersResult [][]bool
@@ -84,7 +85,7 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 		}
 
 		if result {
-			providerScore := pairingscores.NewPairingScore(&providers[j])
+			providerScore := pairingscores.NewPairingScore(&providers[j], providerQosMap[providers[j].Address])
 			providerScores = append(providerScores, providerScore)
 		}
 	}
