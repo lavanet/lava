@@ -61,7 +61,7 @@ var cmdLavavisorInit = &cobra.Command{
 		// fetcher - must return binaryPath (according to selected min or target)
 		binaryPath, err := processmanager.FetchProtocolBinary(lavavisorPath, autoDownload, protocolConsensusVersion)
 		if err != nil {
-			return utils.LavaFormatError("protcol binary couldn't fetched", err)
+			return utils.LavaFormatError("protocol binary couldn't fetched", err)
 		}
 		// linker
 		processmanager.CreateLink(binaryPath)
