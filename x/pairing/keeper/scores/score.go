@@ -138,7 +138,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot P
 				)
 			}
 
-			newScoreComp := req.Score(*score.Provider)
+			newScoreComp := req.Score(*score)
 			if newScoreComp == math.ZeroUint() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},

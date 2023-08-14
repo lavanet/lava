@@ -2,7 +2,6 @@ package scores
 
 import (
 	"cosmossdk.io/math"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
@@ -19,7 +18,7 @@ func (qr *QosReq) Init(policy planstypes.Policy) bool {
 }
 
 // Score calculates the the provider's qos score
-func (qr *QosReq) Score(stakeEntry epochstoragetypes.StakeEntry) math.Uint {
+func (qr *QosReq) Score(score PairingScore) math.Uint {
 	return math.NewUint(1) // TBD
 }
 
