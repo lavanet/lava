@@ -1485,6 +1485,10 @@
                                         "expected_value": "0x1e14"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": []
                             }
                         ]
                     }

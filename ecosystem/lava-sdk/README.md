@@ -264,3 +264,22 @@ module.exports = function override(config) {
 [license-url]: https://github.com/lavanet/lava-sdk/blob/main/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/company/lava-network/
+
+
+# Contribution FAQ
+
+Q: how to compile the protobufs?
+A: 
+```bash
+sudo apt install -y protobuf-compiler
+```
+cd go/.../lava/ecosystem/lava-sdk
+
+If you've made changes to the protobufs directory run: 
+```bash
+./scripts/protoc.sh 
+```
+If you've made changes to relay.proto specifically run:
+```bash
+./scripts/protoc_grpc_relay.sh 
+```

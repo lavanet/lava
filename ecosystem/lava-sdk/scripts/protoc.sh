@@ -42,14 +42,14 @@ protoc \
   "$COSMOS_PROTO_DIR/tendermint/types/types.proto" \
   "$COSMOS_PROTO_DIR/tendermint/types/validator.proto" \
   "$COSMOS_PROTO_DIR/tendermint/version/types.proto" \
-  $THIRD_PARTY_PROTO_DIR/lava/conflict/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/epochstorage/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/pairing/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/spec/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/common/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/plans/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/projects/*.proto \
-  $THIRD_PARTY_PROTO_DIR/lava/subscription/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/conflict/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/common/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/plans/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/projects/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/subscription/*.proto \
 
 # Remove unnecessary codec files
 rm -rf \

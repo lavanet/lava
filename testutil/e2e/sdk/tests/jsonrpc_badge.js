@@ -9,13 +9,18 @@ async function main() {
         },
         chainID: "ETH1",
         lavaChainId:"lava",
-        pairingListConfig:process.env.PAIRING_LIST
+        pairingListConfig:process.env.PAIRING_LIST, 
+        allowInsecureTransport: true,
+    }).catch(e => {
+        throw new Error(" ERR failed initializing lava-sdk jsonrpc badge test");
     });
 
     // Fetch chain id
     const result = await eth.sendRelay({
         method: "eth_chainId",
         params: [],
+    }).catch(e => {
+        throw new Error(" ERR failed sending relay jsonrpc badge test");
     });
 
     // Parse response
