@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/common"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -29,6 +30,7 @@ type (
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
 		badgeTimerStore    common.TimerStore
+		providerQosFS      common.FixationStore
 	}
 )
 
@@ -83,6 +85,8 @@ func NewKeeper(
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
+	keeper.providerQosFS = *common.NewFixationStore(storeKey, cdc, types.ProviderQosStorePrefix)
+
 	return keeper
 }
 
@@ -103,4 +107,12 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 			types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER,
 			types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
+}
+
+func (k Keeper) InitProviderQos(ctx sdk.Context, data []commontypes.RawMessage) {
+	k.providerQosFS.Init(ctx, data)
+}
+
+func (k Keeper) ExportProviderQos(ctx sdk.Context) []commontypes.RawMessage {
+	return k.providerQosFS.Export(ctx)
 }

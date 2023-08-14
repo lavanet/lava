@@ -29,8 +29,7 @@
 // and so on).
 //
 //
-// To add a new requirement, create an object implementing the ScoreReq interface and update CalcSlots()
-// to assign it to the pairing slots as desired. Lastly, add the new requirement in GetAllReqs().
+// To add a new requirement, create an object implementing the ScoreReq interface and add the new requirement in GetAllReqs().
 
 package scores
 
@@ -65,6 +64,7 @@ func GetAllReqs() []ScoreReq {
 	return []ScoreReq{
 		&StakeReq{},
 		&GeoReq{},
+		&QosReq{},
 	}
 }
 
