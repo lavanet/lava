@@ -77,21 +77,22 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 	if err != nil {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
-	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: binaryVersion})
-	// check min version
-	if incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion {
-		vm.updateTriggered <- true
+	minVersionMismatch := (incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion)
+	targetVersionMismatch := (incoming.ConsumerTarget != binaryVersion || incoming.ProviderTarget != binaryVersion)
+
+	// Take action only if both mismatches are detected
+	if minVersionMismatch && targetVersionMismatch {
+		select {
+		case vm.updateTriggered <- true:
+		default:
+		}
 		vm.mismatchType = lvutil.MinVersionMismatch
 		vm.lastknownversion = incoming
 		return lvutil.MinVersionMismatchError
 	}
-	// check target version
-	if incoming.ConsumerTarget != binaryVersion || incoming.ProviderTarget != binaryVersion {
-		vm.updateTriggered <- true
-		vm.mismatchType = lvutil.TargetVersionMismatch
-		vm.lastknownversion = incoming
-		return lvutil.TargetVersionMismatchError
-	}
+
 	// version is ok.
+	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: binaryVersion})
+
 	return nil
 }
