@@ -246,7 +246,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
-	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(c *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
@@ -293,7 +293,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	})
 
 	// Catch the others
-	app.Use("/:dappId/*", func(c *fiber.Ctx) error {
+	app.Use("/*", func(c *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()

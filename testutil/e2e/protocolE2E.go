@@ -1104,7 +1104,7 @@ func runProtocolE2E(timeout time.Duration) {
 	lt.startJSONRPCConsumer(ctx)
 
 	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:333%d/1", n)
+		url := fmt.Sprintf("http://127.0.0.1:333%d", n)
 		msg := fmt.Sprintf("JSONRPCConsumer%d OK", n)
 		lt.checkJSONRPCConsumer(url, time.Minute*2, msg)
 	})
@@ -1115,9 +1115,9 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d/1", (n-1)*3)
+		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
 		lt.checkTendermintConsumer(url, time.Second*30)
-		url = fmt.Sprintf("http://127.0.0.1:334%d/1", (n-1)*3+1)
+		url = fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
 		lt.checkRESTConsumer(url, time.Second*30)
 		url = fmt.Sprintf("127.0.0.1:334%d", (n-1)*3+2)
 		lt.checkGRPCConsumer(url, time.Second*30)
@@ -1125,7 +1125,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:333%d/1", n)
+		url := fmt.Sprintf("http://127.0.0.1:333%d", n)
 		if err := jsonrpcTests(url, time.Second*30); err != nil {
 			panic(err)
 		}
@@ -1134,7 +1134,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d/1", (n-1)*3)
+		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
 		if err := tendermintTests(url, time.Second*30); err != nil {
 			panic(err)
 		}
@@ -1143,7 +1143,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d/1", (n-1)*3)
+		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
 		if err := tendermintURITests(url, time.Second*30); err != nil {
 			panic(err)
 		}
@@ -1154,7 +1154,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// staked client then with subscription
 	repeat(1, func(n int) {
-		url := fmt.Sprintf("http://127.0.0.1:334%d/1", (n-1)*3+1)
+		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3+1)
 		if err := restTests(url, time.Second*30); err != nil {
 			panic(err)
 		}
@@ -1171,7 +1171,7 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 	utils.LavaFormatInfo("GRPC TEST OK")
 
-	lt.checkResponse("http://127.0.0.1:3340/1", "http://127.0.0.1:3341/1", "127.0.0.1:3342")
+	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
 
 	// TODO: Add payment tests when subscription payment mechanism is implemented
 
