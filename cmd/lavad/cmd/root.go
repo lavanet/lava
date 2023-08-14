@@ -128,8 +128,9 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
+			customConfig := initTendermintConfig()
 			return server.InterceptConfigsPreRunHandler(
-				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
+				cmd, customAppTemplate, customAppConfig, customConfig,
 			)
 		},
 	}
