@@ -8,15 +8,20 @@ import (
 
 type SelectedProvidersFilter struct {
 	selectedProviders []string
+	mix               bool
 }
 
 func (f *SelectedProvidersFilter) IsMix() bool {
-	return false
+	return f.mix
 }
 
 func (f *SelectedProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	switch strictestPolicy.SelectedProvidersMode {
-	case planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE, planstypes.SELECTED_PROVIDERS_MODE_MIXED:
+	case planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE:
+		f.selectedProviders = strictestPolicy.SelectedProviders
+		return true
+	case planstypes.SELECTED_PROVIDERS_MODE_MIXED:
+		f.mix = true // set mix as true
 		f.selectedProviders = strictestPolicy.SelectedProviders
 		return true
 	}

@@ -65,17 +65,21 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 	for j := 0; j < len(providers); j++ {
 		result := true
 		slotFiltering := map[int]struct{}{} // for mix filters
+		// check provider for each filter
 		for i := 0; i < len(filters); i++ {
-			// if filter is mandatory
+			// if filter result was negative meaning provider didn't pass
 			if !filtersResult[i][j] {
-				if !filters[i].IsMix() {
-					result = false
-					break
-				} else {
+				// check if filter is mandatory
+				if filters[i].IsMix() {
 					// filter is a mix filter, that didn't pass
 					for _, index := range mixFilterIndexes[filters[i]] {
 						slotFiltering[index] = struct{}{} // this provider won't be selected at these slot numbers
 					}
+				} else {
+					// filter is a mandatory filter that didn't pass so we skip this provider
+					result = false
+					break
+
 				}
 			}
 		}

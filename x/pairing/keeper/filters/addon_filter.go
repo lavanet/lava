@@ -9,10 +9,11 @@ import (
 
 type AddonFilter struct {
 	requirements map[spectypes.CollectionData]map[string]struct{} // key is collectionData value is a map of required extensions
+	mix          bool
 }
 
 func (f *AddonFilter) IsMix() bool {
-	return false
+	return f.mix
 }
 
 func (f *AddonFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
@@ -21,6 +22,10 @@ func (f *AddonFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 		if len(chainPolicy.Requirements) > 0 {
 			requirements := map[spectypes.CollectionData]map[string]struct{}{}
 			for _, requirement := range chainPolicy.Requirements {
+				if requirement.Mixed {
+					// even one requirement as mix sets this filter as a mix filter
+					f.mix = true
+				}
 				if requirement.Differentiator() != "" {
 					if _, ok := requirements[requirement.Collection]; !ok {
 						requirements[requirement.Collection] = map[string]struct{}{}

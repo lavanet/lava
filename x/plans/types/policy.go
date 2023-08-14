@@ -266,5 +266,12 @@ func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 }
 
 func (cr ChainRequirement) Differentiator() string {
-	return cr.Collection.String() + strings.Join(cr.Extensions, ",")
+	if len(cr.Extensions) == 0 && cr.Collection.AddOn == "" {
+		return ""
+	}
+	diff := cr.Collection.String() + strings.Join(cr.Extensions, ",")
+	if cr.Mixed {
+		diff = "mixed-" + diff
+	}
+	return diff
 }
