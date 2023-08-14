@@ -9,7 +9,6 @@ import (
 )
 
 func TestTotalScore(t *testing.T) {
-
 	templates := []struct {
 		name         string
 		scores       []*PairingScore

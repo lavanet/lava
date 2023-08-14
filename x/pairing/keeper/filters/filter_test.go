@@ -20,6 +20,7 @@ func (mockFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEnt
 func (mockFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	return true
 }
+
 func (mockFilter) IsMix() bool {
 	return false
 }

@@ -1966,16 +1966,15 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 					for _, provider := range pairing.GetProviders() {
 						for _, endpoint := range provider.Endpoints {
 							for _, addon := range endpoint.Addons {
-								services[addon] = services[addon] + 1
+								services[addon]++
 							}
 							for _, extension := range endpoint.Extensions {
-								services[extension] = services[extension] + 1
+								services[extension]++
 							}
 							for _, apiInterface := range endpoint.ApiInterfaces {
-								services[apiInterface] = services[apiInterface] + 1
+								services[apiInterface]++
 							}
 						}
-
 					}
 					for _, expected := range tt.expectedStrictestPolicies {
 						count, ok := services[expected]
@@ -2116,16 +2115,15 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		for _, provider := range pairing.GetProviders() {
 			for _, endpoint := range provider.Endpoints {
 				for _, addon := range endpoint.Addons {
-					servicesCount[addon] = servicesCount[addon] + 1
+					servicesCount[addon]++
 				}
 				for _, extension := range endpoint.Extensions {
-					servicesCount[extension] = servicesCount[extension] + 1
+					servicesCount[extension]++
 				}
 				for _, apiInterface := range endpoint.ApiInterfaces {
-					servicesCount[apiInterface] = servicesCount[apiInterface] + 1
+					servicesCount[apiInterface]++
 				}
 			}
-
 		}
 		for _, expected := range []string{"archive"} {
 			count, ok := servicesCount[expected]
@@ -2140,5 +2138,4 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		count := countSelectedAddresses(addresses, selectedProviders)
 		require.Equal(t, count, len(selectedProviders))
 	})
-
 }
