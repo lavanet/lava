@@ -6,7 +6,7 @@
 # Dockerfile for reproducible build of lavad binary and docker image
 ########################################################################
 
-ARG GO_VERSION="1.18.2"
+ARG GO_VERSION="1.19.12"
 ARG RUNNER_IMAGE="debian:11-slim"
 
 # --------------------------------------------------------
