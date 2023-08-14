@@ -1322,7 +1322,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		{
 			Enabled:        true,
 			CollectionData: mandatory,
-			Extensions:     getExtensions("ext1", "ext2"),
+			Extensions:     getExtensions("ext1", "ext2", "not-supporting-providers"),
 		},
 		{
 			Enabled:        true,
@@ -1368,6 +1368,14 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		Requirements: []planstypes.ChainRequirement{{
 			Collection: mandatory,
 			Extensions: []string{"ext1"},
+			Mixed:      true,
+		}},
+	}
+	mandatoryNotSupportingProvidersMix := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"not-supporting-providers"},
 			Mixed:      true,
 		}},
 	}
@@ -1726,6 +1734,11 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			projChainPolicy:           allSupportingChainPolicy,
 			expectedProviders:         2,
 			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+		{
+			name:              "mixed not supporting providers",
+			projChainPolicy:   mandatoryNotSupportingProvidersMix,
+			expectedProviders: 26,
 		},
 	}
 
