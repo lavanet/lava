@@ -590,6 +590,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	allowed := planstypes.SELECTED_PROVIDERS_MODE_ALLOWED
 	exclusive := planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
 	disabled := planstypes.SELECTED_PROVIDERS_MODE_DISABLED
+	mixed := planstypes.SELECTED_PROVIDERS_MODE_MIXED
 
 	maxProvidersToPair, err := ts.Keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
 		[]*planstypes.Policy{&ts.plan.PlanPolicy, policy},
@@ -660,6 +661,13 @@ func TestSelectedProvidersPairing(t *testing.T) {
 		// provider unstake checks cases
 		{"EXCLUSIVE mode provider unstakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
 		{"EXCLUSIVE mode non-staked provider stakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
+
+		{"MIXED mode normal pairing", mixed, mixed, mixed, 0, 0},
+		{"MIXED mode pairing", mixed, mixed, mixed, 1, 1},
+		{"MIXED mode intersection between plan/sub policies", mixed, mixed, mixed, 4, 3},
+		{"MIXED mode intersection between plan/proj policies", mixed, mixed, mixed, 5, 4},
+		{"MIXED mode intersection between sub/proj policies", mixed, mixed, mixed, 6, 5},
+		{"MIXED mode intersection between all policies", mixed, mixed, mixed, 7, 6},
 	}
 
 	var expectedProvidersAfterUnstake []string
@@ -737,8 +745,30 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				providerAddresses2 = append(providerAddresses2, provider.Address)
 			}
 
+			countSelectedAddresses := func(selected []string, expected []string) int {
+				count := 0
+				countPossibilities := map[string]struct{}{}
+				for _, possibility := range expected {
+					countPossibilities[possibility] = struct{}{}
+				}
+				for _, selectedProvider := range selected {
+					_, ok := countPossibilities[selectedProvider]
+					if ok {
+						count++
+					}
+				}
+				return count
+			}
+
 			// check pairings
 			switch tt.name {
+			case "MIXED mode pairing",
+				"MIXED mode intersection between plan/sub policies",
+				"MIXED mode intersection between plan/proj policies",
+				"MIXED mode intersection between sub/proj policies",
+				"MIXED mode intersection between all policies":
+				count := countSelectedAddresses(providerAddresses1, expectedSelectedProviders[tt.expectedProviders])
+				require.GreaterOrEqual(t, count, len(providerAddresses1)/2)
 			case "ALLOWED mode normal pairing", "DISABLED mode normal pairing":
 				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
@@ -758,7 +788,6 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.True(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Less(t, uint64(len(providerAddresses1)), maxProvidersToPair)
 				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
-
 			case "EXCLUSIVE mode selected more than MaxProvidersToPair providers":
 				require.True(t, slices.IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
 				require.True(t, slices.IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
@@ -1055,6 +1084,24 @@ func TestGeolocationPairingScores(t *testing.T) {
 			// verify that the slots have all the expected geos
 			for _, found := range geoSeen {
 				require.True(t, found)
+			}
+
+			seenIndexes := map[int]struct{}{}
+			// check indexes are right
+			pairingSlotGroups := pairingscores.GroupSlots(slots)
+			for _, pairingSlotGroup := range pairingSlotGroups {
+				indexes := pairingSlotGroup.Indexes()
+				for _, index := range indexes {
+					_, ok := seenIndexes[index]
+					require.False(t, ok)
+					seenIndexes[index] = struct{}{}
+				}
+			}
+			// verify all slot indexes are in groups
+			require.Equal(t, len(seenIndexes), len(slots))
+			for idx := range slots {
+				_, ok := seenIndexes[idx]
+				require.True(t, ok)
 			}
 		})
 	}

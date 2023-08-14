@@ -1,3 +1,5 @@
+package scores
+
 // Package scores implements the scoring mechanism used for picking providers in the pairing process.
 //
 // The pairing process involves the following steps:
@@ -31,8 +33,6 @@
 //
 // To add a new requirement, create an object implementing the ScoreReq interface and update CalcSlots()
 // to assign it to the pairing slots as desired. Lastly, add the new requirement in GetAllReqs().
-
-package scores
 
 import (
 	"bytes"
