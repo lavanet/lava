@@ -2,7 +2,6 @@ package rpcprovider
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"math/rand"
 	"os"
@@ -27,9 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -285,44 +282,4 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 	cmdTestRPCProvider.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider
-}
-
-func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
-	cmdTestProviderCaCert := &cobra.Command{
-		Use:     `provider-ca-cert --network-address "ip:port"`,
-		Short:   `test the certificate of an rpc provider`,
-		Long:    `test if the rpc provider in the given network address is using the right format of CA certificate`,
-		Example: `lavad test provider-ca-cert --network-address "127.0.0.1:2379"`,
-		Args:    cobra.RangeArgs(0, 1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// handle flags, pass necessary fields
-			networkAddress, err := cmd.Flags().GetString(networkAddressFlag)
-			if err != nil {
-				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
-			}
-
-			ctx := context.Background()
-			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
-			defer cancel()
-
-			creds := credentials.NewTLS(&tls.Config{})
-			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(creds))
-			if err != nil {
-				utils.LavaFormatError("Failed to dial network address", err, utils.Attribute{Key: "Address", Value: networkAddress})
-				utils.LavaFormatError("It means your provider is not setup correctly or is lacking CA certification", nil)
-				return nil
-			}
-			utils.LavaFormatInfo("Finished dialing network address successfully!")
-			utils.LavaFormatInfo("CA certificate is setup correctly!")
-			return nil
-		},
-	}
-
-	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "", "network address")
-	err := cmdTestProviderCaCert.MarkFlagRequired(networkAddressFlag)
-	if err != nil {
-		utils.LavaFormatFatal("MarkFlagRequired Error", err)
-	}
-
-	return cmdTestProviderCaCert
 }

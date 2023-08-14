@@ -1521,6 +1521,10 @@
                                         "expected_value": "0x2329"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": []
                             }
                         ]
                     }
@@ -1641,6 +1645,10 @@
                                       "expected_value": "0x2328"
                                   }
                               ]
+                          },
+                          {
+                              "name": "pruning",
+                              "values": []
                           }
                       ]
                     }

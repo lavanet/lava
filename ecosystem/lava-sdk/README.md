@@ -75,28 +75,77 @@ To use the SDK, you will first need to initialize it.
 
 ```typescript
 const lavaSDK = await new LavaSDK({
-  privateKey: privKey,
-  chainID: chainID,
-  rpcInterface: rpcInterface, // Optional
-  pairingListConfig: localConfigPath, // Optional
-  network: network; // Optional
-  geolocation: geolocation; // Optional
+  privateKey: privKey, // string (Only if Badge is not provided)
+  badge: badgeOptions, // BadgeOptions (Only if privateKey is not provided)
+  chainID: chainID, // string (Required)
+  rpcInterface: rpcInterface, // string (Optional)
+  pairingListConfig: localConfigPath, // string (Optional)
+  network: network, // string (Optional)
+  geolocation: geolocation, // string (Optional)
+  secure: secureFlag, // boolean (Optional)
+  allowInsecureTransport: insecureTransportFlag, // boolean (Optional)
+  debug: debugFlag, // boolean (Optional)
 });
-```
 
-- `privateKey` parameter is required and should be the private key of the staked Lava client for the specified `chainID`.
+const badgeOptions: BadgeOptions = {
+    badgeServerAddress: serverAddress, // string (Required)
+    projectId: projectIdValue, // string (Required)
+    authentication: authValue, // string (Optional)
+};
+```
+Lava SDK options: 
+
+- `badge` parameter specifies the public URL of the badge server and the ID of the project you want to connect to. If you enable the badge, you should remove the `privateKey`
+
+- `privateKey` parameter is required and should be the private key of the staked Lava client for the specified `chainID`
 
 - `chainID` parameter is required and should be the ID of the chain you want to query. You can find all supported chains with their IDs [supportedChains](https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
 
-- `rpcInterface` is an optional field representing the interface that will be used for sending relays. For cosmos chains it can be `tendermintRPC` or `rest`. For evm compatible chains `jsonRPC` or `rest`. You can find the list of all default rpc interfaces [supportedChains](https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
+- `rpcInterface` is an optional parameter representing the interface that will be used for sending relays. For cosmos chains it can be `tendermintRPC` or `rest`. For evm compatible chains `jsonRPC` or `rest`. You can find the list of all default rpc interfaces [supportedChains](https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
 
-- `pairingListConfig` is an optional field that specifies the lava pairing list config used for communicating with lava network. Lava SDK does not rely on one centralized rpc for querying lava network. It uses a list of rpc providers to fetch list of the providers for specified `chainID` and `rpcInterface` from lava network. If not pairingListConfig set, the default list will be used [default lava pairing list](https://github.com/lavanet/lava-providers/blob/main/pairingList.json)
+- `pairingListConfig` is an optional parameter that specifies the lava pairing list config used for communicating with lava network. Lava SDK does not rely on one centralized rpc for querying lava network. It uses a list of rpc providers to fetch list of the providers for specified `chainID` and `rpcInterface` from lava network. If not pairingListConfig set, the default list will be used [default lava pairing list](https://github.com/lavanet/lava-providers/blob/main/pairingList.json)
 
-- `network` is an optional field that specifies the network from pairingListConfig which will be used. Default value is `testnet`.
+- `network` is an optional parameter that specifies the network from pairingListConfig which will be used. Default value is `testnet`
 
-- `geolocation` is an optional field that specifies the geolocation which will be used. Default value is `1` which represents North America providers. Besides North America providers, lava supports EU providers on geolocation `2`.
+- `geolocation` is an optional parameter that specifies the geolocation which will be used. Default value is `1` which represents North America providers. Besides North America providers, lava supports EU providers on geolocation `2`
 
-- `lavaChainId` is an optional field that specifies the chain id of the lava network. Default value is `lava-testnet-2` which represents Lava testnet. 
+- `lavaChainId` is an optional parameter that specifies the chain id of the lava network. Default value is `lava-testnet-2` which represents Lava testnet
+
+- `secure` is an optional parameter which indicates whether the SDK should communicate through HTTPS. This is a temporary flag that will be disabled once the chain uses HTTPS by default
+
+- `allowInsecureTransport` is an optional parameter which indicates whether to use an insecure transport when connecting to the provider. This option is intended for testing purposes only and allows for the use of self-signed certificates
+
+- `debug` is an optional parameter used for debugging the LavaSDK. When enabled, it mostly prints logs to speed up development
+
+Badge options:
+
+- `badgeServerAddress` is an optional parameter that specifies the public URL of the badge server
+
+- `projectId` is an optional parameter that represents the ID of the project you want to connect to
+
+- `authentication` is an optional parameter that specifies any additional authentication requirements
+
+
+### Private keys vs Badge server
+
+In the LavaSDK, users have the option to authenticate using either a private key or a badge server. Both methods have their advantages and specific use cases. Let's dive into the details of each:
+
+#### Private Key:
+
+The private key is the quickest way to start using the LavaSDK. All you need is the private key of an account that has staked both for the Lava Network and the chain you wish to query. With this, you can immediately begin utilizing the functionalities of the LavaSDK.
+
+However, it's crucial to note that using a private key directly, especially in a browser environment, comes with security risks. If a user exposes their private key in a browser-based application, malicious actors can easily discover it and exploit it for their purposes. As such, direct usage of the private key should be limited to server-side operations or browser testing environments. It's not recommended for production-level applications, especially those that run client-side.
+
+#### Badge Server:
+
+The Badge server is a dedicated Go service that clients can initiate. It acts as an intermediary between the LavaSDK and the Lava Network, ensuring that no secrets or private keys are stored directly within the SDK. Instead, all sensitive information is securely held on the Badge server, with the LavaSDK only communicating with this server.
+
+The primary advantage of using the Badge server is the enhanced security it offers. Additionally, the Badge server pre-updates some information like pairing list for current epoch, allowing the LavaSDK to fetch data more rapidly by merely pinging the server. This results in faster and more efficient operations. 
+
+However, there are some challenges to consider. Users need to bootstrap and maintain the Badge server, which might require additional resources and expertise. For those interested in exploring the Badge server without setting up their own, we have deployed a Lava Test Badge server. You can access and experiment with it through our gateway application at [Lava Gateway](https://accounts.lavanet.xyz/)
+
+For detailed instructions on how to start the Badge server, refer to our [documentation](https://github.com/lavanet/lava/blob/main/protocol/badgegenerator/Readme.md)
+
 ---
 
 ### TendermintRPC / JSON-RPC interface:
@@ -215,3 +264,22 @@ module.exports = function override(config) {
 [license-url]: https://github.com/lavanet/lava-sdk/blob/main/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/company/lava-network/
+
+
+# Contribution FAQ
+
+Q: how to compile the protobufs?
+A: 
+```bash
+sudo apt install -y protobuf-compiler
+```
+cd go/.../lava/ecosystem/lava-sdk
+
+If you've made changes to the protobufs directory run: 
+```bash
+./scripts/protoc.sh 
+```
+If you've made changes to relay.proto specifically run:
+```bash
+./scripts/protoc_grpc_relay.sh 
+```
