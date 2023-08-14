@@ -27,7 +27,17 @@ var cmdLavavisorInit = &cobra.Command{
 		lavavisor init --directory ./custom/lavavisor/path 
 		lavavisor init --directory ./custom/lavavisor/path --auto-download true`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return LavavisorInit(cmd)
+		autoStart, err := cmd.Flags().GetBool("auto-start")
+		if err != nil {
+			return err
+		}
+		if err := LavavisorInit(cmd); err != nil {
+			return err
+		}
+		if autoStart {
+			return LavavisorStart(cmd)
+		}
+		return nil
 	},
 }
 
@@ -35,6 +45,7 @@ func init() {
 	flags.AddQueryFlagsToCmd(cmdLavavisorInit)
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
+	cmdLavavisorInit.Flags().Bool("auto-start", false, "Executes start cmd automatically after init is completed")
 	cmdLavavisorInit.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	rootCmd.AddCommand(cmdLavavisorInit)
 }

@@ -86,7 +86,7 @@ var cmdLavavisorStart = &cobra.Command{
 	Short: "A command that will start provider processes given with config.yml",
 	Long: `A command that will start provider processes given with config.yml and starts 
     lavavisor listening process. It reads config.yaml, checks the list of provider-services, 
-    and starts them with the linked 'which lava-protocol' binary.`,
+    and starts them with the linked binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return LavavisorStart(cmd)
 	},
