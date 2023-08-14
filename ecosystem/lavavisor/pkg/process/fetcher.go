@@ -13,7 +13,7 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
-func FetchAndLinkProtocolBinary(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) error {
+func FetchProtocolBinary(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) error {
 	return checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion)
 }
 

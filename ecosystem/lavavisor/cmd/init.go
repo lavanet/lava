@@ -34,6 +34,11 @@ var cmdLavavisorInit = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// check auto-download flag
+		autoDownload, err := cmd.Flags().GetBool("auto-download")
+		if err != nil {
+			return err
+		}
 		// initialize lavavisor state tracker
 		ctx := context.Background()
 		clientCtx, err := client.GetClientQueryContext(cmd)
@@ -53,18 +58,12 @@ var cmdLavavisorInit = &cobra.Command{
 			return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
 		}
 		utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
-		// search extracted directory inside ./lavad/upgrades/<fetched_version>
+		// ./lavad/upgrades/<fetched_version>
 		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+protocolConsensusVersion.ProviderMin)
-		binaryPath := filepath.Join(versionDir, "lava-protocol")
-		// check auto-download flag
-		autoDownload, err := cmd.Flags().GetBool("auto-download")
-		if err != nil {
-			return err
-		}
 		// fetcher
-		processmanager.FetchAndLinkProtocolBinary(versionDir, autoDownload, protocolConsensusVersion)
+		processmanager.FetchProtocolBinary(versionDir, autoDownload, protocolConsensusVersion)
 		// linker
-		processmanager.CreateLink(binaryPath)
+		processmanager.CreateLink(versionDir)
 
 		// ToDo: if autodownload false: alert user that binary is not exist, monitor directory constantly!,
 		return nil

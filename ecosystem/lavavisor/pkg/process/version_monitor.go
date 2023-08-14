@@ -57,7 +57,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 				// fetcher
-				FetchAndLinkProtocolBinary(versionDir, vm.autoDownload, vm.lastknownversion)
+				FetchProtocolBinary(versionDir, vm.autoDownload, vm.lastknownversion)
 				// linker
 				CreateLink(binaryPath)
 

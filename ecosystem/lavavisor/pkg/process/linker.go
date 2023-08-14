@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 )
 
-func CreateLink(binaryPath string) {
+func CreateLink(versionDir string) {
+	binaryPath := filepath.Join(versionDir, "lava-protocol")
+
 	dest, err := findLavaProtocolPath(binaryPath)
 	if err != nil {
 		utils.LavaFormatFatal("", err)
