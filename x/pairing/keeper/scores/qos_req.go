@@ -19,7 +19,12 @@ func (qr *QosReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the the provider's qos score
 func (qr *QosReq) Score(score PairingScore) math.Uint {
-	return math.NewUint(1) // TBD
+	qosScore, err := qr.qos.ComputeQoS()
+	if err != nil {
+		return math.NewUint(1)
+	}
+
+	return math.Uint(qosScore)
 }
 
 func (qr *QosReq) GetName() string {
@@ -27,7 +32,7 @@ func (qr *QosReq) GetName() string {
 }
 
 // Equal used to compare slots to determine slot groups.
-// Equal always returns true (QosReq score of an entry is the entry's qos)
+// Equal always returns true (there are no different "types" of qos)
 func (qr *QosReq) Equal(other ScoreReq) bool {
 	return true
 }
