@@ -33,7 +33,11 @@ func CmdEffectivePolicy() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				address = clientKey.GetAddress().String()
+				addressAccount, err := clientKey.GetAddress()
+				if err != nil {
+					return err
+				}
+				address = addressAccount.String()
 			}
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {

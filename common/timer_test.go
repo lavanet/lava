@@ -50,13 +50,13 @@ func testWithTimerTemplate(t *testing.T, playbook []timerTemplate, countTS int) 
 		callbackTimeData   string
 	)
 
-	callbackHeight := func(ctx sdk.Context, key []byte, data []byte) {
+	callbackHeight := func(ctx sdk.Context, key, data []byte) {
 		callbackBlockCount += 1
 		callbackBlockKey += string(key)
 		callbackBlockData += string(data)
 	}
 
-	callbackTime := func(ctx sdk.Context, key []byte, data []byte) {
+	callbackTime := func(ctx sdk.Context, key, data []byte) {
 		callbackTimeCount += 1
 		callbackTimeKey += string(key)
 		callbackTimeData += string(data)

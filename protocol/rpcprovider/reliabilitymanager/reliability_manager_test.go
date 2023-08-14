@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"testing"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/protocol/statetracker"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -20,7 +22,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
 type mockFilter struct{}
@@ -68,7 +69,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		Name:  "banana",
 		Value: "55",
 	}
-	relayRequestData := lavaprotocol.NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, nil)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, "", nil)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
@@ -103,7 +104,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 	}
 
 	// now send this to another provider
-	relayRequestDataDR := lavaprotocol.NewRelayData(ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, nil)
+	relayRequestDataDR := lavaprotocol.NewRelayData(ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, "", nil)
 	relayDR, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
 
@@ -153,6 +154,17 @@ func (m mockTx) SendVoteReveal(voteID string, voteData *reliabilitymanager.VoteD
 	return nil
 }
 
+type txSenderMock struct {
+	cb func() error
+}
+
+func (tsm *txSenderMock) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
+	if tsm.cb == nil {
+		return fmt.Errorf("No cb")
+	}
+	return tsm.cb()
+}
+
 func TestFullFlowReliabilityConflict(t *testing.T) {
 	specId := "LAV1"
 	ts := chainlib.SetupForTests(t, 3, specId, "../../../")
@@ -170,7 +182,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, string(replyDataBuf))
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../")
+	chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../", nil)
 	if closeServer != nil {
 		defer closeServer()
 	}
@@ -179,6 +191,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 
+	consumerSesssionWithProvider := &lavasession.ConsumerSessionsWithProvider{}
 	singleConsumerSession := &lavasession.SingleConsumerSession{
 		CuSum:                       20,
 		LatestRelayCu:               10, // set by GetSessions cuNeededForSession
@@ -196,7 +209,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		LatestRelayCu:               100, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   456,
-		Client:                      nil,
+		Client:                      consumerSesssionWithProvider,
 		RelayNum:                    5,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,
@@ -208,9 +221,9 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		Name:  "banana",
 		Value: "55",
 	}
-	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue)
+	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue, 0)
 	require.NoError(t, err)
-	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/blocks/latest", []byte{}, chainMessage.RequestedBlock(), spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), nil)
+	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/blocks/latest", []byte{}, chainMessage.RequestedBlock(), spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
 
 	relay, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
@@ -249,7 +262,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	utils.LavaFormatDebug("honest provider allDataHash", utils.Attribute{Key: "hash", Value: fmt.Sprintf("%#v", allDataHash)})
 
 	// now send this to another provider
-	relayRequestDataDR := lavaprotocol.NewRelayData(ts.Ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, nil)
+	relayRequestDataDR := lavaprotocol.NewRelayData(ts.Ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, "", nil)
 	relayDR, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
 
@@ -280,11 +293,26 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		ReplyServer:     nil,
 		Finalized:       true,
 	}
+
 	conflict := lavaprotocol.VerifyReliabilityResults(ts.Ctx, relayResult, relayResultDR, chainMessage.GetApiCollection(), chainParser)
 	require.NotNil(t, conflict)
 	msg := conflicttypes.NewMsgDetection(consumer_address.String(), nil, conflict, nil)
-	_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
-	require.Nil(t, err)
+
+	cb := func() error {
+		_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
+		require.Nil(t, err)
+		return err
+	}
+	txm := &txSenderMock{cb: cb}
+	consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
+	err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Client) // report first time
+	require.NoError(t, err)
+	err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Client) // make sure we dont report 2nd time
+	require.NoError(t, err)
+
+	_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg) // validate reporting 2nd time returns an error.
+	require.Error(t, err)
+
 	lastEvent := sdk.UnwrapSDKContext(ts.Ctx).EventManager().Events()[len(sdk.UnwrapSDKContext(ts.Ctx).EventManager().Events())-1]
 	event := terderminttypes.Event(lastEvent)
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName, event.Type)
@@ -341,8 +369,8 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName, event.Type)
 	require.True(t, func() bool {
 		for _, attr := range event.Attributes {
-			if string(attr.Key) == "winner" {
-				require.Equal(t, provider_address.String(), string(attr.Value))
+			if attr.Key == "winner" {
+				require.Equal(t, provider_address.String(), attr.Value)
 				return true
 			}
 		}

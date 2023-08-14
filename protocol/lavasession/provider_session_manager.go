@@ -62,7 +62,7 @@ func (psm *ProviderSessionManager) IsActiveConsumer(epoch uint64, address string
 	return providerSessionWithConsumer, nil // no error
 }
 
-func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsumer(ctx context.Context, providerSessionsWithConsumer *ProviderSessionsWithConsumer, sessionId uint64, epoch uint64, relayNumber uint64) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsumer(ctx context.Context, providerSessionsWithConsumer *ProviderSessionsWithConsumer, sessionId, epoch, relayNumber uint64) (*SingleProviderSession, error) {
 	if providerSessionsWithConsumer.atomicReadConsumerBlocked() != notBlockListedConsumer {
 		return nil, utils.LavaFormatError("This consumer address is blocked.", nil, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "consumer", Value: providerSessionsWithConsumer.consumerAddr})
 	}
@@ -80,7 +80,7 @@ func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsum
 	return singleProviderSession, nil
 }
 
-func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer(address string, epoch uint64, sessionId uint64, pairedProviders int64) (providerSessionWithConsumer *ProviderSessionsWithConsumer, err error) {
+func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer(address string, epoch, sessionId uint64, pairedProviders int64) (providerSessionWithConsumer *ProviderSessionsWithConsumer, err error) {
 	if mapOfDataReliabilitySessionsWithConsumer, consumerFoundInEpoch := psm.dataReliabilitySessionsWithAllConsumers[epoch]; consumerFoundInEpoch {
 		if providerSessionWithConsumer, consumerAddressFound := mapOfDataReliabilitySessionsWithConsumer.sessionMap[address]; consumerAddressFound {
 			if providerSessionWithConsumer.atomicReadConsumerBlocked() == blockListedConsumer { // we atomic read block listed so we dont need to lock the provider. (double lock is always a bad idea.)
@@ -105,7 +105,7 @@ func (psm *ProviderSessionManager) getOrCreateDataReliabilitySessionWithConsumer
 }
 
 // GetDataReliabilitySession fetches a data reliability session
-func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch uint64, sessionId uint64, relayNumber uint64, pairedProviders int64) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epoch, sessionId, relayNumber uint64, pairedProviders int64) (*SingleProviderSession, error) {
 	// validate Epoch
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch})
@@ -159,7 +159,7 @@ func (psm *ProviderSessionManager) GetDataReliabilitySession(address string, epo
 	return singleProviderSession, nil
 }
 
-func (psm *ProviderSessionManager) GetSession(ctx context.Context, address string, epoch uint64, sessionId uint64, relayNumber uint64, badge *pairingtypes.Badge) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) GetSession(ctx context.Context, address string, epoch, sessionId, relayNumber uint64, badge *pairingtypes.Badge) (*SingleProviderSession, error) {
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
 		return nil, InvalidEpochError
@@ -203,7 +203,7 @@ func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badge
 	return providerSessionsWithConsumer.badgeEpochData[badgeUser]
 }
 
-func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch uint64, maxCuForConsumer uint64, pairedProviders int64) (*ProviderSessionsWithConsumer, error) {
+func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoch, maxCuForConsumer uint64, pairedProviders int64) (*ProviderSessionsWithConsumer, error) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	if !psm.IsValidEpoch(epoch) { // checking again because we are now locked and epoch cant change now.
@@ -227,7 +227,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, epoc
 	return providerSessionWithConsumer, nil
 }
 
-func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch uint64, sessionId uint64, relayNumber uint64, maxCuForConsumer uint64, pairedProviders int64, badge *pairingtypes.Badge) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch, sessionId, relayNumber, maxCuForConsumer uint64, pairedProviders int64, badge *pairingtypes.Badge) (*SingleProviderSession, error) {
 	_, err := psm.IsActiveConsumer(epoch, consumerAddress)
 	if err != nil {
 		if ConsumerNotRegisteredYet.Is(err) {
@@ -263,7 +263,7 @@ func (psm *ProviderSessionManager) getActiveConsumer(epoch uint64, address strin
 	return nil, ConsumerNotRegisteredYet
 }
 
-func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(ctx context.Context, providerSessionsWithConsumer *ProviderSessionsWithConsumer, sessionId uint64, epoch uint64) (singleProviderSession *SingleProviderSession, err error) {
+func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(ctx context.Context, providerSessionsWithConsumer *ProviderSessionsWithConsumer, sessionId, epoch uint64) (singleProviderSession *SingleProviderSession, err error) {
 	session, err := providerSessionsWithConsumer.getExistingSession(ctx, sessionId)
 	if err == nil {
 		return session, nil
@@ -339,7 +339,7 @@ func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMa
 	return
 }
 
-func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName string, subscriptionID string, consumerAddress string, epoch uint64) error {
+func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName, subscriptionID, consumerAddress string, epoch uint64) error {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	mapOfConsumers, foundMapOfConsumers := psm.subscriptionSessionsWithAllConsumers[epoch]
@@ -406,7 +406,7 @@ func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSub
 	return utils.LavaFormatError("addSubscription", SubscriptionAlreadyExistsError, utils.Attribute{Key: "SubscriptionId", Value: subscription.Id}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
 }
 
-func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch uint64, relayNumber uint64) error {
+func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch, relayNumber uint64) error {
 	err := psm.OnSessionDone(session, relayNumber)
 	if err != nil {
 		return utils.LavaFormatError("Failed ReleaseSessionAndCreateSubscription", err)
@@ -442,7 +442,7 @@ func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epo
 }
 
 // Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it
-func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch uint64, sessionID uint64, newCU uint64) error {
+func (psm *ProviderSessionManager) UpdateSessionCU(consumerAddress string, epoch, sessionID, newCU uint64) error {
 	// load the session and update the CU inside
 
 	// Step 1: Lock psm
@@ -509,6 +509,6 @@ func NewProviderSessionManager(rpcProviderEndpoint *RPCProviderEndpoint, numberO
 	}
 }
 
-func IsEpochValidForUse(targetEpoch uint64, blockedEpochHeight uint64) bool {
+func IsEpochValidForUse(targetEpoch, blockedEpochHeight uint64) bool {
 	return targetEpoch > blockedEpochHeight
 }

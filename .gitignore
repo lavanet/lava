@@ -21,20 +21,27 @@ vue/dist
 
 # Logs and debug
 scripts/automation_scripts/automation_results*
-testutil/e2e/logs/
+testutil/e2e/protocolLogs/
+testutil/e2e/sdkLogs/
 testutil/debugging/
+testutil/e2e/logs/
 
 # Misc
 scripts/vars/
 rpcprovider.yml
 rpcconsumer.yml
 
+# Node modules
+**/node_modules
+
+# Pairing lsit
+**/pairingList.json
+
 # Lava SDK ignores 
 ecosystem/lava-sdk/node_modules/*
 ecosystem/lava-sdk/src/js/*
 ecosystem/lava-sdk/dist/main.js
 ecosystem/lava-sdk/thirdparty_protobufs/*
-ecosystem/lava-sdk/proto/*
 ecosystem/lava-sdk/dist/*
 ecosystem/lava-sdk/.dccache
 ecosystem/lava-sdk/.idea
@@ -47,6 +54,14 @@ ecosystem/lava-sdk/examples/tendermintRPC_test.ts
 ecosystem/lava-sdk/examples/tendermintRPC_test2.ts
 ecosystem/lava-sdk/examples/jsonRPC_badge_test.ts
 ecosystem/lava-sdk/pairingList.json
+# ecosystem/lava-sdk/proto/**/*[!.proto] #tried but didnt work
+ecosystem/lava-sdk/proto/**/*.yaml
+ecosystem/lava-sdk/proto/**/*.bazel
+ecosystem/lava-sdk/proto/**/*.bzl
+ecosystem/lava-sdk/proto/**/*.md
+ecosystem/lava-sdk/proto/**/*.sh
+ecosystem/lava-sdk/proto/**/*.json
+ecosystem/lava-sdk/proto/**/*.go
 
 # Ignore the bin and dist folders and their content
 ecosystem/lava-sdk/bin/examples

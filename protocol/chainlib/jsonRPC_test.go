@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -63,7 +64,7 @@ func TestJSONChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
-	apip.ParseMsg("", []byte{}, "", nil)
+	apip.ParseMsg("", []byte{}, "", nil, 0)
 }
 
 func TestJSONGetSupportedApi(t *testing.T) {
@@ -119,7 +120,7 @@ func TestJSONParseMessage(t *testing.T) {
 
 	marshalledData, _ := json.Marshal(data)
 
-	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil)
+	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil, 0)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
@@ -135,7 +136,7 @@ func TestJsonRpcChainProxy(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x10a7a08"}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../")
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -146,6 +147,89 @@ func TestJsonRpcChainProxy(t *testing.T) {
 	_, err = chainFetcher.FetchBlockHashByNum(ctx, block)
 	errMsg := "GET_BLOCK_BY_NUM Failed ParseMessageResponse ErrMsg: invalid parser input format"
 	require.True(t, err.Error()[:len(errMsg)] == errMsg, err.Error())
+	if closeServer != nil {
+		closeServer()
+	}
+}
+
+func TestAddonAndVerifications(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
+	})
+
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"debug"})
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainRouter)
+	require.NotNil(t, chainFetcher)
+
+	verifications, err := chainParser.GetVerifications([]string{"debug"})
+	require.NoError(t, err)
+	require.NotEmpty(t, verifications)
+	for _, verification := range verifications {
+		parsing := &verification.ParseDirective
+		collectionType := verification.ConnectionType
+		chainMessage, err := CraftChainMessage(parsing, collectionType, chainParser, nil, nil)
+		require.NoError(t, err)
+		reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
+		require.NoError(t, err)
+		_, err = FormatResponseForParsing(reply, chainMessage)
+		require.NoError(t, err)
+	}
+	if closeServer != nil {
+		closeServer()
+	}
+}
+
+func TestExtensions(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
+	})
+
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"archive"})
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainRouter)
+	require.NotNil(t, chainFetcher)
+	configuredExtensions := map[string]struct{}{
+		"archive": {},
+	}
+	chainParser.SetConfiguredExtensions(configuredExtensions)
+	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	require.True(t, ok)
+	latestTemplate := strings.Replace(parsingForCrafting.FunctionTemplate, "0x%x", "%s", 1)
+	latestReq := []byte(fmt.Sprintf(latestTemplate, "latest"))
+	reqSpecific := []byte(fmt.Sprintf(parsingForCrafting.FunctionTemplate, 99))
+	// with latest block not set
+	chainMessage, err := chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 0)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Empty(t, chainMessage.GetExtensions())
+
+	// with latest block set
+	chainMessage, err = chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 100)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Empty(t, chainMessage.GetExtensions())
+
+	// with latest block not set
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 0)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Len(t, chainMessage.GetExtensions(), 1)
+
+	// with latest block set
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 100)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Len(t, chainMessage.GetExtensions(), 1)
+	require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
 	if closeServer != nil {
 		closeServer()
 	}

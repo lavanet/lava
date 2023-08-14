@@ -4,10 +4,11 @@ import (
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/lavanet/lava/testutil/sample"
 	pairingsimulation "github.com/lavanet/lava/x/pairing/simulation"
@@ -18,7 +19,7 @@ import (
 var (
 	_ = sample.AccAddress
 	_ = pairingsimulation.FindAccount
-	_ = simappparams.StakePerAccount
+	_ = sims.StakePerAccount
 	_ = simulation.MsgEntryKind
 	_ = baseapp.Paramspace
 )
@@ -69,31 +70,40 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 }
 
 // ProposalContents doesn't return any content functions for governance proposals
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
+func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalMsg {
 	return nil
 }
 
-// RandomizedParams creates randomized  param changes for the simulator
-func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
-	pairingParams := types.DefaultParams()
-	return []simtypes.ParamChange{
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.FraudStakeSlashingFactor))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.FraudSlashingAmount))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
-		}),
-		simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
-			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
+// TODO: Add weighted proposals
+func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedProposalMsg {
+	return []simtypes.WeightedProposalMsg{
+		simulation.NewWeightedProposalMsg("op_weight_msg_update_params", 100, func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) sdk.Msg {
+			return &types2.MsgUpdateParams{}
 		}),
 	}
 }
+
+//// RandomizedParams creates randomized  param changes for the simulator
+// func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+//	pairingParams := types.DefaultParams()
+//	return []simtypes.ParamChange{
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.FraudStakeSlashingFactor))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudSlashingAmount), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.FraudSlashingAmount))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyEpochBlocksOverlap), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.EpochBlocksOverlap))
+//		}),
+//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyRecommendedEpochNumToCollectPayment), func(r *rand.Rand) string {
+//			return string(types.Amino.MustMarshalJSON(pairingParams.RecommendedEpochNumToCollectPayment))
+//		}),
+//	}
+// }
 
 // RegisterStoreDecoder registers a decoder
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}

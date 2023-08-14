@@ -1,15 +1,16 @@
 package types
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const TypeMsgAddKeys = "add_keys"
 
 var _ sdk.Msg = &MsgAddKeys{}
 
-func NewMsgAddKeys(creator string, projectID string, projectKeys []ProjectKey) *MsgAddKeys {
+func NewMsgAddKeys(creator, projectID string, projectKeys []ProjectKey) *MsgAddKeys {
 	return &MsgAddKeys{
 		Creator:     creator,
 		Project:     projectID,
@@ -41,7 +42,7 @@ func (msg *MsgAddKeys) GetSignBytes() []byte {
 func (msg *MsgAddKeys) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
 	return nil

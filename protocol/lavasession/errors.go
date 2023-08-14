@@ -1,7 +1,7 @@
 package lavasession
 
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 )
 
 var ( // Consumer Side Errors

@@ -33,7 +33,7 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 			return nil, err
 		}
 		// get the spec's expected interfaces
-		expectedInterfaces := k.getExpectedInterfacesForSpecInner(&fullspec, map[epochstoragetypes.EndpointService]struct{}{}, true)
+		expectedInterfaces := k.GetExpectedServicesForExpandedSpec(fullspec, true)
 
 		// TODO: print addons too
 		apiInterfacesNames := getInterfacesNamesFromMap(expectedInterfaces)
@@ -60,9 +60,13 @@ func (k Keeper) ShowAllChains(goCtx context.Context, req *types.QueryShowAllChai
 }
 
 func getInterfacesNamesFromMap(expectedInterfaces map[epochstoragetypes.EndpointService]struct{}) []string {
+	seen := make(map[string]struct{})
 	var apiInterfacesNames []string
 	for endpointService := range expectedInterfaces {
-		apiInterfacesNames = append(apiInterfacesNames, endpointService.ApiInterface)
+		if _, ok := seen[endpointService.ApiInterface]; !ok {
+			seen[endpointService.ApiInterface] = struct{}{}
+			apiInterfacesNames = append(apiInterfacesNames, endpointService.ApiInterface)
+		}
 	}
 	sort.Strings(apiInterfacesNames)
 	return apiInterfacesNames

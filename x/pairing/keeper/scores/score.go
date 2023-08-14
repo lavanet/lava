@@ -29,22 +29,21 @@
 // and so on).
 //
 //
-// To add a new requirement, one should create a new object that satisfies the ScoreReq interface and update the
-// CalcSlots() function so the new requirement will be assigned to the pairing slots (according to some logic).
-// Lastly, append the new requirement object in the GetAllReqs() function. Use StakeReq or GeoReq as examples.
+// To add a new requirement, create an object implementing the ScoreReq interface and update CalcSlots()
+// to assign it to the pairing slots as desired. Lastly, add the new requirement in GetAllReqs().
 
 package scores
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"strconv"
+
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
@@ -63,9 +62,10 @@ func init() {
 }
 
 func GetAllReqs() []ScoreReq {
-	stakeReq := StakeReq{}
-	geoReq := GeoReq{}
-	return []ScoreReq{&stakeReq, &geoReq}
+	return []ScoreReq{
+		&StakeReq{},
+		&GeoReq{},
+	}
 }
 
 // get the overall requirements from the policy and assign slots that'll fulfil them
@@ -140,22 +140,22 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 			}
 
 			newScoreComp := req.Score(*score.Provider)
-			if newScoreComp == sdk.ZeroUint() {
+			if newScoreComp == math.ZeroUint() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},
 					utils.Attribute{Key: "provider", Value: score.Provider.Address},
 				)
 			}
-			newScoreCompDec := sdk.NewDecFromInt(sdk.Int(newScoreComp))
+			newScoreCompDec := sdk.NewDecFromInt(math.Int(newScoreComp))
 			newScoreCompDec = newScoreCompDec.Power(weight)
-			newScoreComp = sdk.Uint(newScoreCompDec.TruncateInt())
+			newScoreComp = math.Uint(newScoreCompDec.TruncateInt())
 
 			// update the score component map
 			score.ScoreComponents[reqName] = newScoreComp
 		}
 
 		// calc new score
-		newScore := sdk.OneUint()
+		newScore := math.OneUint()
 		for _, scoreComp := range score.ScoreComponents {
 			newScore = newScore.Mul(scoreComp)
 		}
@@ -166,17 +166,18 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 }
 
 // PrepareHashData prepares the hash needed in the pseudo-random choice of providers
-func PrepareHashData(projectIndex string, chainID string, epochHash []byte, idx int) []byte {
+func PrepareHashData(projectIndex, chainID string, epochHash []byte, idx int) []byte {
 	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex), []byte(strconv.Itoa(idx))}, nil)
 }
 
-// PickProviders pick a <group-count> providers set with a pseudo-random weighted choice (using the providers' score list and hashData)
+// PickProviders pick a <group-count> providers set with a pseudo-random weighted choice
+// (using the providers' score list and hashData)
 func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hashData []byte) (returnedProviders []epochstoragetypes.StakeEntry) {
 	if len(scores) == 0 {
 		return returnedProviders
 	}
 
-	scoreSum := sdk.ZeroUint()
+	scoreSum := math.ZeroUint()
 	for _, providerScore := range scores {
 		if providerScore.SkipForSelection {
 			// skip index of providers already selected
@@ -184,23 +185,16 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 		}
 		scoreSum = scoreSum.Add(providerScore.Score)
 	}
-	if scoreSum == sdk.ZeroUint() {
+	if scoreSum == math.ZeroUint() {
 		utils.LavaFormatError("score sum is zero", fmt.Errorf("cannot pick providers for pairing"))
 		return returnedProviders
 	}
 
-	sum256 := sha256.Sum256(hashData)
-	// Fold the SHA-256 hash into a 64-bit seed using bitwise XOR
-	var seed int64
-	for i := 0; i < len(sum256)/8; i++ {
-		seed ^= int64(binary.BigEndian.Uint64(sum256[i*8 : (i+1)*8]))
-	}
-
-	rand.Seed(seed)
+	rng := rand.New(hashData)
 
 	for it := 0; it < groupCount; it++ {
-		randomValue := uint64(rand.Int63n(scoreSum.BigInt().Int64())) + 1
-		newScoreSum := sdk.ZeroUint()
+		randomValue := uint64(rng.Int63n(scoreSum.BigInt().Int64())) + 1
+		newScoreSum := math.ZeroUint()
 
 		for idx := len(scores) - 1; idx >= 0; idx-- {
 			if scores[idx].SkipForSelection {
@@ -211,8 +205,9 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupCount int, hash
 			newScoreSum = newScoreSum.Add(providerScore.Score)
 			if randomValue <= newScoreSum.Uint64() {
 				// we hit our chosen provider
+				// remove this provider from the random pool, so the sum is lower now
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
-				scoreSum = scoreSum.Sub(providerScore.Score) // we remove this provider from the random pool, so the sum is lower now
+				scoreSum = scoreSum.Sub(providerScore.Score)
 				scores[idx].SkipForSelection = true
 				break
 			}

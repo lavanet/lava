@@ -4,7 +4,7 @@ command -v shellcheck >/dev/null && shellcheck "$0"
 
 ROOT_PROTO_DIR="./proto/cosmos/cosmos-sdk"
 COSMOS_PROTO_DIR="$ROOT_PROTO_DIR/proto"
-THIRD_PARTY_PROTO_DIR="$ROOT_PROTO_DIR/third_party/proto"
+THIRD_PARTY_PROTO_DIR="../../proto"
 OUT_DIR="./src/codec/"
 
 mkdir -p "$OUT_DIR"
@@ -42,14 +42,14 @@ protoc \
   "$COSMOS_PROTO_DIR/tendermint/types/types.proto" \
   "$COSMOS_PROTO_DIR/tendermint/types/validator.proto" \
   "$COSMOS_PROTO_DIR/tendermint/version/types.proto" \
-  $THIRD_PARTY_PROTO_DIR/conflict/*.proto \
-  $THIRD_PARTY_PROTO_DIR/epochstorage/*.proto \
-  $THIRD_PARTY_PROTO_DIR/pairing/*.proto \
-  $THIRD_PARTY_PROTO_DIR/spec/*.proto \
-  $THIRD_PARTY_PROTO_DIR/common/*.proto \
-  $THIRD_PARTY_PROTO_DIR/plans/*.proto \
-  $THIRD_PARTY_PROTO_DIR/projects/*.proto \
-  $THIRD_PARTY_PROTO_DIR/subscription/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/conflict/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/common/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/plans/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/projects/*.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/subscription/*.proto \
 
 # Remove unnecessary codec files
 rm -rf \

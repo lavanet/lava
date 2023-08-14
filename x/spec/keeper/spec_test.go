@@ -1,11 +1,12 @@
 package keeper_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"strconv"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
@@ -130,6 +131,22 @@ func generateHeaders(count int) (retHeaders []*types.Header) {
 	return
 }
 
+func generateVerifications(count int) (retVerifications []*types.Verification) {
+	retVerifications = []*types.Verification{}
+	for i := 0; i < count; i++ {
+		verification := &types.Verification{
+			Name:           "verification" + strconv.Itoa(i),
+			ParseDirective: &types.ParseDirective{},
+			Values: []*types.ParseValue{{
+				Extension:     "",
+				ExpectedValue: "123",
+			}},
+		}
+		retVerifications = append(retVerifications, verification)
+	}
+	return
+}
+
 func createApiCollectionWithHeaders(
 	apiCount int,
 	apiIds []int,
@@ -151,6 +168,7 @@ func createApiCollectionWithHeaders(
 		imports,
 		apiDiff)
 	apiCollection.Headers = generateHeaders(headersCount)
+	apiCollection.Verifications = generateVerifications(headersCount)
 	return apiCollection
 }
 
@@ -214,7 +232,7 @@ func TestSpecGetAll(t *testing.T) {
 
 // setupSpecsForSpecInheritance returns a slice of Spec according to the
 // template therein, to simulate collection of existing Spec(s) on the chain.
-func (ts *tester) setupSpecsForSpecInheritance(apis []*types.Api, apisDiff []*types.Api) {
+func (ts *tester) setupSpecsForSpecInheritance(apis, apisDiff []*types.Api) {
 	template := []struct {
 		name    string
 		enabled bool
@@ -749,6 +767,10 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 					}
 					require.Equal(t, 1, len(apiCol.ParseDirectives), "collectionData %v, parsing %v", apiCol.CollectionData, apiCol.ParseDirectives)
 					require.Equal(t, 2, len(apiCol.Headers))
+					require.Equal(t, 2, len(apiCol.Verifications))
+					for _, verification := range apiCol.Verifications {
+						require.NotNil(t, verification.ParseDirective)
+					}
 				}
 				require.Equal(t, tt.resultApiCollections, collections)
 				require.Equal(t, tt.totalApis, totApis, fullspec)
@@ -800,14 +822,28 @@ func TestCookbookSpecs(t *testing.T) {
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
 		require.Nil(t, err)
 
-		err = codec.NewLegacyAmino().UnmarshalJSON(contents, &proposal)
-		require.Nil(t, err)
+		decoder := json.NewDecoder(bytes.NewReader(contents))
+		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
+		err = decoder.Decode(&proposal)
+		require.Nil(t, err, fileName)
 
 		for _, sp := range proposal.Proposal.Specs {
 			ts.setSpec(sp)
 			fullspec, err := ts.expandSpec(sp)
 			require.NoError(t, err)
 			require.NotNil(t, fullspec)
+			verifications := []*types.Verification{}
+			for _, apiCol := range fullspec.ApiCollections {
+				for _, verification := range apiCol.Verifications {
+					require.NotNil(t, verification.ParseDirective)
+					require.NotEqual(t, "", verification.ParseDirective.ApiName)
+				}
+				verifications = append(verifications, apiCol.Verifications...)
+			}
+			if fullspec.Enabled {
+				// all specs need to have verifications
+				require.Greater(t, len(verifications), 0, fullspec.Index)
+			}
 		}
 	}
 }

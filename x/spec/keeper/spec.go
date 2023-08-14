@@ -67,6 +67,14 @@ func (k Keeper) GetAllSpec(ctx sdk.Context) (list []types.Spec) {
 	return
 }
 
+func (k Keeper) GetExpandedSpec(ctx sdk.Context, index string) (types.Spec, error) {
+	spec, found := k.GetSpec(ctx, index)
+	if found {
+		return k.ExpandSpec(ctx, spec)
+	}
+	return types.Spec{}, fmt.Errorf("no matching spec %s", index)
+}
+
 // ExpandSpec takes a (raw) Spec and expands the "imports" field of the spec
 // -if needed, recursively- to add to the current Spec those additional APIs
 // from the imported Spec(s). It returns the expanded Spec.
@@ -221,7 +229,7 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 
 // returns whether a spec name is a valid spec in the consensus
 // first return value is found and active, second argument is found only, third argument is the provider's type (dynamic/static)
-func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType types.Spec_ProvidersTypes) {
+func (k Keeper) IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive, found bool, providersType types.Spec_ProvidersTypes) {
 	spec, found := k.GetSpec(ctx, chainID)
 	foundAndActive = false
 	if found {
@@ -251,8 +259,7 @@ func (k Keeper) GetAllChainIDs(ctx sdk.Context) (chainIDs []string) {
 }
 
 // returns map[apiInterface][]addons
-func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, err error) {
-	expectedInterfaces = make(map[epochstoragetypes.EndpointService]struct{})
+func (k Keeper) GetExpectedServicesForSpec(ctx sdk.Context, chainID string, mandatory bool) (expectedServices map[epochstoragetypes.EndpointService]struct{}, err error) {
 	var spec types.Spec
 	spec, found := k.GetSpec(ctx, chainID)
 	if found && spec.Enabled {
@@ -264,31 +271,40 @@ func (k Keeper) GetExpectedInterfacesForSpec(ctx sdk.Context, chainID string, ma
 				utils.Attribute{Key: "chainID", Value: chainID},
 			)
 		}
-		expectedInterfaces = k.getExpectedInterfacesForSpecInner(&spec, expectedInterfaces, mandatory)
-		return expectedInterfaces, nil
+		expectedServices = k.GetExpectedServicesForExpandedSpec(spec, mandatory)
+		return expectedServices, nil
 	}
-	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedInterfacesForSpec", nil,
+	return nil, utils.LavaFormatWarning("spec not found or not enabled in GetExpectedServicesForSpec", nil,
 		utils.Attribute{Key: "chainID", Value: chainID})
 }
 
-func (k Keeper) getExpectedInterfacesForSpecInner(spec *types.Spec, expectedInterfaces map[epochstoragetypes.EndpointService]struct{}, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
-	for _, apiCollection := range spec.ApiCollections {
+func (k Keeper) GetExpectedServicesForExpandedSpec(expandedSpec types.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{} {
+	expectedServices := make(map[epochstoragetypes.EndpointService]struct{})
+	for _, apiCollection := range expandedSpec.ApiCollections {
 		if apiCollection.Enabled && (!mandatory || apiCollection.CollectionData.AddOn == "") { // if mandatory is turned on only regard empty addons as expected interfaces for spec
 			service := epochstoragetypes.EndpointService{
 				ApiInterface: apiCollection.CollectionData.ApiInterface,
 				Addon:        apiCollection.CollectionData.AddOn,
+				Extension:    "",
 			}
 			// if this is an optional apiInterface, we set addon as ""
 			if apiCollection.CollectionData.AddOn == apiCollection.CollectionData.ApiInterface {
 				service.Addon = ""
 			}
-			expectedInterfaces[service] = struct{}{}
+			expectedServices[service] = struct{}{}
+			// add extensions when not asking for mandatory
+			if !mandatory {
+				for _, extension := range apiCollection.Extensions {
+					service.Extension = extension.Name
+					expectedServices[service] = struct{}{}
+				}
+			}
 		}
 	}
-	return expectedInterfaces
+	return expectedServices
 }
 
-func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock int64, latestBlock int64) bool {
+func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock, latestBlock int64) bool {
 	spec, found := k.GetSpec(ctx, chainID)
 	if !found {
 		return false

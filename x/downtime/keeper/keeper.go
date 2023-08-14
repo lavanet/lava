@@ -4,6 +4,8 @@ import (
 	"math"
 	"time"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -17,7 +19,7 @@ type EpochStorageKeeper interface {
 	GetParams(ctx sdk.Context) (params epochstoragetypes.Params)
 }
 
-func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
+func NewKeeper(cdc codec.BinaryCodec, sk storetypes.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(v1.ParamKeyTable())
@@ -31,7 +33,7 @@ func NewKeeper(cdc codec.BinaryCodec, sk sdk.StoreKey, ps paramtypes.Subspace, e
 }
 
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.BinaryCodec
 	paramstore paramtypes.Subspace
 
@@ -59,7 +61,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (*v1.GenesisState, error) {
 		return false
 	})
 	// get garbage collection
-	k.IterateGarbageCollections(ctx, func(height uint64, gcBlock uint64) (stop bool) {
+	k.IterateGarbageCollections(ctx, func(height, gcBlock uint64) (stop bool) {
 		gs.DowntimesGarbageCollection = append(gs.DowntimesGarbageCollection, &v1.DowntimeGarbageCollection{Block: height, GcBlock: gcBlock})
 		return false
 	})
@@ -189,7 +191,7 @@ func (k Keeper) IterateDowntimes(ctx sdk.Context, startHeight, endHeight uint64,
 	}
 }
 
-func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcBlock uint64) {
+func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height, gcBlock uint64) {
 	ctx.KVStore(k.storeKey).
 		Set(
 			types.GetDowntimeGarbageKey(gcBlock),
@@ -197,7 +199,7 @@ func (k Keeper) SetDowntimeGarbageCollection(ctx sdk.Context, height uint64, gcB
 		)
 }
 
-func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height uint64, gcBlock uint64) (stop bool)) {
+func (k Keeper) IterateGarbageCollections(ctx sdk.Context, onResult func(height, gcBlock uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iter := store.Iterator(types.DowntimeHeightGarbageKey, sdk.PrefixEndBytes(types.DowntimeHeightGarbageKey))
 

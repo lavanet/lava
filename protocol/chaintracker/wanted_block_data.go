@@ -18,7 +18,7 @@ type WantedBlocksData struct {
 	specificBlock *BlockRange
 }
 
-func (wbd *WantedBlocksData) New(fromBlock int64, toBlock int64, specificBlock int64, latestBlock int64, earliestBlockSaved int64) (err error) {
+func (wbd *WantedBlocksData) New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved int64) (err error) {
 	if earliestBlockSaved > latestBlock {
 		return InvalidLatestBlockNumValue
 	}
@@ -100,7 +100,7 @@ func (wbd *WantedBlocksData) String() string {
 	return fmt.Sprintf("range: %+v specific: %+v", wbd.rangeBlocks, wbd.specificBlock)
 }
 
-func NewBlockRange(fromBlock int64, toBlock int64, earliestBlockSaved int64, latestBlock int64) (br *BlockRange, err error) {
+func NewBlockRange(fromBlock, toBlock, earliestBlockSaved, latestBlock int64) (br *BlockRange, err error) {
 	if fromBlock < 0 || toBlock < 0 || earliestBlockSaved < 0 {
 		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block range: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
 	}
@@ -142,7 +142,7 @@ func (br *BlockRange) IsWanted(blockNum int64) bool {
 	return true
 }
 
-func LatestArgToBlockNum(request int64, latestBlock int64) int64 {
+func LatestArgToBlockNum(request, latestBlock int64) int64 {
 	// only modify latest - X requests
 	if request > spectypes.LATEST_BLOCK {
 		return request

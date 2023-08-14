@@ -10,14 +10,17 @@ import {
   QueryGetPairingResponse,
   QueryUserEntryRequest,
   QueryUserEntryResponse,
-} from "../codec/pairing/query";
-import { QueryGetSpecRequest, QueryGetSpecResponse } from "../codec/spec/query";
+} from "../codec/lavanet/lava/pairing/query";
+import {
+  QueryGetSpecRequest,
+  QueryGetSpecResponse,
+} from "../codec/lavanet/lava/spec/query";
 import { fetchLavaPairing } from "../util/lavaPairing";
 import Relayer from "../relayer/relayer";
 import ProvidersErrors from "./errors";
 import { base64ToUint8Array, generateRPCData, parseLong } from "../util/common";
-import { Badge } from "../grpc_web_services/pairing/relay_pb";
-import { QueryShowAllChainsResponse } from "../codec/spec/query";
+import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { QueryShowAllChainsResponse } from "../codec/lavanet/lava/spec/query";
 
 const BOOT_RETRY_ATTEMPTS = 2;
 export interface LavaProvidersOptions {
@@ -248,9 +251,6 @@ export class LavaProviders {
     // Extract providers from pairing response
     const providers = pairingResponse.providers;
 
-    // Initialize ConsumerSessionWithProvider array
-    const pairing: Array<ConsumerSessionWithProvider> = [];
-
     // Create request for getting userEntity
     const userEntityRequest = {
       address: this.accountAddress,
@@ -266,38 +266,54 @@ export class LavaProviders {
       maxcu = await this.getMaxCuForUser(userEntityRequest, lavaApis);
     }
 
+    // Initialize ConsumerSessionWithProvider array
+    const pairing: Array<ConsumerSessionWithProvider> = [];
+    const pairingFromDifferentGeolocation: Array<ConsumerSessionWithProvider> =
+      [];
     // Iterate over providers to populate pairing list
     for (const provider of providers) {
       // Skip providers with no endpoints
+      this.debugPrint("parsing provider", provider);
       if (provider.endpoints.length == 0) {
         continue;
       }
 
       // Initialize relevantEndpoints array
-      const relevantEndpoints: Array<Endpoint> = [];
+      const sameGeoEndpoints: Array<Endpoint> = [];
+      const differntGeoEndpoints: Array<Endpoint> = [];
 
       // Only take into account endpoints that use the same api interface
       // And geolocation
       for (const endpoint of provider.endpoints) {
-        if (
-          endpoint.apiInterfaces.includes(rpcInterface) &&
-          parseLong(endpoint.geolocation) == Number(this.geolocation)
-        ) {
-          const convertedEndpoint = new Endpoint(endpoint.iPPORT, true, 0);
-          relevantEndpoints.push(convertedEndpoint);
+        if (!endpoint.apiInterfaces.includes(rpcInterface)) {
+          continue;
+        }
+        const convertedEndpoint = new Endpoint(endpoint.iPPORT, true, 0);
+        if (parseLong(endpoint.geolocation) == Number(this.geolocation)) {
+          sameGeoEndpoints.push(convertedEndpoint); // set same geo location provider endpoint
+        } else {
+          differntGeoEndpoints.push(convertedEndpoint); // set different geo location provider endpoint
         }
       }
 
-      // Skip providers with no relevant endpoints
-      if (relevantEndpoints.length == 0) {
+      // skip if we have no endpoints at all.
+      if (sameGeoEndpoints.length == 0 && differntGeoEndpoints.length == 0) {
         continue;
       }
 
+      let sameGeoOptions = false; // if we have same geolocation options or not
+      let endpointListToStore: Endpoint[] = differntGeoEndpoints;
+      if (sameGeoEndpoints.length > 0) {
+        sameGeoOptions = true;
+        endpointListToStore = sameGeoEndpoints;
+      }
+
+      // create single consumer session from pairing.
       const singleConsumerSession = new SingleConsumerSession(
         0, // cuSum
         0, // latestRelayCuSum
         1, // relayNumber
-        relevantEndpoints[0],
+        endpointListToStore[0],
         parseLong(pairingResponse.currentEpoch),
         provider.address
       );
@@ -305,7 +321,7 @@ export class LavaProviders {
       // Create a new pairing object
       const newPairing = new ConsumerSessionWithProvider(
         this.accountAddress,
-        relevantEndpoints,
+        endpointListToStore,
         singleConsumerSession,
         maxcu,
         0, // used compute units
@@ -313,11 +329,24 @@ export class LavaProviders {
       );
 
       // Add newly created pairing in the pairing list
-      pairing.push(newPairing);
+      if (sameGeoOptions) {
+        pairing.push(newPairing);
+      } else {
+        pairingFromDifferentGeolocation.push(newPairing);
+      }
     }
 
-    // Create session object
-    const sessionManager = new SessionManager(pairing, nextEpochStart, apis);
+    if (pairing.length == 0 && pairingFromDifferentGeolocation.length == 0) {
+      throw new Error("Could not find any relevant pairing");
+    }
+    // Create session object from both pairing lists.
+    const sessionManager = new SessionManager(
+      pairing,
+      pairingFromDifferentGeolocation,
+      nextEpochStart,
+      apis
+    );
+    this.debugPrint("SessionManager Object", sessionManager);
 
     return sessionManager;
   }
@@ -337,8 +366,8 @@ export class LavaProviders {
       (item) => item.MaxComputeUnits > item.UsedComputeUnits
     );
 
-    if (validProviders.length === 0) {
-      throw ProvidersErrors.errNoValidProvidersForCurrentEpoch;
+    if (validProviders.length <= 1) {
+      return validProviders; // returning the array as it is.
     }
 
     // Fisher-Yates shuffle

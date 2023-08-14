@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
@@ -44,6 +45,25 @@ type GrpcNodeErrorResponse struct {
 	ErrorCode    uint32 `json:"error_code"`
 }
 
+type grpcDescriptorCache struct {
+	cachedDescriptors sync.Map // method name is the key, method descriptor is the value
+}
+
+func (gdc *grpcDescriptorCache) getDescriptor(methodName string) *desc.MethodDescriptor {
+	if descriptor, ok := gdc.cachedDescriptors.Load(methodName); ok {
+		converted, success := descriptor.(*desc.MethodDescriptor) // convert to a descriptor
+		if success {
+			return converted
+		}
+		utils.LavaFormatError("Failed Converting method descriptor", nil, utils.Attribute{Key: "Method", Value: methodName})
+	}
+	return nil
+}
+
+func (gdc *grpcDescriptorCache) setDescriptor(methodName string, descriptor *desc.MethodDescriptor) {
+	gdc.cachedDescriptors.Store(methodName, descriptor)
+}
+
 type GrpcChainParser struct {
 	BaseChainParser
 
@@ -56,14 +76,14 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
-func (apip *GrpcChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *GrpcChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
 	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
-func (apip *GrpcChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *GrpcChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -85,7 +105,7 @@ func (apip *GrpcChainParser) setupForProvider(reflectionConnection *grpc.ClientC
 
 func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, metadata)
+		chainMessage, err := apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, metadata, 0)
 		chainMessage.AppendHeader(metadata)
 		return chainMessage, err
 	}
@@ -107,7 +127,7 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
+func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("GrpcChainParser not defined")
@@ -155,6 +175,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
+	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 
@@ -180,8 +201,8 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections, headers := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers)
+	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -201,7 +222,7 @@ func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
+func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0
@@ -230,7 +251,8 @@ func NewGrpcChainListener(
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	chainParser ChainParser) (chainListener *GrpcChainListener) {
+	chainParser ChainParser,
+) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
 		listenEndpoint,
@@ -256,11 +278,15 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
+
+		// Extract dappID from grpc header
+		dappID := extractDappIDFromGrpcHeader(metadataValues)
+
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
-		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, grpcHeaders)
+		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, metricsData, grpcHeaders)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {
@@ -296,9 +322,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 type GrpcChainProxy struct {
 	BaseChainProxy
-	conn grpcConnectorIf
+	conn             grpcConnectorInterface
+	descriptorsCache *grpcDescriptorCache
 }
-type grpcConnectorIf interface {
+type grpcConnectorInterface interface {
 	Close()
 	GetRpc(ctx context.Context, block bool) (*grpc.ClientConn, error)
 	ReturnRpc(rpc *grpc.ClientConn)
@@ -318,9 +345,10 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn)
 }
 
-func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorIf) (ChainProxy, error) {
+func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
+		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
+		descriptorsCache: &grpcDescriptorCache{},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -370,27 +398,31 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
-	defer cancel()
 
-	// TODO: improve functionality, this is reading descriptors every send
-	// improvement would be caching the descriptors, instead of fetching them.
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
-	var descriptor desc.Descriptor
-	if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
-		return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
+
+	// check if we have method descriptor already cached.
+	methodDescriptor := cp.descriptorsCache.getDescriptor(methodName)
+	if methodDescriptor == nil { // method descriptor not cached yet, need to fetch it and add to cache
+		var descriptor desc.Descriptor
+		if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
+			return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+		serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
+		}
+		methodDescriptor = serviceDescriptor.FindMethodByName(methodName)
+		if methodDescriptor == nil {
+			return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
+		}
+
+		// add the descriptor to the chainProxy cache
+		cp.descriptorsCache.setDescriptor(methodName, methodDescriptor)
 	}
 
-	serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)
-	if !ok {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor, ok := descriptor.(*desc.ServiceDescriptor)", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "descriptor", Value: descriptor})
-	}
-	methodDescriptor := serviceDescriptor.FindMethodByName(methodName)
-	if methodDescriptor == nil {
-		return nil, "", nil, utils.LavaFormatError("serviceDescriptor.FindMethodByName returned nil", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "methodName", Value: methodName})
-	}
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 
 	var reader io.Reader
@@ -442,8 +474,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
-
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply

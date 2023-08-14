@@ -6,8 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -40,26 +39,6 @@ func NextMonth(date time.Time) time.Time {
 		0,
 		time.UTC,
 	)
-}
-
-// ExportSubscriptions exports subscriptions data (for genesis)
-func (k Keeper) ExportSubscriptions(ctx sdk.Context) []commontypes.RawMessage {
-	return k.subsFS.Export(ctx)
-}
-
-// ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
-func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
-	return k.subsTS.Export(ctx)
-}
-
-// InitSubscriptions imports subscriptions data (from genesis)
-func (k Keeper) InitSubscriptions(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.subsFS.Init(ctx, data)
-}
-
-// InitSubscriptions imports subscriptions timers data (from genesis)
-func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.subsTS.Init(ctx, data)
 }
 
 // GetSubscription returns the subscription of a given consumer
@@ -184,7 +163,7 @@ func (k Keeper) CreateSubscription(
 	}
 
 	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
-		return utils.LavaFormatWarning("create subscription failed", sdkerrors.ErrInsufficientFunds,
+		return utils.LavaFormatWarning("create subscription failed", legacyerrors.ErrInsufficientFunds,
 			utils.Attribute{Key: "creator", Value: creator},
 			utils.Attribute{Key: "price", Value: price},
 		)
@@ -284,7 +263,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
-		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", sdkerrors.ErrKeyNotFound,
+		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
 		)
 	}
@@ -292,7 +271,7 @@ func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (plans
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	if !found {
 		// normally would panic! but can "recover" by ignoring and returning error
-		err := utils.LavaFormatError("critical: failed to find existing subscription plan", sdkerrors.ErrKeyNotFound,
+		err := utils.LavaFormatError("critical: failed to find existing subscription plan", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
 			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
 			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
@@ -306,12 +285,12 @@ func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (plans
 func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, projectData projectstypes.ProjectData) error {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
-		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
+		return legacyerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
 	}
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	if !found {
-		err := utils.LavaFormatError("critical: failed to find existing subscriptio plan", sdkerrors.ErrKeyNotFound,
+		err := utils.LavaFormatError("critical: failed to find existing subscriptio plan", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: sub.Creator},
 			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
 			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
@@ -322,10 +301,10 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, proje
 	return k.projectsKeeper.CreateProject(ctx, consumer, projectData, plan)
 }
 
-func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer string, name string) error {
+func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer, name string) error {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
-		return sdkerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
+		return legacyerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
 	}
 
 	projectID := projectstypes.ProjectIndex(consumer, name)
@@ -348,7 +327,7 @@ func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string)
 	}
 }
 
-func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block uint64, cuAmount uint64) error {
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block, cuAmount uint64) error {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
 		return utils.LavaFormatError("can't charge cu to subscription",

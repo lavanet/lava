@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,7 +15,6 @@ import (
 
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/lavanet/lava/x/plans/client/utils"
 	"github.com/lavanet/lava/x/plans/types"
 )
@@ -82,7 +83,7 @@ $ %s tx gov plans-proposal plans-add <path/to/proposal.json> --from=<key_or_addr
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
 				return err
 			}
@@ -134,7 +135,7 @@ $ %s tx gov plans-proposal plans-del <path/to/proposal.json> --from=<key_or_addr
 				return err
 			}
 
-			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
 				return err
 			}

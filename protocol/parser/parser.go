@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -216,17 +216,17 @@ func blockInterfaceToString(block interface{}) string {
 func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
-		return nil, utils.LavaFormatError("invalid input format, input length", nil, utils.Attribute{Key: "input_len", Value: strconv.Itoa(len(input))})
+		return nil, utils.LavaFormatProduction("invalid input format, input length", nil, utils.Attribute{Key: "input_len", Value: strconv.Itoa(len(input))})
 	}
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
-		return nil, utils.LavaFormatError("invalid input format, input isn't an unsigned index", err, utils.Attribute{Key: "input", Value: inp})
+		return nil, utils.LavaFormatProduction("invalid input format, input isn't an unsigned index", err, utils.Attribute{Key: "input", Value: inp})
 	}
 
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, utils.LavaFormatError("invalid input format, data is not json", err, utils.Attribute{Key: "data", Value: unmarshalledData})
+		return nil, utils.LavaFormatProduction("invalid input format, data is not json", err, utils.Attribute{Key: "data", Value: unmarshalledData})
 	}
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
@@ -422,7 +422,7 @@ func ParseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 // parseArrayOfInterfaces returns value of item with specified prop name
 // If it doesn't exist return nil
-func parseArrayOfInterfaces(data []interface{}, propName string, innerSeparator string) []interface{} {
+func parseArrayOfInterfaces(data []interface{}, propName, innerSeparator string) []interface{} {
 	// Iterate over unmarshalled data
 	for _, val := range data {
 		if prop, ok := val.(string); ok {

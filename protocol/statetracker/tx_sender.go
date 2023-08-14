@@ -45,12 +45,12 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	for _, txEvent := range txEvents {
 		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 			for _, attribute := range txEvent.Attributes {
-				eventStr := string(attribute.Key)
+				eventStr := attribute.Key
 				eventStr = strings.SplitN(eventStr, ".", 2)[0]
 				if eventStr == "BasePay" {
-					lavaRewardTemp, err := sdk.ParseCoinNormalized(string(attribute.Value))
+					lavaRewardTemp, err := sdk.ParseCoinNormalized(attribute.Value)
 					if err != nil {
-						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: string(attribute.Value)})
+						return utils.LavaFormatError("failed parsing simulation result", nil, utils.Attribute{Key: "attribute", Value: attribute.Value})
 					}
 					lavaReward = lavaReward.Add(lavaRewardTemp)
 					break
@@ -151,7 +151,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		}
 	}
 	if !success {
-		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
+		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult}, utils.Attribute{Key: "Number Of Retries executed", Value: idx}, utils.Attribute{Key: "Parsed Sequence", Value: sequenceNumberParsed})
 	}
 	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "result", Value: summarizedTransactionResult})
 	return nil
@@ -198,9 +198,7 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	// TODO: retry logic for sequence number mismatch
-	// TODO: make sure we are not spamming the same conflicts, previous code only detecs relay by relay, it has no state tracking wether it reported already
+func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {

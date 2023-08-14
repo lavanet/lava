@@ -42,7 +42,7 @@ func NewGRPCFetcher(grpcAddr string) (*GRPCFetcher, error) {
 	}, nil
 }
 
-func (fetcher *GRPCFetcher) FetchPairings(chainId string, userId string) (*[]epochtypes.StakeEntry, uint64, error) {
+func (fetcher *GRPCFetcher) FetchPairings(chainId, userId string) (*[]epochtypes.StakeEntry, uint64, error) {
 	defer fetcher.CancelFunc()
 	utils.LavaFormatInfo("Fetching pairings for chain",
 		utils.Attribute{Key: "chainId", Value: chainId},

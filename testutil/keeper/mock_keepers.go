@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	tenderminttypes "github.com/tendermint/tendermint/types"
 )
 
 // account keeper mock
@@ -103,7 +103,7 @@ func (k *mockBankKeeper) AddToBalance(addr sdk.AccAddress, amounts sdk.Coins) er
 
 func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) error {
 	if _, ok := k.balance[addr.String()]; ok {
-		k.balance[addr.String()] = k.balance[addr.String()].Sub(amounts)
+		k.balance[addr.String()] = k.balance[addr.String()].Sub(amounts...)
 	} else {
 		return fmt.Errorf("acount is empty, can't sub")
 	}
@@ -186,5 +186,13 @@ func (b *MockBlockStore) LoadBlockCommit(height int64) *tenderminttypes.Commit {
 }
 
 func (b *MockBlockStore) LoadSeenCommit(height int64) *tenderminttypes.Commit {
+	return nil
+}
+
+func (b *MockBlockStore) LoadBlockMetaByHash(hash []byte) *tenderminttypes.BlockMeta {
+	return nil
+}
+
+func (b *MockBlockStore) DeleteLatestBlock() error {
 	return nil
 }

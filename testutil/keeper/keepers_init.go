@@ -7,6 +7,11 @@ import (
 	"testing"
 	"time"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/rpc/core"
+	tenderminttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -15,6 +20,7 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/lavanet/lava/common/types"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
@@ -34,11 +40,6 @@ import (
 	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/rpc/core"
-	tenderminttypes "github.com/tendermint/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 const (
@@ -78,7 +79,7 @@ type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace string, key string, value string) (err error) {
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
 	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
 	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
 	return
@@ -126,48 +127,48 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
 	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
-	stateStore.MountStoreWithDB(pairingStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(pairingMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(pairingStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(pairingMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	specStoreKey := sdk.NewKVStoreKey(spectypes.StoreKey)
 	specMemStoreKey := storetypes.NewMemoryStoreKey(spectypes.MemStoreKey)
-	stateStore.MountStoreWithDB(specStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(specMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(specStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(specMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	plansStoreKey := sdk.NewKVStoreKey(planstypes.StoreKey)
 	plansMemStoreKey := storetypes.NewMemoryStoreKey(planstypes.MemStoreKey)
-	stateStore.MountStoreWithDB(plansStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(plansMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(plansStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(plansMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	projectsStoreKey := sdk.NewKVStoreKey(projectstypes.StoreKey)
 	projectsMemStoreKey := storetypes.NewMemoryStoreKey(projectstypes.MemStoreKey)
-	stateStore.MountStoreWithDB(projectsStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(projectsMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(projectsStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(projectsMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	protocolStoreKey := sdk.NewKVStoreKey(protocoltypes.StoreKey)
 	protocolMemStoreKey := storetypes.NewMemoryStoreKey(protocoltypes.MemStoreKey)
-	stateStore.MountStoreWithDB(protocolStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(protocolMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(protocolStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(protocolMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	subscriptionStoreKey := sdk.NewKVStoreKey(subscriptiontypes.StoreKey)
 	subscriptionMemStoreKey := storetypes.NewMemoryStoreKey(subscriptiontypes.MemStoreKey)
-	stateStore.MountStoreWithDB(subscriptionStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(subscriptionMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(subscriptionStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(subscriptionMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
 	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
-	stateStore.MountStoreWithDB(epochStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(epochMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(epochStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(epochMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	paramsStoreKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
-	stateStore.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
 	tkey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	stateStore.MountStoreWithDB(tkey, sdk.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(tkey, storetypes.StoreTypeIAVL, db)
 
 	conflictStoreKey := sdk.NewKVStoreKey(conflicttypes.StoreKey)
 	conflictMemStoreKey := storetypes.NewMemoryStoreKey(conflicttypes.MemStoreKey)
-	stateStore.MountStoreWithDB(conflictStoreKey, sdk.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(conflictMemStoreKey, sdk.StoreTypeMemory, nil)
+	stateStore.MountStoreWithDB(conflictStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(conflictMemStoreKey, storetypes.StoreTypeMemory, nil)
 
 	require.NoError(t, stateStore.LoadLatestVersion())
 
@@ -227,7 +228,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	protocoltypes.UpdateLatestParams(protocolParams)
 	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
-
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
 	ss := Servers{}
@@ -243,8 +243,15 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
-	NewBlock(sdk.WrapSDKContext(ctx), &ks)
+
+	ks.Plans.InitPlans(ctx, []types.RawMessage{})
+	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
+	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
+	ks.Projects.InitProjects(ctx, []types.RawMessage{})
+
+	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())
+
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
@@ -258,7 +265,7 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	rand.Read(headerHash)
 	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
 
-	NewBlock(sdk.WrapSDKContext(unwrapedCtx), ks)
+	NewBlock(unwrapedCtx, ks)
 
 	if len(customBlockTime) > 0 {
 		ks.BlockStore.AdvanceBlock(customBlockTime[0])
@@ -322,9 +329,7 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 }
 
 // Make sure you save the new context
-func NewBlock(ctx context.Context, ks *Keepers) {
-	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-
+func NewBlock(ctx sdk.Context, ks *Keepers) {
 	// get the value and type of the Keepers struct
 	keepersType := reflect.TypeOf(*ks)
 	keepersValue := reflect.ValueOf(*ks)
@@ -334,7 +339,7 @@ func NewBlock(ctx context.Context, ks *Keepers) {
 		fieldValue := keepersValue.Field(i)
 
 		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
-			beginBlocker.BeginBlock(unwrapedCtx)
+			beginBlocker.BeginBlock(ctx)
 		}
 	}
 }

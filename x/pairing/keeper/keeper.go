@@ -3,7 +3,9 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/log"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,8 +17,8 @@ import (
 type (
 	Keeper struct {
 		cdc        codec.BinaryCodec
-		storeKey   sdk.StoreKey
-		memKey     sdk.StoreKey
+		storeKey   storetypes.StoreKey
+		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
 
 		bankKeeper         types.BankKeeper
@@ -43,7 +45,7 @@ func init() {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeKey,
-	memKey sdk.StoreKey,
+	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 
 	bankKeeper types.BankKeeper,
@@ -74,7 +76,7 @@ func NewKeeper(
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
-	badgeTimerCallback := func(ctx sdk.Context, badgeKey []byte, _ []byte) {
+	badgeTimerCallback := func(ctx sdk.Context, badgeKey, _ []byte) {
 		keeper.RemoveBadgeUsedCu(ctx, badgeKey)
 	}
 	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix).

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
@@ -110,7 +110,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 
 // DeleteProject deletes a project from a subscription
 // (takes effect at the beginning of next epoch)
-func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string) error {
+func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	// project deletion takes effect at the beginning of the next epoch
@@ -155,7 +155,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator string, projectID string)
 // expected to be current block height (takes effect immediately).
 func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
-		return sdkerrors.ErrInvalidType
+		return legacyerrors.ErrInvalidType
 	}
 
 	if key.IsType(types.ProjectKey_ADMIN) {
@@ -203,13 +203,13 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 // expected to be the next epoch start (takes effect upon next epoch).
 func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
 	if !key.IsTypeValid() {
-		return sdkerrors.ErrInvalidType
+		return legacyerrors.ErrInvalidType
 	}
 
 	if key.IsType(types.ProjectKey_ADMIN) {
 		found := project.DeleteKey(types.ProjectAdminKey(key.Key))
 		if !found {
-			return sdkerrors.ErrKeyNotFound
+			return legacyerrors.ErrKeyNotFound
 		}
 	}
 
@@ -217,7 +217,7 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		// check that the developer key belongs to the project (and remove it)
 		found := project.DeleteKey(types.ProjectDeveloperKey(key.Key))
 		if !found {
-			return sdkerrors.ErrKeyNotFound
+			return legacyerrors.ErrKeyNotFound
 		}
 
 		// and now remove it from the developer keys mapping (to projects)
@@ -225,12 +225,12 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 		found = k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
 		if !found {
-			return sdkerrors.ErrNotFound
+			return legacyerrors.ErrNotFound
 		}
 
 		// the developer key belongs to a different project
 		if devkeyData.ProjectID != project.GetIndex() {
-			return utils.LavaFormatWarning("failed to unregister key", sdkerrors.ErrNotFound,
+			return utils.LavaFormatWarning("failed to unregister key", legacyerrors.ErrNotFound,
 				utils.Attribute{Key: "projectID", Value: project.Index},
 				utils.Attribute{Key: "key", Value: key.Key},
 				utils.Attribute{Key: "keyTypes", Value: key.Kinds},
@@ -260,7 +260,7 @@ func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr s
 func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
 	var project types.Project
 	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
-		utils.LavaFormatError("critical: snapshot of project failed (find)", sdkerrors.ErrKeyNotFound,
+		utils.LavaFormatError("critical: snapshot of project failed (find)", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)

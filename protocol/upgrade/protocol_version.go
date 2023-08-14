@@ -15,7 +15,7 @@ var lavaProtocolVersion = ProtocolVersion{
 	ProviderVersion: "0.21.0",
 }
 
-func GetLavaProtocolVersion() ProtocolVersion {
+func GetCurrentVersion() ProtocolVersion {
 	return lavaProtocolVersion
 }
 

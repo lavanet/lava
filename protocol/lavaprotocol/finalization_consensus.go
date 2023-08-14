@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -18,6 +19,7 @@ type FinalizationConsensus struct {
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
 	providerDataContainersMu         sync.RWMutex
 	currentEpoch                     uint64
+	latestBlock                      uint64 // for caching
 }
 
 type ProviderHashesConsensus struct {
@@ -37,7 +39,7 @@ type providerDataContainer struct {
 	// TODO:: keep relay request for conflict reporting
 }
 
-func GetLatestFinalizedBlock(latestBlock int64, blockDistanceForFinalizedData int64) int64 {
+func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) int64 {
 	finalization_criteria := blockDistanceForFinalizedData
 	return latestBlock - finalization_criteria
 }
@@ -174,6 +176,12 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	}
 }
 
+func (s *FinalizationConsensus) LatestBlock() uint64 {
+	s.providerDataContainersMu.RLock()
+	defer s.providerDataContainersMu.RUnlock()
+	return s.latestBlock
+}
+
 // returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for
 // does the calculation on finalized entries then extrapolates the ending based on blockDistance
 func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
@@ -236,12 +244,16 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		}
 		return median
 	}
+	providersMedianOfLatestBlock := median(mapExpectedBlockHeights) + int64(blockDistanceForFinalizedData)
+	if providersMedianOfLatestBlock > 0 && uint64(providersMedianOfLatestBlock) > s.latestBlock {
+		atomic.StoreUint64(&s.latestBlock, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
+	}
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
 	// then we move forward blockDistanceForFinalizedData to get the expected latest block
-	return median(mapExpectedBlockHeights) - allowedBlockLagForQosSync + int64(blockDistanceForFinalizedData), len(mapExpectedBlockHeights)
+	return providersMedianOfLatestBlock - allowedBlockLagForQosSync, len(mapExpectedBlockHeights)
 }
 
-func InterpolateBlocks(timeNow time.Time, latestBlockTime time.Time, averageBlockTime time.Duration) int64 {
+func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time.Duration) int64 {
 	if timeNow.Before(latestBlockTime) {
 		return 0
 	}

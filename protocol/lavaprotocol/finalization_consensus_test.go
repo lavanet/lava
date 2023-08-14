@@ -28,7 +28,7 @@ type finalizationTestInsertion struct {
 	relayReply      *pairingtypes.RelayReply
 }
 
-func createStubHashes(from uint64, to uint64, identifier string) map[int64]string {
+func createStubHashes(from, to uint64, identifier string) map[int64]string {
 	ret := map[int64]string{}
 	for i := from; i <= to; i++ {
 		ret[int64(i)] = strconv.Itoa(int(i)) + identifier
@@ -36,7 +36,7 @@ func createStubHashes(from uint64, to uint64, identifier string) map[int64]strin
 	return ret
 }
 
-func finalizationInsertionForProviders(chainID string, epoch uint64, latestBlock uint64, startProvider int, providersNum int, success bool, identifier string, blocksInFinalizationProof uint32, blockDistanceForFinalizedData uint32) (rets []finalizationTestInsertion) {
+func finalizationInsertionForProviders(chainID string, epoch, latestBlock uint64, startProvider, providersNum int, success bool, identifier string, blocksInFinalizationProof, blockDistanceForFinalizedData uint32) (rets []finalizationTestInsertion) {
 	fromBlock := latestBlock - uint64(blockDistanceForFinalizedData)
 	for i := startProvider; i < startProvider+providersNum; i++ {
 		rets = append(rets, finalizationTestInsertion{
@@ -72,7 +72,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		ctx := context.Background()
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../")
+		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -154,11 +154,13 @@ func TestConsensusHashesInsertion(t *testing.T) {
 }
 
 func TestQoS(t *testing.T) {
+	decToSet, _ := sdk.NewDecFromStr("0.05") // test values fit 0.05 Availability requirements
+	lavasession.AvailabilityPercentage = decToSet
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		t.Run(chainID, func(t *testing.T) {
 			ctx := context.Background()
-			chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../")
+			chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}
