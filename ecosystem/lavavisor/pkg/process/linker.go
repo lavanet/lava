@@ -23,7 +23,7 @@ func CreateLink(binaryPath string) {
 func findLavaProtocolPath(binaryPath string) (string, error) {
 	out, err := exec.LookPath("lava-protocol")
 	if err == nil {
-		return strings.TrimSpace(string(out)), nil
+		return strings.TrimSpace(out), nil
 	}
 	return copyBinaryToSystemPath(binaryPath)
 }
@@ -47,7 +47,7 @@ func copyBinaryToSystemPath(binaryPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("couldn't find the binary in the system path: %w", err)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return strings.TrimSpace(out), nil
 }
 
 func validateBinaryExecutable(path string) {

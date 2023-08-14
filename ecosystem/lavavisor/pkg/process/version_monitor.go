@@ -20,7 +20,6 @@ type VersionMonitor struct {
 }
 
 func NewVersionMonitor(initVersion string, lavavisorPath string, providers []*ProviderProcess, autoDownload bool) *VersionMonitor {
-
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
@@ -88,7 +87,7 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 		}
 		vm.mismatchType = lvutil.MinVersionMismatch
 		vm.lastknownversion = incoming
-		return lvutil.MinVersionMismatchError
+		return utils.LavaFormatError("Version mismatch detected!", nil)
 	}
 
 	// version is ok.
