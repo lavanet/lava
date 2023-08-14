@@ -16,6 +16,22 @@
                 "overuse_rate": "0",
                 "plan_policy": {
                     "chain_policies": [
+                        {
+                            "chain_id": "ETH1",
+                            "requirements": [
+                                {
+                                    "collection":{
+                                        "api_interface": "jsonrpc",
+                                        "type": "POST"
+                                    },
+                                    "extensions":["archive"],
+                                    "mixed":true
+                                }
+                            ]
+                        },
+                        {
+                            "chain_id": "*"
+                        }
                     ],
                     "geolocation_profile": "18446744073709551615",
                     "total_cu_limit": "1000000",
