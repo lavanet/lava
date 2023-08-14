@@ -6,7 +6,7 @@ For more details visit https://docs.lavanet.xyz/access-server-kit or our Discord
 ## Usage
 1. Clone the repository
 2. `cd` into the repository folder
-3. Run `make install`
+3. Run `make install-all`
 4. Create a configuration file with the following format:
 
 ```

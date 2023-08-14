@@ -15,6 +15,10 @@ var lavaProtocolVersion = ProtocolVersion{
 	ProviderVersion: "0.21.0",
 }
 
+func GetCurrentVersion() ProtocolVersion {
+	return lavaProtocolVersion
+}
+
 func ValidateProtocolVersion(incoming *protocoltypes.Version) error {
 	// check min version
 	if incoming.ConsumerMin != lavaProtocolVersion.ConsumerVersion || incoming.ProviderMin != lavaProtocolVersion.ProviderVersion {
