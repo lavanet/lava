@@ -113,7 +113,10 @@ func LavavisorStart(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+	txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+	if err != nil {
+		utils.LavaFormatFatal("failed to create tx factory", err)
+	}
 
 	// auto-download
 	autoDownload, err := cmd.Flags().GetBool("auto-download")

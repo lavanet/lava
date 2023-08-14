@@ -68,7 +68,10 @@ func LavavisorInit(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+	txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+	if err != nil {
+		utils.LavaFormatFatal("failed to create tx factory", err)
+	}
 
 	lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavavisorChainFetcher)

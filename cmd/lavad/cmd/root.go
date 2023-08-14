@@ -111,7 +111,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		Use:     "lava-protocol",
 		Short:   "Lava Protocol daemon",
 		Long:    "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
-		Version: upgrade.GetLavaProtocolVersion().ProviderVersion,
+		Version: upgrade.GetCurrentVersion().ProviderVersion,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
