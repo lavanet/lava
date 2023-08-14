@@ -1,4 +1,4 @@
-import { RelayPrivateData } from "../grpc_web_services/lava/pairing/relay_pb";
+import { RelayPrivateData } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import Relayer from "./relayer";
 
 describe("Test relay request", () => {

@@ -16,6 +16,28 @@ type PairingScore struct {
 	Score            math.Uint
 	ScoreComponents  map[string]math.Uint
 	SkipForSelection bool
+	SlotFiltering    map[int]struct{} // slot indexes here are skipped
+}
+
+func (ps *PairingScore) IsValidForSelection(slotIndex int) bool {
+	if ps.SkipForSelection {
+		return false
+	}
+	if _, ok := ps.SlotFiltering[slotIndex]; ok {
+		// provider has mix filtering for this slot index
+		return false
+	}
+	return true
+}
+
+func (ps *PairingScore) InvalidIndexes(possibleIndexes []int) []int {
+	invalidIndexes := []int{}
+	for _, slotIndex := range possibleIndexes {
+		if _, ok := ps.SlotFiltering[slotIndex]; ok {
+			invalidIndexes = append(invalidIndexes, slotIndex)
+		}
+	}
+	return invalidIndexes
 }
 
 func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry) *PairingScore {

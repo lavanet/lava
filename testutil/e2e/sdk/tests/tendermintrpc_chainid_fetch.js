@@ -2,17 +2,22 @@ const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
 
 async function main() {
     // Initialize Lava SDK
-    const cosmosHub = await new LavaSDK({
+    const lavaSDKTendermint = await new LavaSDK({
         privateKey: process.env.PRIVATE_KEY,
         chainID: "LAV1",
         lavaChainId:"lava",
-        pairingListConfig:process.env.PAIRING_LIST
+        pairingListConfig:process.env.PAIRING_LIST, 
+        allowInsecureTransport: true,
+    }).catch(e => {
+        throw new Error(" ERR failed setting lava-sdk tendermint test");
     });
 
     // Fetch chain id
-    const result = await cosmosHub.sendRelay({
+    const result = await lavaSDKTendermint.sendRelay({
         method: "status",
         params: [],
+    }).catch(e => {
+        throw new Error(" ERR failed sending relay tendermint test");
     });
 
     // Parse response
@@ -22,7 +27,7 @@ async function main() {
 
     // Validate chainID
     if (chainID != "lava") {
-        throw new Error(" ERR Chain ID is not equal to cosmoshub-4");
+        throw new Error(" ERR Chain ID is not equal to lava");
     }else{
         console.log("Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
     }

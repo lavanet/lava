@@ -3,15 +3,27 @@
 # Usage: and targets:
 #   [LAVA_BUILD_OPTIONS=...] [ENV...] make [TARGET...]
 #
-# Targets:
+# Binaries:
+#   lavad               - binary to run for nodes and validators
+#   lava-protocol       - binary to run for providers
 #
-#   build               - local build (output: `build/lavad`)
-#   docker-build        - docker build (output: `build/lavad`) with docker image
+# Targets:
+#   (the output of builds goes to $(BUILD_DIR), by default: build/*)
+#
+#   build-[BIN]         - local build of select binary; [BIN] is one of "Binaries" (or "all")
+#   build               - equivalent to build-$(LAVA_BINARY) if set (if not set: error)
+#
+#   install-[BIN]       - local install of select binary; [BIN] is one of "Binaries" (or "all")
+#   install             - equivalent to install-$(LAVA_BINARY) if set (if not set: error)
+#
+#   docker-build-[BIN]  - docker build of select binary; [BIN] is one of "Binaries" (or "all")
+#   docker-build        - equivalent to docket-build-$(LAVA_BINARY) if set (if not set: error)
 #
 #   build-images        - build both amd64,arm64 lavad(s) and docker image(s)
-#   build-image-amd64   - docker build (output: `build/lavad-linux-amd64`) with docker image
-#   build-image-arm64   - docker build (output: `build/lavad-linux-arm64`) with docker image
+#   build-image-amd64   - docker build (output: `$(BUILD_DIR)/*-linux-amd64`) with docker image
+#   build-image-arm64   - docker build (output: `$(BUILD_DIR)/*-linux-arm64`) with docker image
 #
+#   proto-gen           - (re)generate protobuf file
 #   test                - run unit-tests
 #   lint                - run the linter
 #
@@ -27,10 +39,11 @@
 #
 #   cleveldb, rocksdb   - (not to be used)
 # 
-#   production-log-level - build the binary with some logs set as warnings instead of errors when the error can be related to bad usage instead of a bug.
+#   production-log-level - logs for errros related to bad usage (rather than bugs) set as warnings
 #
 # Environment
 #   LAVA_VERSION=...    - select lava version (for 'release')
+#   LAVA_BINARY=...     - select binary to build: "lavad", "lava-protocol", or "all"
 #   BUILDDIR=...        - select local directory for build output
 #   LEDGER_ENABLED      - (not to be used)
 #
@@ -39,15 +52,15 @@
 #   Build locally and run unit tests
 #     make test build
 #
-#   Build locally a static binary (runs on any distributions and in containers)
-#     LAVA_BUILD_OPTIONS="static" make build
+#   Build locally static binaries (runs on any distributions and in containers)
+#     LAVA_BUILD_OPTIONS="static" make build-all
 #
 #   Build and generate docker image
-#     LAVA_BUILD_OPTIONS="static" make docker-build
+#     LAVA_BUILD_OPTIONS="static" make docker-build-all
 #
 #   Build release [and optionally generate docker image]
-#     LAVA_BUILD_OPTIONS="static,release" make build
-#     LAVA_BUILD_OPTIONS="static,release" make docker-build
+#     LAVA_BUILD_OPTIONS="static,release" make build-all
+#     LAVA_BUILD_OPTIONS="static,release" make docker-build-all
 #
 #   Build release of specific version, and generate docker image
 #     LAVA_VERSION=0.4.3 LAVA_BUILD_OPTIONS="static,release" make docker-build
@@ -153,10 +166,17 @@ endif
 build_tags += $(BUILD_TAGS)
 build_tags := $(strip $(build_tags))
 
+# trick: whitespace hold a single whitespace
 null :=
 whitespace += $(null) $(null)
 comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
+
+# trick: newline hold a single newline (Makefile ignores first newline)
+define newline
+
+
+endef
 
 # process linker flags
 
@@ -203,35 +223,90 @@ ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
+LAVA_ALL_BINARIES := lavad lava-protocol
+
+# helper target/build functions
+
+# return prefix of $2 before first occurence of $1
+# example: $(call prefix -,hello-world) yields "hello"
+define prefix
+$(word 1,$(subst $1,$(whitespace),$2))
+endef
+
+# generate a dependency of each of (matrix) $1-$2: $3 (where $1 is a list)
+# example: $(call makedep,x y,suffix,depends) yields "x-suffix y-suffix: depends"
+define makedep
+$(strip $(foreach t,$1,$(t)-$(2) )): $3
+endef
+
 ###############################################################################
 ###                                  Build                                  ###
 ###############################################################################
 
 all: lint test
 
-BUILD_TARGETS := build install
+# test that $(LAVA_BINARY) is valid: wrap valid values within ":" to avoid
+# sub-matches (and explicitly rule out the full combo of all valid binaries
+# as a single string).
 
-build: BUILD_ARGS=-o $(BUILDDIR)/
+valid_binaries := :$(subst $(whitespace),:,$(LAVA_ALL_BINARIES)):all:
 
-$(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./...
+# arg should not contain ":"
+# :arg: should appear in valid_binaries
+define validate_binary
+$(if $(findstring :,$1),$(error $2),)
+$(if $(findstring :$1:,$(valid_binaries)),,$(error $2))
+endef
+
+# targets "build","install" (standalone) are only possible if LAVA_BINARY is
+# defined - either one of available binaries in $(LAVA_ALL_BINARIES) or "all";
+# otherwise it is an error.
+
+ifeq (,$(LAVA_BINARY))
+LAVA_BINARY := bad
+# these will be called if target is "build" or "install" and $(LAVA_BINARY)
+# remains undefined.
+build-bad install-bad docker-build-bad:
+	$(error "target '$(call prefix,-,$@)' requires valid env 'LAVA_BINARY'")
+else
+$(call validate_binary,$(LAVA_BINARY),\
+  "targets 'build'(comma) 'install' require valid env 'LAVA_BINARY'")
+endif
+
+build: build-$(LAVA_BINARY)
+install: install-$(LAVA_BINARY)
+
+build-%: BUILD_ARGS=-o $(BUILDDIR)/
+build-% install-%: $(BUILDDIR)/
+	$(call validate_binary,$*,"No rule to make target '$@'")
+	go $(call prefix,-,$@) -mod=readonly $(BUILD_FLAGS) $(BUILD_ARGS) ./cmd/$*
+
+# dummy rule to prevent the above wildcard from catching {build,install}-all
+$(call makedep,build install,all,)
+	@echo -n
+
+build-all: $(foreach binary,$(LAVA_ALL_BINARIES),build-$(binary))
+install-all: $(foreach binary,$(LAVA_ALL_BINARIES),install-$(binary))
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
+docker-build: docker-build-$(LAVA_BINARY)
+
 # build lavad within docker (reproducible) and docker image
-docker-build: build-docker-helper build-docker-copier
+docker-build-%: build-docker-helper-% build-docker-copier-%
+	@echo -n
 
 # build lavad within docker (repducible) for both archs
 build-images: build-image_amd64 build-image-arm64
 
 # build lavad-linux-amd64 within docker (reproducible) and docker image
 build-image-amd64: TARGETARCH=amd64
-build-image-amd64: build-docker-helper build-docker-copier
+build-image-amd64: build-docker-helper-all build-docker-copier-all
 
 # build lavad-linux-arm64 within docker (reproducible) and docker image
 build-image-arm64: TARGETARCH=arm64
-build-image-arm64: build-docker-helper build-docker-copier
+build-image-arm64: build-docker-helper-all build-docker-copier-all
 
 RUNNER_IMAGE_DEBIAN := debian:11-slim
 
@@ -240,7 +315,8 @@ $(if $(TARGETARCH),$(TARGETARCH),$(shell GOARCH= go env GOARCH))
 endef
 
 # Note: this target expects TARGETARCH to be defined
-build-docker-helper: $(BUILDDIR)/
+build-docker-helper-%: $(BUILDDIR)/
+	$(call validate_binary,$*,"No rule to make target '$@'")
 	$(DOCKER) buildx create --name lavabuilder || true
 	$(DOCKER) buildx use lavabuilder
 	$(DOCKER) buildx build \
@@ -250,6 +326,7 @@ build-docker-helper: $(BUILDDIR)/
 		--build-arg GIT_CLONE=$(GIT_CLONE) \
 		--build-arg BUILD_OPTIONS=$(LAVA_BUILD_OPTIONS) \
 		--build-arg RUNNER_IMAGE=$(RUNNER_IMAGE_DEBIAN) \
+		--build-arg LAVA_BINARY=$* \
 		--platform linux/$(call autogen_targetarch) \
 		-t lava:$(VERSION) \
 		--load \
@@ -260,12 +337,18 @@ define autogen_extraver
 $(if $(TARGETARCH),-linux-$(TARGETARCH),)
 endef
 
+define expand_lava_binary
+$(subst all,$(LAVA_ALL_BINARIES),$1)
+endef
+
 # Note: this target expects TARGETARCH to be defined
-build-docker-copier: $(BUILDDIR)/
-	$(DOCKER) rm -f lavabinary 2> /dev/null || true
-	$(DOCKER) create -ti --name lavabinary lava:$(VERSION)
-	$(DOCKER) cp lavabinary:/bin/lavad $(BUILDDIR)/lavad$(call autogen_extraver)
-	$(DOCKER) rm -f lavabinary
+build-docker-copier-%: $(BUILDDIR)/
+	$(call validate_binary,$*,"No rule to make target '$@'")
+	@$(DOCKER) rm -f lavabinary 2> /dev/null || true
+	@$(DOCKER) create -ti --name lavabinary lava:$(VERSION) > /dev/null
+	$(foreach binary,$(call expand_lava_binary,$*),\
+	  $(DOCKER) cp lavabinary:/bin/$(binary) $(BUILDDIR)/$(binary)$(call autogen_extraver) $(newline))
+	@$(DOCKER) rm -f lavabinary > /dev/null
 
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
@@ -288,35 +371,25 @@ lint:
 	@echo "--> Running linter"
 	golangci-lint run --config .golangci.yml
 
-build-protocol:
-	@echo "--> Building protocol"
-	@go build -o $(BUILDDIR)/lava-protocol ./protocol
-	@if [ -n "$$(which lava-protocol)" ]; then \
-		echo "Replacing existing lava-protocol binary at: $$(which lava-protocol)"; \
-		cp $(BUILDDIR)/lava-protocol $$(dirname $$(which lava-protocol)); \
-	elif [ -n "$$(which lavad)" ]; then \
-		echo "Copying lava-protocol binary to the folder location of lavad at: $$(which lavad)"; \
-		cp $(BUILDDIR)/lava-protocol $$(dirname $$(which lavad)); \
-	elif [ -z "$$(which lavad)" ]; then \
-		echo "Copying lava-protocol binary to GOPATH/bin at: $(GOPATH)/bin"; \
-		cp $(BUILDDIR)/lava-protocol $(GOPATH)/bin; \
-	fi
-  
-PROJECT_NAME = $(shell git remote get-url origin | xargs basename -s .git)
+# protobuf generation
+
+define rwildcard
+  $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+endef
 
 protoVer=0.13.5
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-containerProtoGen=$(PROJECT_NAME)-proto-gen-$(protoVer)
-containerProtoFmt=$(PROJECT_NAME)-proto-fmt-$(protoVer)
+containerProtoGen=lava-proto-gen-$(protoVer)
+containerProtoFmt=lava-proto-fmt-$(protoVer)
 
-proto-gen:
-	@echo "Generating Protobuf files"
-	if docker ps -a --format '{{.Names}}' | grep -Eq "^${containerProtoGen}$$"; then docker start -a $(containerProtoGen); \
-	else docker run --name $(containerProtoGen) -v $(CURDIR):/workspace --workdir /workspace $(protoImageName) \
-		sh ./scripts/protocgen.sh; fi
+proto-gen: $(BUILDDIR)/proto-gen
+$(BUILDDIR)/proto-gen: $(call rwildcard,proto/,*.proto)
+	@echo "Generating protobuf files"
+	docker run --rm -v $(CURDIR):/workspace --workdir /workspace \
+		$(protoImageName) sh ./scripts/protocgen.sh
+	@touch $@
 
-.PHONY: all build docker-build install lint test \
+.PHONY: all docker-build lint test proto-gen \
 	go-mod-cache go.sum draw-deps \
-	build-docker-helper build-docker-copier \
-        build-images build-image-amd64 build-image-arm64 \
-
+	build build-all install install-all \
+	build-images build-image-amd64 build-image-arm64

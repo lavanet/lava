@@ -42,3 +42,5 @@ proto.lavanet.lava.pairing.RelaySession.toObject = function(includeInstance, msg
     qos_excellence_report: (f = msg.getQosExcellenceReport()) && proto.lavanet.lava.pairing.QualityOfServiceReport.toObject(includeInstance, f)
   };
 ```
+
+we now added a script to automatically change the names see fix_grpc_web_camel_case.py

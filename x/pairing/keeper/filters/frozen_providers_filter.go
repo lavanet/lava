@@ -8,6 +8,10 @@ import (
 
 type FrozenProvidersFilter struct{}
 
+func (f *FrozenProvidersFilter) IsMix() bool {
+	return false
+}
+
 func (f *FrozenProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	// frozen providers (or providers that their stake is not applied yet) can't be part of the pairing - this filter is always active
 	return true

@@ -1033,7 +1033,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			effectiveGeo, err := ts.Keepers.Pairing.CalculateEffectiveGeolocationFromPolicies(policies)
 			require.Nil(t, err)
 
-			slots := pairingscores.CalcSlots(planstypes.Policy{
+			slots := pairingscores.CalcSlots(&planstypes.Policy{
 				GeolocationProfile: effectiveGeo,
 				MaxProvidersToPair: tt.planPolicy.MaxProvidersToPair,
 			})
@@ -1216,7 +1216,7 @@ func TestGeoSlotCalc(t *testing.T) {
 			MaxProvidersToPair: 14,
 		}
 
-		slots := pairingscores.CalcSlots(policy)
+		slots := pairingscores.CalcSlots(&policy)
 		for _, slot := range slots {
 			geoReqFromMap := slot.Reqs[geoReqName]
 			geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
@@ -1235,7 +1235,7 @@ func TestGeoSlotCalc(t *testing.T) {
 		GeolocationProfile: uint64(planstypes.Geolocation_GL),
 		MaxProvidersToPair: 14,
 	}
-	slots := pairingscores.CalcSlots(policy)
+	slots := pairingscores.CalcSlots(&policy)
 	for _, slot := range slots {
 		geoReqFromMap := slot.Reqs[geoReqName]
 		geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)

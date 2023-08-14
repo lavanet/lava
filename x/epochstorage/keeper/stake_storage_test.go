@@ -101,11 +101,11 @@ func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 		testkeeper.AdvanceEpoch(ctxx, allkeepers)
 	}
 
-	removeAllEntriesBeforeBlock(keeper, ctx, 10, []string{"COS3ETH1LAV1COS4"})
+	removeAllEntriesBeforeBlock(keeper, ctx, 10, []string{"OSMOETH1LAV1OSMOT"})
 	allStorage := keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), stakeStorageSlots) // no entry was removed
 
-	removeAllEntriesBeforeBlock(keeper, ctx, 10, []string{"COS3"})
+	removeAllEntriesBeforeBlock(keeper, ctx, 10, []string{"OSMO"})
 	allStorage = keeper.GetAllStakeStorage(ctx)
 	require.Equal(t, len(allStorage), stakeStorageSlots) // no entry was removed
 
