@@ -1,0 +1,1 @@
+export const AVAILABILITY_PERCENTAGE = 0.1;
