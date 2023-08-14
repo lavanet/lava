@@ -51,7 +51,7 @@ func copyBinaryToSystemPath(binaryPath string) (string, error) {
 }
 
 func validateBinaryExecutable(path string) {
-	version, err := exec.Command(path, "--version").Output()
+	version, err := exec.Command(path, "version").Output()
 	if err != nil {
 		utils.LavaFormatFatal("binary is not a valid executable: ", err)
 	}
