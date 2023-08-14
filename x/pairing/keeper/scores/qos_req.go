@@ -2,16 +2,13 @@ package scores
 
 import (
 	"cosmossdk.io/math"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 const qosReqName = "qos-req"
 
 // QosReq implements the ScoreReq interface for provider staking requirement(s)
-type QosReq struct {
-	qos pairingtypes.QualityOfServiceReport
-}
+type QosReq struct{}
 
 func (qr *QosReq) Init(policy planstypes.Policy) bool {
 	return true
@@ -19,7 +16,7 @@ func (qr *QosReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the the provider's qos score
 func (qr *QosReq) Score(score PairingScore) math.Uint {
-	qosScore, err := qr.qos.ComputeQoS()
+	qosScore, err := score.QosExcellenceReport.ComputeQoS()
 	if err != nil {
 		return math.NewUint(1)
 	}
