@@ -206,7 +206,7 @@ func PickProviders(ctx sdk.Context, scores []*PairingScore, groupIndexes []int, 
 				// remove this provider from the random pool, so the sum is lower now
 
 				returnedProviders = append(returnedProviders, *providerScore.Provider)
-				totalScore, slotIndexScore = AddProviderToSelection(providerScore, groupIndexes, totalScore, slotIndexScore)
+				totalScore, slotIndexScore = RemoveProviderFromSelection(providerScore, groupIndexes, totalScore, slotIndexScore)
 				break
 			}
 		}
