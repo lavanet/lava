@@ -17,6 +17,7 @@ func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsen
 	versions := []string{protocolConsensusVersion.ProviderTarget, protocolConsensusVersion.ProviderMin}
 
 	for _, version := range versions {
+		utils.LavaFormatInfo("Trying to fetch", utils.Attribute{Key: "version", Value: version})
 		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+version)
 		selectedBinaryPath, err = checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion)
 		if err == nil {
@@ -42,7 +43,7 @@ func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolCons
 		}
 	}
 	utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
-	return selectedBinaryPath, nil
+	return binaryPath, nil
 }
 
 func dirExists(versionDir string) bool {
