@@ -1027,6 +1027,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			providerScores := []*pairingscores.PairingScore{}
 
 			_, cluster, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, *devResponse.Project, ts.spec.Index)
+			require.Nil(t, err)
 
 			for i := range stakeEntries {
 				qos := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)

@@ -116,7 +116,11 @@ func (k Keeper) CreateSubscription(
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 		sub.Cluster = types.GetCluster(sub)
-
+		if sub.Cluster == "" {
+			return utils.LavaFormatError("cannot assign cluster for new subscription", fmt.Errorf("CreateSubscription failed"),
+				utils.Attribute{Key: "sub", Value: sub},
+			)
+		}
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
 		if err != nil {
@@ -261,8 +265,15 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
 	}
 
+	// since the total duration increases, the cluster might change
 	sub.DurationTotal += 1
-	sub.Cluster = types.GetCluster(sub)
+	cluster := types.GetCluster(sub)
+	if cluster == "" {
+		utils.LavaFormatError("cannot update cluster for existing subscription", fmt.Errorf("CreateSubscription failed"),
+			utils.Attribute{Key: "sub", Value: sub},
+		)
+	}
+	sub.Cluster = cluster
 }
 
 func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {

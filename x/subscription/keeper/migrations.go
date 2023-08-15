@@ -129,6 +129,9 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 			}
 
 			sub_V5.Cluster = types.GetCluster(sub_V5)
+			if sub_V5.Cluster == "" {
+				sub_V5.Cluster = "free"
+			}
 
 			keeper.subsFS.ModifyEntry(ctx, ind, block, &sub_V5)
 		}

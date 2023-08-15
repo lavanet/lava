@@ -2,7 +2,19 @@ package types
 
 import "strconv"
 
-// To add a new criterion, update the Cluster struct, create an array with
+// QoS clustering divides the QoS monitoring into a discrete set of clusters
+// such that QoS is maintained separately for each Provider x Cluster.
+//
+// The clusters are determined based on certain subscription owner properties,
+// such as past or recent activity (e.g. aggregate subscription periods), the
+// current plan used, etc. Each consumer (subscription owner or project developer)
+// QoS report about some provider will be considered only in the cluster matching
+// that consumer’s properties. During pairing selection for a particular consumer,
+// the QoS data for the pairing calculation will be taken from the cluster matching
+// that consumer’s properties.
+// Cluster assignment is updated when a subscription renews (every month).
+
+// To add a new cluster criterion, update the Cluster struct, create an array with
 // the criterion values (like PLAN_CRITERION) and add it to constructAllClusters()
 
 type Cluster struct {
@@ -13,8 +25,9 @@ type Cluster struct {
 var AllClusters []Cluster
 
 var (
-	PLAN_CRITERION      = []string{"free", "basic", "premium", "enterprise"}
-	SUB_USAGE_CRITERION = []uint64{6, 12}
+	PLAN_CRITERION = []string{"free", "basic", "premium", "enterprise"}
+	// 0 = under a month, 6 = between 1-6 months, 12 = between 6-12 months
+	SUB_USAGE_CRITERION = []uint64{0, 6, 12}
 )
 
 func init() {
@@ -41,7 +54,7 @@ func constructAllClusters() []Cluster {
 // GetCluster returns the subscription's best-fit cluster
 func GetCluster(sub Subscription) string {
 	for _, cluster := range AllClusters {
-		if sub.PlanIndex == cluster.plan && sub.DurationTotal == cluster.subUsage {
+		if sub.PlanIndex == cluster.plan && sub.DurationTotal <= cluster.subUsage {
 			return cluster.String()
 		}
 	}

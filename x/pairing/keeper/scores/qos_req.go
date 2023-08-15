@@ -16,12 +16,16 @@ func (qr *QosReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the the provider's qos score
 func (qr *QosReq) Score(score PairingScore) math.Uint {
-	qosScore, err := score.QosExcellenceReport.ComputeQoS()
-	if err != nil {
-		return math.NewUint(1)
-	}
+	// TODO: update Qos in providerQosFS properly and uncomment this code below
+	// Also, the qos score should range between 0.5-2
 
-	return math.Uint(qosScore)
+	// qosScore, err := score.QosExcellenceReport.ComputeQoS()
+	// if err != nil {
+	// 	return math.NewUint(1)
+	// }
+
+	// return math.Uint(qosScore)
+	return math.NewUint(1)
 }
 
 func (qr *QosReq) GetName() string {
