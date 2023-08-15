@@ -85,6 +85,12 @@ ENV BUILD_COMMIT=${GIT_COMMIT}
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 
+# Download  IP geolocation database
+RUN curl https://iptoasn.com/data/ip2asn-v4.tsv.gz -o /tmp/ip2asn-v4.tsv.gz \
+    && gunzip /tmp/ip2asn-v4.tsv.gz
+
+RUN curl https://storage.googleapis.com/lavanet-public-asssets/countries.csv -o /tmp/countries.csv
+
 # Build lavad binary
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
     --mount=type=cache,sharing=private,target=/go/pkg/mod \
@@ -139,6 +145,9 @@ WORKDIR $HOME
 COPY docker/entrypoint.sh /
 COPY docker/start_node.sh start_node.sh
 COPY docker/start_portal.sh start_portal.sh
+
+COPY --from=builder --chown=0:0 --chmod=755 /tmp/ip2asn-v4.tsv ./config/badge/ip2asn-v4.tsv
+COPY --from=builder --chown=0:0 --chmod=755 /tmp/countries.csv ./config/badge/countries.csv
 
 # common setup
 ENV LAVA_COSMOVISOR_URL=
