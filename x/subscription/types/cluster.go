@@ -25,7 +25,8 @@ type Cluster struct {
 var AllClusters []Cluster
 
 var (
-	PLAN_CRITERION = []string{"free", "basic", "premium", "enterprise"}
+	FREE_PLAN      = "free" // gets its own const because it's treated different
+	PLAN_CRITERION = []string{FREE_PLAN, "basic", "premium", "enterprise"}
 	// 0 = under a month, 6 = between 1-6 months, 12 = between 6-12 months
 	SUB_USAGE_CRITERION = []uint64{0, 6, 12}
 )
@@ -39,7 +40,7 @@ func constructAllClusters() []Cluster {
 	var clusters []Cluster
 	for _, plan := range PLAN_CRITERION {
 		for _, subUsage := range SUB_USAGE_CRITERION {
-			if plan == "free" {
+			if plan == FREE_PLAN {
 				// all free plan users use a single cluster
 				clusters = append(clusters, NewCluster(plan, 0))
 				break
@@ -54,7 +55,7 @@ func constructAllClusters() []Cluster {
 // GetCluster returns the subscription's best-fit cluster
 func GetCluster(sub Subscription) string {
 	for _, cluster := range AllClusters {
-		if sub.PlanIndex == cluster.plan && sub.DurationTotal <= cluster.subUsage {
+		if sub.PlanIndex == cluster.plan && sub.DurationTotal <= cluster.subUsage || sub.PlanIndex == FREE_PLAN {
 			return cluster.String()
 		}
 	}
@@ -67,7 +68,7 @@ func NewCluster(plan string, subUsage uint64) Cluster {
 
 // String returns a unique string that describes the cluster (can be used as a key)
 func (c Cluster) String() string {
-	if c.plan == "free" {
+	if c.plan == FREE_PLAN {
 		// free plan key is "free"
 		return c.plan
 	}

@@ -244,6 +244,19 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		expiry := uint64(NextMonth(date).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+
+		sub.DurationTotal += 1
+
+		// since the total duration increases, the cluster might change
+		cluster := types.GetCluster(sub)
+		if cluster == "" {
+			utils.LavaFormatError("cannot update cluster for existing subscription", fmt.Errorf("CreateSubscription failed"),
+				utils.Attribute{Key: "sub", Value: sub},
+			)
+		} else {
+			sub.Cluster = cluster
+		}
+
 		err := k.subsFS.AppendEntry(ctx, consumer, block, &sub)
 		if err != nil {
 			// normally would panic! but ok to ignore - the subscription remains
@@ -264,16 +277,6 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		details := map[string]string{"consumer": consumer}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
 	}
-
-	// since the total duration increases, the cluster might change
-	sub.DurationTotal += 1
-	cluster := types.GetCluster(sub)
-	if cluster == "" {
-		utils.LavaFormatError("cannot update cluster for existing subscription", fmt.Errorf("CreateSubscription failed"),
-			utils.Attribute{Key: "sub", Value: sub},
-		)
-	}
-	sub.Cluster = cluster
 }
 
 func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
