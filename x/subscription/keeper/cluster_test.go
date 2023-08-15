@@ -21,6 +21,7 @@ func TestGetCluster(t *testing.T) {
 
 	// add valid plans for clusters ("mock" is invalid since it's not part of PLAN_CRITERION)
 	plan := ts.Plan("mock")
+	mockIndex := plan.Index
 	for _, planName := range subscriptiontypes.PLAN_CRITERION {
 		plan.Index = planName
 		ts.AddPlan(planName, plan)
@@ -37,18 +38,13 @@ func TestGetCluster(t *testing.T) {
 		{name: "basic sub", sub: subBasic, plan: "basic", valid: true},
 		{name: "premium sub", sub: subPremium, plan: "premium", valid: true},
 		{name: "enterprise sub", sub: subEnterprise, plan: "enterprise", valid: true},
-		{name: "mock sub", sub: subMock, plan: "mock", valid: false},
+		{name: "mock sub", sub: subMock, plan: mockIndex, valid: false},
 	}
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ts.TxSubscriptionBuy(tt.sub, tt.sub, tt.plan, 12)
-			if !tt.valid {
-				// if got here, the subscription should not have been created
-				require.NotNil(t, err)
-			} else {
-				require.Nil(t, err)
-			}
+			require.Nil(t, err)
 
 			// check that for all sub usage periods, the sub's cluster is correct
 			for _, subUsage := range subscriptiontypes.SUB_USAGE_CRITERION {
@@ -56,18 +52,21 @@ func TestGetCluster(t *testing.T) {
 				subRes, err := ts.QuerySubscriptionCurrent(tt.sub)
 				sub := subRes.Sub
 				require.Nil(t, err)
-				if !tt.valid {
-					// Current returns sub=nil and err=nil for non-existent sub
-					require.Nil(t, sub)
-					return
-				}
 
 				// create a cluster to get the expected cluster key
-				c := subscriptiontypes.NewCluster(tt.plan, subUsage)
-				require.Equal(t, c.String(), sub.Cluster)
+				if tt.valid {
+					c := subscriptiontypes.NewCluster(tt.plan, subUsage)
+					require.Equal(t, c.String(), sub.Cluster)
+				} else {
+					// invalid sub (plan=mock) should be created with default cluster "free"
+					// every time the cluster is supposed to be updated, it fails and keep the
+					// previous cluster (so it'll always be free)
+					require.Equal(t, subscriptiontypes.FREE_PLAN, sub.Cluster)
+				}
 
-				// advance months (effectively 4 months, each iteration should make the sub change clusters)
-				ts.AdvanceMonths(5)
+				// advance months (4 months - 5 sec + epochTime, each iteration should make the sub change clusters)
+				ts.AdvanceMonths(4)
+				ts.AdvanceEpoch()
 			}
 		})
 	}

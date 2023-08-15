@@ -117,9 +117,11 @@ func (k Keeper) CreateSubscription(
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
 		sub.Cluster = types.GetCluster(sub)
 		if sub.Cluster == "" {
-			return utils.LavaFormatError("cannot assign cluster for new subscription", fmt.Errorf("CreateSubscription failed"),
+			// couldn't find cluster - alert and put default cluster: "free"
+			utils.LavaFormatError("cannot assign cluster for new subscription", fmt.Errorf("CreateSubscription failed"),
 				utils.Attribute{Key: "sub", Value: sub},
 			)
+			sub.Cluster = types.FREE_PLAN
 		}
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
