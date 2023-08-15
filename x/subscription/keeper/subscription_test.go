@@ -693,7 +693,7 @@ func TestDurationTotal(t *testing.T) {
 	_, err := ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, months)
 	require.Nil(t, err)
 
-	for i := 0; i < months; i++ {
+	for i := 0; i < months-1; i++ {
 		subRes, err := ts.QuerySubscriptionCurrent(subAddr)
 		sub := subRes.Sub
 		require.Nil(t, err)
@@ -701,4 +701,35 @@ func TestDurationTotal(t *testing.T) {
 		ts.AdvanceMonths(1)
 		ts.AdvanceEpoch()
 	}
+
+	// buy extra 4 months and check duration total continues from last count
+	subRes, err := ts.QuerySubscriptionCurrent(subAddr)
+	require.Nil(t, err)
+	durationSoFar := subRes.Sub.DurationTotal
+
+	extraMonths := 4
+	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths)
+	require.Nil(t, err)
+
+	for i := 0; i < extraMonths; i++ {
+		subRes, err := ts.QuerySubscriptionCurrent(subAddr)
+		sub := subRes.Sub
+		require.Nil(t, err)
+		require.Equal(t, uint64(i)+durationSoFar, sub.DurationTotal)
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+	}
+
+	// expire subscription and buy a new one. verify duration total starts from scratch
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	subRes, err = ts.QuerySubscriptionCurrent(subAddr)
+	require.Nil(t, err)
+	require.Nil(t, subRes.Sub)
+
+	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths)
+	require.Nil(t, err)
+	subRes, err = ts.QuerySubscriptionCurrent(subAddr)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), subRes.Sub.DurationTotal)
 }
