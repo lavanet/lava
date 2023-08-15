@@ -4,12 +4,8 @@ import (
 	"context"
 	"os"
 	"os/signal"
-
-	// "os/exec"
-	// "os/signal"
 	"path/filepath"
 
-	// "strings"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -124,7 +120,7 @@ func LavavisorStart(cmd *cobra.Command) error {
 		return err
 	}
 
-	// Read config.yaml
+	// Read config.yml
 	configPath := filepath.Join(lavavisorPath, "/config.yml")
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
