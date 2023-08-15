@@ -26,7 +26,7 @@ proxy_app = "tcp://127.0.0.1:26658"
   timeout_precommit_delta = "500ms"
   timeout_prevote = "1s"
   timeout_prevote_delta = "500ms"
-  timeout_propose = "30s"
+  timeout_propose = "1s"
   timeout_propose_delta = "500ms"
   wal_file = "data/cs.wal/wal"
 
