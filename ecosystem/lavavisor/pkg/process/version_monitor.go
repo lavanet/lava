@@ -61,7 +61,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				CreateLink(binaryPath)
 
 				for _, process := range vm.processes {
-					utils.LavaFormatInfo("Restarting process: %s\n", utils.Attribute{Key: "Process", Value: process.Name})
+					utils.LavaFormatInfo("Restarting process", utils.Attribute{Key: "Process", Value: process.Name})
 					vm.processes = StartProcess(vm.processes, process.Name)
 				}
 

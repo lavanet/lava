@@ -140,7 +140,7 @@ func LavavisorStart(cmd *cobra.Command) error {
 	// Iterate over the list of services and start them
 	var processes []*processmanager.ServiceProcess
 	for _, process := range config.Services {
-		utils.LavaFormatInfo("Starting process: %s\n", utils.Attribute{Key: "Process", Value: process})
+		utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
 		processes = processmanager.StartProcess(processes, process)
 	}
 
