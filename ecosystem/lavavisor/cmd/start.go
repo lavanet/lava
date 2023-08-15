@@ -2,6 +2,7 @@ package lavavisor
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -37,10 +38,10 @@ type LavaVisor struct {
 }
 
 type Config struct {
-	ProviderServices []string `yaml:"provider-services"`
+	Services []string `yaml:"services"`
 }
 
-func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, providers []*processmanager.ProviderProcess) (err error) {
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, services []*processmanager.ServiceProcess) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -63,7 +64,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 
-	versionMonitor := processmanager.NewVersionMonitor(version.ProviderMin, lavavisorPath, providers, autoDownload)
+	versionMonitor := processmanager.NewVersionMonitor(version.ProviderMin, lavavisorPath, services, autoDownload)
 
 	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
 
@@ -83,9 +84,9 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 var cmdLavavisorStart = &cobra.Command{
 	Use:   "start",
-	Short: "A command that will start provider processes given with config.yml",
-	Long: `A command that will start provider processes given with config.yml and starts 
-    lavavisor listening process. It reads config.yaml, checks the list of provider-services, 
+	Short: "A command that will start service processes given with config.yml",
+	Long: `A command that will start service processes given with config.yml and starts 
+    lavavisor listening process. It reads config.yaml, checks the list of services, 
     and starts them with the linked binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return LavavisorStart(cmd)
@@ -137,15 +138,16 @@ func LavavisorStart(cmd *cobra.Command) error {
 		return utils.LavaFormatError("failed to unmarshal config.yaml: %v", err)
 	}
 
-	// Iterate over the list of provider services and start them
-	var providers []*processmanager.ProviderProcess
-	for _, provider := range config.ProviderServices {
-		utils.LavaFormatInfo("Starting provider: %s\n", utils.Attribute{Key: "Provider", Value: provider})
-		providers = processmanager.StartProvider(providers, provider)
+	// Iterate over the list of services and start them
+	var processes []*processmanager.ServiceProcess
+	fmt.Println("Config Services: ", config.Services)
+	for _, process := range config.Services {
+		utils.LavaFormatInfo("Starting process: %s\n", utils.Attribute{Key: "Process", Value: process})
+		processes = processmanager.StartProcess(processes, process)
 	}
 
 	// Start lavavisor version monitor process
 	lavavisor := LavaVisor{}
-	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, providers)
+	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, processes)
 	return err
 }

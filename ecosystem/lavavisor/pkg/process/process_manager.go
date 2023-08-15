@@ -8,22 +8,21 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-type ProviderProcess struct {
-	Name      string
-	ChainID   string
-	IsRunning bool
+type ServiceProcess struct {
+	Name    string
+	ChainID string
 }
 
-func StartProvider(providers []*ProviderProcess, provider string) []*ProviderProcess {
-	// Extract the chain id from the provider string
-	chainID := strings.Split(provider, "-")[1]
+func StartProcess(processes []*ServiceProcess, process string) []*ServiceProcess {
+	// Extract the chain id from the process string
+	chainID := strings.Split(process, "-")[1]
 
 	// Create command list
 	cmds := []*exec.Cmd{
 		exec.Command("sudo", "systemctl", "daemon-reload"),
-		exec.Command("sudo", "systemctl", "enable", provider+".service"),
-		exec.Command("sudo", "systemctl", "restart", provider+".service"),
-		exec.Command("sudo", "systemctl", "status", provider+".service"),
+		exec.Command("sudo", "systemctl", "enable", process+".service"),
+		exec.Command("sudo", "systemctl", "restart", process+".service"),
+		exec.Command("sudo", "systemctl", "status", process+".service"),
 	}
 
 	// Run the commands and capture their output
@@ -40,13 +39,12 @@ func StartProvider(providers []*ProviderProcess, provider string) []*ProviderPro
 		}
 	}
 
-	// Add to the list of providers
-	providers = append(providers, &ProviderProcess{
-		Name:      provider,
-		ChainID:   chainID,
-		IsRunning: true,
+	// Add to the list of services
+	processes = append(processes, &ServiceProcess{
+		Name:    process,
+		ChainID: chainID,
 	})
-	return providers
+	return processes
 }
 
 func getBinaryVersion(binaryPath string) (string, error) {

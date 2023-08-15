@@ -15,11 +15,11 @@ type VersionMonitor struct {
 	updateTriggered  chan bool
 	mismatchType     lvutil.MismatchType
 	lastknownversion *protocoltypes.Version
-	providers        []*ProviderProcess
+	processes        []*ServiceProcess
 	autoDownload     bool
 }
 
-func NewVersionMonitor(initVersion string, lavavisorPath string, providers []*ProviderProcess, autoDownload bool) *VersionMonitor {
+func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*ServiceProcess, autoDownload bool) *VersionMonitor {
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
 	binaryPath := filepath.Join(versionDir, "lava-protocol")
 
@@ -27,7 +27,7 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, providers []*Pr
 		BinaryPath:      binaryPath,
 		LavavisorPath:   lavavisorPath,
 		updateTriggered: make(chan bool),
-		providers:       providers,
+		processes:       processes,
 		autoDownload:    autoDownload,
 	}
 }
@@ -60,9 +60,9 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				// linker
 				CreateLink(binaryPath)
 
-				for _, provider := range vm.providers {
-					utils.LavaFormatInfo("Restarting provider: %s\n", utils.Attribute{Key: "Provider", Value: provider.Name})
-					vm.providers = StartProvider(vm.providers, provider.Name)
+				for _, process := range vm.processes {
+					utils.LavaFormatInfo("Restarting process: %s\n", utils.Attribute{Key: "Process", Value: process.Name})
+					vm.processes = StartProcess(vm.processes, process.Name)
 				}
 
 				utils.LavaFormatInfo("Lavavisor successfully updated protocol version!", utils.Attribute{Key: "Upgraded version:", Value: versionToUpgrade})
