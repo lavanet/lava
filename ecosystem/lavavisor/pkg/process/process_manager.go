@@ -47,13 +47,10 @@ func StartProcess(processes []*ServiceProcess, process string) []*ServiceProcess
 }
 
 func getBinaryVersion(binaryPath string) (string, error) {
-	cmd := exec.Command(binaryPath, "-v")
+	cmd := exec.Command(binaryPath, "version")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", utils.LavaFormatError("failed to execute command", err)
 	}
-
-	// output format is "lava-protocol version x.x.x"
-	version := strings.Split(string(output), " ")[2]
-	return strings.TrimSpace(version), nil
+	return strings.TrimSpace(string(output)), nil
 }
