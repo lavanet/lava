@@ -1,7 +1,6 @@
 package processmanager
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 
@@ -27,18 +26,14 @@ func StartProcess(processes []*ServiceProcess, process string) []*ServiceProcess
 
 	// Run the commands and capture their output
 	for _, cmd := range cmds {
-		fmt.Printf("Running command: %s\n", strings.Join(cmd.Args, " "))
+		utils.LavaFormatInfo("Running", utils.Attribute{Key: "command", Value: strings.Join(cmd.Args, " ")})
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			fmt.Printf("Failed to run command: %s, Error: %s\n", cmd, err)
-			fmt.Printf("Command Output: \n%s\n", output)
+			utils.LavaFormatError("Failed to run command", err, utils.Attribute{Key: "Output", Value: output})
 			return nil
-		} else {
-			fmt.Printf("Successfully run command: %s\n", cmd)
-			fmt.Printf("Command Output: \n%s\n", output)
 		}
+		utils.LavaFormatInfo("Command runned successfully", utils.Attribute{Key: "Output", Value: output})
 	}
-
 	// Add to the list of services
 	processes = append(processes, &ServiceProcess{
 		Name:    process,

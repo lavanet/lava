@@ -2,7 +2,6 @@ package lavavisor
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 
@@ -140,7 +139,6 @@ func LavavisorStart(cmd *cobra.Command) error {
 
 	// Iterate over the list of services and start them
 	var processes []*processmanager.ServiceProcess
-	fmt.Println("Config Services: ", config.Services)
 	for _, process := range config.Services {
 		utils.LavaFormatInfo("Starting process: %s\n", utils.Attribute{Key: "Process", Value: process})
 		processes = processmanager.StartProcess(processes, process)
