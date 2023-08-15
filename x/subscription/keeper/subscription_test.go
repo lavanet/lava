@@ -681,3 +681,24 @@ func TestDelProjectEndSubscription(t *testing.T) {
 	// should not panic
 	ts.AdvanceBlock(2 * commontypes.STALE_ENTRY_TIME)
 }
+
+// TestDurationTotal tests that the total duration of the subscription is updated correctly
+func TestDurationTotal(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	months := 12
+	plan := ts.Plan("mock")
+
+	_, subAddr := ts.Account("sub1")
+	_, err := ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, months)
+	require.Nil(t, err)
+
+	for i := 0; i < months; i++ {
+		subRes, err := ts.QuerySubscriptionCurrent(subAddr)
+		sub := subRes.Sub
+		require.Nil(t, err)
+		require.Equal(t, uint64(i), sub.DurationTotal)
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+	}
+}
