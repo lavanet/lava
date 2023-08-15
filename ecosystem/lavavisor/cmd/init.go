@@ -22,10 +22,11 @@ var cmdLavavisorInit = &cobra.Command{
 	Long: `Prepares the local environment for the operation of LavaVisor.
 	config.yml should be located in the ./lavavisor/ directory.`,
 	Args: cobra.ExactArgs(0),
-	Example: `optional flags: --directory | --auto-download 
+	Example: `optional flags: --directory | --auto-download | --auto-start 
 		lavavisor init <flags>
 		lavavisor init --directory ./custom/lavavisor/path 
-		lavavisor init --directory ./custom/lavavisor/path --auto-download true`,
+		lavavisor init --directory ./custom/lavavisor/path --auto-download
+		lavavisor init --auto-start --auto-download`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		autoStart, err := cmd.Flags().GetBool("auto-start")
 		if err != nil {
