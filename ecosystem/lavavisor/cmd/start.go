@@ -80,7 +80,7 @@ var cmdLavavisorStart = &cobra.Command{
 	Use:   "start",
 	Short: "A command that will start service processes given with config.yml",
 	Long: `A command that will start service processes given with config.yml and starts 
-    lavavisor listening process. It reads config.yaml, checks the list of services, 
+    lavavisor version monitor process. It reads config.yaml, checks the list of services, 
     and starts them with the linked binary.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return LavavisorStart(cmd)
@@ -98,7 +98,7 @@ func init() {
 func LavavisorStart(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
 	// Build path to ./lavavisor
-	lavavisorPath, err := processmanager.GetLavavisorPath(dir)
+	lavavisorPath, err := processmanager.ValidateLavavisorDir(dir)
 	if err != nil {
 		return err
 	}

@@ -29,14 +29,11 @@ func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsen
 	return "", utils.LavaFormatError("Failed to fetch protocol binary for both target and min versions", nil)
 }
 
-func GetLavavisorPath(dir string) (lavavisorPath string, err error) {
-	dir, err = lvutil.ExpandTilde(dir)
+func SetupLavavisorDir(dir string) (lavavisorPath string, err error) {
+	lavavisorPath, err = buildLavavisorPath(dir)
 	if err != nil {
-		return "", utils.LavaFormatError("unable to expand directory path", err)
+		return "", err
 	}
-	// Build path to ./lavavisor
-	lavavisorPath = filepath.Join(dir, "./.lavavisor")
-
 	// Check if ./lavavisor directory exists
 	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
 		// If not, create the directory
@@ -47,6 +44,27 @@ func GetLavavisorPath(dir string) (lavavisorPath string, err error) {
 		utils.LavaFormatInfo(".lavavisor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
 	}
 	return lavavisorPath, nil
+}
+
+func ValidateLavavisorDir(dir string) (lavavisorPath string, err error) {
+	lavavisorPath, err = buildLavavisorPath(dir)
+	if err != nil {
+		return "", err
+	}
+	// Validate the existence of ./lavavisor directory
+	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
+		return "", utils.LavaFormatError("lavavisor directory is not found", err)
+	}
+	return lavavisorPath, nil
+}
+
+func buildLavavisorPath(dir string) (string, error) {
+	dir, err := lvutil.ExpandTilde(dir)
+	if err != nil {
+		return "", utils.LavaFormatError("unable to expand directory path", err)
+	}
+	// Build path to ./lavavisor
+	return filepath.Join(dir, ".lavavisor"), nil
 }
 
 func setUpLavavisorDirectory(lavavisorPath string) error {

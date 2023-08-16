@@ -53,7 +53,7 @@ func init() {
 func LavavisorInit(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
 	// Build path to ./lavavisor
-	lavavisorPath, err := processmanager.GetLavavisorPath(dir)
+	lavavisorPath, err := processmanager.SetupLavavisorDir(dir)
 	if err != nil {
 		return err
 	}
