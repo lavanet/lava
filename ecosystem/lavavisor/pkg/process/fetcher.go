@@ -50,7 +50,7 @@ func GetLavavisorPath(dir string) (lavavisorPath string, err error) {
 }
 
 func setUpLavavisorDirectory(lavavisorPath string) error {
-	err := os.MkdirAll(lavavisorPath, 0755)
+	err := os.MkdirAll(lavavisorPath, 0o755)
 	if err != nil {
 		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
 	}
@@ -63,7 +63,7 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 			"provider1-LAV1",
 		}
 		placeholderText := "services:\n  - " + strings.Join(sampleServices, "\n  - ")
-		err = os.WriteFile(configPath, []byte(placeholderText), 0644)
+		err = os.WriteFile(configPath, []byte(placeholderText), 0o644)
 		if err != nil {
 			return utils.LavaFormatError("unable to write to config.yml file", err)
 		}
@@ -71,7 +71,7 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 	// Create 'upgrades' directory inside .lavavisor
 	upgradesPath := filepath.Join(lavavisorPath, "upgrades")
 	if _, err := os.Stat(upgradesPath); os.IsNotExist(err) {
-		err = os.MkdirAll(upgradesPath, 0755)
+		err = os.MkdirAll(upgradesPath, 0o755)
 		if err != nil {
 			return utils.LavaFormatError("unable to create 'upgrades' directory", err)
 		}
