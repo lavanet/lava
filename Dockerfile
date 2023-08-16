@@ -6,7 +6,7 @@
 # Dockerfile for reproducible build of lavad binary and docker image
 ########################################################################
 
-ARG GO_VERSION="1.19.12"
+ARG GO_VERSION="1.20.5"
 ARG RUNNER_IMAGE="debian:11-slim"
 
 # --------------------------------------------------------
@@ -94,7 +94,7 @@ RUN curl https://storage.googleapis.com/lavanet-public-asssets/countries.csv -o 
 # Build lavad binary
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
     --mount=type=cache,sharing=private,target=/go/pkg/mod \
-    LAVA_BUILD_OPTIONS="${LAVA_BUILD_OPTIONS},static" make install-all
+    LAVA_BUILD_OPTIONS="${LAVA_BUILD_OPTIONS},static" make build
 
 # --------------------------------------------------------
 # Cosmovisor
