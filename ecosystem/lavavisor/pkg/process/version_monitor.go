@@ -56,7 +56,10 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 				// fetcher
-				FetchProtocolBinary(versionDir, vm.autoDownload, vm.lastknownversion)
+				_, err := FetchProtocolBinary(vm.LavavisorPath, vm.autoDownload, vm.lastknownversion)
+				if err != nil {
+					utils.LavaFormatFatal("Lavavisor was not able to fetch updated version!", nil, utils.Attribute{Key: "Version", Value: versionToUpgrade})
+				}
 				// linker
 				CreateLink(binaryPath)
 
