@@ -120,7 +120,7 @@ func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Con
 	}
 }
 
-func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method string, path string, req string, resp string, msgSeed string, err error) {
+func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, err error) {
 	if hasError && err != nil {
 		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return

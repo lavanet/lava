@@ -2,13 +2,13 @@ import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
 import Relayer from "../relayer/relayer";
-import { RelayReply } from "../grpc_web_services/pairing/relay_pb";
+import { RelayReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import {
   TimoutFailureFetchingBadgeError as TimeoutFailureFetchingBadgeError,
   BadgeOptions,
   BadgeManager,
 } from "../badge/fetchBadge";
-import { Badge } from "../grpc_web_services/pairing/relay_pb";
+import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SessionManager, ConsumerSessionWithProvider } from "../types/types";
 import {
   isValidChainID,
@@ -23,8 +23,8 @@ import {
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
-import { QueryShowAllChainsResponse } from "../codec/spec/query";
-import { GenerateBadgeResponse } from "../grpc_web_services/pairing/badges_pb";
+import { QueryShowAllChainsResponse } from "../codec/lavanet/lava/spec/query";
+import { GenerateBadgeResponse } from "../grpc_web_services/lavanet/lava/pairing/badges_pb";
 /**
  * Options for sending RPC relay.
  */
@@ -117,10 +117,9 @@ export class LavaSDK {
     // Initialize local attributes
     this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
     this.secure = options.secure !== undefined ? options.secure : true;
-    this.allowInsecureTransport =
-      options.allowInsecureTransport !== undefined
-        ? options.allowInsecureTransport
-        : true;
+    this.allowInsecureTransport = options.allowInsecureTransport
+      ? options.allowInsecureTransport
+      : false;
     this.debugPrint(
       "secure",
       this.secure,
@@ -289,9 +288,6 @@ export class LavaSDK {
       // Extract attributes from options
       const { method, params } = options;
 
-      // Get pairing list
-      const pairingList = await this.getConsumerProviderSession();
-
       // Get cuSum for specified method
       const cuSum = this.getCuSumForMethod(method);
 
@@ -309,11 +305,7 @@ export class LavaSDK {
         connectionType: this.rpcInterface === "jsonrpc" ? "POST" : "",
       };
 
-      return await this.sendRelayWithRetries(
-        sendRelayOptions,
-        pairingList,
-        cuSum
-      );
+      return await this.sendRelayWithRetries(sendRelayOptions, cuSum);
     } catch (err) {
       throw err;
     }
@@ -330,9 +322,6 @@ export class LavaSDK {
       // Extract attributes from options
       const { method, url, data } = options;
 
-      // Get pairing list
-      const pairingList = await this.getConsumerProviderSession();
-
       // Get cuSum for specified method
       const cuSum = this.getCuSumForMethod(url);
 
@@ -348,11 +337,7 @@ export class LavaSDK {
         connectionType: method,
       };
 
-      return await this.sendRelayWithRetries(
-        sendRelayOptions,
-        pairingList,
-        cuSum
-      );
+      return await this.sendRelayWithRetries(sendRelayOptions, cuSum);
     } catch (err) {
       throw err;
     }
@@ -360,17 +345,22 @@ export class LavaSDK {
 
   // sendRelayWithRetries iterates over provider list and tries to send relay
   // if no provider return result it will result the error from the last provider
-  private async sendRelayWithRetries(
-    options: any,
-    pairingList: ConsumerSessionWithProvider[],
-    cuSum: number
-  ) {
+  private async sendRelayWithRetries(options: any, cuSum: number) {
     // Check if relay was initialized
     if (this.relayer instanceof Error) {
       throw SDKErrors.errRelayerServiceNotInitialized;
     }
     let lastRelayResponse = null;
-
+    // Fetching both pairing lists, one for our geolocation and the other for the other geo locations
+    const [pairingList, extendedPairingList] =
+      await this.getConsumerProviderSession();
+    // because we iterate over the pairing list, we can merge then having pairingList first and extended 2nd
+    pairingList.push(...extendedPairingList);
+    if (pairingList.length == 0) {
+      throw new Error(
+        "sendRelayWithRetries couldn't find pairing list for this epoch."
+      );
+    }
     for (let i = 0; i < pairingList.length; i++) {
       try {
         // Send relay
@@ -447,8 +437,9 @@ export class LavaSDK {
     return cuSum;
   }
 
+  // Return randomized pairing list, our geolocation index 0 and other geolocation index 1
   private async getConsumerProviderSession(): Promise<
-    ConsumerSessionWithProvider[]
+    [ConsumerSessionWithProvider[], ConsumerSessionWithProvider[]]
   > {
     // Check if lava providers were initialized
     if (this.lavaProviders instanceof Error) {
@@ -485,10 +476,15 @@ export class LavaSDK {
       );
     }
 
-    // Return randomized pairing list
-    return this.lavaProviders.pickRandomProviders(
-      this.activeSessionManager.PairingList
-    );
+    // Return randomized pairing list, our geolocation index 0 and other geolocation index 1
+    return [
+      this.lavaProviders.pickRandomProviders(
+        this.activeSessionManager.PairingList
+      ),
+      this.lavaProviders.pickRandomProviders(
+        this.activeSessionManager.PairingListExtended
+      ),
+    ];
   }
 
   private newEpochStarted(): boolean {

@@ -111,7 +111,7 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 	return url + URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH + ac.AuthQuery
 }
 
-func ValidateEndpoint(endpoint string, apiInterface string) error {
+func ValidateEndpoint(endpoint, apiInterface string) error {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest:
 		parsedUrl, err := url.Parse(endpoint)

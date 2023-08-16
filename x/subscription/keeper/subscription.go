@@ -301,7 +301,7 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, proje
 	return k.projectsKeeper.CreateProject(ctx, consumer, projectData, plan)
 }
 
-func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer string, name string) error {
+func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer, name string) error {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
 		return legacyerrors.ErrKeyNotFound.Wrapf("AddProjectToSubscription_can't_get_subscription_of_%s", consumer)
@@ -327,7 +327,7 @@ func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string)
 	}
 }
 
-func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block uint64, cuAmount uint64) error {
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block, cuAmount uint64) error {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
 		return utils.LavaFormatError("can't charge cu to subscription",

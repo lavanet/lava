@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func formatURL(u string) (scheme string, user string, password string, finalURL string) {
+func formatURL(u string) (scheme, user, password, finalURL string) {
 	scheme = "http"
 	if strings.Contains(u, "http://") {
 		u = strings.Split(u, "//")[1]
@@ -28,7 +28,7 @@ func formatURL(u string) (scheme string, user string, password string, finalURL 
 	return scheme, "", "", u
 }
 
-func createProxyRequest(req *http.Request, hostURL string, body string) (proxyRequest *http.Request, err error) {
+func createProxyRequest(req *http.Request, hostURL, body string) (proxyRequest *http.Request, err error) {
 	reqUrl := req.URL
 	scheme, user, password, hostURL := formatURL(hostURL)
 	println("!!!!!!!", user, password, hostURL)

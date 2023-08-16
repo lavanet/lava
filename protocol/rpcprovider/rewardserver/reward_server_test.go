@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"testing"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
 func stubPaymentEvents(num int) (tos []map[string]string) {
@@ -69,7 +69,7 @@ func TestPayments(t *testing.T) {
 	eventAttrs := []terderminttypes.EventAttribute{}
 	for _, attributes := range attributesList {
 		for key, val := range attributes {
-			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: []byte(key), Value: []byte(val)})
+			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: key, Value: val})
 		}
 	}
 	event := terderminttypes.Event{Type: utils.EventPrefix + pairingtypes.RelayPaymentEventName, Attributes: eventAttrs}

@@ -121,7 +121,7 @@ func (k Keeper) LatestParamChange(ctx sdk.Context) (res uint64) {
 }
 
 // GetEpochStartForBlock gets a session start supports one param change
-func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error) {
+func (k Keeper) GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error) {
 	blockInTargetEpoch, err := k.BlockInEpoch(ctx, block)
 	targetEpochStart := block - blockInTargetEpoch
 	return targetEpochStart, blockInTargetEpoch, err

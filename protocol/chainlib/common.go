@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -34,6 +32,7 @@ type VerificationContainer struct {
 	Name           string
 	ParseDirective spectypes.ParseDirective
 	Value          string
+	LatestDistance uint64
 	VerificationKey
 }
 
@@ -45,19 +44,6 @@ type TaggedContainer struct {
 type ApiContainer struct {
 	api           *spectypes.Api
 	collectionKey CollectionKey
-}
-
-type updatableRPCInput interface {
-	parser.RPCInput
-	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
-	AppendHeader(metadata []pairingtypes.Metadata)
-}
-
-type parsedMessage struct {
-	api            *spectypes.Api
-	requestedBlock int64
-	msg            updatableRPCInput
-	apiCollection  *spectypes.ApiCollection
 }
 
 type ApiKey struct {
@@ -77,63 +63,45 @@ type BaseChainProxy struct {
 	NodeUrl          common.NodeUrl
 }
 
-func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
-	pm.msg.AppendHeader(metadata)
-}
-
-func (pm parsedMessage) GetApi() *spectypes.Api {
-	return pm.api
-}
-
-func (pm parsedMessage) GetApiCollection() *spectypes.ApiCollection {
-	return pm.apiCollection
-}
-
-func (pm parsedMessage) RequestedBlock() int64 {
-	return pm.requestedBlock
-}
-
-func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
-	return pm.msg
-}
-
-func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
-	if latestBlock <= spectypes.NOT_APPLICABLE || pm.RequestedBlock() != spectypes.LATEST_BLOCK {
-		return false
-	}
-	success := pm.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
-	if success {
-		pm.requestedBlock = latestBlock
-		return true
-	}
-	return false
-}
-
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	dappID = c.Params("dappId")
+	// Read the dappID from the headers
+	dappID = c.Get("dappId")
 	if dappID == "" {
-		dappID = "NoDappID"
+		dappID = generateNewDappID()
 	}
 	return dappID
+}
+
+// extractDappIDFromGrpcHeader extracts dappID from GRPC header
+func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
+	dappId := generateNewDappID()
+	if values, ok := metadataValues["dapp-id"]; ok && len(values) > 0 {
+		dappId = values[0]
+	}
+	return dappId
+}
+
+// generateNewDappID generates default dappID
+// In future we can also implement unique dappID generation
+func generateNewDappID() string {
+	return "DefaultDappID"
 }
 
 func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
+		// Extract dappID from headers
+		dappID := extractDappIDFromFiberContext(c)
+
+		// Store dappID in the local context
+		c.Locals("dappId", dappID)
+
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
-}
-
-func extractDappIDFromWebsocketConnection(c *websocket.Conn) string {
-	dappId := c.Params("dappId")
-	if dappId == "" {
-		dappId = "NoDappID"
-	}
-	return dappId
 }
 
 func convertToJsonError(errorMsg string) string {
@@ -147,7 +115,7 @@ func convertToJsonError(errorMsg string) string {
 	return string(jsonResponse)
 }
 
-func addAttributeToError(key string, value string, errorMessage string) string {
+func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
@@ -166,7 +134,7 @@ func verifyRPCEndpoint(endpoint string) {
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint common.NodeUrl, httpEndpoint common.NodeUrl) {
+func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, httpEndpoint common.NodeUrl) {
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(endpoint.Url)
 		if err != nil {
@@ -204,7 +172,7 @@ func ListenWithRetry(app *fiber.App, address string) {
 	}
 }
 
-func GetListenerWithRetryGrpc(protocol string, addr string) net.Listener {
+func GetListenerWithRetryGrpc(protocol, addr string) net.Listener {
 	for {
 		lis, err := net.Listen(protocol, addr)
 		if err == nil {
@@ -214,16 +182,6 @@ func GetListenerWithRetryGrpc(protocol string, addr string) net.Listener {
 		time.Sleep(RetryListeningInterval * time.Second)
 		utils.LavaFormatWarning("Attempting connection retry", nil)
 	}
-}
-
-type CraftData struct {
-	Path           string
-	Data           []byte
-	ConnectionType string
-}
-
-func CraftChainMessage(parsing *spectypes.ParseDirective, connectionType string, chainParser ChainParser, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
-	return chainParser.CraftMessage(parsing, connectionType, craftData, metadata)
 }
 
 // rest request headers are formatted like map[string]string

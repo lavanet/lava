@@ -3,6 +3,8 @@ package keeper
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -12,8 +14,6 @@ import (
 	"github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func ConflictKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {

@@ -18,7 +18,7 @@ const (
 	MaximumConcurrentProvidersFlagName = "concurrent-providers"
 )
 
-func ParseEndpointArgs(endpoint_strings []string, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {
+func ParseEndpointArgs(endpoint_strings, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {
 	numFieldsInConfig := len(yaml_config_properties)
 	viper_endpoints = viper.New()
 	if len(endpoint_strings)%numFieldsInConfig != 0 {

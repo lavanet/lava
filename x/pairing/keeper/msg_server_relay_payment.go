@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 type BadgeData struct {
@@ -292,7 +292,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum uint64, servicersToPair uint64, clientAddr sdk.AccAddress) error {
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, clientAddr sdk.AccAddress) error {
 	var unresponsiveProviders []string
 
 	// check that unresponsiveData exists

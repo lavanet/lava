@@ -11,7 +11,7 @@ type ScoreStore struct {
 	Time  time.Time
 }
 
-func NewScoreStore(num float64, denom float64, inpTime time.Time) ScoreStore {
+func NewScoreStore(num, denom float64, inpTime time.Time) ScoreStore {
 	return ScoreStore{Num: num, Denom: denom, Time: inpTime}
 }
 
@@ -29,7 +29,7 @@ func NewScoreStore(num float64, denom float64, inpTime time.Time) ScoreStore {
 // where now is the current time.
 //
 // Note that the returned ScoreStore has a new Time field set to the current time.
-func CalculateTimeDecayFunctionUpdate(oldScore ScoreStore, newScore ScoreStore, halfLife time.Duration, updateWeight float64, sampleTime time.Time) ScoreStore {
+func CalculateTimeDecayFunctionUpdate(oldScore, newScore ScoreStore, halfLife time.Duration, updateWeight float64, sampleTime time.Time) ScoreStore {
 	oldDecayExponent := math.Ln2 * sampleTime.Sub(oldScore.Time).Seconds() / halfLife.Seconds()
 	oldDecayFactor := math.Exp(-oldDecayExponent)
 	newDecayExponent := math.Ln2 * sampleTime.Sub(newScore.Time).Seconds() / halfLife.Seconds()

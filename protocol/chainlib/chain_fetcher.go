@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -46,11 +47,15 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		if len(verifications) == 0 {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
+		latestBlock, err := cf.FetchLatestBlockNum(ctx)
+		if err != nil {
+			return err
+		}
 		for _, verification := range verifications {
 			// we give several chances for starting up
 			var err error
 			for attempts := 0; attempts < 3; attempts++ {
-				err = cf.Verify(ctx, verification)
+				err = cf.Verify(ctx, verification, uint64(latestBlock))
 				if err == nil {
 					break
 				}
@@ -63,7 +68,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer) error {
+func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
 	parsing := &verification.ParseDirective
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
@@ -90,8 +95,36 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
+	if verification.LatestDistance != 0 && latestBlock != 0 {
+		parsedResultAsNumber, err := strconv.ParseUint(parsedResult, 0, 64)
+		if err != nil {
+			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err, []utils.Attribute{
+				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Response", Value: string(reply.Data)},
+				{Key: "parsedResult", Value: parsedResult},
+			}...)
+		}
+		if parsedResultAsNumber > latestBlock {
+			return utils.LavaFormatWarning("[-] verify failed parsed result is greater than latestBlock", err, []utils.Attribute{
+				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "latestBlock", Value: latestBlock},
+				{Key: "parsedResult", Value: parsedResultAsNumber},
+			}...)
+		}
+		if latestBlock-parsedResultAsNumber < verification.LatestDistance {
+			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", err, []utils.Attribute{
+				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "latestBlock", Value: latestBlock},
+				{Key: "parsedResult", Value: parsedResultAsNumber},
+				{Key: "expected", Value: verification.LatestDistance},
+			}...)
+		}
+	}
 	// some verifications only want the response to be valid, and don't care about the value
-	if verification.Value != "*" {
+	if verification.Value != "*" && verification.Value != "" {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
 				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},

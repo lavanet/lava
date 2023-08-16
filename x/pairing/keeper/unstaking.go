@@ -11,7 +11,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID string, creator string, unstakeDescription string) error {
+func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescription string) error {
 	logger := k.Logger(ctx)
 
 	// TODO: validate chainID basic validation

@@ -10,7 +10,7 @@ const TypeMsgDelProject = "del_project"
 
 var _ sdk.Msg = &MsgDelProject{}
 
-func NewMsgDelProject(creator string, name string) *MsgDelProject {
+func NewMsgDelProject(creator, name string) *MsgDelProject {
 	return &MsgDelProject{
 		Creator: creator,
 		Name:    name,

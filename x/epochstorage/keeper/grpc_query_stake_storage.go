@@ -22,7 +22,7 @@ func (k Keeper) StakeStorageAll(c context.Context, req *types.QueryAllStakeStora
 	store := ctx.KVStore(k.storeKey)
 	stakeStorageStore := prefix.NewStore(store, types.KeyPrefix(types.StakeStorageKeyPrefix))
 
-	pageRes, err := query.Paginate(stakeStorageStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(stakeStorageStore, req.Pagination, func(key, value []byte) error {
 		var stakeStorage types.StakeStorage
 		if err := k.cdc.Unmarshal(value, &stakeStorage); err != nil {
 			return err

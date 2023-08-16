@@ -136,7 +136,7 @@ func originIsAllowed(allowedOrigins mapset.Set, browserOrigin string) bool {
 	return false
 }
 
-func ruleAllowsOrigin(allowedOrigin string, browserOrigin string) bool {
+func ruleAllowsOrigin(allowedOrigin, browserOrigin string) bool {
 	var (
 		allowedScheme, allowedHostname, allowedPort string
 		browserScheme, browserHostname, browserPort string

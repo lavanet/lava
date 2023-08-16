@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	commontypes "github.com/lavanet/lava/common/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of the chains and allow all others
@@ -69,6 +70,32 @@ func (policy *Policy) GetSupportedAddons(specID string) (addons []string, err er
 	return addons, nil
 }
 
+func (policy *Policy) GetSupportedExtensions(specID string) (extensions []epochstoragetypes.EndpointService, err error) {
+	chainPolicy, allowed := policy.ChainPolicy(specID)
+	if !allowed {
+		return nil, fmt.Errorf("specID %s not allowed by current policy", specID)
+	}
+	extensions = []epochstoragetypes.EndpointService{}
+	for _, requirement := range chainPolicy.Requirements {
+		// always allow an empty extension
+		emptyExtension := epochstoragetypes.EndpointService{
+			ApiInterface: requirement.Collection.ApiInterface,
+			Addon:        requirement.Collection.AddOn,
+			Extension:    "",
+		}
+		extensions = append(extensions, emptyExtension)
+		for _, extension := range requirement.Extensions {
+			extensionServiceToAdd := epochstoragetypes.EndpointService{
+				ApiInterface: requirement.Collection.ApiInterface,
+				Addon:        requirement.Collection.AddOn,
+				Extension:    extension,
+			}
+			extensions = append(extensions, extensionServiceToAdd)
+		}
+	}
+	return extensions, nil
+}
+
 func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 	// plan policy checks
 	if isPlanPolicy {
@@ -118,6 +145,13 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		}
 		seen[addr] = true
 	}
+	for _, chainPolicy := range policy.ChainPolicies {
+		for _, requirement := range chainPolicy.GetRequirements() {
+			if requirement.Collection.ApiInterface == "" {
+				return sdkerrors.Wrapf(legacyerrors.ErrInvalidRequest, "invalid requirement definition requirement must define collection with an apiInterface (%+v)", chainPolicy)
+			}
+		}
+	}
 
 	return nil
 }
@@ -147,16 +181,8 @@ func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (chainPo
 	return ChainPolicy{ChainId: chainID, Requirements: requirements}, true
 }
 
-func VerifyTotalCuUsage(policies []*Policy, cuUsage uint64) bool {
-	for _, policy := range policies {
-		if policy != nil {
-			if cuUsage >= policy.GetTotalCuLimit() {
-				return false
-			}
-		}
-	}
-
-	return true
+func VerifyTotalCuUsage(effectiveTotalCu uint64, cuUsage uint64) bool {
+	return cuUsage < effectiveTotalCu
 }
 
 // allows unmarshaling parser func

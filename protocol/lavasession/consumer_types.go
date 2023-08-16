@@ -31,7 +31,7 @@ type ConsumerSessionsMap map[string]*SessionInfo
 type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
-	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64)
+	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
 	GetExcellenceQoSReportForProvider(string) *pairingtypes.QualityOfServiceReport
 }
@@ -78,7 +78,8 @@ type Endpoint struct {
 	Client             *pairingtypes.RelayerClient
 	connection         *grpc.ClientConn
 	ConnectionRefusals uint64
-	Addons             []string
+	Addons             map[string]struct{}
+	Extensions         map[string]struct{}
 }
 
 type SessionWithProvider struct {
@@ -100,7 +101,7 @@ func (endpoint *RPCEndpoint) String() (retStr string) {
 	return
 }
 
-func (rpce *RPCEndpoint) New(address string, chainID string, apiInterface string, geolocation uint64) *RPCEndpoint {
+func (rpce *RPCEndpoint) New(address, chainID, apiInterface string, geolocation uint64) *RPCEndpoint {
 	// TODO: validate correct url address
 	rpce.NetworkAddress = address
 	rpce.ChainID = chainID
@@ -151,11 +152,26 @@ func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
 		return true
 	}
 	for _, endpoint := range cswp.Endpoints {
-		for _, addonSupported := range endpoint.Addons {
-			if addonSupported == addon {
-				return true
+		if _, ok := endpoint.Addons[addon]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (cswp *ConsumerSessionsWithProvider) IsSupportingExtensions(extensions []string) bool {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+endpointLoop:
+	for _, endpoint := range cswp.Endpoints {
+		for _, extension := range extensions {
+			if _, ok := endpoint.Extensions[extension]; !ok {
+				// doesn;t support the extension required, continue to next endpoint
+				continue endpointLoop
 			}
 		}
+		// get here only if all extensions are supported in the endpoint
+		return true
 	}
 	return false
 }
@@ -392,7 +408,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 	return expectedLatency
 }
 
-func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 	// Add current Session QoS
 	cs.QoSInfo.TotalRelays++    // increase total relays
 	cs.QoSInfo.AnsweredRelays++ // increase answered relays
@@ -443,7 +459,7 @@ func (cs *SingleConsumerSession) CalculateQoS(latency time.Duration, expectedLat
 	} // else, we don't increase the score at all so everyone will have the same score
 }
 
-func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet sdk.Dec, scaledAvailabilityScoreRet sdk.Dec) {
+func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {
 	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
 	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	return downtimePercentage, scaledAvailabilityScore
