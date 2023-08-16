@@ -38,6 +38,7 @@ func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server
 		projectsData := make(map[string]map[string]*ProjectConfiguration)
 		err := json.Unmarshal([]byte(userData), &projectsData)
 		if err != nil {
+			utils.LavaFormatWarning("provided information: ", err, utils.Attribute{Key: "userData", Value: userData})
 			return nil, err
 		}
 		server.ProjectsConfiguration = projectsData
