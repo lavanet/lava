@@ -11,5 +11,10 @@ message UnstakeProposal {
 
   string title = 1; 
   string description = 2; 
-  string provider = 3; 
+  repeated ProviderUnstakeInfo providers_info = 3; 
+}
+
+message ProviderUnstakeInfo {
+  string provider = 1;
+  string chain_id = 2;
 }
