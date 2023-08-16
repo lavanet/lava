@@ -16,6 +16,8 @@ import (
 
 const MONTHS_IN_YEAR = 12
 
+var allClusters []types.Cluster
+
 // NextMonth returns the date of the same day next month (assumes UTC),
 // adjusting for end-of-months differences if needed.
 func NextMonth(date time.Time) time.Time {
@@ -84,6 +86,8 @@ func (k Keeper) CreateSubscription(
 		)
 	}
 
+	allClusters = k.ConstructAllClusters(ctx)
+
 	var sub types.Subscription
 	found = k.subsFS.FindEntry(ctx, consumer, block, &sub)
 
@@ -115,7 +119,7 @@ func (k Keeper) CreateSubscription(
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
-		sub.Cluster = k.GetCluster(sub)
+		sub.Cluster = k.GetCluster(sub, allClusters)
 		if sub.Cluster == "" {
 			// couldn't find cluster - alert and put default cluster: "free"
 			utils.LavaFormatError("cannot assign cluster for new subscription", fmt.Errorf("CreateSubscription failed"),
@@ -250,7 +254,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.DurationTotal += 1
 
 		// since the total duration increases, the cluster might change
-		cluster := k.GetCluster(sub)
+		cluster := k.GetCluster(sub, allClusters)
 		if cluster == "" {
 			utils.LavaFormatError("cannot update cluster for existing subscription", fmt.Errorf("CreateSubscription failed"),
 				utils.Attribute{Key: "sub", Value: sub},

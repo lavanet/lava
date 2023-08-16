@@ -86,6 +86,7 @@ func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstorage
 
 		if result {
 			providerScore := pairingscores.NewPairingScore(&providers[j], providerQosMap[providers[j].Address])
+			providerScore.SlotFiltering = slotFiltering
 			providerScores = append(providerScores, providerScore)
 		}
 	}
@@ -111,12 +112,17 @@ func CalculateMixFilterSlots(mixFilters []Filter, slotCount int) (mixFiltersInde
 	}
 
 	getRelevantFilters := func(index int) []Filter {
-		providersInBatch := slotCount/(mixFiltersCount/filtersInBatch) + 1
+		providersInBatch := slotCount / ((mixFiltersCount / filtersInBatch) + 1)
 		if index < providersInBatch {
 			return nil // no filters in first batch
 		}
 		batchNumber := (index / providersInBatch) - 1
-		return mixFilters[batchNumber : batchNumber+filtersInBatch]
+		startIndex := batchNumber * filtersInBatch
+		if startIndex+filtersInBatch > len(mixFilters) {
+			// when the numbers don't evenly divide we just disable mix filter slots of the remainder
+			return nil
+		}
+		return mixFilters[startIndex : startIndex+filtersInBatch]
 	}
 
 	for i := 0; i < slotCount; i++ {

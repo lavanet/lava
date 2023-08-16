@@ -24,8 +24,6 @@ import (
 // 	1. For each plan (except "free") a cluster for each subUsage
 //  2. "free" cluster (without regarding subUsage)
 
-var AllClusters []types.Cluster
-
 // constructs all the possible cluster keys
 func (k Keeper) ConstructAllClusters(ctx sdk.Context) []types.Cluster {
 	var clusters []types.Cluster
@@ -45,9 +43,9 @@ func (k Keeper) ConstructAllClusters(ctx sdk.Context) []types.Cluster {
 }
 
 // GetCluster returns the subscription's best-fit cluster
-func (k Keeper) GetCluster(sub types.Subscription) string {
-	for _, cluster := range AllClusters {
-		if sub.PlanIndex == cluster.Plan && sub.DurationTotal <= cluster.SubUsage || sub.PlanIndex == types.FREE_PLAN {
+func (k Keeper) GetCluster(sub types.Subscription, clusters []types.Cluster) string {
+	for _, cluster := range clusters {
+		if sub.PlanIndex == cluster.Plan && (sub.PlanIndex == types.FREE_PLAN || sub.DurationTotal <= cluster.SubUsage) {
 			return cluster.String()
 		}
 	}

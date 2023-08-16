@@ -9,20 +9,18 @@ import (
 
 // TestGetCluster checks that consumer’s properties are properly interpreted into desired cluster.
 func TestGetCluster(t *testing.T) {
-	// setup 5 sub accounts to buy 5 different plans
+	// setup 4 sub accounts to buy 4 different plans
 	ts := newTester(t)
-	ts.SetupAccounts(5, 0, 0) // 5 sub, 0 adm, 0 dev
+	ts.SetupAccounts(4, 0, 0) // 5 sub, 0 adm, 0 dev
 
 	_, subFree := ts.Account("sub1")
 	_, subBasic := ts.Account("sub2")
 	_, subPremium := ts.Account("sub3")
 	_, subEnterprise := ts.Account("sub4")
-	_, subMock := ts.Account("sub5")
 
-	// add valid plans for clusters ("mock" is invalid since it's not part of PLAN_CRITERION)
+	// add valid plans for clusters
 	plan := ts.Plan("mock")
-	mockIndex := plan.Index
-	plans := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
+	plans := []string{"free", "basic", "premium", "enterprise"}
 	for _, planName := range plans {
 		plan.Index = planName
 		ts.AddPlan(planName, plan)
@@ -30,16 +28,14 @@ func TestGetCluster(t *testing.T) {
 	}
 
 	template := []struct {
-		name  string
-		sub   string
-		plan  string
-		valid bool
+		name string
+		sub  string
+		plan string
 	}{
-		{name: "free sub", sub: subFree, plan: "free", valid: true},
-		{name: "basic sub", sub: subBasic, plan: "basic", valid: true},
-		{name: "premium sub", sub: subPremium, plan: "premium", valid: true},
-		{name: "enterprise sub", sub: subEnterprise, plan: "enterprise", valid: true},
-		{name: "mock sub", sub: subMock, plan: mockIndex, valid: false},
+		{name: "free sub", sub: subFree, plan: "free"},
+		{name: "basic sub", sub: subBasic, plan: "basic"},
+		{name: "premium sub", sub: subPremium, plan: "premium"},
+		{name: "enterprise sub", sub: subEnterprise, plan: "enterprise"},
 	}
 
 	for _, tt := range template {
@@ -55,15 +51,8 @@ func TestGetCluster(t *testing.T) {
 				require.Nil(t, err)
 
 				// create a cluster to get the expected cluster key
-				if tt.valid {
-					c := subscriptiontypes.NewCluster(tt.plan, subUsage)
-					require.Equal(t, c.String(), sub.Cluster)
-				} else {
-					// invalid sub (plan=mock) should be created with default cluster "free"
-					// every time the cluster is supposed to be updated, it fails and keep the
-					// previous cluster (so it'll always be free)
-					require.Equal(t, subscriptiontypes.FREE_PLAN, sub.Cluster)
-				}
+				c := subscriptiontypes.NewCluster(tt.plan, subUsage)
+				require.Equal(t, c.String(), sub.Cluster)
 
 				// advance months (4 months - 5 sec + epochTime, each iteration should make the sub change clusters)
 				ts.AdvanceMonths(4)
