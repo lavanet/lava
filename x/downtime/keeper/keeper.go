@@ -16,7 +16,7 @@ import (
 
 type EpochStorageKeeper interface {
 	IsEpochStart(ctx sdk.Context) bool
-	GetEpochStartForBlock(ctx sdk.Context, blockHeight uint64) (epochStartBlock uint64, blocksInEpoch uint64, err error)
+	GetEpochStart(ctx sdk.Context) (epochStartBlock uint64)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 }
 
@@ -174,11 +174,7 @@ func (k Keeper) IterateDowntimes(ctx sdk.Context, startHeight, endHeight uint64,
 
 // RecordDowntime will record a downtime for the current block
 func (k Keeper) RecordDowntime(ctx sdk.Context, duration time.Duration) {
-	epochStartBlock, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
-	if err != nil {
-		// this MUST never fail
-		panic(err)
-	}
+	epochStartBlock := k.epochStorageKeeper.GetEpochStart(ctx)
 	// get epoch identifier
 	cumulativeEpochDowntime, _ := k.GetDowntime(ctx, epochStartBlock)
 	k.SetDowntime(ctx, epochStartBlock, duration+cumulativeEpochDowntime)
