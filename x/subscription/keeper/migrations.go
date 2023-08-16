@@ -128,7 +128,7 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				DurationBought:  sub_V4.DurationTotal,
 			}
 
-			sub_V5.Cluster = types.GetCluster(sub_V5)
+			sub_V5.Cluster = keeper.GetCluster(sub_V5)
 			if sub_V5.Cluster == "" {
 				sub_V5.Cluster = "free"
 			}

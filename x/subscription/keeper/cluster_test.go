@@ -22,7 +22,8 @@ func TestGetCluster(t *testing.T) {
 	// add valid plans for clusters ("mock" is invalid since it's not part of PLAN_CRITERION)
 	plan := ts.Plan("mock")
 	mockIndex := plan.Index
-	for _, planName := range subscriptiontypes.PLAN_CRITERION {
+	plans := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
+	for _, planName := range plans {
 		plan.Index = planName
 		ts.AddPlan(planName, plan)
 		ts.AdvanceEpoch()
@@ -47,7 +48,7 @@ func TestGetCluster(t *testing.T) {
 			require.Nil(t, err)
 
 			// check that for all sub usage periods, the sub's cluster is correct
-			for _, subUsage := range subscriptiontypes.SUB_USAGE_CRITERION {
+			for _, subUsage := range subscriptiontypes.GetSubUsageCriterion() {
 				// get current subscription
 				subRes, err := ts.QuerySubscriptionCurrent(tt.sub)
 				sub := subRes.Sub

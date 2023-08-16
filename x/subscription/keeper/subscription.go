@@ -115,7 +115,7 @@ func (k Keeper) CreateSubscription(
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
-		sub.Cluster = types.GetCluster(sub)
+		sub.Cluster = k.GetCluster(sub)
 		if sub.Cluster == "" {
 			// couldn't find cluster - alert and put default cluster: "free"
 			utils.LavaFormatError("cannot assign cluster for new subscription", fmt.Errorf("CreateSubscription failed"),
@@ -250,7 +250,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.DurationTotal += 1
 
 		// since the total duration increases, the cluster might change
-		cluster := types.GetCluster(sub)
+		cluster := k.GetCluster(sub)
 		if cluster == "" {
 			utils.LavaFormatError("cannot update cluster for existing subscription", fmt.Errorf("CreateSubscription failed"),
 				utils.Attribute{Key: "sub", Value: sub},
