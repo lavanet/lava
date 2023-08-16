@@ -65,7 +65,7 @@ type BaseChainProxy struct {
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	// Read the dappID from the headers
-	dappID = c.Get("dappId")
+	dappID = c.Get("dapp-id")
 	if dappID == "" {
 		dappID = generateNewDappID()
 	}

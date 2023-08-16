@@ -192,7 +192,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 
 	webSocketCallback := websocket.New(func(websockConn *websocket.Conn) {
 		mt, _, _ := websockConn.ReadMessage()
-		dappID, ok := websockConn.Locals("dappId").(string)
+		dappID, ok := websockConn.Locals("dapp-id").(string)
 		if !ok {
 			t.Fatalf("Unable to extract dappID")
 		}
