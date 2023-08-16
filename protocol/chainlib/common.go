@@ -94,7 +94,7 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 		dappID := extractDappIDFromFiberContext(c)
 
 		// Store dappID in the local context
-		c.Locals("dappId", dappID)
+		c.Locals("dapp-id", dappID)
 
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
