@@ -32,7 +32,7 @@ func CmdSetSubscriptionPolicy() *cobra.Command {
 
 			subscriptionPolicyFilePath := args[1]
 
-			policy, err := planstypes.ParsePolicyFromYaml(subscriptionPolicyFilePath)
+			policy, err := planstypes.ParsePolicyFromYamlPath(subscriptionPolicyFilePath)
 			if err != nil {
 				return err
 			}
