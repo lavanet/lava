@@ -94,7 +94,7 @@ RUN curl https://storage.googleapis.com/lavanet-public-asssets/countries.csv -o 
 # Build lavad binary
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
     --mount=type=cache,sharing=private,target=/go/pkg/mod \
-    LAVA_BUILD_OPTIONS="${LAVA_BUILD_OPTIONS},static" make build
+    LAVA_BUILD_OPTIONS="${LAVA_BUILD_OPTIONS},static" make install-all
 
 # --------------------------------------------------------
 # Cosmovisor
