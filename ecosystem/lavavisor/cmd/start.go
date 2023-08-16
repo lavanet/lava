@@ -12,7 +12,6 @@ import (
 	"github.com/lavanet/lava/app"
 	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 
 	"github.com/lavanet/lava/protocol/statetracker"
 
@@ -99,7 +98,7 @@ func init() {
 func LavavisorStart(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
 	// Build path to ./lavavisor
-	lavavisorPath, err := lvutil.GetLavavisorPath(dir)
+	lavavisorPath, err := processmanager.GetLavavisorPath(dir)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
@@ -26,6 +27,56 @@ func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsen
 	}
 
 	return "", utils.LavaFormatError("Failed to fetch protocol binary for both target and min versions", nil)
+}
+
+func GetLavavisorPath(dir string) (lavavisorPath string, err error) {
+	dir, err = lvutil.ExpandTilde(dir)
+	if err != nil {
+		return "", utils.LavaFormatError("unable to expand directory path", err)
+	}
+	// Build path to ./lavavisor
+	lavavisorPath = filepath.Join(dir, "./.lavavisor")
+
+	// Check if ./lavavisor directory exists
+	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
+		// If not, create the directory
+		err = setUpLavavisorDirectory(lavavisorPath)
+		if err != nil {
+			return "", utils.LavaFormatError("unable to create .lavavisor/ directory", err)
+		}
+		utils.LavaFormatInfo(".lavavisor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
+	}
+	return lavavisorPath, nil
+}
+
+func setUpLavavisorDirectory(lavavisorPath string) error {
+	err := os.MkdirAll(lavavisorPath, 0755)
+	if err != nil {
+		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
+	}
+	// Create config.yml file inside .lavavisor and write placeholder text
+	configPath := filepath.Join(lavavisorPath, "config.yml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		sampleServices := []string{
+			"consumer-ETH1",
+			"provider1-ETH1",
+			"provider1-LAV1",
+		}
+		placeholderText := "services:\n  - " + strings.Join(sampleServices, "\n  - ")
+		err = os.WriteFile(configPath, []byte(placeholderText), 0644)
+		if err != nil {
+			return utils.LavaFormatError("unable to write to config.yml file", err)
+		}
+	}
+	// Create 'upgrades' directory inside .lavavisor
+	upgradesPath := filepath.Join(lavavisorPath, "upgrades")
+	if _, err := os.Stat(upgradesPath); os.IsNotExist(err) {
+		err = os.MkdirAll(upgradesPath, 0755)
+		if err != nil {
+			return utils.LavaFormatError("unable to create 'upgrades' directory", err)
+		}
+	}
+	return nil
 }
 
 func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
@@ -53,13 +104,14 @@ func dirExists(versionDir string) bool {
 
 func handleMissingDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) error {
 	if !autoDownload {
-		return utils.LavaFormatError("Sub-directory for version not found in lavavisor", nil, utils.Attribute{Key: "version", Value: protocolConsensusVersion.ProviderMin})
+		return utils.LavaFormatError("Sub-directory for version not found and auto-download is disabled.", nil, utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
 	}
 	utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
 	os.MkdirAll(versionDir, os.ModePerm)
 	if err := downloadAndBuildFromGithub(protocolConsensusVersion.ProviderMin, versionDir); err != nil {
 		return utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", err)
 	}
+	// ToDo: add ValidateProtocolVersion check here after 'version' command available in protocol binary release in github
 	return nil
 }
 
