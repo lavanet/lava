@@ -129,8 +129,14 @@ func GetStrategy() ScoreStrategy {
 // and the previous slot
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot) error {
 	// calculate the score for each req for each provider
+	keys := []string{}
+	for key, _ := range diffSlot.Reqs {
+		keys = append(keys, key)
+	}
+
 	for _, score := range scores {
-		for _, req := range diffSlot.Reqs {
+		for _, key := range keys {
+			req := diffSlot.Reqs[key]
 			reqName := req.GetName()
 			weight, ok := strategy[reqName]
 			if !ok {

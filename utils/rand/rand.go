@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"math/rand"
-
-	"github.com/vpxyz/xorshift/xoroshiro128starstar"
 )
 
 func generateSeed(data []byte) int64 {
@@ -17,7 +15,7 @@ func generateSeed(data []byte) int64 {
 // New returns a new RPNG instance properly seeded
 func New(data []byte) *rand.Rand {
 	seed := generateSeed(data)
-	source := xoroshiro128starstar.NewSource(seed)
+	source := rand.NewSource(seed)
 	return rand.New(source)
 }
 
