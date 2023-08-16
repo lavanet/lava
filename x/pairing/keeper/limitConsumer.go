@@ -37,8 +37,11 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU, totalCU
 	}
 
 	if totalCUInEpochForUserProvider > allowedCU {
-		// if cu limit reached we return an error.
-		return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), []utils.Attribute{{Key: "totalCUInEpochForUserProvider", Value: totalCUInEpochForUserProvider}, {Key: "allowedCUProvider", Value: allowedCU}}...)
+		// last chance to get paid: maybe there was a downtime
+		if totalCUInEpochForUserProvider > allowedCU*k.downtimeKeeper.GetDowntimeFactor(ctx, epoch) {
+			// if cu limit reached we return an error.
+			return utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount", fmt.Errorf("consumer CU limit exceeded"), []utils.Attribute{{Key: "totalCUInEpochForUserProvider", Value: totalCUInEpochForUserProvider}, {Key: "allowedCUProvider", Value: allowedCU}}...)
+		}
 	}
 	return nil
 }

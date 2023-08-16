@@ -13,6 +13,8 @@ message Params {
   // downtime_duration defines the minimum time elapsed between blocks
   // that we consider the chain to be down.
   google.protobuf.Duration downtime_duration = 1 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  // epoch_duration defines an estimation of the time elapsed between epochs
+  google.protobuf.Duration epoch_duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 // Downtime defines a single downtime record.
@@ -22,13 +24,4 @@ message Downtime {
   // duration defines the time elapsed between the previous block and this one.
   // this defines the effective downtime duration.
   google.protobuf.Duration duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-}
-
-// DowntimeGarbageCollection defines when garbage collection will be performed, for a specific downtime.
-// used only in genesis.
-message DowntimeGarbageCollection {
-  // block defines the block that references a Downtime.
-  uint64 block = 1;
-  // gc_time defines the block when garbage collection will be performed.
-  uint64 gc_block = 2;
 }
