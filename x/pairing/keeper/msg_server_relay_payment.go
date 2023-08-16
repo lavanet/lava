@@ -170,7 +170,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 		if !isValidPairing {
-			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
+			// return nil, //TODO: fix here
+			utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
 				utils.Attribute{Key: "client", Value: clientAddr.String()},
 				utils.Attribute{Key: "provider", Value: providerAddr.String()},
 			)
