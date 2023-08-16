@@ -40,7 +40,7 @@ func initFilters(filters []Filter, strictestPolicy planstypes.Policy) []Filter {
 	return activeFilters
 }
 
-func FilterProviders(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, providerQosMap map[string]pairingtypes.QualityOfServiceReport) ([]*pairingscores.PairingScore, error) {
+func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, providerQosMap map[string]pairingtypes.QualityOfServiceReport) ([]*pairingscores.PairingScore, error) {
 	filters = initFilters(filters, *strictestPolicy)
 
 	var filtersResult [][]bool

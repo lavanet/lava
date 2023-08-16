@@ -146,7 +146,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
 	// filter relevant providers and add slotFiltering for mix filters
-	providerScores, err := pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), providerQosMap)
+	providerScores, err := pairingfilters.SetupScores(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), providerQosMap)
 	if err != nil {
 		return nil, 0, "", err
 	}
