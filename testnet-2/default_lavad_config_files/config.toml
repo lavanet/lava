@@ -16,7 +16,7 @@ proxy_app = "tcp://127.0.0.1:26658"
 
 [consensus]
   create_empty_blocks = true
-  create_empty_blocks_interval = "60s"
+  create_empty_blocks_interval = "30s"
   double_sign_check_height = 0
   peer_gossip_sleep_duration = "100ms"
   peer_query_maj23_sleep_duration = "2s"
@@ -89,7 +89,7 @@ proxy_app = "tcp://127.0.0.1:26658"
   max_subscription_clients = 100
   max_subscriptions_per_client = 5
   pprof_laddr = "0.0.0.0:6060"
-  timeout_broadcast_tx_commit = "601s"
+  timeout_broadcast_tx_commit = "301s"
   tls_cert_file = ""
   tls_key_file = ""
   unsafe = false
