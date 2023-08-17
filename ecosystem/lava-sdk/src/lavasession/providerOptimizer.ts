@@ -4,7 +4,7 @@ import { ProviderOptimizer } from "./consumerTypes";
 export class RandomProviderOptimizer implements ProviderOptimizer {
   public chooseProvider(
     allAddresses: string[],
-    ignoredProviders: Map<string, any>,
+    ignoredProviders: string[],
     cu: number,
     requestedBlock: number,
     perturbationPercentage: number

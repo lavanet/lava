@@ -23,7 +23,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        {},
+        [],
         SERVICED_BLOCK_NUMBER,
         "",
         []

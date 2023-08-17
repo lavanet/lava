@@ -5,6 +5,8 @@ import {
   MAX_SESSIONS_ALLOWED_PER_PROVIDER,
 } from "./common";
 import {
+  AllProviderEndpointsDisabledError,
+  MaxComputeUnitsExceededError,
   MaximumNumberOfBlockListedSessionsError,
   MaximumNumberOfSessionsExceededError,
 } from "./errors";
@@ -12,7 +14,7 @@ import {
 export interface SessionInfo {
   session: SingleConsumerSession;
   epoch: number;
-  reportedProviders: string[];
+  reportedProviders: string;
 }
 
 export type ConsumerSessionsMap = Record<string, SessionInfo>;
@@ -30,7 +32,7 @@ export interface ProviderOptimizer {
 
   chooseProvider(
     allAddresses: string[],
-    ignoredProviders: Record<string, any>,
+    ignoredProviders: string[],
     cu: number,
     requestedBlock: number,
     perturbationPercentage: number
@@ -80,7 +82,7 @@ export function calculateAvailabilityScore(qosReport: QoSReport): {
 }
 
 export interface IgnoredProviders {
-  providers: Record<string, any>;
+  providers: Set<string>;
   currentEpoch: number;
 }
 
@@ -95,7 +97,7 @@ export class SingleConsumerSession {
     totalSyncScore: 0,
   };
   public sessionId = 0;
-  public client: any;
+  public client: ConsumerSessionsWithProvider;
   public relayNum = 0;
   public latestBlock = 0;
   public endpoint: Endpoint = {
@@ -178,7 +180,7 @@ export class SingleConsumerSession {
 export interface Endpoint {
   networkAddress: string;
   enabled: boolean;
-  // TODO: add proper type here (RelayerClient)
+  // TODO: add proper type here (Relayer)
   client?: any;
   connectionRefusals: number;
   addons: Set<string>;
@@ -212,6 +214,7 @@ export class RPCEndpoint {
   }
 }
 
+// TODO: ConsumerSessionsWithProvider in relayer
 export class ConsumerSessionsWithProvider {
   public publicLavaAddress: string;
   public endpoints: Endpoint[];
@@ -321,6 +324,32 @@ export class ConsumerSessionsWithProvider {
     };
   }
 
+  public fetchEndpointConnectionFromConsumerSessionWithProvider(): {
+    connected: boolean;
+    endpoint: Endpoint | null;
+    providerAddress: string;
+    error?: Error;
+  } {
+    for (const endpoint of this.endpoints) {
+      if (endpoint.enabled) {
+        this.endpoints.push(endpoint);
+
+        return {
+          connected: true,
+          endpoint: endpoint,
+          providerAddress: this.publicLavaAddress,
+        };
+      }
+    }
+
+    return {
+      connected: false,
+      endpoint: null,
+      providerAddress: this.publicLavaAddress,
+      error: new AllProviderEndpointsDisabledError(),
+    };
+  }
+
   public calculatedExpectedLatency(timeoutGivenToRelay: number): number {
     return timeoutGivenToRelay / 2;
   }
@@ -334,6 +363,24 @@ export class ConsumerSessionsWithProvider {
   ): void {
     return;
   }
+
+  public validateComputeUnits(
+    cuNeededForSession: number
+  ): MaxComputeUnitsExceededError | undefined {
+    if (this.usedComputeUnits + cuNeededForSession > this.maxComputeUnits) {
+      return new MaxComputeUnitsExceededError();
+    }
+  }
+
+  public addUsedComputeUnits(
+    cu: number
+  ): MaxComputeUnitsExceededError | undefined {
+    if (this.usedComputeUnits + cu > this.maxComputeUnits) {
+      return new MaxComputeUnitsExceededError();
+    }
+
+    this.usedComputeUnits += cu;
+  }
 }
 
 export interface SessionsWithProvider {
@@ -341,4 +388,4 @@ export interface SessionsWithProvider {
   currentEpoch: number;
 }
 
-export type SessionsWithProviderMap = Record<string, SessionsWithProvider>;
+export type SessionsWithProviderMap = Map<string, SessionsWithProvider>;
