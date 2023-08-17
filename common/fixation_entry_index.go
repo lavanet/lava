@@ -1,8 +1,6 @@
 package common
 
 import (
-	"bytes"
-
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
@@ -54,7 +52,7 @@ func (fs FixationStore) isEntryIndexLive(ctx sdk.Context, safeIndex types.SafeIn
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
 	store := fs.getEntryIndexStore(ctx)
 	status := store.Get(types.KeyPrefix(string(safeIndex)))
-	return bytes.Equal(status, types.EntryIndexLive)
+	return types.IsEntryIndexLive(status)
 }
 
 // AllEntryIndicesFilter returns all Entry indices with a given prefix and filtered
