@@ -85,6 +85,9 @@ ecosystem/lavajs/.npmrc
 ecosystem/lavajs/proto/lavanet
 ecosystem/lavajs/src
 ecosystem/lavajs/types
+ecosystem/lavajs/dist
+ecosystem/lavajs/mjs
+
 
 
 
