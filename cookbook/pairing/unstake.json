@@ -1,0 +1,17 @@
+{
+    "proposal": {
+        "title": "Unstake proposal",
+        "description": "A proposal for unstaking providers",
+        "providers_info": [
+            {
+                "provider": "lava@1y8pguvsdtz05ykn7hrf4wn8gffzpckfshmppu6",
+                "chain_id": "ETH1"
+            },
+            {
+                "provider": "lava@1vtmyr4kvs6dxs2f9l64amrax6fpd23l3axal0k",
+                "chain_id": "LAV1"
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}
