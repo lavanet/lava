@@ -245,3 +245,7 @@ func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) 
 
 	return stakeEntry, nil
 }
+
+func (k Keeper) GetAllChainIDs(ctx sdk.Context) []string {
+	return k.specKeeper.GetAllChainIDs(ctx)
+}
