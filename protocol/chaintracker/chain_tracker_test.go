@@ -101,7 +101,7 @@ func (mcf *MockChainFetcher) Shrink(newSize int) {
 	copy(newHashes, mcf.blockHashes[currentSize-newSize:])
 }
 
-func NewMockChainFetcher(startBlock int64, blocksToSave int64) *MockChainFetcher {
+func NewMockChainFetcher(startBlock, blocksToSave int64) *MockChainFetcher {
 	mockCHainFetcher := MockChainFetcher{}
 	for i := int64(0); i < blocksToSave; i++ {
 		mockCHainFetcher.SetBlock(startBlock + i)

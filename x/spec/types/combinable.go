@@ -116,7 +116,7 @@ func GetCurrentFromCombinable[T Combinable](current []T) (currentMap map[string]
 	return currentMap
 }
 
-func CombineUnique[T Combinable](appendFrom []T, appendTo []T, currentMap map[string]CurrentContainer, allowOverwrite bool) ([]T, error) {
+func CombineUnique[T Combinable](appendFrom, appendTo []T, currentMap map[string]CurrentContainer, allowOverwrite bool) ([]T, error) {
 	for _, combinable := range appendFrom {
 		if current, found := currentMap[combinable.Differeniator()]; !found {
 			appendTo = append(appendTo, combinable)

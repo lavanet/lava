@@ -175,14 +175,14 @@ func atomicReadBadgeUsedComputeUnits(badgeUserEpochData *ProviderSessionsEpochDa
 	return atomic.LoadUint64(&badgeUserEpochData.UsedComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
+func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed, knownUsed uint64) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
-func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed uint64, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
+func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
@@ -193,7 +193,7 @@ func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missi
 	return atomic.LoadUint64(&pswc.epochData.MissingComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteMissingComputeUnits(newUsed uint64, knownUsed uint64) bool {
+func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteMissingComputeUnits(newUsed, knownUsed uint64) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
@@ -225,7 +225,7 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
-func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new sessionID", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
@@ -255,7 +255,7 @@ func (pswc *ProviderSessionsWithConsumer) getExistingSession(ctx context.Context
 }
 
 // this function verifies the provider can create a data reliability session and returns one if valid
-func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessionId, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session, foundDataReliabilitySession := pswc.Sessions[sessionId]
 	if foundDataReliabilitySession {

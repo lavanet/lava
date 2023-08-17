@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -20,7 +21,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/abci/types"
 )
 
 const (
@@ -29,7 +29,7 @@ const (
 	FlagEventName = "event"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, fromBlock int64, eventName string, value string) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -49,13 +49,17 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, f
 	printEvent := func(event types.Event) string {
 		st := event.Type + ": "
 		for _, attr := range event.Attributes {
-			st += fmt.Sprintf("- %s = %s; ", string(attr.Key), string(attr.Value))
+			st += fmt.Sprintf("- %s = %s; ", attr.Key, attr.Value)
 		}
 		return st
 	}
 
 	readEventsFromBlock := func(block int64, hash string) {
-		blockResults, err := clientCtx.Client.BlockResults(ctx, &block)
+		brp, err := tryIntoTendermintRPC(clientCtx.Client)
+		if err != nil {
+			utils.LavaFormatFatal("invalid blockResults provider", err)
+		}
+		blockResults, err := brp.BlockResults(ctx, &block)
 		if err != nil {
 			utils.LavaFormatError("invalid blockResults status", err)
 			return
@@ -66,7 +70,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks int64, f
 			for _, event := range events {
 				if eventName == "" || event.Type == eventName {
 					for _, attribute := range event.Attributes {
-						if value == "" || string(attribute.Value) == value {
+						if value == "" || attribute.Value == value {
 							utils.LavaFormatInfo("Found a matching event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
 						}
 					}
@@ -194,7 +198,10 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blocks})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			_ = tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			_, err = tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.Seed(time.Now().UnixNano())
 			ctx, cancel := context.WithTimeout(ctx, timeout)

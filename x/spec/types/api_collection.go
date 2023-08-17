@@ -64,7 +64,7 @@ func (apic *ApiCollection) InheritAllFields(myCollections map[CollectionData]*Ap
 // this function combines apis, headers and parsers into the api collection from others. it does not check type compatibility
 // changes in place inside the apic
 // nil merge maps means not to combine that field
-func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled bool, allowOverwrite bool) (err error) {
+func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWithDisabled, allowOverwrite bool) (err error) {
 	mergedApis := map[string]interface{}{}
 	mergedHeaders := map[string]interface{}{}
 	mergedParsers := map[string]interface{}{}

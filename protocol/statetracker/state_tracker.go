@@ -45,15 +45,18 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	if err != nil {
 		return nil, err
 	}
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
-	resultConsensusParams, err := clientCtx.Client.ConsensusParams(ctx, nil) // nil returns latest
-	if err != nil {
-		return nil, err
+
+	// TODO: fix average block time.
+	averageBlockTime := 1
+	if utils.ExtendedLogLevel == "production" {
+		averageBlockTime = 30
 	}
+
+	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(resultConsensusParams.ConsensusParams.Block.TimeIotaMs) * time.Millisecond,
+		AverageBlockTime:  time.Duration(averageBlockTime) * time.Second,
 		ServerBlockMemory: BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

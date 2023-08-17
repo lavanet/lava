@@ -20,7 +20,7 @@ func CmdSetPolicy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-policy [project-index] [policy-file-path]",
 		Short: "set policy to a project",
-		Long:  `The set-policy command allows a project admin to set a new policy to its project. The policy file is a YAML file (see cookbook/projects/example_policy.yml for reference). The new policy will be applied from the next epoch.`,
+		Long:  `The set-policy command allows a project admin to set a new policy to its project. The policy file is a YAML file (see cookbook/projects/example_policy.yml for reference). The new policy will be applied from the next epoch. To define a geolocation in the policy file, use the available geolocations: ` + planstypes.PrintGeolocations(),
 		Example: `required flags: --from <creator-address>
 		lavad tx project set-policy [project-index] [policy-file-path] --from <creator_address>`,
 		Args: cobra.ExactArgs(2),
@@ -32,7 +32,7 @@ func CmdSetPolicy() *cobra.Command {
 
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
-			policy, err := planstypes.ParsePolicyFromYaml(adminPolicyFilePath)
+			policy, err := planstypes.ParsePolicyFromYamlPath(adminPolicyFilePath)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,9 @@ func verifyChainPoliciesAreCorrectlySet(clientCtx client.Context, policy *planst
 						continue
 					}
 				}
-				return fmt.Errorf("can't set an empty addon in a collection, empty addons are ignored %#v", chainPolicy)
+				if len(requirement.Extensions) == 0 {
+					return fmt.Errorf("can't set an empty addon in a collection without extensions it means requirement is empty, empty requirements are ignored %#v", chainPolicy)
+				}
 			}
 		}
 	}

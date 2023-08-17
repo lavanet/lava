@@ -69,11 +69,11 @@ func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
 	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
 }
 
-func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu uint64, syncBlock uint64) {
+func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64) {
 	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now())
 }
 
-func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, success bool, cu uint64, syncBlock uint64, sampleTime time.Time) {
+func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time) {
 	latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
 	providerData, _ := po.getProviderData(providerAddress)
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
@@ -194,7 +194,7 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sa
 	return po.latestSyncData.Block, po.latestSyncData.Time
 }
 
-func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders int) bool {
+func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int) bool {
 	if uint(currentNumProvders) >= po.wantedNumProvidersInConcurrency {
 		return false
 	}
@@ -213,7 +213,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders int, numProviders 
 	return rand.Float64() < explorationChance/float64(numProviders)
 }
 
-func (po *ProviderOptimizer) isBetterProviderScore(latencyScore float64, latencyScoreCurrent float64, syncScore float64, syncScoreCurrent float64) bool {
+func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
 	var latencyWeight float64
 	switch po.strategy {
 	case STRATEGY_LATENCY:
@@ -335,7 +335,7 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	return providerData, found
 }
 
-func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync time.Duration, baseSync time.Duration, halfTime time.Duration, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync, baseSync, halfTime time.Duration, sampleTime time.Time) ProviderData {
 	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), sampleTime)
 	oldScore := providerData.Sync
 	providerData.Sync = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
@@ -355,7 +355,7 @@ func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderD
 }
 
 // update latency data, base latency is the latency for the api defined in the spec
-func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency time.Duration, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time) ProviderData {
 	newScore := score.NewScoreStore(latency.Seconds(), baseLatency.Seconds(), sampleTime)
 	oldScore := providerData.Latency
 	providerData.Latency = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
@@ -404,7 +404,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -432,7 +432,7 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 	return 1 - prob
 }
 
-func pertrubWithNormalGaussian(orig float64, percentage float64) float64 {
+func pertrubWithNormalGaussian(orig, percentage float64) float64 {
 	perturb := rand.NormFloat64() * percentage * orig
 	return orig + perturb
 }

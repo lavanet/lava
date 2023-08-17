@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"testing"
 
+	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tenderminttypes "github.com/tendermint/tendermint/rpc/jsonrpc/types"
 )
 
 func TestTendermintrpcMessage(t *testing.T) {

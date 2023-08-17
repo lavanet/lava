@@ -66,7 +66,7 @@ func TestRestChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
-	apip.ParseMsg("", []byte{}, "", nil)
+	apip.ParseMsg("", []byte{}, "", nil, 0)
 }
 
 func TestRestGetSupportedApi(t *testing.T) {
@@ -111,7 +111,7 @@ func TestRestParseMessage(t *testing.T) {
 		},
 	}
 
-	msg, err := apip.ParseMsg("API1", []byte("test message"), connectionType_test, nil)
+	msg, err := apip.ParseMsg("API1", []byte("test message"), connectionType_test, nil, 0)
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
@@ -197,7 +197,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata)
+			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
 			require.NoError(t, err)
 
@@ -267,7 +267,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata)
+			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
 			require.NoError(t, err)
 			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())

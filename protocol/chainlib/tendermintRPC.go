@@ -33,14 +33,14 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 	return &TendermintChainParser{}, nil
 }
 
-func (apip *TendermintChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *TendermintChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
 	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
-func (apip *TendermintChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *TendermintChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -50,7 +50,7 @@ func (apip *TendermintChainParser) getSupportedApi(name string, connectionType s
 
 func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata)
+		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, 0)
 		chainMessage.AppendHeader(metadata)
 		return chainMessage, err
 	}
@@ -76,7 +76,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
+func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")
@@ -158,10 +158,11 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		tenderMsg.Path = url // add path
 	}
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &tenderMsg, apiCollection)
+	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) ChainMessage {
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
 		api:            serviceApi,
 		apiCollection:  apiCollection,
@@ -204,7 +205,7 @@ func (apip *TendermintChainParser) DataReliabilityParams() (enabled bool, dataRe
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData, spec.BlocksInFinalizationProof)
-func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
+func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0
@@ -253,7 +254,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 
 	app.Use(favicon.New())
 
-	app.Use("/ws/:dappId", func(c *fiber.Ctx) error {
+	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
 		// requested upgrade to the WebSocket protocol.
 		if websocket.IsWebSocketUpgrade(c) {
@@ -274,7 +275,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
 				break
 			}
-			dappID := extractDappIDFromWebsocketConnection(c)
+			dappID, ok := c.Locals("dappId").(string)
+			if !ok {
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC)
+			}
 
 			ctx, cancel := context.WithCancel(context.Background())
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -327,10 +331,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		}
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
-	app.Get("/ws/:dappId", websocketCallbackWithDappID)
-	app.Get("/:dappId/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
+	app.Get("/ws", websocketCallbackWithDappID)
+	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
-	app.Post("/:dappId/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(c *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -367,7 +371,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		return c.SendString(string(reply.Data))
 	})
 
-	app.Get("/:dappId/*", func(c *fiber.Ctx) error {
+	app.Get("/*", func(c *fiber.Ctx) error {
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 

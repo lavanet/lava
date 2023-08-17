@@ -12,8 +12,9 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -32,7 +33,7 @@ type ConsumerSessionManager struct {
 	pairingAddressesLength uint64
 
 	validAddresses        []string // contains all addresses that are currently valid
-	addonAddresses        map[string][]string
+	addonAddresses        map[RouterKey][]string
 	addedToPurgeAndReport map[string]struct{} // list of purged providers to report for QoS unavailability. (easier to search maps.)
 
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
@@ -70,7 +71,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
 	csm.pairingAddressesLength = uint64(pairingListLength)
 	csm.numberOfResets = 0
-	csm.RemoveAddonAddresses("")
+	csm.RemoveAddonAddresses("", nil)
 	// Reset the pairingPurge.
 	// This happens only after an entire epoch. so its impossible to have session connected to the old purged list
 	csm.closePurgedUnusedPairingsConnections() // this must be before updating csm.pairingPurge as we want to close the connections of older sessions (prev 2 epochs)
@@ -80,28 +81,29 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairingAddresses[idx] = provider.PublicLavaAddress
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
-	csm.setValidAddressesToDefaultValue("") // the starting point is that valid addresses are equal to pairing addresses.
+	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
 
-func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string) {
-	if addon == "" {
+func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions []string) {
+	if addon == "" && len(extensions) == 0 {
 		// purge all
-		csm.addonAddresses = make(map[string][]string)
+		csm.addonAddresses = make(map[RouterKey][]string)
 	} else {
+		routerKey := NewRouterKey(append(extensions, addon))
 		if csm.addonAddresses == nil {
-			csm.addonAddresses = make(map[string][]string)
+			csm.addonAddresses = make(map[RouterKey][]string)
 		}
-		csm.addonAddresses[addon] = []string{}
+		csm.addonAddresses[routerKey] = []string{}
 	}
 }
 
 // csm is Rlocked
-func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string) (supportingProviderAddresses []string) {
+func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, extensions []string) (supportingProviderAddresses []string) {
 	for _, providerAdress := range csm.validAddresses {
 		providerEntry := csm.pairing[providerAdress]
-		if providerEntry.IsSupportingAddon(addon) {
+		if providerEntry.IsSupportingAddon(addon) && providerEntry.IsSupportingExtensions(extensions) {
 			supportingProviderAddresses = append(supportingProviderAddresses, providerAdress)
 		}
 	}
@@ -109,11 +111,12 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string) (s
 }
 
 // assuming csm is Rlocked
-func (csm *ConsumerSessionManager) getValidAddresses(addon string) (addresses []string) {
-	if csm.addonAddresses == nil || csm.addonAddresses[addon] == nil {
-		return csm.CalculateAddonValidAddresses(addon)
+func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string) (addresses []string) {
+	routerKey := NewRouterKey(append(extensions, addon))
+	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
+		return csm.CalculateAddonValidAddresses(addon, extensions)
 	}
-	return csm.addonAddresses[addon]
+	return csm.addonAddresses[routerKey]
 }
 
 // After 2 epochs we need to close all open connections.
@@ -185,13 +188,22 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 	}
 	client := *endpoint.Client
-	probeResp, err := client.Probe(connectCtx, &wrapperspb.UInt64Value{Value: guid})
+	probeReq := &pairingtypes.ProbeRequest{
+		Guid:         guid,
+		SpecId:       csm.rpcEndpoint.ChainID,
+		ApiInterface: csm.rpcEndpoint.ApiInterface,
+	}
+	probeResp, err := client.Probe(connectCtx, probeReq)
 	relayLatency := time.Since(relaySentTime)
 	if err != nil {
 		return 0, providerAddress, utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})
 	}
-	if probeResp.Value != guid {
-		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil)
+	providerGuid := probeResp.GetGuid()
+	if providerGuid != guid {
+		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "provider Guid", Value: providerGuid}, utils.Attribute{Key: "sent guid", Value: guid})
+	}
+	if probeResp.LatestBlock == 0 {
+		return 0, providerAddress, utils.LavaFormatWarning("provider returned 0 latest block", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "sent guid", Value: guid})
 	}
 	// public lava address is a value that is not changing, so it's thread safe
 	utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress})
@@ -199,8 +211,8 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 }
 
 // csm needs to be locked here
-func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string) {
-	if addon == "" {
+func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string, extensions []string) {
+	if addon == "" && len(extensions) == 0 {
 		csm.validAddresses = make([]string, len(csm.pairingAddresses))
 		index := 0
 		for _, provider := range csm.pairingAddresses {
@@ -211,7 +223,7 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string)
 		// check if one of the pairing addresses supports the addon
 	addingToValidAddresses:
 		for _, provider := range csm.pairingAddresses {
-			if csm.pairing[provider].IsSupportingAddon(addon) {
+			if csm.pairing[provider].IsSupportingAddon(addon) && csm.pairing[provider].IsSupportingExtensions(extensions) {
 				for _, validAddress := range csm.validAddresses {
 					if validAddress == provider {
 						// it exists, no need to add it again
@@ -222,8 +234,8 @@ func (csm *ConsumerSessionManager) setValidAddressesToDefaultValue(addon string)
 				csm.validAddresses = append(csm.validAddresses, provider)
 			}
 		}
-		csm.RemoveAddonAddresses(addon) // refresh the list
-		csm.addonAddresses[addon] = csm.CalculateAddonValidAddresses(addon)
+		csm.RemoveAddonAddresses(addon, extensions) // refresh the list
+		csm.addonAddresses[NewRouterKey(append(extensions, addon))] = csm.CalculateAddonValidAddresses(addon, extensions)
 	}
 }
 
@@ -242,46 +254,48 @@ func (csm *ConsumerSessionManager) atomicReadNumberOfResets() (resets uint64) {
 }
 
 // reset the valid addresses list and increase numberOfResets
-func (csm *ConsumerSessionManager) resetValidAddresses(addon string) uint64 {
+func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions []string) uint64 {
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
-	if len(csm.getValidAddresses(addon)) == 0 { // re verify it didn't change while waiting for lock.
+	if len(csm.getValidAddresses(addon, extensions)) == 0 { // re verify it didn't change while waiting for lock.
 		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil)
-		csm.setValidAddressesToDefaultValue(addon)
+		csm.setValidAddressesToDefaultValue(addon, extensions)
 		csm.numberOfResets += 1
 	}
 	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
 	return csm.numberOfResets
 }
 
-func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string) []string {
+func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions []string) []string {
 	csm.lock.Lock() // lock to set validAddresses[addon] if it's not cached
 	defer csm.lock.Unlock()
-	if csm.addonAddresses == nil || csm.addonAddresses[addon] == nil {
-		csm.RemoveAddonAddresses(addon)
-		csm.addonAddresses[addon] = csm.CalculateAddonValidAddresses(addon)
+	routerKey := NewRouterKey(append(extensions, addon))
+	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
+		csm.RemoveAddonAddresses(addon, extensions)
+		csm.addonAddresses[routerKey] = csm.CalculateAddonValidAddresses(addon, extensions)
 	}
-	return csm.addonAddresses[addon]
+	return csm.addonAddresses[routerKey]
 }
 
 // validating we still have providers, otherwise reset valid addresses list
 // also caches validAddresses for an addon to save on compute
-func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string) uint64 {
+func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, extensions []string) uint64 {
 	numberOfResets := csm.atomicReadNumberOfResets()
-	validAddresses := csm.cacheAddonAddresses(addon)
+	validAddresses := csm.cacheAddonAddresses(addon, extensions)
 	if len(validAddresses) == 0 {
-		numberOfResets = csm.resetValidAddresses(addon)
+		numberOfResets = csm.resetValidAddresses(addon, extensions)
 	}
 	return numberOfResets
 }
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string) (
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string, extensions []*spectypes.Extension) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
+	extensionNames := common.GetExtensionNames(extensions)
 	// if pairing list is empty we reset the state.
-	numberOfResets := csm.validatePairingListNotEmpty(addon)
+	numberOfResets := csm.validatePairingListNotEmpty(addon, extensionNames)
 
 	// verify initUnwantedProviders is not nil
 	if initUnwantedProviders == nil {
@@ -295,7 +309,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	}
 
 	// Get a valid consumerSessionsWithProvider
-	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon)
+	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames)
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +428,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		}
 
 		// If we do not have enough fetch more
-		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon)
+		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames)
 
 		// If error exists but we have sessions, return them
 		if err != nil && len(sessions) != 0 {
@@ -429,20 +443,21 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 }
 
 // Get a valid provider address.
-func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string) (addresses []string, err error) {
+func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
 	ignoredProvidersListLength := len(ignoredProvidersList)
-	validAddressesLength := len(csm.getValidAddresses(addon))
+	validAddresses := csm.getValidAddresses(addon, extensions)
+	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: csm.getValidAddresses(addon)}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
+		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
 		return
 	}
-	providers := csm.providerOptimizer.ChooseProvider(csm.getValidAddresses(addon), ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+	providers := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
 	if debug {
 		utils.LavaFormatDebug("choosing provider",
-			utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon)},
+			utils.Attribute{Key: "validAddresses", Value: validAddresses},
 			utils.Attribute{Key: "ignoredProvidersList", Value: ignoredProvidersList},
 			utils.Attribute{Key: "chosenProviders", Value: providers},
 		)
@@ -450,7 +465,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 
 	// make sure we have at least 1 valid provider
 	if len(providers) == 0 || providers[0] == "" {
-		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: csm.getValidAddresses(addon)}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
+		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
 		return
 	}
@@ -458,7 +473,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	return providers, nil
 }
 
-func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string) (sessionWithProviderMap SessionWithProviderMap, err error) {
+func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 	if debug {
@@ -472,7 +487,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	}
 
 	// Fetch provider addresses
-	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon)
+	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions)
 	if err != nil {
 		utils.LavaFormatError("could not get a provider addresses", err)
 		return nil, err
@@ -496,7 +511,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 					utils.Attribute{Key: "pairing", Value: csm.pairing},
 					utils.Attribute{Key: "epochAtStart", Value: currentEpoch},
 					utils.Attribute{Key: "currentEpoch", Value: csm.atomicReadCurrentEpoch()},
-					utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon)},
+					utils.Attribute{Key: "validAddresses", Value: csm.getValidAddresses(addon, extensions)},
 					utils.Attribute{Key: "wantedProviderNumber", Value: wantedProviderNumber},
 				)
 			}
@@ -521,7 +536,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 		}
 
 		// If we do not have enough fetch more
-		providerAddresses, err = csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon)
+		providerAddresses, err = csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions)
 
 		// If error exists but we have providers, return them
 		if err != nil && len(sessionWithProviderMap) != 0 {
@@ -543,7 +558,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 		if addr == address {
 			// remove the index from the valid list.
 			csm.validAddresses = append(csm.validAddresses[:idx], csm.validAddresses[idx+1:]...)
-			csm.RemoveAddonAddresses("")
+			csm.RemoveAddonAddresses("", nil)
 			return nil
 		}
 	}

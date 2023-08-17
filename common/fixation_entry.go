@@ -400,7 +400,7 @@ func (fs *FixationStore) AppendEntry(
 	return nil
 }
 
-func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key []byte, data []byte) {
+func (fs *FixationStore) entryCallbackBeginBlock(ctx sdk.Context, key, data []byte) {
 	safeIndex, block, kind := decodeFromTimer(key)
 
 	types.AssertSanitizedIndex(safeIndex, fs.prefix)
@@ -981,6 +981,10 @@ func (fs *FixationStore) createEntryStoreKey(index string) string {
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
+	err := fs.MigrateVersion(ctx)
+	if err != nil {
+		utils.LavaFormatPanic("fixation migration failed", err, utils.Attribute{Key: "fixation"})
+	}
 	fs.tstore.Tick(ctx)
 }
 
@@ -1002,7 +1006,7 @@ func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
 	gs.Version = fs.getVersion(ctx)
 
 	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
-		var entries types.Entries
+		var entries types.GenesisEntries
 		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
 			utils.LavaFormatPanic("fixation export: unsanitized index", err)
@@ -1060,7 +1064,7 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
-	callback := func(ctx sdk.Context, key []byte, data []byte) {
+	callback := func(ctx sdk.Context, key, data []byte) {
 		fs.entryCallbackBeginBlock(ctx, key, data)
 	}
 

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/slices"
@@ -779,7 +778,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	}
 }
 
-func (ts *tester) verifyPairingDistribution(desc string, client string, providersToPair int, weight func(epochstoragetypes.StakeEntry) int64) {
+func (ts *tester) verifyPairingDistribution(desc, client string, providersToPair int, weight func(epochstoragetypes.StakeEntry) int64) {
 	const iterations = 10000
 	const epsilon = 0.15
 
@@ -1206,7 +1205,7 @@ func TestGeoSlotCalc(t *testing.T) {
 	geoReqName := pairingscores.GeoReq{}.GetName()
 
 	allGeos := planstypes.GetAllGeolocations()
-	maxGeo := commontypes.FindMax(allGeos)
+	maxGeo := slices.Max(allGeos)
 
 	// iterate over all possible geolocations, create a policy and calc slots
 	// not checking 0 because there can never be a policy with geo=0

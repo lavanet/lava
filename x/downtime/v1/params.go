@@ -9,12 +9,15 @@ import (
 
 var (
 	ParamKeyDowntimeDuration        = []byte("DowntimeDuration")
-	DefaultParamKeyDowntimeDuration = 30 * time.Minute
+	DefaultParamKeyDowntimeDuration = 5 * time.Minute
+	ParamKeyEpochDuration           = []byte("EpochDuration")
+	DefaultParamKeyEpochDuration    = 30 * time.Minute
 )
 
 func DefaultParams() Params {
 	return Params{
 		DowntimeDuration: DefaultParamKeyDowntimeDuration,
+		EpochDuration:    DefaultParamKeyEpochDuration,
 	}
 }
 
@@ -23,11 +26,15 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 func (m *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamKeyDowntimeDuration, &m.DowntimeDuration, validateDowntimeDuration),
+		paramtypes.NewParamSetPair(ParamKeyEpochDuration, &m.EpochDuration, validateDowntimeDuration),
 	}
 }
 
 func (m *Params) Validate() error {
 	if err := validateDowntimeDuration(m.DowntimeDuration); err != nil {
+		return err
+	}
+	if err := validateDowntimeDuration(m.EpochDuration); err != nil {
 		return err
 	}
 	return nil

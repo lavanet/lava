@@ -6,21 +6,22 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type BaseChainParser struct {
-	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
-	spec              spectypes.Spec
-	rwLock            sync.RWMutex
-	serverApis        map[ApiKey]ApiContainer
-	apiCollections    map[CollectionKey]*spectypes.ApiCollection
-	headers           map[ApiKey]*spectypes.Header
-	verifications     map[VerificationKey][]VerificationContainer
-	allowedAddons     map[string]struct{}
-	allowedExtensions map[string]struct{}
+	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec            spectypes.Spec
+	rwLock          sync.RWMutex
+	serverApis      map[ApiKey]ApiContainer
+	apiCollections  map[CollectionKey]*spectypes.ApiCollection
+	headers         map[ApiKey]*spectypes.Header
+	verifications   map[VerificationKey][]VerificationContainer
+	allowedAddons   map[string]struct{}
+	extensionParser extensionslib.ExtensionParser
 }
 
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
@@ -57,12 +58,42 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	_, ok := bcp.allowedExtensions[extension]
-	return ok
+	return bcp.extensionParser.AllowedExtension(extension)
+}
+
+func (bcp *BaseChainParser) SetConfiguredExtensions(extensions map[string]struct{}) error {
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
+	for extension := range extensions {
+		if !bcp.isExtension(extension) {
+			return utils.LavaFormatError("configured extensions contain an extension that is not allowed in the spec", nil, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "configured extensions", Value: extensions}, utils.Attribute{Key: "allowed extensions", Value: bcp.extensionParser.AllowedExtensions})
+		}
+	}
+	// reset the current one in case we configured it previously
+	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
+	for collectionKey, apiCollection := range bcp.apiCollections {
+		for _, extension := range apiCollection.Extensions {
+			if extension.Name == "" {
+				// skip empty extensions
+				continue
+			}
+			if _, ok := extensions[extension.Name]; ok {
+				extensionKey := extensionslib.ExtensionKey{
+					Extension:      extension.Name,
+					ConnectionType: collectionKey.ConnectionType,
+					InternalPath:   collectionKey.InternalPath,
+					Addon:          collectionKey.Addon,
+				}
+				configuredExtensions[extensionKey] = extension
+			}
+		}
+	}
+	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
+	return nil
 }
 
 // this function errors if it meets a value that is neither a n addon or an extension
-func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons []string, extensions []string, err error) {
+func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error) {
 	checked := map[string]struct{}{}
 	for _, supportedToCheck := range supported {
 		// ignore repeated occurrences
@@ -130,7 +161,7 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[specty
 		allowedAddons[apoCollection.CollectionData.AddOn] = struct{}{}
 	}
 	bcp.allowedAddons = allowedAddons
-	bcp.allowedExtensions = allowedExtensions
+	bcp.extensionParser = extensionslib.ExtensionParser{AllowedExtensions: allowedExtensions}
 }
 
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
@@ -144,8 +175,14 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	return val.Parsing, &val.ApiCollection.CollectionData, ok
 }
 
+func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *parsedMessage, latestBlock uint64) {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	bcp.extensionParser.ExtensionParsing(addon, parsedMessageArg, latestBlock)
+}
+
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -175,7 +212,7 @@ func (apip *BaseChainParser) getSupportedApi(name string, connectionType string)
 }
 
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -277,6 +314,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						Name:            verification.Name,
 						ParseDirective:  *verification.ParseDirective,
 						Value:           parseValue.ExpectedValue,
+						LatestDistance:  parseValue.LatestDistance,
 						VerificationKey: verificationKey,
 					}
 
@@ -294,7 +332,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 }
 
 // matchSpecApiByName returns service api which match given name
-func matchSpecApiByName(name string, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
+func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
 	for apiName, api := range serverApis {
 		re, err := regexp.Compile("^" + apiName.Name + "$")

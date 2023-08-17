@@ -5,7 +5,7 @@ import (
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -67,7 +67,7 @@ func NewKeeper(
 		subsFS: fs,
 	}
 
-	subsTimerCallback := func(ctx sdk.Context, subkey []byte, _ []byte) {
+	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
 		keeper.advanceMonth(ctx, subkey)
 	}
 

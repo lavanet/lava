@@ -12,7 +12,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
 	logger := k.Logger(ctx)
 
 	// TODO: basic validation for chain ID
@@ -59,8 +59,10 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator string, chainID string, a
 	}
 
 	if !planstypes.IsValidGeoEnum(int32(geolocation)) {
-		return utils.LavaFormatWarning("can't register for no geolocation or geolocation outside zones", fmt.Errorf("invalid geolocation"),
+		return utils.LavaFormatWarning(`geolocations are treated as a bitmap. To configure multiple geolocations, 
+		use the uint representation of the valid geolocations`, fmt.Errorf("missing or invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
+			utils.Attribute{Key: "valid_geolocations", Value: planstypes.PrintGeolocations()},
 		)
 	}
 
@@ -170,7 +172,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocations := k.specKeeper.GeolocationCount(ctx)
 
-	geolocKey := func(intefaceName string, geolocation uint64, addon string, extension string) epochstoragetypes.EndpointService {
+	geolocKey := func(intefaceName string, geolocation uint64, addon, extension string) epochstoragetypes.EndpointService {
 		return epochstoragetypes.EndpointService{
 			ApiInterface: intefaceName + "_" + strconv.FormatUint(geolocation, 10),
 			Addon:        addon,
@@ -223,4 +225,27 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 
 	// all interfaces and geolocations were implemented
 	return endpoints, nil
+}
+
+func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) (epochstoragetypes.StakeEntry, error) {
+	providerAcc, err := sdk.AccAddressFromBech32(provider)
+	if err != nil {
+		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("invalid provider address", fmt.Errorf("cannot get stake entry"),
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
+	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAcc)
+	if !found {
+		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("provider not staked on chain", fmt.Errorf("cannot get stake entry"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
+	return stakeEntry, nil
+}
+
+func (k Keeper) GetAllChainIDs(ctx sdk.Context) []string {
+	return k.specKeeper.GetAllChainIDs(ctx)
 }

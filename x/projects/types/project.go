@@ -10,11 +10,11 @@ const (
 	ADMIN_PROJECT_NAME = "admin"
 )
 
-func ProjectIndex(subscriptionAddress string, projectName string) string {
+func ProjectIndex(subscriptionAddress, projectName string) string {
 	return subscriptionAddress + "-" + projectName
 }
 
-func NewProject(subscriptionAddress string, projectName string, enable bool) (Project, error) {
+func NewProject(subscriptionAddress, projectName string, enable bool) (Project, error) {
 	if !ValidateProjectName(projectName) {
 		return Project{}, fmt.Errorf("invalid project name: %s", projectName)
 	}

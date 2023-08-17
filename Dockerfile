@@ -6,7 +6,7 @@
 # Dockerfile for reproducible build of lavad binary and docker image
 ########################################################################
 
-ARG GO_VERSION="1.18.2"
+ARG GO_VERSION="1.20.5"
 ARG RUNNER_IMAGE="debian:11-slim"
 
 # --------------------------------------------------------
@@ -41,9 +41,15 @@ ARG TARGETARCH
 # (useful to compile a specific version, combined with GIT_VERSION).
 ARG GIT_CLONE=false
 
-# set LAVA_BUILD_OPTIONS to control the Makefile behavior (see there).
+# set LAVA_BUILD_OPTIONS to control the Makefile behavior.
+# (this controls the build options - see there)
 ARG BUILD_OPTIONS
 ENV LAVA_BUILD_OPTIONS=${BUILD_OPTIONS}
+
+# set LAVA_BINARY to control Makefile behavior.
+# (this controls which binaries will be generated - see there)
+ARG LAVA_BINARY
+ENV LAVA_BINARY=${LAVA_BINARY}
 
 # Download go dependencies
 WORKDIR /lava
@@ -78,6 +84,12 @@ ENV BUILD_COMMIT=${GIT_COMMIT}
 
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
+
+# Download  IP geolocation database
+RUN curl https://iptoasn.com/data/ip2asn-v4.tsv.gz -o /tmp/ip2asn-v4.tsv.gz \
+    && gunzip /tmp/ip2asn-v4.tsv.gz
+
+RUN curl https://storage.googleapis.com/lavanet-public-asssets/countries.csv -o /tmp/countries.csv
 
 # Build lavad binary
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
@@ -123,8 +135,9 @@ RUN apt-get update \
 
 FROM runner-base
 
-COPY --from=cosmovisor /go/bin/cosmovisor /bin/cosmovisor
-COPY --from=builder /lava/build/lavad /bin/lavad
+ARG LAVA_BINARY
+COPY --from=cosmovisor --chown=0:0 --chmod=755 /go/bin/cosmovisor /bin/
+COPY --from=builder --chown=0:0 --chmod=755 /lava/build/* /bin/
 
 ENV HOME /lava
 WORKDIR $HOME
@@ -132,6 +145,9 @@ WORKDIR $HOME
 COPY docker/entrypoint.sh /
 COPY docker/start_node.sh start_node.sh
 COPY docker/start_portal.sh start_portal.sh
+
+COPY --from=builder --chown=0:0 --chmod=755 /tmp/ip2asn-v4.tsv ./config/badge/ip2asn-v4.tsv
+COPY --from=builder --chown=0:0 --chmod=755 /tmp/countries.csv ./config/badge/countries.csv
 
 # common setup
 ENV LAVA_COSMOVISOR_URL=

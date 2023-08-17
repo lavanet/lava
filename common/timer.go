@@ -105,7 +105,7 @@ import (
 // the user may call Tick() at other deterministic intervals and reduce the workload.
 
 // TimerCallback defined the callback handler function
-type TimerCallback func(ctx sdk.Context, key []byte, data []byte)
+type TimerCallback func(ctx sdk.Context, key, data []byte)
 
 // TimerStore represents a timer store to manager timers and timeouts
 type TimerStore struct {
@@ -225,7 +225,7 @@ func (tstore *TimerStore) setNextTimeout(ctx sdk.Context, which types.TimerType,
 	store.Set([]byte(types.NextTimerKey[which]), b)
 }
 
-func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value uint64, key []byte, data []byte) {
+func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value uint64, key, data []byte) {
 	store := tstore.getStoreTimer(ctx, which)
 	timerKey := types.EncodeBlockAndKey(value, key)
 	store.Set(timerKey, data)
@@ -255,7 +255,7 @@ func (tstore *TimerStore) delTimer(ctx sdk.Context, which types.TimerType, value
 
 // AddTimerByBlockHeight adds a new timer to expire on a given block height.
 // If a timer for that <block, key> tuple exists, it will be overridden.
-func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte, data []byte) {
+func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, key, data []byte) {
 	if block <= uint64(ctx.BlockHeight()) {
 		// panic:ok: caller should never add a timer with past expiry
 		panic(fmt.Sprintf("timer expiry block %d smaller than ctx block %d",
@@ -266,7 +266,7 @@ func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, k
 
 // AddTimerByBlockTime adds a new timer to expire on a future block with the given timestamp.
 // If a timer for that <timestamp, key> tuple exists, it will be overridden.
-func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte, data []byte) {
+func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key, data []byte) {
 	if timestamp <= uint64(ctx.BlockTime().UTC().Unix()) {
 		// panic:ok: caller should never add a timer with past expiry
 		panic(fmt.Sprintf("timer expiry time %d smaller than ctx time %d",

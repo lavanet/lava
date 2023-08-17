@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -22,6 +23,9 @@ func init() {
 			allGeoEnumRegions |= geoloc
 		}
 	}
+	sort.Slice(allGeoEnumRegionsList, func(i, j int) bool {
+		return allGeoEnumRegionsList[i] < allGeoEnumRegionsList[j]
+	})
 }
 
 // IsValidGeoEnum tests the validity of a given geolocation
@@ -94,4 +98,25 @@ func (g *Geolocation) UnmarshalJSON(b []byte) error {
 	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
 	*g = Geolocation(Geolocation_value[j])
 	return nil
+}
+
+func PrintGeolocations() string {
+	var geos []int32
+	for _, geoInt := range Geolocation_value {
+		geos = append(geos, geoInt)
+	}
+
+	sort.Slice(geos, func(i, j int) bool {
+		return geos[i] < geos[j]
+	})
+
+	var geosStr []string
+	for _, geoInt := range geos {
+		if geoInt == int32(Geolocation_GLS) {
+			continue
+		}
+		geosStr = append(geosStr, Geolocation_name[geoInt]+": 0x"+strconv.FormatInt(int64(geoInt), 16))
+	}
+
+	return strings.Join(geosStr, ", ")
 }
