@@ -131,7 +131,7 @@ func GetStrategy() ScoreStrategy {
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot) error {
 	// calculate the score for each req for each provider
 	keys := []string{}
-	for key, _ := range diffSlot.Reqs {
+	for key := range diffSlot.Reqs {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
