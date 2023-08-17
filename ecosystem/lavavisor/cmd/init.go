@@ -15,39 +15,39 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdLavavisorInit = &cobra.Command{
-	Use:   "init",
-	Short: "initializes the environment for LavaVisor",
-	Long: `Prepares the local environment for the operation of LavaVisor.
-	config.yml should be located in the ./lavavisor/ directory.`,
-	Args: cobra.ExactArgs(0),
-	Example: `optional flags: --directory | --auto-download | --auto-start 
-		lavavisor init <flags>
-		lavavisor init --directory ./custom/lavavisor/path 
-		lavavisor init --directory ./custom/lavavisor/path --auto-download
-		lavavisor init --auto-start --auto-download`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		autoStart, err := cmd.Flags().GetBool("auto-start")
-		if err != nil {
-			return err
-		}
-		if err := LavavisorInit(cmd); err != nil {
-			return err
-		}
-		if autoStart {
-			return LavavisorStart(cmd)
-		}
-		return nil
-	},
-}
-
-func init() {
+func CreateLavaVisorInitCobraCommand() *cobra.Command {
+	cmdLavavisorInit := &cobra.Command{
+		Use:   "init",
+		Short: "initializes the environment for LavaVisor",
+		Long: `Prepares the local environment for the operation of LavaVisor.
+		config.yml should be located in the ./lavavisor/ directory.`,
+		Args: cobra.ExactArgs(0),
+		Example: `optional flags: --directory | --auto-download | --auto-start 
+			lavavisor init <flags>
+			lavavisor init --directory ./custom/lavavisor/path 
+			lavavisor init --directory ./custom/lavavisor/path --auto-download
+			lavavisor init --auto-start --auto-download`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			autoStart, err := cmd.Flags().GetBool("auto-start")
+			if err != nil {
+				return err
+			}
+			if err := LavavisorInit(cmd); err != nil {
+				return err
+			}
+			if autoStart {
+				return LavavisorStart(cmd)
+			}
+			return nil
+		},
+	}
 	flags.AddQueryFlagsToCmd(cmdLavavisorInit)
 	cmdLavavisorInit.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorInit.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	cmdLavavisorInit.Flags().Bool("auto-start", false, "Executes start cmd automatically after init is completed")
 	cmdLavavisorInit.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	rootCmd.AddCommand(cmdLavavisorInit)
+
+	return cmdLavavisorInit
 }
 
 func LavavisorInit(cmd *cobra.Command) error {

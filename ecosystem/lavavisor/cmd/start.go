@@ -76,23 +76,22 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	return nil
 }
 
-var cmdLavavisorStart = &cobra.Command{
-	Use:   "start",
-	Short: "A command that will start service processes given with config.yml",
-	Long: `A command that will start service processes given with config.yml and starts 
-    lavavisor version monitor process. It reads config.yaml, checks the list of services, 
-    and starts them with the linked binary.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return LavavisorStart(cmd)
-	},
-}
-
-func init() {
+func CreateLavaVisorStartCobraCommand() *cobra.Command {
+	cmdLavavisorStart := &cobra.Command{
+		Use:   "start",
+		Short: "A command that will start service processes given with config.yml",
+		Long: `A command that will start service processes given with config.yml and starts 
+		lavavisor version monitor process. It reads config.yaml, checks the list of services, 
+		and starts them with the linked binary.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return LavavisorStart(cmd)
+		},
+	}
 	flags.AddQueryFlagsToCmd(cmdLavavisorStart)
 	cmdLavavisorStart.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorStart.Flags().Bool("auto-download", false, "Automatically download missing binaries")
 	cmdLavavisorStart.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	rootCmd.AddCommand(cmdLavavisorStart)
+	return cmdLavavisorStart
 }
 
 func LavavisorStart(cmd *cobra.Command) error {
