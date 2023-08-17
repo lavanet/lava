@@ -1,0 +1,102 @@
+{
+  "name": "@lavanet/lavajs",
+  "version": "0.21.2",
+  "description": "lavajs",
+  "author": "Lava Network",
+  "homepage": "https://github.com/lavanet",
+  "license": "Apache-2.0",
+  "main": "main/index.js",
+  "module": "module/index.js",
+  "typings": "types/index.d.ts",
+  "directories": {
+    "lib": "src",
+    "test": "__tests__"
+  },
+  "files": [
+    "types",
+    "src",
+    "main",
+    "module"
+  ],
+  "scripts": {
+    "build:main": "cross-env BABEL_ENV=production babel src --out-dir main --delete-dir-on-start --extensions \".tsx,.ts,.js\"",
+    "build:module": "cross-env MODULE=true babel src --out-dir module --delete-dir-on-start  --extensions \".tsx,.ts,.js\"",
+    "build:ts": "tsc --project ./tsconfig.json",
+    "build": "npm run build:module && npm run build:main",
+    "buidl": "npm run build && npm run build:ts",
+    "codegen": "cross-env NODE_ENV=development babel-node scripts/codegen.js",
+    "prepare": "npm run build",
+    "dev": "cross-env NODE_ENV=development babel-node src/index --extensions \".tsx,.ts,.js\"",
+    "watch": "cross-env NODE_ENV=development babel-watch src/index --extensions \".tsx,.ts,.js\"",
+    "lint": "eslint src --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:debug": "node --inspect node_modules/.bin/jest --runInBand"
+  },
+  "bin": {
+    "lava-sdk": "main/main.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lavanet/lavajs"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/lavanet/lavajs/issues"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.21.0",
+    "@babel/core": "7.21.4",
+    "@babel/eslint-parser": "^7.21.3",
+    "@babel/node": "^7.20.7",
+    "@babel/plugin-proposal-class-properties": "7.18.6",
+    "@babel/plugin-proposal-export-default-from": "7.18.10",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "7.18.6",
+    "@babel/plugin-proposal-numeric-separator": "7.18.6",
+    "@babel/plugin-proposal-object-rest-spread": "7.20.7",
+    "@babel/plugin-proposal-optional-chaining": "7.21.0",
+    "@babel/plugin-transform-runtime": "7.21.4",
+    "@babel/preset-env": "7.21.4",
+    "@babel/preset-flow": "^7.21.4",
+    "@babel/preset-typescript": "^7.21.4",
+    "@osmonauts/telescope": "^0.92.2",
+    "@protobufs/cosmos": "^0.1.0",
+    "@protobufs/cosmos_proto": "^0.0.10",
+    "@protobufs/cosmwasm": "^0.1.1",
+    "@protobufs/gogoproto": "^0.0.10",
+    "@protobufs/google": "^0.0.10",
+    "@protobufs/ibc": "^0.1.0",
+    "@protobufs/juno": "^0.1.0",
+    "@protobufs/osmosis": "^0.4.0",
+    "@protobufs/tendermint": "^0.0.10",
+    "@types/jest": "^29.5.0",
+    "babel-core": "7.0.0-bridge.0",
+    "babel-jest": "29.5.0",
+    "babel-watch": "^7.7.2",
+    "cross-env": "^7.0.2",
+    "eslint": "8.38.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^29.5.0",
+    "jest-in-case": "^1.0.2",
+    "long": "^5.2.1",
+    "prettier": "^2.8.7",
+    "regenerator-runtime": "^0.13.11",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.21.0",
+    "@cosmjs/amino": "^0.29.4",
+    "@cosmjs/proto-signing": "^0.29.5",
+    "@cosmjs/stargate": "^0.29.4",
+    "@cosmjs/tendermint-rpc": "^0.29.4",
+    "@osmonauts/lcd": "^0.11.1",
+    "@types/protobufjs": "^6.0.0",
+    "protobufjs": "^6.11.2"
+  }
+}
