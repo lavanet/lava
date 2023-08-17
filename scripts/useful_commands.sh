@@ -30,3 +30,19 @@ function wait_next_block {
     fi
   done
 }
+
+function wait_two_blocks {
+  current=$( lavad q block | jq -r .block.header.height)
+  currentNum=$(($current))
+  echo "Waiting for two blocks"
+  while true; do
+    sleep 0.5
+    new=$( lavad q block | jq -r .block.header.height)
+    newNum=$(($new))
+    if [[ $((newNum - current)) -ge 2 ]]
+    then
+      echo "finished waiting for two blocks"
+        break
+    fi
+  done
+}
