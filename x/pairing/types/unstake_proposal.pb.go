@@ -6,7 +6,7 @@ package types
 import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/cosmos/gogoproto/proto"
 	_ "google.golang.org/protobuf/types/known/wrapperspb"
 	io "io"
 	math "math"
