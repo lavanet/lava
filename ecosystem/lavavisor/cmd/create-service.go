@@ -26,7 +26,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 		the 'lavavisor start' command can utilize them to manage (enable, restart, and check the status of) 
 		each service using the 'systemctl' tool. This ensures that each service is properly integrated with 
 		the system's service manager, allowing for robust management and monitoring of the LavaVisor services.
-		Each service file inside [service-config-folder] must be named exactly the same with corresponsing service name
+		Each service file inside [service-config-folder] must be named exactly the same with corresponding service name
 		defined in config.yml`,
 		Args: cobra.ExactArgs(1),
 		Example: `required flags: --geolocation | --from
@@ -43,7 +43,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			}
 			// create services folder in lavavisorPath
 			lavavisorServicesDir := lavavisorPath + "/services"
-			err = os.MkdirAll(lavavisorServicesDir, 0755) // 0755 is a common permission for directories
+			err = os.MkdirAll(lavavisorServicesDir, 0o755) // 0755 is a common permission for directories
 			if err != nil {
 				return utils.LavaFormatError("failed to create services directory", err)
 			}
@@ -61,14 +61,14 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 
 			// service logs dir:
 			logsDir := lavavisorServicesDir + "/logs"
-			err = os.MkdirAll(logsDir, 0755) // 0755 is a common permission for directories
+			err = os.MkdirAll(logsDir, 0o755) // 0755 is a common permission for directories
 			if err != nil {
 				return utils.LavaFormatError("failed to create service logs directory", err)
 			}
 
 			// service logs dir:
 			lavavisorServiceConfigDir := lavavisorServicesDir + "/service_configs"
-			err = os.MkdirAll(lavavisorServiceConfigDir, 0755) // 0755 is a common permission for directories
+			err = os.MkdirAll(lavavisorServiceConfigDir, 0o755) // 0755 is a common permission for directories
 			if err != nil {
 				return utils.LavaFormatError("failed to create service logs directory", err)
 			}
