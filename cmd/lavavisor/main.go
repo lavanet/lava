@@ -16,11 +16,16 @@ func main() {
 	cmdLavavisorInit := lvcmd.CreateLavaVisorInitCobraCommand()
 	// lavavisor start cobra command
 	cmdLavavisorStart := lvcmd.CreateLavaVisorStartCobraCommand()
+	// lavavisor start cobra command
+	cmdLavavisorCreateService := lvcmd.CreateLavaVisorCreateServiceCobraCommand()
 
-	// Add Version Command
+	// Add Lavavisor Init
 	rootCmd.AddCommand(cmdLavavisorInit)
-	// Add RPC Consumer Command
+	// Add Lavavisor Start
 	rootCmd.AddCommand(cmdLavavisorStart)
+	// Add Lavavisor Create Service
+	rootCmd.AddCommand(cmdLavavisorCreateService)
+
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
