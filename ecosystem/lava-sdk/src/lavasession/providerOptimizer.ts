@@ -9,7 +9,16 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
     requestedBlock: number,
     perturbationPercentage: number
   ): string[] {
-    return shuffleArray(allAddresses);
+    const returnProviders = allAddresses
+      .map((address) => {
+        if (ignoredProviders.includes(address)) {
+          return;
+        }
+        return address;
+      })
+      .filter(Boolean) as string[];
+
+    return shuffleArray(returnProviders);
   }
 
   public appendRelayData(
@@ -23,7 +32,7 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
   }
 
   public appendRelayFailure(providerAddress: string) {
-    console.log("RandomProviderOptimizer.appendRelayFailure() not implemented");
+    // console.log("RandomProviderOptimizer.appendRelayFailure() not implemented");
     return;
   }
 
