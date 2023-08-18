@@ -182,7 +182,7 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 
 func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
 	configPath := filepath.Join(lavavisorPath, "config.yml")
-	file, err := os.OpenFile(configPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(configPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return utils.LavaFormatError("error opening config.yml for appending", err)
 	}
