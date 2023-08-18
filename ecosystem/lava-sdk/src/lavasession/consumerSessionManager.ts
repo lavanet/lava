@@ -5,16 +5,25 @@ import {
   ProviderOptimizer,
   RPCEndpoint,
   SessionsWithProviderMap,
+  SingleConsumerSession,
 } from "./consumerTypes";
 import { newRouterKey } from "./routerKey";
 import {
   AddressIndexWasNotFoundError,
   AllProviderEndpointsDisabledError,
+  BlockProviderError,
   EpochMismatchError,
+  MaximumNumberOfBlockListedSessionsError,
+  MaximumNumberOfSessionsExceededError,
   PairingListEmptyError,
+  ReportAndBlockProviderError,
+  SessionIsAlreadyBlockListedError,
 } from "./errors";
 import { Result } from "./helpers";
-import { RELAY_NUMBER_INCREMENT } from "./common";
+import {
+  MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION,
+  RELAY_NUMBER_INCREMENT,
+} from "./common";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -51,6 +60,10 @@ export class ConsumerSessionManager {
 
   public getCurrentEpoch(): number {
     return this.currentEpoch;
+  }
+
+  public getNumberOfResets(): number {
+    return this.numberOfResets;
   }
 
   public getPairingAddressesLength(): number {
@@ -156,11 +169,31 @@ export class ConsumerSessionManager {
         }
 
         const reportedProviders = this.getReportedProviders(sessionEpoch);
-        const { singleConsumerSession, pairingEpoch } =
+        const consumerSessionInstanceFromEndpoint =
           consumerSessionsWithProvider.getConsumerSessionInstanceFromEndpoint(
             endpoint,
             numberOfResets
           );
+        if (consumerSessionInstanceFromEndpoint instanceof Error) {
+          if (
+            consumerSessionInstanceFromEndpoint instanceof
+            MaximumNumberOfSessionsExceededError
+          ) {
+            tempIgnoredProviders.providers.add(providerAddress);
+          } else if (
+            consumerSessionInstanceFromEndpoint instanceof
+            MaximumNumberOfBlockListedSessionsError
+          ) {
+            this.blockProvider(providerAddress, false, sessionEpoch);
+          } else {
+            throw consumerSessionInstanceFromEndpoint;
+          }
+
+          continue;
+        }
+
+        const { singleConsumerSession, pairingEpoch } =
+          consumerSessionInstanceFromEndpoint;
 
         if (pairingEpoch !== sessionEpoch) {
           sessionEpoch = pairingEpoch;
@@ -170,6 +203,7 @@ export class ConsumerSessionManager {
           consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession);
         if (err) {
           tempIgnoredProviders.providers.add(providerAddress);
+          singleConsumerSession.unlock();
           continue;
         }
 
@@ -181,6 +215,8 @@ export class ConsumerSessionManager {
           epoch: sessionEpoch,
           reportedProviders: reportedProviders,
         };
+
+        tempIgnoredProviders.providers.add(providerAddress);
 
         if (Object.keys(sessions).length === wantedSessions) {
           return sessions;
@@ -209,12 +245,74 @@ export class ConsumerSessionManager {
     throw new Error("Not implemented");
   }
 
-  public onSessionFailure(consumerSession: any, errorReceived: Error): void {
-    throw new Error("Not implemented");
+  public onSessionFailure(
+    consumerSession: SingleConsumerSession,
+    // TODO: extract code from error
+    errorReceived?: Error | null
+  ): void {
+    if (!consumerSession.isLocked()) {
+      // TODO: improve error message
+      throw new Error("Session is not locked");
+    }
+
+    if (consumerSession.blockListed) {
+      throw new SessionIsAlreadyBlockListedError();
+    }
+
+    consumerSession.qoSInfo.totalRelays++;
+    consumerSession.consecutiveNumberOfFailures++;
+
+    let consumerSessionBlockListed = false;
+    // TODO: verify if code == SessionOutOfSyncError.ABCICode() (from go)
+    if (
+      consumerSession.consecutiveNumberOfFailures >
+      MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION
+    ) {
+      consumerSession.blockListed = true;
+      consumerSessionBlockListed = true;
+    }
+    const cuToDecrease = consumerSession.latestRelayCu;
+    this.providerOptimizer.appendRelayFailure(
+      consumerSession.client.publicLavaAddress
+    );
+    consumerSession.latestRelayCu = 0;
+
+    const parentConsumerSessionsWithProvider = consumerSession.client;
+    consumerSession.unlock();
+
+    const error =
+      parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease);
+    if (error) {
+      // TODO: return error?
+      throw error;
+    }
+
+    let blockProvider = false;
+    let reportProvider = false;
+    if (errorReceived instanceof ReportAndBlockProviderError) {
+      blockProvider = true;
+      reportProvider = true;
+    } else if (errorReceived instanceof BlockProviderError) {
+      blockProvider = true;
+    }
+
+    if (
+      consumerSessionBlockListed &&
+      parentConsumerSessionsWithProvider.usedComputeUnits === 0
+    ) {
+      blockProvider = true;
+      reportProvider = true;
+    }
+
+    if (blockProvider) {
+      const { publicProviderAddress, pairingEpoch } =
+        parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch();
+      this.blockProvider(publicProviderAddress, reportProvider, pairingEpoch);
+    }
   }
 
   public onSessionDone(
-    consumerSession: any,
+    consumerSession: SingleConsumerSession,
     latestServicedBlock: number,
     specComputeUnits: number,
     currentLatency: number,
@@ -224,10 +322,31 @@ export class ConsumerSessionManager {
     providersCount: number,
     isHangingApi: boolean
   ): void {
-    throw new Error("Not implemented");
+    consumerSession.cuSum += consumerSession.latestRelayCu;
+    consumerSession.latestRelayCu = 0;
+    consumerSession.consecutiveNumberOfFailures = 0;
+    consumerSession.latestBlock = latestServicedBlock;
+    consumerSession.calculateQoS(
+      currentLatency,
+      expectedLatency,
+      expectedBH - latestServicedBlock,
+      numOfProviders,
+      providersCount
+    );
+    this.providerOptimizer.appendRelayData(
+      consumerSession.client.publicLavaAddress,
+      currentLatency,
+      isHangingApi,
+      specComputeUnits,
+      latestServicedBlock
+    );
+    consumerSession.unlock();
   }
 
   public getReportedProviders(epoch: number): string {
+    if (epoch != this.currentEpoch) {
+      return "";
+    }
     return JSON.stringify(Array.from(this.addedToPurgeAndReport));
   }
 
@@ -262,6 +381,7 @@ export class ConsumerSessionManager {
     }
 
     this.validAddresses.splice(idx, 1);
+    this.removeAddonAddress();
     return {
       result: undefined,
     };
@@ -288,7 +408,7 @@ export class ConsumerSessionManager {
     );
 
     if (providerAddresses.error) {
-      throw providerAddresses.error;
+      return { error: providerAddresses.error };
     }
 
     const wantedProviders = providerAddresses.result.length;
@@ -298,8 +418,9 @@ export class ConsumerSessionManager {
       for (const providerAddress of providerAddresses.result) {
         const consumerSessionsWithProvider = this.pairing.get(providerAddress);
         if (consumerSessionsWithProvider === undefined) {
-          // todo: throw invalid provider address error
-          continue;
+          throw new Error(
+            "Invalid provider address returned from csm.getValidProviderAddresses"
+          );
         }
 
         const err =
@@ -376,7 +497,7 @@ export class ConsumerSessionManager {
     const routerKey = newRouterKey([...extensions, addon]);
 
     const validAddresses = this.addonAddresses.get(routerKey);
-    if (validAddresses === undefined) {
+    if (validAddresses === undefined || validAddresses.length === 0) {
       return this.calculateAddonValidAddresses(addon, extensions);
     }
 

@@ -9,6 +9,7 @@ import {
   MaxComputeUnitsExceededError,
   MaximumNumberOfBlockListedSessionsError,
   MaximumNumberOfSessionsExceededError,
+  NegativeComputeUnitsAmountError,
 } from "./errors";
 
 export interface SessionInfo {
@@ -119,6 +120,15 @@ export class SingleConsumerSession {
     this.sessionId = sessionId;
     this.client = client;
     this.endpoint = endpoint;
+  }
+
+  public tryLock(): boolean {
+    if (!this.locked) {
+      this.lock();
+      return true;
+    }
+
+    return false;
   }
 
   public isLocked(): boolean {
@@ -238,6 +248,16 @@ export class ConsumerSessionsWithProvider {
     this.pairingEpoch = pairingEpoch;
   }
 
+  public getPublicLavaAddressAndPairingEpoch(): {
+    publicProviderAddress: string;
+    pairingEpoch: number;
+  } {
+    return {
+      publicProviderAddress: this.publicLavaAddress,
+      pairingEpoch: this.pairingEpoch,
+    };
+  }
+
   public conflictAlreadyReported(): boolean {
     return this.conflictFoundAndReported;
   }
@@ -279,10 +299,12 @@ export class ConsumerSessionsWithProvider {
   public getConsumerSessionInstanceFromEndpoint(
     endpoint: Endpoint,
     numberOfResets: number
-  ): {
-    singleConsumerSession: SingleConsumerSession;
-    pairingEpoch: number;
-  } {
+  ):
+    | {
+        singleConsumerSession: SingleConsumerSession;
+        pairingEpoch: number;
+      }
+    | Error {
     const maximumBlockSessionsAllowed =
       MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER * (numberOfResets + 1);
 
@@ -293,12 +315,14 @@ export class ConsumerSessionsWithProvider {
       }
 
       if (numberOfBlockedSessions >= maximumBlockSessionsAllowed) {
-        throw new MaximumNumberOfBlockListedSessionsError();
+        return new MaximumNumberOfBlockListedSessionsError();
       }
 
-      if (!session.isLocked()) {
+      if (session.tryLock()) {
         if (session.blockListed) {
           numberOfBlockedSessions++;
+          session.unlock();
+
           continue;
         }
 
@@ -317,6 +341,8 @@ export class ConsumerSessionsWithProvider {
     const randomSessionId = Math.random();
     const session = new SingleConsumerSession(randomSessionId, this, endpoint);
     session.lock();
+
+    this.sessions[session.sessionId] = session;
 
     return {
       singleConsumerSession: session,
@@ -380,6 +406,16 @@ export class ConsumerSessionsWithProvider {
     }
 
     this.usedComputeUnits += cu;
+  }
+
+  public decreaseUsedComputeUnits(
+    cu: number
+  ): NegativeComputeUnitsAmountError | undefined {
+    if (this.usedComputeUnits - cu < 0) {
+      return new NegativeComputeUnitsAmountError();
+    }
+
+    this.usedComputeUnits -= cu;
   }
 }
 
