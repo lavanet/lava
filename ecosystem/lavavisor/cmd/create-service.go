@@ -80,7 +80,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			if serviceType != "provider" && serviceType != "consumer" {
 				return utils.LavaFormatError("invalid service type, must be provider or consumer", nil)
 			}
-			serviceConfigFile := args[1] // the path that contains provider or consumer's configuartion yml file
+			serviceConfigFile := args[1] // the path that contains provider or consumer's configuration yml file
 			// from user
 			fromUser, _ := cmd.Flags().GetString(flags.FlagFrom)
 			// keyring backend
