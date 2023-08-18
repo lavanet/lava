@@ -1,7 +1,6 @@
 package processmanager
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -31,7 +30,7 @@ func findLavaProtocolPath(binaryPath string) (string, error) {
 func copyBinaryToSystemPath(binaryPath string) (string, error) {
 	gobin, err := exec.Command("go", "env", "GOPATH").Output()
 	if err != nil {
-		return "", fmt.Errorf("couldn't determine Go binary path: %w", err)
+		return "", utils.LavaFormatError("couldn't determine Go binary path", err)
 	}
 
 	goBinPath := strings.TrimSpace(string(gobin)) + "/bin/"
@@ -40,12 +39,12 @@ func copyBinaryToSystemPath(binaryPath string) (string, error) {
 
 	err = lvutil.Copy(binaryPath, goBinPath+"lava-protocol")
 	if err != nil {
-		return "", fmt.Errorf("couldn't copy binary to system path: %w", err)
+		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
 	}
 
 	out, err := exec.LookPath("lava-protocol")
 	if err != nil {
-		return "", fmt.Errorf("couldn't find the binary in the system path: %w", err)
+		return "", utils.LavaFormatError("couldn't find the binary in the system path", err)
 	}
 	return strings.TrimSpace(out), nil
 }
