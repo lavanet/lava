@@ -110,7 +110,12 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 
 			utils.LavaFormatInfo("Creating the service file")
 
-			return CreateServiceFile(serviceParams)
+			serviceFileName, err := CreateServiceFile(serviceParams)
+			if err != nil {
+				return err
+			}
+			// Write the name of the service into .lavavisor/config.yml
+			return WriteToConfigFile(lavavisorPath, serviceFileName)
 		},
 	}
 	flags.AddTxFlagsToCmd(cmdLavavisorCreateService)
@@ -123,23 +128,23 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 	return cmdLavavisorCreateService
 }
 
-func CreateServiceFile(serviceParams *ServiceParams) error {
+func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	// working dir:
 	out, err := exec.LookPath("lava-protocol")
 	if err != nil {
-		return utils.LavaFormatError("could not detect a linked lava-protocol binary", err)
+		return "", utils.LavaFormatError("could not detect a linked lava-protocol binary", err)
 	}
 	workingDir := strings.TrimSpace(filepath.Dir(out) + "/")
 
 	if _, err := os.Stat(serviceParams.ServiceConfigFile); err != nil {
-		return utils.LavaFormatError("Service config file not found", err)
+		return "", utils.LavaFormatError("Service config file not found", err)
 	}
 
 	serviceId := serviceParams.ServiceType + "-" + serviceParams.ChainID
 	configPath := serviceParams.LavavisorServiceConfigDir + "/" + filepath.Base(serviceParams.ServiceConfigFile)
 	err = lvutil.Copy(serviceParams.ServiceConfigFile, configPath)
 	if err != nil {
-		return utils.LavaFormatError("couldn't copy binary to system path", err)
+		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
 	}
 
 	content := "[Unit]\n"
@@ -166,9 +171,37 @@ func CreateServiceFile(serviceParams *ServiceParams) error {
 	filePath := serviceParams.LavavisorServicesDir + "/" + serviceId + ".service"
 	err = os.WriteFile(filePath, []byte(content), os.ModePerm)
 	if err != nil {
-		return utils.LavaFormatError("error writing to service file", err)
+		return "", utils.LavaFormatError("error writing to service file", err)
 	}
-
 	utils.LavaFormatInfo("Service file has been created successfully", utils.Attribute{Key: "Path", Value: filePath})
+	// Extract filename from filePath
+	filename := filepath.Base(filePath)
+
+	return filename, nil
+}
+
+func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
+	configPath := filepath.Join(lavavisorPath, "config.yml")
+	file, err := os.OpenFile(configPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return utils.LavaFormatError("error opening config.yml for appending", err)
+	}
+	defer file.Close()
+	// Check if the file is newly created by checking its size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if fileInfo.Size() == 0 {
+		_, err = file.WriteString("services:\n")
+		if err != nil {
+			return err
+		}
+	}
+	// Append the new service name
+	_, err = file.WriteString("\t- " + serviceFileName + "\n")
+	if err != nil {
+		return err
+	}
 	return nil
 }

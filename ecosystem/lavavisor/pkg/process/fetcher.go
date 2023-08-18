@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
@@ -71,20 +70,6 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 	err := os.MkdirAll(lavavisorPath, 0o755)
 	if err != nil {
 		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
-	}
-	// Create config.yml file inside .lavavisor and write placeholder text
-	configPath := filepath.Join(lavavisorPath, "config.yml")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		sampleServices := []string{
-			"consumer-ETH1",
-			"provider1-ETH1",
-			"provider1-LAV1",
-		}
-		placeholderText := "services:\n  - " + strings.Join(sampleServices, "\n  - ")
-		err = os.WriteFile(configPath, []byte(placeholderText), 0o644)
-		if err != nil {
-			return utils.LavaFormatError("unable to write to config.yml file", err)
-		}
 	}
 	// Create 'upgrades' directory inside .lavavisor
 	upgradesPath := filepath.Join(lavavisorPath, "upgrades")
