@@ -132,10 +132,15 @@ func LavavisorStart(cmd *cobra.Command) error {
 	}
 
 	// Iterate over the list of services and start them
+	lavavisorServicesDir := lavavisorPath + "/services/"
+	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
+		return utils.LavaFormatError("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
+	}
 	var processes []*processmanager.ServiceProcess
 	for _, process := range config.Services {
 		utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
-		processes = processmanager.StartProcess(processes, process)
+		serviceDir := lavavisorServicesDir + process
+		processes = processmanager.StartProcess(processes, process, serviceDir)
 	}
 
 	// Start lavavisor version monitor process
