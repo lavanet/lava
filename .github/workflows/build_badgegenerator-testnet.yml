@@ -69,6 +69,7 @@ jobs:
             -t $REGISTRY:$IMAGE_TAG-$NOW \
             --cache-from="type=local,src=/tmp/.buildx-cache" \
             --cache-to="type=local,dest=/tmp/.buildx-cache-new" \
+            --build-arg LAVA_BINARY=lavad \
             --push -f Dockerfile .
 
         # Necessary if you don't want your cache to grow forever, until
