@@ -13,16 +13,16 @@ type ServiceProcess struct {
 	ChainID string
 }
 
-func StartProcess(processes []*ServiceProcess, process string) []*ServiceProcess {
+func StartProcess(processes []*ServiceProcess, process string, serviceDir string) []*ServiceProcess {
 	// Extract the chain id from the process string
 	chainID := strings.Split(process, "-")[1]
 
 	// Create command list
 	cmds := []*exec.Cmd{
 		exec.Command("sudo", "systemctl", "daemon-reload"),
-		exec.Command("sudo", "systemctl", "enable", process+".service"),
-		exec.Command("sudo", "systemctl", "restart", process+".service"),
-		exec.Command("sudo", "systemctl", "status", process+".service"),
+		exec.Command("sudo", "systemctl", "enable", process),
+		exec.Command("sudo", "systemctl", "restart", process),
+		exec.Command("sudo", "systemctl", "status", process),
 	}
 
 	// Run the commands and capture their output
