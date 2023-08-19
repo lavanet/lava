@@ -2,6 +2,7 @@ package processmanager
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
@@ -63,9 +64,14 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				// linker
 				CreateLink(binaryPath)
 
+				lavavisorServicesDir := vm.LavavisorPath + "/services/"
+				if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
+					utils.LavaFormatFatal("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
+				}
 				for _, process := range vm.processes {
 					utils.LavaFormatInfo("Restarting process", utils.Attribute{Key: "Process", Value: process.Name})
-					vm.processes = StartProcess(vm.processes, process.Name)
+					serviceDir := lavavisorServicesDir + process.Name
+					vm.processes = StartProcess(vm.processes, process.Name, serviceDir)
 				}
 
 				utils.LavaFormatInfo("Lavavisor successfully updated protocol version!", utils.Attribute{Key: "Upgraded version:", Value: versionToUpgrade})
