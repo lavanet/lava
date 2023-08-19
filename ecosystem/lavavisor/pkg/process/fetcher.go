@@ -71,6 +71,14 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 	if err != nil {
 		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
 	}
+	// Create config.yml file inside .lavavisor and write placeholder text
+	configPath := filepath.Join(lavavisorPath, "config.yml")
+	configFile, err := os.Create(configPath)
+	if err != nil {
+		return utils.LavaFormatError("unable to create or clean config.yml", err)
+	}
+	defer configFile.Close() // Close the file
+
 	// Create 'upgrades' directory inside .lavavisor
 	upgradesPath := filepath.Join(lavavisorPath, "upgrades")
 	if _, err := os.Stat(upgradesPath); os.IsNotExist(err) {
