@@ -142,31 +142,32 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 
 	serviceId := serviceParams.ServiceType + "-" + serviceParams.ChainID
 	configPath := serviceParams.LavavisorServiceConfigDir + "/" + filepath.Base(serviceParams.ServiceConfigFile)
+
 	err = lvutil.Copy(serviceParams.ServiceConfigFile, configPath)
 	if err != nil {
 		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
 	}
 
 	content := "[Unit]\n"
-	content += "\tDescription=" + serviceId + " daemon\n"
-	content += "\tAfter=network-online.target\n\n"
+	content += "  Description=" + serviceId + " daemon\n"
+	content += "  After=network-online.target\n\n"
 	content += "[Service]\n"
-	content += "\tWorkingDirectory=" + workingDir + "\n"
+	content += "  WorkingDirectory=" + workingDir + "\n"
 	if serviceParams.ServiceType == "consumer" {
-		content += "\tExecStart=lava-protocol rpcconsumer "
+		content += "  ExecStart=lava-protocol rpcconsumer "
 	} else if serviceParams.ServiceType == "provider" {
-		content += "\tExecStart=lava-protocol rpcprovider "
+		content += "  ExecStart=lava-protocol rpcprovider "
 	}
-	content += configPath + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
+	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
-	content += "\tUser=ubuntu\n"
-	content += "\tRestart=always\n"
-	content += "\tRestartSec=180\n"
-	content += "\tLimitNOFILE=infinity\n"
-	content += "\tLimitNPROC=infinity\n"
-	content += "\tStandardOutput=append:" + serviceParams.LavavisorLogsDir + "/" + serviceId + ".log\n\n"
+	content += "  User=ubuntu\n"
+	content += "  Restart=always\n"
+	content += "  RestartSec=180\n"
+	content += "  LimitNOFILE=infinity\n"
+	content += "  LimitNPROC=infinity\n"
+	content += "  StandardOutput=append:" + serviceParams.LavavisorLogsDir + "/" + serviceId + ".log\n\n"
 	content += "[Install]\n"
-	content += "\tWantedBy=multi-user.target"
+	content += "  WantedBy=multi-user.target\n"
 
 	filePath := serviceParams.LavavisorServicesDir + "/" + serviceId + ".service"
 	err = os.WriteFile(filePath, []byte(content), os.ModePerm)
@@ -199,7 +200,7 @@ func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
 		}
 	}
 	// Append the new service name
-	_, err = file.WriteString("\t- " + serviceFileName + "\n")
+	_, err = file.WriteString("  - " + serviceFileName + "\n")
 	if err != nil {
 		return err
 	}
