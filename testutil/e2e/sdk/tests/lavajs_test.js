@@ -16,7 +16,7 @@ async function main() {
     // get subscription info (lava query)
     let subscriptionResult = await lavaClient.subscription.current({ consumer: process.env.PUBLIC_KEY })
     
-    if (subscriptionResult.creator != process.env.PUBLIC_KEY) {
+    if (subscriptionResult.sub.creator != process.env.PUBLIC_KEY) {
         console.log(subscriptionResult, "VS", process.env.PUBLIC_KEY)
         throw new Error("Failed validating subscription creator.")
     }
@@ -24,7 +24,7 @@ async function main() {
     
     // get a balance (cosmos sdk query)
     let balanceResult = await cosmosClient.bank.v1beta1.allBalances({ address: process.env.PUBLIC_KEY })
-    if (balanceResult[0].denom != "ulava") {
+    if (balanceResult.balances[0].denom != "ulava") {
         console.log(balanceResult, "VS", "required denom 'ulava'")
         throw new Error("Failed validating allBalances")
     }
