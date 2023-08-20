@@ -1892,3 +1892,32 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		})
 	}
 }
+
+// TestPairingConsistency checks we consistently get the same pairing in the same epoch
+func TestPairingConsistency(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(10, 1, 3)
+	iterations := 100
+
+	consumers := ts.Accounts(common.CONSUMER)
+
+	res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
+	require.Nil(t, err)
+	prevPairing := res.Providers
+	for i := 0; i < iterations; i++ {
+		res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
+		require.Nil(t, err)
+
+		var prevPairingAddrs []string
+		var currentPairingAddrs []string
+
+		for i := range res.Providers {
+			prevPairingAddrs = append(prevPairingAddrs, prevPairing[i].Address)
+			currentPairingAddrs = append(currentPairingAddrs, res.Providers[i].Address)
+		}
+
+		require.True(t, slices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))
+
+		prevPairing = res.Providers
+	}
+}
