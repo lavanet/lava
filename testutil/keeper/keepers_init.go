@@ -28,6 +28,7 @@ import (
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/plans"
@@ -118,6 +119,17 @@ func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, spec
 		return err
 	}
 	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
+	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
 	err = proposalHandler(ctx, proposal)
 	return err
 }
