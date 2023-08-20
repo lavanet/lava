@@ -37,6 +37,7 @@ package scores
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -133,6 +134,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 	for key := range diffSlot.Reqs {
 		keys = append(keys, key)
 	}
+	sort.Strings(keys)
 
 	for _, score := range scores {
 		for _, key := range keys {
