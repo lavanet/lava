@@ -68,7 +68,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 
 		// Set the environment variable for the private key
 		cmd.Env = append(cmd.Env, "PRIVATE_KEY="+privateKey)
-		cmd.Env = append(cmd.Env, "PUBLIC_KEY="+privateKey)
+		cmd.Env = append(cmd.Env, "PUBLIC_KEY="+publicKey)
 
 		// Set the environment variable for badge server project id
 		cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")

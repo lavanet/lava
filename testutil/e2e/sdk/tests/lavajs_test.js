@@ -3,32 +3,39 @@ const { lavanet } = require("../../../../ecosystem/lavajs/dist/codegen/lavanet/b
 async function main() {
     const client = await lavanet.ClientFactory.createRPCQueryClient({ rpcEndpoint: "http://127.0.0.1:26657" })
     const lavaClient = client.lavanet.lava;
-    let res3 = await lavaClient.spec.spec({ ChainID: "LAV1" })
+    let specResult = await lavaClient.spec.spec({ ChainID: "LAV1" })
     const cosmosClient = client.cosmos;
-    console.log(res3)
-    
+    if (specResult.index == "LAV1") {
+        console.log(specResult)
+        throw new Error("Failed validating Lava spec.")
+    }
+    console.log("[lavajs_test] Success: Fetching LAV1 spec")
+
+    console.log("[lavajs_test] sending queries for address", process.env.PUBLIC_KEY)
+
     // get subscription info (lava query)
-    let res = await lavaClient.subscription.current({ consumer: process.env.PUBLIC_KEY })
-    console.log(res)
+    let subscriptionResult = await lavaClient.subscription.current({ consumer: process.env.PUBLIC_KEY })
+    
+    if (subscriptionResult.creator != process.env.PUBLIC_KEY) {
+        console.log(subscriptionResult, "VS", process.env.PUBLIC_KEY)
+        throw new Error("Failed validating subscription creator.")
+    }
+    console.log("[lavajs_test] Success: Fetching consumer's subscription")
     
     // get a balance (cosmos sdk query)
-    let res2 = await cosmosClient.bank.v1beta1.allBalances({ address: process.env.PUBLIC_KEY })
-    console.log(res2)
-
-    // Validate chainID
-    if (chainID != "lava") {
-        throw new Error(" ERR Chain ID is not equal to lava");
-    }else{
-        console.log("Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
+    let balanceResult = await cosmosClient.bank.v1beta1.allBalances({ address: process.env.PUBLIC_KEY })
+    if (balanceResult[0].denom != "ulava") {
+        console.log(balanceResult, "VS", "required denom 'ulava'")
+        throw new Error("Failed validating allBalances")
     }
-
+    console.log("[lavajs_test] Success: Fetching consumer's balance")
 }
 
 (async () => {
     try {
         await main();
     } catch (error) {
-        console.error(" ERR "+error.message);
+        console.error(" ERR [lavajs_test] "+error.message);
         process.exit(1);
     }
 })();
