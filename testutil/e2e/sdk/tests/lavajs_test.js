@@ -1,7 +1,7 @@
-const { lavajs } = require("../../../../ecosystem/lavajs/dist/codegen");
+const { lavanet } = require("../../../../ecosystem/lavajs/dist/codegen/lavanet/bundle");
 
 async function main() {
-    const client = await lavajs.lavanet.ClientFactory.createRPCQueryClient({ rpcEndpoint: "http://127.0.0.1:26657" })
+    const client = await lavanet.ClientFactory.createRPCQueryClient({ rpcEndpoint: "http://127.0.0.1:26657" })
     const lavaClient = client.lavanet.lava;
     let res3 = await lavaClient.spec.spec({ ChainID: "LAV1" })
     const cosmosClient = client.cosmos;
