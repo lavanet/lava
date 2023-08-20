@@ -11,15 +11,15 @@ import (
 
 // for convenience (calculate once only)
 var (
-	allGeoEnumRegionsList []int32
-	allGeoEnumRegions     int32
+	geoAmount         int
+	allGeoEnumRegions int32
 )
 
 // initialize convenience vars at start-up
 func init() {
 	for _, geoloc := range Geolocation_value {
 		if geoloc != int32(Geolocation_GLS) && geoloc != int32(Geolocation_GL) {
-			allGeoEnumRegionsList = append(allGeoEnumRegionsList, geoloc)
+			geoAmount += 1
 			allGeoEnumRegions |= geoloc
 		}
 	}
@@ -62,7 +62,11 @@ func ParseGeoEnum(arg string) (geoloc int32, err error) {
 }
 
 func GetAllGeolocations() []int32 {
-	return allGeoEnumRegionsList
+	var allGeos []int32
+	for i := 0; i < geoAmount; i++ {
+		allGeos = append(allGeos, 1<<i)
+	}
+	return allGeos
 }
 
 func GetGeolocationsFromUint(geoloc int32) []Geolocation {
