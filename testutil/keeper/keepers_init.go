@@ -20,7 +20,7 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/common"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
@@ -269,10 +269,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
-	ks.Plans.InitPlans(ctx, []types.RawMessage{})
-	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
-	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
-	ks.Projects.InitProjects(ctx, []types.RawMessage{})
+	ks.Plans.InitPlans(ctx, *common.DefaultGenesis())
+	ks.Subscription.InitSubscriptions(ctx, *common.DefaultGenesis())
+	ks.Projects.InitDevelopers(ctx, *common.DefaultGenesis())
+	ks.Projects.InitProjects(ctx, *common.DefaultGenesis())
 
 	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())
