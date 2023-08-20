@@ -72,9 +72,16 @@ func GetAllGeolocations() []int32 {
 func GetGeolocationsFromUint(geoloc int32) []Geolocation {
 	geoList := []Geolocation{}
 	allGeos := GetAllGeolocations()
-	for _, geo := range allGeos {
-		if geo&geoloc != 0 {
-			geoList = append(geoList, Geolocation(geo))
+
+	if geoloc == int32(Geolocation_GL) {
+		for i := 0; i < len(allGeos); i++ {
+			geoList = append(geoList, Geolocation(allGeos[i]))
+		}
+	} else {
+		for i := 0; i < len(allGeos); i++ {
+			if (geoloc>>i)&1 == 1 {
+				geoList = append(geoList, Geolocation(1<<i))
+			}
 		}
 	}
 
