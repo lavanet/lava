@@ -83,6 +83,9 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 }
 
 func calculateCostFromLatency(latency uint64) math.Uint {
+	if latency == 0 {
+		return math.OneUint()
+	}
 	return sdk.NewUint(maxGeoLatency / latency)
 }
 
