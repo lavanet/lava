@@ -3,6 +3,8 @@ import {
   AVAILABILITY_PERCENTAGE,
   MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER,
   MAX_SESSIONS_ALLOWED_PER_PROVIDER,
+  MIN_PROVIDERS_FOR_SYNC,
+  PERCENTILE_TO_CALCULATE_LATENCY,
 } from "./common";
 import {
   AllProviderEndpointsDisabledError,
@@ -167,11 +169,40 @@ export class SingleConsumerSession {
 
     const { downtimePercentage, scaledAvailabilityScore } =
       calculateAvailabilityScore(this.qoSInfo);
+    this.qoSInfo.lastQoSReport.availability = scaledAvailabilityScore;
     if (BigNumber(1).gt(this.qoSInfo.lastQoSReport.availability)) {
       // todo: should we log? do we log in the sdk?
     }
 
-    const latencyScore = 0;
+    const latencyScore = this.calculateLatencyScore(expectedLatency, latency);
+    this.qoSInfo.latencyScoreList.push(latencyScore);
+    this.qoSInfo.latencyScoreList = this.qoSInfo.latencyScoreList.sort();
+    this.qoSInfo.lastQoSReport.latency =
+      this.qoSInfo.latencyScoreList[
+        // golang int casting just cuts the decimal part
+        Math.floor(
+          this.qoSInfo.latencyScoreList.length * PERCENTILE_TO_CALCULATE_LATENCY
+        )
+      ];
+
+    const shouldCalculateSync =
+      numOfProviders > Math.ceil(servicersToCount * MIN_PROVIDERS_FOR_SYNC);
+    if (shouldCalculateSync) {
+      if (blockHeightDiff <= 0) {
+        this.qoSInfo.syncScoreSum++;
+      }
+
+      this.qoSInfo.totalSyncScore++;
+
+      const sync = BigNumber(this.qoSInfo.syncScoreSum).div(
+        this.qoSInfo.totalSyncScore
+      );
+      this.qoSInfo.lastQoSReport.sync = sync.toNumber();
+
+      if (BigNumber(1).gt(sync)) {
+        // todo: should we log? do we log in the sdk?
+      }
+    }
     return;
   }
 
@@ -183,7 +214,7 @@ export class SingleConsumerSession {
     const bigExpectedLatency = BigNumber(expectedLatency);
     const bigLatency = BigNumber(latency);
 
-    return BigNumber.min(oneDec, bigLatency.div(bigExpectedLatency)).toNumber();
+    return BigNumber.min(oneDec, bigExpectedLatency).div(bigLatency).toNumber();
   }
 }
 
@@ -378,16 +409,6 @@ export class ConsumerSessionsWithProvider {
 
   public calculatedExpectedLatency(timeoutGivenToRelay: number): number {
     return timeoutGivenToRelay / 2;
-  }
-
-  public calculateQoS(
-    latency: number,
-    expectedLatency: number,
-    blockHeightDiff: number,
-    numOfProviders: number,
-    servicersToCount: number
-  ): void {
-    return;
   }
 
   public validateComputeUnits(
