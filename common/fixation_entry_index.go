@@ -47,6 +47,14 @@ func (fs FixationStore) removeEntryIndex(ctx sdk.Context, safeIndex types.SafeIn
 	store.Delete(types.KeyPrefix(string(safeIndex)))
 }
 
+// isEntryIndexLive returns isLive from store
+func (fs FixationStore) isEntryIndexLive(ctx sdk.Context, safeIndex types.SafeIndex) bool {
+	types.AssertSanitizedIndex(safeIndex, fs.prefix)
+	store := fs.getEntryIndexStore(ctx)
+	status := store.Get(types.KeyPrefix(string(safeIndex)))
+	return types.IsEntryIndexLive(status)
+}
+
 // AllEntryIndicesFilter returns all Entry indices with a given prefix and filtered
 // by the given filter function.
 func (fs FixationStore) AllEntryIndicesFilter(ctx sdk.Context, prefix string, filter func(k, v []byte) bool) []string {

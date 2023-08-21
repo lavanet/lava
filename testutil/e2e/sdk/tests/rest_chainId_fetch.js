@@ -10,7 +10,7 @@ async function main() {
         pairingListConfig:process.env.PAIRING_LIST,
         allowInsecureTransport: true,
     }).catch(e => {
-        throw new Error(" ERR failed initializing lava-sdk rest test");
+        throw new Error(" ERR [rest_chainId_fetch] failed initializing lava-sdk rest test");
     });
 
     // Fetch chain id
@@ -18,7 +18,7 @@ async function main() {
         method: "GET",
         url: "/cosmos/base/tendermint/v1beta1/node_info",
     }).catch(e => {
-        throw new Error(" ERR failed sending relay rest test");
+        throw new Error(" ERR [rest_chainId_fetch] failed sending relay rest test");
     });
 
     // Parse response
@@ -28,9 +28,9 @@ async function main() {
 
     // Validate chainID
     if (chainID != "lava") {
-        throw new Error(" ERR Chain ID is not equal to lava");
+        throw new Error(" ERR [rest_chainId_fetch] Chain ID is not equal to lava");
     }else{
-        console.log("Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
+        console.log("[rest_chainId_fetch] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
     }
 }
 
@@ -38,7 +38,7 @@ async function main() {
     try {
         await main();
     } catch (error) {
-        console.error(" ERR "+error.message);
+        console.error(" ERR [rest_chainId_fetch] "+error.message);
         process.exit(1);
     }
 })();

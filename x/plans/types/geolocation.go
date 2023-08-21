@@ -23,6 +23,9 @@ func init() {
 			allGeoEnumRegions |= geoloc
 		}
 	}
+	sort.Slice(allGeoEnumRegionsList, func(i, j int) bool {
+		return allGeoEnumRegionsList[i] < allGeoEnumRegionsList[j]
+	})
 }
 
 // IsValidGeoEnum tests the validity of a given geolocation

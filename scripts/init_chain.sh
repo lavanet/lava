@@ -1,6 +1,14 @@
 #!/bin/bash
 # make install-all
 killall -9 lavad
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $__dir/useful_commands.sh
+
+# Check if jq is not installed
+if ! command_exists jq; then
+    echo "jq not found. Please install jq using the init_install.sh script or manually."
+    exit 1
+fi
 
 rm -rf ~/.lava
 lavad init validator --chain-id lava
@@ -29,52 +37,30 @@ echo $(cat "$path$genesis")
 
 # Determine OS
 os_name=$(uname)
+case "$(uname)" in
+  Darwin)
+    SED_INLINE="-i ''" ;;
+  Linux)
+    SED_INLINE="-i" ;;
+  *)
+    echo "unknown system: $(uname)"
+    exit 1 ;;
+esac
 
-# Check if the OS is macOS or Linux and apply the correct sed command
-if [ "$os_name" = "Darwin" ]; then
-    # For macOS
-    sed -i '' \
-    -e 's/timeout_propose = .*/timeout_propose = "1s"/' \
-    -e 's/timeout_propose_delta = .*/timeout_propose_delta = "500ms"/' \
-    -e 's/timeout_prevote = .*/timeout_prevote = "1s"/' \
-    -e 's/timeout_prevote_delta = .*/timeout_prevote_delta = "500ms"/' \
-    -e 's/timeout_precommit = .*/timeout_precommit = "500ms"/' \
-    -e 's/timeout_precommit_delta = .*/timeout_precommit_delta = "1s"/' \
-    -e 's/timeout_commit = .*/timeout_commit = "1s"/' \
-    -e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' "$path$config"
 
-elif [ "$os_name" = "Linux" ]; then
-    # For Linux
-    sed -i \
-    -e 's/timeout_propose = .*/timeout_propose = "1s"/' \
-    -e 's/timeout_propose_delta = .*/timeout_propose_delta = "500ms"/' \
-    -e 's/timeout_prevote = .*/timeout_prevote = "1s"/' \
-    -e 's/timeout_prevote_delta = .*/timeout_prevote_delta = "500ms"/' \
-    -e 's/timeout_precommit = .*/timeout_precommit = "500ms"/' \
-    -e 's/timeout_precommit_delta = .*/timeout_precommit_delta = "1s"/' \
-    -e 's/timeout_commit = .*/timeout_commit = "1s"/' \
-    -e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' "$path$config"
-
-else
-    echo "Unsupported OS: $os_name"
-    exit 1
-fi
-
+sed $SED_INLINE \
+-e 's/timeout_propose = .*/timeout_propose = "1s"/' \
+-e 's/timeout_propose_delta = .*/timeout_propose_delta = "500ms"/' \
+-e 's/timeout_prevote = .*/timeout_prevote = "1s"/' \
+-e 's/timeout_prevote_delta = .*/timeout_prevote_delta = "500ms"/' \
+-e 's/timeout_precommit = .*/timeout_precommit = "500ms"/' \
+-e 's/timeout_precommit_delta = .*/timeout_precommit_delta = "1s"/' \
+-e 's/timeout_commit = .*/timeout_commit = "1s"/' \
+-e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' "$path$config"
 
 # Edit app.toml file
-os_name=$(uname)
+sed $SED_INLINE -e "s/enable = .*/enable = true/" "$path$app"
 
-# Check if the OS is macOS or Linux and apply the correct sed command
-if [ "$os_name" = "Darwin" ]; then
-    # For macOS
-    sed -i '' -e "s/enable = .*/enable = true/" "$path$app"
-elif [ "$os_name" = "Linux" ]; then
-    # For Linux
-    sed -i -e "s/enable = .*/enable = true/" "$path$app"
-else
-    echo "Unsupported OS: $os_name"
-    exit 1
-fi
 # Add users
 users=("alice" "bob" "user1" "user2" "user3" "user4" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")
 

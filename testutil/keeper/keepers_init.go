@@ -20,7 +20,7 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/common"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
@@ -28,6 +28,7 @@ import (
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/plans"
@@ -118,6 +119,17 @@ func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, spec
 		return err
 	}
 	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
+	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
 	err = proposalHandler(ctx, proposal)
 	return err
 }
@@ -257,10 +269,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
-	ks.Plans.InitPlans(ctx, []types.RawMessage{})
-	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
-	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
-	ks.Projects.InitProjects(ctx, []types.RawMessage{})
+	ks.Plans.InitPlans(ctx, *common.DefaultGenesis())
+	ks.Subscription.InitSubscriptions(ctx, *common.DefaultGenesis())
+	ks.Projects.InitDevelopers(ctx, *common.DefaultGenesis())
+	ks.Projects.InitProjects(ctx, *common.DefaultGenesis())
 
 	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())
