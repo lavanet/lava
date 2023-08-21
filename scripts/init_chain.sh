@@ -6,7 +6,7 @@ source $__dir/useful_commands.sh
 
 # Check if jq is not installed
 if ! command_exists jq; then
-    echo "Unable to install jq using apt or brew. Please install jq manually."
+    echo "jq not found. Please install jq using the init_install.sh script or manually."
     exit 1
 fi
 
