@@ -1,43 +1,11 @@
 #!/bin/bash
 # make install-all
 killall -9 lavad
-
-# Function to check if a command is available
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Flag to track if jq installation is successful
-jq_installed=false
+__dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source $__dir/useful_commands.sh
 
 # Check if jq is not installed
 if ! command_exists jq; then
-    # Try to install jq using apt (for Debian/Ubuntu)
-    if command_exists apt; then
-        echo "Installing jq using apt..."
-        sudo apt update
-        sudo apt install -y jq
-        if command_exists jq; then
-            echo "jq has been successfully installed."
-            jq_installed=true
-        fi
-    fi
-
-    # Try to install jq using brew (for macOS)
-    if ! $jq_installed && command_exists brew; then
-        echo "Installing jq using brew..."
-        brew install jq
-        if command_exists jq; then
-            echo "jq has been successfully installed."
-            jq_installed=true
-        fi
-    fi
-else
-    jq_installed=true
-fi
-
-# if jq is still not installed, exit
-if ! $jq_installed; then
     echo "Unable to install jq using apt or brew. Please install jq manually."
     exit 1
 fi
