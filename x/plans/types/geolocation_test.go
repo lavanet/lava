@@ -10,9 +10,10 @@ import (
 
 func TestAllGeos(t *testing.T) {
 	geos := planstypes.GetAllGeolocations()
-	var geosFromMap []int32
-	for _, geo := range planstypes.Geolocation_value {
-		if geo == int32(planstypes.Geolocation_GL) || geo == int32(planstypes.Geolocation_GLS) {
+	var geosFromMap []planstypes.Geolocation
+	for _, geoInt := range planstypes.Geolocation_value {
+		geo := planstypes.Geolocation(geoInt)
+		if geo == planstypes.Geolocation_GL || geo == planstypes.Geolocation_GLS {
 			continue
 		}
 		geosFromMap = append(geosFromMap, geo)
