@@ -1,4 +1,4 @@
-package yaml
+package decoder
 
 import (
 	"encoding/json"

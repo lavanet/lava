@@ -10,8 +10,8 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/lavanet/lava/utils/decoder"
 	"github.com/lavanet/lava/utils/slices"
-	"github.com/lavanet/lava/utils/yaml"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -217,8 +217,8 @@ func ParsePolicyFromYamlPath(path string) (*Policy, error) {
 func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 	var policy Policy
 	enumHooks := slices.Slice(
-		yaml.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
-		yaml.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
+		decoder.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
+		decoder.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
 		// Add more enum hook functions for other enum types as needed
 	)
 
@@ -229,9 +229,9 @@ func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 	)
 
 	if isPath {
-		err = yaml.DecodeFile(from, "Policy", &policy, enumHooks, &unset, &unused)
+		err = decoder.DecodeFile(from, "Policy", &policy, enumHooks, &unset, &unused)
 	} else {
-		err = yaml.Decode(from, "Policy", &policy, enumHooks, &unset, &unused)
+		err = decoder.Decode(from, "Policy", &policy, enumHooks, &unset, &unused)
 	}
 
 	if err != nil {
@@ -259,7 +259,7 @@ func handleUnsetPolicyFields(unset []string, policy *Policy) {
 		}
 	}
 
-	yaml.SetDefaultValues(defaultValues, policy)
+	decoder.SetDefaultValues(defaultValues, policy)
 }
 
 // parseEnumValue is a helper function to parse the enum value based on the provided enumType.
