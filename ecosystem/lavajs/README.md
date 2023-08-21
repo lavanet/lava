@@ -1,28 +1,24 @@
-# lavajs
+# lava
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/545047/188804067-28e67e5e-0214-4449-ab04-2e0c564a6885.svg" width="80"><br />
-    lavajs
+  <img src="https://user-images.githubusercontent.com/2770565/223762290-44afc792-8ad4-4dbb-b2c2-532780d6c5de.png" alt="Logo" width="80" height="80"><br>
+   <h3 align="center">Lava JS </h3>
 </p>
 
 
 ## install
 
 ```sh
-npm install lavajs
+npm install @lavanet/lavajs
 ```
 ## Table of contents
 
-- [lavajs](#lavajs)
+- [lava](#lava)
   - [Install](#install)
   - [Table of contents](#table-of-contents)
 - [Usage](#usage)
-    - [RPC Clients](#rpc-clients)
-    - [Composing Messages](#composing-messages)
-        - Cosmos, CosmWasm, and IBC
-            - [CosmWasm](#cosmwasm-messages)
-            - [IBC](#ibc-messages)
-            - [Cosmos](#cosmos-messages)
+    - [Full Flow Example](#full-flow-example)
+    - [RPC Clients](#rpc-clients)           
 - [Wallets and Signers](#connecting-with-wallets-and-signing-messages)
     - [Stargate Client](#initializing-the-stargate-client)
     - [Creating Signers](#creating-signers)
@@ -32,93 +28,77 @@ npm install lavajs
 - [Credits](#credits)
 
 ## Usage
+
+### Full Flow Example
+```js
+import * as lavajs from '@lavanet/lavajs';
+import { Secp256k1Wallet } from '@cosmjs/amino'
+import { fromHex } from "@cosmjs/encoding";
+import Long from 'long';
+
+const publicRpc = "<RPC-HERE>"
+const privKey = "<PRIV-KEY-HERE>"
+
+// interacting specifically with lava
+async function run() {
+  // create a lava client factory  
+  const client = await lavajs.lavanet.ClientFactory.createRPCQueryClient({ rpcEndpoint: publicRpc})
+  const lavaClient = client.lavanet.lava;
+  const cosmosClient = client.cosmos;
+  
+  // create a wallet from a private key
+  let wallet = await Secp256k1Wallet.fromKey(fromHex(privKey), "lava@")
+  const [firstAccount] = await wallet.getAccounts();
+  console.log(firstAccount)
+  let signingClient = await lavajs.getSigningLavanetClient({
+    rpcEndpoint: publicRpc,
+    signer: wallet,
+  })
+
+  // get subscription info (lava query)
+  let res = await lavaClient.subscription.current({ consumer: firstAccount.address })
+  console.log(res)
+  
+  // get a balance (cosmos sdk query)
+  let res2 = await cosmosClient.bank.v1beta1.allBalances({ address: firstAccount.address })
+  console.log(res2)
+  
+  // buy a subscription (lava tx)
+  const msg = lavajs.lavanet.lava.subscription.MessageComposer.withTypeUrl.buy({
+    creator: firstAccount.address,
+    consumer: firstAccount.address,
+    index: "explorer",
+    duration: new Long(1), /* in months */
+  })
+
+  const fee = {
+    amount: [{ amount: "1", denom: "ulava" }], // Replace with the desired fee amount and token denomination
+    gas: "50000000", // Replace with the desired gas limit
+  }
+  
+  // careful here, uncommenting this code will launch a transaction. 
+  //   await signingClient.signAndBroadcast(firstAccount.address,[msg], fee, "Buying subscription on Lava blockchain!")
+}
+
+run()
+
+```
+
 ### RPC Clients
 
 ```js
-import { lava } from 'lavajs';
+import { lava } from '@lavanet/lavajs';
 
 const { createRPCQueryClient } = lava.ClientFactory; 
 const client = await createRPCQueryClient({ rpcEndpoint: RPC_ENDPOINT });
 
 // now you can query the cosmos modules
 const balance = await client.cosmos.bank.v1beta1
-    .allBalances({ address: 'lava1addresshere' });
+    .allBalances({ address: 'lava@1addresshere' });
 
 // you can also query the lava modules
 const balances = await client.lava.exchange.v1beta1
     .exchangeBalances()
-```
-
-### Composing Messages
-
-Import the `lava` object from `lavajs`. 
-
-```js
-import { lava } from 'lavajs';
-
-const {
-    createSpotLimitOrder,
-    createSpotMarketOrder,
-    deposit
-} = lava.exchange.v1beta1.MessageComposer.withTypeUrl;
-```
-
-#### CosmWasm Messages
-
-```js
-import { cosmwasm } from "lavajs";
-
-const {
-    clearAdmin,
-    executeContract,
-    instantiateContract,
-    migrateContract,
-    storeCode,
-    updateAdmin
-} = cosmwasm.wasm.v1.MessageComposer.withTypeUrl;
-```
-
-#### IBC Messages
-
-```js
-import { ibc } from 'lavajs';
-
-const {
-    transfer
-} = ibc.applications.transfer.v1.MessageComposer.withTypeUrl
-```
-
-#### Cosmos Messages
-
-```js
-import { cosmos } from 'lavajs';
-
-const {
-    fundCommunityPool,
-    setWithdrawAddress,
-    withdrawDelegatorReward,
-    withdrawValidatorCommission
-} = cosmos.distribution.v1beta1.MessageComposer.fromPartial;
-
-const {
-    multiSend,
-    send
-} = cosmos.bank.v1beta1.MessageComposer.fromPartial;
-
-const {
-    beginRedelegate,
-    createValidator,
-    delegate,
-    editValidator,
-    undelegate
-} = cosmos.staking.v1beta1.MessageComposer.fromPartial;
-
-const {
-    deposit,
-    submitProposal,
-    vote,
-    voteWeighted
-} = cosmos.gov.v1beta1.MessageComposer.fromPartial;
 ```
 
 ## Connecting with Wallets and Signing Messages
@@ -129,12 +109,12 @@ Here are the docs on [creating signers](https://github.com/cosmology-tech/cosmos
 
 ### Initializing the Stargate Client
 
-Use `getSigninglavaClient` to get your `SigningStargateClient`, with the proto/amino messages full-loaded. No need to manually add amino types, just require and initialize the client:
+Use `getSigningLavanetClient` to get your `SigningStargateClient`, with the proto/amino messages full-loaded. No need to manually add amino types, just require and initialize the client:
 
 ```js
-import { getSigninglavaClient } from 'lavajs';
+import { getSigningLavanetClient } from '@lavanet/lavajs';
 
-const stargateClient = await getSigninglavaClient({
+const stargateClient = await getSigningLavanetClient({
   rpcEndpoint,
   signer // OfflineSigner
 });
@@ -220,7 +200,7 @@ import {
     ibcAminoConverters,
     lavaAminoConverters,
     lavaProtoRegistry
-} from 'lavajs';
+} from '@lavanet/lavajs';
 
 const signer: OfflineSigner = /* create your signer (see above)  */
 const rpcEndpint = 'https://rpc.cosmos.directory/lava'; // or another URL
@@ -259,7 +239,7 @@ yarn build
 
 ### Codegen
 
-Contract schemas live in `./contracts`, and protos in `./proto`. Look inside of `scripts/codegen.js` and configure the settings for bundling your SDK and contracts into `lavajs`:
+Contract schemas live in `./contracts`, and protos in `./proto`. Look inside of `scripts/codegen.js` and configure the settings for bundling your SDK and contracts into `lava`:
 
 ```
 yarn codegen
@@ -270,24 +250,18 @@ yarn codegen
 Build the types and then publish:
 
 ```
-yarn build
+yarn build:ts
 yarn publish
 ```
-
-## Related
-
-Checkout these related projects:
-
-* [@cosmwasm/ts-codegen](https://github.com/CosmWasm/ts-codegen) for generated CosmWasm contract Typescript classes
-* [@cosmology/telescope](https://github.com/cosmology-tech/telescope) a "babel for the Cosmos", Telescope is a TypeScript Transpiler for Cosmos Protobufs.
-* [chain-registry](https://github.com/cosmology-tech/chain-registry) an npm module for the official Cosmos chain-registry.
-* [cosmos-kit](https://github.com/cosmology-tech/cosmos-kit) A wallet connector for the Cosmos ⚛️
-* [create-cosmos-app](https://github.com/cosmology-tech/create-cosmos-app) set up a modern Cosmos app by running one command.
-* [starship](https://github.com/cosmology-tech/starship) a k8s-based unified development environment for Cosmos Ecosystem
-
 ## Credits
 
 🛠 Built by Cosmology — if you like our tools, please consider delegating to [our validator ⚛️](https://cosmology.tech/validator)
+
+Code built with the help of these related projects:
+
+* [@cosmwasm/ts-codegen](https://github.com/CosmWasm/ts-codegen) for generated CosmWasm contract Typescript classes
+* [@osmonauts/telescope](https://github.com/osmosis-labs/telescope) a "babel for the Cosmos", Telescope is a TypeScript Transpiler for Cosmos Protobufs.
+* [cosmos-kit](https://github.com/cosmology-tech/cosmos-kit) A wallet connector for the Cosmos ⚛️
 
 ## Disclaimer
 

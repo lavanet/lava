@@ -12,25 +12,32 @@ async function main() {
         throw new Error(" ERR failed initializing lava-sdk jsonrpc test");
     });
 
-    // Fetch chain id
-    const result = await eth.sendRelay({
-        method: "eth_chainId",
-        params: [],
-    }).catch(e => {
-        throw new Error(" ERR failed sending relay jsonrpc test");
-    });
+    let relayArray = [];
+    for (let i = 0; i < 100; i++) { // send 100 relays asynchronously
+        relayArray.push((async () => {
+            // Fetch chain id
+            const result = await eth.sendRelay({
+                method: "eth_chainId",
+                params: [],
+            }).catch(e => {
+                throw new Error(` ERR ${i} [jsonrpc_chainId_fetch] failed sending relay jsonrpc test`);
+            });
 
-    // Parse response
-    const parsedResponse = JSON.parse(result);
+            // Parse response
+            const parsedResponse = JSON.parse(result);
 
-    const chainID = parsedResponse.result;
+            const chainID = parsedResponse.result;
 
-    // Validate chainID
-    if (chainID != "0x1") {
-        throw new Error(" ERR Chain ID is not equal to 0x1");
-    } else{
-        console.log("[jsonrpc_chainId_fetch] Success: Fetching ETH chain ID using jsonrpc passed. Chain ID correctly matches '0x1'");
+            // Validate chainID
+            if (chainID != "0x1") {
+                throw new Error(" ERR [jsonrpc_chainId_fetch] Chain ID is not equal to 0x1");
+            } else{
+                console.log(i, "[jsonrpc_chainId_fetch] Success: Fetching ETH chain ID using jsonrpc passed. Chain ID correctly matches '0x1'");
+            }
+        })().catch(err => {throw err;}));
     }
+    // wait for all relays to finish;
+    await Promise.allSettled(relayArray);
 }
 
 (async () => {

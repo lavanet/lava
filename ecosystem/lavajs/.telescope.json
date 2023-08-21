@@ -46,7 +46,6 @@
     },
     "aminoEncoding": {
       "enabled": true,
-      "exceptions": "AMINO_MAP",
       "useRecursiveV2encoding": false
     },
     "lcdClients": {
