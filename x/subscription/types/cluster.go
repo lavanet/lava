@@ -23,6 +23,6 @@ func NewCluster(plan string, subUsage uint64) Cluster {
 }
 
 func GetSubUsageCriterion() []uint64 {
-	// 0 = under a month, 6 = between 1-6 months, 12 = between 6-12 months
-	return []uint64{0, 6, 12}
+	// 0 = under a month, 6 = between 1-6 months, 12 = over 6 months
+	return []uint64{0, 6, 7}
 }
