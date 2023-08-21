@@ -1894,6 +1894,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 }
 
 // TestPairingConsistency checks we consistently get the same pairing in the same epoch
+// TODO: stake providers with geolocation=3 to actually test pairing consistency
 func TestPairingConsistency(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(10, 1, 3)
@@ -1919,5 +1920,14 @@ func TestPairingConsistency(t *testing.T) {
 		require.True(t, slices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))
 
 		prevPairing = res.Providers
+	}
+}
+
+// TestNoZeroLatency checks that there are no zero values in GEO_LATENCY_MAP
+func TestNoZeroLatency(t *testing.T) {
+	for _, latencyMap := range pairingscores.GEO_LATENCY_MAP {
+		for _, latency := range latencyMap {
+			require.NotEqual(t, uint64(0), latency)
+		}
 	}
 }
