@@ -18,13 +18,12 @@ func (k Keeper) GetProviderQosMap(ctx sdk.Context, chainID string, cluster strin
 	indices := k.providerQosFS.GetAllEntryIndicesWithPrefix(ctx, prefix)
 
 	for _, ind := range indices {
-		var qos pairingtypes.QualityOfServiceReport
-		found := k.providerQosFS.FindEntry(ctx, ind, uint64(ctx.BlockHeight()), &qos)
+		var providerQos pairingtypes.ProviderQos
+		found := k.providerQosFS.FindEntry(ctx, ind, uint64(ctx.BlockHeight()), &providerQos)
 		if !found {
 			continue
 		}
-		provider := pairingtypes.GetProviderFromProviderQosKey(ind)
-		providerQosMap[provider] = qos
+		providerQosMap[providerQos.Provider] = providerQos.QosExcellence
 	}
 
 	return providerQosMap
@@ -32,8 +31,8 @@ func (k Keeper) GetProviderQosMap(ctx sdk.Context, chainID string, cluster strin
 
 // GetQos gets a provider's QoS excellence report from the providerQosFS
 func (k Keeper) GetQos(ctx sdk.Context, chainID string, cluster string, provider string) pairingtypes.QualityOfServiceReport {
-	var qos pairingtypes.QualityOfServiceReport
+	var providerQos pairingtypes.ProviderQos
 	key := pairingtypes.ProviderQosKey(provider, chainID, cluster)
-	k.providerQosFS.FindEntry(ctx, key, uint64(ctx.BlockHeight()), &qos)
-	return qos
+	k.providerQosFS.FindEntry(ctx, key, uint64(ctx.BlockHeight()), &providerQos)
+	return providerQos.QosExcellence
 }

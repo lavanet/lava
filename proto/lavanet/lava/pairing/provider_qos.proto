@@ -1,0 +1,14 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+import "gogoproto/gogo.proto";
+import "lavanet/lava/pairing/relay.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+message ProviderQos {
+  string provider = 1;
+  QualityOfServiceReport qos_excellence = 2 [(gogoproto.nullable) = false]; 
+}
+
