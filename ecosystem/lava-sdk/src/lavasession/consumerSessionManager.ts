@@ -70,10 +70,17 @@ export class ConsumerSessionManager {
     return this.pairingAddresses.size;
   }
 
+  public getAddedToPurgeAndReport(): Set<string> {
+    return this.addedToPurgeAndReport;
+  }
+
   public updateAllProviders(
     epoch: number,
     pairingList: Map<number, ConsumerSessionsWithProvider>
   ): void {
+    if (epoch <= this.currentEpoch) {
+      throw new Error("Trying to update provider list for older epoch");
+    }
     this.currentEpoch = epoch;
 
     // reset states
@@ -241,8 +248,24 @@ export class ConsumerSessionManager {
     }
   }
 
-  public onSessionUnused(consumerSession: any): void {
-    throw new Error("Not implemented");
+  public onSessionUnused(consumerSession: SingleConsumerSession): void {
+    if (consumerSession.tryLock()) {
+      throw new Error(
+        "consumer session must be locked before accessing this method"
+      );
+    }
+
+    const cuToDecrease = consumerSession.latestRelayCu;
+    consumerSession.latestRelayCu = 0;
+    const parentConsumerSessionsWithProvider = consumerSession.client;
+    consumerSession.unlock();
+    const err =
+      parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease);
+
+    if (err) {
+      // TODO: check if we really need to throw here
+      throw err;
+    }
   }
 
   public onSessionFailure(
@@ -493,7 +516,7 @@ export class ConsumerSessionManager {
     this.addonAddresses.set(routerKey, addonAddresses);
   }
 
-  private getValidAddresses(addon: string, extensions: string[]): string[] {
+  public getValidAddresses(addon: string, extensions: string[]): string[] {
     const routerKey = newRouterKey([...extensions, addon]);
 
     const validAddresses = this.addonAddresses.get(routerKey);
