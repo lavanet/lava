@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -21,10 +22,18 @@ func DecodeFile(path string, key string, result interface{}, hooks []mapstructur
 
 func Decode(input string, key string, result interface{}, hooks []mapstructure.DecodeHookFunc, unset, unused *[]string) error {
 	var config map[string]interface{}
+	inputBytes := []byte(input)
 
-	err := yaml.Unmarshal([]byte(input), &config)
-	if err != nil {
-		return err
+	if isJSON(inputBytes) {
+		err := json.Unmarshal(inputBytes, &config)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := yaml.Unmarshal(inputBytes, &config)
+		if err != nil {
+			return err
+		}
 	}
 
 	if config == nil {
@@ -32,7 +41,7 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 	}
 
 	// get the desired section in the yaml/config per the given key
-	config, result, err = configByKey(key, config, result)
+	config, result, err := configByKey(key, config, result)
 	if err != nil {
 		return err
 	}
@@ -64,6 +73,11 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 	}
 
 	return nil
+}
+
+func isJSON(data []byte) bool {
+	var js json.RawMessage
+	return json.Unmarshal(data, &js) == nil
 }
 
 func configByKey(key string, config map[string]interface{}, result interface{}) (map[string]interface{}, interface{}, error) {
