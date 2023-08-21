@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type ServiceParams struct {
@@ -110,6 +111,20 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 
 			utils.LavaFormatInfo("Creating the service file")
 
+			filename := filepath.Base(serviceConfigFile)
+			configName := filename[0 : len(filename)-len(filepath.Ext(filename))]
+			configPath := filepath.Dir(serviceConfigFile)
+
+			viper.SetConfigName(configName)
+			viper.SetConfigType("yml")
+			viper.AddConfigPath(configPath)
+
+			// Read the configuration file
+			err = viper.ReadInConfig()
+			if err != nil {
+				return utils.LavaFormatError("Error reading config file", err)
+			}
+
 			serviceFileName, err := CreateServiceFile(serviceParams)
 			if err != nil {
 				return err
@@ -140,7 +155,8 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 		return "", utils.LavaFormatError("Service config file not found", err)
 	}
 
-	serviceId := serviceParams.ServiceType + "-" + serviceParams.ChainID
+	configChainID := viper.GetString("endpoints.0.chain-id")
+	serviceId := serviceParams.ServiceType + "-" + configChainID
 	configPath := serviceParams.LavavisorServiceConfigDir + "/" + filepath.Base(serviceParams.ServiceConfigFile)
 
 	err = lvutil.Copy(serviceParams.ServiceConfigFile, configPath)
