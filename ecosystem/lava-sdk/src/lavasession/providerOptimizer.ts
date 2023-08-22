@@ -21,6 +21,16 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
     return shuffleArray(returnProviders);
   }
 
+  public appendProbeRelayData(
+    providerAddress: string,
+    latency: number,
+    success: boolean
+  ) {
+    console.log(
+      "RandomProviderOptimizer.appendProbeRelayData() not implemented"
+    );
+  }
+
   public appendRelayData(
     providerAddress: string,
     latency: number,

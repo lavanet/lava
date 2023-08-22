@@ -22,13 +22,13 @@ const CU_SUM_ON_FAILURE = 0;
 
 describe("ConsumerSessionManager", () => {
   describe("getSessions", () => {
-    it("happy flow", () => {
+    it("happy flow", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -68,13 +68,13 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("tests pairing reset", () => {
+    it("tests pairing reset", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       cm.validAddresses = [];
 
       const consumerSessions = cm.getSessions(
@@ -116,13 +116,13 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("test pairing reset with failures", () => {
+    it("test pairing reset with failures", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       while (true) {
         if (cm.validAddresses.length === 0) {
@@ -160,13 +160,13 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("tests pairing reset with multiple failures", () => {
+    it("tests pairing reset with multiple failures", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       // let numberOfResets = 0;
       for (
@@ -262,13 +262,13 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("tests success and failure of session with update pairings in the middle", () => {
+    it("tests success and failure of session with update pairings in the middle", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const sessionList: { cs: SingleConsumerSession; epoch: number }[] = [];
       const sessionListData: { relayNum: number; cuSum: number }[] = [];
@@ -347,7 +347,7 @@ describe("ConsumerSessionManager", () => {
         }
       }
 
-      cm.updateAllProviders(
+      await cm.updateAllProviders(
         SECOND_EPOCH_HEIGHT,
         createPairingList("test2", true)
       );
@@ -387,13 +387,13 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("tests session failure and get reported providers", () => {
+    it("tests session failure and get reported providers", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -439,13 +439,13 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("tests session failure epoch mismatch", () => {
+    it("tests session failure epoch mismatch", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -461,21 +461,24 @@ describe("ConsumerSessionManager", () => {
           CU_FOR_FIRST_REQUEST
         );
 
-        cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-        cm.onSessionFailure(
-          consumerSession.session,
-          new ReportAndBlockProviderError()
-        );
+        try {
+          await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+        } catch (e) {
+          cm.onSessionFailure(
+            consumerSession.session,
+            new ReportAndBlockProviderError()
+          );
+        }
       }
     });
 
-    it("tests all providers endpoints disabled", () => {
+    it("tests all providers endpoints disabled", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", false);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
 
@@ -487,13 +490,13 @@ describe("ConsumerSessionManager", () => {
     });
 
     describe("tests pairing with addons", () => {
-      test.each(["", "addon"])(`addon: %s`, (addon) => {
+      test.each(["", "addon"])(`addon: %s`, async (addon) => {
         const cm = new ConsumerSessionManager(
           new RPCEndpoint("stub", "stub", "stub", 0),
           new RandomProviderOptimizer()
         );
         const pairingList = createPairingList("", true);
-        cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+        await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, [])).not.toEqual(0);
 
         const initialProvidersLength = cm.getValidAddresses(addon, []).length;
@@ -572,13 +575,13 @@ describe("ConsumerSessionManager", () => {
         },
       ];
 
-      test.each(extensionOptions)(`$name`, ({ addon, extensions }) => {
+      test.each(extensionOptions)(`$name`, async ({ addon, extensions }) => {
         const cm = new ConsumerSessionManager(
           new RPCEndpoint("stub", "stub", "stub", 0),
           new RandomProviderOptimizer()
         );
         const pairingList = createPairingList("", true);
-        cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+        await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, extensions)).not.toEqual(0);
 
         const initialProvidersLength = cm.getValidAddresses(
@@ -633,14 +636,14 @@ describe("ConsumerSessionManager", () => {
   });
 
   describe("updateAllProviders", () => {
-    it("updates providers", () => {
+    it("updates providers", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
 
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
@@ -650,17 +653,18 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
-    it("updates all providers with same epoch", () => {
+    it("updates all providers with same epoch", async () => {
       const cm = new ConsumerSessionManager(
         new RPCEndpoint("stub", "stub", "stub", 0),
         new RandomProviderOptimizer()
       );
 
       const pairingList = createPairingList("", true);
-      cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-      expect(() =>
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      await expect(
         cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList)
-      ).toThrowError("Trying to update provider list for older epoch");
+      ).rejects.toThrowError("Trying to update provider list for older epoch");
 
       expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);

@@ -24,6 +24,11 @@ import {
   MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION,
   RELAY_NUMBER_INCREMENT,
 } from "./common";
+import {
+  ProbeReply,
+  ProbeRequest,
+} from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import BigNumber from "bignumber.js";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -54,7 +59,7 @@ export class ConsumerSessionManager {
     this.providerOptimizer = providerOptimizer;
   }
 
-  public getRpcEndpoint(): any {
+  public getRpcEndpoint(): RPCEndpoint {
     return this.rpcEndpoint;
   }
 
@@ -74,10 +79,10 @@ export class ConsumerSessionManager {
     return this.addedToPurgeAndReport;
   }
 
-  public updateAllProviders(
+  public async updateAllProviders(
     epoch: number,
     pairingList: Map<number, ConsumerSessionsWithProvider>
-  ): void {
+  ): Promise<void> {
     if (epoch <= this.currentEpoch) {
       throw new Error("Trying to update provider list for older epoch");
     }
@@ -99,6 +104,8 @@ export class ConsumerSessionManager {
     );
 
     this.setValidAddressesToDefaultValue();
+
+    await this.probeProviders(pairingList);
   }
 
   public removeAddonAddress(addon = "", extensions: string[] = []): void {
@@ -597,5 +604,128 @@ export class ConsumerSessionManager {
     }
 
     return this.numberOfResets;
+  }
+
+  private async probeProviders(
+    pairingList: Map<number, ConsumerSessionsWithProvider>
+  ) {
+    // TODO: better random generator
+    const random = BigNumber.random(10);
+    const guid = random.shiftedBy(random.sd()).toNumber();
+    const probePromises: Promise<{
+      latency: number;
+      providerAddress: string;
+      error?: Error;
+    }>[] = [];
+    for (const consumerSessionWithProvider of pairingList.values()) {
+      probePromises.push(this.probeProvider(guid, consumerSessionWithProvider));
+    }
+
+    const probeResults = await Promise.all(probePromises);
+    for (const probeResult of probeResults) {
+      const { latency, providerAddress, error } = probeResult;
+      this.providerOptimizer.appendProbeRelayData(
+        providerAddress,
+        latency,
+        Boolean(error)
+      );
+    }
+  }
+
+  private async probeProvider(
+    guid: number,
+    consumerSessionsWithProvider: ConsumerSessionsWithProvider
+  ): Promise<{ latency: number; providerAddress: string; error?: Error }> {
+    const { connected, endpoint, providerAddress, error } =
+      consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider();
+    if (error || !connected) {
+      return { latency: 0, providerAddress: providerAddress, error: error };
+    }
+
+    const client = endpoint?.client;
+    const relaySentTime = Date.now();
+    if (!client) {
+      return {
+        latency: 0,
+        providerAddress: providerAddress,
+        // TODO: do we need to add more context to error?
+        error: new Error("endpoint client is null"),
+      };
+    }
+
+    const probeRequest = new ProbeRequest();
+    probeRequest.setGuid(guid);
+    probeRequest.setApiInterface(this.rpcEndpoint.apiInterface);
+    probeRequest.setSpecId(this.rpcEndpoint.chainId);
+
+    const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
+      client.probe(probeRequest, (err, response) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        if (response) {
+          resolve(response);
+        }
+
+        reject(new Error("Response is null"));
+      });
+    });
+
+    try {
+      const response = await this.relayWithTimeout(5000, requestPromise);
+      const relayLatency = Date.now() - relaySentTime; // in milliseconds
+      if (response instanceof Error) {
+        return {
+          latency: 0,
+          providerAddress: providerAddress,
+          error: response,
+        };
+      }
+
+      const providerGuid = response.getGuid();
+      if (providerGuid !== guid) {
+        return {
+          latency: 0,
+          error: new Error("Mismatch probe response"),
+          providerAddress,
+        };
+      }
+
+      if (response.getLatestBlock() === 0) {
+        return {
+          latency: 0,
+          providerAddress: providerAddress,
+          error: new Error("Provider returned 0 latest block"),
+        };
+      }
+
+      return {
+        latency: relayLatency,
+        providerAddress,
+      };
+    } catch (e) {
+      return {
+        latency: 0,
+        error: new Error("Probe call error"),
+        providerAddress,
+      };
+    }
+  }
+
+  private async relayWithTimeout(
+    timeLimit: number,
+    task: Promise<ProbeReply>
+  ): Promise<ProbeReply | Error> {
+    return Promise.race([task, this.timeoutPromise(timeLimit)]);
+  }
+
+  private timeoutPromise(timeout: number): Promise<Error> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        reject(new Error("Timeout exceeded"));
+      }, timeout);
+    });
   }
 }

@@ -13,6 +13,8 @@ import {
   MaximumNumberOfSessionsExceededError,
   NegativeComputeUnitsAmountError,
 } from "./errors";
+import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
+import transportAllowInsecure from "../util/browserAllowInsecure";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -23,6 +25,12 @@ export interface SessionInfo {
 export type ConsumerSessionsMap = Record<string, SessionInfo>;
 
 export interface ProviderOptimizer {
+  appendProbeRelayData(
+    providerAddress: string,
+    latency: number,
+    success: boolean
+  ): void;
+
   appendRelayFailure(providerAddress: string): void;
 
   appendRelayData(
@@ -221,8 +229,7 @@ export class SingleConsumerSession {
 export interface Endpoint {
   networkAddress: string;
   enabled: boolean;
-  // TODO: add proper type here (Relayer)
-  client?: any;
+  client?: RelayerClient;
   connectionRefusals: number;
   addons: Set<string>;
   extensions: Set<string>;
@@ -247,7 +254,7 @@ export class RPCEndpoint {
   }
 
   public key(): string {
-    return this.networkAddress + this.apiInterface;
+    return this.chainId + this.apiInterface;
   }
 
   public string(): string {
@@ -389,6 +396,13 @@ export class ConsumerSessionsWithProvider {
   } {
     for (const endpoint of this.endpoints) {
       if (endpoint.enabled) {
+        endpoint.client = new RelayerClient(
+          "https://" + endpoint.networkAddress,
+          {
+            transport: transportAllowInsecure,
+          }
+        );
+
         this.endpoints.push(endpoint);
 
         return {
