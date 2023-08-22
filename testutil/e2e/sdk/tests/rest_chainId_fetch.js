@@ -14,24 +14,33 @@ async function main() {
     });
 
     // Fetch chain id
-    const result = await lavaSdkRest.sendRelay({
-        method: "GET",
-        url: "/cosmos/base/tendermint/v1beta1/node_info",
-    }).catch(e => {
-        throw new Error(" ERR [rest_chainId_fetch] failed sending relay rest test");
-    });
+    let relayArray = [];
+    for (let i = 0; i < 100; i++) { // send 100 relays asynchronously
+        relayArray.push((async () => {
+            // Fetch chain id
+            const result = await lavaSdkRest.sendRelay({
+                method: "GET",
+                url: "/cosmos/base/tendermint/v1beta1/node_info",
+            }).catch(e => {
+                throw new Error(` ERR ${i} [rest_chainId_fetch] failed sending relay rest test`);
+            });
 
-    // Parse response
-    const parsedResponse = JSON.parse(result);
+            // Parse response
+            const parsedResponse = JSON.parse(result);
 
-    const chainID = parsedResponse["default_node_info"].network;
+            const chainID = parsedResponse["default_node_info"].network;
 
-    // Validate chainID
-    if (chainID != "lava") {
-        throw new Error(" ERR [rest_chainId_fetch] Chain ID is not equal to lava");
-    }else{
-        console.log("[rest_chainId_fetch] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
+            // Validate chainID
+            if (chainID != "lava") {
+                throw new Error(" ERR [rest_chainId_fetch] Chain ID is not equal to lava");
+            }else{
+                console.log(i, "[rest_chainId_fetch] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
+            } 
+        })().catch(err => {throw err;}));
     }
+    // wait for all relays to finish;
+    await Promise.allSettled(relayArray);
+
 }
 
 (async () => {
