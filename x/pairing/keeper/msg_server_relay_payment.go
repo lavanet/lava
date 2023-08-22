@@ -52,11 +52,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					BadgeSigner: badgeSigner,
 				}
 				addressEpochBadgeMap[mapKey] = badgeData
-			} else {
-				return nil, utils.LavaFormatError("address already exist in addressEpochBadgeMap", nil,
-					utils.Attribute{Key: "address", Value: relay.Badge.Address},
-					utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
-				)
 			}
 		}
 	}
