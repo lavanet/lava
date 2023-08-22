@@ -7,9 +7,15 @@ import {
   RelayReply,
   RelaySession,
   RelayPrivateData,
+  Badge,
+  ProbeRequest,
+  ProbeReply,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
-import { Relayer as RelayerService } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
-import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import {
+  Relayer as RelayerService,
+  RelayerClient,
+} from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
+import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 
@@ -46,6 +52,38 @@ class Relayer {
       );
     }
     this.badge = badge;
+  }
+
+  async probeProvider(
+    providerAddress: string,
+    apiInterface: string,
+    specId: string
+  ): Promise<ProbeReply> {
+    const client = new RelayerClient(
+      this.prefix + "://" + providerAddress,
+      this.getTransport()
+    );
+    const request = new ProbeRequest();
+    request.setGuid(123);
+    request.setApiInterface(apiInterface);
+    request.setSpecId(specId);
+    const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
+      client.probe(
+        request,
+        (err: ServiceError | null, result: ProbeReply | null) => {
+          if (err != null) {
+            console.log("failed sending probe", err);
+            reject(err);
+          }
+
+          if (result != null) {
+            resolve(result);
+          }
+          reject(new Error("Didn't get an error nor result"));
+        }
+      );
+    });
+    return this.relayWithTimeout(5000, requestPromise);
   }
 
   async sendRelay(
@@ -143,6 +181,16 @@ class Relayer {
     });
 
     return this.relayWithTimeout(5000, requestPromise);
+  }
+
+  getTransport() {
+    return {
+      // if allow insecure we use a transport with rejectUnauthorized disabled
+      // otherwise normal transport (default to rejectUnauthorized = true));}
+      transport: this.allowInsecureTransport
+        ? transportAllowInsecure
+        : transport,
+    };
   }
 
   extractErrorMessage(error: string) {

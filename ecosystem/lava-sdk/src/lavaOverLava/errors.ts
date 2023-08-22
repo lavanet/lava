@@ -1,4 +1,7 @@
 class ProvidersErrors {
+  static errProbeResponseUndefined: Error = new Error(
+    "Probe response undefined"
+  );
   static errLavaProvidersNotInitialized: Error = new Error(
     "Lava providers not initialized"
   );

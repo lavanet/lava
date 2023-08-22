@@ -36,3 +36,13 @@ export function parseLong(long: Long): number {
   }
   return parsedNumber;
 }
+
+export function debugPrint(
+  debugMode: boolean,
+  message?: any,
+  ...optionalParams: any[]
+) {
+  if (debugMode) {
+    console.log(message, ...optionalParams);
+  }
+}
