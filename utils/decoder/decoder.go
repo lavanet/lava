@@ -37,7 +37,7 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 	}
 
 	if config == nil {
-		return fmt.Errorf("yaml: empty input")
+		return fmt.Errorf("yaml/json: empty input")
 	}
 
 	// get the desired section in the yaml/config per the given key
@@ -108,7 +108,7 @@ func configByKey(key string, config map[string]interface{}, result interface{}) 
 				return nil, nil, fmt.Errorf("yaml: key type mismatch: %q", key)
 			}
 
-			if kind == reflect.Slice {
+			if kind == reflect.Slice || kind == reflect.String {
 				config = map[string]interface{}{
 					"Result": value,
 				}
