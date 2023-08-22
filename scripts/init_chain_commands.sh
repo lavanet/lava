@@ -3,6 +3,7 @@ __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
 # Making sure old screens are not running
+echo $(latest_vote)
 killall screen
 screen -wipe
 GASPRICE="0.000000001ulava"
