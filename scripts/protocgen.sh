@@ -7,6 +7,11 @@ if ! command_exists buf; then
     exit 1
 fi
 
+if ! command_exists protoc-gen-gocosmos; then
+    echo "protoc-gen-gocosmos not found. Please install protoc-gen-gocosmos using the init_install.sh script or manually."
+    exit 1
+fi
+
 set -eo pipefail
 
 echo "Generating gogo proto code"
