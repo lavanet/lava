@@ -1,6 +1,6 @@
 import { PairingUpdater } from "./pairing_updater";
 import { StateQuery } from "./state_query";
-import { BadgeManager } from "../badge/fetchBadge";
+import { BadgeManager } from "../badge/badgeManager";
 
 // TODO we can make relayer not default
 import Relayer from "../relayer/relayer";

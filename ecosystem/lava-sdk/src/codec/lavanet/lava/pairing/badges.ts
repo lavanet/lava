@@ -1,7 +1,8 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { StakeEntry } from "../epochstorage/stake_entry";
+import { Spec } from "../spec/spec";
+import { QueryGetPairingResponse } from "./query";
 import { Badge } from "./relay";
 
 export const protobufPackage = "lavanet.lava.pairing";
@@ -14,8 +15,9 @@ export interface GenerateBadgeRequest {
 
 export interface GenerateBadgeResponse {
   badge?: Badge;
-  pairingList: StakeEntry[];
+  getPairingResponse?: QueryGetPairingResponse;
   badgeSignerAddress: string;
+  spec?: Spec;
 }
 
 function createBaseGenerateBadgeRequest(): GenerateBadgeRequest {
@@ -103,7 +105,7 @@ export const GenerateBadgeRequest = {
 };
 
 function createBaseGenerateBadgeResponse(): GenerateBadgeResponse {
-  return { badge: undefined, pairingList: [], badgeSignerAddress: "" };
+  return { badge: undefined, getPairingResponse: undefined, badgeSignerAddress: "", spec: undefined };
 }
 
 export const GenerateBadgeResponse = {
@@ -111,11 +113,14 @@ export const GenerateBadgeResponse = {
     if (message.badge !== undefined) {
       Badge.encode(message.badge, writer.uint32(10).fork()).ldelim();
     }
-    for (const v of message.pairingList) {
-      StakeEntry.encode(v!, writer.uint32(18).fork()).ldelim();
+    if (message.getPairingResponse !== undefined) {
+      QueryGetPairingResponse.encode(message.getPairingResponse, writer.uint32(18).fork()).ldelim();
     }
     if (message.badgeSignerAddress !== "") {
       writer.uint32(26).string(message.badgeSignerAddress);
+    }
+    if (message.spec !== undefined) {
+      Spec.encode(message.spec, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -139,7 +144,7 @@ export const GenerateBadgeResponse = {
             break;
           }
 
-          message.pairingList.push(StakeEntry.decode(reader, reader.uint32()));
+          message.getPairingResponse = QueryGetPairingResponse.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag != 26) {
@@ -147,6 +152,13 @@ export const GenerateBadgeResponse = {
           }
 
           message.badgeSignerAddress = reader.string();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.spec = Spec.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -160,20 +172,22 @@ export const GenerateBadgeResponse = {
   fromJSON(object: any): GenerateBadgeResponse {
     return {
       badge: isSet(object.badge) ? Badge.fromJSON(object.badge) : undefined,
-      pairingList: Array.isArray(object?.pairingList) ? object.pairingList.map((e: any) => StakeEntry.fromJSON(e)) : [],
+      getPairingResponse: isSet(object.getPairingResponse)
+        ? QueryGetPairingResponse.fromJSON(object.getPairingResponse)
+        : undefined,
       badgeSignerAddress: isSet(object.badgeSignerAddress) ? String(object.badgeSignerAddress) : "",
+      spec: isSet(object.spec) ? Spec.fromJSON(object.spec) : undefined,
     };
   },
 
   toJSON(message: GenerateBadgeResponse): unknown {
     const obj: any = {};
     message.badge !== undefined && (obj.badge = message.badge ? Badge.toJSON(message.badge) : undefined);
-    if (message.pairingList) {
-      obj.pairingList = message.pairingList.map((e) => e ? StakeEntry.toJSON(e) : undefined);
-    } else {
-      obj.pairingList = [];
-    }
+    message.getPairingResponse !== undefined && (obj.getPairingResponse = message.getPairingResponse
+      ? QueryGetPairingResponse.toJSON(message.getPairingResponse)
+      : undefined);
     message.badgeSignerAddress !== undefined && (obj.badgeSignerAddress = message.badgeSignerAddress);
+    message.spec !== undefined && (obj.spec = message.spec ? Spec.toJSON(message.spec) : undefined);
     return obj;
   },
 
@@ -184,8 +198,11 @@ export const GenerateBadgeResponse = {
   fromPartial<I extends Exact<DeepPartial<GenerateBadgeResponse>, I>>(object: I): GenerateBadgeResponse {
     const message = createBaseGenerateBadgeResponse();
     message.badge = (object.badge !== undefined && object.badge !== null) ? Badge.fromPartial(object.badge) : undefined;
-    message.pairingList = object.pairingList?.map((e) => StakeEntry.fromPartial(e)) || [];
+    message.getPairingResponse = (object.getPairingResponse !== undefined && object.getPairingResponse !== null)
+      ? QueryGetPairingResponse.fromPartial(object.getPairingResponse)
+      : undefined;
     message.badgeSignerAddress = object.badgeSignerAddress ?? "";
+    message.spec = (object.spec !== undefined && object.spec !== null) ? Spec.fromPartial(object.spec) : undefined;
     return message;
   },
 };

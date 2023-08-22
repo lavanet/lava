@@ -7,7 +7,7 @@ import {
   TimoutFailureFetchingBadgeError as TimeoutFailureFetchingBadgeError,
   BadgeOptions,
   BadgeManager,
-} from "../badge/fetchBadge";
+} from "../badge/badgeManager";
 import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SessionManager, ConsumerSessionWithProvider } from "../types/types";
 import {

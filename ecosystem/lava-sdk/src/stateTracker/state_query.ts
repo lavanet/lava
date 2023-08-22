@@ -2,7 +2,7 @@ import {
   DEFAULT_LAVA_PAIRING_LIST,
   BOOT_RETRY_ATTEMPTS,
 } from "../config/default";
-import { BadgeManager } from "../badge/fetchBadge";
+import { BadgeManager } from "../badge/badgeManager";
 import { ChainIDRpcInterface, Config } from "./stateTracker";
 import { fetchLavaPairing } from "../util/lavaPairing";
 import { debugPrint } from "../util/common";

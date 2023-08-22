@@ -4,9 +4,11 @@ package lavanet.lava.pairing;
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 import "lavanet/lava/pairing/relay.proto";
+import "lavanet/lava/pairing/query.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "lavanet/lava/epochstorage/stake_entry.proto";
+import "lavanet/lava/spec/spec.proto";
 
 service BadgeGenerator {
   rpc GenerateBadge(GenerateBadgeRequest) returns (GenerateBadgeResponse) {}
@@ -20,6 +22,7 @@ message GenerateBadgeRequest {
 
 message GenerateBadgeResponse {
   Badge badge = 1; 
-  repeated lavanet.lava.epochstorage.StakeEntry pairing_list = 2 [(gogoproto.nullable) = true];
+  QueryGetPairingResponse get_pairing_response = 2;
   string badge_signer_address = 3;
+  lavanet.lava.spec.Spec spec = 4;
 }

@@ -46,7 +46,7 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 
 func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.eventTracker)
+	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
 	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
 	if !ok {
@@ -56,7 +56,7 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 }
 
 func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
-	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version)
+	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.EventTracker, version)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {
@@ -66,7 +66,7 @@ func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 }
 
 func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	voteUpdater := NewVoteUpdater(pst.eventTracker)
+	voteUpdater := NewVoteUpdater(pst.EventTracker)
 	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
 	voteUpdater, ok := voteUpdaterRaw.(*VoteUpdater)
 	if !ok {
@@ -77,7 +77,7 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	payemntUpdater := NewPaymentUpdater(pst.eventTracker)
+	payemntUpdater := NewPaymentUpdater(pst.EventTracker)
 	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
 	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
 	if !ok {

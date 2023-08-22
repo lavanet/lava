@@ -2321,6 +2321,11 @@ export interface Query {
   StaticProvidersList(request: QueryStaticProvidersListRequest): Promise<QueryStaticProvidersListResponse>;
   /** Queries a list of EffectivePolicy items. */
   EffectivePolicy(request: QueryEffectivePolicyRequest): Promise<QueryEffectivePolicyResponse>;
+  /**
+   * this line is used by starport scaffolding # 2
+   * Queries a list of SdkPairing items.
+   */
+  SdkPairing(request: QueryGetPairingRequest): Promise<QuerySdkPairingResponse>;
 }
 
 export class QueryClientImpl implements Query {
@@ -2342,6 +2347,7 @@ export class QueryClientImpl implements Query {
     this.UserEntry = this.UserEntry.bind(this);
     this.StaticProvidersList = this.StaticProvidersList.bind(this);
     this.EffectivePolicy = this.EffectivePolicy.bind(this);
+    this.SdkPairing = this.SdkPairing.bind(this);
   }
   Params(request: QueryParamsRequest): Promise<QueryParamsResponse> {
     const data = QueryParamsRequest.encode(request).finish();
@@ -2427,6 +2433,12 @@ export class QueryClientImpl implements Query {
     const data = QueryEffectivePolicyRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "EffectivePolicy", data);
     return promise.then((data) => QueryEffectivePolicyResponse.decode(_m0.Reader.create(data)));
+  }
+
+  SdkPairing(request: QueryGetPairingRequest): Promise<QuerySdkPairingResponse> {
+    const data = QueryGetPairingRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "SdkPairing", data);
+    return promise.then((data) => QuerySdkPairingResponse.decode(_m0.Reader.create(data)));
   }
 }
 

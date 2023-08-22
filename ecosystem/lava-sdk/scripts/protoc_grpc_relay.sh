@@ -30,9 +30,3 @@ echo "running fix_grpc_web_camel_case.py"
 python3 ./scripts/fix_grpc_web_camel_case.py
 
 cp -r $OUT_DIR ./bin/src/.
-
-echo "-------------------- CHANGE NEEDED --------------"
-echo "We need to change camel case to snake case in relay_pb.js"
-echo "Also copy the compiled files to the bin"
-echo "read ./scripts/README.md for more information"
-echo "-------------------------------------------------"
