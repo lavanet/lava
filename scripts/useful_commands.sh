@@ -43,5 +43,10 @@ command_exists() {
 }
 
 latest_vote() {
+  # Check if jq is not installed
+  if ! command_exists yq; then
+      echo "yq not found. Please install yq using the init_install.sh script or manually."
+      exit 1
+  fi
   lavad q gov proposals 2> /dev/null | yq eval '.proposals[].id'  | wc -l
 }
