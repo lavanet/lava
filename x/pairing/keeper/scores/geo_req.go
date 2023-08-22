@@ -1,8 +1,11 @@
 package scores
 
 import (
+	"fmt"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
@@ -83,6 +86,10 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 }
 
 func calculateCostFromLatency(latency uint64) math.Uint {
+	if latency == 0 {
+		utils.LavaFormatWarning("got latency 0 when calculating geo req score", fmt.Errorf("invalid geo req score"))
+		return math.OneUint()
+	}
 	return sdk.NewUint(maxGeoLatency / latency)
 }
 

@@ -1892,3 +1892,42 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		})
 	}
 }
+
+// TestPairingConsistency checks we consistently get the same pairing in the same epoch
+// TODO: stake providers with geolocation=3 to actually test pairing consistency
+func TestPairingConsistency(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(10, 1, 3)
+	iterations := 100
+
+	consumers := ts.Accounts(common.CONSUMER)
+
+	res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
+	require.Nil(t, err)
+	prevPairing := res.Providers
+	for i := 0; i < iterations; i++ {
+		res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
+		require.Nil(t, err)
+
+		var prevPairingAddrs []string
+		var currentPairingAddrs []string
+
+		for i := range res.Providers {
+			prevPairingAddrs = append(prevPairingAddrs, prevPairing[i].Address)
+			currentPairingAddrs = append(currentPairingAddrs, res.Providers[i].Address)
+		}
+
+		require.True(t, slices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))
+
+		prevPairing = res.Providers
+	}
+}
+
+// TestNoZeroLatency checks that there are no zero values in GEO_LATENCY_MAP
+func TestNoZeroLatency(t *testing.T) {
+	for _, latencyMap := range pairingscores.GEO_LATENCY_MAP {
+		for _, latency := range latencyMap {
+			require.NotEqual(t, uint64(0), latency)
+		}
+	}
+}
