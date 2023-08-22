@@ -35,18 +35,16 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 	cmdLavavisorCreateService := &cobra.Command{
 		Use:   `create-service [service-type: "provider" or "consumer"] [service-config-folder]`,
 		Short: "generates service files for each provider/consumer in the config.yml.",
-		Long: `The 'create-service' command generates system service files for each provider 
-		and consumer specified in the config.yml file. Once these service files are created, 
+		Long: `The 'create-service' command generates system service files for provider 
+		and consumer processes. Once these service files are created, 
 		the 'lavavisor start' command can utilize them to manage (enable, restart, and check the status of) 
-		each service using the 'systemctl' tool. This ensures that each service is properly integrated with 
-		the system's service manager, allowing for robust management and monitoring of the LavaVisor services.
-		Each service file inside [service-config-folder] must be named exactly the same with corresponding service name
-		defined in config.yml`,
+		each service using the 'systemctl' command.
+		After a service file is created, the name of the service is added to "config.yml" file inside Lavavisor directory.`,
 		Args: cobra.ExactArgs(2),
 		Example: `required flags: --geolocation | --from
 			optional flags: --log-level  | --node  | --keyring-backend
-			lavavisor create-service ./config --geolocation 1 --from alice --log-level warn
-			lavavisor create-service ./config --geolocation 1 --from bob --log-level info`,
+			lavavisor create-service provider ./config --geolocation 1 --from alice --log-level warn
+			lavavisor create-service consumer ./config --geolocation 1 --from bob --log-level info`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// 1. read config.yml -> this will tell us what service files this command will create
 			dir, _ := cmd.Flags().GetString("directory")
@@ -135,7 +133,6 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 	}
 	flags.AddTxFlagsToCmd(cmdLavavisorCreateService)
 	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagFrom)
-	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagChainID)
 	cmdLavavisorCreateService.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdLavavisorCreateService.MarkFlagRequired(common.GeolocationFlag)
 	cmdLavavisorCreateService.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
