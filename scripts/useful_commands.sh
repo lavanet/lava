@@ -39,5 +39,9 @@ function wait_count_blocks {
 
 # Function to check if a command is available
 command_exists() {
-    command -v "$1" >/dev/null 2>&1
+  command -v "$1" >/dev/null 2>&1
+}
+
+latest_vote() {
+  lavad q gov proposals 2> /dev/null | yq eval '.proposals[].id'  | wc -l
 }
