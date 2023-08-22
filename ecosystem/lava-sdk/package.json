@@ -1,6 +1,6 @@
 {
   "name": "@lavanet/lava-sdk",
-  "version": "0.16.1",
+  "version": "0.21.0",
   "description": "An SDK for interacting with Lava provider",
   "main": "./bin/src/sdk/sdk.js",
   "author": "Lava Protocol Inc",

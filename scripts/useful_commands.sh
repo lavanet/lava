@@ -30,3 +30,14 @@ function wait_next_block {
     fi
   done
 }
+
+function wait_count_blocks {
+  for i in $(seq 1 $1); do
+    wait_next_block
+  done
+}
+
+# Function to check if a command is available
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
