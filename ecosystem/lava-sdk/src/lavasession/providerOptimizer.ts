@@ -18,7 +18,8 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
       })
       .filter(Boolean) as string[];
 
-    return shuffleArray(returnProviders);
+    const provider = shuffleArray(returnProviders)[0];
+    return provider ? [provider] : [];
   }
 
   public appendProbeRelayData(
@@ -66,7 +67,10 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
   }
 
   public getExcellenceQoSReportForProvider(providerAddress: string): any {
-    throw new Error("Not implemented");
+    console.log(
+      "RandomProviderOptimizer.getExcellenceQoSReportForProvider() not implemented"
+    );
+    return;
   }
 }
 
