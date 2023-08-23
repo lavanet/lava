@@ -105,6 +105,7 @@ import (
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingmodule "github.com/lavanet/lava/x/pairing"
+	pairingmoduleclient "github.com/lavanet/lava/x/pairing/client"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
 	plansmodule "github.com/lavanet/lava/x/plans"
@@ -134,11 +135,7 @@ const (
 )
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
-var Upgrades = []upgrades.Upgrade{
-	upgrades.Upgrade_0_20_1,
-	upgrades.Upgrade_0_20_2,
-	upgrades.Upgrade_0_20_3,
-}
+var Upgrades = []upgrades.Upgrade{}
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
@@ -155,6 +152,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		specmoduleclient.SpecAddProposalHandler,
 		plansmoduleclient.PlansAddProposalHandler,
 		plansmoduleclient.PlansDelProposalHandler,
+		pairingmoduleclient.PairingUnstakeProposal,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -417,6 +415,50 @@ func New(
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
+	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[projectsmoduletypes.StoreKey],
+		keys[projectsmoduletypes.MemStoreKey],
+		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.EpochstorageKeeper,
+	)
+	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
+
+	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
+		appCodec,
+		keys[subscriptionmoduletypes.StoreKey],
+		keys[subscriptionmoduletypes.MemStoreKey],
+		app.GetSubspace(subscriptionmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
+		app.PlansKeeper,
+	)
+	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// downtime module
+	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
+	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
+
+	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
+		appCodec,
+		keys[pairingmoduletypes.StoreKey],
+		keys[pairingmoduletypes.MemStoreKey],
+		app.GetSubspace(pairingmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
+		app.SubscriptionKeeper,
+		app.PlansKeeper,
+		app.DowntimeKeeper,
+	)
+	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// register the proposal types
 	govRouter := v1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, v1beta1.ProposalHandler).
@@ -427,6 +469,7 @@ func New(
 		AddRoute(paramproposal.RouterKey, specmodule.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		// user defined
 		AddRoute(plansmoduletypes.ProposalsRouterKey, plansmodule.NewPlansProposalsHandler(app.PlansKeeper)).
+		AddRoute(pairingmoduletypes.ProposalsRouterKey, pairingmodule.NewPairingProposalsHandler(app.PairingKeeper)).
 
 		//
 		// default
@@ -462,45 +505,6 @@ func New(
 		govtypes.NewMultiGovHooks(),
 	)
 
-	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
-		appCodec,
-		keys[projectsmoduletypes.StoreKey],
-		keys[projectsmoduletypes.MemStoreKey],
-		app.GetSubspace(projectsmoduletypes.ModuleName),
-		app.EpochstorageKeeper,
-	)
-	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
-
-	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
-		appCodec,
-		keys[subscriptionmoduletypes.StoreKey],
-		keys[subscriptionmoduletypes.MemStoreKey],
-		app.GetSubspace(subscriptionmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		&app.EpochstorageKeeper,
-		app.ProjectsKeeper,
-		app.PlansKeeper,
-	)
-	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
-		appCodec,
-		keys[pairingmoduletypes.StoreKey],
-		keys[pairingmoduletypes.MemStoreKey],
-		app.GetSubspace(pairingmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.SpecKeeper,
-		&app.EpochstorageKeeper,
-		app.ProjectsKeeper,
-		app.SubscriptionKeeper,
-		app.PlansKeeper,
-	)
-	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
-
 	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
 		appCodec,
 		keys[conflictmoduletypes.StoreKey],
@@ -522,10 +526,6 @@ func New(
 		app.GetSubspace(protocolmoduletypes.ModuleName),
 	)
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
-
-	// downtime module
-	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
-	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 

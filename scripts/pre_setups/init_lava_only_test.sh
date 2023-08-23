@@ -22,7 +22,6 @@ lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 
 sleep 4
 
-
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
 

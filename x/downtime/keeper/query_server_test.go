@@ -17,43 +17,21 @@ func TestQueryServer_QueryDowntime(t *testing.T) {
 	qs := keeper.NewQueryServer(dk)
 
 	// set some downtimes
-	downtimes := []*v1.Downtime{
-		{
-			Block:    1,
-			Duration: 2 * time.Second,
-		},
-		{
-			Block:    2,
-			Duration: 3 * time.Second,
-		},
-		{
-			Block:    3,
-			Duration: 4 * time.Second,
-		},
+	downtime := &v1.Downtime{
+		Block:    1,
+		Duration: 50 * time.Minute,
 	}
-	dk.SetDowntime(ctx, downtimes[0].Block, downtimes[0].Duration)
-	dk.SetDowntime(ctx, downtimes[1].Block, downtimes[1].Duration)
-	dk.SetDowntime(ctx, downtimes[2].Block, downtimes[2].Duration)
+
+	dk.SetDowntime(ctx, downtime.Block, downtime.Duration)
 
 	t.Run("ok", func(t *testing.T) {
 		resp, err := qs.QueryDowntime(sdk.WrapSDKContext(ctx), &v1.QueryDowntimeRequest{
-			StartBlock: 1,
-			EndBlock:   2,
+			EpochStartBlock: uint64(1),
 		})
 		require.NoError(t, err)
 		require.Equal(t, &v1.QueryDowntimeResponse{
-			Downtimes:                  downtimes[:2],
-			CumulativeDowntimeDuration: 5 * time.Second,
+			CumulativeDowntimeDuration: downtime.Duration,
 		}, resp)
-	})
-
-	t.Run("error - invalid height", func(t *testing.T) {
-		resp, err := qs.QueryDowntime(sdk.WrapSDKContext(ctx), &v1.QueryDowntimeRequest{
-			StartBlock: 2,
-			EndBlock:   1,
-		})
-		require.ErrorContains(t, err, "start block must be less than or equal to end block")
-		require.Nil(t, resp)
 	})
 }
 

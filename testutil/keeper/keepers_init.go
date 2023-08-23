@@ -20,11 +20,15 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/common"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
+	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
+	downtimemoduletypes "github.com/lavanet/lava/x/downtime/types"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/plans"
@@ -62,6 +66,7 @@ type Keepers struct {
 	Protocol      protocolkeeper.Keeper
 	ParamsKeeper  paramskeeper.Keeper
 	BlockStore    MockBlockStore
+	Downtime      downtimekeeper.Keeper
 }
 
 type Servers struct {
@@ -118,6 +123,17 @@ func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, spec
 	return err
 }
 
+func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
+	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -170,6 +186,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(conflictStoreKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(conflictMemStoreKey, storetypes.StoreTypeMemory, nil)
 
+	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
+	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
@@ -177,6 +196,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(epochstoragetypes.ModuleName)
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
 	paramsKeeper.Subspace(protocoltypes.ModuleName)
+	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -200,6 +220,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 		"ConflictParams",
 	)
 
+	downtimeParamsSubspace, _ := paramsKeeper.GetSubspace(downtimemoduletypes.ModuleName)
+
 	ks := Keepers{}
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
@@ -209,7 +231,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans)
+	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
@@ -228,6 +251,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	protocoltypes.UpdateLatestParams(protocolParams)
 	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
+	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
+
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
 	ss := Servers{}
@@ -244,10 +269,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
-	ks.Plans.InitPlans(ctx, []types.RawMessage{})
-	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
-	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
-	ks.Projects.InitProjects(ctx, []types.RawMessage{})
+	ks.Plans.InitPlans(ctx, *common.DefaultGenesis())
+	ks.Subscription.InitSubscriptions(ctx, *common.DefaultGenesis())
+	ks.Projects.InitDevelopers(ctx, *common.DefaultGenesis())
+	ks.Projects.InitProjects(ctx, *common.DefaultGenesis())
 
 	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())

@@ -142,7 +142,7 @@ func runSDKE2E(timeout time.Duration) {
 
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)
-	sdk.RunSDKTests(ctx, grpcConn, privateKey, lt.logs["01_sdkTest"])
+	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"])
 
 	lt.finishTestSuccessfully()
 

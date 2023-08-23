@@ -144,6 +144,64 @@ func TestIntersection(t *testing.T) {
 	}
 }
 
+func TestUnion(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		slices [][]int
+		result []int
+	}{
+		{"zero slices", [][]int{}, []int{}},
+		{"one slice", [][]int{{1, 2}}, []int{1, 2}},
+		{"two slices, one empty", [][]int{{1, 2}, {}}, []int{1, 2}},
+		{"two slices, non empty", [][]int{{1, 2, 3}, {1, 4}}, []int{1, 2, 3, 4}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			res := Union(tt.slices...)
+			require.Subset(t, tt.result, res)
+			require.Subset(t, res, tt.result)
+		})
+	}
+}
+
+// simple struct with Differentiator for TestUnionByFunc
+type testUnion struct {
+	s string
+}
+
+func (x testUnion) Differentiator() string {
+	return x.s[0:1]
+}
+
+func TestUnionByFunc(t *testing.T) {
+	tu := []testUnion{
+		{s: "after"},
+		{s: "aleph"},
+		{s: "about"},
+		{s: "below"},
+		{s: "bring"},
+		{s: "chain"},
+		{s: "chase"},
+		{s: "chill"},
+	}
+	for _, tt := range []struct {
+		name   string
+		slices [][]testUnion
+		result []testUnion
+	}{
+		{"zero slices", [][]testUnion{}, []testUnion{}},
+		{"one slice", [][]testUnion{Slice(tu[1], tu[2])}, Slice(tu[2])},
+		{"two slices, one empty", [][]testUnion{Slice(tu[1], tu[2]), {}}, Slice(tu[2])},
+		{"two slices, non empty", [][]testUnion{Slice(tu[1], tu[2], tu[3]), Slice(tu[1], tu[4])}, Slice(tu[1], tu[4])},
+		{"test differentiator same", [][]testUnion{Slice(tu[1], tu[3], tu[6]), Slice(tu[2], tu[4], tu[7])}, Slice(tu[2], tu[4], tu[7])},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			res := UnionByFunc(tt.slices...)
+			require.Subset(t, tt.result, res)
+			require.Subset(t, res, tt.result)
+		})
+	}
+}
+
 func TestUnorderedEqual(t *testing.T) {
 	for _, tt := range []struct {
 		name   string

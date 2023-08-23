@@ -14,6 +14,18 @@ message Entry {
     bool is_latest = 7; // is this entry the latest entry now?
 }
 
+message GenesisEntries {
+    string index = 2;
+    bool is_live = 3;
+    repeated Entry entries = 4 [(gogoproto.nullable) = false];
+}
+
+message GenesisState {
+    uint64 version = 1;
+    repeated GenesisEntries entries = 2 [(gogoproto.nullable) = false];
+    repeated RawMessage timerstore = 3[(gogoproto.nullable) = false];
+}
+
 message RawMessage {
     bytes key = 1;
     bytes value = 2;

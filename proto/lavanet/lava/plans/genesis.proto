@@ -11,6 +11,6 @@ option go_package = "github.com/lavanet/lava/x/plans/types";
 // GenesisState defines the plan module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  repeated lavanet.lava.common.RawMessage plansFS = 2 [(gogoproto.nullable) = false];
+  lavanet.lava.common.GenesisState plansFS = 2 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }
