@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	protocolversion "github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -85,8 +86,9 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 	if err != nil {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
-	minVersionMismatch := (incoming.ConsumerMin != binaryVersion || incoming.ProviderMin != binaryVersion)
-	targetVersionMismatch := (incoming.ConsumerTarget != binaryVersion || incoming.ProviderTarget != binaryVersion)
+
+	minVersionMismatch := (protocolversion.HasVersionMismatch(incoming.ConsumerMin, binaryVersion) || protocolversion.HasVersionMismatch(incoming.ProviderMin, binaryVersion))
+	targetVersionMismatch := (protocolversion.HasVersionMismatch(incoming.ConsumerTarget, binaryVersion) || protocolversion.HasVersionMismatch(incoming.ProviderTarget, binaryVersion))
 
 	// Take action only if both mismatches are detected
 	if minVersionMismatch && targetVersionMismatch {
