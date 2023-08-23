@@ -184,8 +184,8 @@ func (rws *RewardServer) paidCU() uint64 {
 
 func (rws *RewardServer) addExpectedPayment(expectedPay PaymentRequest) {
 	rws.lock.Lock() // this can be a separate lock, if we have performance issues
-	defer rws.lock.Unlock()
 	rws.expectedPayments = append(rws.expectedPayments, expectedPay)
+	rws.lock.Unlock()
 }
 
 func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64, uniqueID uint64, chainID string) bool {

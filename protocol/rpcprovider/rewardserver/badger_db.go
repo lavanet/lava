@@ -93,16 +93,8 @@ func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
 	result := make(map[string][]byte)
 
-	mdb.lock.RLock()
-	for key, value := range mdb.rewards {
-		if value.isExpired() {
-			continue
-		}
-
-		result[key] = value.data
-	}
-	mdb.lock.RUnlock()
-
+	// firstly select from persistent db,
+	// because rewards map may store the newest data to replace old one from db
 	err := mdb.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10
@@ -127,6 +119,16 @@ func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	mdb.lock.RLock()
+	for key, value := range mdb.rewards {
+		if value.isExpired() {
+			continue
+		}
+
+		result[key] = value.data
+	}
+	mdb.lock.RUnlock()
 
 	return result, nil
 }
