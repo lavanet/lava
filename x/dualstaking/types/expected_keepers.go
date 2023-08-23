@@ -16,3 +16,7 @@ type BankKeeper interface {
 	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	// Methods imported from bank should be defined here
 }
+
+type EpochstorageKeeper interface {
+	// Methods imported from epochstorage should be defined here
+}
