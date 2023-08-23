@@ -1,0 +1,7 @@
+syntax = "proto3";
+package lava.dualstaking;
+
+option go_package = "github.com/lavanet/lava/x/dualstaking/types";
+
+// Msg defines the Msg service.
+service Msg {}
