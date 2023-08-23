@@ -1,12 +1,16 @@
 syntax = "proto3";
-package lava.dualstaking;
+package lavanet.lava.dualstaking;
 
 import "gogoproto/gogo.proto";
-import "lava/dualstaking/params.proto";
+import "lavanet/lava/dualstaking/params.proto";
+import "lavanet/lava/common/fixationEntry.proto";
 
 option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
 // GenesisState defines the dualstaking module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.common.RawMessage delegationsFS = 2 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.common.RawMessage delegatorsFS = 3 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.common.RawMessage unbondingsTS = 4 [(gogoproto.nullable) = false];
 }
