@@ -22,8 +22,8 @@ const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of 
 // init policy default values (for fields that their natural zero value is not good)
 // the values were chosen in a way that they will not influence the strictest policy calculation
 var policyDefaultValues = map[string]interface{}{
-	"GeolocationProfile": uint64(Geolocation_GL),
-	"MaxProvidersToPair": uint64(math.MaxUint64),
+	"geolocation_profile":   uint64(Geolocation_GL),
+	"max_providers_to_pair": uint64(math.MaxUint64),
 }
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
@@ -242,14 +242,17 @@ func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 		return &policy, fmt.Errorf("invalid policy: unknown field(s): %v", unused)
 	}
 	if len(unset) != 0 {
-		handleUnsetPolicyFields(unset, &policy)
+		err = handleUnsetPolicyFields(unset, &policy)
+		if err != nil {
+			return &policy, err
+		}
 	}
 
 	return &policy, nil
 }
 
 // handleMissingPolicyFields sets default values to missing fields
-func handleUnsetPolicyFields(unset []string, policy *Policy) {
+func handleUnsetPolicyFields(unset []string, policy *Policy) error {
 	defaultValues := make(map[string]interface{})
 
 	for _, field := range unset {
@@ -259,7 +262,7 @@ func handleUnsetPolicyFields(unset []string, policy *Policy) {
 		}
 	}
 
-	decoder.SetDefaultValues(defaultValues, policy)
+	return decoder.SetDefaultValues(defaultValues, policy)
 }
 
 func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {

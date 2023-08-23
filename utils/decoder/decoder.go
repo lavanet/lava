@@ -128,7 +128,17 @@ func configByKey(key string, config map[string]interface{}, result interface{}) 
 }
 
 func SetDefaultValues(input map[string]interface{}, result interface{}) error {
-	return mapstructure.Decode(input, result)
+	decoderConfig := mapstructure.DecoderConfig{
+		Result:  result,
+		TagName: "json",
+	}
+
+	decoder, err := mapstructure.NewDecoder(&decoderConfig)
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(input)
 }
 
 // EnumParseFunc represents the signature of enum parse functions.
