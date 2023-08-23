@@ -223,7 +223,7 @@ ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
-LAVA_ALL_BINARIES := lavad lava-protocol lavavisor
+LAVA_ALL_BINARIES := lavad lava-protocol lava-visor
 
 # helper target/build functions
 
