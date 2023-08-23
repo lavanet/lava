@@ -12,7 +12,7 @@
                     "amount": "100000"
                 },
                 "annual_discount_percentage": 20,
-                "allow_overuse": false,
+                "allow_overuse": true,
                 "overuse_rate": 2,
                 "plan_policy": {
                     "chain_policies": [

@@ -53,6 +53,7 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 		DecodeHook: decoderHookFunc,
 		Metadata:   &decoderMetadata,
 		Result:     result,
+		TagName:    "json",
 	}
 
 	decoder, err := mapstructure.NewDecoder(&decoderConfig)

@@ -17,59 +17,70 @@ import (
 type (
 	PlansAddProposalJSON struct {
 		Proposal types.PlansAddProposal `json:"proposal"`
-		Deposit  string                 `json:"deposit" yaml:"deposit"`
+		Deposit  string                 `json:"deposit"`
 	}
 )
 
 type (
 	PlansDelProposalJSON struct {
 		Proposal types.PlansDelProposal `json:"proposal"`
-		Deposit  string                 `json:"deposit" yaml:"deposit"`
+		Deposit  string                 `json:"deposit"`
 	}
 )
 
 // Parse plans add proposal JSON form file
-func ParsePlansAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret PlansAddProposalJSON, err error) {
-	for _, fileName := range strings.Split(proposalFile, ",") {
-		var proposal PlansAddProposalJSON
+func ParsePlansAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (PlansAddProposalJSON, error) {
+	var ret PlansAddProposalJSON
+	decoderHooks := []mapstructure.DecodeHookFunc{
+		priceDecodeHookFunc,
+		types.PolicyEnumDecodeHookFunc,
+	}
 
-		decoderHooks := []mapstructure.DecodeHookFunc{
-			priceDecodeHookFunc,
-		}
-
+	files := strings.Split(proposalFile, ",")
+	for _, fileName := range files {
 		var (
-			unused []string
-			unset  []string
-			err    error
+			plansAddProposal PlansAddProposalJSON
+			unused           []string
+			unset            []string
+			err              error
 		)
 
-		err = decoder.DecodeFile(fileName, "proposal", &proposal.Proposal, decoderHooks, &unset, &unused)
+		err = decoder.DecodeFile(fileName, "proposal", &plansAddProposal.Proposal, decoderHooks, &unset, &unused)
 		if err != nil {
-			return proposal, err
+			return PlansAddProposalJSON{}, err
 		}
 
-		err = decoder.DecodeFile(fileName, "deposit", &proposal.Deposit, nil, nil, nil)
+		err = decoder.DecodeFile(fileName, "deposit", &plansAddProposal.Deposit, nil, nil, nil)
 		if err != nil {
-			return proposal, err
+			return PlansAddProposalJSON{}, err
 		}
 
-		if len(ret.Proposal.Plans) > 0 {
-			ret.Proposal.Plans = append(ret.Proposal.Plans, proposal.Proposal.Plans...)
-			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
-			ret.Proposal.Title = proposal.Proposal.Title + " " + ret.Proposal.Title
-			retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
+		err = plansAddProposal.Proposal.ValidateBasic()
+		if err != nil {
+			return PlansAddProposalJSON{}, err
+		}
+
+		if len(plansAddProposal.Proposal.Plans) > 0 {
+			ret.Proposal.Plans = append(ret.Proposal.Plans, plansAddProposal.Proposal.Plans...)
+			ret.Proposal.Description = ret.Proposal.Description + " " + plansAddProposal.Proposal.Description
+			ret.Proposal.Title = ret.Proposal.Title + " " + plansAddProposal.Proposal.Title
+
+			proposalDeposit, err := sdk.ParseCoinNormalized(plansAddProposal.Deposit)
 			if err != nil {
-				return proposal, err
+				return PlansAddProposalJSON{}, err
 			}
-			proposalDeposit, err := sdk.ParseCoinNormalized(proposal.Deposit)
-			if err != nil {
-				return proposal, err
+			if ret.Deposit != "" {
+				retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
+				if err != nil {
+					return PlansAddProposalJSON{}, err
+				}
+				ret.Deposit = retDeposit.Add(proposalDeposit).String()
+			} else {
+				ret.Deposit = proposalDeposit.String()
 			}
-			ret.Deposit = retDeposit.Add(proposalDeposit).String()
-		} else {
-			ret = proposal
 		}
 	}
+
 	return ret, nil
 }
 
@@ -106,9 +117,7 @@ func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret
 	return ret, nil
 }
 
-// Plan Hook Functions
-
-// priceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type sdk.Int)
+// PriceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type sdk.Int)
 func priceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 	if t == reflect.TypeOf(sdk.NewInt(0)) {
 		amountStr, ok := data.(string)

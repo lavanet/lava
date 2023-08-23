@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strings"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/lavanet/lava/utils/decoder"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/mitchellh/mapstructure"
 )
 
 const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of the chains and allow all others
@@ -216,12 +218,10 @@ func ParsePolicyFromYamlPath(path string) (*Policy, error) {
 
 func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 	var policy Policy
-	enumHooks := slices.Slice(
-		decoder.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
-		decoder.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
-		// Add more enum hook functions for other enum types as needed
-	)
 
+	enumHooks := []mapstructure.DecodeHookFunc{
+		PolicyEnumDecodeHookFunc,
+	}
 	var (
 		unused []string
 		unset  []string
@@ -262,23 +262,6 @@ func handleUnsetPolicyFields(unset []string, policy *Policy) {
 	decoder.SetDefaultValues(defaultValues, policy)
 }
 
-// parseEnumValue is a helper function to parse the enum value based on the provided enumType.
-func parsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, error) {
-	switch v := enumType.(type) {
-	case uint64:
-		geo, err := ParseGeoEnum(strVal)
-		if err != nil {
-			return 0, fmt.Errorf("invalid geolocation %s", strVal)
-		}
-		return geo, nil
-	case SELECTED_PROVIDERS_MODE:
-		return DecodeSelectedProvidersMode(strVal)
-	// Add cases for other enum types as needed
-	default:
-		return nil, fmt.Errorf("unsupported enum type: %T", v)
-	}
-}
-
 func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 	mode, found := SELECTED_PROVIDERS_MODE_value[dataStr]
 	if found {
@@ -290,4 +273,40 @@ func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 
 func (cr ChainRequirement) Differentiator() string {
 	return cr.Collection.String() + strings.Join(cr.Extensions, ",")
+}
+
+func PolicyEnumDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	if t == reflect.TypeOf(Policy{}) {
+		policyMap, ok := data.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("unexpected data type for policy field")
+		}
+
+		// geolocation enum handling
+		geo, ok := policyMap["geolocation_profile"]
+		if ok {
+			if geoStr, ok := geo.(string); ok {
+				geoUint, err := ParseGeoEnum(geoStr)
+				if err != nil {
+					return nil, err
+				}
+				policyMap["geolocation_profile"] = geoUint
+			}
+		}
+
+		// selected providers mode enum handling
+		mode, ok := policyMap["selected_providers_mode"]
+		if ok {
+			if modeStr, ok := mode.(string); ok {
+				modeEnum, err := DecodeSelectedProvidersMode(modeStr)
+				if err != nil {
+					return nil, err
+				}
+				policyMap["selected_providers_mode"] = modeEnum
+			}
+		}
+
+		data = policyMap
+	}
+	return data, nil
 }
