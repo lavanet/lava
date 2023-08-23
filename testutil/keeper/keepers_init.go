@@ -58,6 +58,7 @@ const BLOCK_HEADER_LEN = 32
 type Keepers struct {
 	AccountKeeper mockAccountKeeper
 	BankKeeper    mockBankKeeper
+	StakingKeeper mockStakingKeeper
 	Spec          speckeeper.Keeper
 	Epochstorage  epochstoragekeeper.Keeper
 	Dualstaking   dualstakingkeeper.Keeper
@@ -236,9 +237,10 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks := Keepers{}
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
+	ks.StakingKeeper = mockStakingKeeper{}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec)
+	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.StakingKeeper, ks.Epochstorage, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
