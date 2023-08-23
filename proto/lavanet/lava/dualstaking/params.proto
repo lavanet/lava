@@ -1,5 +1,5 @@
 syntax = "proto3";
-package lava.dualstaking;
+package lavanet.lava.dualstaking;
 
 import "gogoproto/gogo.proto";
 

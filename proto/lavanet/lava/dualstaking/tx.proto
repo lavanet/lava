@@ -1,5 +1,5 @@
 syntax = "proto3";
-package lava.dualstaking;
+package lavanet.lava.dualstaking;
 
 option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
