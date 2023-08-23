@@ -99,8 +99,11 @@ import (
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflictmoduletypes "github.com/lavanet/lava/x/conflict/types"
 	downtimemodule "github.com/lavanet/lava/x/downtime"
-	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
+	downtimemodulekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	downtimemoduletypes "github.com/lavanet/lava/x/downtime/types"
+	dualstakingmodule "github.com/lavanet/lava/x/dualstaking"
+	dualstakingmodulekeeper "github.com/lavanet/lava/x/dualstaking/keeper"
+	dualstakingmoduletypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -188,6 +191,7 @@ var (
 		vesting.AppModuleBasic{},
 		specmodule.AppModuleBasic{},
 		epochstoragemodule.AppModuleBasic{},
+		dualstakingmodule.AppModuleBasic{},
 		subscriptionmodule.AppModuleBasic{},
 		pairingmodule.AppModuleBasic{},
 		conflictmodule.AppModuleBasic{},
@@ -208,6 +212,7 @@ var (
 		govtypes.ModuleName:                {authtypes.Burner},
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.ModuleName:  {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		subscriptionmoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		pairingmoduletypes.ModuleName:      {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		conflictmoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
@@ -289,6 +294,7 @@ func New(
 		evidencetypes.StoreKey, crisistypes.StoreKey, ibctransfertypes.StoreKey, ibcexported.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
 		epochstoragemoduletypes.StoreKey,
+		dualstakingmoduletypes.StoreKey,
 		subscriptionmoduletypes.StoreKey,
 		pairingmoduletypes.StoreKey,
 		conflictmoduletypes.StoreKey,
@@ -485,8 +491,20 @@ func New(
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.DualstakingKeeper = *dualstakingmodulekeeper.NewKeeper(
+		appCodec,
+		keys[dualstakingmoduletypes.StoreKey],
+		keys[dualstakingmoduletypes.MemStoreKey],
+		app.GetSubspace(dualstakingmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.EpochstorageKeeper,
+	)
+	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// downtime module
-	app.DowntimeKeeper = downtimekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
+	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
 	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
 
 	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
@@ -568,6 +586,7 @@ func New(
 		transferModule,
 		specModule,
 		epochstorageModule,
+		dualstakingModule,
 		subscriptionModule,
 		pairingModule,
 		conflictModule,
@@ -600,6 +619,7 @@ func New(
 		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		downtimemoduletypes.ModuleName, // downtime needs to run before pairing
@@ -628,6 +648,7 @@ func New(
 		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
+		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
@@ -661,6 +682,7 @@ func New(
 		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
+		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		downtimemoduletypes.ModuleName,
 		pairingmoduletypes.ModuleName,
@@ -699,6 +721,7 @@ func New(
 		transferModule,
 		specModule,
 		epochstorageModule,
+		dualstakingModule,
 		subscriptionModule,
 		pairingModule,
 		conflictModule,
@@ -922,6 +945,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
+	paramsKeeper.Subspace(dualstakingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(subscriptionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)

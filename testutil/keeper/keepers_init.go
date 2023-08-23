@@ -26,6 +26,8 @@ import (
 	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	downtimemoduletypes "github.com/lavanet/lava/x/downtime/types"
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
@@ -57,6 +59,7 @@ type Keepers struct {
 	BankKeeper    mockBankKeeper
 	Spec          speckeeper.Keeper
 	Epochstorage  epochstoragekeeper.Keeper
+	Dualstaking   dualstakingkeeper.Keeper
 	Subscription  subscriptionkeeper.Keeper
 	Conflict      conflictkeeper.Keeper
 	Pairing       pairingkeeper.Keeper
@@ -76,6 +79,7 @@ type Servers struct {
 	ProjectServer      projectstypes.MsgServer
 	ProtocolServer     protocoltypes.MsgServer
 	SubscriptionServer subscriptiontypes.MsgServer
+	DualstakingServer  dualstakingtypes.MsgServer
 	PlansServer        planstypes.MsgServer
 }
 
@@ -159,6 +163,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore.MountStoreWithDB(subscriptionStoreKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(subscriptionMemStoreKey, storetypes.StoreTypeMemory, nil)
 
+	dualstakingStoreKey := sdk.NewKVStoreKey(dualstakingtypes.StoreKey)
+	dualstakingMemStoreKey := storetypes.NewMemoryStoreKey(dualstakingtypes.MemStoreKey)
+	stateStore.MountStoreWithDB(dualstakingStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(dualstakingMemStoreKey, storetypes.StoreTypeMemory, nil)
+
 	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
 	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
 	stateStore.MountStoreWithDB(epochStoreKey, storetypes.StoreTypeIAVL, db)
@@ -201,6 +210,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	subscriptionparamsSubspace, _ := paramsKeeper.GetSubspace(subscriptiontypes.ModuleName)
 
+	dualstakingparamsSubspace, _ := paramsKeeper.GetSubspace(dualstakingtypes.ModuleName)
+
 	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
 		conflicttypes.Amino,
 		conflictStoreKey,
@@ -215,6 +226,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
+	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
@@ -232,6 +244,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
 	ks.Epochstorage.SetParams(ctx, epochstoragetypes.DefaultParams())
+	ks.Dualstaking.SetParams(ctx, dualstakingtypes.DefaultParams())
 	ks.Conflict.SetParams(ctx, conflicttypes.DefaultParams())
 	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
 	protocolParams := protocoltypes.DefaultParams()
@@ -252,6 +265,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.ProjectServer = projectskeeper.NewMsgServerImpl(ks.Projects)
 	ss.ProtocolServer = protocolkeeper.NewMsgServerImpl(ks.Protocol)
 	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
+	ss.DualstakingServer = dualstakingkeeper.NewMsgServerImpl(ks.Dualstaking)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 

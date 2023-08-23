@@ -14,6 +14,7 @@ import (
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/x/dualstaking/keeper"
 	"github.com/lavanet/lava/x/dualstaking/types"
+	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,11 +37,22 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		"DualstakingParams",
 	)
+
+	paramsSubspaceEpochstorage := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"EpochStorageParams",
+	)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
+		nil,
+		nil,
+		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
