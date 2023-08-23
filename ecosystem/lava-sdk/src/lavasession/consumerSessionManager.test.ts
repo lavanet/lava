@@ -179,27 +179,27 @@ describe("ConsumerSessionManager", () => {
             break;
           }
 
-          try {
-            const consumerSessions = cm.getSessions(
-              CU_FOR_FIRST_REQUEST,
-              [],
-              SERVICED_BLOCK_NUMBER,
-              "",
-              []
-            );
+          const consumerSessions = cm.getSessions(
+            CU_FOR_FIRST_REQUEST,
+            [],
+            SERVICED_BLOCK_NUMBER,
+            "",
+            []
+          );
 
-            for (const consumerSession of Object.values(consumerSessions)) {
-              cm.onSessionFailure(consumerSession.session);
-            }
-          } catch (e) {
-            if (
-              cm.validAddresses.length === 0 &&
-              e instanceof PairingListEmptyError
-            ) {
+          if (
+            cm.validAddresses.length === 0 &&
+            consumerSessions instanceof Error
+          ) {
+            if (consumerSessions instanceof PairingListEmptyError) {
               break;
+            } else {
+              throw consumerSessions;
             }
+          }
 
-            throw e;
+          for (const consumerSession of Object.values(consumerSessions)) {
+            cm.onSessionFailure(consumerSession.session);
           }
         }
 
@@ -461,9 +461,11 @@ describe("ConsumerSessionManager", () => {
           CU_FOR_FIRST_REQUEST
         );
 
-        try {
-          await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-        } catch (e) {
+        const error = await cm.updateAllProviders(
+          FIRST_EPOCH_HEIGHT,
+          pairingList
+        );
+        if (error) {
           cm.onSessionFailure(
             consumerSession.session,
             new ReportAndBlockProviderError()
@@ -482,11 +484,15 @@ describe("ConsumerSessionManager", () => {
       expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
 
-      try {
-        cm.getSessions(CU_FOR_FIRST_REQUEST, [], SERVICED_BLOCK_NUMBER, "", []);
-      } catch (e) {
-        expect(e).toBeInstanceOf(PairingListEmptyError);
-      }
+      const sessions = cm.getSessions(
+        CU_FOR_FIRST_REQUEST,
+        [],
+        SERVICED_BLOCK_NUMBER,
+        "",
+        []
+      );
+
+      expect(sessions).toBeInstanceOf(PairingListEmptyError);
     });
 
     describe("tests pairing with addons", () => {
@@ -662,9 +668,10 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      await expect(
-        cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList)
-      ).rejects.toThrowError("Trying to update provider list for older epoch");
+      const err = await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      expect(err?.message).toEqual(
+        "Trying to update provider list for older epoch"
+      );
 
       expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);

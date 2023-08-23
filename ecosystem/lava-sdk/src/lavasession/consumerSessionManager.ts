@@ -29,6 +29,7 @@ import {
   ProbeRequest,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import BigNumber from "bignumber.js";
+import Logger from "../logger/logger";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -82,9 +83,15 @@ export class ConsumerSessionManager {
   public async updateAllProviders(
     epoch: number,
     pairingList: Map<number, ConsumerSessionsWithProvider>
-  ): Promise<void> {
+  ): Promise<Error | undefined> {
     if (epoch <= this.currentEpoch) {
-      throw new Error("Trying to update provider list for older epoch");
+      Logger.error(
+        `trying to update provider list for older epoch ${JSON.stringify({
+          epoch,
+          currentEpoch: this.currentEpoch,
+        })}`
+      );
+      return new Error("Trying to update provider list for older epoch");
     }
     this.currentEpoch = epoch;
 
@@ -105,7 +112,14 @@ export class ConsumerSessionManager {
 
     this.setValidAddressesToDefaultValue();
 
-    await this.probeProviders(pairingList);
+    Logger.debug(
+      `updated providers ${JSON.stringify({
+        epoch: this.currentEpoch,
+        spec: this.rpcEndpoint.key(),
+      })}`
+    );
+
+    await this.probeProviders(pairingList, epoch);
   }
 
   public removeAddonAddress(addon = "", extensions: string[] = []): void {
@@ -142,7 +156,7 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[]
-  ): ConsumerSessionsMap {
+  ): ConsumerSessionsMap | Error {
     const numberOfResets = this.validatePairingListNotEmpty(addon, extensions);
     const tempIgnoredProviders: IgnoredProviders = {
       providers: new Set(initUnwantedProviders),
@@ -156,66 +170,76 @@ export class ConsumerSessionManager {
       addon,
       extensions
     );
-    if (sessionWithProvidersMap.error) {
-      throw sessionWithProvidersMap.error;
+    if (sessionWithProvidersMap instanceof Error) {
+      return sessionWithProvidersMap;
     }
 
-    const wantedSessions = sessionWithProvidersMap.result.size;
+    const wantedSessions = sessionWithProvidersMap.size;
 
     const sessions: ConsumerSessionsMap = {};
     while (true) {
-      for (const sessionWithProviders of sessionWithProvidersMap.result) {
+      for (const sessionWithProviders of sessionWithProvidersMap) {
         const [providerAddress, sessionsWithProvider] = sessionWithProviders;
         const consumerSessionsWithProvider =
           sessionsWithProvider.sessionsWithProvider;
         let sessionEpoch = sessionsWithProvider.currentEpoch;
 
-        const { connected, endpoint, error } =
+        const endpointConn =
           consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider();
-        if (error && error instanceof AllProviderEndpointsDisabledError) {
-          this.blockProvider(providerAddress, true, sessionEpoch);
-          continue;
-        }
 
-        if (!connected || endpoint === null) {
-          tempIgnoredProviders.providers.add(providerAddress);
-          continue;
-        }
-
-        const reportedProviders = this.getReportedProviders(sessionEpoch);
-        const consumerSessionInstanceFromEndpoint =
-          consumerSessionsWithProvider.getConsumerSessionInstanceFromEndpoint(
-            endpoint,
-            numberOfResets
-          );
-        if (consumerSessionInstanceFromEndpoint instanceof Error) {
-          if (
-            consumerSessionInstanceFromEndpoint instanceof
-            MaximumNumberOfSessionsExceededError
-          ) {
-            tempIgnoredProviders.providers.add(providerAddress);
-          } else if (
-            consumerSessionInstanceFromEndpoint instanceof
-            MaximumNumberOfBlockListedSessionsError
-          ) {
-            this.blockProvider(providerAddress, false, sessionEpoch);
+        if (endpointConn.error) {
+          // if all provider endpoints are disabled, block and report provider
+          if (endpointConn.error instanceof AllProviderEndpointsDisabledError) {
+            this.blockProvider(providerAddress, true, sessionEpoch);
           } else {
-            throw consumerSessionInstanceFromEndpoint;
+            // if any other error just throw it
+            throw endpointConn.error;
           }
 
           continue;
         }
 
-        const { singleConsumerSession, pairingEpoch } =
-          consumerSessionInstanceFromEndpoint;
+        if (!endpointConn.connected) {
+          tempIgnoredProviders.providers.add(providerAddress);
+          continue;
+        }
+
+        const reportedProviders = this.getReportedProviders(sessionEpoch);
+        const consumerSessionInstance =
+          consumerSessionsWithProvider.getConsumerSessionInstanceFromEndpoint(
+            endpointConn.endpoint,
+            numberOfResets
+          );
+        if (consumerSessionInstance.error) {
+          const { error } = consumerSessionInstance;
+
+          if (error instanceof MaximumNumberOfSessionsExceededError) {
+            tempIgnoredProviders.providers.add(providerAddress);
+          } else if (error instanceof MaximumNumberOfBlockListedSessionsError) {
+            this.blockProvider(providerAddress, false, sessionEpoch);
+          } else {
+            throw error;
+          }
+
+          continue;
+        }
+
+        const { singleConsumerSession, pairingEpoch } = consumerSessionInstance;
 
         if (pairingEpoch !== sessionEpoch) {
+          Logger.error(
+            `sessionEpoch and pairingEpoch mismatch sessionEpoch: ${sessionEpoch} pairingEpoch: ${pairingEpoch}`
+          );
           sessionEpoch = pairingEpoch;
         }
 
         const err =
           consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession);
         if (err) {
+          Logger.debug(
+            `consumerSessionWithProvider.addUsedComputeUnits error: ${err.message}`
+          );
+
           tempIgnoredProviders.providers.add(providerAddress);
           singleConsumerSession.unlock();
           continue;
@@ -224,11 +248,28 @@ export class ConsumerSessionManager {
         singleConsumerSession.latestRelayCu = cuNeededForSession;
         singleConsumerSession.relayNum += RELAY_NUMBER_INCREMENT;
 
+        Logger.debug(
+          `Consumer got session with provider: ${JSON.stringify({
+            providerAddress,
+            sessionEpoch,
+            cuSum: singleConsumerSession.cuSum,
+            relayNum: singleConsumerSession.relayNum,
+            sessionId: singleConsumerSession.sessionId,
+          })}`
+        );
+
         sessions[providerAddress] = {
           session: singleConsumerSession,
           epoch: sessionEpoch,
           reportedProviders: reportedProviders,
         };
+
+        if (singleConsumerSession.relayNum > 1) {
+          singleConsumerSession.qoSInfo.lastExcellenceQoSReport =
+            this.providerOptimizer.getExcellenceQoSReportForProvider(
+              providerAddress
+            );
+        }
 
         tempIgnoredProviders.providers.add(providerAddress);
 
@@ -245,19 +286,24 @@ export class ConsumerSessionManager {
         extensions
       );
 
-      if (sessionWithProvidersMap.error && Object.keys(sessions).length !== 0) {
+      if (
+        sessionWithProvidersMap instanceof Error &&
+        Object.keys(sessions).length !== 0
+      ) {
         return sessions;
       }
 
-      if (sessionWithProvidersMap.error) {
-        throw sessionWithProvidersMap.error;
+      if (sessionWithProvidersMap instanceof Error) {
+        return sessionWithProvidersMap;
       }
     }
   }
 
-  public onSessionUnused(consumerSession: SingleConsumerSession): void {
+  public onSessionUnused(
+    consumerSession: SingleConsumerSession
+  ): Error | undefined {
     if (consumerSession.tryLock()) {
-      throw new Error(
+      return new Error(
         "consumer session must be locked before accessing this method"
       );
     }
@@ -266,27 +312,23 @@ export class ConsumerSessionManager {
     consumerSession.latestRelayCu = 0;
     const parentConsumerSessionsWithProvider = consumerSession.client;
     consumerSession.unlock();
-    const err =
-      parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease);
 
-    if (err) {
-      // TODO: check if we really need to throw here
-      throw err;
-    }
+    return parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(
+      cuToDecrease
+    );
   }
 
   public onSessionFailure(
     consumerSession: SingleConsumerSession,
     // TODO: extract code from error
     errorReceived?: Error | null
-  ): void {
+  ): Error | undefined {
     if (!consumerSession.isLocked()) {
-      // TODO: improve error message
-      throw new Error("Session is not locked");
+      return new Error("Session is not locked");
     }
 
     if (consumerSession.blockListed) {
-      throw new SessionIsAlreadyBlockListedError();
+      return new SessionIsAlreadyBlockListedError();
     }
 
     consumerSession.qoSInfo.totalRelays++;
@@ -298,6 +340,9 @@ export class ConsumerSessionManager {
       consumerSession.consecutiveNumberOfFailures >
       MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION
     ) {
+      Logger.debug(
+        `Blocking consumer session id: ${consumerSession.sessionId}`
+      );
       consumerSession.blockListed = true;
       consumerSessionBlockListed = true;
     }
@@ -313,8 +358,7 @@ export class ConsumerSessionManager {
     const error =
       parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease);
     if (error) {
-      // TODO: return error?
-      throw error;
+      return error;
     }
 
     let blockProvider = false;
@@ -351,7 +395,11 @@ export class ConsumerSessionManager {
     numOfProviders: number,
     providersCount: number,
     isHangingApi: boolean
-  ): void {
+  ): Error | undefined {
+    if (!consumerSession.isLocked()) {
+      return new Error("Session is not locked");
+    }
+
     consumerSession.cuSum += consumerSession.latestRelayCu;
     consumerSession.latestRelayCu = 0;
     consumerSession.consecutiveNumberOfFailures = 0;
@@ -384,37 +432,30 @@ export class ConsumerSessionManager {
     address: string,
     reportProvider: boolean,
     sessionEpoch: number
-  ): void {
+  ): Error | undefined {
     if (sessionEpoch != this.currentEpoch) {
-      throw new EpochMismatchError();
+      return new EpochMismatchError();
     }
 
-    const result = this.removeAddressFromValidAddresses(address);
-    if (
-      result.error &&
-      !(result.error instanceof AddressIndexWasNotFoundError)
-    ) {
-      throw result.error;
+    const error = this.removeAddressFromValidAddresses(address);
+    if (error) {
+      Logger.error(`address ${address} was not found in valid addresses`);
     }
 
     if (reportProvider) {
+      Logger.info(`Reporting provider for unresponsiveness: ${address}`);
       this.addedToPurgeAndReport.add(address);
     }
   }
 
-  private removeAddressFromValidAddresses(address: string): Result<void> {
+  private removeAddressFromValidAddresses(address: string): Error | undefined {
     const idx = this.validAddresses.indexOf(address);
     if (idx === -1) {
-      return {
-        error: new AddressIndexWasNotFoundError(),
-      };
+      return new AddressIndexWasNotFoundError();
     }
 
     this.validAddresses.splice(idx, 1);
     this.removeAddonAddress();
-    return {
-      result: undefined,
-    };
   }
 
   private getValidConsumerSessionsWithProvider(
@@ -423,8 +464,23 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[]
-  ): Result<SessionsWithProviderMap> {
+  ): SessionsWithProviderMap | Error {
+    Logger.debug(
+      `called getValidConsumerSessionsWithProvider ${JSON.stringify({
+        ignoredProviders,
+      })}`
+    );
+
     if (ignoredProviders.currentEpoch < this.currentEpoch) {
+      Logger.debug(
+        `ignoredP epoch is not current epoch, resetting ignoredProviders ${JSON.stringify(
+          {
+            ignoredProvidersEpoch: ignoredProviders.currentEpoch,
+            currentEpoch: this.currentEpoch,
+          }
+        )}`
+      );
+
       ignoredProviders.providers = new Set();
       ignoredProviders.currentEpoch = this.currentEpoch;
     }
@@ -437,17 +493,33 @@ export class ConsumerSessionManager {
       extensions
     );
 
-    if (providerAddresses.error) {
-      return { error: providerAddresses.error };
+    if (providerAddresses instanceof Error) {
+      Logger.error(
+        `could not get a provider addresses error: ${providerAddresses.message}`
+      );
+      return providerAddresses;
     }
 
-    const wantedProviders = providerAddresses.result.length;
+    const wantedProviders = providerAddresses.length;
     const sessionsWithProvider: SessionsWithProviderMap = new Map();
 
     while (true) {
-      for (const providerAddress of providerAddresses.result) {
+      for (const providerAddress of providerAddresses) {
         const consumerSessionsWithProvider = this.pairing.get(providerAddress);
         if (consumerSessionsWithProvider === undefined) {
+          Logger.error(
+            `invalid provider address returned from csm.getValidProviderAddresses ${JSON.stringify(
+              {
+                providerAddress,
+                allProviderAddresses: providerAddresses,
+                pairing: this.pairing,
+                currentEpoch: this.currentEpoch,
+                validAddresses: this.getValidAddresses(addon, extensions),
+                wantedProviderNumber: wantedProviders,
+              }
+            )}`
+          );
+
           throw new Error(
             "Invalid provider address returned from csm.getValidProviderAddresses"
           );
@@ -468,9 +540,7 @@ export class ConsumerSessionManager {
         ignoredProviders.providers.add(providerAddress);
 
         if (sessionsWithProvider.size === wantedProviders) {
-          return {
-            result: sessionsWithProvider,
-          };
+          return sessionsWithProvider;
         }
       }
 
@@ -482,16 +552,18 @@ export class ConsumerSessionManager {
         extensions
       );
 
-      if (providerAddresses.error && sessionsWithProvider.size !== 0) {
-        return {
-          result: sessionsWithProvider,
-        };
+      if (
+        providerAddresses instanceof Error &&
+        sessionsWithProvider.size !== 0
+      ) {
+        return sessionsWithProvider;
       }
 
-      if (providerAddresses.error) {
-        return {
-          error: providerAddresses.error,
-        };
+      if (providerAddresses instanceof Error) {
+        Logger.debug(
+          `could not get a provider address ${providerAddresses.message}`
+        );
+        return providerAddresses;
       }
     }
   }
@@ -540,16 +612,20 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[]
-  ): Result<string[]> {
+  ): string[] | Error {
     const ignoredProvidersLength = Object.keys(ignoredProviderList).length;
     const validAddresses = this.getValidAddresses(addon, extensions);
     const validAddressesLength = validAddresses.length;
     const totalValidLength = validAddressesLength - ignoredProvidersLength;
 
     if (totalValidLength <= 0) {
-      return {
-        error: new PairingListEmptyError(),
-      };
+      Logger.debug(
+        `pairing list empty ${JSON.stringify({
+          providerList: validAddresses,
+          ignoredProviderList,
+        })}`
+      );
+      return new PairingListEmptyError();
     }
 
     const providers = this.providerOptimizer.chooseProvider(
@@ -560,20 +636,31 @@ export class ConsumerSessionManager {
       0
     );
 
+    Logger.debug(
+      `choosing provider ${JSON.stringify({
+        validAddresses,
+        ignoredProviderList,
+        providers,
+      })}`
+    );
+
     if (providers.length === 0) {
-      return {
-        error: new PairingListEmptyError(),
-      };
+      Logger.debug(
+        `No providers returned by the optimizer ${JSON.stringify({
+          providerList: validAddresses,
+          ignoredProviderList,
+        })}`
+      );
+      return new PairingListEmptyError();
     }
 
-    return {
-      result: providers,
-    };
+    return providers;
   }
 
   private resetValidAddress(addon = "", extensions: string[] = []): number {
     const validAddresses = this.getValidAddresses(addon, extensions);
     if (validAddresses.length === 0) {
+      Logger.warn("provider pairing list is empty, resetting state");
       this.setValidAddressesToDefaultValue(addon, extensions);
       this.numberOfResets++;
     }
@@ -607,11 +694,21 @@ export class ConsumerSessionManager {
   }
 
   private async probeProviders(
-    pairingList: Map<number, ConsumerSessionsWithProvider>
+    pairingList: Map<number, ConsumerSessionsWithProvider>,
+    epoch: number
   ) {
     // TODO: better random generator
     const random = BigNumber.random(10);
     const guid = random.shiftedBy(random.sd()).toNumber();
+
+    Logger.info(
+      `providers probe initiated ${JSON.stringify({
+        endpoint: this.rpcEndpoint,
+        guid,
+        epoch,
+      })}`
+    );
+
     const probePromises: Promise<{
       latency: number;
       providerAddress: string;
@@ -630,6 +727,14 @@ export class ConsumerSessionManager {
         Boolean(error)
       );
     }
+
+    Logger.debug(
+      `providers probe done ${JSON.stringify({
+        endpoint: this.rpcEndpoint,
+        guid,
+        epoch,
+      })}`
+    );
   }
 
   private async probeProvider(
@@ -639,16 +744,26 @@ export class ConsumerSessionManager {
     const { connected, endpoint, providerAddress, error } =
       consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider();
     if (error || !connected) {
-      return { latency: 0, providerAddress: providerAddress, error: error };
+      return {
+        latency: 0,
+        // we always have the provider address here
+        providerAddress: providerAddress as string,
+        error: error,
+      };
     }
 
     const client = endpoint?.client;
     const relaySentTime = Date.now();
     if (!client) {
+      Logger.error(
+        `returned null client in endpoint ${JSON.stringify({
+          consumerSessionsWithProvider,
+        })}`
+      );
+
       return {
         latency: 0,
         providerAddress: providerAddress,
-        // TODO: do we need to add more context to error?
         error: new Error("endpoint client is null"),
       };
     }
@@ -677,6 +792,11 @@ export class ConsumerSessionManager {
       const response = await this.relayWithTimeout(5000, requestPromise);
       const relayLatency = Date.now() - relaySentTime; // in milliseconds
       if (response instanceof Error) {
+        Logger.error(
+          `probe call error ${response.message} ${JSON.stringify({
+            providerAddress,
+          })}`
+        );
         return {
           latency: 0,
           providerAddress: providerAddress,
@@ -686,6 +806,14 @@ export class ConsumerSessionManager {
 
       const providerGuid = response.getGuid();
       if (providerGuid !== guid) {
+        Logger.error(
+          `mismatch probe resposne ${JSON.stringify({
+            providerAddress,
+            providerGuid,
+            sentGuid: guid,
+          })}`
+        );
+
         return {
           latency: 0,
           error: new Error("Mismatch probe response"),
@@ -693,7 +821,14 @@ export class ConsumerSessionManager {
         };
       }
 
-      if (response.getLatestBlock() === 0) {
+      const latestBlock = response.getLatestBlock();
+      if (latestBlock === 0) {
+        Logger.error(
+          `provider returned 0 latest block ${JSON.stringify({
+            providerAddress,
+          })}`
+        );
+
         return {
           latency: 0,
           providerAddress: providerAddress,
@@ -701,11 +836,25 @@ export class ConsumerSessionManager {
         };
       }
 
+      consumerSessionsWithProvider.setLatestBlock(latestBlock);
+
+      Logger.debug(
+        `probed provider successfully ${JSON.stringify({
+          latency: relayLatency,
+          providerAddress,
+        })}`
+      );
+
       return {
         latency: relayLatency,
         providerAddress,
       };
     } catch (e) {
+      Logger.error(
+        `probe call error ${(e as Error).message} ${JSON.stringify({
+          providerAddress,
+        })}`
+      );
       return {
         latency: 0,
         error: new Error("Probe call error"),

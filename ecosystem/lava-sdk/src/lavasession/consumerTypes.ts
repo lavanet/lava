@@ -15,6 +15,8 @@ import {
 } from "./errors";
 import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
 import transportAllowInsecure from "../util/browserAllowInsecure";
+import Logger from "../logger/logger";
+import { Result } from "./helpers";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -179,7 +181,12 @@ export class SingleConsumerSession {
       calculateAvailabilityScore(this.qoSInfo);
     this.qoSInfo.lastQoSReport.availability = scaledAvailabilityScore;
     if (BigNumber(1).gt(this.qoSInfo.lastQoSReport.availability)) {
-      // todo: should we log? do we log in the sdk?
+      Logger.info(
+        `QoS availability report ${JSON.stringify({
+          availability: this.qoSInfo.lastQoSReport.availability,
+          downPercent: downtimePercentage,
+        })}`
+      );
     }
 
     const latencyScore = this.calculateLatencyScore(expectedLatency, latency);
@@ -208,7 +215,14 @@ export class SingleConsumerSession {
       this.qoSInfo.lastQoSReport.sync = sync.toNumber();
 
       if (BigNumber(1).gt(sync)) {
-        // todo: should we log? do we log in the sdk?
+        Logger.debug(
+          `QoS sync report ${JSON.stringify({
+            sync: this.qoSInfo.lastQoSReport.sync,
+            blockDiff: blockHeightDiff,
+            syncScore: `${this.qoSInfo.syncScoreSum}/${this.qoSInfo.totalSyncScore}`,
+            sessionId: this.sessionId,
+          })}`
+        );
       }
     }
     return;
@@ -262,13 +276,13 @@ export class RPCEndpoint {
   }
 }
 
-// TODO: ConsumerSessionsWithProvider in relayer
 export class ConsumerSessionsWithProvider {
   public publicLavaAddress: string;
   public endpoints: Endpoint[];
   public sessions: Record<number, SingleConsumerSession>;
   public maxComputeUnits: number;
   public usedComputeUnits = 0;
+  private latestBlock = 0;
   private readonly pairingEpoch: number;
   private conflictFoundAndReported = false; // 0 == not reported, 1 == reported
 
@@ -284,6 +298,14 @@ export class ConsumerSessionsWithProvider {
     this.sessions = sessions;
     this.maxComputeUnits = maxComputeUnits;
     this.pairingEpoch = pairingEpoch;
+  }
+
+  public getLatestBlock(): number {
+    return this.latestBlock;
+  }
+
+  public setLatestBlock(block: number) {
+    this.latestBlock = block;
   }
 
   public getPublicLavaAddressAndPairingEpoch(): {
@@ -337,12 +359,10 @@ export class ConsumerSessionsWithProvider {
   public getConsumerSessionInstanceFromEndpoint(
     endpoint: Endpoint,
     numberOfResets: number
-  ):
-    | {
-        singleConsumerSession: SingleConsumerSession;
-        pairingEpoch: number;
-      }
-    | Error {
+  ): Result<{
+    singleConsumerSession: SingleConsumerSession;
+    pairingEpoch: number;
+  }> {
     const maximumBlockSessionsAllowed =
       MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER * (numberOfResets + 1);
 
@@ -353,7 +373,10 @@ export class ConsumerSessionsWithProvider {
       }
 
       if (numberOfBlockedSessions >= maximumBlockSessionsAllowed) {
-        return new MaximumNumberOfBlockListedSessionsError();
+        return {
+          pairingEpoch: 0,
+          error: new MaximumNumberOfBlockListedSessionsError(),
+        };
       }
 
       if (session.tryLock()) {
@@ -388,12 +411,11 @@ export class ConsumerSessionsWithProvider {
     };
   }
 
-  public fetchEndpointConnectionFromConsumerSessionWithProvider(): {
+  public fetchEndpointConnectionFromConsumerSessionWithProvider(): Result<{
     connected: boolean;
-    endpoint: Endpoint | null;
+    endpoint: Endpoint;
     providerAddress: string;
-    error?: Error;
-  } {
+  }> {
     for (const endpoint of this.endpoints) {
       if (endpoint.enabled) {
         endpoint.client = new RelayerClient(
@@ -413,9 +435,15 @@ export class ConsumerSessionsWithProvider {
       }
     }
 
+    Logger.error(
+      `purging provider after all endpoints are disabled ${JSON.stringify({
+        providerEndpoints: this.endpoints,
+        providerAddress: this.publicLavaAddress,
+      })}`
+    );
+
     return {
       connected: false,
-      endpoint: null,
       providerAddress: this.publicLavaAddress,
       error: new AllProviderEndpointsDisabledError(),
     };
@@ -429,6 +457,9 @@ export class ConsumerSessionsWithProvider {
     cuNeededForSession: number
   ): MaxComputeUnitsExceededError | undefined {
     if (this.usedComputeUnits + cuNeededForSession > this.maxComputeUnits) {
+      Logger.warn(
+        `MaxComputeUnitsExceededError: ${this.publicLavaAddress} cu: ${this.usedComputeUnits} max: ${this.maxComputeUnits}`
+      );
       return new MaxComputeUnitsExceededError();
     }
   }

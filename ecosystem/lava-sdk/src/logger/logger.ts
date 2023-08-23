@@ -1,6 +1,10 @@
 import chalk from "chalk";
 
 class Logger {
+  static debug(s: string) {
+    console.debug(s);
+  }
+
   static info(s: string) {
     console.log(s);
   }

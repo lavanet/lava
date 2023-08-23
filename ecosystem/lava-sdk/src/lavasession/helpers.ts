@@ -1,11 +1,9 @@
-export interface ErrorResult {
-  error: Error;
-  result?: null;
-}
+export type ErrorResult<T, E extends Error = Error> = {
+  error: E;
+} & Partial<T>;
 
-export interface SuccessResult<T> {
-  result: T;
-  error?: null;
-}
+export type SuccessResult<T> = T & { error?: undefined };
 
-export type Result<T> = ErrorResult | SuccessResult<T>;
+export type Result<T = unknown, E extends Error = Error> =
+  | SuccessResult<T>
+  | ErrorResult<T, E>;
