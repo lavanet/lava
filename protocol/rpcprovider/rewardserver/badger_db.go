@@ -24,8 +24,6 @@ var _ DB = (*BadgerDB)(nil)
 const persistThreshold = 100
 
 func (mdb *BadgerDB) Key() string {
-	mdb.lock.RLock()
-	defer mdb.lock.RUnlock()
 	return mdb.specId
 }
 
@@ -36,10 +34,10 @@ func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
 	mdb.rewards[key] = newEntry(data, ttl)
 
 	if len(mdb.rewards) == persistThreshold {
-		// err := mdb.saveAll(mdb.rewards)
-		// if err != nil {
-		// 	return err
-		// }
+		err := mdb.saveAll()
+		if err != nil {
+			return err
+		}
 
 		mdb.rewards = make(map[string]*entryWithTtl, persistThreshold)
 	}
@@ -47,7 +45,7 @@ func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
 	return nil
 }
 
-func (mdb *BadgerDB) saveAll(rewards map[string]*entryWithTtl) error {
+func (mdb *BadgerDB) saveAll() error {
 	err := mdb.db.Update(func(txn *badger.Txn) error {
 		for key, data := range mdb.rewards {
 			e := badger.NewEntry([]byte(key), data.data).WithTTL(data.remainingTtl())
@@ -57,7 +55,7 @@ func (mdb *BadgerDB) saveAll(rewards map[string]*entryWithTtl) error {
 			}
 		}
 
-		return txn.Commit()
+		return nil
 	})
 
 	return err
@@ -65,9 +63,8 @@ func (mdb *BadgerDB) saveAll(rewards map[string]*entryWithTtl) error {
 
 func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 	mdb.lock.RLock()
-	defer mdb.lock.RUnlock()
-
 	entry, found := mdb.rewards[key]
+	mdb.lock.RUnlock()
 	if found && !entry.isExpired() {
 		return entry.data, nil
 	}
@@ -135,22 +132,24 @@ func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
 }
 
 func (mdb *BadgerDB) Delete(key string) error {
-	mdb.lock.Lock()
-	defer mdb.lock.Unlock()
-
-	delete(mdb.rewards, key)
-
 	err := mdb.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(key))
 	})
+
+	mdb.lock.Lock()
+	delete(mdb.rewards, key)
+	mdb.lock.Unlock()
 
 	return err
 }
 
 func (mdb *BadgerDB) DeletePrefix(prefix string) error {
-	mdb.lock.Lock()
-	defer mdb.lock.Unlock()
+	err := mdb.db.DropPrefix([]byte(prefix))
+	if err != nil {
+		return err
+	}
 
+	mdb.lock.Lock()
 	for key := range mdb.rewards {
 		if !strings.HasPrefix(key, prefix) {
 			continue
@@ -158,18 +157,14 @@ func (mdb *BadgerDB) DeletePrefix(prefix string) error {
 
 		delete(mdb.rewards, key)
 	}
-
-	err := mdb.db.DropPrefix([]byte(prefix))
-	if err != nil {
-		return err
-	}
+	mdb.lock.Unlock()
 
 	return err
 }
 
 func (mdb *BadgerDB) Close() error {
 	if len(mdb.rewards) > 0 {
-		err := mdb.saveAll(mdb.rewards)
+		err := mdb.saveAll()
 		if err != nil {
 			return err
 		}
