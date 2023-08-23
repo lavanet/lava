@@ -30,6 +30,7 @@ func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *protocoltypes.Versi
 			utils.Attribute{Key: "binary provider version: ", Value: lavaProtocolVersion.ProviderVersion},
 		)
 	}
+
 	// check target version
 	if incoming.ConsumerTarget != lavaProtocolVersion.ConsumerVersion || incoming.ProviderTarget != lavaProtocolVersion.ProviderVersion {
 		return utils.LavaFormatError("target protocol version mismatch, there is a newer version available. We highly recommend to upgrade.",
