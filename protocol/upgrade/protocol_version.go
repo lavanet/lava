@@ -19,7 +19,7 @@ func GetCurrentVersion() ProtocolVersion {
 	return lavaProtocolVersion
 }
 
-func ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
 	// check min version
 	if incoming.ConsumerMin != lavaProtocolVersion.ConsumerVersion || incoming.ProviderMin != lavaProtocolVersion.ProviderVersion {
 		utils.LavaFormatPanic("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",
