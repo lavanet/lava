@@ -2150,6 +2150,8 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		count := countSelectedAddresses(addresses, selectedProviders)
 		require.Equal(t, count, len(selectedProviders))
 	})
+}
+
 // TestPairingConsistency checks we consistently get the same pairing in the same epoch
 // TODO: stake providers with geolocation=3 to actually test pairing consistency
 func TestPairingConsistency(t *testing.T) {

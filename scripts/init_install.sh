@@ -43,7 +43,7 @@ fi
 
 if ! command_exists buf; then
     # Define the version of buf to install
-    BUF_VERSION="0.56.0"  # Update this to the latest version if needed
+    BUF_VERSION="1.25.0"  # Update this to the latest version if needed
 
     # Define the installation directory
     INSTALL_DIR="/usr/local/bin"  # You might need to adjust this based on your preferences
@@ -65,6 +65,15 @@ if ! command_exists buf; then
     fi
 else
     echo "buf is already installed"
+fi
+
+if ! command_exists protoc-gen-gocosmos; then
+    git clone https://github.com/cosmos/gogoproto.git
+    cd gogoproto
+    go mod download
+    make install
+    cd ..
+    rm -rf gogoproto
 fi
 
 if ! command_exists yq; then
