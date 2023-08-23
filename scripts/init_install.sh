@@ -66,3 +66,18 @@ if ! command_exists buf; then
 else
     echo "buf is already installed"
 fi
+
+if ! command_exists yq; then
+    go install github.com/mikefarah/yq/v4@latest 
+
+    # Check if the installation was successful
+    if [ $? -eq 0 ]; then
+        echo "yq version has been installed "
+        exit 0
+    else
+        echo "An error occurred during the yq installation process. Please install buf manually."
+        exit 1
+    fi
+else
+    echo "yq is already installed"
+fi
