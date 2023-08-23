@@ -92,8 +92,11 @@ func TestSendNewProof(t *testing.T) {
 	db := rewardserver.NewMemoryDB(specId)
 	db2 := rewardserver.NewMemoryDB("newSpec")
 	rewardDB := rewardserver.NewRewardDB()
-	rewardDB.AddDB(specId, db)
-	rewardDB.AddDB("newSpec", db2)
+	err := rewardDB.AddDB(db)
+	require.NoError(t, err)
+
+	err = rewardDB.AddDB(db2)
+	require.NoError(t, err)
 
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	testCases := []struct {
@@ -158,7 +161,9 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	db := rewardserver.NewMemoryDB("specId")
 	rewardStore := rewardserver.NewRewardDB()
-	rewardStore.AddDB("specId", db)
+	err := rewardStore.AddDB(db)
+	require.NoError(t, err)
+
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
 
 	prevProof := common.BuildRelayRequestWithBadge(ctx, "providerAddr", []byte{}, uint64(1), uint64(0), "specId", nil, &pairingtypes.Badge{})
@@ -178,7 +183,8 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	db := rewardserver.NewMemoryDB("specId")
 	rewardStore := rewardserver.NewRewardDB()
-	rewardStore.AddDB("specId", db)
+	err := rewardStore.AddDB(db)
+	require.NoError(t, err)
 
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
 
@@ -203,7 +209,8 @@ func TestUpdateEpoch(t *testing.T) {
 		stubRewardsTxSender := rewardsTxSenderDouble{}
 		db := rewardserver.NewMemoryDB("spec")
 		rewardDB := rewardserver.NewRewardDB()
-		rewardDB.AddDB("spec", db)
+		err := rewardDB.AddDB(db)
+		require.NoError(t, err)
 
 		rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test")
 
@@ -275,8 +282,11 @@ func BenchmarkSendNewProofInMemory(b *testing.B) {
 	db1 := rewardserver.NewMemoryDB("spec")
 	db2 := rewardserver.NewMemoryDB("spec2")
 	rewardStore := rewardserver.NewRewardDB()
-	rewardStore.AddDB("spec", db1)
-	rewardStore.AddDB("spec2", db2)
+	err := rewardStore.AddDB(db1)
+	require.NoError(b, err)
+
+	err = rewardStore.AddDB(db2)
+	require.NoError(b, err)
 
 	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
@@ -293,8 +303,12 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	db1 := rewardserver.NewLocalDB("badger_test", "provider", "spec", 0)
 	db2 := rewardserver.NewLocalDB("badger_test", "provider", "spec2", 0)
 	rewardStore := rewardserver.NewRewardDB()
-	rewardStore.AddDB("spec", db1)
-	rewardStore.AddDB("spec2", db2)
+	err := rewardStore.AddDB(db1)
+	require.NoError(b, err)
+
+	err = rewardStore.AddDB(db2)
+	require.NoError(b, err)
+
 	defer func() {
 		rewardStore.Close()
 	}()

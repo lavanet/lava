@@ -59,6 +59,10 @@ type EpochRewards struct {
 	consumerRewards map[string]*ConsumerRewards // key is consumer
 }
 
+func (eprw *EpochRewards) NumRewards() int {
+	return len(eprw.consumerRewards)
+}
+
 type RewardServer struct {
 	rewardsTxSender   RewardsTxSender
 	lock              sync.RWMutex
