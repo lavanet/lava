@@ -144,6 +144,13 @@ func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) 
 	return nil
 }
 
+// mock staking keeper
+type mockStakingKeeper struct{}
+
+func (k mockStakingKeeper) UnbondingTime(ctx sdk.Context) time.Duration {
+	return time.Minute
+}
+
 type MockBlockStore struct {
 	height       int64
 	blockHistory map[int64]*tenderminttypes.Block
