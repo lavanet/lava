@@ -1,21 +1,26 @@
 import { PairingUpdater } from "./pairing_updater";
 import { StateQuery } from "./state_query";
 import { BadgeManager } from "../badge/badgeManager";
-
-// TODO we can make relayer not default
+import { debugPrint } from "../util/common";
 import Relayer from "../relayer/relayer";
+import { ConsumerSessionWithProvider } from "../types/types";
+
+const DEFAULT_RETRY_INTERVAL = 10000;
 
 // Updater interface
 interface Updater {
   update(): void;
 }
 
-// ChainIDRpcInterface interface
+// ChainIDRpcInterface
+// TODO Move it to SDK class when we create it
 export interface ChainIDRpcInterface {
   chainID: string;
   rpcInterface: string;
 }
 
+// Config interface
+// TODO Move it to SDK class when we create it
 export interface Config {
   geolocation: string;
   network: string;
@@ -23,37 +28,57 @@ export interface Config {
   debug: boolean;
 }
 
+// ConsumerSessionManager interface
+export interface ConsumerSessionManager {
+  getRpcEndpoint(): string;
+  updateAllProviders(providers: ConsumerSessionWithProvider[]): void;
+}
+
+// ConsumerSessionManagerList is an array of ConsumerSessionManager
+export type ConsumerSessionManagerList = ConsumerSessionManager[];
+
+// ConsumerSessionManagerMap is an map where key is chainID and value is ConsumerSessionManagerList
+export type ConsumerSessionManagerMap = Map<string, ConsumerSessionManagerList>;
+
 export class StateTracker {
-  // All variables in state tracker
-  private updaters: Updater[] = [];
-  private stateQuery: StateQuery;
+  private updaters: Updater[] = []; // List of all registered updaters
+  private stateQuery: StateQuery; // State Query instance
+  private config: Config; // Config options
 
   // Constructor for State Tracker
   constructor(
-    badgeManager: BadgeManager,
     pairingListConfig: string,
     relayer: Relayer,
     chainIDRpcInterface: ChainIDRpcInterface[],
     config: Config,
-    consumerSessionManagerMap: any // TODO add consumerSessionManagerMap type
+    consumerSessionManagerMap: ConsumerSessionManagerMap,
+    badgeManager?: BadgeManager
   ) {
+    debugPrint(config.debug, "Initialization of State Tracker started");
+
+    // Save config
+    this.config = config;
+
     // Initialize State Query
     this.stateQuery = new StateQuery(
-      badgeManager,
       pairingListConfig,
       chainIDRpcInterface,
       relayer,
-      config
+      config,
+      badgeManager
     );
 
     // Create Pairing Updater
     const pairingUpdater = new PairingUpdater(
       this.stateQuery,
-      consumerSessionManagerMap
+      consumerSessionManagerMap,
+      config
     );
 
     // Register all updaters
     this.registerForUpdates(pairingUpdater);
+
+    debugPrint(config.debug, "Pairing updater added");
 
     // Call executeUpdateOnNewEpoch method to start the process
     this.executeUpdateOnNewEpoch();
@@ -67,8 +92,15 @@ export class StateTracker {
   // executeUpdateOnNewEpoch executes all updates on every new epoch
   async executeUpdateOnNewEpoch(): Promise<void> {
     try {
+      debugPrint(this.config.debug, "New epoch started, fetching pairing list");
+
       // Fetching all the info including the time_till_next_epoch
       const timeTillNextEpoch = await this.stateQuery.fetchPairing();
+
+      debugPrint(
+        this.config.debug,
+        "Pairing list fetched, started new epoch in: " + timeTillNextEpoch
+      );
 
       // Call update method on all registered updaters
       for (const updater of this.updaters) {
@@ -76,12 +108,19 @@ export class StateTracker {
       }
 
       // Set up a timer to call this method again when the next epoch begins
-      setTimeout(() => this.executeUpdateOnNewEpoch(), timeTillNextEpoch);
+      setTimeout(
+        () => this.executeUpdateOnNewEpoch(),
+        timeTillNextEpoch * 1000
+      );
     } catch (error) {
       console.error("An error occurred during pairing processing:", error);
 
-      // TODO fix DEFAULT_RETRY_INTERVAL
-      const DEFAULT_RETRY_INTERVAL = 10000;
+      debugPrint(
+        this.config.debug,
+        "Retry fetching pairing list in: " + DEFAULT_RETRY_INTERVAL
+      );
+
+      // Retry fetching pairing list after DEFAULT_RETRY_INTERVAL
       setTimeout(() => this.executeUpdateOnNewEpoch(), DEFAULT_RETRY_INTERVAL);
     }
   }
