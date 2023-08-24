@@ -99,6 +99,11 @@ func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret
 			return PlansDelProposalJSON{}, err
 		}
 
+		err = proposal.Proposal.ValidateBasic()
+		if err != nil {
+			return PlansDelProposalJSON{}, err
+		}
+
 		if len(ret.Proposal.Plans) > 0 {
 			ret.Proposal.Plans = append(ret.Proposal.Plans, proposal.Proposal.Plans...)
 			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
