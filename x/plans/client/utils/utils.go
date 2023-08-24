@@ -1,10 +1,7 @@
 package utils
 
 import (
-	"fmt"
-	"math/big"
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -29,20 +26,17 @@ type (
 )
 
 // Parse plans add proposal JSON form file
-func ParsePlansAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (PlansAddProposalJSON, error) {
-	var ret PlansAddProposalJSON
+func ParsePlansAddProposalJSON(proposalFile string) (ret PlansAddProposalJSON, err error) {
 	decoderHooks := []mapstructure.DecodeHookFunc{
-		priceDecodeHookFunc,
+		types.PriceDecodeHookFunc,
 		types.PolicyEnumDecodeHookFunc,
 	}
 
-	files := strings.Split(proposalFile, ",")
-	for _, fileName := range files {
+	for _, fileName := range strings.Split(proposalFile, ",") {
 		var (
 			plansAddProposal PlansAddProposalJSON
 			unused           []string
 			unset            []string
-			err              error
 		)
 
 		err = decoder.DecodeFile(fileName, "proposal", &plansAddProposal.Proposal, decoderHooks, &unset, &unused)
@@ -58,6 +52,13 @@ func ParsePlansAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (Pla
 		err = plansAddProposal.Proposal.ValidateBasic()
 		if err != nil {
 			return PlansAddProposalJSON{}, err
+		}
+
+		if len(unset) > 0 {
+			err = plansAddProposal.Proposal.HandleUnsetPlanProposalFields(unset)
+			if err != nil {
+				return PlansAddProposalJSON{}, err
+			}
 		}
 
 		if len(plansAddProposal.Proposal.Plans) > 0 {
@@ -85,6 +86,7 @@ func ParsePlansAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (Pla
 }
 
 // Parse plans delete proposal JSON form file
+// TODO: use DecodeFile here instead of json unmarshal
 func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret PlansDelProposalJSON, err error) {
 	for _, fileName := range strings.Split(proposalFile, ",") {
 		var proposal PlansDelProposalJSON
@@ -115,23 +117,4 @@ func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret
 		}
 	}
 	return ret, nil
-}
-
-// PriceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type sdk.Int)
-func priceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-	if t == reflect.TypeOf(sdk.NewInt(0)) {
-		amountStr, ok := data.(string)
-		if !ok {
-			return nil, fmt.Errorf("unexpected data type for amount field")
-		}
-
-		// Convert the string amount to an sdk.Int
-		amount, ok := new(big.Int).SetString(amountStr, 10)
-		if !ok {
-			return nil, fmt.Errorf("failed to convert amount to sdk.Int")
-		}
-		return sdk.NewIntFromBigInt(amount), nil
-	}
-
-	return data, nil
 }

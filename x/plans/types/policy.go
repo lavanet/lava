@@ -242,7 +242,7 @@ func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 		return &policy, fmt.Errorf("invalid policy: unknown field(s): %v", unused)
 	}
 	if len(unset) != 0 {
-		err = handleUnsetPolicyFields(unset, &policy)
+		err = policy.HandleUnsetPolicyFields(unset)
 		if err != nil {
 			return &policy, err
 		}
@@ -252,7 +252,7 @@ func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 }
 
 // handleMissingPolicyFields sets default values to missing fields
-func handleUnsetPolicyFields(unset []string, policy *Policy) error {
+func (p *Policy) HandleUnsetPolicyFields(unset []string) error {
 	defaultValues := make(map[string]interface{})
 
 	for _, field := range unset {
@@ -262,7 +262,7 @@ func handleUnsetPolicyFields(unset []string, policy *Policy) error {
 		}
 	}
 
-	return decoder.SetDefaultValues(defaultValues, policy)
+	return decoder.SetDefaultValues(defaultValues, p)
 }
 
 func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
