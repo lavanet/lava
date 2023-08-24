@@ -334,15 +334,26 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 // matchSpecApiByName returns service api which match given name
 func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
+	foundNameOnDifferentConnectionType := ""
 	for apiName, api := range serverApis {
 		re, err := regexp.Compile("^" + apiName.Name + "$")
 		if err != nil {
 			utils.LavaFormatError("regex Compile api", err, utils.Attribute{Key: "apiName", Value: apiName})
 			continue
 		}
-		if re.MatchString(name) && apiName.ConnectionType == connectionType {
-			return &api, true
+		if re.MatchString(name) {
+			if apiName.ConnectionType == connectionType {
+				return &api, true
+			} else {
+				foundNameOnDifferentConnectionType = apiName.ConnectionType
+			}
 		}
+	}
+	if foundNameOnDifferentConnectionType != "" { // its hard to notice when we have an API on only one connection type.
+		utils.LavaFormatWarning("API was found on a different connection type", nil,
+			utils.Attribute{Key: "connection_type_found", Value: foundNameOnDifferentConnectionType},
+			utils.Attribute{Key: "connection_type_requested", Value: connectionType},
+		)
 	}
 	return nil, false
 }
