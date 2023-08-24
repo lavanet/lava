@@ -281,3 +281,40 @@ func TestDecodePlanAddProposal(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, deposit == expectedDeposit)
 }
+
+func TestPlanDelProposal(t *testing.T) {
+	expectedProposal := PlansDelProposal{
+		Title:       "Delete temporary (to-delete) plan proposal",
+		Description: "A proposal to delete temporary (to-delete) plan",
+		Plans:       []string{"to_delete_plan", "another_plan_delete"},
+	}
+
+	expectedDeposit := "10000000ulava"
+
+	input := `
+	{
+		"proposal": {
+			"title": "Delete temporary (to-delete) plan proposal",
+			"description": "A proposal to delete temporary (to-delete) plan",
+			"plans": [
+				"to_delete_plan",
+				"another_plan_delete"
+			]
+		},
+		"deposit": "10000000ulava"
+	}`
+
+	var (
+		planPorposal PlansDelProposal
+		deposit      string
+		err          error
+	)
+
+	err = decoder.Decode(input, "proposal", &planPorposal, nil, nil, nil)
+	require.Nil(t, err)
+	require.True(t, planPorposal.Equal(expectedProposal))
+
+	err = decoder.Decode(input, "deposit", &deposit, nil, nil, nil)
+	require.Nil(t, err)
+	require.True(t, deposit == expectedDeposit)
+}

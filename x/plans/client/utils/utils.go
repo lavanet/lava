@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"os"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -86,19 +85,20 @@ func ParsePlansAddProposalJSON(proposalFile string) (ret PlansAddProposalJSON, e
 }
 
 // Parse plans delete proposal JSON form file
-// TODO: use DecodeFile here instead of json unmarshal
 func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret PlansDelProposalJSON, err error) {
 	for _, fileName := range strings.Split(proposalFile, ",") {
 		var proposal PlansDelProposalJSON
 
-		contents, err := os.ReadFile(fileName)
+		err = decoder.DecodeFile(fileName, "proposal", &proposal.Proposal, nil, nil, nil)
 		if err != nil {
-			return proposal, err
+			return PlansDelProposalJSON{}, err
 		}
 
-		if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
-			return proposal, err
+		err = decoder.DecodeFile(fileName, "deposit", &proposal.Deposit, nil, nil, nil)
+		if err != nil {
+			return PlansDelProposalJSON{}, err
 		}
+
 		if len(ret.Proposal.Plans) > 0 {
 			ret.Proposal.Plans = append(ret.Proposal.Plans, proposal.Proposal.Plans...)
 			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
