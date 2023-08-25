@@ -19,17 +19,14 @@ import {
   ReportAndBlockProviderError,
   SessionIsAlreadyBlockListedError,
 } from "./errors";
-import { Result } from "./helpers";
 import {
   MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION,
   RELAY_NUMBER_INCREMENT,
 } from "./common";
-import {
-  ProbeReply,
-  ProbeRequest,
-} from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import BigNumber from "bignumber.js";
 import Logger from "../logger/logger";
+import Relayer from "../relayer/relayer";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -52,10 +49,14 @@ export class ConsumerSessionManager {
   >();
   private providerOptimizer: ProviderOptimizer;
 
+  private relayer: Relayer;
+
   public constructor(
+    relayer: Relayer,
     rpcEndpoint: RPCEndpoint,
     providerOptimizer: ProviderOptimizer
   ) {
+    this.relayer = relayer;
     this.rpcEndpoint = rpcEndpoint;
     this.providerOptimizer = providerOptimizer;
   }
@@ -741,17 +742,18 @@ export class ConsumerSessionManager {
     guid: number,
     consumerSessionsWithProvider: ConsumerSessionsWithProvider
   ): Promise<{ latency: number; providerAddress: string; error?: Error }> {
-    const { connected, endpoint, providerAddress, error } =
+    const endpointConn =
       consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider();
-    if (error || !connected) {
+    if (endpointConn.error || !endpointConn.connected) {
       return {
         latency: 0,
         // we always have the provider address here
-        providerAddress: providerAddress as string,
-        error: error,
+        providerAddress: endpointConn.providerAddress as string,
+        error: endpointConn.error,
       };
     }
 
+    const { endpoint, providerAddress } = endpointConn;
     const client = endpoint?.client;
     const relaySentTime = Date.now();
     if (!client) {
@@ -768,41 +770,13 @@ export class ConsumerSessionManager {
       };
     }
 
-    const probeRequest = new ProbeRequest();
-    probeRequest.setGuid(guid);
-    probeRequest.setApiInterface(this.rpcEndpoint.apiInterface);
-    probeRequest.setSpecId(this.rpcEndpoint.chainId);
-
-    const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
-      client.probe(probeRequest, (err, response) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        if (response) {
-          resolve(response);
-        }
-
-        reject(new Error("Response is null"));
-      });
-    });
-
     try {
-      const response = await this.relayWithTimeout(5000, requestPromise);
+      const response = await this.relayer.probeProvider(
+        endpoint.networkAddress,
+        this.rpcEndpoint.apiInterface,
+        this.rpcEndpoint.chainId
+      );
       const relayLatency = Date.now() - relaySentTime; // in milliseconds
-      if (response instanceof Error) {
-        Logger.error(
-          `probe call error ${response.message} ${JSON.stringify({
-            providerAddress,
-          })}`
-        );
-        return {
-          latency: 0,
-          providerAddress: providerAddress,
-          error: response,
-        };
-      }
 
       const providerGuid = response.getGuid();
       if (providerGuid !== guid) {
