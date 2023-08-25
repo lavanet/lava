@@ -24,7 +24,7 @@ export interface SessionInfo {
   reportedProviders: string;
 }
 
-export type ConsumerSessionsMap = Record<string, SessionInfo>;
+export type ConsumerSessionsMap = Map<string, SessionInfo>;
 
 export interface ProviderOptimizer {
   appendProbeRelayData(

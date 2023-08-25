@@ -39,9 +39,12 @@ describe("ConsumerSessionManager", () => {
         "",
         []
       );
-      expect(Object.keys(consumerSessions).length).toBeGreaterThan(0);
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
+      expect(consumerSessions.size).toBeGreaterThan(0);
 
-      for (const consumerSession of Object.values(consumerSessions)) {
+      for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
           CU_FOR_FIRST_REQUEST
@@ -87,9 +90,12 @@ describe("ConsumerSessionManager", () => {
         "",
         []
       );
-      expect(Object.keys(consumerSessions).length).toBeGreaterThan(0);
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
+      expect(consumerSessions.size).toBeGreaterThan(0);
 
-      for (const consumerSession of Object.values(consumerSessions)) {
+      for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
           CU_FOR_FIRST_REQUEST
@@ -140,8 +146,11 @@ describe("ConsumerSessionManager", () => {
           "",
           []
         );
+        if (consumerSessions instanceof Error) {
+          throw consumerSessions;
+        }
 
-        for (const consumerSession of Object.values(consumerSessions)) {
+        for (const consumerSession of consumerSessions.values()) {
           cm.onSessionFailure(consumerSession.session);
         }
       }
@@ -153,9 +162,13 @@ describe("ConsumerSessionManager", () => {
         "",
         []
       );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
+
       expect(cm.validAddresses.length).toEqual(cm.getPairingAddressesLength());
 
-      for (const consumerSession of Object.values(consumerSessions)) {
+      for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
           CU_FOR_FIRST_REQUEST
@@ -192,18 +205,18 @@ describe("ConsumerSessionManager", () => {
             []
           );
 
-          if (
-            cm.validAddresses.length === 0 &&
-            consumerSessions instanceof Error
-          ) {
-            if (consumerSessions instanceof PairingListEmptyError) {
+          if (consumerSessions instanceof Error) {
+            if (
+              cm.validAddresses.length === 0 &&
+              consumerSessions instanceof PairingListEmptyError
+            ) {
               break;
             } else {
               throw consumerSessions;
             }
           }
 
-          for (const consumerSession of Object.values(consumerSessions)) {
+          for (const consumerSession of consumerSessions.values()) {
             cm.onSessionFailure(consumerSession.session);
           }
         }
@@ -217,11 +230,15 @@ describe("ConsumerSessionManager", () => {
           "",
           []
         );
+        if (consumerSessions instanceof Error) {
+          throw consumerSessions;
+        }
+
         expect(cm.validAddresses.length).toEqual(
           cm.getPairingAddressesLength()
         );
 
-        for (const consumerSession of Object.values(consumerSessions)) {
+        for (const consumerSession of consumerSessions.values()) {
           expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
           expect(consumerSession.session.latestRelayCu).toEqual(
             CU_FOR_FIRST_REQUEST
@@ -237,8 +254,11 @@ describe("ConsumerSessionManager", () => {
         "",
         []
       );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
 
-      for (const consumerSession of Object.values(consumerSessions)) {
+      for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
           CU_FOR_FIRST_REQUEST
@@ -286,8 +306,11 @@ describe("ConsumerSessionManager", () => {
           "",
           []
         );
+        if (consumerSessions instanceof Error) {
+          throw consumerSessions;
+        }
 
-        for (const consumerSession of Object.values(consumerSessions)) {
+        for (const consumerSession of consumerSessions.values()) {
           expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
           expect(consumerSession.session.latestRelayCu).toEqual(
             CU_FOR_FIRST_REQUEST
@@ -344,8 +367,11 @@ describe("ConsumerSessionManager", () => {
           "",
           []
         );
+        if (consumerSessions instanceof Error) {
+          throw consumerSessions;
+        }
 
-        for (const consumerSession of Object.values(consumerSessions)) {
+        for (const consumerSession of consumerSessions.values()) {
           expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
           expect(consumerSession.session.latestRelayCu).toEqual(
             CU_FOR_FIRST_REQUEST
@@ -409,8 +435,11 @@ describe("ConsumerSessionManager", () => {
         "",
         []
       );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
 
-      for (const consumerSession of Object.values(consumerSessions)) {
+      for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
           CU_FOR_FIRST_REQUEST
@@ -462,8 +491,11 @@ describe("ConsumerSessionManager", () => {
         "",
         []
       );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
 
-      for (const consumerSession of Object.values(consumerSessions)) {
+      for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
           CU_FOR_FIRST_REQUEST
@@ -524,8 +556,11 @@ describe("ConsumerSessionManager", () => {
             addon,
             []
           );
+          if (consumerSessions instanceof Error) {
+            throw consumerSessions;
+          }
 
-          for (const consumerSession of Object.values(consumerSessions)) {
+          for (const consumerSession of consumerSessions.values()) {
             cm.onSessionFailure(
               consumerSession.session,
               new ReportAndBlockProviderError()
@@ -546,7 +581,11 @@ describe("ConsumerSessionManager", () => {
           addon,
           []
         );
-        for (const consumerSession of Object.values(consumerSessions)) {
+        if (consumerSessions instanceof Error) {
+          throw consumerSessions;
+        }
+
+        for (const consumerSession of consumerSessions.values()) {
           cm.onSessionDone(
             consumerSession.session,
             SERVICED_BLOCK_NUMBER,
@@ -613,8 +652,11 @@ describe("ConsumerSessionManager", () => {
             addon,
             extensions
           );
+          if (consumerSessions instanceof Error) {
+            throw consumerSessions;
+          }
 
-          for (const consumerSession of Object.values(consumerSessions)) {
+          for (const consumerSession of consumerSessions.values()) {
             cm.onSessionFailure(
               consumerSession.session,
               new ReportAndBlockProviderError()
@@ -635,7 +677,11 @@ describe("ConsumerSessionManager", () => {
           addon,
           extensions
         );
-        for (const consumerSession of Object.values(consumerSessions)) {
+        if (consumerSessions instanceof Error) {
+          throw consumerSessions;
+        }
+
+        for (const consumerSession of consumerSessions.values()) {
           cm.onSessionDone(
             consumerSession.session,
             SERVICED_BLOCK_NUMBER,

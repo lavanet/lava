@@ -177,7 +177,7 @@ export class ConsumerSessionManager {
 
     const wantedSessions = sessionWithProvidersMap.size;
 
-    const sessions: ConsumerSessionsMap = {};
+    const sessions: ConsumerSessionsMap = new Map();
     while (true) {
       for (const sessionWithProviders of sessionWithProvidersMap) {
         const [providerAddress, sessionsWithProvider] = sessionWithProviders;
@@ -259,11 +259,11 @@ export class ConsumerSessionManager {
           })}`
         );
 
-        sessions[providerAddress] = {
+        sessions.set(providerAddress, {
           session: singleConsumerSession,
           epoch: sessionEpoch,
           reportedProviders: reportedProviders,
-        };
+        });
 
         if (singleConsumerSession.relayNum > 1) {
           singleConsumerSession.qoSInfo.lastExcellenceQoSReport =
@@ -274,7 +274,7 @@ export class ConsumerSessionManager {
 
         tempIgnoredProviders.providers.add(providerAddress);
 
-        if (Object.keys(sessions).length === wantedSessions) {
+        if (sessions.size === wantedSessions) {
           return sessions;
         }
       }
@@ -287,10 +287,7 @@ export class ConsumerSessionManager {
         extensions
       );
 
-      if (
-        sessionWithProvidersMap instanceof Error &&
-        Object.keys(sessions).length !== 0
-      ) {
+      if (sessionWithProvidersMap instanceof Error && sessions.size !== 0) {
         return sessions;
       }
 
