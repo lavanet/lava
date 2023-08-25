@@ -64,17 +64,7 @@ ecosystem/lava-sdk/proto/**/*.json
 ecosystem/lava-sdk/proto/**/*.go
 
 # Ignore the bin and dist folders and their content
-ecosystem/lava-sdk/bin/examples
-ecosystem/lava-sdk/bin/src/badge
-ecosystem/lava-sdk/bin/src/codec
-ecosystem/lava-sdk/bin/src/config
-ecosystem/lava-sdk/bin/src/lavaOverLava
-ecosystem/lava-sdk/bin/src/logger
-ecosystem/lava-sdk/bin/src/relayer
-ecosystem/lava-sdk/bin/src/sdk
-ecosystem/lava-sdk/bin/src/types
-ecosystem/lava-sdk/bin/src/util
-ecosystem/lava-sdk/bin/src/wallet
+ecosystem/lava-sdk/bin/*
 ecosystem/lava-sdk/dist/*
 
 

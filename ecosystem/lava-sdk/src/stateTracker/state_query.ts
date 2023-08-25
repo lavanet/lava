@@ -1,11 +1,20 @@
-import {
-  DEFAULT_LAVA_PAIRING_LIST,
-  BOOT_RETRY_ATTEMPTS,
-} from "../config/default";
+import { DEFAULT_LAVA_PAIRING_LIST } from "../config/default";
 import { BadgeManager } from "../badge/badgeManager";
-import { ChainIDRpcInterface, Config } from "./stateTracker";
+import { ChainIDRpcInterface, Config } from "./state_tracker";
 import { fetchLavaPairing } from "../util/lavaPairing";
-import { debugPrint } from "../util/common";
+import { StateTrackerErrors } from "./errors";
+import Long from "long";
+import {
+  base64ToUint8Array,
+  generateRPCData,
+  debugPrint,
+  parseLong,
+} from "../util/common";
+import {
+  QueryGetPairingRequest,
+  QuerySdkPairingResponse,
+} from "../codec/lavanet/lava/pairing/query";
+import { StakeEntry } from "../codec/lavanet/lava/epochstorage/stake_entry";
 
 // TODO we can make relayer not default
 import Relayer from "../relayer/relayer";
@@ -20,25 +29,35 @@ import {
   Endpoint,
 } from "../types/types";
 
-export class StateQuery {
-  private badgeManager: BadgeManager;
-  private pairingListConfig: string;
-  private relayer: Relayer;
-  private chainIDRpcInterfaces: ChainIDRpcInterface[];
-  private lavaProviders: ConsumerSessionWithProvider[];
-  private config: Config;
+// PairingResponse is an interface with all necessary info for creating pairing list
+export interface PairingResponse {
+  providers: StakeEntry[];
+  maxCu: number;
+  currentEpoch: number;
+}
 
-  // pairing is going to be a map with chainId as key and an array of ConsumerSessionWithProvider as value
-  private pairing: Map<string, ConsumerSessionWithProvider[]>;
+const lavaChainID = "LAV1";
+const lavaRPCInterface = "tendermintrpc";
+
+export class StateQuery {
+  private badgeManager: BadgeManager | undefined; // Badge Manager instance
+  private pairingListConfig: string; // Pairing list config, if empty use seed providers form github
+  private relayer: Relayer; // Relayer instance
+  private chainIDRpcInterfaces: ChainIDRpcInterface[]; // Array of {chainID, rpcInterface} pairs
+  private lavaProviders: ConsumerSessionWithProvider[]; // Array of Lava providers
+  private config: Config; // Config options
+  private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
 
   // Constructor for state tracker
   constructor(
-    badgeManager: BadgeManager,
     pairingListConfig: string,
     chainIdRpcInterfaces: ChainIDRpcInterface[],
     relayer: Relayer,
-    config: Config
+    config: Config,
+    badgeManager?: BadgeManager
   ) {
+    debugPrint(config.debug, "Initialization of State Query started");
+
     // Save arguments
     this.badgeManager = badgeManager;
     this.pairingListConfig = pairingListConfig;
@@ -50,72 +69,229 @@ export class StateQuery {
     this.lavaProviders = [];
 
     // Initialize pairing to an empty map
-    this.pairing = new Map<string, ConsumerSessionWithProvider[]>();
+    this.pairing = new Map<string, PairingResponse>();
+
+    debugPrint(config.debug, "Initialization of State Query ended");
   }
 
   //fetchLavaProviders fetches lava providers from different sources
   private async fetchLavaProviders(
-    badgeManager: BadgeManager,
-    pairingListConfig: string
+    pairingListConfig: string,
+    badgeManager?: BadgeManager
   ): Promise<ConsumerSessionWithProvider[]> {
-    // TODO once we refactor badge server, use it to fetch lava providers
+    try {
+      debugPrint(this.config.debug, "Fetching lava providers started");
+      // If badgeManager exists use it to fetch lava providers
+      if (badgeManager == undefined) {
+      }
 
-    // If we have providers return them
-    if (this.lavaProviders.length != 0) {
-      return this.lavaProviders;
-    }
+      // If we have providers return them
+      if (this.lavaProviders.length != 0) {
+        debugPrint(this.config.debug, "Return already saved providers");
+        return this.lavaProviders;
+      }
 
-    // Else if pairingListConfig exists use it to fetch lava providers from local file
-    if (pairingListConfig != "") {
-      const pairingList = await this.fetchLocalLavaPairingList(
-        pairingListConfig
-      );
+      // Else if pairingListConfig exists use it to fetch lava providers from local file
+      if (pairingListConfig != "") {
+        const pairingList = await this.fetchLocalLavaPairingList(
+          pairingListConfig
+        );
+
+        const providers = await this.constructLavaPairing(pairingList);
+
+        // Construct lava providers from pairing list and return it
+        return providers;
+      }
+
+      // Fetch pairing from default lava pairing list
+      const pairingList = await this.fetchDefaultLavaPairingList();
+
+      const providers = await this.constructLavaPairing(pairingList);
+
       // Construct lava providers from pairing list and return it
-      return this.constructLavaPairing(pairingList);
+      return providers;
+    } catch (err) {
+      throw err;
     }
-
-    const pairingList = await this.fetchDefaultLavaPairingList();
-    // Construct lava providers from pairing list and return it
-    return this.constructLavaPairing(pairingList);
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
   public async fetchPairing(): Promise<number> {
-    // fetch lava providers
-    await this.fetchLavaProviders(this.badgeManager, this.pairingListConfig);
+    try {
+      debugPrint(this.config.debug, "Fetching pairing started");
 
-    // Make sure lava providers are initialized
-    if (this.lavaProviders == null) {
-      throw ProvidersErrors.errLavaProvidersNotInitialized;
+      // fetch lava providers
+      await this.fetchLavaProviders(this.pairingListConfig, this.badgeManager);
+
+      // Make sure lava providers are initialized
+      if (this.lavaProviders == null) {
+        throw ProvidersErrors.errLavaProvidersNotInitialized;
+      }
+
+      // Reset pairing
+      this.pairing = new Map<string, PairingResponse>();
+
+      // Save time till next epoch
+      let timeLeftToNextPairing;
+
+      // Fetch latest block using probe
+      const latestNumber = await this.getLatestBlockFromProviders(
+        this.relayer,
+        this.lavaProviders,
+        lavaChainID,
+        lavaRPCInterface
+      );
+
+      // Update latest block in lava pairing
+      for (const consumerSessionWithProvider of this.lavaProviders) {
+        consumerSessionWithProvider.Session.PairingEpoch = latestNumber;
+      }
+
+      // Iterate over chain and construct pairing
+      for (const chainIDRpcInterface of this.chainIDRpcInterfaces) {
+        // Fetch pairing for specified chainID
+        const pairingResponse = await this.getPairingFromChain(
+          {
+            chainID: chainIDRpcInterface.chainID,
+            client: this.config.accountAddress,
+          },
+          10
+        );
+
+        // If pairing is undefined set to empty object
+        if (
+          pairingResponse == undefined ||
+          pairingResponse.pairing == undefined ||
+          pairingResponse.spec == undefined
+        ) {
+          this.pairing.set(chainIDRpcInterface.chainID, {
+            providers: [],
+            maxCu: -1,
+            currentEpoch: latestNumber,
+          });
+
+          continue;
+        }
+
+        // Parse time till next epoch
+        timeLeftToNextPairing = parseLong(
+          pairingResponse.pairing.timeLeftToNextPairing
+        );
+
+        // Save pairing response for chainID
+        this.pairing.set(chainIDRpcInterface.chainID, {
+          providers: pairingResponse.pairing.providers,
+          maxCu: parseLong(pairingResponse.maxCu),
+          currentEpoch: latestNumber,
+        });
+      }
+
+      // If timeLeftToNextPairing undefined return an error
+      if (timeLeftToNextPairing == undefined) {
+        throw StateTrackerErrors.errTimeTillNextEpochMissing;
+      }
+
+      debugPrint(this.config.debug, "Fetching pairing ended");
+
+      // Return timeLeftToNextPairing
+      return timeLeftToNextPairing;
+    } catch (err) {
+      throw err;
     }
-
-    // Fetch latest block using probe
-    const latestNumber = await this.getLatestBlockFromProviders(
-      this.relayer,
-      this.lavaProviders,
-      "LAV1",
-      "tendermintrpc"
-    );
-
-    this.pairing = new Map<string, ConsumerSessionWithProvider[]>();
-
-    // For each chain
-    for (const chainIDRpcInterface of this.chainIDRpcInterfaces) {
-      // Send to all providers SdkPairing call
-      // Create ConsumerSessionWithProvider[] from providers
-      // Save for this chain providers
-    }
-
-    // After we have everything we will return timeTillNextEpoch and currentBlock
-    return 3;
   }
 
   // getPairing return pairing list for specific chainID
-  public getPairing(
-    chainID: string
-  ): ConsumerSessionWithProvider[] | undefined {
+  public getPairing(chainID: string): PairingResponse | undefined {
     // Return pairing for the specific chainId from the map
     return this.pairing.get(chainID);
+  }
+
+  // getPairingFromChain fetch pairing response from lava providers
+  private async getPairingFromChain(
+    request: QueryGetPairingRequest,
+    relayCu: number
+  ): Promise<QuerySdkPairingResponse> {
+    try {
+      debugPrint(
+        this.config.debug,
+        "Get pairing for:" + request.chainID + " started"
+      );
+      // Encode request
+      const requestData = QueryGetPairingRequest.encode(request).finish();
+
+      // Create hex from data
+      const hexData = Buffer.from(requestData).toString("hex");
+
+      // Init send relay options
+      const sendRelayOptions = {
+        data: generateRPCData("abci_query", [
+          "/lavanet.lava.pairing.Query/SdkPairing",
+          hexData,
+          "0",
+          false,
+        ]),
+        url: "",
+        connectionType: "",
+      };
+
+      // Send relay to all providers and return first response
+      const jsonResponse = await this.relayer.SendRelayToAllProvidersAndRace(
+        this.lavaProviders,
+        sendRelayOptions,
+        relayCu,
+        lavaRPCInterface
+      );
+
+      if (jsonResponse.result.response.value == null) {
+        // If response is null log the error
+        console.error(
+          "ERROR, failed to fetch pairing for spec: " +
+            request.chainID +
+            ",error: " +
+            jsonResponse.result.response.log
+        );
+
+        // Return empty object
+        // We do not want to return error because it will stop the state tracker for other chains
+        return {
+          pairing: undefined,
+          spec: undefined,
+          maxCu: Long.fromNumber(-1),
+        };
+      }
+
+      // Decode response
+      const byteArrayResponse = base64ToUint8Array(
+        jsonResponse.result.response.value
+      );
+      const decodedResponse = QuerySdkPairingResponse.decode(byteArrayResponse);
+
+      // If response undefined throw an error
+      if (
+        decodedResponse.pairing == undefined ||
+        decodedResponse.pairing.providers == undefined
+      ) {
+        throw ProvidersErrors.errProvidersNotFound;
+      }
+
+      debugPrint(
+        this.config.debug,
+        "Get pairing for:" + request.chainID + " ended"
+      );
+      // Return decoded response
+      return decodedResponse;
+    } catch (err) {
+      // Console log the error
+      console.error(err);
+
+      // Return empty object
+      // We do not want to return error because it will stop the state tracker for other chains
+      return {
+        pairing: undefined,
+        spec: undefined,
+        maxCu: Long.fromNumber(-1),
+      };
+    }
   }
 
   // getLatestBlockFromProviders tries to fetch latest block using probe
@@ -125,16 +301,22 @@ export class StateQuery {
     chainID: string,
     rpcInterface: string
   ): Promise<number> {
+    debugPrint(this.config.debug, "Get latest block from providers started");
     let lastProbeResponse = null;
+
+    // Iterate over providers and return first successfull probe response
     for (let i = 0; i < providers.length; i++) {
       try {
+        // Send probe request
         const probeResponse = await relayer.probeProvider(
           this.lavaProviders[i].Session.Endpoint.Addr,
-          chainID,
-          rpcInterface
+          rpcInterface,
+          chainID
         );
 
+        // If no error save response and break
         lastProbeResponse = probeResponse;
+
         break;
       } catch (err) {
         // If error is instance of Error
@@ -145,15 +327,107 @@ export class StateQuery {
       }
     }
 
+    // If last provider returned an error
+    // throw it
     if (lastProbeResponse instanceof Error) {
       throw lastProbeResponse;
     }
 
+    // If probe response does not exists return an error
+    // This should never happen
     if (lastProbeResponse == undefined) {
       throw ProvidersErrors.errProbeResponseUndefined;
     }
 
-    return lastProbeResponse.getLatestBlock();
+    debugPrint(this.config.debug, "Get latest block from providers ended");
+
+    // Return latest block from probe response
+    return lastProbeResponse.getLavaEpoch();
+  }
+
+  // fetchLocalLavaPairingList uses local pairingList.json file to load lava providers
+  private async fetchLocalLavaPairingList(path: string): Promise<any> {
+    debugPrint(this.config.debug, "Fetch pairing list from local config");
+    try {
+      const data = await fetchLavaPairing(path);
+      return this.validatePairingData(data);
+    } catch (err) {
+      debugPrint(
+        this.config.debug,
+        "Error happened in fetchLocalLavaPairingList" + err
+      );
+      throw err;
+    }
+  }
+
+  // fetchLocalLavaPairingList fetch lava pairing from seed providers list
+  private async fetchDefaultLavaPairingList(): Promise<any> {
+    debugPrint(
+      this.config.debug,
+      "Fetch pairing list from seed providers in github"
+    );
+
+    // Fetch lava providers from seed list
+    const response = await fetch(DEFAULT_LAVA_PAIRING_LIST);
+
+    // Validate response
+    if (!response.ok) {
+      throw new Error(`Unable to fetch pairing list: ${response.statusText}`);
+    }
+
+    try {
+      // Parse response
+      const data = await response.json();
+
+      return this.validatePairingData(data);
+    } catch (error) {
+      debugPrint(
+        this.config.debug,
+        "Error happened in fetchDefaultLavaPairingList" + error
+      );
+      throw error;
+    }
+  }
+
+  // constructLavaPairing constructs consumer session with provider list from pairing list
+  private async constructLavaPairing(
+    pairingList: any
+  ): Promise<ConsumerSessionWithProvider[]> {
+    try {
+      // Initialize ConsumerSessionWithProvider array
+      const pairing: Array<ConsumerSessionWithProvider> = [];
+
+      for (const provider of pairingList) {
+        const singleConsumerSession = new SingleConsumerSession(
+          0, // cuSum
+          0, // latestRelayCuSum
+          1, // relayNumber
+          new Endpoint(provider.rpcAddress, true, 0),
+          -1,
+          provider.publicAddress
+        );
+
+        // Create a new pairing object
+        const newPairing = new ConsumerSessionWithProvider(
+          this.config.accountAddress,
+          [],
+          singleConsumerSession,
+          1000,
+          0,
+          false
+        );
+
+        // Add newly created pairing in the pairing list
+        pairing.push(newPairing);
+      }
+
+      // Save lava providers
+      this.lavaProviders = pairing;
+
+      return pairing;
+    } catch (err) {
+      throw err;
+    }
   }
 
   // validatePairingData validates pairing data
@@ -173,219 +447,6 @@ export class StateQuery {
         }). Supported geolocations: ${Object.keys(data[this.config.network])}`
       );
     }
-
     return data[this.config.network][this.config.geolocation];
-  }
-
-  // fetchLocalLavaPairingList uses local pairingList.json file to load lava providers
-  private async fetchLocalLavaPairingList(path: string): Promise<any> {
-    try {
-      const data = await fetchLavaPairing(path);
-      return this.validatePairingData(data);
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  // fetchLocalLavaPairingList fetch lava pairing from seed providers list
-  private async fetchDefaultLavaPairingList(): Promise<any> {
-    // Fetch lava providers from seed list
-    const response = await fetch(DEFAULT_LAVA_PAIRING_LIST);
-
-    // Validate response
-    if (!response.ok) {
-      throw new Error(`Unable to fetch pairing list: ${response.statusText}`);
-    }
-
-    try {
-      // Parse response
-      const data = await response.json();
-      return this.validatePairingData(data);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // constructLavaPairing constructs consumer session with provider list from pairing list
-  private constructLavaPairing(
-    pairingList: any
-  ): ConsumerSessionWithProvider[] {
-    // Initialize ConsumerSessionWithProvider array
-    const pairing: Array<ConsumerSessionWithProvider> = [];
-
-    for (const provider of pairingList) {
-      const singleConsumerSession = new SingleConsumerSession(
-        0, // cuSum
-        0, // latestRelayCuSum
-        1, // relayNumber
-        new Endpoint(provider.rpcAddress, true, 0),
-        -1, //invalid epoch
-        provider.publicAddress
-      );
-
-      // Create a new pairing object
-      const newPairing = new ConsumerSessionWithProvider(
-        this.config.accountAddress,
-        [],
-        singleConsumerSession,
-        100000, // invalid max cu
-        0, // used compute units
-        false
-      );
-
-      // Add newly created pairing in the pairing list
-      pairing.push(newPairing);
-    }
-    // Save lava providers
-    this.lavaProviders = pairing;
-
-    return pairing;
-  }
-
-  // SendRelayToAllProvidersAndRace sends relay to all lava providers and returns first response
-  private async SendRelayToAllProvidersAndRace(
-    providers: ConsumerSessionWithProvider[],
-    options: any,
-    relayCu: number,
-    rpcInterface: string
-  ): Promise<any> {
-    let lastError;
-    for (
-      let retryAttempt = 0;
-      retryAttempt < BOOT_RETRY_ATTEMPTS;
-      retryAttempt++
-    ) {
-      const allRelays: Map<string, Promise<any>> = new Map();
-      let response;
-      for (const provider of providers) {
-        const uniqueKey =
-          provider.Session.ProviderAddress +
-          String(Math.floor(Math.random() * 10000000));
-        const providerRelayPromise = this.SendRelayWithRetry(
-          options,
-          provider,
-          relayCu,
-          rpcInterface
-        )
-          .then((result: any) => {
-            debugPrint(this.config.debug, "response succeeded", result);
-            response = result;
-            allRelays.delete(uniqueKey);
-          })
-          .catch((err: any) => {
-            debugPrint(
-              this.config.debug,
-              "one of the promises failed in SendRelayToAllProvidersAndRace reason:",
-              err,
-              uniqueKey
-            );
-            lastError = err;
-            allRelays.delete(uniqueKey);
-          });
-        allRelays.set(uniqueKey, providerRelayPromise);
-      }
-      const promisesToWait = allRelays.size;
-      for (let i = 0; i < promisesToWait; i++) {
-        const returnedPromise = await Promise.race(allRelays);
-        await returnedPromise[1];
-        if (response) {
-          debugPrint(
-            this.config.debug,
-            "SendRelayToAllProvidersAndRace, got response from one provider",
-            response
-          );
-          return response;
-        }
-      }
-      debugPrint(
-        this.config.debug,
-        "Failed all promises SendRelayToAllProvidersAndRace, trying again",
-        retryAttempt,
-        "out of",
-        BOOT_RETRY_ATTEMPTS
-      );
-    }
-    throw new Error(
-      "Failed all promises SendRelayToAllProvidersAndRace: " + String(lastError)
-    );
-  }
-
-  // SendRelayWithRetry tryes to send relay to provider and reties depending on errors
-  private async SendRelayWithRetry(
-    options: any,
-    lavaRPCEndpoint: ConsumerSessionWithProvider,
-    relayCu: number,
-    rpcInterface: string
-  ): Promise<any> {
-    let response;
-    if (this.relayer == null) {
-      throw ProvidersErrors.errNoRelayer;
-    }
-    try {
-      // For now we have hardcode relay cu
-      response = await this.relayer.sendRelay(
-        options,
-        lavaRPCEndpoint,
-        relayCu,
-        rpcInterface
-      );
-    } catch (error) {
-      // If error is instace of Error
-      if (error instanceof Error) {
-        // If error is not old blokc height throw and error
-        // Extract current block height from error
-        const currentBlockHeight = this.extractBlockNumberFromError(error);
-
-        // If current block height equal nill throw an error
-        if (currentBlockHeight == null) {
-          throw error;
-        }
-
-        // Save current block height
-        lavaRPCEndpoint.Session.PairingEpoch = parseInt(currentBlockHeight);
-
-        // Retry same relay with added block height
-        try {
-          response = await this.relayer.sendRelay(
-            options,
-            lavaRPCEndpoint,
-            relayCu,
-            rpcInterface
-          );
-        } catch (error) {
-          throw error;
-        }
-      }
-    }
-
-    // Validate that response is not undefined
-    if (response == undefined) {
-      return "";
-    }
-
-    // Decode response
-    const dec = new TextDecoder();
-    const decodedResponse = dec.decode(response.getData_asU8());
-
-    // Parse response
-    const jsonResponse = JSON.parse(decodedResponse);
-
-    // Return response
-    return jsonResponse;
-  }
-
-  // extractBlockNumberFromError extract block number from error if exists
-  private extractBlockNumberFromError(error: Error): string | null {
-    let currentBlockHeightRegex = /current epoch Value:(\d+)/;
-    let match = error.message.match(currentBlockHeightRegex);
-
-    // Retry with new error
-    if (match == null) {
-      currentBlockHeightRegex = /current epoch: (\d+)/; // older epoch parsing
-
-      match = error.message.match(currentBlockHeightRegex);
-      return match ? match[1] : null;
-    }
-    return match ? match[1] : null;
   }
 }

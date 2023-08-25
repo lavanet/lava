@@ -1,3 +1,4 @@
+import { BOOT_RETRY_ATTEMPTS } from "../config/default";
 import { ConsumerSessionWithProvider } from "../types/types";
 import { Secp256k1, sha256 } from "@cosmjs/crypto";
 import { fromHex } from "@cosmjs/encoding";
@@ -360,6 +361,132 @@ class Relayer {
     const hash = sha256(encodedMessage);
 
     return hash;
+  }
+
+  // SendRelayToAllProvidersAndRace sends relay to all lava providers and returns first response
+  public async SendRelayToAllProvidersAndRace(
+    providers: ConsumerSessionWithProvider[],
+    options: any,
+    relayCu: number,
+    rpcInterface: string
+  ): Promise<any> {
+    console.log("Started sending to all providers and race");
+    let lastError;
+    for (
+      let retryAttempt = 0;
+      retryAttempt < BOOT_RETRY_ATTEMPTS;
+      retryAttempt++
+    ) {
+      const allRelays: Map<string, Promise<any>> = new Map();
+      let response;
+      for (const provider of providers) {
+        const uniqueKey =
+          provider.Session.ProviderAddress +
+          String(Math.floor(Math.random() * 10000000));
+        const providerRelayPromise = this.SendRelayWithRetry(
+          options,
+          provider,
+          relayCu,
+          rpcInterface
+        );
+        allRelays.set(uniqueKey, providerRelayPromise);
+      }
+
+      while (allRelays.size > 0) {
+        const returnedResponse = await Promise.race([...allRelays.values()]);
+        if (returnedResponse) {
+          console.log("Ended sending to all providers and race");
+          return returnedResponse;
+        }
+        // Handle removal of completed promises separately (Optional and based on your needs)
+        allRelays.forEach((promise, key) => {
+          promise
+            .then(() => allRelays.delete(key))
+            .catch(() => allRelays.delete(key));
+        });
+      }
+    }
+    throw new Error(
+      "Failed all promises SendRelayToAllProvidersAndRace: " + String(lastError)
+    );
+  }
+
+  // SendRelayWithRetry tryes to send relay to provider and reties depending on errors
+  private async SendRelayWithRetry(
+    options: any,
+    lavaRPCEndpoint: ConsumerSessionWithProvider,
+    relayCu: number,
+    rpcInterface: string
+  ): Promise<any> {
+    let response;
+
+    try {
+      // For now we have hardcode relay cu
+      response = await this.sendRelay(
+        options,
+        lavaRPCEndpoint,
+        relayCu,
+        rpcInterface
+      );
+    } catch (error) {
+      // If error is instace of Error
+      if (error instanceof Error) {
+        console.log("USAOOO ERR");
+        // If error is not old blokc height throw and error
+        // Extract current block height from error
+        const currentBlockHeight = this.extractBlockNumberFromError(error);
+
+        // If current block height equal nill throw an error
+        if (currentBlockHeight == null) {
+          throw error;
+        }
+
+        // Save current block height
+        lavaRPCEndpoint.Session.PairingEpoch = parseInt(currentBlockHeight);
+
+        // Retry same relay with added block height
+        try {
+          response = await this.sendRelay(
+            options,
+            lavaRPCEndpoint,
+            relayCu,
+            rpcInterface
+          );
+        } catch (error) {
+          throw error;
+        }
+      }
+    }
+
+    // Validate that response is not undefined
+    if (response == undefined) {
+      return "";
+    }
+
+    // Decode response
+    const dec = new TextDecoder();
+    const decodedResponse = dec.decode(response.getData_asU8());
+
+    // Parse response
+    const jsonResponse = JSON.parse(decodedResponse);
+
+    // Return response
+    return jsonResponse;
+  }
+
+  // extractBlockNumberFromError extract block number from error if exists
+  private extractBlockNumberFromError(error: Error): string | null {
+    let currentBlockHeightRegex = /current epoch Value:(\d+)/;
+    let match = error.message.match(currentBlockHeightRegex);
+
+    // Retry with new error
+    if (match == null) {
+      currentBlockHeightRegex = /current epoch: (\d+)/; // older epoch parsing
+
+      match = error.message.match(currentBlockHeightRegex);
+      return match ? match[1] : null;
+    }
+    return match ? match[1] : null;
   }
 }
 

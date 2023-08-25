@@ -45,7 +45,8 @@ export class BadgeManager {
   }
 
   public async fetchBadge(
-    badgeUser: string
+    badgeUser: string,
+    specId: string
   ): Promise<GenerateBadgeResponse | Error> {
     if (!this.active) {
       throw BadBadgeUsageWhileNotActiveError;
@@ -53,6 +54,7 @@ export class BadgeManager {
     const request = new GenerateBadgeRequest();
     request.setBadgeAddress(badgeUser);
     request.setProjectId(this.projectId);
+    request.setSpecId(specId);
     const requestPromise = new Promise<GenerateBadgeResponse>(
       (resolve, reject) => {
         grpc.invoke(BadgeGenerator.GenerateBadge, {

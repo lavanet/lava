@@ -174,7 +174,8 @@ export class LavaSDK {
 
   private async fetchNewBadge(): Promise<GenerateBadgeResponse> {
     const badgeResponse = await this.badgeManager.fetchBadge(
-      this.walletAddress
+      this.walletAddress,
+      "LAV1"
     );
     if (badgeResponse instanceof Error) {
       throw TimeoutFailureFetchingBadgeError;
