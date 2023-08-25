@@ -94,4 +94,29 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
+	HandleExternalError(replyData string) error
+}
+
+// External Errors
+func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
+	if strings.Contains(replyData, "502 Bad Gateway") {
+		return utils.LavaFormatError("Provider Side Received External error: 502 Bad Gateway", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+	}
+	// ... Add more specific checks for Rest API here ...
+	return nil
+}
+
+func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
+	// ... Add more specific checks for JsonRPC API here ...
+	return nil
+}
+
+func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
+	// ... Add more specific checks for TendermintRPC API here ...
+	return nil
+}
+
+func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
+	// ... Add more specific checks for GRPC API here ...
+	return nil
 }

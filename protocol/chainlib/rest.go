@@ -438,6 +438,11 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		return nil, "", nil, err
 	}
 
+	err = rcp.HandleExternalError(string(body))
+	if err != nil {
+		return nil, "", nil, err
+	}
+
 	reply := &pairingtypes.RelayReply{
 		Data:     body,
 		Metadata: convertToMetadataMapOfSlices(res.Header),
