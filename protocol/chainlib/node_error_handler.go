@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 	"syscall"
 
@@ -97,26 +98,77 @@ type ErrorHandler interface {
 	HandleExternalError(replyData string) error
 }
 
+func HandleGenericExternalError(replyData string) error {
+	// REGEX patterns
+	infuraRateLimitPattern := regexp.MustCompile(`429 Too Many Requests.*daily request count exceeded, request rate limited`)
+
+	switch {
+	// Check Bad Gateway
+	case strings.Contains(replyData, "502 Bad Gateway"):
+		return utils.LavaFormatError("Provider Returned External Error: 502 Bad Gateway", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+		// Check for "Cannot read properties of undefined" errors
+	case strings.Contains(replyData, "Cannot read properties of undefined"):
+		// Extract the property being accessed, if mentioned
+		var property string
+		matches := regexp.MustCompile(`\(reading '(.+?)'\)`).FindStringSubmatch(replyData)
+		if len(matches) > 1 {
+			property = matches[1]
+		}
+		return utils.LavaFormatError("Provider Returned External Error: Attempted to access an undefined object property", nil, utils.Attribute{Key: "Property:", Value: property}, utils.Attribute{Key: "Reply:", Value: replyData})
+		// Check for "got called with unhandled relay receiver" errors
+	case strings.Contains(replyData, "got called with unhandled relay receiver"):
+		// Extract requested and handled receivers
+		requestedReceiverMatch := regexp.MustCompile(`{Key:requested_receiver Value:(.+?)}`).FindStringSubmatch(replyData)
+		handledReceiversMatch := regexp.MustCompile(`{Key:handled_receivers Value:(.+?)}`).FindStringSubmatch(replyData)
+
+		var requestedReceiver, handledReceivers string
+		if len(requestedReceiverMatch) > 1 {
+			requestedReceiver = requestedReceiverMatch[1]
+		}
+		if len(handledReceiversMatch) > 1 {
+			handledReceivers = handledReceiversMatch[1]
+		}
+		return utils.LavaFormatError("Provider Returned External Error: Unhandled relay receiver", nil, utils.Attribute{Key: "Reqested Receiver:", Value: requestedReceiver}, utils.Attribute{Key: "Handled Receiver:", Value: handledReceivers}, utils.Attribute{Key: "Reply:", Value: replyData})
+		// Check rate limit
+	case infuraRateLimitPattern.MatchString(replyData):
+		return utils.LavaFormatError("Provider Returned External Error: Infura Rate Limit Error - Too Many Requests.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+		// Check unreachable network
+	case strings.Contains(replyData, `"message":"Rpc Error"`) && strings.Contains(replyData, `connect: network is unreachable`):
+		return utils.LavaFormatError("Provider Returned External Error:RPC Network Unreachable. The target service might be down or there might be a network issue.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+
+	default:
+	}
+	return nil
+}
+
 // External Errors
 func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
-	if strings.Contains(replyData, "502 Bad Gateway") {
-		return utils.LavaFormatError("Provider Side Received External error: 502 Bad Gateway", nil, utils.Attribute{Key: "Reply:", Value: replyData})
-	}
-	// ... Add more specific checks for Rest API here ...
 	return nil
 }
 
 func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
-	// ... Add more specific checks for JsonRPC API here ...
+	// switch {
+	// case strings.Contains(replyData, `429 Too Many Requests`) && strings.Contains(replyData, `"daily request count exceeded, request rate limited"`):
+	// 	errMsg := "Infura Rate Limit Error: Too Many Requests. Daily request count exceeded; request rate limited."
+	// 	return utils.LavaFormatError(errMsg, nil, utils.Attribute{Key: "Reply:", Value: replyData})
+
+	// default:
+	// 	// Default handling if no specific condition is met
+	// }
 	return nil
 }
 
 func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
-	// ... Add more specific checks for TendermintRPC API here ...
+	// switch {
+	// case strings.Contains(replyData, `"message":"Rpc Error"`) && strings.Contains(replyData, `connect: network is unreachable`):
+	// 	errMsg := "JSON-RPC Error: RPC Network Unreachable. The target service might be down or there might be a network issue."
+	// 	return utils.LavaFormatError(errMsg, nil, utils.Attribute{Key: "Reply:", Value: replyData})
+
+	// }
 	return nil
 }
 
 func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
-	// ... Add more specific checks for GRPC API here ...
+	// Add checks for GRPC API ...
 	return nil
 }

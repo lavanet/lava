@@ -616,6 +616,14 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+
+		// @audit Check generic external errors
+		err := chainlib.HandleGenericExternalError(string(reply.Data))
+		if err != nil {
+			return nil, utils.LavaFormatError("External error detected in reply", err, utils.Attribute{Key: "Reply", Value: reply.Data})
+		}
+
+		//
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock to set the correct latest block
 		if requestedBlockHash != nil || finalized {
