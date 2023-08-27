@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"math"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,7 +31,15 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	m.keeper.paramstore.GetParamSet(ctx, &paramsV3)
 
 	var paramsV4 v4.Params
-	paramsV4.GeolocationCount = int32(paramsV3.GeolocationCount)
+
+	var geoInt32 int32
+	if paramsV3.GeolocationCount <= math.MaxInt32 {
+		geoInt32 = int32(paramsV3.GeolocationCount)
+	} else {
+		geoInt32 = math.MaxInt32
+	}
+
+	paramsV4.GeolocationCount = geoInt32
 	paramsV4.MaxCU = paramsV3.MaxCU
 
 	m.keeper.paramstore.SetParamSet(ctx, &paramsV4)
