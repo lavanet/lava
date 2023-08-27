@@ -15,7 +15,7 @@ type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive, found bool, providersType spectypes.Spec_ProvidersTypes)
 	GetExpandedSpec(ctx sdk.Context, index string) (val spectypes.Spec, err error)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool) // this spec is unexpanded don;t use for collections work
-	GeolocationCount(ctx sdk.Context) uint64
+	GeolocationCount(ctx sdk.Context) int32
 	GetExpectedServicesForExpandedSpec(expandedSpec spectypes.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{}
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }

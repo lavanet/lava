@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	KeyGeolocationCount            = []byte("GeolocationCount")
-	DefaultGeolocationCount uint64 = 8
+	KeyGeolocationCount           = []byte("GeolocationCount")
+	DefaultGeolocationCount int32 = 8
 )
 
 var (
@@ -25,7 +25,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(geolocationCount, maxCU uint64) Params {
+func NewParams(geolocationCount int32, maxCU uint64) Params {
 	return Params{GeolocationCount: geolocationCount, MaxCU: maxCU}
 }
 

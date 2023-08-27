@@ -56,8 +56,8 @@ func TestGeoReqScore(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		reqGeo          uint64
-		providerGeo     uint64
+		reqGeo          int32
+		providerGeo     int32
 		expectedLatency uint64
 	}{
 		{
@@ -75,19 +75,19 @@ func TestGeoReqScore(t *testing.T) {
 		{
 			name:            "happy flow - provider supports global",
 			reqGeo:          1,
-			providerGeo:     uint64(planstypes.Geolocation_GL),
+			providerGeo:     int32(planstypes.Geolocation_GL),
 			expectedLatency: minGeoLatency,
 		},
 		{
 			name:            "provider doesn't support geo req but is neighbor",
 			reqGeo:          1,
-			providerGeo:     uint64(planstypes.Geolocation_USE),
+			providerGeo:     int32(planstypes.Geolocation_USE),
 			expectedLatency: GEO_LATENCY_MAP[planstypes.Geolocation_USC][planstypes.Geolocation_USE],
 		},
 		{
 			name:            "provider doesn't support geo req but isn't neighbor",
 			reqGeo:          1,
-			providerGeo:     uint64(planstypes.Geolocation_AS),
+			providerGeo:     int32(planstypes.Geolocation_AS),
 			expectedLatency: GEO_LATENCY_MAP[planstypes.Geolocation_USC][planstypes.Geolocation_AS],
 		},
 	}

@@ -137,7 +137,7 @@ func (ts *Tester) StakeProviderExtra(
 	spec spectypes.Spec,
 	amount int64,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) error {
 	// if geoloc left zero, use default 1
@@ -366,7 +366,7 @@ func (ts *Tester) TxPairingStakeProvider(
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	msg := &pairingtypes.MsgStakeProvider{

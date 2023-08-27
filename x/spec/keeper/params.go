@@ -19,7 +19,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 // GeolocationCount returns the GeolocationCount param
-func (k Keeper) GeolocationCount(ctx sdk.Context) (res uint64) {
+func (k Keeper) GeolocationCount(ctx sdk.Context) (res int32) {
 	k.paramstore.Get(ctx, types.KeyGeolocationCount, &res)
 	return
 }

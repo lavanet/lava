@@ -246,15 +246,15 @@ func (k Keeper) CalculateEffectiveSelectedProviders(policies []*planstypes.Polic
 	return effectiveMode, effectiveSelectedProviders
 }
 
-func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) (uint64, error) {
-	geolocation := uint64(math.MaxUint64)
+func (k Keeper) CalculateEffectiveGeolocationFromPolicies(policies []*planstypes.Policy) (int32, error) {
+	geolocation := int32(math.MaxInt32)
 
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
 	for _, policy := range policies {
 		if policy != nil {
 			geo := policy.GetGeolocationProfile()
-			if geo == uint64(planstypes.Geolocation_value["GLS"]) {
-				return uint64(planstypes.Geolocation_value["GL"]), nil
+			if geo == planstypes.Geolocation_value["GLS"] {
+				return planstypes.Geolocation_value["GL"], nil
 			}
 			geolocation &= geo
 		}

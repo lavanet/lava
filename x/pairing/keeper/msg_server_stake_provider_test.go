@@ -341,7 +341,7 @@ func TestStakeEndpoints(t *testing.T) {
 		host string,
 		apiInterfaces []string,
 		addons []string,
-		geoloc uint64,
+		geoloc int32,
 	) epochstoragetypes.Endpoint {
 		return epochstoragetypes.Endpoint{
 			IPPORT:        host,
@@ -355,7 +355,7 @@ func TestStakeEndpoints(t *testing.T) {
 		host string,
 		apiInterfaces []string,
 		addons []string,
-		geoloc uint64,
+		geoloc int32,
 		extensions []string,
 	) epochstoragetypes.Endpoint {
 		return epochstoragetypes.Endpoint{
@@ -371,7 +371,7 @@ func TestStakeEndpoints(t *testing.T) {
 		name        string
 		endpoints   []epochstoragetypes.Endpoint
 		success     bool
-		geolocation uint64
+		geolocation int32
 		addons      int
 		extensions  int
 	}

@@ -130,7 +130,7 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 			providers restrictions) and non-empty list of selected providers`)
 	}
 
-	if policy.GeolocationProfile == uint64(Geolocation_GLS) && !isPlanPolicy {
+	if policy.GeolocationProfile == int32(Geolocation_GLS) && !isPlanPolicy {
 		return sdkerrors.Wrap(ErrPolicyGeolocation, `cannot configure geolocation = GLS (0)`)
 	}
 

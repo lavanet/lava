@@ -71,7 +71,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
-		existingProviders := map[uint64]uint64{}
+		existingProviders := map[int32]uint64{}
 		// count providers per geolocation
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
 			existingProviders[providerStakeEntry.Geolocation]++
