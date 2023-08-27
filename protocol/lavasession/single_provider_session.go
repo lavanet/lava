@@ -14,7 +14,7 @@ const (
 )
 
 type SingleProviderSession struct {
-	userSessionsParent *ProviderSessionsWithConsumer
+	userSessionsParent *ProviderSessionsWithConsumerProject
 	CuSum              uint64
 	LatestRelayCu      uint64
 	SessionID          uint64
@@ -163,7 +163,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 			utils.Attribute{Key: "GUID", Value: ctx},
 			utils.Attribute{Key: "currentMissingCU", Value: missingCU},
 			utils.Attribute{Key: "totalMissingCu", Value: totalMissingCu},
-			utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumerAddr},
+			utils.Attribute{Key: "consumer", Value: sps.userSessionsParent.consumersProjectId},
 			utils.Attribute{Key: "sessionID", Value: sps.SessionID},
 			utils.Attribute{Key: "relayNum", Value: sps.RelayNum})
 	}
