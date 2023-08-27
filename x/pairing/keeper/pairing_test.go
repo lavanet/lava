@@ -132,7 +132,8 @@ func TestGetPairing(t *testing.T) {
 	// (for the benefit of users) but the "zeroEpoch" test below expects to start at the
 	// same epoch of staking the providers.
 	ts.addClient(1)
-	ts.addProvider(1)
+	err := ts.addProvider(1)
+	require.Nil(t, err)
 
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
 	constBlockTime := testkeeper.BLOCK_TIME
@@ -579,7 +580,8 @@ func TestAddonPairing(t *testing.T) {
 func TestSelectedProvidersPairing(t *testing.T) {
 	ts := newTester(t)
 
-	ts.addProvider(200)
+	err := ts.addProvider(200)
+	require.Nil(t, err)
 
 	policy := &planstypes.Policy{
 		GeolocationProfile: math.MaxUint64,
@@ -595,7 +597,9 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	)
 	require.Nil(t, err)
 
-	ts.addProvider(200)
+	err = ts.addProvider(200)
+	require.Nil(t, err)
+
 	_, p1 := ts.GetAccount(common.PROVIDER, 0)
 	_, p2 := ts.GetAccount(common.PROVIDER, 1)
 	_, p3 := ts.GetAccount(common.PROVIDER, 2)
@@ -1901,7 +1905,9 @@ func TestPairingConsistency(t *testing.T) {
 	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(3)
 	ts.AddPlan("mock", ts.plan)
 	ts.addClient(1)
-	ts.addProviderGeolocation(10, 3)
+	err := ts.addProviderGeolocation(10, 3)
+	require.Nil(t, err)
+
 	ts.AdvanceEpoch()
 
 	consumers := ts.Accounts(common.CONSUMER)
