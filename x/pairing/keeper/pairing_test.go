@@ -1894,11 +1894,15 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 }
 
 // TestPairingConsistency checks we consistently get the same pairing in the same epoch
-// TODO: stake providers with geolocation=3 to actually test pairing consistency
 func TestPairingConsistency(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(10, 1, 3)
 	iterations := 100
+
+	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(3)
+	ts.AddPlan("mock", ts.plan)
+	ts.addClient(1)
+	ts.addProviderGeolocation(10, 3)
+	ts.AdvanceEpoch()
 
 	consumers := ts.Accounts(common.CONSUMER)
 
