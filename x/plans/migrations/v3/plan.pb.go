@@ -11,6 +11,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -33,7 +34,7 @@ type Plan struct {
 	Description              string        `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"`
 	Type                     string        `protobuf:"bytes,12,opt,name=type,proto3" json:"type,omitempty"`
 	AnnualDiscountPercentage uint64        `protobuf:"varint,13,opt,name=annual_discount_percentage,json=annualDiscountPercentage,proto3" json:"annual_discount_percentage,omitempty"`
-	PlanPolicy               Policy `protobuf:"bytes,14,opt,name=plan_policy,json=planPolicy,proto3" json:"plan_policy"`
+	PlanPolicy               v3.Policy `protobuf:"bytes,14,opt,name=plan_policy,json=planPolicy,proto3" json:"plan_policy"`
 }
 
 func (m *Plan) Reset()         { *m = Plan{} }
@@ -125,11 +126,11 @@ func (m *Plan) GetAnnualDiscountPercentage() uint64 {
 	return 0
 }
 
-func (m *Plan) GetPlanPolicy() Policy {
+func (m *Plan) GetPlanPolicy() v3.Policy {
 	if m != nil {
 		return m.PlanPolicy
 	}
-	return Policy{}
+	return v3.Policy{}
 }
 
 func init() {
