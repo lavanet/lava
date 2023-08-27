@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"github.com/lavanet/lava/utils/rand"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -162,6 +163,7 @@ type TestStruct struct {
 }
 
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
+	rand.InitRandomSeed()
 	ts := TestStruct{}
 	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
 	// init keepers state

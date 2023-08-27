@@ -64,6 +64,7 @@ func TestProviderOptimizerSetGet(t *testing.T) {
 func TestProviderOptimizerBasic(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
+	rand.InitRandomSeed()
 
 	requestCU := uint64(10)
 	requestBlock := int64(1000)
