@@ -114,7 +114,7 @@ export interface MsgCancelUnbondingDelegationResponse {
  * Since: cosmos-sdk 0.47
  */
 export interface MsgUpdateParams {
-  /** authority is the address of the governance account. */
+  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
   authority: string;
   /**
    * params defines the x/staking parameters to update.
