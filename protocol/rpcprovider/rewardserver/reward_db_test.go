@@ -1,6 +1,7 @@
 package rewardserver_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -16,7 +17,9 @@ import (
 func TestSave(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
 	rs := rewardserver.NewRewardDB()
-	rs.AddDB("specId", db)
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
@@ -30,15 +33,40 @@ func TestSave(t *testing.T) {
 	require.Equal(t, 1, len(rewards))
 }
 
-func TestFindAll(t *testing.T) {
+func TestSaveThreshold(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
 	rs := rewardserver.NewRewardDB()
-	rs.AddDB("specId", db)
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	_, _, err := rs.Save("consumerAddr", "consumerKey"+"specId", proof)
+	for i := 0; i < 101; i++ {
+		_, saved, err := rs.Save(fmt.Sprintf("consumerAddr%d", i), fmt.Sprintf("consumerKey%d", i), proof)
+		require.NoError(t, err)
+		require.True(t, saved)
+	}
+
+	rewards, err := rs.FindAll()
 	require.NoError(t, err)
+
+	require.Equal(t, 1, len(rewards))
+	require.Equal(t, 101, rewards[0].NumRewards())
+}
+
+func TestFindAll(t *testing.T) {
+	db := rewardserver.NewMemoryDB("specId")
+	rs := rewardserver.NewRewardDB()
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
+
+	_, saved, err := rs.Save("consumerAddr", "consumerKey"+"specId", proof)
+	require.NoError(t, err)
+	require.True(t, saved)
 
 	rewards, err := rs.FindAll()
 	require.NoError(t, err)
@@ -48,13 +76,16 @@ func TestFindAll(t *testing.T) {
 func TestFindOne(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
 	rs := rewardserver.NewRewardDB()
-	rs.AddDB("specId", db)
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
 
-	_, _, err := rs.Save("consumerAddr", "consumerKey", proof)
+	_, saved, err := rs.Save("consumerAddr", "consumerKey", proof)
 	require.NoError(t, err)
+	require.True(t, saved)
 
 	reward, err := rs.FindOne(uint64(proof.Epoch), "consumerAddr", "consumerKey", proof.SessionId)
 	require.NoError(t, err)
@@ -64,7 +95,9 @@ func TestFindOne(t *testing.T) {
 func TestDeleteClaimedRewards(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
 	rs := rewardserver.NewRewardDB()
-	rs.AddDB("specId", db)
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
@@ -75,8 +108,9 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, _, err = rs.Save(addr.String(), "consumerKey", proof)
+	_, saved, err := rs.Save(addr.String(), "consumerKey", proof)
 	require.NoError(t, err)
+	require.True(t, saved)
 
 	err = rs.DeleteClaimedRewards([]*pairingtypes.RelaySession{proof})
 	require.NoError(t, err)
@@ -89,7 +123,9 @@ func TestDeleteClaimedRewards(t *testing.T) {
 func TestDeleteEpochRewards(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
 	rs := rewardserver.NewRewardDB()
-	rs.AddDB("specId", db)
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
@@ -100,8 +136,9 @@ func TestDeleteEpochRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, _, err = rs.Save(addr.String(), "consumerKey", proof)
+	_, saved, err := rs.Save(addr.String(), "consumerKey", proof)
 	require.NoError(t, err)
+	require.True(t, saved)
 
 	err = rs.DeleteEpochRewards(uint64(proof.Epoch))
 	require.NoError(t, err)
@@ -116,7 +153,9 @@ func TestRewardsWithTTL(t *testing.T) {
 	// really really short TTL to make sure the rewards are not queryable
 	ttl := 1 * time.Nanosecond
 	rs := rewardserver.NewRewardDBWithTTL(ttl)
-	rs.AddDB("spec", db)
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
 	privKey, addr := sigs.GenerateFloatingKey()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 
@@ -127,8 +166,9 @@ func TestRewardsWithTTL(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, _, err = rs.Save(addr.String(), "consumerKey", proof)
+	_, saved, err := rs.Save(addr.String(), "consumerKey", proof)
 	require.NoError(t, err)
+	require.True(t, saved)
 
 	rewards, err := rs.FindAll()
 	require.NoError(t, err)

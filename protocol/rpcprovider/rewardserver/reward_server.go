@@ -59,6 +59,10 @@ type EpochRewards struct {
 	consumerRewards map[string]*ConsumerRewards // key is consumer
 }
 
+func (eprw *EpochRewards) NumRewards() int {
+	return len(eprw.consumerRewards)
+}
+
 type RewardServer struct {
 	rewardsTxSender   RewardsTxSender
 	lock              sync.RWMutex
@@ -180,8 +184,8 @@ func (rws *RewardServer) paidCU() uint64 {
 
 func (rws *RewardServer) addExpectedPayment(expectedPay PaymentRequest) {
 	rws.lock.Lock() // this can be a separate lock, if we have performance issues
-	defer rws.lock.Unlock()
 	rws.expectedPayments = append(rws.expectedPayments, expectedPay)
+	rws.lock.Unlock()
 }
 
 func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClient sdk.AccAddress, blockHeight int64, uniqueID uint64, chainID string) bool {
@@ -257,17 +261,11 @@ func (rws *RewardServer) SubscribeEnded(consumer string, epoch uint64, subscribe
 }
 
 func (rws *RewardServer) updateCUServiced(cu uint64) {
-	rws.lock.Lock()
-	defer rws.lock.Unlock()
-	currentCU := atomic.LoadUint64(&rws.totalCUServiced)
-	atomic.StoreUint64(&rws.totalCUServiced, currentCU+cu)
+	atomic.AddUint64(&rws.totalCUServiced, cu)
 }
 
 func (rws *RewardServer) updateCUPaid(cu uint64) {
-	rws.lock.Lock()
-	defer rws.lock.Unlock()
-	currentCU := atomic.LoadUint64(&rws.totalCUPaid)
-	atomic.StoreUint64(&rws.totalCUPaid, currentCU+cu)
+	atomic.AddUint64(&rws.totalCUPaid, cu)
 }
 
 func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string, shardID uint) {
@@ -275,9 +273,9 @@ func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string
 	// but opening a db can race. (NewLocalDB) so we lock this method.
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
-	_, found := rws.rewardDB.GetDB(specId)
+	found := rws.rewardDB.DBExists(specId)
 	if !found {
-		rws.rewardDB.AddDB(specId, NewLocalDB(rws.rewardStoragePath, providerPublicAddress, specId, shardID))
+		rws.rewardDB.AddDB(NewLocalDB(rws.rewardStoragePath, providerPublicAddress, specId, shardID))
 	}
 }
 

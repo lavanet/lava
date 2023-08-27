@@ -41,9 +41,6 @@ type RewardEntity struct {
 }
 
 func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (*pairingtypes.RelaySession, bool, error) {
-	rs.lock.Lock()
-	defer rs.lock.Unlock()
-
 	key := rs.assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
 
 	re := &RewardEntity{
@@ -98,9 +95,6 @@ func (rs *RewardDB) FindOne(
 	consumerKey string,
 	sessionId uint64,
 ) (*pairingtypes.RelaySession, error) {
-	rs.lock.RLock()
-	defer rs.lock.RUnlock()
-
 	key := rs.assembleKey(epoch, consumerAddr, sessionId, consumerKey)
 	re, err := rs.findOne(key)
 	if err != nil {
@@ -133,9 +127,6 @@ func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
 }
 
 func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
-	rs.lock.RLock()
-	defer rs.lock.RUnlock()
-
 	rawRewards := make(map[string]*RewardEntity)
 	for _, db := range rs.dbs {
 		raw, err := db.FindAll()
@@ -183,9 +174,6 @@ func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 }
 
 func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
-	rs.lock.Lock()
-	defer rs.lock.Unlock()
-
 	var deletedPrefixes []string
 	for _, claimedReward := range claimedRewards {
 		consumer, err := sigs.ExtractSignerAddress(claimedReward)
@@ -212,9 +200,6 @@ func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySes
 }
 
 func (rs *RewardDB) DeleteEpochRewards(epoch uint64) error {
-	rs.lock.Lock()
-	defer rs.lock.Unlock()
-
 	prefix := strconv.FormatUint(epoch, 10)
 	return rs.deletePrefix(prefix)
 }
@@ -229,7 +214,7 @@ func (rs *RewardDB) deletePrefix(prefix string) error {
 	return nil
 }
 
-func (rs *RewardDB) AddDB(specId string, db DB) error {
+func (rs *RewardDB) AddDB(db DB) error {
 	// reading key before lock to avoid double locking.
 	dbKey := db.Key()
 
@@ -244,18 +229,12 @@ func (rs *RewardDB) AddDB(specId string, db DB) error {
 	return nil
 }
 
-func (rs *RewardDB) GetDB(specId string) (DB, bool) {
-	rs.lock.RLock()
-	defer rs.lock.RUnlock()
-
-	db, found := rs.dbs[specId]
-	return db, found
+func (rs *RewardDB) DBExists(specId string) bool {
+	_, found := rs.dbs[specId]
+	return found
 }
 
 func (rs *RewardDB) Close() error {
-	rs.lock.Lock()
-	defer rs.lock.Unlock()
-
 	for _, db := range rs.dbs {
 		err := db.Close()
 		if err != nil {
