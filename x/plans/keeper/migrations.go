@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v2 "github.com/lavanet/lava/x/plans/migrations/v2"
@@ -129,6 +130,13 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				cp8arr = append(cp8arr, cp8)
 			}
 
+			var geoInt32 int32
+			if p7.PlanPolicy.GeolocationProfile <= math.MaxInt32 {
+				geoInt32 = int32(p7.PlanPolicy.GeolocationProfile)
+			} else {
+				geoInt32 = math.MaxInt32
+			}
+
 			p8 := v8.Plan{
 				Index:                    p7.Index,
 				Block:                    p7.Block,
@@ -140,7 +148,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				AnnualDiscountPercentage: p7.AnnualDiscountPercentage,
 				PlanPolicy: v8.Policy{
 					ChainPolicies:         cp8arr,
-					GeolocationProfile:    int32(p7.PlanPolicy.GeolocationProfile),
+					GeolocationProfile:    geoInt32,
 					TotalCuLimit:          p7.PlanPolicy.TotalCuLimit,
 					EpochCuLimit:          p7.PlanPolicy.EpochCuLimit,
 					MaxProvidersToPair:    p7.PlanPolicy.MaxProvidersToPair,
