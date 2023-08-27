@@ -33,8 +33,8 @@ func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool) {
 }
 
 // Check if consumer exists and is not blocked, if all is valid return the ProviderSessionsWithConsumer pointer
-func (psm *ProviderSessionManager) IsActiveProject(epoch uint64, address string) (providerSessionWithConsumer *ProviderSessionsWithConsumerProject, err error) {
-	providerSessionWithConsumer, err = psm.getActiveProject(epoch, address)
+func (psm *ProviderSessionManager) IsActiveProject(epoch uint64, projectId string) (providerSessionWithConsumer *ProviderSessionsWithConsumerProject, err error) {
+	providerSessionWithConsumer, err = psm.getActiveProject(epoch, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -139,13 +139,13 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	return providerSessionWithConsumer, nil
 }
 
-func (psm *ProviderSessionManager) readConsumerToPairedWithProjectMap(consumerAddress string, epoch uint64) (string, bool) {
+func (psm *ProviderSessionManager) readConsumerToPairedWithProjectMap(consumerAddress string, epoch uint64) (projectId string, found bool) {
 	psm.lock.RLock()
 	defer psm.lock.RUnlock()
 
 	_, foundEpoch := psm.consumerPairedWithProjectMap[epoch]
 	if !foundEpoch {
-		return "", foundEpoch
+		return "", false
 	}
 
 	project, foundConsumer := psm.consumerPairedWithProjectMap[epoch].consumerToProjectMap[consumerAddress]
