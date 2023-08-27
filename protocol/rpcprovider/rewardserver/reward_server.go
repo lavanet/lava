@@ -129,7 +129,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		}
 
-		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "rewardsToClaim", Value: len(rewardsToClaim)})
+		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "number_of_relay_sessions_sent", Value: len(rewardsToClaim)})
 	} else {
 		utils.LavaFormatDebug("no rewards to claim")
 	}
