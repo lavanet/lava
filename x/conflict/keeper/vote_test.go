@@ -46,6 +46,7 @@ func (ts *tester) setupForCommit() (string, conflicttypes.MsgDetection, *pairing
 }
 
 func TestCommit(t *testing.T) {
+	rand.InitRandomSeed()
 	ts := newTester(t)
 	voteID, detection, relay0, _ := ts.setupForCommit()
 
