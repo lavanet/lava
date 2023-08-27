@@ -35,6 +35,6 @@ func (f *GeolocationFilter) Filter(ctx sdk.Context, providers []epochstoragetype
 	return filterResult
 }
 
-func isGeolocationSupported(policyGeolocation uint64, providerGeolocation uint64) bool {
+func isGeolocationSupported(policyGeolocation, providerGeolocation uint64) bool {
 	return policyGeolocation&providerGeolocation != 0
 }

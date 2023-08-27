@@ -5,7 +5,7 @@ import (
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -64,18 +64,18 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k Keeper) ExportProjects(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportProjects(ctx sdk.Context) commontypes.GenesisState {
 	return k.projectsFS.Export(ctx)
 }
 
-func (k Keeper) InitProjects(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.projectsFS.Init(ctx, data)
+func (k Keeper) InitProjects(ctx sdk.Context, gs commontypes.GenesisState) {
+	k.projectsFS.Init(ctx, gs)
 }
 
-func (k Keeper) ExportDevelopers(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportDevelopers(ctx sdk.Context) commontypes.GenesisState {
 	return k.developerKeysFS.Export(ctx)
 }
 
-func (k Keeper) InitDevelopers(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.developerKeysFS.Init(ctx, data)
+func (k Keeper) InitDevelopers(ctx sdk.Context, gs commontypes.GenesisState) {
+	k.developerKeysFS.Init(ctx, gs)
 }

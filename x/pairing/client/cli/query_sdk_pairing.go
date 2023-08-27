@@ -32,7 +32,7 @@ func CmdSdkPairing() *cobra.Command {
 				Client:  reqClient,
 			}
 
-			res, err := queryClient.SdkPairing(cmd.Context(), params)
+			res, err := queryClient.GetPairing(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

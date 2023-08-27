@@ -393,6 +393,78 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "starknet_addInvokeTransaction",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "starknet_addDeclareTransaction",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "starknet_addDeployAccountTransaction",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "starknet_estimateMessageFee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],

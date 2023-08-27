@@ -24,6 +24,7 @@ import (
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
@@ -73,12 +74,12 @@ func (s *strategyValue) Type() string {
 }
 
 type ConsumerStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error
-	GetConsumerPolicy(ctx context.Context, consumerAddress string, chainID string) (*plantypes.Policy, error)
+	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
 }
 
@@ -144,7 +145,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
-	consumerStateTracker.RegisterForVersionUpdates(ctx, version)
+	consumerStateTracker.RegisterForVersionUpdates(ctx, version, &upgrade.ProtocolVersion{})
 
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -248,7 +249,7 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		Example: `required flags: --geolocation 1 --from alice
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
-rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
+rpcconsumer 127.0.0.1:3333 OSMO tendermintrpc 127.0.0.1:3334 OSMO rest <flags>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
@@ -363,7 +364,10 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				utils.LavaFormatFatal("failed to verify cmd flags", err)
 			}
 
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to create tx factory", err)
+			}
 			rpcConsumer := RPCConsumer{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
@@ -391,7 +395,6 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
-	cmdRPCConsumer.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdRPCConsumer.Flags().Uint64(commonlib.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCConsumer.Flags().Uint(commonlib.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCConsumer.MarkFlagRequired(commonlib.GeolocationFlag)

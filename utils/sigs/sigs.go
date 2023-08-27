@@ -15,12 +15,12 @@ import (
 	"fmt"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	tendermintcrypto "github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	tendermintcrypto "github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 type Signable interface {

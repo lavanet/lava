@@ -3,6 +3,9 @@ package keeper
 import (
 	"testing"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -13,9 +16,6 @@ import (
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmdb "github.com/tendermint/tm-db"
 )
 
 func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
@@ -54,6 +54,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
+		nil,
 		nil,
 		nil,
 		nil,

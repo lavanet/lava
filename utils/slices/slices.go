@@ -8,6 +8,10 @@ type Number interface {
 	constraints.Float | constraints.Integer
 }
 
+type ComparableByFunc interface {
+	Differentiator() string
+}
+
 func Slice[T any](v ...T) []T {
 	return v
 }
@@ -89,6 +93,46 @@ func Intersection[T comparable](arrays ...[]T) []T {
 		if count == len(arrays) {
 			res = append(res, elem)
 		}
+	}
+
+	return res
+}
+
+func Union[T comparable](arrays ...[]T) []T {
+	elements := make(map[T]bool)
+
+	for _, arr := range arrays {
+		for _, elem := range arr {
+			elements[elem] = true
+		}
+	}
+
+	res := make([]T, len(elements))
+
+	count := 0
+	for elem := range elements {
+		res[count] = elem
+		count++
+	}
+
+	return res
+}
+
+func UnionByFunc[T ComparableByFunc](arrays ...[]T) []T {
+	elements := make(map[string]T)
+
+	for _, arr := range arrays {
+		for _, elem := range arr {
+			elements[elem.Differentiator()] = elem
+		}
+	}
+
+	res := make([]T, len(elements))
+
+	count := 0
+	for _, elem := range elements {
+		res[count] = elem
+		count++
 	}
 
 	return res

@@ -18,7 +18,7 @@ func generateSeed(data []byte) int64 {
 // New returns a new RPNG instance properly seeded
 func New(data []byte) *rand.Rand {
 	seed := generateSeed(data)
-	source := xoroshiro128starstar.NewSource(seed)
+	source := rand.NewSource(seed)
 	return rand.New(source)
 }
 

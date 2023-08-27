@@ -1,6 +1,6 @@
 {
   "name": "@lavanet/lava-sdk",
-  "version": "0.16.1",
+  "version": "0.21.0",
   "description": "An SDK for interacting with Lava provider",
   "main": "./bin/src/sdk/sdk.js",
   "author": "Lava Protocol Inc",
@@ -16,7 +16,6 @@
     "run_rest_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/restAPI.js",
     "run_jsonrpc_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC.js",
     "run_jsonrpc_badge_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/jsonRPC_badge_test.js",
-
     "run_test_tendermint_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/tendermintRPC_test.js",
     "node_test_tendermint_example": "node ./bin/examples/tendermintRPC_test.js",
     "run_test_rest_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/restAPI_test.js",
@@ -64,6 +63,7 @@
     "protobufjs": "^7.1.2",
     "rxjs": "^7.5.7",
     "ts-jest": "^29.0.3",
+    "ts-node": "^10.9.1",
     "ts-proto": "^1.145.0",
     "ts-protoc-gen": "^0.15.0"
   },
@@ -87,7 +87,7 @@
   },
   "homepage": "https://github.com/lavanet/lava-sdk#readme",
   "engines": {
-		"node": ">=18",
-		"npm": ">=6.12.0"
-	}
+    "node": ">=18",
+    "npm": ">=6.12.0"
+  }
 }

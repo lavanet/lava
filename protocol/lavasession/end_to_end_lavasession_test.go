@@ -32,7 +32,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "") // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil) // get a session
 	require.Nil(t, err)
 
 	for _, cs := range css {
@@ -49,7 +49,7 @@ func TestHappyFlowE2E(t *testing.T) {
 		require.Error(t, err)
 		require.True(t, ConsumerNotRegisteredYet.Is(err))
 		// expect session to be missing, so we need to register it for the first time
-		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Client.MaxComputeUnits, pairedProviders, nil)
+		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Client.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Client.MaxComputeUnits, pairedProviders, "projectIdTest", nil)
 		// validate session was added
 		require.NotEmpty(t, psm.sessionsWithAllConsumers)
 		require.Nil(t, err)

@@ -2,10 +2,10 @@ package rpcprovider
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -27,10 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
-	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -65,54 +61,59 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface string, addons []string) (time.Duration, error) {
+			checkOneProvider := func(apiInterface, addon string) (time.Duration, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
 				}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
-					return 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				defer conn.Close()
 				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
-				returned, err := relayerClient.Probe(ctx, &wrapperspb.UInt64Value{Value: guid})
+				probeReq := &pairingtypes.ProbeRequest{
+					Guid:         guid,
+					SpecId:       providerEntry.Chain,
+					ApiInterface: apiInterface,
+				}
+				probeResp, err := relayerClient.Probe(ctx, probeReq)
 				if err != nil {
-					return 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				relayLatency := time.Since(relaySentTime)
-				if guid != returned.Value {
-					return 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: returned.Value}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+				if guid != probeResp.GetGuid() {
+					return 0, 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
 					RelaySession: &pairingtypes.RelaySession{SpecId: providerEntry.Chain},
-					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: apiInterface, Addon: addons},
+					RelayData:    &pairingtypes.RelayPrivateData{ApiInterface: apiInterface, Addon: addon},
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {
-					return 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				code := status.Code(err)
 				if code != codes.Code(lavasession.EpochMismatchError.ABCICode()) {
-					return 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addons}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
-				return relayLatency, nil
+				return relayLatency, probeResp.GetLatestBlock(), nil
 			}
 			endpointServices := endpoint.GetSupportedServices()
 			if len(endpointServices) == 0 {
 				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			for _, endpointService := range endpointServices {
-				probeLatency, err := checkOneProvider(endpointService.ApiInterface, []string{endpointService.Addon})
+				probeLatency, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
 					continue
 				}
 				utils.LavaFormatInfo("successfully verified provider endpoint", utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
-				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String())
+				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String()+"latest block: 0x"+strconv.FormatInt(latestBlockFromProbe, 16))
 			}
 		}
 	}
@@ -140,7 +141,7 @@ func CreateTestRPCProviderCobraCommand() *cobra.Command {
 need to provider either provider_address or --from wallet_name
 optional flag: --endpoints in order to validate provider process before submitting a stake command
 endpoints is a space separated list of endpoint,
-each endpoint is: listen-ip:listen-port(the url),[optional: the api interfaces and addons to check],spec-id(the spec identifier to test)`,
+each endpoint is: listen-ip:listen-port(the url),[optional: the api interfaces and addon to check],spec-id(the spec identifier to test)`,
 		Example: `rpcprovider lava@myprovideraddress
 rpcprovider --from providerWallet
 rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc,ETH1 provider-public-grpc:port,rest,LAV1"`,
@@ -187,7 +188,11 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			utils.LavaFormatInfo("RPCProvider Test started", utils.Attribute{Key: "address", Value: address})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			txFactory := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to create txFactory", err)
+			}
+
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
 			resultStatus, err := clientCtx.Client.Status(ctx)
@@ -274,48 +279,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCProvider)
-	cmdTestRPCProvider.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdTestRPCProvider.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
 	return cmdTestRPCProvider
-}
-
-func CreateTestRPCProviderCACertificateCobraCommand() *cobra.Command {
-	cmdTestProviderCaCert := &cobra.Command{
-		Use:     `provider-ca-cert --network-address "ip:port"`,
-		Short:   `test the certificate of an rpc provider`,
-		Long:    `test if the rpc provider in the given network address is using the right format of CA certificate`,
-		Example: `lavad test provider-ca-cert --network-address "127.0.0.1:2379"`,
-		Args:    cobra.RangeArgs(0, 1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// handle flags, pass necessary fields
-			networkAddress, err := cmd.Flags().GetString(networkAddressFlag)
-			if err != nil {
-				return utils.LavaFormatError("cmd.Flags().GetString(networkAddressFlag)", err)
-			}
-
-			ctx := context.Background()
-			connectCtx, cancel := context.WithTimeout(ctx, time.Second)
-			defer cancel()
-
-			creds := credentials.NewTLS(&tls.Config{})
-			_, err = grpc.DialContext(connectCtx, networkAddress, grpc.WithBlock(), grpc.WithTransportCredentials(creds))
-			if err != nil {
-				utils.LavaFormatError("Failed to dial network address", err, utils.Attribute{Key: "Address", Value: networkAddress})
-				utils.LavaFormatError("It means your provider is not setup correctly or is lacking CA certification", nil)
-				return nil
-			}
-			utils.LavaFormatInfo("Finished dialing network address successfully!")
-			utils.LavaFormatInfo("CA certificate is setup correctly!")
-			return nil
-		},
-	}
-
-	cmdTestProviderCaCert.Flags().String(networkAddressFlag, "", "network address")
-	err := cmdTestProviderCaCert.MarkFlagRequired(networkAddressFlag)
-	if err != nil {
-		utils.LavaFormatFatal("MarkFlagRequired Error", err)
-	}
-
-	return cmdTestProviderCaCert
 }

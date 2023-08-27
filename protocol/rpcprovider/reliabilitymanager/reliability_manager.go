@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
@@ -15,7 +16,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -98,11 +98,12 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		// we need to send a commit, first we need to use the chainProxy and get the response
 		// TODO: implement code that verified the requested block is finalized and if its not waits and tries again
 		ctx := context.Background()
-		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil)
+		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil, 0)
 		if err != nil {
 			return utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 		}
+		// TODO: get extensions and addons from the request
 		reply, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 		if err != nil {
 			return utils.LavaFormatError("vote relay send has failed", err,
@@ -123,7 +124,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 	}
 }
 
-func (rm *ReliabilityManager) GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
+func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
 	return rm.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
@@ -176,7 +177,7 @@ func (vp *VoteParams) GetCloseVote() bool {
 func BuildBaseVoteDataFromEvent(event terderminttypes.Event) (voteID string, voteDeadline uint64, err error) {
 	attributes := map[string]string{}
 	for _, attribute := range event.Attributes {
-		attributes[string(attribute.Key)] = string(attribute.Value)
+		attributes[attribute.Key] = attribute.Value
 	}
 	voteID, ok := attributes["voteID"]
 	if !ok {
@@ -196,7 +197,7 @@ func BuildBaseVoteDataFromEvent(event terderminttypes.Event) (voteID string, vot
 func BuildVoteParamsFromDetectionEvent(event terderminttypes.Event) (*VoteParams, error) {
 	attributes := map[string]string{}
 	for _, attribute := range event.Attributes {
-		attributes[string(attribute.Key)] = string(attribute.Value)
+		attributes[attribute.Key] = attribute.Value
 	}
 	voteID, ok := attributes["voteID"]
 	if !ok {

@@ -29,6 +29,7 @@ const (
 	epoch2                         = testNumberOfBlocksKeptInMemory + epoch1
 	consumerOneAddress             = "consumer1"
 	pairedProviders                = int64(1)
+	projectId                      = "projectIdTest"
 )
 
 func initProviderSessionManager() *ProviderSessionManager {
@@ -55,7 +56,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, nil)
+	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, projectId, nil)
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
@@ -100,7 +101,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 	require.True(t, ConsumerNotRegisteredYet.Is(err))
 
 	// expect session to be missing, so we need to register it for the first time
-	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, badge)
+	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, projectId, badge)
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
@@ -124,34 +125,34 @@ func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleP
 	require.Equal(t, sps.PairingEpoch, epoch1)
 }
 
-func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
-	// initialize the struct
-	psm := initProviderSessionManager()
+// func prepareDRSession(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
+// 	// initialize the struct
+// 	psm := initProviderSessionManager()
 
-	// get data reliability session
-	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, pairedProviders)
+// 	// get data reliability session
+// 	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, pairedProviders)
 
-	// validate results
-	require.Nil(t, err)
-	require.NotNil(t, sps)
+// 	// validate results
+// 	require.Nil(t, err)
+// 	require.NotNil(t, sps)
 
-	// validate expected results
-	require.Empty(t, psm.sessionsWithAllConsumers)
-	require.NotEmpty(t, psm.dataReliabilitySessionsWithAllConsumers)
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+// 	// validate expected results
+// 	require.Empty(t, psm.sessionsWithAllConsumers)
+// 	require.NotEmpty(t, psm.dataReliabilitySessionsWithAllConsumers)
+// 	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
-	// // prepare session for usage
-	err = sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
-	require.NoError(t, err)
-	// validate session was prepared successfully
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
-	require.Equal(t, epoch1, sps.PairingEpoch)
+// 	// // prepare session for usage
+// 	err = sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
+// 	require.NoError(t, err)
+// 	// validate session was prepared successfully
+// 	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
+// 	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
+// 	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
+// 	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
+// 	require.Equal(t, epoch1, sps.PairingEpoch)
 
-	return psm, sps
-}
+// 	return psm, sps
+// }
 
 func TestHappyFlowPSM(t *testing.T) {
 	// init test
@@ -374,9 +375,7 @@ func TestPSMEpochChange(t *testing.T) {
 
 	// validate epoch update
 	require.Equal(t, psm.blockedEpochHeight, epoch1)
-	require.Empty(t, psm.dataReliabilitySessionsWithAllConsumers)
 	require.Empty(t, psm.sessionsWithAllConsumers)
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
 
 	// try to verify we cannot get a session from epoch1 after we blocked it
 	sps, err = psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber, nil)
@@ -463,143 +462,12 @@ func TestPSMCUMisMatch(t *testing.T) {
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
 
-func TestPSMDataReliabilityHappyFlow(t *testing.T) {
-	// prepare data reliability session
-	ctx := context.Background()
-	psm, sps := prepareDRSession(t, ctx)
-
-	// perform session done
-	psm.OnSessionDone(sps, relayNumber)
-
-	// validate session done information is valid.
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, relayNumber, sps.RelayNum)
-	require.Equal(t, epoch1, sps.PairingEpoch)
-}
-
-func TestPSMDataReliabilityTwicePerEpoch(t *testing.T) {
-	ctx := context.Background()
-	// prepare data reliability session
-	psm, sps := prepareDRSession(t, ctx)
-
-	// perform session done
-	psm.OnSessionDone(sps, relayNumber)
-
-	// validate session done information is valid.
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, relayNumber, sps.RelayNum)
-	require.Equal(t, epoch1, sps.PairingEpoch)
-
-	// try to get a data reliability session again.
-	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, pairedProviders)
-
-	// validate we cant get more than one data reliability session per epoch (might change in the future)
-	require.Error(t, err)
-	require.True(t, DataReliabilitySessionAlreadyUsedError.Is(err)) // validate error is what we expect.
-	require.Nil(t, sps)
-}
-
-func TestPSMDataReliabilitySessionFailure(t *testing.T) {
-	// prepare data reliability session
-	ctx := context.Background()
-	psm, sps := prepareDRSession(t, ctx)
-
-	// perform session failure.
-	psm.OnSessionFailure(sps, relayNumber)
-
-	// validate on session failure that the relay number was subtracted
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, sps.RelayNum, uint64(0))
-	require.Equal(t, epoch1, sps.PairingEpoch)
-}
-
-func TestPSMDataReliabilityRetryAfterFailure(t *testing.T) {
-	ctx := context.Background()
-	// prepare data reliability session
-	psm, sps := prepareDRSession(t, ctx)
-
-	// perform session failure.
-	psm.OnSessionFailure(sps, relayNumber)
-
-	// validate on session failure that the relay number was subtracted
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, sps.RelayNum, uint64(0))
-	require.Equal(t, epoch1, sps.PairingEpoch)
-
-	// try to get a data reliability session again.
-	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, pairedProviders)
-
-	// validate we can get a data reliability session if we failed before
-	require.Nil(t, err)
-	require.NotNil(t, sps)
-
-	// // prepare session for usage
-	err = sps.PrepareSessionForUsage(ctx, relayCu, dataReliabilityRelayCu, 0)
-	require.NoError(t, err)
-	// validate session was prepared successfully
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
-	require.Equal(t, epoch1, sps.PairingEpoch)
-
-	// perform session done
-	psm.OnSessionDone(sps, relayNumber)
-
-	// validate session done information is valid.
-	require.Equal(t, dataReliabilityRelayCu, sps.LatestRelayCu)
-	require.Equal(t, dataReliabilityRelayCu, sps.CuSum)
-	require.Equal(t, dataReliabilitySessionId, sps.SessionID)
-	require.Equal(t, relayNumber, sps.RelayNum)
-	require.Equal(t, epoch1, sps.PairingEpoch)
-}
-
-func TestPSMDataReliabilityEpochChange(t *testing.T) {
-	ctx := context.Background()
-	// prepare data reliability session
-	psm, sps := prepareDRSession(t, ctx)
-
-	// perform session done.
-	psm.OnSessionDone(sps, relayNumber)
-
-	// update epoch to epoch2 height
-	psm.UpdateEpoch(epoch2)
-
-	// validate epoch update
-	require.Equal(t, psm.blockedEpochHeight, epoch1)
-	require.Empty(t, psm.dataReliabilitySessionsWithAllConsumers)
-}
-
-func TestPSMDataReliabilitySessionFailureEpochChange(t *testing.T) {
-	ctx := context.Background()
-	// prepare data reliability session
-	psm, sps := prepareDRSession(t, ctx)
-
-	// perform session done.
-	psm.OnSessionFailure(sps, relayNumber)
-
-	// update epoch to epoch2 height
-	psm.UpdateEpoch(epoch2)
-
-	// validate epoch update
-	require.Equal(t, psm.blockedEpochHeight, epoch1)
-	require.Empty(t, psm.dataReliabilitySessionsWithAllConsumers)
-}
-
 func TestPSMSubscribeHappyFlowProcessUnsubscribe(t *testing.T) {
 	// init test
 	psm, sps := prepareSession(t, context.Background())
 
 	// validate subscription map is empty
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 
 	// subscribe
 	var channel chan interface{}
@@ -613,17 +481,12 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribe(t *testing.T) {
 	// verify state after subscription creation
 	require.True(t, LockMisUseDetectedError.Is(sps.VerifyLock())) // validating session was unlocked.
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers)
-	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch1]
-	require.True(t, foundEpoch)
-	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress]
-	require.True(t, foundConsumer)
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID]
+	_, foundSubscription := psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions[subscriptionID]
 	require.True(t, foundSubscription)
 
 	err := psm.ProcessUnsubscribe("unsubscribe", subscriptionID, consumerOneAddress, epoch1)
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 }
 
 func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
@@ -631,7 +494,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
 	psm, sps := prepareSession(t, context.Background())
 
 	// validate subscription map is empty
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 
 	// subscribe
 	var channel chan interface{}
@@ -657,19 +520,14 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
 	// verify state after subscription creation
 	require.True(t, LockMisUseDetectedError.Is(sps.VerifyLock())) // validating session was unlocked.
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers)
-	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch1]
-	require.True(t, foundEpoch)
-	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress]
-	require.True(t, foundConsumer)
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID]
+	_, foundSubscription := psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions[subscriptionID]
 	require.True(t, foundSubscription)
-	_, foundSubscription2 := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID2]
+	_, foundSubscription2 := psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions[subscriptionID2]
 	require.True(t, foundSubscription2)
 
 	err = psm.ProcessUnsubscribe(TendermintUnsubscribeAll, subscriptionID, consumerOneAddress, epoch1)
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 }
 
 func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testing.T) {
@@ -677,7 +535,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testin
 	psm, sps := prepareSession(t, context.Background())
 
 	// validate subscription map is empty
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 
 	// subscribe
 	var channel chan interface{}
@@ -699,8 +557,8 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testin
 
 	err = psm.ProcessUnsubscribe("unsubscribeOne", subscriptionID, consumerOneAddress, epoch1)
 	require.True(t, SubscriptionPointerIsNilError.Is(err))
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
-	_, foundId2 := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID2]
+	require.NotEmpty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
+	_, foundId2 := psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions[subscriptionID2]
 	require.True(t, foundId2)
 }
 
@@ -709,7 +567,7 @@ func TestPSMSubscribeHappyFlowSubscriptionEnded(t *testing.T) {
 	psm, sps := prepareSession(t, context.Background())
 
 	// validate subscription map is empty
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 
 	// subscribe
 	var channel chan interface{}
@@ -723,16 +581,11 @@ func TestPSMSubscribeHappyFlowSubscriptionEnded(t *testing.T) {
 	// verify state after subscription creation
 	require.True(t, LockMisUseDetectedError.Is(sps.VerifyLock())) // validating session was unlocked.
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers)
-	_, foundEpoch := psm.subscriptionSessionsWithAllConsumers[epoch1]
-	require.True(t, foundEpoch)
-	_, foundConsumer := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress]
-	require.True(t, foundConsumer)
-	_, foundSubscription := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID]
+	_, foundSubscription := psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions[subscriptionID]
 	require.True(t, foundSubscription)
 
 	psm.SubscriptionEnded(consumerOneAddress, epoch1, subscriptionID)
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 }
 
 func TestPSMSubscribeHappyFlowSubscriptionEndedOneOutOfTwo(t *testing.T) {
@@ -740,7 +593,7 @@ func TestPSMSubscribeHappyFlowSubscriptionEndedOneOutOfTwo(t *testing.T) {
 	psm, sps := prepareSession(t, context.Background())
 
 	// validate subscription map is empty
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 
 	// subscribe
 	var channel chan interface{}
@@ -761,8 +614,8 @@ func TestPSMSubscribeHappyFlowSubscriptionEndedOneOutOfTwo(t *testing.T) {
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1, relayNumber)
 
 	psm.SubscriptionEnded(consumerOneAddress, epoch1, subscriptionID)
-	require.NotEmpty(t, psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress])
-	_, foundId2 := psm.subscriptionSessionsWithAllConsumers[epoch1].subscriptionMap[consumerOneAddress][subscriptionID2]
+	require.NotEmpty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
+	_, foundId2 := psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions[subscriptionID2]
 	require.True(t, foundId2)
 }
 
@@ -771,7 +624,7 @@ func TestPSMSubscribeEpochChange(t *testing.T) {
 	psm, sps := prepareSession(t, context.Background())
 
 	// validate subscription map is empty
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch1].sessionMap[projectId].ongoingSubscriptions)
 
 	// subscribe
 	var channel chan interface{}
@@ -792,8 +645,7 @@ func TestPSMSubscribeEpochChange(t *testing.T) {
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1, relayNumber+1)
 
 	psm.UpdateEpoch(epoch2)
-	require.Empty(t, psm.subscriptionSessionsWithAllConsumers)
-	require.Empty(t, psm.sessionsWithAllConsumers)
+	require.Empty(t, psm.sessionsWithAllConsumers[epoch2])
 }
 
 type testSessionData struct {
@@ -886,7 +738,7 @@ func TestPSMUsageSync(t *testing.T) {
 							require.True(t, needsRegister)
 							needsRegister = false
 							utils.LavaFormatInfo("registered session", utils.Attribute{Key: "sessionID", Value: sessionStoreTest.sessionID}, utils.Attribute{Key: "epoch", Value: sessionStoreTest.epoch})
-							session, err := psm.RegisterProviderSessionWithConsumer(ctx, consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, maxCuForConsumer, pairedProviders, nil)
+							session, err := psm.RegisterProviderSessionWithConsumer(ctx, consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, sessionStoreTest.relayNum+1, maxCuForConsumer, pairedProviders, projectId, nil)
 							require.NoError(t, err)
 							sessionStoreTest.session = session
 							sessionStoreTest.history = append(sessionStoreTest.history, ",RegisterGet")

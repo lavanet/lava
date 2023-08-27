@@ -2,13 +2,13 @@ import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
 import Relayer from "../relayer/relayer";
-import { RelayReply } from "../grpc_web_services/pairing/relay_pb";
+import { RelayReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import {
   TimoutFailureFetchingBadgeError as TimeoutFailureFetchingBadgeError,
   BadgeOptions,
   BadgeManager,
 } from "../badge/fetchBadge";
-import { Badge } from "../grpc_web_services/pairing/relay_pb";
+import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SessionManager, ConsumerSessionWithProvider } from "../types/types";
 import {
   isValidChainID,
@@ -23,8 +23,8 @@ import {
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
-import { QueryShowAllChainsResponse } from "../codec/spec/query";
-import { GenerateBadgeResponse } from "../grpc_web_services/pairing/badges_pb";
+import { QueryShowAllChainsResponse } from "../codec/lavanet/lava/spec/query";
+import { GenerateBadgeResponse } from "../grpc_web_services/lavanet/lava/pairing/badges_pb";
 /**
  * Options for sending RPC relay.
  */
@@ -117,10 +117,9 @@ export class LavaSDK {
     // Initialize local attributes
     this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
     this.secure = options.secure !== undefined ? options.secure : true;
-    this.allowInsecureTransport =
-      options.allowInsecureTransport !== undefined
-        ? options.allowInsecureTransport
-        : true;
+    this.allowInsecureTransport = options.allowInsecureTransport
+      ? options.allowInsecureTransport
+      : false;
     this.debugPrint(
       "secure",
       this.secure,

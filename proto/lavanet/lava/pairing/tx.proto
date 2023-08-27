@@ -1,0 +1,69 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+// this line is used by starport scaffolding # proto/tx/import
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "lavanet/lava/epochstorage/endpoint.proto";
+import "lavanet/lava/pairing/relay.proto";
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc StakeProvider(MsgStakeProvider) returns (MsgStakeProviderResponse);
+  rpc UnstakeProvider(MsgUnstakeProvider) returns (MsgUnstakeProviderResponse);
+  rpc RelayPayment(MsgRelayPayment) returns (MsgRelayPaymentResponse);
+  rpc FreezeProvider(MsgFreezeProvider) returns (MsgFreezeProviderResponse);
+  rpc UnfreezeProvider(MsgUnfreezeProvider) returns (MsgUnfreezeProviderResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgStakeProvider {
+  string creator = 1;
+  string chainID = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.epochstorage.Endpoint endpoints = 4 [(gogoproto.nullable) = false];
+  uint64 geolocation = 5;
+  string moniker = 6;
+}
+
+message MsgStakeProviderResponse {
+}
+
+message MsgUnstakeProvider {
+  string creator = 1;
+  string chainID = 2;
+}
+
+message MsgUnstakeProviderResponse {
+}
+
+message MsgRelayPayment {
+  reserved 3;
+  string creator = 1;
+  repeated RelaySession relays = 2;
+  string descriptionString = 4;
+}
+
+message MsgRelayPaymentResponse {
+}
+
+message MsgFreezeProvider {
+  string creator = 1;
+  repeated string chainIds = 2;
+  string reason = 3;
+}
+
+message MsgFreezeProviderResponse {
+}
+
+message MsgUnfreezeProvider {
+  string creator = 1;
+  repeated string chainIds = 2;
+}
+
+message MsgUnfreezeProviderResponse {
+}
+
+// this line is used by starport scaffolding # proto/tx/message

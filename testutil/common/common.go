@@ -69,7 +69,7 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 	return relaySession
 }
 
-func CreateMsgDetectionTest(ctx context.Context, consumer Account, provider0 Account, provider1 Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1 *types.RelayReply, reply2 *types.RelayReply, errRet error) {
+func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
 	msg := &conflicttypes.MsgDetection{}
 	msg.Creator = consumer.Addr.String()
 	// request 0

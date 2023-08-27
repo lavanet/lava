@@ -10,14 +10,17 @@ import {
   QueryGetPairingResponse,
   QueryUserEntryRequest,
   QueryUserEntryResponse,
-} from "../codec/pairing/query";
-import { QueryGetSpecRequest, QueryGetSpecResponse } from "../codec/spec/query";
+} from "../codec/lavanet/lava/pairing/query";
+import {
+  QueryGetSpecRequest,
+  QueryGetSpecResponse,
+} from "../codec/lavanet/lava/spec/query";
 import { fetchLavaPairing } from "../util/lavaPairing";
 import Relayer from "../relayer/relayer";
 import ProvidersErrors from "./errors";
 import { base64ToUint8Array, generateRPCData, parseLong } from "../util/common";
-import { Badge } from "../grpc_web_services/pairing/relay_pb";
-import { QueryShowAllChainsResponse } from "../codec/spec/query";
+import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { QueryShowAllChainsResponse } from "../codec/lavanet/lava/spec/query";
 
 const BOOT_RETRY_ATTEMPTS = 2;
 export interface LavaProvidersOptions {

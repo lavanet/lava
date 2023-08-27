@@ -62,7 +62,7 @@ func (k Keeper) GetProjectForDeveloper(ctx sdk.Context, developerKey string, blo
 // AddKeysToProject adds keys to a project. Keys are added immediately, retroactively
 // effective at the start of this epoch. The adminKey must be valid (and specifically,
 // not already marked for deletion by next epoch).
-func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
+func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID, adminKey string, projectKeys []types.ProjectKey) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ctxBlock)
@@ -184,7 +184,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID string, adminKey str
 // DelKeysFromProject delete keys from a project. Keys are marked for deleteion due by
 // the beginning of next epoch. The adminKey must be valid (specifically, not already
 // marked for deletion by next epoch).
-func (k Keeper) DelKeysFromProject(ctx sdk.Context, projectID string, adminKey string, projectKeys []types.ProjectKey) error {
+func (k Keeper) DelKeysFromProject(ctx sdk.Context, projectID, adminKey string, projectKeys []types.ProjectKey) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
@@ -250,7 +250,7 @@ func (k Keeper) DelKeysFromProject(ctx sdk.Context, projectID string, adminKey s
 
 // ChargeComputUnitsToProject charges use of CU to the project at a given block.
 // Propgage the charge to subsequent versions (blocks) within the same snapshot.
-func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, blockHeight uint64, cu uint64) (err error) {
+func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, blockHeight, cu uint64) (err error) {
 	blocks := k.projectsFS.GetEntryVersionsRange(ctx, project.Index, blockHeight, uint64(commontypes.STALE_ENTRY_TIME))
 
 	for _, block := range blocks {

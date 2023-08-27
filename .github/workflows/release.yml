@@ -24,13 +24,17 @@ jobs:
     - name: Configure Go
       uses: actions/setup-go@v3
       with:
-        go-version: '^1.20.5'
+        go-version: 1.20.5
         check-latest: true
         cache: true
 
+    - name: Set Environment Variable
+      run: |
+        echo "LAVA_BUILD_OPTIONS=\"release\"" >> $GITHUB_ENV
+
     - name: Build
       run: |
-        make build
+        make build-all
 
     - name: Test build
       continue-on-error: true
@@ -66,6 +70,22 @@ jobs:
           -H "Content-Type: $(file -b --mime-type build/lavad)" \
           --data-binary @build/lavad \
           $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
+
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: $(file -b --mime-type build/lava-protocol)" \
+          --data-binary @build/lava-protocol \
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lava-protocol-${{ github.event.release.tag_name }}-linux-amd64/g')
+
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: $(file -b --mime-type build/lava-visor)" \
+          --data-binary @build/lava-visor \
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lava-visor-${{ github.event.release.tag_name }}-linux-amd64/g')
         }
 
         delete_binary(){
@@ -114,9 +134,9 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          github.rest.repos.updateRelease({
+          const { data } = await github.rest.repos.updateRelease({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            release_id: ${{ github.event.release.id }},
+            release_id: context.payload.release.id,
             body: ${{ steps.existing_checksum.outputs.NEW_BODY }}
-          })
+          });

@@ -70,13 +70,13 @@ type dataHandler interface {
 	onDeleteEvent()
 }
 
-type subscriptionData struct {
-	subscriptionMap map[string]map[string]*RPCSubscription
+type sessionData struct {
+	sessionMap map[string]*ProviderSessionsWithConsumerProject
 }
 
-func (sm subscriptionData) onDeleteEvent() {
-	for _, consumer := range sm.subscriptionMap {
-		for _, subscription := range consumer {
+func (sm sessionData) onDeleteEvent() { // perform any delete operations before deleting the session
+	for _, consumer := range sm.sessionMap {
+		for _, subscription := range consumer.ongoingSubscriptions { // close any ongoing subscriptions
 			if subscription.Sub == nil { // validate subscription not nil
 				utils.LavaFormatError("filterOldEpochEntriesSubscribe Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscription.Id})
 			} else {
@@ -86,11 +86,11 @@ func (sm subscriptionData) onDeleteEvent() {
 	}
 }
 
-type sessionData struct {
-	sessionMap map[string]*ProviderSessionsWithConsumer
+type projectConsumerMapping struct {
+	consumerToProjectMap map[string]string
 }
 
-func (sm sessionData) onDeleteEvent() { // do nothing
+func (pcm projectConsumerMapping) onDeleteEvent() { // do nothing
 }
 
 type RPCSubscription struct {
@@ -110,16 +110,17 @@ const (
 	isDataReliabilityPSWC  = 1
 )
 
-// holds all of the data for a consumer for a certain epoch
-type ProviderSessionsWithConsumer struct {
-	Sessions          map[uint64]*SingleProviderSession
-	isBlockListed     uint32
-	consumerAddr      string
-	epochData         *ProviderSessionsEpochData
-	badgeEpochData    map[string]*ProviderSessionsEpochData
-	Lock              sync.RWMutex
-	isDataReliability uint32 // 0 is false, 1 is true. set to uint so we can atomically read
-	pairedProviders   int64
+// holds all of the data for a consumer (project) for a certain epoch
+type ProviderSessionsWithConsumerProject struct {
+	Sessions             map[uint64]*SingleProviderSession
+	isBlockListed        uint32
+	consumersProjectId   string
+	epochData            *ProviderSessionsEpochData
+	badgeEpochData       map[string]*ProviderSessionsEpochData
+	Lock                 sync.RWMutex
+	isDataReliability    uint32 // 0 is false, 1 is true. set to uint so we can atomically read
+	pairedProviders      int64
+	ongoingSubscriptions map[string]*RPCSubscription // key == sub id
 }
 
 type BadgeSession struct {
@@ -127,35 +128,36 @@ type BadgeSession struct {
 	BadgeUser         string
 }
 
-func NewProviderSessionsWithConsumer(consumerAddr string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumer {
-	pswc := &ProviderSessionsWithConsumer{
-		Sessions:          map[uint64]*SingleProviderSession{},
-		isBlockListed:     0,
-		consumerAddr:      consumerAddr,
-		epochData:         epochData,
-		badgeEpochData:    map[string]*ProviderSessionsEpochData{},
-		isDataReliability: isDataReliability,
-		pairedProviders:   pairedProviders,
+func NewProviderSessionsWithConsumer(projectId string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumerProject {
+	pswc := &ProviderSessionsWithConsumerProject{
+		Sessions:             map[uint64]*SingleProviderSession{},
+		isBlockListed:        0,
+		consumersProjectId:   projectId,
+		epochData:            epochData,
+		badgeEpochData:       map[string]*ProviderSessionsEpochData{},
+		isDataReliability:    isDataReliability,
+		pairedProviders:      pairedProviders,
+		ongoingSubscriptions: map[string]*RPCSubscription{},
 	}
 	return pswc
 }
 
 // reads the pairedProviders data atomically for DR
-func (pswc *ProviderSessionsWithConsumer) atomicReadPairedProviders() int64 {
+func (pswc *ProviderSessionsWithConsumerProject) atomicReadPairedProviders() int64 {
 	return atomic.LoadInt64(&pswc.pairedProviders)
 }
 
 // reads the isDataReliability data atomically
-func (pswc *ProviderSessionsWithConsumer) atomicReadIsDataReliability() uint32 {
+func (pswc *ProviderSessionsWithConsumerProject) atomicReadIsDataReliability() uint32 {
 	return atomic.LoadUint32(&pswc.isDataReliability)
 }
 
 // reads cs.BlockedEpoch atomically to determine if the consumer is blocked notBlockListedConsumer = 0, blockListedConsumer = 1
-func (pswc *ProviderSessionsWithConsumer) atomicReadConsumerBlocked() (blockStatus uint32) {
+func (pswc *ProviderSessionsWithConsumerProject) atomicReadConsumerBlocked() (blockStatus uint32) {
 	return atomic.LoadUint32(&pswc.isBlockListed)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicReadMaxComputeUnits() (maxComputeUnits uint64) {
+func (pswc *ProviderSessionsWithConsumerProject) atomicReadMaxComputeUnits() (maxComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
@@ -163,11 +165,11 @@ func atomicReadBadgeMaxComputeUnits(badgeUserEpochData *ProviderSessionsEpochDat
 	return atomic.LoadUint64(&badgeUserEpochData.MaxComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
+func (pswc *ProviderSessionsWithConsumerProject) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicWriteUsedComputeUnits(cu uint64) {
+func (pswc *ProviderSessionsWithConsumerProject) atomicWriteUsedComputeUnits(cu uint64) {
 	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
 }
 
@@ -175,32 +177,32 @@ func atomicReadBadgeUsedComputeUnits(badgeUserEpochData *ProviderSessionsEpochDa
 	return atomic.LoadUint64(&badgeUserEpochData.UsedComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteUsedComputeUnits(newUsed uint64, knownUsed uint64) bool {
+func (pswc *ProviderSessionsWithConsumerProject) atomicCompareAndWriteUsedComputeUnits(newUsed, knownUsed uint64) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
-func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed uint64, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
+func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&badgeUserEpochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
+func (pswc *ProviderSessionsWithConsumerProject) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.MissingComputeUnits)
 }
 
-func (pswc *ProviderSessionsWithConsumer) atomicCompareAndWriteMissingComputeUnits(newUsed uint64, knownUsed uint64) bool {
+func (pswc *ProviderSessionsWithConsumerProject) atomicCompareAndWriteMissingComputeUnits(newUsed, knownUsed uint64) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.MissingComputeUnits, knownUsed, newUsed)
 }
 
-func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool, totalMissingCu uint64) {
+func (pswc *ProviderSessionsWithConsumerProject) SafeAddMissingComputeUnits(currentMissingCU uint64, allowedThreshold float64) (legitimate bool, totalMissingCu uint64) {
 	for {
 		missing := pswc.atomicReadMissingComputeUnits()
 		used := pswc.atomicReadUsedComputeUnits()
@@ -225,7 +227,7 @@ func (pswc *ProviderSessionsWithConsumer) SafeAddMissingComputeUnits(currentMiss
 }
 
 // create a new session with a consumer, and store it inside it's providerSessions parent
-func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx context.Context, sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumerProject) createNewSingleProviderSession(ctx context.Context, sessionId, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new sessionID", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session = &SingleProviderSession{
 		userSessionsParent: pswc,
@@ -244,7 +246,7 @@ func (pswc *ProviderSessionsWithConsumer) createNewSingleProviderSession(ctx con
 }
 
 // this function returns the session locked to be used
-func (pswc *ProviderSessionsWithConsumer) getExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumerProject) getExistingSession(ctx context.Context, sessionId uint64) (session *SingleProviderSession, err error) {
 	pswc.Lock.RLock()
 	defer pswc.Lock.RUnlock()
 	if session, ok := pswc.Sessions[sessionId]; ok {
@@ -255,7 +257,7 @@ func (pswc *ProviderSessionsWithConsumer) getExistingSession(ctx context.Context
 }
 
 // this function verifies the provider can create a data reliability session and returns one if valid
-func (pswc *ProviderSessionsWithConsumer) getDataReliabilitySingleSession(sessionId uint64, epoch uint64) (session *SingleProviderSession, err error) {
+func (pswc *ProviderSessionsWithConsumerProject) getDataReliabilitySingleSession(sessionId, epoch uint64) (session *SingleProviderSession, err error) {
 	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
 	session, foundDataReliabilitySession := pswc.Sessions[sessionId]
 	if foundDataReliabilitySession {

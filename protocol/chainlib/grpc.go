@@ -76,14 +76,14 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
-func (apip *GrpcChainParser) getApiCollection(connectionType string, internalPath string, addon string) (*spectypes.ApiCollection, error) {
+func (apip *GrpcChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
 	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
-func (apip *GrpcChainParser) getSupportedApi(name string, connectionType string) (*ApiContainer, error) {
+func (apip *GrpcChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -105,7 +105,7 @@ func (apip *GrpcChainParser) setupForProvider(reflectionConnection *grpc.ClientC
 
 func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, metadata)
+		chainMessage, err := apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, metadata, 0)
 		chainMessage.AppendHeader(metadata)
 		return chainMessage, err
 	}
@@ -127,7 +127,7 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata) (ChainMessage, error) {
+func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("GrpcChainParser not defined")
@@ -175,6 +175,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	}
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
+	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 
@@ -221,7 +222,7 @@ func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabil
 
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
-func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData uint32, blocksInFinalizationProof uint32) {
+func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return 0, 0, 0, 0
@@ -277,11 +278,15 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
+
+		// Extract dappID from grpc header
+		dappID := extractDappIDFromGrpcHeader(metadataValues)
+
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		var relayReply *pairingtypes.RelayReply
-		metricsData := metrics.NewRelayAnalytics("NoDappID", apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", "NoDappID", metricsData, grpcHeaders)
+		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
+		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, metricsData, grpcHeaders)
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {

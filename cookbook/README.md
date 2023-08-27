@@ -2,9 +2,9 @@
 
 ### Links
 
-`Spec` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/spec.proto](../proto/spec/spec.proto)
+`Spec` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/spec.proto](../proto/lavanet/lava/spec/spec.proto)
 
-`ServiceApi` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/service_api.proto](../proto/spec/service_api.proto)
+`ServiceApi` protobuf: [https://github.com/lavanet/lava/blob/main/proto/spec/service_api.proto](../proto/lavanet/lava/spec/service_api.proto)
 
 ### Overview
 

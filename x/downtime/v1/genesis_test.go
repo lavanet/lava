@@ -23,12 +23,6 @@ func TestGenesis_Validate(t *testing.T) {
 						Block:    1,
 					},
 				},
-				DowntimesGarbageCollection: []*DowntimeGarbageCollection{
-					{
-						Block:   1,
-						GcBlock: 1,
-					},
-				},
 			},
 		},
 		"invalid params": {
@@ -60,17 +54,6 @@ func TestGenesis_Validate(t *testing.T) {
 				},
 			},
 			ExpError: "invalid downtime block",
-		},
-		"invalid downtime garbage collection": {
-			Genesis: GenesisState{
-				Params: DefaultParams(),
-				DowntimesGarbageCollection: []*DowntimeGarbageCollection{
-					{
-						Block: 0,
-					},
-				},
-			},
-			ExpError: "invalid downtime garbage collection block",
 		},
 	}
 

@@ -4,10 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
@@ -54,89 +52,82 @@ func TestDowntime(t *testing.T) {
 	require.False(t, ok)
 }
 
-func TestHadDowntimes(t *testing.T) {
-	app, ctx := app.TestSetup()
-	keeper := app.DowntimeKeeper
-
-	// no downtime
-	has, _ := keeper.HadDowntimeBetween(ctx, 1, 2)
-	require.False(t, has)
-
-	// set downtime
-	keeper.SetDowntime(ctx, 1, 1*time.Minute)
-	// set another downtime
-	keeper.SetDowntime(ctx, 2, 1*time.Minute)
-	has, duration := keeper.HadDowntimeBetween(ctx, 1, 2)
-	require.True(t, has)
-	require.Equal(t, 2*time.Minute, duration)
-
-	// test same block
-	has, duration = keeper.HadDowntimeBetween(ctx, 1, 1)
-	require.True(t, has)
-	require.Equal(t, 1*time.Minute, duration)
-
-	// out of range
-	has, duration = keeper.HadDowntimeBetween(ctx, 1, 3)
-	require.True(t, has)
-	require.Equal(t, 2*time.Minute, duration)
-}
-
 func TestBeginBlock(t *testing.T) {
-	// anonymous function to move into next block with provided duration
-	nextBlock := func(ctx sdk.Context, elapsedTime time.Duration) sdk.Context {
-		return ctx.WithBlockHeight(ctx.BlockHeight() + 1).WithBlockTime(ctx.BlockTime().Add(elapsedTime))
-	}
-
 	app, ctx := app.TestSetup()
-	app.EpochstorageKeeper.SetParams(ctx, epochstoragetypes.DefaultParams())
-	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(1)
+	ctx = ctx.WithBlockTime(time.Now().UTC()).WithBlockHeight(0)
+
+	epochParams := epochstoragetypes.DefaultParams()
+
+	app.EpochstorageKeeper.SetParams(ctx, epochParams)
+	app.EpochstorageKeeper.PushFixatedParams(ctx, 0, 0)
+	app.EpochstorageKeeper.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
+
 	keeper := app.DowntimeKeeper
 	keeper.SetParams(ctx, v1.DefaultParams())
 
+	// anonymous function to move into next block with provided duration
+	nextBlock := func(ctx sdk.Context, elapsedTime time.Duration) sdk.Context {
+		ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1).WithBlockTime(ctx.BlockTime().Add(elapsedTime))
+		app.EpochstorageKeeper.BeginBlock(ctx)
+		keeper.BeginBlock(ctx)
+		return ctx
+	}
+
+	epochStartBlock := func(ctx sdk.Context) uint64 {
+		return app.EpochstorageKeeper.GetEpochStart(ctx)
+	}
+
 	// start with no block time recorded as of now
-	keeper.BeginBlock(ctx)
+	ctx = nextBlock(ctx, 1*time.Second)
 	lbt, ok := keeper.GetLastBlockTime(ctx)
 	require.True(t, ok)
-	require.Equal(t, ctx.BlockTime(), lbt)
+	require.Equal(t, ctx.BlockTime().String(), lbt.String())
 
-	// move into next block
+	// move into next block, check if block time is updated
 	ctx = nextBlock(ctx, 1*time.Minute)
-
-	// run begin block again to check if block time is updated
-	keeper.BeginBlock(ctx)
 	lbt, ok = keeper.GetLastBlockTime(ctx)
 	require.True(t, ok)
-	require.Equal(t, ctx.BlockTime(), lbt)
+	require.Equal(t, ctx.BlockTime().String(), lbt.String())
 
 	// move into next block –– forcing a downtime
 	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
-
-	// run begin block again to check if downtime is recorded
-	keeper.BeginBlock(ctx)
-	hadDowntimes, duration := keeper.HadDowntimeBetween(ctx, 0, uint64(ctx.BlockHeight()))
+	duration, hadDowntimes := keeper.GetDowntime(ctx, epochStartBlock(ctx))
 	require.True(t, hadDowntimes)
 	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
-	// move into next block, it shouldn't have downtimes.
+	// move into next block, downtime must not increase
 	ctx = nextBlock(ctx, 1*time.Second)
-	keeper.BeginBlock(ctx)
-	_, hadDowntimes = keeper.GetDowntime(ctx, uint64(ctx.BlockHeight()))
-	require.False(t, hadDowntimes)
+	duration, hadDowntimes = keeper.GetDowntime(ctx, epochStartBlock(ctx))
+	require.True(t, hadDowntimes)
+	require.Equal(t, keeper.GetParams(ctx).DowntimeDuration, duration)
 
-	// we check garbage collection by advancing blocks until the garbage collection blocks are reached
-	gcBlocks := keeper.GCBlocks(ctx)
-	for i := 0; i < int(gcBlocks); i++ {
-		ctx = nextBlock(ctx, 1*time.Second)
-		keeper.BeginBlock(ctx)
+	// move into next block, accumulating more downtime
+	ctx = nextBlock(ctx, keeper.GetParams(ctx).DowntimeDuration)
+
+	duration, hadDowntimes = keeper.GetDowntime(ctx, epochStartBlock(ctx))
+	require.True(t, hadDowntimes)
+	require.Equal(t, 2*keeper.GetParams(ctx).DowntimeDuration, duration)
+
+	// check downtime factors
+	factor := keeper.GetDowntimeFactor(ctx, epochStartBlock(ctx))
+	require.Equal(t, uint64(1), factor)
+
+	// now let's advance the block until we have 1 entire epoch of downtime
+	ctx = nextBlock(ctx, keeper.GetParams(ctx).EpochDuration-duration)
+	factor = keeper.GetDowntimeFactor(ctx, epochStartBlock(ctx))
+	require.Equal(t, uint64(2), factor)
+
+	beforeAdvanceEpoch := epochStartBlock(ctx)
+	// check garbage collection was done, after forcing epochs to pass until
+	// the first epoch is deleted.
+	for i := 0; i < int(epochParams.EpochsToSave)+1; i++ {
+		for !app.EpochstorageKeeper.IsEpochStart(ctx) {
+			ctx = nextBlock(ctx, 1*time.Second)
+		}
+		ctx = nextBlock(ctx, 1*time.Second) // we advance one more block, otherwise IsEpochStart will return true again
 	}
-	keeper.BeginBlock(ctx)
-
-	// now we check the garbage collection store prefix, which should be empty
-	sk := app.GetKey(types.ModuleName)
-	store := prefix.NewStore(ctx.KVStore(sk), types.DowntimeHeightGarbageKey)
-	iter := store.Iterator(nil, nil)
-	defer iter.Close()
-	require.False(t, iter.Valid())
+	_, hadDowntime := keeper.GetDowntime(ctx, beforeAdvanceEpoch)
+	require.False(t, hadDowntime)
 }
 
 func TestImportExportGenesis(t *testing.T) {
@@ -152,12 +143,6 @@ func TestImportExportGenesis(t *testing.T) {
 				{
 					Block:    1,
 					Duration: 50 * time.Minute,
-				},
-			},
-			DowntimesGarbageCollection: []*v1.DowntimeGarbageCollection{
-				{
-					Block:   1,
-					GcBlock: 100,
 				},
 			},
 			LastBlockTime: nil,

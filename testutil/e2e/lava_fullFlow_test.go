@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestLava(t *testing.T) {
+func TestLavaProtocol(t *testing.T) {
 	// default timeout same as `go test`
 	timeout := time.Minute * 10
 
@@ -13,5 +13,16 @@ func TestLava(t *testing.T) {
 		timeout = time.Until(deadline).Round(10 * time.Second)
 	}
 
-	runE2E(timeout)
+	runProtocolE2E(timeout)
+}
+
+func TestLavaSDK(t *testing.T) {
+	// default timeout same as `go test`
+	timeout := time.Minute * 10
+
+	if deadline, ok := t.Deadline(); ok {
+		timeout = time.Until(deadline).Round(10 * time.Second)
+	}
+
+	runSDKE2E(timeout)
 }

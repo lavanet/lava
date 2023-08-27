@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
@@ -16,7 +17,6 @@ import (
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	terderminttypes "github.com/tendermint/tendermint/abci/types"
 )
 
 const (
@@ -322,7 +322,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		index      int
 	}
 	attributesList := []*mapCont{}
-	appendToAttributeList := func(idx int, key string, value string) {
+	appendToAttributeList := func(idx int, key, value string) {
 		var mapContToChange *mapCont
 		for _, mapCont := range attributesList {
 			if mapCont.index != idx {
@@ -338,7 +338,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		mapContToChange.attributes[key] = value
 	}
 	for _, attribute := range event.Attributes {
-		splittedAttrs := strings.SplitN(string(attribute.Key), ".", 2)
+		splittedAttrs := strings.SplitN(attribute.Key, ".", 2)
 		attrKey := splittedAttrs[0]
 		index := 0
 		if len(splittedAttrs) > 1 {
@@ -351,7 +351,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 				utils.LavaFormatError("failed building PaymentRequest from relay_payment event, index returned unreasonable value", nil, utils.Attribute{Key: "index", Value: index})
 			}
 		}
-		appendToAttributeList(index, attrKey, string(attribute.Value))
+		appendToAttributeList(index, attrKey, attribute.Value)
 	}
 	payments := []*PaymentRequest{}
 	for idx, mapCont := range attributesList {
@@ -415,6 +415,6 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	return payments, nil
 }
 
-func getKeyForConsumerRewards(specId string, apiInterface string, consumerAddress string) string {
+func getKeyForConsumerRewards(specId, apiInterface, consumerAddress string) string {
 	return specId + apiInterface + consumerAddress
 }

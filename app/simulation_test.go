@@ -5,22 +5,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
+	"github.com/cosmos/ibc-go/v7/testing/simapp"
 	"github.com/lavanet/lava/app"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func init() {
-	simapp.GetSimulatorFlags()
+	cli.GetSimulatorFlags()
 }
 
-var defaultConsensusParams = &abci.ConsensusParams{
-	Block: &abci.BlockParams{
+var defaultConsensusParams = &tmproto.ConsensusParams{
+	Block: &tmproto.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   2000000,
 	},
@@ -64,7 +66,7 @@ func BenchmarkSimulation(b *testing.B) {
 		app.DefaultNodeHome,
 		0,
 		encoding,
-		simapp.EmptyAppOptions{},
+		sims.EmptyAppOptions{},
 	)
 
 	// Run randomized simulations
@@ -74,13 +76,13 @@ func BenchmarkSimulation(b *testing.B) {
 		app.BaseApp,
 		simapp.AppStateFn(app.AppCodec(), app.SimulationManager()),
 		simulationtypes.RandomAccounts,
-		simapp.SimulationOperations(app, app.AppCodec(), config),
+		sims.SimulationOperations(app, app.AppCodec(), config),
 		app.ModuleAccountAddrs(),
 		config,
 		app.AppCodec(),
 	)
 
-	err = simapp.CheckExportSimulation(app, config, simParams)
+	err = sims.CheckExportSimulation(app, config, simParams)
 	require.NoError(b, err)
 	require.NoError(b, simErr)
 

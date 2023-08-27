@@ -32,7 +32,7 @@ func CmdSetPolicy() *cobra.Command {
 
 			projectId := args[0]
 			adminPolicyFilePath := args[1]
-			policy, err := planstypes.ParsePolicyFromYaml(adminPolicyFilePath)
+			policy, err := planstypes.ParsePolicyFromYamlPath(adminPolicyFilePath)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,9 @@ func verifyChainPoliciesAreCorrectlySet(clientCtx client.Context, policy *planst
 						continue
 					}
 				}
-				return fmt.Errorf("can't set an empty addon in a collection, empty addons are ignored %#v", chainPolicy)
+				if len(requirement.Extensions) == 0 {
+					return fmt.Errorf("can't set an empty addon in a collection without extensions it means requirement is empty, empty requirements are ignored %#v", chainPolicy)
+				}
 			}
 		}
 	}

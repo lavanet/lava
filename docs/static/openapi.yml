@@ -39518,6 +39518,12 @@ paths:
                               cu_multiplier:
                                 type: number
                                 format: float
+                              rule:
+                                type: object
+                                properties:
+                                  block:
+                                    type: string
+                                    format: uint64
                         verifications:
                           type: array
                           items:
@@ -41199,6 +41205,12 @@ paths:
                                 cu_multiplier:
                                   type: number
                                   format: float
+                                rule:
+                                  type: object
+                                  properties:
+                                    block:
+                                      type: string
+                                      format: uint64
                           verifications:
                             type: array
                             items:
@@ -41272,6 +41284,9 @@ paths:
                                         type: string
                                       expected_value:
                                         type: string
+                                      latest_distance:
+                                        type: string
+                                        format: uint64
               pagination:
                 type: object
                 properties:
@@ -41654,6 +41669,12 @@ paths:
                               cu_multiplier:
                                 type: number
                                 format: float
+                              rule:
+                                type: object
+                                properties:
+                                  block:
+                                    type: string
+                                    format: uint64
                         verifications:
                           type: array
                           items:
@@ -41727,6 +41748,9 @@ paths:
                                       type: string
                                     expected_value:
                                       type: string
+                                    latest_distance:
+                                      type: string
+                                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -42031,6 +42055,12 @@ paths:
                                 cu_multiplier:
                                   type: number
                                   format: float
+                                rule:
+                                  type: object
+                                  properties:
+                                    block:
+                                      type: string
+                                      format: uint64
                           verifications:
                             type: array
                             items:
@@ -42104,6 +42134,9 @@ paths:
                                         type: string
                                       expected_value:
                                         type: string
+                                      latest_distance:
+                                        type: string
+                                        format: uint64
               pagination:
                 type: object
                 properties:
@@ -42486,6 +42519,12 @@ paths:
                               cu_multiplier:
                                 type: number
                                 format: float
+                              rule:
+                                type: object
+                                properties:
+                                  block:
+                                    type: string
+                                    format: uint64
                         verifications:
                           type: array
                           items:
@@ -42559,6 +42598,9 @@ paths:
                                       type: string
                                     expected_value:
                                       type: string
+                                    latest_distance:
+                                      type: string
+                                      format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -68020,6 +68062,10 @@ definitions:
         type: array
         items:
           type: string
+      extensions:
+        type: array
+        items:
+          type: string
   lavanet.lava.pairing.RelayReply:
     type: object
     properties:
@@ -68150,6 +68196,10 @@ definitions:
                 value:
                   type: string
           addon:
+            type: array
+            items:
+              type: string
+          extensions:
             type: array
             items:
               type: string
@@ -68836,6 +68886,21 @@ definitions:
         type: string
         format: uint64
     description: Params defines the parameters for the module.
+  lavanet.lava.pairing.ProbeReply:
+    type: object
+    properties:
+      guid:
+        type: string
+        format: uint64
+      latest_block:
+        type: string
+        format: int64
+      finalized_blocks_hashes:
+        type: string
+        format: byte
+      lava_epoch:
+        type: string
+        format: uint64
   lavanet.lava.pairing.ProviderPaymentStorage:
     type: object
     properties:
@@ -69595,6 +69660,12 @@ definitions:
                       cu_multiplier:
                         type: number
                         format: float
+                      rule:
+                        type: object
+                        properties:
+                          block:
+                            type: string
+                            format: uint64
                 verifications:
                   type: array
                   items:
@@ -70185,6 +70256,12 @@ definitions:
             cu_multiplier:
               type: number
               format: float
+            rule:
+              type: object
+              properties:
+                block:
+                  type: string
+                  format: uint64
       verifications:
         type: array
         items:
@@ -70254,6 +70331,9 @@ definitions:
                     type: string
                   expected_value:
                     type: string
+                  latest_distance:
+                    type: string
+                    format: uint64
   lavanet.lava.spec.BlockParser:
     type: object
     properties:
@@ -70309,6 +70389,12 @@ definitions:
       cu_multiplier:
         type: number
         format: float
+      rule:
+        type: object
+        properties:
+          block:
+            type: string
+            format: uint64
   lavanet.lava.spec.FUNCTION_TAG:
     type: string
     enum:
@@ -70432,6 +70518,15 @@ definitions:
         type: string
       expected_value:
         type: string
+      latest_distance:
+        type: string
+        format: uint64
+  lavanet.lava.spec.Rule:
+    type: object
+    properties:
+      block:
+        type: string
+        format: uint64
   lavanet.lava.spec.Spec:
     type: object
     properties:
@@ -70683,6 +70778,12 @@ definitions:
                   cu_multiplier:
                     type: number
                     format: float
+                  rule:
+                    type: object
+                    properties:
+                      block:
+                        type: string
+                        format: uint64
             verifications:
               type: array
               items:
@@ -70752,6 +70853,9 @@ definitions:
                           type: string
                         expected_value:
                           type: string
+                        latest_distance:
+                          type: string
+                          format: uint64
   lavanet.lava.spec.Spec.ProvidersTypes:
     type: string
     enum:
@@ -70839,6 +70943,9 @@ definitions:
               type: string
             expected_value:
               type: string
+            latest_distance:
+              type: string
+              format: uint64
   lavanet.lava.plans.ListInfoStruct:
     type: object
     properties:
@@ -71991,6 +72098,12 @@ definitions:
                         cu_multiplier:
                           type: number
                           format: float
+                        rule:
+                          type: object
+                          properties:
+                            block:
+                              type: string
+                              format: uint64
                   verifications:
                     type: array
                     items:
@@ -72063,6 +72176,9 @@ definitions:
                                 type: string
                               expected_value:
                                 type: string
+                              latest_distance:
+                                type: string
+                                format: uint64
       pagination:
         type: object
         properties:
@@ -72351,6 +72467,12 @@ definitions:
                       cu_multiplier:
                         type: number
                         format: float
+                      rule:
+                        type: object
+                        properties:
+                          block:
+                            type: string
+                            format: uint64
                 verifications:
                   type: array
                   items:
@@ -72423,6 +72545,9 @@ definitions:
                               type: string
                             expected_value:
                               type: string
+                            latest_distance:
+                              type: string
+                              format: uint64
   lavanet.lava.spec.QueryParamsResponse:
     type: object
     properties:

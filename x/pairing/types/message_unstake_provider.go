@@ -10,7 +10,7 @@ const TypeMsgUnstakeProvider = "unstake_provider"
 
 var _ sdk.Msg = &MsgUnstakeProvider{}
 
-func NewMsgUnstakeProvider(creator string, chainID string) *MsgUnstakeProvider {
+func NewMsgUnstakeProvider(creator, chainID string) *MsgUnstakeProvider {
 	return &MsgUnstakeProvider{
 		Creator: creator,
 		ChainID: chainID,

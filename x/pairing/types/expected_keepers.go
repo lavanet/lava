@@ -12,7 +12,7 @@ import (
 
 type SpecKeeper interface {
 	// Methods imported from spec should be defined here
-	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive bool, found bool, providersType spectypes.Spec_ProvidersTypes)
+	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive, found bool, providersType spectypes.Spec_ProvidersTypes)
 	GetExpandedSpec(ctx sdk.Context, index string) (val spectypes.Spec, err error)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool) // this spec is unexpanded don;t use for collections work
 	GeolocationCount(ctx sdk.Context) uint64
@@ -31,7 +31,7 @@ type EpochstorageKeeper interface {
 	IsEpochStart(ctx sdk.Context) (res bool)
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error)
 	BlocksToSaveRaw(ctx sdk.Context) (res uint64)
-	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error)
+	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
 	PopUnstakeEntries(ctx sdk.Context, block uint64) (value []epochstoragetypes.StakeEntry)
 	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64) error
@@ -68,18 +68,22 @@ type BankKeeper interface {
 }
 
 type ProjectsKeeper interface {
-	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, block uint64, cu uint64) (err error)
+	ChargeComputeUnitsToProject(ctx sdk.Context, project projectstypes.Project, block, cu uint64) (err error)
 	GetProjectForDeveloper(ctx sdk.Context, developerKey string, blockHeight uint64) (proj projectstypes.Project, errRet error)
 	GetProjectForBlock(ctx sdk.Context, projectID string, block uint64) (projectstypes.Project, error)
 }
 
 type SubscriptionKeeper interface {
 	GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error)
-	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block uint64, cuAmount uint64) error
+	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block, cuAmount uint64) error
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 }
 
 type PlanKeeper interface {
 	GetAllPlanIndices(ctx sdk.Context) (val []string)
 	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
+}
+
+type DowntimeKeeper interface {
+	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
 }

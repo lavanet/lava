@@ -5,7 +5,7 @@ import (
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -56,13 +56,13 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 }
 
 // Export all plans from the KVStore
-func (k Keeper) ExportPlans(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportPlans(ctx sdk.Context) commontypes.GenesisState {
 	return k.plansFS.Export(ctx)
 }
 
 // Init all plans in the KVStore
-func (k Keeper) InitPlans(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.plansFS.Init(ctx, data)
+func (k Keeper) InitPlans(ctx sdk.Context, gs commontypes.GenesisState) {
+	k.plansFS.Init(ctx, gs)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

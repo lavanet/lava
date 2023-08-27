@@ -37,6 +37,7 @@ package scores
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -129,8 +130,15 @@ func GetStrategy() ScoreStrategy {
 // and the previous slot
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *PairingSlot) error {
 	// calculate the score for each req for each provider
+	keys := []string{}
+	for key := range diffSlot.Reqs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	for _, score := range scores {
-		for _, req := range diffSlot.Reqs {
+		for _, key := range keys {
+			req := diffSlot.Reqs[key]
 			reqName := req.GetName()
 			weight, ok := strategy[reqName]
 			if !ok {
@@ -166,7 +174,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot *
 }
 
 // PrepareHashData prepares the hash needed in the pseudo-random choice of providers
-func PrepareHashData(projectIndex string, chainID string, epochHash []byte, idx int) []byte {
+func PrepareHashData(projectIndex, chainID string, epochHash []byte, idx int) []byte {
 	return bytes.Join([][]byte{epochHash, []byte(chainID), []byte(projectIndex), []byte(strconv.Itoa(idx))}, nil)
 }
 

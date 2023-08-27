@@ -25,7 +25,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(geolocationCount uint64, maxCU uint64) Params {
+func NewParams(geolocationCount, maxCU uint64) Params {
 	return Params{GeolocationCount: geolocationCount, MaxCU: maxCU}
 }
 
