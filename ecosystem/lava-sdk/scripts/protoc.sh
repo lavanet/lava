@@ -2,6 +2,8 @@
 set -o errexit -o nounset -o pipefail
 command -v shellcheck >/dev/null && shellcheck "$0"
 
+echo "make sure to go mod tidy the lava repo before trying to run this file"
+
 ROOT_PROTO_DIR="./proto/cosmos/cosmos-sdk"
 COSMOS_PROTO_DIR="$ROOT_PROTO_DIR/proto"
 THIRD_PARTY_PROTO_DIR="../../proto"
