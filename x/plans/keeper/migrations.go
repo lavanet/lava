@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v2 "github.com/lavanet/lava/x/plans/migrations/v2"
+	v3 "github.com/lavanet/lava/x/plans/migrations/v3"
 )
 
 type Migrator struct {
@@ -28,11 +29,11 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	for _, planIndex := range planIndices {
 		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, planIndex)
 		for _, block := range blocks {
-			var plan_v2 v2.PlanV2
+			var plan_v2 v2.Plan
 			m.keeper.plansFS.ReadEntry(ctx, planIndex, block, &plan_v2)
 
 			// create policy struct
-			planPolicy := v2.PolicyV2{
+			planPolicy := v3.Policy{
 				GeolocationProfile: uint64(1),
 				TotalCuLimit:       plan_v2.ComputeUnits,
 				EpochCuLimit:       plan_v2.ComputeUnitsPerEpoch,
@@ -40,7 +41,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 			}
 
 			// convert plan from type v2.Plan to types.Plan
-			plan_v3 := v2.Plan{
+			plan_v3 := v3.Plan{
 				Index:                    plan_v2.Index,
 				Block:                    plan_v2.Block,
 				Price:                    plan_v2.Price,
