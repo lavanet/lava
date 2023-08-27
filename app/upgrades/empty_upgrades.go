@@ -1,7 +1,6 @@
 package upgrades
 
 import (
-	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -33,21 +32,3 @@ func defaultUpgradeHandler(
 // 		},
 // 	},
 // }
-
-var Upgrade_0_20_1 = Upgrade{
-	UpgradeName:          "v0.20.1",
-	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
-}
-
-var Upgrade_0_20_2 = Upgrade{
-	UpgradeName:          "v0.20.2",
-	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
-}
-
-var Upgrade_0_20_3 = Upgrade{
-	UpgradeName:          "v0.20.3",
-	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
-}

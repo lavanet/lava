@@ -1,8 +1,10 @@
-
 #!/bin/bash
+source ./scripts/prepare_protobufs.sh
+# preparing the env
+prepare
 
 ROOT_PROTO_DIR="./proto/cosmos/cosmos-sdk"
-COSMOS_PROTO_DIR="$ROOT_PROTO_DIR/proto"
+COSMOS_PROTO_DIR="$ROOT_PROTO_DIR"
 THIRD_PARTY_PROTO_DIR="../../proto"
 OUT_DIR="./src/grpc_web_services"
 
@@ -20,8 +22,8 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/unique_payment_storage_client_provider.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/subscription/subscription.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/projects/project.proto" \
-     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/plans/policy.proto" \
-     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/epoch_payments.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/plans/policy.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/epoch_payments.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
@@ -32,6 +34,7 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$COSMOS_PROTO_DIR/cosmos/base/v1beta1/coin.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/query/v1beta1/pagination.proto" \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
+
 # mv ./src/proto/test ./src/pairing/.
 # rm -rf ./src/proto
 # mv ./src/pairing ./src/proto

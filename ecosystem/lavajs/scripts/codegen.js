@@ -14,8 +14,7 @@ telescope({
     tsDisable: {
       files: [
         'cosmos/authz/v1beta1/tx.amino.ts',
-        'cosmos/staking/v1beta1/tx.amino.ts',
-        'cosmos/tx/signing/v1beta1/signing.ts'
+        'cosmos/staking/v1beta1/tx.amino.ts'
       ],
       patterns: ['**/*amino.ts', '**/*registry.ts']
     },
@@ -55,7 +54,6 @@ telescope({
           'cosmos.params.v1beta1',
           'cosmos.slashing.v1beta1',
           'cosmos.vesting.v1beta1',
-          'cosmos.staking.v1beta1',
           // 'google.api',
           'ibc.core.port.v1',
           'ibc.core.types.v1'

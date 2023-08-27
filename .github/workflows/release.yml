@@ -34,7 +34,7 @@ jobs:
 
     - name: Build
       run: |
-        make build
+        make build-all
 
     - name: Test build
       continue-on-error: true
@@ -70,6 +70,22 @@ jobs:
           -H "Content-Type: $(file -b --mime-type build/lavad)" \
           --data-binary @build/lavad \
           $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
+
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: $(file -b --mime-type build/lava-protocol)" \
+          --data-binary @build/lava-protocol \
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lava-protocol-${{ github.event.release.tag_name }}-linux-amd64/g')
+
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: $(file -b --mime-type build/lava-visor)" \
+          --data-binary @build/lava-visor \
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lava-visor-${{ github.event.release.tag_name }}-linux-amd64/g')
         }
 
         delete_binary(){

@@ -13,25 +13,31 @@ async function main() {
     });
 
     // Fetch chain id
-    const result = await lavaSDKTendermint.sendRelay({
-        method: "status",
-        params: [],
-    }).catch(e => {
-        throw new Error(" ERR [tendermintrpc_chainid_fetch] failed sending relay tendermint test");
-    });
-
-    // Parse response
-    const parsedResponse = JSON.parse(result);
-
-    const chainID = parsedResponse.result["node_info"].network;
-
-    // Validate chainID
-    if (chainID != "lava") {
-        throw new Error(" ERR Chain ID is not equal to lava");
-    }else{
-        console.log("[tendermintrpc_chainid_fetch] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
+    let relayArray = [];
+    for (let i = 0; i < 100; i++) { // send 100 relays asynchronously
+        relayArray.push((async () => {
+            const result = await lavaSDKTendermint.sendRelay({
+                method: "status",
+                params: [],
+            }).catch(e => {
+                throw new Error(` ERR ${i} [tendermintrpc_chainid_fetch] failed sending relay tendermint test`);
+            });
+        
+            // Parse response
+            const parsedResponse = JSON.parse(result);
+        
+            const chainID = parsedResponse.result["node_info"].network;
+        
+            // Validate chainID
+            if (chainID != "lava") {
+                throw new Error(" ERR [tendermintrpc_chainid_fetch] Chain ID is not equal to lava");
+            }else{
+                console.log(i, "[tendermintrpc_chainid_fetch] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
+            }
+        })().catch(err => {throw err;}));
     }
-
+    // wait for all relays to finish;
+    await Promise.allSettled(relayArray);
 }
 
 (async () => {
