@@ -40,8 +40,8 @@ import (
 )
 
 const (
-	configFolder        = "./testutil/e2e/e2eProviderConfigs"
-	rewardServerStorage = "./testutil/e2e/rewardServerStorage/"
+	protocolLogsFolder = "./testutil/e2e/protocolLogs/"
+	configFolder       = "./testutil/e2e/e2eProviderConfigs"
 )
 
 var (

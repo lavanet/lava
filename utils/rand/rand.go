@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"math/rand"
 	"time"
-
-	"github.com/vpxyz/xorshift/xoroshiro128starstar"
 )
 
 func generateSeed(data []byte) int64 {

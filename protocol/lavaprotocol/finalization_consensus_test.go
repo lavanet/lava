@@ -2,11 +2,12 @@ package lavaprotocol
 
 import (
 	"context"
-	"github.com/lavanet/lava/utils/rand"
 	"net/http"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/lavanet/lava/utils/rand"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"

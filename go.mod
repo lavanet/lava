@@ -39,7 +39,6 @@ require (
 	github.com/praserx/ipconv v1.2.1
 	github.com/spf13/pflag v1.0.5
 	gonum.org/v1/gonum v0.13.0
-	google.golang.org/api v0.126.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
 
@@ -73,8 +72,8 @@ require (
 	github.com/goccy/go-json v0.9.11 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/glog v1.1.0 // indirect
-	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -97,8 +96,6 @@ require (
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
-	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect

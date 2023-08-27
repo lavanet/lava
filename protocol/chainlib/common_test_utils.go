@@ -2,13 +2,14 @@ package chainlib
 
 import (
 	"context"
-	"github.com/lavanet/lava/utils/rand"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/lavanet/lava/utils/rand"
 
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
