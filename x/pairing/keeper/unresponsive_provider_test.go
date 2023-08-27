@@ -37,6 +37,7 @@ func (ts *tester) checkProviderStaked(provider sdk.AccAddress) {
 }
 
 func TestUnresponsivenessStressTest(t *testing.T) {
+	rand.InitRandomSeed()
 	clientsCount := 100
 	providersCount := 6
 
