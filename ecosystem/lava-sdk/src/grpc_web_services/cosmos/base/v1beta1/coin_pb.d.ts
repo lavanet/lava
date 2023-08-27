@@ -4,6 +4,7 @@
 import * as jspb from "google-protobuf";
 import * as gogoproto_gogo_pb from "../../../gogoproto/gogo_pb";
 import * as cosmos_proto_cosmos_pb from "../../../cosmos_proto/cosmos_pb";
+import * as amino_amino_pb from "../../../amino/amino_pb";
 
 export class Coin extends jspb.Message {
   getDenom(): string;

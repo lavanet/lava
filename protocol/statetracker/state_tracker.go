@@ -88,5 +88,5 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 
 // For lavavisor access
 func (s *StateTracker) GetEventTracker() *EventTracker {
-	return s.eventTracker
+	return s.EventTracker
 }
