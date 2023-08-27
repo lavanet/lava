@@ -9,13 +9,18 @@ export const protobufPackage = "cosmos.distribution.v1beta1";
 export interface Params {
   communityTax: string;
   /**
-   * The base_proposer_reward and bonus_proposer_reward fields are deprecated
-   * and are no longer used in the x/distribution module's reward mechanism.
+   * Deprecated: The base_proposer_reward field is deprecated and is no longer used
+   * in the x/distribution module's reward mechanism.
    *
    * @deprecated
    */
   baseProposerReward: string;
-  /** @deprecated */
+  /**
+   * Deprecated: The bonus_proposer_reward field is deprecated and is no longer used
+   * in the x/distribution module's reward mechanism.
+   *
+   * @deprecated
+   */
   bonusProposerReward: string;
   withdrawAddrEnabled: boolean;
 }
