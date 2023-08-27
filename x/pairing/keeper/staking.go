@@ -180,7 +180,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		}
 	}
 
-	for idx := int32(0); idx < geolocations; idx++ {
+	for idx := uint64(0); idx < geolocations; idx++ {
 		// geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {
