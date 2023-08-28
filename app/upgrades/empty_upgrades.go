@@ -1,10 +1,12 @@
 package upgrades
 
 import (
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
+	v1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
 func defaultUpgradeHandler(
@@ -32,3 +34,21 @@ func defaultUpgradeHandler(
 // 		},
 // 	},
 // }
+
+var Upgrade_0_22_0 = Upgrade{
+	UpgradeName:          "v0.22.0",
+	CreateUpgradeHandler: v0_22_0_UpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+func v0_22_0_UpgradeHandler(
+	m *module.Manager,
+	c module.Configurator,
+	bapm BaseAppParamManager,
+	lk *keepers.LavaKeepers,
+) upgradetypes.UpgradeHandler {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		lk.DowntimeKeeper.SetParams(ctx, v1.DefaultParams())
+		return m.RunMigrations(ctx, c, vm)
+	}
+}
