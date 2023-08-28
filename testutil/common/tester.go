@@ -148,12 +148,16 @@ func (ts *Tester) StakeProviderExtra(
 	// if necessary, generate mock endpoints
 	if endpoints == nil {
 		apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
-		endpoint := epochstoragetypes.Endpoint{
-			IPPORT:        "123",
-			ApiInterfaces: []string{apiInterface},
-			Geolocation:   geoloc,
+		geolocations := planstypes.GetGeolocationsFromUint(int32(geoloc))
+
+		for _, geo := range geolocations {
+			endpoint := epochstoragetypes.Endpoint{
+				IPPORT:        "123",
+				ApiInterfaces: []string{apiInterface},
+				Geolocation:   uint64(geo),
+			}
+			endpoints = append(endpoints, endpoint)
 		}
-		endpoints = []epochstoragetypes.Endpoint{endpoint}
 	}
 
 	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))

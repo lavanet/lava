@@ -107,7 +107,7 @@ func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAd
 	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
-func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
+func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {
 	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 
