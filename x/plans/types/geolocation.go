@@ -55,7 +55,7 @@ func ParseGeoEnum(arg string) (geoloc int32, err error) {
 	split := strings.Split(arg, ",")
 	for _, s := range split {
 		val, ok := Geolocation_value[s]
-		if !ok || val == int32(Geolocation_GLS) {
+		if !ok {
 			return 0, fmt.Errorf("invalid geolocation code: %s", s)
 		}
 		geoloc |= val
