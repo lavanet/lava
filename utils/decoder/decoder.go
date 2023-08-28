@@ -1,6 +1,7 @@
-package yaml
+package decoder
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -21,18 +22,26 @@ func DecodeFile(path string, key string, result interface{}, hooks []mapstructur
 
 func Decode(input string, key string, result interface{}, hooks []mapstructure.DecodeHookFunc, unset, unused *[]string) error {
 	var config map[string]interface{}
+	inputBytes := []byte(input)
 
-	err := yaml.Unmarshal([]byte(input), &config)
-	if err != nil {
-		return err
+	if isJSON(inputBytes) {
+		err := json.Unmarshal(inputBytes, &config)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := yaml.Unmarshal(inputBytes, &config)
+		if err != nil {
+			return err
+		}
 	}
 
 	if config == nil {
-		return fmt.Errorf("yaml: empty input")
+		return fmt.Errorf("yaml/json: empty input")
 	}
 
 	// get the desired section in the yaml/config per the given key
-	config, result, err = configByKey(key, config, result)
+	config, result, err := configByKey(key, config, result)
 	if err != nil {
 		return err
 	}
@@ -44,6 +53,7 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 		DecodeHook: decoderHookFunc,
 		Metadata:   &decoderMetadata,
 		Result:     result,
+		TagName:    "json",
 	}
 
 	decoder, err := mapstructure.NewDecoder(&decoderConfig)
@@ -64,6 +74,11 @@ func Decode(input string, key string, result interface{}, hooks []mapstructure.D
 	}
 
 	return nil
+}
+
+func isJSON(data []byte) bool {
+	var js json.RawMessage
+	return json.Unmarshal(data, &js) == nil
 }
 
 func configByKey(key string, config map[string]interface{}, result interface{}) (map[string]interface{}, interface{}, error) {
@@ -94,7 +109,7 @@ func configByKey(key string, config map[string]interface{}, result interface{}) 
 				return nil, nil, fmt.Errorf("yaml: key type mismatch: %q", key)
 			}
 
-			if kind == reflect.Slice {
+			if kind == reflect.Slice || kind == reflect.String {
 				config = map[string]interface{}{
 					"Result": value,
 				}
@@ -113,7 +128,17 @@ func configByKey(key string, config map[string]interface{}, result interface{}) 
 }
 
 func SetDefaultValues(input map[string]interface{}, result interface{}) error {
-	return mapstructure.Decode(input, result)
+	decoderConfig := mapstructure.DecoderConfig{
+		Result:  result,
+		TagName: "json",
+	}
+
+	decoder, err := mapstructure.NewDecoder(&decoderConfig)
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(input)
 }
 
 // EnumParseFunc represents the signature of enum parse functions.

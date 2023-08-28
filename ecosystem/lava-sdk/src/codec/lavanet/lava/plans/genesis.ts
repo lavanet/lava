@@ -1,7 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { RawMessage } from "../common/fixationEntry";
+import { GenesisState as GenesisState1 } from "../common/fixationEntry";
 import { Params } from "./params";
 
 export const protobufPackage = "lavanet.lava.plans";
@@ -10,11 +10,11 @@ export const protobufPackage = "lavanet.lava.plans";
 export interface GenesisState {
   params?: Params;
   /** this line is used by starport scaffolding # genesis/proto/state */
-  plansFS: RawMessage[];
+  plansFS?: GenesisState1;
 }
 
 function createBaseGenesisState(): GenesisState {
-  return { params: undefined, plansFS: [] };
+  return { params: undefined, plansFS: undefined };
 }
 
 export const GenesisState = {
@@ -22,8 +22,8 @@ export const GenesisState = {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
-    for (const v of message.plansFS) {
-      RawMessage.encode(v!, writer.uint32(18).fork()).ldelim();
+    if (message.plansFS !== undefined) {
+      GenesisState1.encode(message.plansFS, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -47,7 +47,7 @@ export const GenesisState = {
             break;
           }
 
-          message.plansFS.push(RawMessage.decode(reader, reader.uint32()));
+          message.plansFS = GenesisState1.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -61,18 +61,15 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      plansFS: Array.isArray(object?.plansFS) ? object.plansFS.map((e: any) => RawMessage.fromJSON(e)) : [],
+      plansFS: isSet(object.plansFS) ? GenesisState1.fromJSON(object.plansFS) : undefined,
     };
   },
 
   toJSON(message: GenesisState): unknown {
     const obj: any = {};
     message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
-    if (message.plansFS) {
-      obj.plansFS = message.plansFS.map((e) => e ? RawMessage.toJSON(e) : undefined);
-    } else {
-      obj.plansFS = [];
-    }
+    message.plansFS !== undefined &&
+      (obj.plansFS = message.plansFS ? GenesisState1.toJSON(message.plansFS) : undefined);
     return obj;
   },
 
@@ -85,7 +82,9 @@ export const GenesisState = {
     message.params = (object.params !== undefined && object.params !== null)
       ? Params.fromPartial(object.params)
       : undefined;
-    message.plansFS = object.plansFS?.map((e) => RawMessage.fromPartial(e)) || [];
+    message.plansFS = (object.plansFS !== undefined && object.plansFS !== null)
+      ? GenesisState1.fromPartial(object.plansFS)
+      : undefined;
     return message;
   },
 };
