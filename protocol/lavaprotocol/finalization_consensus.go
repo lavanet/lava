@@ -248,12 +248,17 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	}
 	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
 	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
+	if debug {
+		utils.LavaFormatDebug("finalization information", utils.Attribute{Key: "mapExpectedBlockHeights", Value: mapExpectedBlockHeights}, utils.Attribute{Key: "medianOfExpectedBlocks", Value: medianOfExpectedBlocks}, utils.Attribute{Key: "latestBlock", Value: providersMedianOfLatestBlock}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
+	}
 	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > s.latestBlock {
+		if uint64(providersMedianOfLatestBlock) > s.latestBlock+1000 && s.latestBlock > 0 {
+			utils.LavaFormatError("uncontinuous jump in finalization data", nil, utils.Attribute{Key: "latestBlock", Value: s.latestBlock}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
+
+		}
 		atomic.StoreUint64(&s.latestBlock, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
 	}
-	if debug {
-		utils.LavaFormatDebug("finalization information", utils.Attribute{Key: "mapExpectedBlockHeights", Value: mapExpectedBlockHeights}, utils.Attribute{Key: "medianOfExpectedBlocks", Value: medianOfExpectedBlocks}, utils.Attribute{Key: "latestBlock", Value: s.LatestBlock()}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
-	}
+
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
 	// then we move forward blockDistanceForFinalizedData to get the expected latest block
 	return providersMedianOfLatestBlock - allowedBlockLagForQosSync, len(mapExpectedBlockHeights)
