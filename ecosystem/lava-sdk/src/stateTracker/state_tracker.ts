@@ -5,6 +5,7 @@ import { BadgeManager } from "../badge/badgeManager";
 import { debugPrint } from "../util/common";
 import { ConsumerSessionWithProvider } from "../types/types";
 import { StateQuery } from "./stateQuery/state_query";
+import { Updater } from "./updaters/updater";
 import Relayer from "../relayer/relayer";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
@@ -90,11 +91,6 @@ export class StateTracker {
     this.executeUpdateOnNewEpoch();
   }
 
-  // registerForUpdates adds new updater
-  private registerForUpdates(updater: Updater) {
-    this.updaters.push(updater);
-  }
-
   // executeUpdateOnNewEpoch executes all updates on every new epoch
   async executeUpdateOnNewEpoch(): Promise<void> {
     try {
@@ -129,5 +125,10 @@ export class StateTracker {
       // Retry fetching pairing list after DEFAULT_RETRY_INTERVAL
       setTimeout(() => this.executeUpdateOnNewEpoch(), DEFAULT_RETRY_INTERVAL);
     }
+  }
+
+  // registerForUpdates adds new updater
+  private registerForUpdates(updater: Updater) {
+    this.updaters.push(updater);
   }
 }

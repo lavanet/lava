@@ -431,7 +431,6 @@ class Relayer {
     } catch (error) {
       // If error is instace of Error
       if (error instanceof Error) {
-        console.log("USAOOO ERR");
         // If error is not old blokc height throw and error
         // Extract current block height from error
         const currentBlockHeight = this.extractBlockNumberFromError(error);

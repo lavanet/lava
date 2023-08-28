@@ -34,7 +34,7 @@ export class PairingUpdater {
         debugPrint(this.config.debug, "Updating pairing list for: ", chainID);
 
         // Fetch pairing list
-        let pairing = this.stateQuery.getPairing(chainID);
+        const pairing = this.stateQuery.getPairing(chainID);
         if (pairing == undefined) {
           debugPrint(
             this.config.debug,
