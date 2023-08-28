@@ -112,10 +112,10 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	}
 }
 
-func (k Keeper) InitProviderQos(ctx sdk.Context, data []commontypes.RawMessage) {
-	k.providerQosFS.Init(ctx, data)
+func (k Keeper) InitProjects(ctx sdk.Context, gs commontypes.GenesisState) {
+	k.providerQosFS.Init(ctx, gs)
 }
 
-func (k Keeper) ExportProviderQos(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportDevelopers(ctx sdk.Context) commontypes.GenesisState {
 	return k.providerQosFS.Export(ctx)
 }
