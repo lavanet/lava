@@ -100,12 +100,16 @@ type ErrorHandler interface {
 
 func HandleGenericExternalError(replyData string) error {
 	// REGEX patterns
-	infuraRateLimitPattern := regexp.MustCompile(`429 Too Many Requests.*daily request count exceeded, request rate limited`)
+	rateLimitPattern := regexp.MustCompile(`429 Too Many Requests`)
+	httpsClientPattern := regexp.MustCompile(`server gave HTTP response to HTTPS client`)
 
 	switch {
+	// Check Service Unavailable
+	case strings.Contains(replyData, "503 Service Unavailable"):
+		return utils.LavaFormatError("Provider Returned External Error: 503 Service Unavailable.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
 	// Check Bad Gateway
-	case strings.Contains(replyData, "502 Bad Gateway"):
-		return utils.LavaFormatError("Provider Returned External Error: 502 Bad Gateway", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+	case strings.Contains(replyData, "502 Bad Gateway") || strings.Contains(replyData, "502 (Bad Gateway)"):
+		return utils.LavaFormatError("Provider Returned External Error: 502 Bad Gateway.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
 		// Check for "Cannot read properties of undefined" errors
 	case strings.Contains(replyData, "Cannot read properties of undefined"):
 		// Extract the property being accessed, if mentioned
@@ -114,7 +118,7 @@ func HandleGenericExternalError(replyData string) error {
 		if len(matches) > 1 {
 			property = matches[1]
 		}
-		return utils.LavaFormatError("Provider Returned External Error: Attempted to access an undefined object property", nil, utils.Attribute{Key: "Property:", Value: property}, utils.Attribute{Key: "Reply:", Value: replyData})
+		return utils.LavaFormatError("Provider Returned External Error: Attempted to access an undefined object property.", nil, utils.Attribute{Key: "Property:", Value: property}, utils.Attribute{Key: "Reply:", Value: replyData})
 		// Check for "got called with unhandled relay receiver" errors
 	case strings.Contains(replyData, "got called with unhandled relay receiver"):
 		// Extract requested and handled receivers
@@ -128,13 +132,16 @@ func HandleGenericExternalError(replyData string) error {
 		if len(handledReceiversMatch) > 1 {
 			handledReceivers = handledReceiversMatch[1]
 		}
-		return utils.LavaFormatError("Provider Returned External Error: Unhandled relay receiver", nil, utils.Attribute{Key: "Reqested Receiver:", Value: requestedReceiver}, utils.Attribute{Key: "Handled Receiver:", Value: handledReceivers}, utils.Attribute{Key: "Reply:", Value: replyData})
+		return utils.LavaFormatError("Provider Returned External Error: Unhandled relay receiver.", nil, utils.Attribute{Key: "Reqested Receiver:", Value: requestedReceiver}, utils.Attribute{Key: "Handled Receiver:", Value: handledReceivers}, utils.Attribute{Key: "Reply:", Value: replyData})
 		// Check rate limit
-	case infuraRateLimitPattern.MatchString(replyData):
-		return utils.LavaFormatError("Provider Returned External Error: Infura Rate Limit Error - Too Many Requests.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+	case rateLimitPattern.MatchString(replyData):
+		return utils.LavaFormatError("Provider Returned External Error: Rate Limit Error - Too Many Requests.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
 		// Check unreachable network
 	case strings.Contains(replyData, `"message":"Rpc Error"`) && strings.Contains(replyData, `connect: network is unreachable`):
 		return utils.LavaFormatError("Provider Returned External Error:RPC Network Unreachable. The target service might be down or there might be a network issue.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
+		// Check server gave http response to https client
+	case httpsClientPattern.MatchString(replyData):
+		return utils.LavaFormatError("Provider Returned External Error: Server gave HTTP response to HTTPS client.", nil, utils.Attribute{Key: "Reply:", Value: replyData})
 
 	default:
 	}

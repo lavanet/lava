@@ -85,11 +85,23 @@ func TestHandleGenericExternalError(t *testing.T) {
 		input string
 	}{
 		{
+			name:  "503 Service Unavailable",
+			input: `<html><body><h1>503 Service Unavailable</h1>\nNo server is available to handle this request.\n</body></html>\n\n`,
+		},
+		{
+			name:  "HTTP Response Error",
+			input: `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"Post \"https://evmos-grpc.w3coins.io:8545\": http: server gave HTTP response to HTTPS client"}}`,
+		},
+		{
 			name:  "Rate Limit Error",
 			input: `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"429 Too Many Requests: {\"code\":-32005,\"message\":\"daily request count exceeded, request rate limited\",\"data\":{\"rate\":{\"allowed_rps\":1,\"backoff_seconds\":30,\"current_rps\":1.4333333333333333},\"see\":\"https://infura.io/dashboard\"}}"}}`,
 		},
 		{
-			name: "Bad Gateway Error",
+			name:  "Rate Limit Error - 2",
+			input: `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"429 Too Many Requests: {\n  \"message\":\"API rate limit exceeded\"\n}"}}`,
+		},
+		{
+			name: "502 Bad Gateway Error",
 			input: `
 			aptosRelayParse SyntaxError: Unexpected token '<', "<html>
 			<h"... is not valid JSON
@@ -112,17 +124,11 @@ func TestHandleGenericExternalError(t *testing.T) {
 		{
 			name: "Unhandled Relay Receiver Error",
 			input: `
-			error sending relay Error: got called with unhandled relay receiver -- [{Key:requested_receiver Value:SOLANATjsonrpc} {Key:handled_receivers Value:LAV1rest,OPTMjsonrpc,BASETjsonrpc,CELOjsonrpc,GTH1jsonrpc,SOLANAjsonrpc,LAV1tendermintrpc,LAV1grpc,POLYGON1jsonrpc,ETH1jsonrpc}]
-				at onEnd (259-83ea28abae179c56.js:1:421415)
-				at 259-83ea28abae179c56.js:1:148736
-				at Array.forEach (<anonymous>)
-				at ei.rawOnError (259-83ea28abae179c56.js:1:148697)
-				at ei.onTransportHeaders (259-83ea28abae179c56.js:1:146173)
-				at 259-83ea28abae179c56.js:1:154362`,
+			{"Error_Received":"{\"Error_GUID\":\"GUID_9390299768\",\"Error\":\"Failed all retries -- [{Key:GUID Value:15668354495498650348} {Key:errors Value:[rpc error: code = Unknown desc = got called with unhandled relay receiver -- [{Key:requested_receiver Value:SOLANATjsonrpc} {Key:handled_receivers Value:LAV1grpc,LAV1tendermintrpc,LAV1rest}] No pairings available.]}]\"}"}`,
 		},
 		{
 			name:  "RPC Network Unreachable Error",
-			input: `error... "message":"Rpc Error" ... connect: network is unreachable...`,
+			input: `{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"Rpc Error","data":"Post \"http://127.0.0.0:45757\": dial tcp 127.0.0.0:45757: connect: network is unreachable"}}`,
 		},
 	}
 
