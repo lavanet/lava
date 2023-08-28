@@ -3,7 +3,8 @@ import { StateQuery } from "./state_query";
 import { BadgeManager } from "../badge/badgeManager";
 import { debugPrint } from "../util/common";
 import Relayer from "../relayer/relayer";
-import { ConsumerSessionWithProvider } from "../types/types";
+import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
+// import { ConsumerSessionWithProvider } from "../types/types";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 
@@ -31,7 +32,10 @@ export interface Config {
 // ConsumerSessionManager interface
 export interface ConsumerSessionManager {
   getRpcEndpoint(): string;
-  updateAllProviders(providers: ConsumerSessionWithProvider[]): void;
+  updateAllProviders(
+    epoch: number,
+    providers: ConsumerSessionsWithProvider[]
+  ): Promise<Error | undefined>;
 }
 
 // ConsumerSessionManagerList is an array of ConsumerSessionManager
