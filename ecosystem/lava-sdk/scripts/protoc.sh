@@ -2,8 +2,12 @@
 set -o errexit -o nounset -o pipefail
 command -v shellcheck >/dev/null && shellcheck "$0"
 
+source ./scripts/prepare_protobufs.sh
+# preparing the env
+prepare
+
 ROOT_PROTO_DIR="./proto/cosmos/cosmos-sdk"
-COSMOS_PROTO_DIR="$ROOT_PROTO_DIR/proto"
+COSMOS_PROTO_DIR="$ROOT_PROTO_DIR"
 THIRD_PARTY_PROTO_DIR="../../proto"
 OUT_DIR="./src/codec/"
 
