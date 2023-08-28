@@ -2,10 +2,16 @@ package scores
 
 import (
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 const qosReqName = "qos-req"
+
+type QosGetter interface {
+	GetQos(ctx sdk.Context, chainID string, cluster string, provider string) pairingtypes.QualityOfServiceReport
+}
 
 // QosReq implements the ScoreReq interface for provider staking requirement(s)
 type QosReq struct{}

@@ -7,7 +7,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
@@ -40,7 +39,7 @@ func initFilters(filters []Filter, strictestPolicy planstypes.Policy) []Filter {
 	return activeFilters
 }
 
-func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, providerQosMap map[string]pairingtypes.QualityOfServiceReport) ([]*pairingscores.PairingScore, error) {
+func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetypes.StakeEntry, strictestPolicy *planstypes.Policy, currentEpoch uint64, slotCount int, cluster string, qg pairingscores.QosGetter) ([]*pairingscores.PairingScore, error) {
 	filters = initFilters(filters, *strictestPolicy)
 
 	var filtersResult [][]bool
@@ -85,7 +84,7 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 		}
 
 		if result {
-			providerScore := pairingscores.NewPairingScore(&providers[j], providerQosMap[providers[j].Address])
+			providerScore := pairingscores.NewPairingScore(&providers[j], qg.GetQos(ctx, providers[j].Chain, cluster, providers[j].Address))
 			providerScore.SlotFiltering = slotFiltering
 			providerScores = append(providerScores, providerScore)
 		}

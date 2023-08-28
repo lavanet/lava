@@ -134,8 +134,6 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	providerQosMap := k.GetProviderQosMap(ctx, chainID, cluster)
-
 	if providersType == spectypes.Spec_static {
 		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
@@ -146,7 +144,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
 	// filter relevant providers and add slotFiltering for mix filters
-	providerScores, err := pairingfilters.SetupScores(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), providerQosMap)
+	providerScores, err := pairingfilters.SetupScores(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), cluster, k)
 	if err != nil {
 		return nil, 0, "", err
 	}
