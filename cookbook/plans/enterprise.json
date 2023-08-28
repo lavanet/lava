@@ -20,22 +20,6 @@
                     "epoch_cu_limit": "9223372036854775807",
                     "max_providers_to_pair": "28",
                     "chain_policies": [
-                        {
-                            "chain_id": "ETH1",
-                            "requirements": [
-                                {
-                                    "collection":{
-                                        "api_interface": "jsonrpc",
-                                        "type": "POST"
-                                    },
-                                    "extensions":["archive"],
-                                    "mixed":true
-                                }
-                            ]
-                        },
-                        {
-                            "chain_id": "*"
-                        }
                     ]
                 }
             }
