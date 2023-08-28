@@ -35,6 +35,7 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$COSMOS_PROTO_DIR/google/api/annotations.proto" \
     "$COSMOS_PROTO_DIR/google/api/http.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/query/v1beta1/pagination.proto" \
+     "$COSMOS_PROTO_DIR/cosmos/base/v1beta1/coin.proto" \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
     "$COSMOS_PROTO_DIR/amino/amino.proto" \
 

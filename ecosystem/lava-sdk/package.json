@@ -7,7 +7,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "tsc": "tsc",
-    "build": "yarn tsc && webpack --config webpack.config.js",
+    "copy-proto": "cp -r ./src/grpc_web_services bin/src/",
+    "build": "yarn tsc && yarn copy-proto && webpack --config webpack.config.js",
     "protoc": "./scripts/protoc.sh",
     "server": "http-server dist/ -c-1",
     "test": "jest ./src",
