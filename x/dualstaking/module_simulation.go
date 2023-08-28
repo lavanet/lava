@@ -23,7 +23,19 @@ var (
 )
 
 const (
-// this line is used by starport scaffolding # simapp/module/const
+	opWeightMsgDelegate = "op_weight_msg_delegate"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgDelegate int = 100
+
+	opWeightMsgRedelegate = "op_weight_msg_redelegate"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgRedelegate int = 100
+
+	opWeightMsgUnbond = "op_weight_msg_unbond"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgUnbond int = 100
+
+	// this line is used by starport scaffolding # simapp/module/const
 )
 
 // GenerateGenesisState creates a randomized GenState of the module.
@@ -50,6 +62,39 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	operations := make([]simtypes.WeightedOperation, 0)
+
+	var weightMsgDelegate int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgDelegate, &weightMsgDelegate, nil,
+		func(_ *rand.Rand) {
+			weightMsgDelegate = defaultWeightMsgDelegate
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgDelegate,
+		dualstakingsimulation.SimulateMsgDelegate(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgRedelegate int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgRedelegate, &weightMsgRedelegate, nil,
+		func(_ *rand.Rand) {
+			weightMsgRedelegate = defaultWeightMsgRedelegate
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgRedelegate,
+		dualstakingsimulation.SimulateMsgRedelegate(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgUnbond int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgUnbond, &weightMsgUnbond, nil,
+		func(_ *rand.Rand) {
+			weightMsgUnbond = defaultWeightMsgUnbond
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgUnbond,
+		dualstakingsimulation.SimulateMsgUnbond(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
 
 	// this line is used by starport scaffolding # simapp/module/operation
 
