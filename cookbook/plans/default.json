@@ -17,7 +17,7 @@
                 "plan_policy": {
                     "chain_policies": [
                     ],
-                    "geolocation_profile": "18446744073709551615",
+                    "geolocation_profile": 65535,
                     "total_cu_limit": "1000000",
                     "epoch_cu_limit": "100000",
                     "max_providers_to_pair": "3",
