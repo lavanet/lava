@@ -7,6 +7,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
+	"github.com/lavanet/lava/x/protocol/types"
 )
 
 func defaultUpgradeHandler(
@@ -49,6 +50,7 @@ func v0_22_0_UpgradeHandler(
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		lk.DowntimeKeeper.SetParams(ctx, v1.DefaultParams())
+		lk.ProtocolKeeper.SetParams(ctx, types.DefaultParams())
 		return m.RunMigrations(ctx, c, vm)
 	}
 }
