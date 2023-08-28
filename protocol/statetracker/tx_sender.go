@@ -3,9 +3,13 @@ package statetracker
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -74,6 +78,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
 	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
 	txfactory = txfactory.WithGasAdjustment(defaultGasAdjustment)
+
 	if err := msg.ValidateBasic(); err != nil {
 		return err
 	}
@@ -83,12 +88,11 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		return err
 	}
 
-	myWriter := bytes.Buffer{}
 	retryWithNewSequenceNumber := false
 	success := false
 	idx := -1
 	sequenceNumberParsed := 0
-	summarizedTransactionResult := ""
+	latestResult := common.TxResultData{}
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
 		if retryWithNewSequenceNumber { // a retry
 			// if sequence number error happened it means that we already sent a tx this block.
@@ -107,7 +111,6 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 				}
 			}
 			txfactory = txfactory.WithSequence(seq)
-			myWriter.Reset()
 			utils.LavaFormatInfo("Retrying with sequence number:", utils.Attribute{Key: "SeqNum", Value: seq})
 			// reset the state
 			sequenceNumberParsed = 0
@@ -119,42 +122,103 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		}
 		txfactory = txfactory.WithGas(gasUsed)
 
-		var transactionResult string
-		clientCtx.Output = &myWriter
-		err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
-		if err != nil {
-			utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, utils.Attribute{Key: "msg", Value: msg})
-			transactionResult = err.Error() // incase we got an error the tx result is basically the error
-		} else {
-			transactionResult = myWriter.String()
-		}
-		var returnCode int
-		summarizedTransactionResult, returnCode = common.ParseTransactionResult(transactionResult)
-		// utils.LavaFormatDebug("parsed transaction code", utils.Attribute{"code",  strconv.Itoa(returnCode)}, "transactionResult": transactionResult})
-		if returnCode == 0 { // if we get some other code which isn't 0 then keep retrying
+		// incase we got an error the tx result is basically the error
+
+		latestResult, err = ts.SendTxAndVerifyCommit(txfactory, msg)
+		transactionResult := latestResult.RawLog
+		if err == nil { // if we get some other code which isn't 0 then keep retrying
 			success = true
+			break
 		} else if strings.Contains(transactionResult, "account sequence") {
 			retryWithNewSequenceNumber = true
 			sequenceNumberParsed, err = common.FindSequenceNumber(transactionResult)
 			if err != nil {
 				utils.LavaFormatWarning("Failed findSequenceNumber", err, utils.Attribute{Key: "sequence", Value: transactionResult})
 			}
-			summarizedTransactionResult = transactionResult
 		} else if strings.Contains(transactionResult, "out of gas") {
 			utils.LavaFormatInfo("Transaction got out of gas error, retrying next block.")
 			retryWithNewSequenceNumber = true // retry with out of gas issue
 		} else if strings.Contains(transactionResult, "insufficient fees; got:") { //
 			err := parseInsufficientFeesError(transactionResult, gasUsed)
 			if err == nil {
-				return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult})
+				return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: latestResult})
 			}
 		}
 	}
 	if !success {
-		return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: summarizedTransactionResult}, utils.Attribute{Key: "Number Of Retries executed", Value: idx}, utils.Attribute{Key: "Parsed Sequence", Value: sequenceNumberParsed})
+		return utils.LavaFormatError("Failed sending transaction with all retries and giving up", nil, utils.Attribute{Key: "result", Value: latestResult}, utils.Attribute{Key: "Number Of Retries executed", Value: idx}, utils.Attribute{Key: "Parsed Sequence", Value: sequenceNumberParsed})
 	}
-	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "result", Value: summarizedTransactionResult})
+	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "hash", Value: hex.EncodeToString(latestResult.Txhash)})
 	return nil
+}
+
+func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (parsedResult common.TxResultData, err error) {
+	myWriter := bytes.Buffer{}
+	clientCtx := ts.clientCtx
+	clientCtx.Output = &myWriter
+	clientCtx.OutputFormat = "json"
+	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
+	if err != nil {
+		utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, utils.Attribute{Key: "msg", Value: msg})
+		return common.TxResultData{}, err
+	}
+	jsonParsedResult := map[string]any{}
+	err = json.Unmarshal(myWriter.Bytes(), &jsonParsedResult)
+	if err != nil {
+		return common.TxResultData{}, utils.LavaFormatInfo("Failed unmarshaling transaction results", utils.Attribute{Key: "transactionResult", Value: myWriter.String()})
+	}
+	myWriter.Reset()
+	if debug {
+		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
+	}
+	resultData, err := common.ParseTransactionResult(jsonParsedResult)
+	if err != nil {
+		return common.TxResultData{}, err
+	}
+	if resultData.Code != 0 {
+		return resultData, utils.LavaFormatInfo("Failed sending transaction, code is not 0", utils.Attribute{Key: "resultData", Value: resultData})
+	}
+	// now that our Tx was sent to the mempool successfully, we want to see it's result on chain
+	resultData, err = ts.waitForTxCommit(resultData)
+	return resultData, err
+}
+
+func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxResultData, error) {
+	clientCtx := ts.clientCtx
+	txResultChan := make(chan *coretypes.ResultTx)
+	guid := utils.GenerateUniqueIdentifier()
+	// check consumer session manager
+	go func() {
+		for {
+			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 3*time.Second)
+			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
+			cancel()
+			if err == nil {
+				txResultChan <- result
+				return
+			}
+			if debug {
+				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}()
+	select {
+	case txRes := <-txResultChan:
+		resultData = common.TxResultData{
+			RawLog: txRes.TxResult.Log,
+			Txhash: resultData.Txhash,
+			Code:   int(txRes.TxResult.Code),
+		}
+		break
+	case <-time.After(5 * time.Minute):
+		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "prev resultData", Value: resultData})
+	}
+	// we found the tx on chain and it failed
+	if resultData.Code != 0 {
+		return resultData, utils.LavaFormatInfo("Failed sending transaction, code is not 0", utils.Attribute{Key: "result", Value: resultData})
+	}
+	return resultData, nil
 }
 
 // this function is extracted from the tx package so that we can use it locally to set the tx factory correctly
