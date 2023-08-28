@@ -107,6 +107,12 @@ func TestMixFilterBatch(t *testing.T) {
 		{
 			name:                 "1 mix filter 10",
 			slotCount:            10,
+			mixFilters:           []Filter{},
+			expectedFiltersCount: 0,
+		},
+		{
+			name:                 "1 mix filter 10",
+			slotCount:            10,
 			mixFilters:           generateFiltersCount(1),
 			expectedFiltersCount: 1,
 		},
@@ -157,14 +163,24 @@ func TestMixFilterBatch(t *testing.T) {
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
 			mixFilterIndexes := CalculateMixFilterSlots(tt.mixFilters, tt.slotCount)
+			biggestIndex := -1
 			seenIndexes := map[int]int{}
 			for _, indexes := range mixFilterIndexes {
 				for _, index := range indexes {
 					seenIndexes[index]++
+					if index > biggestIndex {
+						biggestIndex = index
+					}
 				}
 			}
-			require.Equal(t, seenIndexes[0], 0) // no filters in first batch
-			require.Equal(t, seenIndexes[len(seenIndexes)-1], tt.expectedFiltersCount)
+			_, ok := seenIndexes[0]
+			require.False(t, ok) // no filters in first batch
+			if tt.expectedFiltersCount > 0 {
+				require.NotEqual(t, biggestIndex, -1)
+			} else {
+				require.Equal(t, biggestIndex, -1)
+			}
+			require.Equal(t, seenIndexes[biggestIndex], tt.expectedFiltersCount)
 		})
 	}
 }
