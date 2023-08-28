@@ -39,6 +39,7 @@ func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server
 		ProjectsConfiguration: map[string]map[string]*ProjectConfiguration{},
 		ChainId:               chainId,
 		IpService:             ipService,
+		specs:                 map[string]spectypes.Spec{},
 	}
 
 	if userData != "" {
@@ -92,7 +93,9 @@ func (s *Server) getSpec(ctx context.Context, specId string) (spectypes.Spec, er
 	spec, found := s.checkSpecExists(specId)
 	if !found {
 		err := s.stateTracker.RegisterForSpecUpdates(ctx, s, lavasession.RPCEndpoint{ChainID: specId, ApiInterface: dummyApiInterface})
-		return spectypes.Spec{}, utils.LavaFormatError("BadgeServer Failed registering for spec updates", err)
+		if err != nil {
+			return spectypes.Spec{}, utils.LavaFormatError("BadgeServer Failed registering for spec updates", err)
+		}
 	}
 	// we should have the spec now after fetching it from the chain. if we don't have it badge server failed getting the spec
 	spec, found = s.checkSpecExists(specId)
@@ -152,6 +155,7 @@ func (s *Server) validateRequest(clientAddress string, in *pairingtypes.Generate
 		return nil, err
 	}
 	if in.BadgeAddress == "" || in.ProjectId == "" {
+		fmt.Println("In: ", in)
 		err := fmt.Errorf("bad request, no valid input data provided")
 		utils.LavaFormatError("Validation failed", err)
 		return nil, err

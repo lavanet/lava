@@ -1,16 +1,13 @@
-import { PairingUpdater } from "./pairing_updater";
-import { StateQuery } from "./state_query";
+import { PairingUpdater } from "./updaters/pairing_updater";
+import { StateChainQuery } from "./stateQuery/state_chain_query";
+import { StateBadgeQuery } from "./stateQuery/state_badge_query";
 import { BadgeManager } from "../badge/badgeManager";
 import { debugPrint } from "../util/common";
-import Relayer from "../relayer/relayer";
 import { ConsumerSessionWithProvider } from "../types/types";
+import { StateQuery } from "./stateQuery/state_query";
+import Relayer from "../relayer/relayer";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
-
-// Updater interface
-interface Updater {
-  update(): void;
-}
 
 // ChainIDRpcInterface
 // TODO Move it to SDK class when we create it
@@ -52,6 +49,7 @@ export class StateTracker {
     chainIDRpcInterface: ChainIDRpcInterface[],
     config: Config,
     consumerSessionManagerMap: ConsumerSessionManagerMap,
+    walletAddress: string,
     badgeManager?: BadgeManager
   ) {
     debugPrint(config.debug, "Initialization of State Tracker started");
@@ -59,14 +57,22 @@ export class StateTracker {
     // Save config
     this.config = config;
 
-    // Initialize State Query
-    this.stateQuery = new StateQuery(
-      pairingListConfig,
-      chainIDRpcInterface,
-      relayer,
-      config,
-      badgeManager
-    );
+    if (badgeManager != undefined) {
+      this.stateQuery = new StateBadgeQuery(
+        badgeManager,
+        walletAddress,
+        config,
+        chainIDRpcInterface
+      );
+    } else {
+      // Initialize State Query
+      this.stateQuery = new StateChainQuery(
+        pairingListConfig,
+        chainIDRpcInterface,
+        relayer,
+        config
+      );
+    }
 
     // Create Pairing Updater
     const pairingUpdater = new PairingUpdater(

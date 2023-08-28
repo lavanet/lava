@@ -18,6 +18,7 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/relay.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/badges.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/params.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/query.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/provider_payment_storage.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/unique_payment_storage_client_provider.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/subscription/subscription.proto" \

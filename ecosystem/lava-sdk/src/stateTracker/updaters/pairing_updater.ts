@@ -1,11 +1,11 @@
-import { StateQuery, PairingResponse } from "./state_query";
-import { debugPrint, parseLong } from "../util/common";
-import { Config, ConsumerSessionManagerMap } from "./state_tracker";
+import { StateQuery, PairingResponse } from "../stateQuery/state_query";
+import { debugPrint, parseLong } from "../../util/common";
+import { Config, ConsumerSessionManagerMap } from "../state_tracker";
 import {
   ConsumerSessionWithProvider,
   SingleConsumerSession,
   Endpoint,
-} from "../types/types";
+} from "../../types/types";
 
 export class PairingUpdater {
   private stateQuery: StateQuery; // State Query instance
@@ -88,7 +88,6 @@ export class PairingUpdater {
     // Iterate over providers to populate pairing list
     for (const provider of pairing.providers) {
       debugPrint(this.config.debug, "parsing provider", provider);
-
       // Skip providers with no endpoints
       if (provider.endpoints.length == 0) {
         continue;
