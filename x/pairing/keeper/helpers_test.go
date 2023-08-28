@@ -94,7 +94,8 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	}
 
 	ts.addClient(clientsCount)
-	ts.addProvider(providersCount)
+	err := ts.addProvider(providersCount)
+	require.Nil(ts.T, err)
 
 	ts.AdvanceEpoch()
 
