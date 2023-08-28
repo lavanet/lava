@@ -283,7 +283,7 @@ export class ConsumerSessionsWithProvider {
   public maxComputeUnits: number;
   public usedComputeUnits = 0;
   private latestBlock = 0;
-  private readonly pairingEpoch: number;
+  private pairingEpoch: number;
   private conflictFoundAndReported = false; // 0 == not reported, 1 == reported
 
   public constructor(
@@ -354,6 +354,10 @@ export class ConsumerSessionsWithProvider {
 
   public getPairingEpoch(): number {
     return this.pairingEpoch;
+  }
+
+  public setPairingEpoch(epoch: number) {
+    this.pairingEpoch = epoch;
   }
 
   public getConsumerSessionInstanceFromEndpoint(

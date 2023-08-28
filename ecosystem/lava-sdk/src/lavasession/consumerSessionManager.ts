@@ -61,8 +61,8 @@ export class ConsumerSessionManager {
     this.providerOptimizer = providerOptimizer;
   }
 
-  public getRpcEndpoint(): RPCEndpoint {
-    return this.rpcEndpoint;
+  public getRpcEndpoint(): string {
+    return this.rpcEndpoint.networkAddress;
   }
 
   public getCurrentEpoch(): number {
@@ -83,7 +83,7 @@ export class ConsumerSessionManager {
 
   public async updateAllProviders(
     epoch: number,
-    pairingList: Map<number, ConsumerSessionsWithProvider>
+    pairingList: ConsumerSessionsWithProvider[],
   ): Promise<Error | undefined> {
     if (epoch <= this.currentEpoch) {
       Logger.error(
@@ -692,7 +692,7 @@ export class ConsumerSessionManager {
   }
 
   private async probeProviders(
-    pairingList: Map<number, ConsumerSessionsWithProvider>,
+    pairingList: ConsumerSessionsWithProvider[],
     epoch: number
   ) {
     // TODO: better random generator
@@ -712,7 +712,7 @@ export class ConsumerSessionManager {
       providerAddress: string;
       error?: Error;
     }>[] = [];
-    for (const consumerSessionWithProvider of pairingList.values()) {
+    for (const consumerSessionWithProvider of pairingList) {
       probePromises.push(this.probeProvider(guid, consumerSessionWithProvider));
     }
 

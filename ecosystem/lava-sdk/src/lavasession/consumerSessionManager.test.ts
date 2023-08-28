@@ -745,8 +745,8 @@ describe("ConsumerSessionManager", () => {
 function createPairingList(
   providerPrefixAddress: string,
   enabled: boolean
-): Map<number, ConsumerSessionsWithProvider> {
-  const sessionsWithProvider = new Map<number, ConsumerSessionsWithProvider>();
+): ConsumerSessionsWithProvider[] {
+  const sessionsWithProvider: ConsumerSessionsWithProvider[] = [];
   const pairingEndpoints: Endpoint[] = [
     {
       networkAddress: "",
@@ -802,8 +802,7 @@ function createPairingList(
         endpoints = pairingEndpoints;
     }
 
-    sessionsWithProvider.set(
-      i,
+    sessionsWithProvider.push(
       new ConsumerSessionsWithProvider(
         "provider" + providerPrefixAddress + i,
         endpoints,
