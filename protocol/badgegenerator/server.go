@@ -90,7 +90,7 @@ func (s *Server) checkSpecExists(specID string) (spectypes.Spec, bool) {
 }
 
 func (s *Server) getSpec(ctx context.Context, specId string) (spectypes.Spec, error) {
-	spec, found := s.checkSpecExists(specId)
+	_, found := s.checkSpecExists(specId)
 	if !found {
 		err := s.stateTracker.RegisterForSpecUpdates(ctx, s, lavasession.RPCEndpoint{ChainID: specId, ApiInterface: dummyApiInterface})
 		if err != nil {
@@ -98,7 +98,7 @@ func (s *Server) getSpec(ctx context.Context, specId string) (spectypes.Spec, er
 		}
 	}
 	// we should have the spec now after fetching it from the chain. if we don't have it badge server failed getting the spec
-	spec, found = s.checkSpecExists(specId)
+	spec, found := s.checkSpecExists(specId)
 	if !found {
 		return spectypes.Spec{}, utils.LavaFormatError("Failed fetching spec without getting error, shouldn't get here", nil)
 	}
