@@ -13,13 +13,13 @@ lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/spec_add_ibc.json,
 wait_count_blocks 2
 echo "submitted first proposal"
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
-wait_count_blocks 2
+wait_count_blocks 4
 echo "voted on first proposal"
 
 lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_count_blocks 2
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_count_blocks 2
+wait_count_blocks 4
 
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
