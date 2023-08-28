@@ -137,7 +137,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		}
 	}
 	if debug {
-		utils.LavaFormatDebug("finalization information update successfuly", utils.Attribute{Key: "finalization data", Value: finalizedBlocks}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus})
+		utils.LavaFormatDebug("finalization information update successfully", utils.Attribute{Key: "finalization data", Value: finalizedBlocks}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus})
 	}
 	return finalizationConflict, nil
 }
@@ -254,7 +254,6 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > s.latestBlock {
 		if uint64(providersMedianOfLatestBlock) > s.latestBlock+1000 && s.latestBlock > 0 {
 			utils.LavaFormatError("uncontinuous jump in finalization data", nil, utils.Attribute{Key: "latestBlock", Value: s.latestBlock}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
-
 		}
 		atomic.StoreUint64(&s.latestBlock, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
 	}
