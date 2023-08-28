@@ -40,9 +40,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 }
 
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
-	storeKey := sdk.NewKVStoreKey(v3.StoreKey)
-
-	store := prefix.NewStore(ctx.KVStore(storeKey), v3.KeyPrefix(v3.StakeStorageKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), v3.KeyPrefix(v3.StakeStorageKeyPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
 	defer iterator.Close()
