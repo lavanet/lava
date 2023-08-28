@@ -148,13 +148,13 @@ func (ts *Tester) StakeProviderExtra(
 	// if necessary, generate mock endpoints
 	if endpoints == nil {
 		apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
-		geolocations := planstypes.GetGeolocationsFromUint(int32(geoloc))
+		geolocations := planstypes.GetGeolocationsFromUint(geoloc)
 
 		for _, geo := range geolocations {
 			endpoint := epochstoragetypes.Endpoint{
 				IPPORT:        "123",
 				ApiInterfaces: []string{apiInterface},
-				Geolocation:   uint64(geo),
+				Geolocation:   int32(geo),
 			}
 			endpoints = append(endpoints, endpoint)
 		}
