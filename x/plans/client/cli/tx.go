@@ -71,7 +71,7 @@ $ %s tx gov plans-proposal plans-add <path/to/proposal.json> --from=<key_or_addr
 			if err != nil {
 				return err
 			}
-			proposal, err := utils.ParsePlansAddProposalJSON(clientCtx.LegacyAmino, args[0])
+			proposal, err := utils.ParsePlansAddProposalJSON(args[0])
 			if err != nil {
 				return err
 			}
