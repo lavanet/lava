@@ -75,7 +75,21 @@ ecosystem/lava-sdk/bin/src/sdk
 ecosystem/lava-sdk/bin/src/types
 ecosystem/lava-sdk/bin/src/util
 ecosystem/lava-sdk/bin/src/wallet
-
 ecosystem/lava-sdk/dist/*
 
-# But don't ignore the specific folder inside the bin folder
+
+# lavaJS ignores
+ecosystem/lavajs/main
+ecosystem/lavajs/module
+ecosystem/lavajs/.npmrc
+ecosystem/lavajs/proto/lavanet
+ecosystem/lavajs/src
+ecosystem/lavajs/types
+ecosystem/lavajs/dist
+ecosystem/lavajs/mjs
+
+
+
+
+
+

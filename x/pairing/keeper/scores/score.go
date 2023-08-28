@@ -36,6 +36,7 @@ package scores
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -128,8 +129,16 @@ func GetStrategy() ScoreStrategy {
 // and the previous slot
 func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot PairingSlotInf) error {
 	// calculate the score for each req for each provider
+	keys := []string{}
+	requirements := diffSlot.Requirements()
+	for key := range requirements {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	for _, score := range scores {
-		for _, req := range diffSlot.Requirements() {
+		for _, key := range keys {
+			req := requirements[key]
 			reqName := req.GetName()
 			weight, ok := strategy[reqName]
 			if !ok {

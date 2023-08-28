@@ -3,14 +3,15 @@ package types
 import (
 	"bytes"
 	"encoding/json"
-	fmt "fmt"
+	"fmt"
 	"math"
 	"strings"
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/yaml"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -175,7 +176,7 @@ func GetStrictestChainPolicyForSpec(chainID string, policies []*Policy) (chainPo
 			continue
 		}
 		// previous policies and current policy change collection data, we need the union of both
-		requirements = commontypes.UnionByFields(chainPolicyRequirements, requirements)
+		requirements = slices.UnionByFunc(chainPolicyRequirements, requirements)
 	}
 
 	return ChainPolicy{ChainId: chainID, Requirements: requirements}, true
@@ -200,43 +201,65 @@ func (s *SELECTED_PROVIDERS_MODE) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	// Note that if the string cannot be found then the zero value is used ('Created' in this case)
 	*s = SELECTED_PROVIDERS_MODE(SELECTED_PROVIDERS_MODE_value[j])
 	return nil
 }
 
-func ParsePolicyFromYaml(filePath string) (*Policy, error) {
+func ParsePolicyFromYamlString(input string) (*Policy, error) {
+	return parsePolicyFromYaml(input, false)
+}
+
+func ParsePolicyFromYamlPath(path string) (*Policy, error) {
+	return parsePolicyFromYaml(path, true)
+}
+
+func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 	var policy Policy
-	enumHooks := []commontypes.EnumDecodeHookFuncType{
-		commontypes.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
-		commontypes.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
+	enumHooks := slices.Slice(
+		yaml.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
+		yaml.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
 		// Add more enum hook functions for other enum types as needed
+	)
+
+	var (
+		unused []string
+		unset  []string
+		err    error
+	)
+
+	if isPath {
+		err = yaml.DecodeFile(from, "Policy", &policy, enumHooks, &unset, &unused)
+	} else {
+		err = yaml.Decode(from, "Policy", &policy, enumHooks, &unset, &unused)
 	}
 
-	missingFields, err := commontypes.ReadYaml(filePath, "Policy", &policy, enumHooks, true)
 	if err != nil {
 		return &policy, err
 	}
 
-	handleMissingPolicyFields(missingFields, &policy)
+	if len(unused) != 0 {
+		return &policy, fmt.Errorf("invalid policy: unknown field(s): %v", unused)
+	}
+	if len(unset) != 0 {
+		handleUnsetPolicyFields(unset, &policy)
+	}
 
 	return &policy, nil
 }
 
 // handleMissingPolicyFields sets default values to missing fields
-func handleMissingPolicyFields(missingFields []string, policy *Policy) {
-	missingFieldsDefaultValues := make(map[string]interface{})
+func handleUnsetPolicyFields(unset []string, policy *Policy) {
+	defaultValues := make(map[string]interface{})
 
-	for _, field := range missingFields {
-		defValue, ok := policyDefaultValues[field]
-		// not checking if not ok because fields without default values can use
-		// their natural default value (it's not an error)
-		if ok {
-			missingFieldsDefaultValues[field] = defValue
+	for _, field := range unset {
+		// fields without explicit default values use their natural default value
+		if defValue, ok := policyDefaultValues[field]; ok {
+			defaultValues[field] = defValue
 		}
 	}
 
-	commontypes.SetDefaultValues(policy, missingFieldsDefaultValues)
+	yaml.SetDefaultValues(defaultValues, policy)
 }
 
 // parseEnumValue is a helper function to parse the enum value based on the provided enumType.

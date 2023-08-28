@@ -33,7 +33,7 @@ type Pair struct {
 	PublicAddress string `json:"publicAddress"`
 }
 
-func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, logs *bytes.Buffer) {
+func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *bytes.Buffer) {
 	defer func() {
 		// Delete the file directly without checking if it exists
 		os.Remove("testutil/e2e/sdk/pairingList.json")
@@ -68,6 +68,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 
 		// Set the environment variable for the private key
 		cmd.Env = append(cmd.Env, "PRIVATE_KEY="+privateKey)
+		cmd.Env = append(cmd.Env, "PUBLIC_KEY="+publicKey)
 
 		// Set the environment variable for badge server project id
 		cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")

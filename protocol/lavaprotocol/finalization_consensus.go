@@ -136,7 +136,9 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			}
 		}
 	}
-
+	if debug {
+		utils.LavaFormatDebug("finalization information update successfuly", utils.Attribute{Key: "finalization data", Value: finalizedBlocks}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus})
+	}
 	return finalizationConflict, nil
 }
 
@@ -238,15 +240,19 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		if data_len == 0 {
 			return 0
 		} else if data_len%2 == 0 {
-			median = (data[data_len/2-1] + data[data_len/2]/2.0)
+			median = ((data[data_len/2-1] + data[data_len/2]) / 2.0)
 		} else {
 			median = data[data_len/2]
 		}
 		return median
 	}
-	providersMedianOfLatestBlock := median(mapExpectedBlockHeights) + int64(blockDistanceForFinalizedData)
-	if providersMedianOfLatestBlock > 0 && uint64(providersMedianOfLatestBlock) > s.latestBlock {
+	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
+	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
+	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > s.latestBlock {
 		atomic.StoreUint64(&s.latestBlock, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
+	}
+	if debug {
+		utils.LavaFormatDebug("finalization information", utils.Attribute{Key: "mapExpectedBlockHeights", Value: mapExpectedBlockHeights}, utils.Attribute{Key: "medianOfExpectedBlocks", Value: medianOfExpectedBlocks}, utils.Attribute{Key: "latestBlock", Value: s.LatestBlock()}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
 	}
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
 	// then we move forward blockDistanceForFinalizedData to get the expected latest block

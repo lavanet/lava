@@ -128,8 +128,9 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
+			customConfig := initTendermintConfig()
 			return server.InterceptConfigsPreRunHandler(
-				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
+				cmd, customAppTemplate, customAppConfig, customConfig,
 			)
 		},
 	}
@@ -155,6 +156,23 @@ func initLavaProtocolRootCmd(
 		txCommand(),
 		keys.Commands(app.DefaultNodeHome),
 	)
+}
+
+func NewLavaVisorRootCmd() *cobra.Command {
+	version := "0.1.0"
+	rootCmd := &cobra.Command{
+		Use:     "lava-visor",
+		Short:   `lava-visor is a protocol upgrade manager for Lava protocol binaries.`,
+		Long:    `lava-visor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
+		Version: version,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.Help()
+				os.Exit(0)
+			}
+		},
+	}
+	return rootCmd
 }
 
 // initTendermintConfig helps to override default Tendermint Config values.

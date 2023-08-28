@@ -22,13 +22,11 @@ service Query {
 
 // QueryDowntimeRequest is the request type for the Query/QueryDowntime RPC method.
 message QueryDowntimeRequest {
-  uint64 start_block = 1;
-  uint64 end_block = 2;
+  uint64 epoch_start_block = 1;
 }
 
 // QueryDowntimeResponse is the response type for the Query/QueryDowntime RPC method.
 message QueryDowntimeResponse {
-  repeated Downtime downtimes = 1;
   google.protobuf.Duration cumulative_downtime_duration = 2 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 

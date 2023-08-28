@@ -12,6 +12,7 @@ Policy:
     - chain_id: FTM250
       apis:
         - ftm_blockNumber
+    - chain_id: "*" # allows all other chains without specifying
   geolocation_profile: USE
   total_cu_limit: 1000
   epoch_cu_limit: 100

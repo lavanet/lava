@@ -33,6 +33,8 @@ type Params struct {
 	// downtime_duration defines the minimum time elapsed between blocks
 	// that we consider the chain to be down.
 	DowntimeDuration time.Duration `protobuf:"bytes,1,opt,name=downtime_duration,json=downtimeDuration,proto3,stdduration" json:"downtime_duration"`
+	// epoch_duration defines an estimation of the time elapsed between epochs
+	EpochDuration time.Duration `protobuf:"bytes,2,opt,name=epoch_duration,json=epochDuration,proto3,stdduration" json:"epoch_duration"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -71,6 +73,13 @@ var xxx_messageInfo_Params proto.InternalMessageInfo
 func (m *Params) GetDowntimeDuration() time.Duration {
 	if m != nil {
 		return m.DowntimeDuration
+	}
+	return 0
+}
+
+func (m *Params) GetEpochDuration() time.Duration {
+	if m != nil {
+		return m.EpochDuration
 	}
 	return 0
 }
@@ -131,66 +140,9 @@ func (m *Downtime) GetDuration() time.Duration {
 	return 0
 }
 
-// DowntimeGarbageCollection defines when garbage collection will be performed, for a specific downtime.
-// used only in genesis.
-type DowntimeGarbageCollection struct {
-	// block defines the block that references a Downtime.
-	Block uint64 `protobuf:"varint,1,opt,name=block,proto3" json:"block,omitempty"`
-	// gc_time defines the block when garbage collection will be performed.
-	GcBlock uint64 `protobuf:"varint,2,opt,name=gc_block,json=gcBlock,proto3" json:"gc_block,omitempty"`
-}
-
-func (m *DowntimeGarbageCollection) Reset()         { *m = DowntimeGarbageCollection{} }
-func (m *DowntimeGarbageCollection) String() string { return proto.CompactTextString(m) }
-func (*DowntimeGarbageCollection) ProtoMessage()    {}
-func (*DowntimeGarbageCollection) Descriptor() ([]byte, []int) {
-	return fileDescriptor_17cbf2f7c6c4bd94, []int{2}
-}
-func (m *DowntimeGarbageCollection) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *DowntimeGarbageCollection) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DowntimeGarbageCollection.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *DowntimeGarbageCollection) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DowntimeGarbageCollection.Merge(m, src)
-}
-func (m *DowntimeGarbageCollection) XXX_Size() int {
-	return m.Size()
-}
-func (m *DowntimeGarbageCollection) XXX_DiscardUnknown() {
-	xxx_messageInfo_DowntimeGarbageCollection.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DowntimeGarbageCollection proto.InternalMessageInfo
-
-func (m *DowntimeGarbageCollection) GetBlock() uint64 {
-	if m != nil {
-		return m.Block
-	}
-	return 0
-}
-
-func (m *DowntimeGarbageCollection) GetGcBlock() uint64 {
-	if m != nil {
-		return m.GcBlock
-	}
-	return 0
-}
-
 func init() {
 	proto.RegisterType((*Params)(nil), "lavanet.lava.downtime.v1.Params")
 	proto.RegisterType((*Downtime)(nil), "lavanet.lava.downtime.v1.Downtime")
-	proto.RegisterType((*DowntimeGarbageCollection)(nil), "lavanet.lava.downtime.v1.DowntimeGarbageCollection")
 }
 
 func init() {
@@ -198,26 +150,25 @@ func init() {
 }
 
 var fileDescriptor_17cbf2f7c6c4bd94 = []byte{
-	// 295 bytes of a gzipped FileDescriptorProto
+	// 273 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0xcf, 0x49, 0x2c, 0x4b,
 	0xcc, 0x4b, 0x2d, 0xd1, 0x07, 0xd1, 0xfa, 0x29, 0xf9, 0xe5, 0x79, 0x25, 0x99, 0xb9, 0xa9, 0xfa,
 	0x65, 0x86, 0x70, 0xb6, 0x5e, 0x41, 0x51, 0x7e, 0x49, 0xbe, 0x90, 0x04, 0x54, 0xa1, 0x1e, 0x88,
 	0xd6, 0x83, 0x4b, 0x96, 0x19, 0x4a, 0xc9, 0xa5, 0xe7, 0xe7, 0xa7, 0xe7, 0xa4, 0xea, 0x83, 0xd5,
 	0x25, 0x95, 0xa6, 0xe9, 0xa7, 0x94, 0x16, 0x25, 0x96, 0x64, 0xe6, 0xe7, 0x41, 0x74, 0x4a, 0xc9,
 	0xa3, 0xcb, 0x83, 0x34, 0x16, 0x97, 0x24, 0xe6, 0x16, 0x40, 0x15, 0x88, 0xa4, 0xe7, 0xa7, 0xe7,
-	0x83, 0x99, 0xfa, 0x20, 0x16, 0x44, 0x54, 0x29, 0x8a, 0x8b, 0x2d, 0x20, 0xb1, 0x28, 0x31, 0xb7,
-	0x58, 0x28, 0x80, 0x4b, 0x10, 0x66, 0x5f, 0x3c, 0xcc, 0x6c, 0x09, 0x46, 0x05, 0x46, 0x0d, 0x6e,
-	0x23, 0x49, 0x3d, 0x88, 0xe1, 0x7a, 0x30, 0xc3, 0xf5, 0x5c, 0xa0, 0x0a, 0x9c, 0x38, 0x4e, 0xdc,
-	0x93, 0x67, 0x98, 0x71, 0x5f, 0x9e, 0x31, 0x48, 0x00, 0xa6, 0x1b, 0x26, 0xa7, 0x94, 0xc8, 0xc5,
-	0xe1, 0x02, 0x15, 0x13, 0x12, 0xe1, 0x62, 0x4d, 0xca, 0xc9, 0x4f, 0xce, 0x06, 0x9b, 0xc8, 0x12,
-	0x04, 0xe1, 0x08, 0xd9, 0x73, 0x71, 0xc0, 0xad, 0x62, 0x22, 0xde, 0x2a, 0xb8, 0x26, 0x25, 0x1f,
-	0x2e, 0x49, 0x98, 0x15, 0xee, 0x89, 0x45, 0x49, 0x89, 0xe9, 0xa9, 0xce, 0xf9, 0x39, 0x39, 0xa9,
-	0xc9, 0x20, 0x49, 0x1c, 0x76, 0x4a, 0x72, 0x71, 0xa4, 0x27, 0xc7, 0x43, 0x24, 0x98, 0xc0, 0x12,
-	0xec, 0xe9, 0xc9, 0x4e, 0x20, 0xae, 0x93, 0xfd, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31,
-	0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb,
-	0x31, 0x44, 0xa9, 0xa6, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0xa3, 0xc4,
-	0x65, 0x05, 0x72, 0x6c, 0x26, 0xb1, 0x81, 0x5d, 0x6d, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x02,
-	0x24, 0xda, 0x84, 0xf0, 0x01, 0x00, 0x00,
+	0x83, 0x99, 0xfa, 0x20, 0x16, 0x44, 0x54, 0x69, 0x19, 0x23, 0x17, 0x5b, 0x40, 0x62, 0x51, 0x62,
+	0x6e, 0xb1, 0x50, 0x00, 0x97, 0x20, 0xcc, 0xc2, 0x78, 0x98, 0xe1, 0x12, 0x8c, 0x0a, 0x8c, 0x1a,
+	0xdc, 0x46, 0x92, 0x7a, 0x10, 0xd3, 0xf5, 0x60, 0xa6, 0xeb, 0xb9, 0x40, 0x15, 0x38, 0x71, 0x9c,
+	0xb8, 0x27, 0xcf, 0x30, 0xe3, 0xbe, 0x3c, 0x63, 0x90, 0x00, 0x4c, 0x37, 0x4c, 0x4e, 0xc8, 0x8b,
+	0x8b, 0x2f, 0xb5, 0x20, 0x3f, 0x39, 0x03, 0x61, 0x1c, 0x13, 0xf1, 0xc6, 0xf1, 0x82, 0xb5, 0xc2,
+	0x24, 0x94, 0x12, 0xb9, 0x38, 0x5c, 0xa0, 0xe6, 0x0b, 0x89, 0x70, 0xb1, 0x26, 0xe5, 0xe4, 0x27,
+	0x67, 0x83, 0x5d, 0xc7, 0x12, 0x04, 0xe1, 0x08, 0xd9, 0x73, 0x71, 0x90, 0x63, 0x0f, 0x5c, 0x93,
+	0x93, 0xfd, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1,
+	0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44, 0xa9, 0xa6, 0x67, 0x96,
+	0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0xa3, 0x44, 0x65, 0x05, 0x72, 0x64, 0x26, 0xb1,
+	0x81, 0xed, 0x31, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xd2, 0xea, 0xa8, 0x87, 0xef, 0x01, 0x00,
+	0x00,
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -240,12 +191,20 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.DowntimeDuration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.DowntimeDuration):])
+	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.EpochDuration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.EpochDuration):])
 	if err1 != nil {
 		return 0, err1
 	}
 	i -= n1
 	i = encodeVarintDowntime(dAtA, i, uint64(n1))
+	i--
+	dAtA[i] = 0x12
+	n2, err2 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.DowntimeDuration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.DowntimeDuration):])
+	if err2 != nil {
+		return 0, err2
+	}
+	i -= n2
+	i = encodeVarintDowntime(dAtA, i, uint64(n2))
 	i--
 	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
@@ -271,47 +230,14 @@ func (m *Downtime) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n2, err2 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.Duration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.Duration):])
-	if err2 != nil {
-		return 0, err2
+	n3, err3 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.Duration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.Duration):])
+	if err3 != nil {
+		return 0, err3
 	}
-	i -= n2
-	i = encodeVarintDowntime(dAtA, i, uint64(n2))
+	i -= n3
+	i = encodeVarintDowntime(dAtA, i, uint64(n3))
 	i--
 	dAtA[i] = 0x12
-	if m.Block != 0 {
-		i = encodeVarintDowntime(dAtA, i, uint64(m.Block))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *DowntimeGarbageCollection) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *DowntimeGarbageCollection) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *DowntimeGarbageCollection) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.GcBlock != 0 {
-		i = encodeVarintDowntime(dAtA, i, uint64(m.GcBlock))
-		i--
-		dAtA[i] = 0x10
-	}
 	if m.Block != 0 {
 		i = encodeVarintDowntime(dAtA, i, uint64(m.Block))
 		i--
@@ -339,6 +265,8 @@ func (m *Params) Size() (n int) {
 	_ = l
 	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.DowntimeDuration)
 	n += 1 + l + sovDowntime(uint64(l))
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.EpochDuration)
+	n += 1 + l + sovDowntime(uint64(l))
 	return n
 }
 
@@ -353,21 +281,6 @@ func (m *Downtime) Size() (n int) {
 	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.Duration)
 	n += 1 + l + sovDowntime(uint64(l))
-	return n
-}
-
-func (m *DowntimeGarbageCollection) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Block != 0 {
-		n += 1 + sovDowntime(uint64(m.Block))
-	}
-	if m.GcBlock != 0 {
-		n += 1 + sovDowntime(uint64(m.GcBlock))
-	}
 	return n
 }
 
@@ -436,6 +349,39 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.DowntimeDuration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDowntime
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthDowntime
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.EpochDuration, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -541,94 +487,6 @@ func (m *Downtime) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipDowntime(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthDowntime
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DowntimeGarbageCollection) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowDowntime
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: DowntimeGarbageCollection: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DowntimeGarbageCollection: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Block", wireType)
-			}
-			m.Block = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDowntime
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Block |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GcBlock", wireType)
-			}
-			m.GcBlock = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDowntime
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.GcBlock |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDowntime(dAtA[iNdEx:])

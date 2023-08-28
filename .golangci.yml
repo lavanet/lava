@@ -1,13 +1,15 @@
 run:
   tests: true
   # timeout for analysis, e.g. 30s, 5m, default is 1m
-  timeout: 5m
+  timeout: 7m
   skip-files:
     - "protocol/chainlib/chainproxy/rpcInterfaceMessages/grpcMessage.go"
     - "protocol/chainlib/grpc.go"
     - "protocol/chainlib/grpcproxy/dyncodec/remote_grpc_reflection.go"
     - "protocol/chainlib/grpcproxy/dyncodec/remote_relayer.go"
     - "protocol/chainlib/grpcproxy/dyncodec/remotes_test.go"
+    - "ecosystem/lavajs/*"
+    - "ecosystem/lava-sdk/*"
 
 linters:
   disable-all: true

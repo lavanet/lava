@@ -11,14 +11,14 @@ go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
 2. Lava SDK E2E:
 
 ```
-yarn --cwd ./ecosystem/lava-sdk/ build
+yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
 ```
 
 Run all our E2E using the following command (from the root) - NOT STABLE
 
 ```
-yarn --cwd ./ecosystem/lava-sdk/ build
+yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -v -timeout 1200s
 ```
 
