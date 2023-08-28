@@ -25,6 +25,8 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/projects/project.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/plans/policy.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/epoch_payments.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/spec.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/api_collection.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
@@ -32,9 +34,9 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
     "$COSMOS_PROTO_DIR/google/api/annotations.proto" \
     "$COSMOS_PROTO_DIR/google/api/http.proto" \
-    "$COSMOS_PROTO_DIR/cosmos/base/v1beta1/coin.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/query/v1beta1/pagination.proto" \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
+    "$COSMOS_PROTO_DIR/amino/amino.proto" \
 
 # mv ./src/proto/test ./src/pairing/.
 # rm -rf ./src/proto
