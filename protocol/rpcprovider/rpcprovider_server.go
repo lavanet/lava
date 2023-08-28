@@ -286,6 +286,13 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+
+	// @audit Check generic external errors
+	err = chainlib.HandleGenericExternalError(string(reply.Data))
+	if err != nil {
+		return false, utils.LavaFormatError("External error detected in reply", err, utils.Attribute{Key: "Reply", Value: reply.Data})
+	}
+
 	reply.Metadata, _, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	if clientSub == nil {
 		// failed subscription, but not an error. (probably a node error)
