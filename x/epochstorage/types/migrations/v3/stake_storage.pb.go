@@ -84,7 +84,7 @@ func (m *StakeStorage) GetEpochBlockHash() []byte {
 }
 
 func init() {
-	proto.RegisterType((*StakeStorage)(nil), "lavanet.lava.epochstorage.StakeStorage")
+	proto.RegisterType((*StakeStorage)(nil), "lavanet.lava.epochstorage.StakeStorageV3")
 }
 
 func init() {

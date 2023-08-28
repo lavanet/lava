@@ -20,7 +20,7 @@ const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of 
 // init policy default values (for fields that their natural zero value is not good)
 // the values were chosen in a way that they will not influence the strictest policy calculation
 var policyDefaultValues = map[string]interface{}{
-	"GeolocationProfile": uint64(Geolocation_GL),
+	"GeolocationProfile": int32(Geolocation_GL),
 	"MaxProvidersToPair": uint64(math.MaxUint64),
 }
 
@@ -217,7 +217,7 @@ func ParsePolicyFromYamlPath(path string) (*Policy, error) {
 func parsePolicyFromYaml(from string, isPath bool) (*Policy, error) {
 	var policy Policy
 	enumHooks := slices.Slice(
-		yaml.EnumDecodeHook(uint64(0), parsePolicyEnumValue), // for geolocation
+		yaml.EnumDecodeHook(int32(0), parsePolicyEnumValue), // for geolocation
 		yaml.EnumDecodeHook(SELECTED_PROVIDERS_MODE(0), parsePolicyEnumValue),
 		// Add more enum hook functions for other enum types as needed
 	)
@@ -265,7 +265,7 @@ func handleUnsetPolicyFields(unset []string, policy *Policy) {
 // parseEnumValue is a helper function to parse the enum value based on the provided enumType.
 func parsePolicyEnumValue(enumType interface{}, strVal string) (interface{}, error) {
 	switch v := enumType.(type) {
-	case uint64:
+	case int32:
 		geo, err := ParseGeoEnum(strVal)
 		if err != nil {
 			return 0, fmt.Errorf("invalid geolocation %s", strVal)
