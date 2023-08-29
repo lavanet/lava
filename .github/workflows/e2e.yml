@@ -163,7 +163,7 @@ jobs:
       - name: Install telescope dependencies
         run: |
           cd ecosystem/lavajs
-          export GOPATH=~/go
+          export GOPATH=/home/runner/go
           npm install
           npm run e2e-setup
 

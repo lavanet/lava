@@ -29,9 +29,9 @@ function prepare() {
         exit 1
     fi
 
-
+    echo "GOPATH set to $GOPATH"
+    echo "go env GOPATH: $(go env GOPATH)"
     if [[ -z "$GOPATH" ]]; then
-        GOPATH=~/go
         echo "Error: GOPATH is not set. setting it to ~/go" >&2
     fi
 
