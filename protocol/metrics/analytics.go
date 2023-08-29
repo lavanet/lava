@@ -21,6 +21,7 @@ type RelayMetrics struct {
 	Success      bool
 	ComputeUnits uint64
 	Source       RelaySource
+	Origin       string
 }
 
 type RelayAnalyticsDTO struct {
@@ -33,6 +34,7 @@ type RelayAnalyticsDTO struct {
 	RelayCounts  int64
 	TotalCu      uint64
 	Source       RelaySource
+	Origin       string
 }
 
 func NewRelayAnalytics(projectHash, chainId, apiType string) *RelayMetrics {
