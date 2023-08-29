@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/ecosystem/cache/format"
 	rpcInterfaceMessages "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"

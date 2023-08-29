@@ -140,7 +140,6 @@ func shallowCopy(request *pairingtypes.RelayRequest) *pairingtypes.RelayRequest 
 			Metadata:       request.RelayData.Metadata,
 		},
 	}
-
 }
 
 func TestCacheGetWithoutSet(t *testing.T) {
@@ -180,7 +179,6 @@ func TestCacheGetWithoutSet(t *testing.T) {
 			_, err := cacheServer.GetRelay(ctx, &messageGet)
 
 			require.Error(t, err)
-
 		})
 	}
 }
@@ -296,7 +294,6 @@ func TestCacheSetGetLatest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			if latestBlockForRelay < tt.latestBlockForSetRelay {
 				latestBlockForRelay = tt.latestBlockForSetRelay
 			}
@@ -345,7 +342,6 @@ func TestCacheSetGetLatest(t *testing.T) {
 			} else {
 				require.Error(t, err)
 			}
-
 		})
 	}
 }
@@ -379,7 +375,6 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			if latestBlockForRelay < tt.latestBlockForSetRelay {
 				latestBlockForRelay = tt.latestBlockForSetRelay
 			}
@@ -451,7 +446,6 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			// repeat our latest block get, this time we expect it to look for a newer block and fail
 			_, err = cacheServer.GetRelay(ctx, &messageGet)
 			require.Error(t, err)
-
 		})
 	}
 }
@@ -530,7 +524,6 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			} else {
 				require.Error(t, err)
 			}
-
 		})
 	}
 }
