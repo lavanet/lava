@@ -74,11 +74,14 @@ echo "Done."
 cp examples/jsonRPC.ts examples/jsonRPC_test.ts
 cp examples/restAPI.ts examples/restAPI_test.ts
 cp examples/tendermintRPC.ts examples/tendermintRPC_test.ts
+cp examples/consumerSessionManager.ts examples/consumerSessionManager_test.ts
 
 sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    debug: true,\n\n    allowInsecureTransport: true,/g' examples/jsonRPC_test.ts
 sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    debug: true,\n\n    allowInsecureTransport: true,/g' examples/restAPI_test.ts
 sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    debug: true,\n\n    allowInsecureTransport: true,/g' examples/tendermintRPC_test.ts
+sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    debug: true,\n\n    allowInsecureTransport: true,/g' examples/consumerSessionManager_test.ts
 
 sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/jsonRPC_test.ts
 sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/restAPI_test.ts
 sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/tendermintRPC_test.ts
+sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/consumerSessionManager_test.ts

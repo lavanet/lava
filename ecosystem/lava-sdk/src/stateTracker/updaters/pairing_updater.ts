@@ -1,11 +1,14 @@
 import { StateQuery, PairingResponse } from "../stateQuery/state_query";
 import { debugPrint, parseLong } from "../../util/common";
-import { Config, ConsumerSessionManagerMap } from "../state_tracker";
 import {
-  ConsumerSessionWithProvider,
-  SingleConsumerSession,
+  Config,
+  ConsumerSessionManagerMap,
+  ConsumerSessionManager,
+} from "../state_tracker";
+import {
+  ConsumerSessionsWithProvider,
   Endpoint,
-} from "../../types/types";
+} from "../../lavasession/consumerTypes";
 
 export class PairingUpdater {
   private stateQuery: StateQuery; // State Query instance
@@ -56,12 +59,12 @@ export class PairingUpdater {
   // updateConsummerSessionManager filters pairing list and update consuemr session manager
   private updateConsummerSessionManager(
     pairing: PairingResponse | undefined,
-    consumerSessionManager: any
+    consumerSessionManager: ConsumerSessionManager
   ) {
     // If pairing undefined
     // update consumer session manager with empty provider list
     if (pairing == undefined) {
-      consumerSessionManager.updateAllProviders([]);
+      consumerSessionManager.updateAllProviders(0, []);
 
       return;
     }
@@ -73,17 +76,20 @@ export class PairingUpdater {
     );
 
     // Update specific consumer session manager
-    consumerSessionManager.updateAllProviders(pairingListForThisCSM);
+    consumerSessionManager.updateAllProviders(
+      pairing.currentEpoch,
+      pairingListForThisCSM
+    );
   }
 
   // filterPairingListByEndpoint filters pairing list and return only the once for rpcInterface
   private filterPairingListByEndpoint(
     pairing: PairingResponse,
     rpcInterface: string
-  ): ConsumerSessionWithProvider[] {
+  ): ConsumerSessionsWithProvider[] {
     // Initialize ConsumerSessionWithProvider array
-    const pairingForSameGeolocation: Array<ConsumerSessionWithProvider> = [];
-    const pairingFromDifferentGeolocation: Array<ConsumerSessionWithProvider> =
+    const pairingForSameGeolocation: Array<ConsumerSessionsWithProvider> = [];
+    const pairingFromDifferentGeolocation: Array<ConsumerSessionsWithProvider> =
       [];
     // Iterate over providers to populate pairing list
     for (const provider of pairing.providers) {
@@ -103,7 +109,13 @@ export class PairingUpdater {
         if (!endpoint.apiInterfaces.includes(rpcInterface)) {
           continue;
         }
-        const convertedEndpoint = new Endpoint(endpoint.iPPORT, true, 0);
+        const convertedEndpoint: Endpoint = {
+          networkAddress: endpoint.iPPORT,
+          enabled: true,
+          connectionRefusals: 0,
+          addons: new Set(endpoint.addons),
+          extensions: new Set(endpoint.extensions),
+        };
         if (
           parseLong(endpoint.geolocation) == Number(this.config.geolocation)
         ) {
@@ -126,24 +138,12 @@ export class PairingUpdater {
         endpointListToStore = sameGeoEndpoints;
       }
 
-      // create single consumer session from pairing.
-      const singleConsumerSession = new SingleConsumerSession(
-        0, // cuSum
-        0, // latestRelayCuSum
-        1, // relayNumber
-        endpointListToStore[0],
-        pairing.currentEpoch,
-        provider.address
-      );
-
-      // Create a new pairing object
-      const newPairing = new ConsumerSessionWithProvider(
+      const newPairing = new ConsumerSessionsWithProvider(
         this.config.accountAddress,
         endpointListToStore,
-        singleConsumerSession,
+        {},
         pairing.maxCu,
-        0, // used compute units
-        false
+        pairing.currentEpoch
       );
 
       // Add newly created pairing in the pairing list

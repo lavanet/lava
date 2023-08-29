@@ -1,5 +1,4 @@
 import { BOOT_RETRY_ATTEMPTS } from "../config/default";
-import { ConsumerSessionWithProvider } from "../types/types";
 import { Secp256k1, sha256 } from "@cosmjs/crypto";
 import { fromHex } from "@cosmjs/encoding";
 import { grpc } from "@improbable-eng/grpc-web";
@@ -19,6 +18,7 @@ import {
 import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
+import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
 
 class Relayer {
   private chainID: string;
@@ -89,7 +89,7 @@ class Relayer {
 
   async sendRelay(
     options: SendRelayOptions,
-    consumerProviderSession: ConsumerSessionWithProvider,
+    consumerProviderSession: ConsumerSessionsWithProvider,
     cuSum: number,
     apiInterface: string
   ): Promise<RelayReply> {
@@ -98,10 +98,9 @@ class Relayer {
 
     const enc = new TextEncoder();
 
-    const consumerSession = consumerProviderSession.Session;
+    const consumerSession = consumerProviderSession.sessions[0];
     // Increase used compute units
-    consumerProviderSession.UsedComputeUnits =
-      consumerProviderSession.UsedComputeUnits + cuSum;
+    consumerProviderSession.addUsedComputeUnits(cuSum);
 
     // create request private data
     const requestPrivateData = new RelayPrivateData();
@@ -110,7 +109,7 @@ class Relayer {
     requestPrivateData.setData(enc.encode(data));
     requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
     requestPrivateData.setApiInterface(apiInterface);
-    requestPrivateData.setSalt(consumerSession.getNewSalt());
+    requestPrivateData.setSalt(this.getNewSalt());
 
     const contentHash =
       this.calculateContentHashForRelayData(requestPrivateData);
@@ -118,11 +117,11 @@ class Relayer {
     // create request session
     const requestSession = new RelaySession();
     requestSession.setSpecId(this.chainID);
-    requestSession.setSessionId(consumerSession.getNewSessionId());
+    requestSession.setSessionId(consumerSession.sessionId);
     requestSession.setCuSum(cuSum);
-    requestSession.setProvider(consumerSession.ProviderAddress);
-    requestSession.setRelayNum(consumerSession.RelayNum);
-    requestSession.setEpoch(consumerSession.PairingEpoch);
+    requestSession.setProvider(consumerProviderSession.publicLavaAddress);
+    requestSession.setRelayNum(consumerSession.relayNum);
+    requestSession.setEpoch(consumerProviderSession.getPairingEpoch());
     requestSession.setUnresponsiveProviders(new Uint8Array());
     requestSession.setContentHash(contentHash);
     requestSession.setSig(new Uint8Array());
@@ -146,7 +145,7 @@ class Relayer {
     const requestPromise = new Promise<RelayReply>((resolve, reject) => {
       grpc.invoke(RelayerService.Relay, {
         request: request,
-        host: this.prefix + "://" + consumerSession.Endpoint.Addr,
+        host: this.prefix + "://" + consumerSession.endpoint.networkAddress,
         transport: this.allowInsecureTransport
           ? transportAllowInsecure // if allow insecure we use a transport with rejectUnauthorized disabled
           : transport, // otherwise normal transport (default to rejectUnauthorized = true)
@@ -158,11 +157,8 @@ class Relayer {
             return;
           }
           // underflow guard
-          if (consumerProviderSession.UsedComputeUnits > cuSum) {
-            consumerProviderSession.UsedComputeUnits =
-              consumerProviderSession.UsedComputeUnits - cuSum;
-          } else {
-            consumerProviderSession.UsedComputeUnits = 0;
+          if (consumerProviderSession.usedComputeUnits > cuSum) {
+            consumerProviderSession.decreaseUsedComputeUnits(cuSum);
           }
 
           let additionalInfo = "";
@@ -170,9 +166,9 @@ class Relayer {
             additionalInfo =
               additionalInfo +
               ", provider iPPORT: " +
-              consumerProviderSession.Session.Endpoint.Addr +
+              consumerSession.endpoint.networkAddress +
               ", provider address: " +
-              consumerProviderSession.Session.ProviderAddress;
+              consumerProviderSession.publicLavaAddress;
           }
 
           const errMessage = this.extractErrorMessage(msg) + additionalInfo;
@@ -365,7 +361,7 @@ class Relayer {
 
   // SendRelayToAllProvidersAndRace sends relay to all lava providers and returns first response
   public async SendRelayToAllProvidersAndRace(
-    providers: ConsumerSessionWithProvider[],
+    providers: ConsumerSessionsWithProvider[],
     options: any,
     relayCu: number,
     rpcInterface: string
@@ -381,7 +377,7 @@ class Relayer {
       let response;
       for (const provider of providers) {
         const uniqueKey =
-          provider.Session.ProviderAddress +
+          provider.publicLavaAddress +
           String(Math.floor(Math.random() * 10000000));
         const providerRelayPromise = this.SendRelayWithRetry(
           options,
@@ -414,7 +410,7 @@ class Relayer {
   // SendRelayWithRetry tryes to send relay to provider and reties depending on errors
   private async SendRelayWithRetry(
     options: any,
-    lavaRPCEndpoint: ConsumerSessionWithProvider,
+    lavaRPCEndpoint: ConsumerSessionsWithProvider,
     relayCu: number,
     rpcInterface: string
   ): Promise<any> {
@@ -441,7 +437,7 @@ class Relayer {
         }
 
         // Save current block height
-        lavaRPCEndpoint.Session.PairingEpoch = parseInt(currentBlockHeight);
+        lavaRPCEndpoint.setPairingEpoch(parseInt(currentBlockHeight));
 
         // Retry same relay with added block height
         try {
@@ -486,6 +482,23 @@ class Relayer {
       return match ? match[1] : null;
     }
     return match ? match[1] : null;
+  }
+
+  getNewSalt(): Uint8Array {
+    const salt = this.generateRandomUint();
+    const nonceBytes = new Uint8Array(8);
+    const dataView = new DataView(nonceBytes.buffer);
+
+    // use LittleEndian
+    dataView.setBigUint64(0, BigInt(salt), true);
+
+    return nonceBytes;
+  }
+
+  private generateRandomUint(): number {
+    const min = 1;
+    const max = Number.MAX_SAFE_INTEGER;
+    return Math.floor(Math.random() * (max - min) + min);
   }
 }
 

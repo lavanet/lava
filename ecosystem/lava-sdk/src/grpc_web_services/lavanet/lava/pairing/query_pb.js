@@ -2,6 +2,10 @@
 /**
  * @fileoverview
  * @enhanceable
+<<<<<<< HEAD
+=======
+ * @suppress {missingRequire} reports error on implicit type usages.
+>>>>>>> AgileFreaksFork/lava-sdk-consumer-sessions-manager
  * @suppress {messageConventions} JS Compiler reports an error if a variable or
  *     field starts with 'MSG_' and isn't a translatable message.
  * @public
@@ -12,7 +16,11 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
+<<<<<<< HEAD
 var global = Function('return this')();
+=======
+var global = (function() { return this || window || global || self || Function('return this')(); }).call(null);
+>>>>>>> AgileFreaksFork/lava-sdk-consumer-sessions-manager
 
 var gogoproto_gogo_pb = require('../../../gogoproto/gogo_pb.js');
 goog.object.extend(proto, gogoproto_gogo_pb);

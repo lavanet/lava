@@ -15,12 +15,14 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     --ts_out="service=grpc-web:$OUT_DIR" \
     --proto_path="$COSMOS_PROTO_DIR" \
     --proto_path="$THIRD_PARTY_PROTO_DIR" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/query.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/relay.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/badges.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/params.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/query.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/provider_payment_storage.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/unique_payment_storage_client_provider.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/api_collection.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/subscription/subscription.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/projects/project.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/plans/policy.proto" \
