@@ -165,6 +165,7 @@ jobs:
           sudo apt-get install -y expect
           cd ecosystem/lavajs
           npm install
+          export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
           npm run e2e-setup
 
       ######################################################
