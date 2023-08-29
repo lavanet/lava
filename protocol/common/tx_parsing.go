@@ -1,9 +1,9 @@
 package common
 
 import (
+	"encoding/hex"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/lavanet/lava/utils"
@@ -20,26 +20,44 @@ func FindSequenceNumber(sequence string) (int, error) {
 	return strconv.Atoi(match[1]) // atoi return 0 upon error, so it will be ok when sequenceNumberParsed uses it
 }
 
-func ParseTransactionResult(transactionResult string) (string, int) {
-	transactionResult = strings.ReplaceAll(transactionResult, ": ", ":")
-	transactionResults := strings.Split(transactionResult, "\n")
-	summarizedResult := ""
-	for _, str := range transactionResults {
-		if strings.Contains(str, "raw_log:") || strings.Contains(str, "txhash:") || strings.Contains(str, "code:") {
-			summarizedResult = summarizedResult + str + ", "
+type TxResultData struct {
+	RawLog string
+	Txhash []byte
+	Code   int
+}
+
+func ParseTransactionResult(parsedValues map[string]any) (retData TxResultData, err error) {
+	ret := TxResultData{}
+	txHash, ok := parsedValues["txhash"]
+	if ok {
+		txHashStr, ok := txHash.(string)
+		if ok {
+			ret.Txhash, err = hex.DecodeString(txHashStr)
+		} else {
+			err = utils.LavaFormatError("failed parsing txHash", nil, utils.Attribute{Key: "parsedValues", Value: parsedValues})
+		}
+	} else {
+		err = utils.LavaFormatWarning("failed parsing txHash", nil, utils.Attribute{Key: "parsedValues", Value: parsedValues})
+	}
+	rawlog, ok := parsedValues["raw_log"]
+	if ok {
+		rawLogStr, ok := rawlog.(string)
+		if ok {
+			ret.RawLog = rawLogStr
+		} else {
+			err = utils.LavaFormatError("failed parsing rawlog", nil, utils.Attribute{Key: "parsedValues", Value: parsedValues})
 		}
 	}
-
-	re := regexp.MustCompile(`code:(\d+)`) // extracting code from transaction result (in format code:%d)
-	match := re.FindStringSubmatch(transactionResult)
-	if match == nil || len(match) < 2 {
-		return summarizedResult, 1 // not zero
+	code, ok := parsedValues["code"]
+	if ok {
+		codeNumber, ok := code.(float64)
+		if ok {
+			ret.Code = int(codeNumber)
+		} else {
+			err = utils.LavaFormatError("failed parsing code", nil, utils.Attribute{Key: "parsedValues", Value: parsedValues})
+		}
 	}
-	retCode, err := strconv.Atoi(match[1]) // extract return code.
-	if err != nil {
-		return summarizedResult, 1 // not zero
-	}
-	return summarizedResult, retCode
+	return ret, err
 }
 
 func VerifyAndHandleUnsupportedFlags(currentFlags *pflag.FlagSet) error {

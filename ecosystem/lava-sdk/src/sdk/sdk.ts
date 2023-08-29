@@ -25,6 +25,7 @@ import {
 } from "../config/default";
 import { QueryShowAllChainsResponse } from "../codec/lavanet/lava/spec/query";
 import { GenerateBadgeResponse } from "../grpc_web_services/lavanet/lava/pairing/badges_pb";
+import { Logger, LogLevel } from "../logger/logger";
 /**
  * Options for sending RPC relay.
  */
@@ -57,7 +58,7 @@ export interface LavaSDKOptions {
   lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
   secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
   allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
-  debug?: boolean; // Optional for debugging the LavaSDK mostly prints to speed up development
+  logLevel?: string | LogLevel; // Optional for log level settings, "debug" | "info" | "warn" | "error" | "success" | "NoPrints"
 }
 
 export class LavaSDK {
@@ -77,7 +78,6 @@ export class LavaSDK {
   private relayer: Relayer | Error;
   private secure: boolean;
   private allowInsecureTransport: boolean;
-  private debugMode: boolean;
 
   private activeSessionManager: SessionManager | Error;
 
@@ -115,7 +115,7 @@ export class LavaSDK {
     }
 
     // Initialize local attributes
-    this.debugMode = options.debug ? options.debug : false; // enabling debug prints mainly used for development / debugging
+    Logger.SetLogLevel(options.logLevel);
     this.secure = options.secure !== undefined ? options.secure : true;
     this.allowInsecureTransport = options.allowInsecureTransport
       ? options.allowInsecureTransport
@@ -169,7 +169,7 @@ export class LavaSDK {
   }
 
   private debugPrint(message?: any, ...optionalParams: any[]) {
-    this.debugMode && console.log(message, ...optionalParams);
+    Logger.debug(message, optionalParams);
   }
 
   private async fetchNewBadge(): Promise<GenerateBadgeResponse> {
@@ -200,7 +200,6 @@ export class LavaSDK {
         this.currentEpochBadge
       ),
       geolocation: this.geolocation,
-      debug: this.debugMode,
     });
     this.debugPrint("time took lava providers", performance.now() - start);
 

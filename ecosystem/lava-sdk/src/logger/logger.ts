@@ -1,38 +1,70 @@
 import chalk from "chalk";
 
-class Logger {
-  static debug(s: string) {
-    console.debug(s);
+export enum LogLevel {
+  NoPrints = 0,
+  Error = 1,
+  Warn = 2,
+  Success = 3,
+  Info = 4,
+  Debug = 5,
+}
+
+class LoggerClass {
+  private logLevel: LogLevel = LogLevel.Error; // default log level is Error
+
+  public SetLogLevel(level: LogLevel | string | undefined) {
+    if (!level) {
+      return;
+    }
+    if (typeof level === "string") {
+      let levelUpperCase = "";
+      if (level.length > 0) {
+        levelUpperCase = level[0].toUpperCase() + level.slice(1); // debug -> Debug to match enum keys
+      }
+      const enumLogLevel = LogLevel[levelUpperCase as keyof typeof LogLevel];
+      if (enumLogLevel !== undefined) {
+        this.logLevel = enumLogLevel;
+      } else {
+        console.log("Failed Setting LogLevel unknown key", level);
+      }
+    } else {
+      this.logLevel = level;
+    }
   }
 
-  static info(s: string) {
-    console.log(s);
+  public debug(message?: any, ...optionalParams: any[]) {
+    if (this.logLevel >= LogLevel.Debug) {
+      console.log(chalk.cyan("[Debug]", message, optionalParams));
+    }
   }
 
-  // eslint-disable-next-line
-  static deepInfo(s: any) {
-    console.log(s);
+  public info(message?: any, ...optionalParams: any[]) {
+    if (this.logLevel >= LogLevel.Info) {
+      console.log(chalk.white("[Info]", message, ...optionalParams));
+    }
   }
 
-  static title(s: string) {
-    console.log(chalk.blue(s));
+  public success(message?: any, ...optionalParams: any[]) {
+    if (this.logLevel >= LogLevel.Success) {
+      console.log(chalk.green("[Success]", message, ...optionalParams));
+    }
   }
 
-  static warn(s: string) {
-    console.log(chalk.yellow(s));
+  public warn(message?: any, ...optionalParams: any[]) {
+    if (this.logLevel >= LogLevel.Warn) {
+      console.log(chalk.yellow("[Warning]", message, ...optionalParams));
+    }
   }
 
-  static success(s: string) {
-    console.log(chalk.green(s));
+  public error(message?: any, ...optionalParams: any[]) {
+    if (this.logLevel >= LogLevel.Error) {
+      console.log(chalk.red("[Error]", message, ...optionalParams));
+    }
   }
 
-  static error(s: string) {
-    console.log(chalk.red(s));
-  }
-
-  static emptyLine() {
+  public emptyLine() {
     console.log();
   }
 }
 
-export default Logger;
+export const Logger = new LoggerClass();

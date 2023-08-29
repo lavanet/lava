@@ -135,7 +135,9 @@ const (
 )
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
-var Upgrades = []upgrades.Upgrade{}
+var Upgrades = []upgrades.Upgrade{
+	upgrades.Upgrade_0_22_0,
+}
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
 
@@ -584,6 +586,7 @@ func New(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
+		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -607,7 +610,6 @@ func New(
 		plansmoduletypes.ModuleName,
 		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
-		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName)
 

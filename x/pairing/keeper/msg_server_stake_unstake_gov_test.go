@@ -32,7 +32,8 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	ts.AdvanceBlocks(19)
 
 	// stake a provider
-	ts.addProvider(1)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
 	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// Verify the provider paid for its stake request
@@ -93,7 +94,8 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
 	ts.AdvanceBlocks(19)
 	// stake a provider
-	ts.addProvider(1)
+	err = ts.addProvider(1)
+	require.Nil(t, err)
 	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// Verify the provider/client paid for its stake request

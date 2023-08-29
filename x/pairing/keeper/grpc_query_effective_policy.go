@@ -27,5 +27,5 @@ func (k Keeper) EffectivePolicy(goCtx context.Context, req *types.QueryEffective
 		}
 	}
 	strictestPolicy, err := k.GetProjectStrictestPolicy(ctx, project, req.SpecID)
-	return &types.QueryEffectivePolicyResponse{Policy: &strictestPolicy}, err
+	return &types.QueryEffectivePolicyResponse{Policy: strictestPolicy}, err
 }

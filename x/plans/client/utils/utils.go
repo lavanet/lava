@@ -1,58 +1,86 @@
 package utils
 
 import (
-	"os"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils/decoder"
 	"github.com/lavanet/lava/x/plans/types"
+	"github.com/mitchellh/mapstructure"
 )
 
 type (
 	PlansAddProposalJSON struct {
 		Proposal types.PlansAddProposal `json:"proposal"`
-		Deposit  string                 `json:"deposit" yaml:"deposit"`
+		Deposit  string                 `json:"deposit"`
 	}
 )
 
 type (
 	PlansDelProposalJSON struct {
 		Proposal types.PlansDelProposal `json:"proposal"`
-		Deposit  string                 `json:"deposit" yaml:"deposit"`
+		Deposit  string                 `json:"deposit"`
 	}
 )
 
 // Parse plans add proposal JSON form file
-func ParsePlansAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret PlansAddProposalJSON, err error) {
+func ParsePlansAddProposalJSON(proposalFile string) (ret PlansAddProposalJSON, err error) {
+	decoderHooks := []mapstructure.DecodeHookFunc{
+		types.PriceDecodeHookFunc,
+		types.PolicyEnumDecodeHookFunc,
+	}
+
 	for _, fileName := range strings.Split(proposalFile, ",") {
-		var proposal PlansAddProposalJSON
+		var (
+			plansAddProposal PlansAddProposalJSON
+			unused           []string
+			unset            []string
+		)
 
-		contents, err := os.ReadFile(fileName)
+		err = decoder.DecodeFile(fileName, "proposal", &plansAddProposal.Proposal, decoderHooks, &unset, &unused)
 		if err != nil {
-			return proposal, err
+			return PlansAddProposalJSON{}, err
 		}
 
-		if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
-			return proposal, err
+		err = decoder.DecodeFile(fileName, "deposit", &plansAddProposal.Deposit, nil, nil, nil)
+		if err != nil {
+			return PlansAddProposalJSON{}, err
 		}
-		if len(ret.Proposal.Plans) > 0 {
-			ret.Proposal.Plans = append(ret.Proposal.Plans, proposal.Proposal.Plans...)
-			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
-			ret.Proposal.Title = proposal.Proposal.Title + " " + ret.Proposal.Title
-			retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
+
+		err = plansAddProposal.Proposal.ValidateBasic()
+		if err != nil {
+			return PlansAddProposalJSON{}, err
+		}
+
+		if len(unset) > 0 {
+			err = plansAddProposal.Proposal.HandleUnsetPlanProposalFields(unset)
 			if err != nil {
-				return proposal, err
+				return PlansAddProposalJSON{}, err
 			}
-			proposalDeposit, err := sdk.ParseCoinNormalized(proposal.Deposit)
+		}
+
+		if len(plansAddProposal.Proposal.Plans) > 0 {
+			ret.Proposal.Plans = append(ret.Proposal.Plans, plansAddProposal.Proposal.Plans...)
+			ret.Proposal.Description = ret.Proposal.Description + " " + plansAddProposal.Proposal.Description
+			ret.Proposal.Title = ret.Proposal.Title + " " + plansAddProposal.Proposal.Title
+
+			proposalDeposit, err := sdk.ParseCoinNormalized(plansAddProposal.Deposit)
 			if err != nil {
-				return proposal, err
+				return PlansAddProposalJSON{}, err
 			}
-			ret.Deposit = retDeposit.Add(proposalDeposit).String()
-		} else {
-			ret = proposal
+			if ret.Deposit != "" {
+				retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
+				if err != nil {
+					return PlansAddProposalJSON{}, err
+				}
+				ret.Deposit = retDeposit.Add(proposalDeposit).String()
+			} else {
+				ret.Deposit = proposalDeposit.String()
+			}
 		}
 	}
+
 	return ret, nil
 }
 
@@ -61,14 +89,21 @@ func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret
 	for _, fileName := range strings.Split(proposalFile, ",") {
 		var proposal PlansDelProposalJSON
 
-		contents, err := os.ReadFile(fileName)
+		err = decoder.DecodeFile(fileName, "proposal", &proposal.Proposal, nil, nil, nil)
 		if err != nil {
-			return proposal, err
+			return PlansDelProposalJSON{}, err
 		}
 
-		if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
-			return proposal, err
+		err = decoder.DecodeFile(fileName, "deposit", &proposal.Deposit, nil, nil, nil)
+		if err != nil {
+			return PlansDelProposalJSON{}, err
 		}
+
+		err = proposal.Proposal.ValidateBasic()
+		if err != nil {
+			return PlansDelProposalJSON{}, err
+		}
+
 		if len(ret.Proposal.Plans) > 0 {
 			ret.Proposal.Plans = append(ret.Proposal.Plans, proposal.Proposal.Plans...)
 			ret.Proposal.Description = proposal.Proposal.Description + " " + ret.Proposal.Description
