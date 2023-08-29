@@ -43,6 +43,7 @@ function prepare() {
         exit 1
     fi
 
+    echo "$(ls $gopath/pkg/mod/github.com/cosmos)"
     specific_dir="$gopath/pkg/mod/github.com/cosmos/cosmos-sdk@v0.47.3"
 
     if [[ ! -d "$specific_dir" ]]; then
