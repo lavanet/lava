@@ -75,6 +75,7 @@ export interface ChainPolicy {
 export interface ChainRequirement {
   collection?: CollectionData;
   extensions: string[];
+  mixed: boolean;
 }
 
 function createBasePolicy(): Policy {
@@ -341,7 +342,7 @@ export const ChainPolicy = {
 };
 
 function createBaseChainRequirement(): ChainRequirement {
-  return { collection: undefined, extensions: [] };
+  return { collection: undefined, extensions: [], mixed: false };
 }
 
 export const ChainRequirement = {
@@ -351,6 +352,9 @@ export const ChainRequirement = {
     }
     for (const v of message.extensions) {
       writer.uint32(18).string(v!);
+    }
+    if (message.mixed === true) {
+      writer.uint32(24).bool(message.mixed);
     }
     return writer;
   },
@@ -376,6 +380,13 @@ export const ChainRequirement = {
 
           message.extensions.push(reader.string());
           continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.mixed = reader.bool();
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -389,6 +400,7 @@ export const ChainRequirement = {
     return {
       collection: isSet(object.collection) ? CollectionData.fromJSON(object.collection) : undefined,
       extensions: Array.isArray(object?.extensions) ? object.extensions.map((e: any) => String(e)) : [],
+      mixed: isSet(object.mixed) ? Boolean(object.mixed) : false,
     };
   },
 
@@ -401,6 +413,7 @@ export const ChainRequirement = {
     } else {
       obj.extensions = [];
     }
+    message.mixed !== undefined && (obj.mixed = message.mixed);
     return obj;
   },
 
@@ -414,6 +427,7 @@ export const ChainRequirement = {
       ? CollectionData.fromPartial(object.collection)
       : undefined;
     message.extensions = object.extensions?.map((e) => e) || [];
+    message.mixed = object.mixed ?? false;
     return message;
   },
 };
