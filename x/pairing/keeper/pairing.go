@@ -113,7 +113,7 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
 func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, projectID string, errorRet error) {
-	var strictestPolicy planstypes.Policy
+	var strictestPolicy *planstypes.Policy
 
 	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
 	if err != nil {
@@ -139,31 +139,26 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	}
 
 	filters := pairingfilters.GetAllFilters()
-
-	stakeEntries, err = pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch)
+	// create the pairing slots with assigned reqs
+	slots := pairingscores.CalcSlots(strictestPolicy)
+	// group identical slots (in terms of reqs types)
+	slotGroups := pairingscores.GroupSlots(slots)
+	// filter relevant providers and add slotFiltering for mix filters
+	providerScores, err := pairingfilters.FilterProviders(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots))
 	if err != nil {
 		return nil, 0, "", err
 	}
 
-	// create the pairing slots with assigned reqs
-	slots := pairingscores.CalcSlots(strictestPolicy)
-	if len(slots) >= len(stakeEntries) {
-		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
-	}
-
-	// group identical slots (in terms of reqs types)
-	slotGroups := pairingscores.GroupSlots(slots)
-
-	// create providerScore array with all possible providers
-	providerScores := []*pairingscores.PairingScore{}
-	for i := range stakeEntries {
-		providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
-		providerScores = append(providerScores, providerScore)
+	if len(slots) >= len(providerScores) {
+		filteredEntries := []epochstoragetypes.StakeEntry{}
+		for _, score := range providerScores {
+			filteredEntries = append(filteredEntries, *score.Provider)
+		}
+		return filteredEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
-	prevGroupSlot := pairingscores.NewPairingSlot() // init dummy slot to compare to
-	prevGroupSlot.Reqs = map[string]pairingscores.ScoreReq{}
+	prevGroupSlot := pairingscores.NewPairingSlotGroup(pairingscores.NewPairingSlot(-1)) // init dummy slot to compare to
 	for idx, group := range slotGroups {
 		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
@@ -171,7 +166,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		if err != nil {
 			return nil, 0, "", err
 		}
-		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Count, hashData)
+		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Indexes(), hashData)
 		providers = append(providers, pickedProviders...)
 		prevGroupSlot = group
 	}
@@ -179,10 +174,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
-func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (planstypes.Policy, error) {
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (*planstypes.Policy, error) {
 	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
 	if err != nil {
-		return planstypes.Policy{}, err
+		return nil, err
 	}
 
 	planPolicy := plan.GetPlanPolicy()
@@ -195,27 +190,27 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	}
 	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
 	if !allowed {
-		return planstypes.Policy{}, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
+		return nil, fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
 	}
 	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, err
+		return nil, err
 	}
 
 	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
 	if err != nil {
-		return planstypes.Policy{}, err
+		return nil, err
 	}
 
 	sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.GetSubscription())
 	if !found {
-		return planstypes.Policy{}, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
+		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
 	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
 
-	strictestPolicy := planstypes.Policy{
+	strictestPolicy := &planstypes.Policy{
 		GeolocationProfile:    geolocation,
 		MaxProvidersToPair:    providersToPair,
 		SelectedProvidersMode: selectedProvidersMode,

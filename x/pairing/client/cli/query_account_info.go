@@ -16,10 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	separator = "--------------------------------------------\n"
-)
-
 var _ = strconv.Itoa(0)
 
 func CmdAccountInfo() *cobra.Command {
@@ -90,18 +86,6 @@ func CmdAccountInfo() *cobra.Command {
 							}
 							break
 						}
-					}
-				}
-
-				// TODO: when userEntry is deprecated this can be removed
-				userEntry, err := pairingQuerier.UserEntry(ctx, &types.QueryUserEntryRequest{
-					Address: address,
-					ChainID: chainID,
-					Block:   uint64(currentBlock),
-				})
-				if err == nil {
-					if userEntry.MaxCU > 0 {
-						info.Consumer = append(info.Consumer, userEntry.Consumer)
 					}
 				}
 			}

@@ -275,7 +275,14 @@ func DecodeSelectedProvidersMode(dataStr string) (interface{}, error) {
 }
 
 func (cr ChainRequirement) Differentiator() string {
-	return cr.Collection.String() + strings.Join(cr.Extensions, ",")
+	if cr.Collection.ApiInterface == "" {
+		return ""
+	}
+	diff := cr.Collection.String() + strings.Join(cr.Extensions, ",")
+	if cr.Mixed {
+		diff = "mixed-" + diff
+	}
+	return diff
 }
 
 func PolicyEnumDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
