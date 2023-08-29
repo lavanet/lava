@@ -162,10 +162,9 @@ jobs:
 
       - name: Install telescope dependencies
         run: |
-          sudo apt-get install -y expect
           cd ecosystem/lavajs
+          export GOPATH=~/go
           npm install
-          export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
           npm run e2e-setup
 
       ######################################################

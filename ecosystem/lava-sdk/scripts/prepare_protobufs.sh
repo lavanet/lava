@@ -31,8 +31,8 @@ function prepare() {
 
 
     if [[ -z "$GOPATH" ]]; then
-        echo "Error: GOPATH is not set. Set the GOPATH environment variable to your Go workspace directory." >&2
-        exit 1
+        GOPATH=~/go
+        echo "Error: GOPATH is not set. setting it to ~/go" >&2
     fi
 
     if [[ ! -d "$GOPATH" ]]; then
