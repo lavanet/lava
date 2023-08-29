@@ -1,10 +1,10 @@
 {
   "name": "@lavanet/lavajs",
-  "version": "0.0.1",
+  "version": "0.22.0",
   "description": "lavajs",
-  "author": "lavanet <ran@lavanet.xyz>",
-  "homepage": "https://github.com/lavanet/lavajs#readme",
-  "license": "SEE LICENSE IN LICENSE",
+  "author": "Lava Network",
+  "homepage": "https://github.com/lavanet/lava/ecosystem/lavajs#readme",
+  "license": "Apache-2.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "typings": "dist/index.d.ts",
@@ -13,34 +13,37 @@
   },
   "files": [
     "dist",
-    "!CHANGELOG.md"
+    "mjs"
   ],
   "scripts": {
-    "build:cjs": "yarn tsc -p tsconfig.json --outDir dist --module commonjs || true",
-    "build:mjs": "yarn tsc -p tsconfig.json --outDir mjs --module es2022 --declaration false || true",
+    "e2e-setup": "./scripts/build_lavajs.sh",
+    "init": "./scripts/build_lavajs.sh",
     "clean:mjs": "rimraf mjs",
     "clean:dist": "rimraf dist",
     "clean": "npm run clean:mjs && npm run clean:dist",
-    "build:rename": "publish-scripts --cmd rename --srcDir mjs --outDir dist --findExt js --replaceExt mjs --no-rmDir",
-    "build": "npm run clean && npm run build:cjs && npm run build:mjs && npm run build:rename",
-    "e2e-setup": "./scripts/build_lavajs.sh",
     "codegen": "node scripts/codegen.js",
     "prepare": "npm run build",
     "lint": "eslint src --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:debug": "node --inspect node_modules/.bin/jest --runInBand"
+    "test:debug": "node --inspect node_modules/.bin/jest --runInBand",
+    "build:cjs": "yarn tsc -p tsconfig.json --outDir dist --module commonjs || true",
+    "build:mjs": "yarn tsc -p tsconfig.json --outDir mjs --module es2022 --declaration false || true",
+    "build": "echo 'make sure to yarn init first'; npm run clean && npm run build:cjs && npm run build:mjs && npm run build:rename"
+  },
+  "bin": {
+    "lava-js": "dist/codegen/index.js"
   },
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lavanet/lavajs"
+    "url": "git+https://github.com/lavanet/lava/ecosystem/lavajs"
   },
   "keywords": [],
   "bugs": {
-    "url": "https://github.com/lavanet/lavajs/issues"
+    "url": "https://github.com/lavanet/lava/issues"
   },
   "devDependencies": {
     "@cosmology/telescope": "^0.105.0",
@@ -63,10 +66,10 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@cosmjs/amino": "0.29.4",
-    "@cosmjs/proto-signing": "0.29.4",
-    "@cosmjs/stargate": "0.29.4",
-    "@cosmjs/tendermint-rpc": "^0.29.4",
+    "@cosmjs/amino": "^0.31.1",
+    "@cosmjs/proto-signing": "^0.31.1",
+    "@cosmjs/stargate": "^0.31.1",
+    "@cosmjs/tendermint-rpc": "^0.31.1",
     "@cosmology/lcd": "^0.12.0"
   }
 }

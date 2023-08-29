@@ -2,7 +2,7 @@ import { AccountData } from "@cosmjs/proto-signing";
 import { Secp256k1Wallet } from "@cosmjs/amino";
 import { Secp256k1HdWallet } from "@cosmjs/launchpad";
 import WalletErrors from "./errors";
-import Logger from "../logger/logger";
+import { Logger } from "../logger/logger";
 import { fromHex } from "@cosmjs/encoding";
 import {
   Bip39,
