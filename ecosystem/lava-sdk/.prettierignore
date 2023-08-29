@@ -7,7 +7,7 @@ dist
 .idea
 src/codec
 src/proto
-
+src/grpc_web_services
 *.json
 *.yaml
 *.yml
