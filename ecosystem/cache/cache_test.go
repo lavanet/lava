@@ -75,7 +75,7 @@ func TestCacheSetGet(t *testing.T) {
 
 			// perform a delay
 			time.Sleep(tt.delay)
-			//now to get it
+			// now to get it
 
 			messageGet := pairingtypes.RelayCacheGet{
 				Request:      shallowCopy(request),
@@ -168,7 +168,7 @@ func TestCacheGetWithoutSet(t *testing.T) {
 
 			request := getRequest3(1230, []byte(StubSig))
 
-			//now to get it
+			// now to get it
 
 			messageGet := pairingtypes.RelayCacheGet{
 				Request:      shallowCopy(request),
@@ -237,7 +237,7 @@ func TestCacheFailSetWithInvalidRequestBlock(t *testing.T) {
 
 // all gets try to get latest, latest replacement is by definition temporary so everything with delay will fail
 func TestCacheSetGetLatest(t *testing.T) {
-	//all tests use the same cache server
+	// all tests use the same cache server
 	ctx, cacheServer := initTest()
 	tests := []struct {
 		name                   string
@@ -321,7 +321,7 @@ func TestCacheSetGetLatest(t *testing.T) {
 				_ = utils.LavaFormatDebug("Big Delay", utils.Attribute{Key: "delay", Value: fmt.Sprintf("%+v", tt.delay)})
 			}
 			time.Sleep(tt.delay)
-			//now to get it
+			// now to get it
 
 			// modify the request to get latest
 			request.RelayData.RequestBlock = spectypes.LATEST_BLOCK
@@ -352,7 +352,7 @@ func TestCacheSetGetLatest(t *testing.T) {
 
 // this test sets up a bigger latest block after the set (with a different entry) so we make sure to miss latest request
 func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
-	//all tests use the same cache server
+	// all tests use the same cache server
 	ctx, cacheServer := initTest()
 	tests := []struct {
 		name                   string
@@ -363,7 +363,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 		latestBlockForSetRelay int64
 		latestIsCorrect        bool
 	}{
-		//latestBlockForSetRelay need to increase by more than 1 for each test
+		// latestBlockForSetRelay need to increase by more than 1 for each test
 		{name: "1: Finalized No Hash", valid: true, delay: time.Millisecond, finalized: true, hash: nil, latestBlockForSetRelay: 1230, latestIsCorrect: true},
 		{name: "2: Finalized After delay No Hash", valid: false, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, latestBlockForSetRelay: 1240, latestIsCorrect: true},
 		{name: "3: NonFinalized No Hash", valid: true, delay: time.Millisecond, finalized: false, hash: nil, latestBlockForSetRelay: 1250, latestIsCorrect: true},
@@ -401,7 +401,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			require.Nil(t, err)
 			// perform a delay
 			time.Sleep(tt.delay)
-			//now to get it
+			// now to get it
 
 			// modify the request to get latest
 			request.RelayData.RequestBlock = spectypes.LATEST_BLOCK
@@ -427,7 +427,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			}
 
 			request2 := shallowCopy(request)
-			request2.RelayData.RequestBlock = latestBlockForRelay + 1 //make latest block advance
+			request2.RelayData.RequestBlock = latestBlockForRelay + 1 // make latest block advance
 			request2.RelayData.Data = []byte(StubData + "nonRelevantData")
 
 			messageSet2 := pairingtypes.RelayCacheSet{
@@ -439,7 +439,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 				Response:     response,
 				Finalized:    tt.finalized,
 			}
-			_, err = cacheServer.SetRelay(ctx, &messageSet2) //we use this to increase latest block received
+			_, err = cacheServer.SetRelay(ctx, &messageSet2) // we use this to increase latest block received
 			require.NoError(t, err)
 			messageGet = pairingtypes.RelayCacheGet{
 				Request:      shallowCopy(request),
@@ -486,10 +486,10 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			formatIDInJsonResponse := func(idNum int64) []byte {
 				return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","result":0x12345,"id":%d}`, idNum))
 			}
-			request := getRequest3(1230, formatIDInJson(id)) //&pairingtypes.RelayRequest{
+			request := getRequest3(1230, formatIDInJson(id)) // &pairingtypes.RelayRequest{
 
 			response := &pairingtypes.RelayReply{
-				Data: formatIDInJsonResponse(id), //response has the old id when cached
+				Data: formatIDInJsonResponse(id), // response has the old id when cached
 			}
 
 			messageSet := pairingtypes.RelayCacheSet{
@@ -507,10 +507,10 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 
 			// perform a delay
 			time.Sleep(tt.delay)
-			//now to get it
+			// now to get it
 
 			changedID := id + 1
-			//now we change the ID:
+			// now we change the ID:
 			request.RelayData.Data = formatIDInJson(changedID)
 
 			messageGet := pairingtypes.RelayCacheGet{
