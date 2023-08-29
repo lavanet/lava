@@ -68,6 +68,7 @@ ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/gogoproto
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/google
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/tendermint
 
+
 # Ignore the bin and dist folders and their content
 ecosystem/lava-sdk/bin/*
 ecosystem/lava-sdk/dist/*
@@ -77,11 +78,17 @@ ecosystem/lava-sdk/dist/*
 ecosystem/lavajs/main
 ecosystem/lavajs/module
 ecosystem/lavajs/.npmrc
-ecosystem/lavajs/proto/lavanet
 ecosystem/lavajs/src
 ecosystem/lavajs/types
 ecosystem/lavajs/dist
 ecosystem/lavajs/mjs
+# protobufs lavajs
+ecosystem/lavajs/proto/lavanet
+ecosystem/lavajs/proto/amino
+ecosystem/lavajs/proto/cosmos
+ecosystem/lavajs/proto/gogoproto
+ecosystem/lavajs/proto/google
+ecosystem/lavajs/proto/tendermint
 
 
 
