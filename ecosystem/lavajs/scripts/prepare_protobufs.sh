@@ -30,9 +30,12 @@ function prepare() {
     fi
 
 
+    echo "✨✨✨✨✨ GOPATH set to $GOPATH" >&2
+    echo "✨✨✨✨✨ go env GOPATH: $(go env GOPATH)" >&2
+    echo "✨✨✨✨✨ go env GOMODCACHE: $(go env GOMODCACHE)" >&2
     if [[ -z "$GOPATH" ]]; then
-        echo "Error: GOPATH is not set. Set the GOPATH environment variable to your Go workspace directory." >&2
-        exit 1
+        echo "Error: GOPATH is not set. setting it to ~/go" >&2
+        export GOPATH=$(go env GOPATH):~/go
     fi
 
     if [[ ! -d "$GOPATH" ]]; then

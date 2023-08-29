@@ -29,11 +29,10 @@ function prepare() {
         exit 1
     fi
 
-    echo "✨✨✨✨✨ GOPATH set to $GOPATH" >&2
-    echo "✨✨✨✨✨ go env GOPATH: $(go env GOPATH)" >&2
-    echo "✨✨✨✨✨ go env GOMODCACHE: $(go env GOMODCACHE)" >&2
+
     if [[ -z "$GOPATH" ]]; then
-        echo "Error: GOPATH is not set. setting it to ~/go" >&2
+        echo "Error: GOPATH is not set. Set the GOPATH environment variable to your Go workspace directory." >&2
+        exit 1
     fi
 
     if [[ ! -d "$GOPATH" ]]; then
@@ -45,7 +44,7 @@ function prepare() {
 
     if [[ ! -d "$specific_dir" ]]; then
         echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$GOPATH/pkg/mod'." >&2
-        echo "make sure you ran 'go mod tidy' in the lava main repo" >&2
+        echo "make sure you ran 'go mod tidy' in the lava main repo"
         exit 1
     fi
 
