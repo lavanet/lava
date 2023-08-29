@@ -33,36 +33,36 @@ function prepare() {
     echo "✨✨✨✨✨ GOPATH set to $GOPATH" >&2
     echo "✨✨✨✨✨ go env GOPATH: $(go env GOPATH)" >&2
     echo "✨✨✨✨✨ go env GOMODCACHE: $(go env GOMODCACHE)" >&2
-    if [[ -z "$GOPATH" ]]; then
+    gopath=$(go env GOPATH)
+    if [[ -z "$gopath" ]]; then
         echo "Error: GOPATH is not set. setting it to ~/go" >&2
-        export GOPATH=$(go env GOPATH):~/go
     fi
 
-    if [[ ! -d "$GOPATH" ]]; then
-        echo "Error: The directory specified in GOPATH ('$GOPATH') does not exist." >&2
+    if [[ ! -d "$gopath" ]]; then
+        echo "Error: The directory specified in GOPATH ('$gopath') does not exist." >&2
         exit 1
     fi
 
-    specific_dir="$GOPATH/pkg/mod/github.com/cosmos/cosmos-sdk@v0.47.3"
+    specific_dir="$gopath/pkg/mod/github.com/cosmos/cosmos-sdk@v0.47.3"
 
     if [[ ! -d "$specific_dir" ]]; then
-        echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$GOPATH/pkg/mod'." >&2
+        echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$gopath/pkg/mod'." >&2
         echo "make sure you ran 'go mod tidy' in the lava main repo"
         exit 1
     fi
 
-    gogodir="$GOPATH/pkg/mod/github.com/cosmos/gogoproto@v1.4.10"
+    gogodir="$gopath/pkg/mod/github.com/cosmos/gogoproto@v1.4.10"
 
     if [[ ! -d "$gogodir" ]]; then
-        echo "Error: The gogodir directory ('$gogodir') does not exist under '$GOPATH/pkg/mod'." >&2
+        echo "Error: The gogodir directory ('$gogodir') does not exist under '$gopath/pkg/mod'." >&2
         echo "make sure you ran 'go mod tidy' in the lava main repo"
         exit 1
     fi
 
-    googledir="$GOPATH/pkg/mod/github.com/gogo/googleapis@v1.4.1"
+    googledir="$gopath/pkg/mod/github.com/gogo/googleapis@v1.4.1"
 
     if [[ ! -d "$googledir" ]]; then
-        echo "Error: The googledir directory ('$googledir') does not exist under '$GOPATH/pkg/mod'." >&2
+        echo "Error: The googledir directory ('$googledir') does not exist under '$gopath/pkg/mod'." >&2
         echo "make sure you ran 'go mod tidy' in the lava main repo"
         exit 1
     fi
