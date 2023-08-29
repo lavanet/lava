@@ -16,6 +16,10 @@ PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
+
+screen -d -m -S cache-provider bash -c "source ~/.bashrc; lava-protocol rpcprovider 127.0.0.1:7777 2>&1 | tee $LOGS_DIR/CACHE_PROVIDER.log"
+screen -d -m -S cache-provider bash -c "source ~/.bashrc; lava-protocol rpcprovider 127.0.0.1:7778 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log"
+
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
@@ -56,7 +60,7 @@ $PROVIDER1_LISTENER AXELAR rest '$AXELAR_REST' \
 $PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
-$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --cache-be "127.0.0.1:7777" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 # $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
@@ -171,7 +175,7 @@ screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3382 SUIT jsonrpc \
 127.0.0.1:3383 AVAX jsonrpc \
 127.0.0.1:3384 FVM jsonrpc \
-$EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --cache-be "127.0.0.1:7778" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
 # 127.0.0.1:3385 MANTLE jsonrpc \
 
 echo "--- setting up screens done ---"
