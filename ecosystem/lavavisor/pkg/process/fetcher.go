@@ -182,7 +182,6 @@ func downloadAndBuildFromGithub(version, versionDir string) error {
 
 	// Prepare the path for downloaded zip
 	zipPath := filepath.Join(versionDir, version+".zip")
-	fmt.Println("zipPath: ", zipPath)
 	// Make sure the directory exists
 	dir := filepath.Dir(zipPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -212,7 +211,6 @@ func downloadAndBuildFromGithub(version, versionDir string) error {
 
 	// Build the binary
 	srcPath := versionDir + "/lava-" + version
-	fmt.Println("srcPath: ", srcPath)
 	protocolPath := srcPath + "/cmd/lava-protocol"
 	utils.LavaFormatInfo("building protocol", utils.Attribute{Key: "protocol-path", Value: protocolPath})
 
