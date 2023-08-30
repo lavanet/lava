@@ -84,18 +84,19 @@ func Unzip(src string, dest string) ([]string, error) {
 	return filenames, nil
 }
 
-// Parse the version string "vX.Y.Z" into a struct with X, Y, Z as integers
-func ParseVersion(version string) (v struct {
+type SemanticVer struct {
 	Major, Minor, Patch int
-}) {
+}
+
+// Parse the version string "vX.Y.Z" into a struct with X, Y, Z as integers
+func ParseVersion(version string) (v *SemanticVer) {
+	v = &SemanticVer{}
 	fmt.Sscanf(version, "%d.%d.%d", &v.Major, &v.Minor, &v.Patch)
-	return
+	return v
 }
 
 // Decrement the version. If Patch is 0, decrement Minor and reset Patch to 9. If Minor is 0, decrement Major.
-func DecrementVersion(v *struct {
-	Major, Minor, Patch int
-}) {
+func DecrementVersion(v *SemanticVer) {
 	if v.Patch > 0 {
 		v.Patch--
 	} else if v.Minor > 0 {
@@ -105,9 +106,7 @@ func DecrementVersion(v *struct {
 }
 
 // Check if version v1 is less than v2
-func IsVersionLessThan(v1, v2 *struct {
-	Major, Minor, Patch int
-}) bool {
+func IsVersionLessThan(v1, v2 *SemanticVer) bool {
 	if v1.Major < v2.Major {
 		return true
 	}
@@ -121,8 +120,6 @@ func IsVersionLessThan(v1, v2 *struct {
 }
 
 // Format the version struct back to a string "vX.Y.Z"
-func FormatVersion(v *struct {
-	Major, Minor, Patch int
-}) string {
+func FormatVersion(v *SemanticVer) string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
