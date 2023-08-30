@@ -5,7 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/dualstaking/params.proto";
-import "lavanet/lava/epochstorage/stake_entry.proto";
+import "lavanet/lava/dualstaking/delegate.proto";
 
 option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
@@ -36,5 +36,5 @@ message QueryDelegatorProvidersRequest {
 }
 
 message QueryDelegatorProvidersResponse {
-  repeated lavanet.lava.epochstorage.StakeEntry stake_entries = 1 [(gogoproto.nullable) = false];
+  repeated Delegation delegations = 1 [(gogoproto.nullable) = false];
 }
