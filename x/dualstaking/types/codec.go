@@ -11,7 +11,7 @@ import (
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgDelegate{}, "dualstaking/Delegate", nil)
-	cdc.RegisterConcrete(&MsgDelegate{}, "dualstaking/Redelegate", nil)
+	cdc.RegisterConcrete(&MsgRedelegate{}, "dualstaking/Redelegate", nil)
 	cdc.RegisterConcrete(&MsgUnbond{}, "dualstaking/Unbond", nil)
 	// this line is used by starport scaffolding # 2
 }
