@@ -85,6 +85,10 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 1)
+	_, provider := ts.AddAccount(common.PROVIDER, 50, testBalance)
+
 	buildEndpoint := func(geoloc string) []string {
 		hostip := "127.0.0.1:3351"
 		apiInterface := "jsonrpc"
@@ -236,8 +240,15 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
+			endpoints, geo, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
 			if tc.valid {
+				require.Nil(t, err)
+				// adjust endpoints to match the default API interfaces and addons generated with ts
+				for i := 0; i < len(endpoints); i++ {
+					endpoints[i].ApiInterfaces = []string{"stub"}
+					endpoints[i].Addons = []string{}
+				}
+				_, err = ts.TxPairingStakeProvider(provider, ts.spec.Index, ts.spec.MinStakeProvider, endpoints, uint64(geo), "")
 				require.Nil(t, err)
 			} else {
 				require.NotNil(t, err)
