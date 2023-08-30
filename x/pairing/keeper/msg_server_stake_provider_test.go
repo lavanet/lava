@@ -33,7 +33,8 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			ts.AdvanceEpoch()
 
 			// Note: using the same "ts" means each provider added gets a new index ("it")
-			ts.addProviderMoniker(1, tt.moniker)
+			err := ts.addProviderMoniker(1, tt.moniker)
+			require.Nil(t, err)
 			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
 
 			ts.AdvanceEpoch()
@@ -60,7 +61,8 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	moniker := "exampleMoniker"
-	ts.addProviderMoniker(1, moniker)
+	err := ts.addProviderMoniker(1, moniker)
+	require.Nil(t, err)
 	ts.AdvanceEpoch()
 
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)

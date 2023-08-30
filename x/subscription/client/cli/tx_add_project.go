@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/yaml"
+	"github.com/lavanet/lava/utils/decoder"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -66,7 +66,7 @@ func CmdAddProject() *cobra.Command {
 			}
 
 			if projectKeysFilePath != "" {
-				err = yaml.DecodeFile(projectKeysFilePath, "Project-Keys", &projectKeys, nil, nil, nil)
+				err = decoder.DecodeFile(projectKeysFilePath, "Project-Keys", &projectKeys, nil, nil, nil)
 				if err != nil {
 					return err
 				}

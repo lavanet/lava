@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	debug = true
+	debug = false
 )
 
 type HeaderFilterer interface {

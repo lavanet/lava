@@ -25,11 +25,9 @@ func (ps *PairingScore) IsValidForSelection(slotIndex int) bool {
 	if ps.SkipForSelection {
 		return false
 	}
-	if _, ok := ps.SlotFiltering[slotIndex]; ok {
-		// provider has mix filtering for this slot index
-		return false
-	}
-	return true
+	_, ok := ps.SlotFiltering[slotIndex]
+	// invalid if provider has mix filtering for this slot index
+	return !ok
 }
 
 func (ps *PairingScore) InvalidIndexes(possibleIndexes []int) []int {

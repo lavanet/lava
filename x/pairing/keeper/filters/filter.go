@@ -72,8 +72,8 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 				// check if filter is mandatory
 				if filters[i].IsMix() {
 					// filter is a mix filter, that didn't pass
-					for _, index := range mixFilterIndexes[filters[i]] {
-						slotFiltering[index] = struct{}{} // this provider won't be selected at these slot numbers
+					for _, slotIndex := range mixFilterIndexes[filters[i]] {
+						slotFiltering[slotIndex] = struct{}{} // this provider won't be selected at these slot numbers
 					}
 				} else {
 					// filter is a mandatory filter that didn't pass so we skip this provider
@@ -102,14 +102,9 @@ func CalculateMixFilterSlots(mixFilters []Filter, slotCount int) (mixFiltersInde
 	if slotCount <= 1 || len(mixFilters) == 0 {
 		return mixFiltersIndexes
 	}
-	filtersInBatch := 1
-
-	//
-	// +1 for no mix filters
-	for (mixFiltersCount/filtersInBatch)+1 > slotCount {
-		filtersInBatch++
-	}
-
+	// filtersInBatch needs to supply this condition:
+	// (mixFiltersCount/filtersInBatch)+1 <= slotCount
+	filtersInBatch := (mixFiltersCount + slotCount - 2) / (slotCount - 1)
 	getRelevantFilters := func(index int) []Filter {
 		providersInBatch := slotCount / ((mixFiltersCount / filtersInBatch) + 1)
 		if index < providersInBatch {
@@ -117,20 +112,17 @@ func CalculateMixFilterSlots(mixFilters []Filter, slotCount int) (mixFiltersInde
 		}
 		batchNumber := (index / providersInBatch) - 1
 		startIndex := batchNumber * filtersInBatch
+		endIndex := startIndex + filtersInBatch
 		if startIndex+filtersInBatch > len(mixFilters) {
 			// when the numbers don't evenly divide we just disable mix filter slots of the remainder
 			return nil
 		}
-		return mixFilters[startIndex : startIndex+filtersInBatch]
+		return mixFilters[startIndex:endIndex]
 	}
 
 	for i := 0; i < slotCount; i++ {
 		for _, filter := range getRelevantFilters(i) {
-			if _, ok := mixFiltersIndexes[filter]; !ok {
-				mixFiltersIndexes[filter] = []int{i}
-			} else {
-				mixFiltersIndexes[filter] = append(mixFiltersIndexes[filter], i)
-			}
+			mixFiltersIndexes[filter] = append(mixFiltersIndexes[filter], i)
 		}
 	}
 	return mixFiltersIndexes

@@ -11,32 +11,14 @@
                     "denom": "ulava",
                     "amount": "600000000000"
                 },
-                "annual_discount_percentage": "0",
+                "annual_discount_percentage": 0,
                 "allow_overuse": false,
-                "overuse_rate": "0",
+                "overuse_rate": 0,
                 "plan_policy": {
-                    "geolocation_profile": "0",
-                    "total_cu_limit": "1000000000",
-                    "epoch_cu_limit": "5000000",
-                    "max_providers_to_pair": "14",
-                    "chain_policies": [
-                        {
-                            "chain_id": "ETH1",
-                            "requirements": [
-                                {
-                                    "collection":{
-                                        "api_interface": "jsonrpc",
-                                        "type": "POST"
-                                    },
-                                    "extensions":["archive"],
-                                    "mixed":true
-                                }
-                            ]
-                        },
-                        {
-                            "chain_id": "*"
-                        }
-                    ]
+                    "geolocation_profile": "GLS",
+                    "total_cu_limit": 1000000000,
+                    "epoch_cu_limit": 5000000,
+                    "max_providers_to_pair": 14
                 }
             }
         ]

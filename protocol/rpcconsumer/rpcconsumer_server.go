@@ -100,7 +100,58 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 		return err
 	}
 	go chainListener.Serve(ctx)
+	// we trigger a latest block call to get some more information on our providers
+	go rpccs.sendInitialRelays(MaxRelayRetries)
 	return nil
+}
+
+// sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
+func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
+	// only start after everythign is initialized
+	reinitializedChan := make(chan bool)
+	// check consumer session manager
+	go func() {
+		for {
+			if rpccs.consumerSessionManager.Initialized() {
+				reinitializedChan <- true
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+	select {
+	case <-reinitializedChan:
+		break
+	case <-time.After(30 * time.Second):
+		utils.LavaFormatError("failed initial relays, csm was not initialised after timeout", nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
+		return
+	}
+
+	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
+	parsing, collectionData, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	if !ok {
+		utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
+		return
+	}
+	path := parsing.ApiName
+	data := []byte(parsing.FunctionTemplate)
+	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, 0)
+	if err != nil {
+		utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
+		return
+	}
+	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
+	unwantedProviders := map[string]struct{}{}
+	for iter := 0; iter < count; iter++ {
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", &unwantedProviders)
+		if err != nil {
+			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "unwantedProviders", Value: unwantedProviders}}...)
+			unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+		} else {
+			unwantedProviders = map[string]struct{}{}
+			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderAddress}}...)
+		}
+	}
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
@@ -139,11 +190,10 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
-	extensions := common.GetExtensionNames(chainMessage.GetExtensions())
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, extensions)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true

@@ -77,6 +77,11 @@ if ! command_exists protoc-gen-gocosmos; then
 fi
 
 if ! command_exists yq; then
+
+    if ! check_go_version; then
+        echo "Go 1.20 is not installed. Installing..."
+        sudo apt install -y golang-1.20
+    fi
     go install github.com/mikefarah/yq/v4@latest 
 
     # Check if the installation was successful

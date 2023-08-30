@@ -11,15 +11,15 @@ message Project {
     string subscription = 2; // the subscription address that owns the project
     reserved 3;
     bool enabled = 4; // enabled flag
-    repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false]; // list of the projects keys
-    lavanet.lava.plans.Policy admin_policy = 6;
+    repeated ProjectKey project_keys = 5 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "project_keys"]; // list of the projects keys
+    lavanet.lava.plans.Policy admin_policy = 6 [(gogoproto.jsontag) = "admin_policy"];
     uint64 used_cu = 7;
-    lavanet.lava.plans.Policy subscription_policy = 8;
+    lavanet.lava.plans.Policy subscription_policy = 8 [(gogoproto.jsontag) = "subscription_policy"];
     uint64 snapshot = 9; // snapshot id to uniquely identify snapshots
 }
 
 message ProjectKey {
-    string key = 1; // the address of the project key
+    string key = 1 [(gogoproto.jsontag) = "key"]; // the address of the project key
 
     reserved 2;
     reserved 3;
@@ -30,7 +30,7 @@ message ProjectKey {
         DEVELOPER = 0x2;
     }
 
-    uint32 kinds = 4;
+    uint32 kinds = 4 [(gogoproto.jsontag) = "kinds"];
 }
 
 message ProtoDeveloperData {

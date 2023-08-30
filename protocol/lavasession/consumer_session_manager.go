@@ -86,6 +86,12 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	return nil
 }
 
+func (csm *ConsumerSessionManager) Initialized() bool {
+	csm.lock.RLock()         // start by locking the class lock.
+	defer csm.lock.RUnlock() // we defer here so in case we return an error it will unlock automatically.
+	return len(csm.pairingAddresses) != 0
+}
+
 func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions []string) {
 	if addon == "" && len(extensions) == 0 {
 		// purge all
@@ -450,7 +456,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
+		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		err = PairingListEmptyError
 		return
 	}
