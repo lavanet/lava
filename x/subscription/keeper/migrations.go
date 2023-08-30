@@ -104,7 +104,6 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate 4->5: subscriptions")
 
 	keeper := m.keeper
-	allClusters := keeper.ConstructAllClusters(ctx)
 
 	indices := keeper.subsFS.AllEntryIndicesFilter(ctx, "", nil)
 	for _, ind := range indices {
@@ -130,7 +129,7 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				DurationBought:  sub_V4.DurationTotal,
 			}
 
-			sub_V5.Cluster = keeper.GetCluster(sub_V5, allClusters)
+			sub_V5.Cluster = keeper.GetCluster(ctx, sub_V5)
 			if sub_V5.Cluster == "" {
 				sub_V5.Cluster = "free"
 			}

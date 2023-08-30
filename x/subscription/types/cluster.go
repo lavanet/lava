@@ -7,7 +7,7 @@ type Cluster struct {
 	SubUsage uint64
 }
 
-const FREE_PLAN = "free" // gets its own const because it's treated different
+const FREE_PLAN = "free" // gets its own const because it's treated differently
 
 // String returns a unique string that describes the cluster (can be used as a key)
 func (c Cluster) String() string {
@@ -23,6 +23,6 @@ func NewCluster(plan string, subUsage uint64) Cluster {
 }
 
 func GetSubUsageCriterion() []uint64 {
-	// 0 = under a month, 6 = between 1-6 months, 12 = over 6 months
+	// 0 = under a month, 6 = between 1-6 months, 7 = over 6 months
 	return []uint64{0, 6, 7}
 }

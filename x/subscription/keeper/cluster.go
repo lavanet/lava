@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
@@ -24,30 +26,20 @@ import (
 // 	1. For each plan (except "free") a cluster for each subUsage
 //  2. "free" cluster (without regarding subUsage)
 
-// constructs all the possible cluster keys
-func (k Keeper) ConstructAllClusters(ctx sdk.Context) []types.Cluster {
-	var clusters []types.Cluster
+// GetCluster returns the subscription's best-fit cluster
+func (k Keeper) GetCluster(ctx sdk.Context, sub types.Subscription) string {
+	if sub.PlanIndex == types.FREE_PLAN {
+		return types.FREE_PLAN
+	}
+
 	plans := k.plansKeeper.GetAllPlanIndices(ctx)
 	for _, plan := range plans {
 		for _, subUsage := range types.GetSubUsageCriterion() {
-			if plan == types.FREE_PLAN {
-				// all free plan users use a single cluster
-				clusters = append(clusters, types.NewCluster(plan, 0))
-				break
+			if sub.PlanIndex == plan && sub.DurationTotal <= subUsage {
+				return plan + "_" + strconv.FormatUint(subUsage, 10)
 			}
-			clusters = append(clusters, types.NewCluster(plan, subUsage))
 		}
 	}
 
-	return clusters
-}
-
-// GetCluster returns the subscription's best-fit cluster
-func (k Keeper) GetCluster(sub types.Subscription, clusters []types.Cluster) string {
-	for _, cluster := range clusters {
-		if sub.PlanIndex == cluster.Plan && (sub.PlanIndex == types.FREE_PLAN || sub.DurationTotal <= cluster.SubUsage) {
-			return cluster.String()
-		}
-	}
 	return ""
 }
