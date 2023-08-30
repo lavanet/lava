@@ -117,7 +117,7 @@ class Relayer {
     // create request session
     const requestSession = new RelaySession();
     requestSession.setSpecId(this.chainID);
-    requestSession.setSessionId(consumerSession.sessionId);
+    requestSession.setSessionId(1);
     requestSession.setCuSum(cuSum);
     requestSession.setProvider(consumerProviderSession.publicLavaAddress);
     requestSession.setRelayNum(consumerSession.relayNum);

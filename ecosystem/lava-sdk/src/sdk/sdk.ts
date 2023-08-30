@@ -9,21 +9,12 @@ import {
   BadgeManager,
 } from "../badge/badgeManager";
 import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
-import { SessionManager, ConsumerSessionWithProvider } from "../types/types";
-import {
-  isValidChainID,
-  fetchRpcInterface,
-  validateRpcInterfaceWithChainID,
-} from "../util/chains";
-import { generateRPCData } from "../util/common";
-import { LavaProviders } from "../lavaOverLava/providers";
 import {
   LAVA_CHAIN_ID as LAVA_SPEC_ID,
   DEFAULT_LAVA_PAIRING_NETWORK,
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
 } from "../config/default";
-import { QueryShowAllChainsResponse } from "../codec/lavanet/lava/spec/query";
 import { GenerateBadgeResponse } from "../grpc_web_services/lavanet/lava/pairing/badges_pb";
 import { Logger, LogLevel } from "../logger/logger";
 /**
@@ -73,13 +64,10 @@ export class LavaSDK {
   private badgeManager: BadgeManager;
   private currentEpochBadge: Badge | undefined; // The current badge is the badge for the current epoch
 
-  private lavaProviders: LavaProviders | Error;
   private account: AccountData | Error;
   private relayer: Relayer | Error;
   private secure: boolean;
   private allowInsecureTransport: boolean;
-
-  private activeSessionManager: SessionManager | Error;
 
   /**
    * Create Lava-SDK instance
@@ -137,8 +125,6 @@ export class LavaSDK {
     this.pairingListConfig = pairingListConfig;
     this.account = SDKErrors.errAccountNotInitialized;
     this.relayer = SDKErrors.errRelayerServiceNotInitialized;
-    this.lavaProviders = SDKErrors.errLavaProvidersNotInitialized;
-    this.activeSessionManager = SDKErrors.errSessionNotInitialized;
 
     // Init sdk
     return (async (): Promise<LavaSDK> => {
@@ -184,6 +170,7 @@ export class LavaSDK {
   }
 
   private async initLavaProviders(start: number) {
+    /*
     if (this.account instanceof Error) {
       throw new Error("initLavaProviders failed: " + String(this.account));
     }
@@ -240,6 +227,7 @@ export class LavaSDK {
     );
 
     this.debugPrint("time took getSession", performance.now() - start);
+    */
   }
 
   private async init() {
@@ -280,6 +268,7 @@ export class LavaSDK {
     await this.initLavaProviders(start);
   }
 
+  /*
   private async handleRpcRelay(options: SendRelayOptions): Promise<string> {
     try {
       if (this.rpcInterface === "rest") {
@@ -342,7 +331,7 @@ export class LavaSDK {
       throw err;
     }
   }
-
+*/
   // sendRelayWithRetries iterates over provider list and tries to send relay
   // if no provider return result it will result the error from the last provider
   private async sendRelayWithRetries(options: any, cuSum: number) {
@@ -350,45 +339,9 @@ export class LavaSDK {
     if (this.relayer instanceof Error) {
       throw SDKErrors.errRelayerServiceNotInitialized;
     }
+
     let lastRelayResponse = null;
     // Fetching both pairing lists, one for our geolocation and the other for the other geo locations
-    const [pairingList, extendedPairingList] =
-      await this.getConsumerProviderSession();
-    // because we iterate over the pairing list, we can merge then having pairingList first and extended 2nd
-    pairingList.push(...extendedPairingList);
-    if (pairingList.length == 0) {
-      throw new Error(
-        "sendRelayWithRetries couldn't find pairing list for this epoch."
-      );
-    }
-    for (let i = 0; i < pairingList.length; i++) {
-      try {
-        // Send relay
-        const relayResponse = await this.relayer.sendRelay(
-          options,
-          pairingList[i],
-          cuSum,
-          this.rpcInterface
-        );
-
-        // Return relay in json format
-        return this.decodeRelayResponse(relayResponse);
-      } catch (err) {
-        // If error is instace of Error
-        if (err instanceof Error) {
-          // An error occurred during the sendRelay operation
-          /*
-          console.error(
-            "Error during sendRelay: " + err.message,
-            " from provider: " + pairingList[i].Session.Endpoint.Addr
-          );
-          */
-
-          // Store the relay response
-          lastRelayResponse = err;
-        }
-      }
-    }
 
     // If an error occurred in all the operations, return the decoded response of the last operation
     throw lastRelayResponse;
@@ -406,8 +359,15 @@ export class LavaSDK {
   async sendRelay(
     options: SendRelayOptions | SendRestRelayOptions
   ): Promise<string> {
+    /*
     if (this.isRest(options)) return await this.handleRestRelay(options);
     return await this.handleRpcRelay(options);
+    
+
+    if (this.isRest(options)) return await this.handleRestRelay(options);
+    return await this.handleRpcRelay(options);
+      */
+    return Promise.resolve("Hello from the promise!");
   }
 
   private decodeRelayResponse(relayResponse: RelayReply): string {
@@ -419,6 +379,7 @@ export class LavaSDK {
   }
 
   private getCuSumForMethod(method: string): number {
+    /*
     // Check if activeSession was initialized
     if (this.activeSessionManager instanceof Error) {
       throw SDKErrors.errSessionNotInitialized;
@@ -435,8 +396,11 @@ export class LavaSDK {
     }
 
     return cuSum;
+    */
+    return 0;
   }
 
+  /*
   // Return randomized pairing list, our geolocation index 0 and other geolocation index 1
   private async getConsumerProviderSession(): Promise<
     [ConsumerSessionWithProvider[], ConsumerSessionWithProvider[]]
@@ -499,6 +463,7 @@ export class LavaSDK {
     // Return if new epoch has started
     return now.getTime() > this.activeSessionManager.NextEpochStart.getTime();
   }
+  */
 
   private isRest(
     options: SendRelayOptions | SendRestRelayOptions

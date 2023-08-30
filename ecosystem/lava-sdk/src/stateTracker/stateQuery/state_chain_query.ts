@@ -20,14 +20,14 @@ import {
 import Relayer from "../../relayer/relayer";
 
 // TODO remove provider error when we refactor
-import ProvidersErrors from "../../lavaOverLava/errors";
+import { ProvidersErrors } from "../errors";
 
 // TODO once we refactor consumer session manager we should define new type
 import {
-  ConsumerSessionWithProvider,
+  ConsumerSessionsWithProvider,
   SingleConsumerSession,
   Endpoint,
-} from "../../types/types";
+} from "../../lavasession/consumerTypes";
 
 const lavaChainID = "LAV1";
 const lavaRPCInterface = "tendermintrpc";
@@ -36,7 +36,7 @@ export class StateChainQuery {
   private pairingListConfig: string; // Pairing list config, if empty use seed providers form github
   private relayer: Relayer; // Relayer instance
   private chainIDRpcInterfaces: ChainIDRpcInterface[]; // Array of {chainID, rpcInterface} pairs
-  private lavaProviders: ConsumerSessionWithProvider[]; // Array of Lava providers
+  private lavaProviders: ConsumerSessionsWithProvider[]; // Array of Lava providers
   private config: Config; // Config options
   private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
 
@@ -91,7 +91,7 @@ export class StateChainQuery {
 
       // Update latest block in lava pairing
       for (const consumerSessionWithProvider of this.lavaProviders) {
-        consumerSessionWithProvider.Session.PairingEpoch = latestNumber;
+        consumerSessionWithProvider.setPairingEpoch(latestNumber);
       }
 
       // Iterate over chain and construct pairing
@@ -156,7 +156,7 @@ export class StateChainQuery {
   //fetchLavaProviders fetches lava providers from different sources
   private async fetchLavaProviders(
     pairingListConfig: string
-  ): Promise<ConsumerSessionWithProvider[]> {
+  ): Promise<ConsumerSessionsWithProvider[]> {
     try {
       debugPrint(this.config.debug, "Fetching lava providers started");
 
@@ -281,7 +281,7 @@ export class StateChainQuery {
   // getLatestBlockFromProviders tries to fetch latest block using probe
   private async getLatestBlockFromProviders(
     relayer: Relayer,
-    providers: ConsumerSessionWithProvider[],
+    providers: ConsumerSessionsWithProvider[],
     chainID: string,
     rpcInterface: string
   ): Promise<number> {
@@ -293,7 +293,7 @@ export class StateChainQuery {
       try {
         // Send probe request
         const probeResponse = await relayer.probeProvider(
-          this.lavaProviders[i].Session.Endpoint.Addr,
+          this.lavaProviders[i].sessions[0].endpoint.networkAddress,
           rpcInterface,
           chainID
         );
@@ -323,7 +323,11 @@ export class StateChainQuery {
       throw ProvidersErrors.errProbeResponseUndefined;
     }
 
-    debugPrint(this.config.debug, "Get latest block from providers ended");
+    debugPrint(
+      this.config.debug,
+      "Get latest block from providers ended",
+      "latest block " + lastProbeResponse.getLavaEpoch()
+    );
 
     // Return latest block from probe response
     return lastProbeResponse.getLavaEpoch();
@@ -376,30 +380,37 @@ export class StateChainQuery {
   // constructLavaPairing constructs consumer session with provider list from pairing list
   private constructLavaPairing(
     pairingList: any
-  ): ConsumerSessionWithProvider[] {
+  ): ConsumerSessionsWithProvider[] {
     try {
       // Initialize ConsumerSessionWithProvider array
-      const pairing: Array<ConsumerSessionWithProvider> = [];
+      const pairing: Array<ConsumerSessionsWithProvider> = [];
 
       for (const provider of pairingList) {
-        const singleConsumerSession = new SingleConsumerSession(
-          0, // cuSum
-          0, // latestRelayCuSum
-          1, // relayNumber
-          new Endpoint(provider.rpcAddress, true, 0),
-          -1,
-          provider.publicAddress
-        );
+        const endpoint: Endpoint = {
+          networkAddress: provider.rpcAddress,
+          enabled: true,
+          connectionRefusals: 0,
+          addons: new Set<string>(),
+          extensions: new Set<string>(),
+        };
 
         // Create a new pairing object
-        const newPairing = new ConsumerSessionWithProvider(
-          this.config.accountAddress,
+        const newPairing = new ConsumerSessionsWithProvider(
+          provider.publicAddress,
           [],
-          singleConsumerSession,
+          {},
           1000,
-          0,
-          false
+          0
         );
+
+        const randomSessionId = Math.random();
+        const singleConsumerSession = new SingleConsumerSession(
+          randomSessionId,
+          newPairing,
+          endpoint
+        );
+
+        newPairing.sessions[0] = singleConsumerSession;
 
         // Add newly created pairing in the pairing list
         pairing.push(newPairing);

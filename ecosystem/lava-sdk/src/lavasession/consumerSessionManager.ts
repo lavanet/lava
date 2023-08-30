@@ -25,7 +25,7 @@ import {
 } from "./common";
 import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import BigNumber from "bignumber.js";
-import Logger from "../logger/logger";
+import { Logger } from "../logger/logger";
 import Relayer from "../relayer/relayer";
 
 export class ConsumerSessionManager {
@@ -83,7 +83,7 @@ export class ConsumerSessionManager {
 
   public async updateAllProviders(
     epoch: number,
-    pairingList: ConsumerSessionsWithProvider[],
+    pairingList: ConsumerSessionsWithProvider[]
   ): Promise<Error | undefined> {
     if (epoch <= this.currentEpoch) {
       Logger.error(

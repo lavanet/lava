@@ -15,7 +15,7 @@ import {
 } from "./errors";
 import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
 import transportAllowInsecure from "../util/browserAllowInsecure";
-import Logger from "../logger/logger";
+import { Logger } from "../logger/logger";
 import { Result } from "./helpers";
 
 export interface SessionInfo {
@@ -111,7 +111,7 @@ export class SingleConsumerSession {
   };
   public sessionId = 0;
   public client: ConsumerSessionsWithProvider;
-  public relayNum = 0;
+  public relayNum = 1;
   public latestBlock = 0;
   public endpoint: Endpoint = {
     networkAddress: "",

@@ -2,7 +2,7 @@ import { BadgeGenerator } from "../grpc_web_services/lavanet/lava/pairing/badges
 import {
   GenerateBadgeRequest,
   GenerateBadgeResponse,
-} from "../grpc_web_services/lavanet/lava/pairing/badges_pb";
+} from "..//grpc_web_services/lavanet/lava/pairing/badges_pb";
 import { grpc } from "@improbable-eng/grpc-web";
 import transport from "../util/browser";
 
