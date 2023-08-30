@@ -76,7 +76,10 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager) (*RPCCon
 		rpcConsumerLogs.StoreMetricData = true
 		rpcConsumerLogs.MetricService = NewMetricService()
 		rpcConsumerLogs.excludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
-		rpcConsumerLogs.excludedUserAgent = []string{"curl", "PostmanRuntime"} // TODO take this from env variables
+		agentsValue := os.Getenv("TO_EXCLUDE_METRICS_AGENTS")
+		if len(agentsValue) > 0 {
+			rpcConsumerLogs.excludedUserAgent = strings.Split(agentsValue, ";")
+		}
 	}
 	return rpcConsumerLogs, err
 }
@@ -162,7 +165,6 @@ func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err erro
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
-		// TODO check if this will throw in case we don't have the key
 		originHeaderValue, _ := c.Locals(OriginHeaderKey).(string)
 		rpccl.SendMetrics(data, err, originHeaderValue)
 	}
@@ -195,7 +197,6 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 		return false
 	}
 
-	//TODO should we not count when we don't have this userAgent Header
 	if len(userAgentHeaderValue) > 0 {
 		for _, excludedAgent := range rpccl.excludedUserAgent {
 			if strings.Contains(userAgentHeaderValue, excludedAgent) {
