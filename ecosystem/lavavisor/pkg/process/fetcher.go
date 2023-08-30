@@ -14,12 +14,12 @@ import (
 )
 
 func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
-	currentVersion := lvutil.ParseVersion(protocolConsensusVersion.ProviderTarget)
-	minVersion := lvutil.ParseVersion(protocolConsensusVersion.ProviderMin)
+	currentVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderTarget)
+	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin)
 
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
-		utils.LavaFormatInfo("Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatVersion(currentVersion)})
-		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+lvutil.FormatVersion(currentVersion))
+		utils.LavaFormatInfo("Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
+		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
 		selectedBinaryPath, err = checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
 		if err == nil {
 			return selectedBinaryPath, nil
@@ -128,7 +128,7 @@ func handleMissingDir(versionDir string, autoDownload bool, currentVersion *lvut
 	utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
 	utils.LavaFormatInfo("Trying to download:", utils.Attribute{Key: "Version", Value: currentVersion})
 	os.MkdirAll(versionDir, os.ModePerm)
-	if err := downloadAndBuildFromGithub(lvutil.FormatVersion(currentVersion), versionDir); err == nil {
+	if err := downloadAndBuildFromGithub(lvutil.FormatFromSemanticVersion(currentVersion), versionDir); err == nil {
 		binaryPath = filepath.Join(versionDir, "lava-protocol")
 		return binaryPath, nil
 	}

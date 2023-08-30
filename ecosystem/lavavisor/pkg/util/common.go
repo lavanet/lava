@@ -89,7 +89,7 @@ type SemanticVer struct {
 }
 
 // Parse the version string "vX.Y.Z" into a struct with X, Y, Z as integers
-func ParseVersion(version string) (v *SemanticVer) {
+func ParseToSemanticVersion(version string) (v *SemanticVer) {
 	v = &SemanticVer{}
 	fmt.Sscanf(version, "%d.%d.%d", &v.Major, &v.Minor, &v.Patch)
 	return v
@@ -120,6 +120,6 @@ func IsVersionLessThan(v1, v2 *SemanticVer) bool {
 }
 
 // Format the version struct back to a string "vX.Y.Z"
-func FormatVersion(v *SemanticVer) string {
+func FormatFromSemanticVersion(v *SemanticVer) string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 }
