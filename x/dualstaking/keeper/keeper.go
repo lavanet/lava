@@ -27,9 +27,9 @@ type (
 		specKeeper         types.SpecKeeper
 		stakingKeeper      types.StakingKeeper
 
-		delegationFS common.FixationStore
-		delegatorFS  common.FixationStore
-		unbondingTS  common.TimerStore
+		delegationFS common.FixationStore // map proviers/chainID -> delegations
+		delegatorFS  common.FixationStore // map delegators -> providers
+		unbondingTS  common.TimerStore    // track unbonding timeouts
 	}
 )
 
