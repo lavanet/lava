@@ -76,12 +76,14 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	inputFormatter, outputFormatter := format.FormatterForRelayRequestAndResponse(relayCacheGet.ApiInterface)
 	relayCacheGet.Request.RelayData.Data = inputFormatter(relayCacheGet.Request.RelayData.Data)
 	requestedBlock := relayCacheGet.Request.RelayData.RequestBlock
-	relayCacheGet.Request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, s.getLatestBlock(relayCacheGet.ChainID, relayCacheGet.Request.RelaySession.Provider))
+	getLatestBlock := s.getLatestBlock(relayCacheGet.ChainID, relayCacheGet.Request.RelaySession.Provider)
+	relayCacheGet.Request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, getLatestBlock)
 	cacheKey := formatCacheKey(relayCacheGet.ApiInterface, relayCacheGet.ChainID, relayCacheGet.Request)
 	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: relayCacheGet.Finalized},
 		utils.Attribute{Key: "requestedBlock", Value: requestedBlock},
 		utils.Attribute{Key: "requestHash", Value: relayCacheGet.BlockHash},
+		utils.Attribute{Key: "modifiedRequestedBlock", Value: relayCacheGet.Request.RelayData.RequestBlock},
 	)
 	cacheVal, cache_source, found := s.findInAllCaches(relayCacheGet.Finalized, cacheKey)
 	// TODO: use the information when a new block is finalized
@@ -171,7 +173,7 @@ func (s *RelayerCacheServer) getLatestBlockInner(chainID string, providerAddr st
 	if cacheValue, ok := value.(LastestCacheStore); ok {
 		return cacheValue.latestBlock, cacheValue.latestExpirationTime
 	}
-	_ = utils.LavaFormatError("latestBlock value is not a LastestCacheStore", EntryTypeError, utils.Attribute{Key: "value", Value: fmt.Sprintf("%+v", value)})
+	utils.LavaFormatError("latestBlock value is not a LastestCacheStore", EntryTypeError, utils.Attribute{Key: "value", Value: fmt.Sprintf("%+v", value)})
 	return spectypes.NOT_APPLICABLE, time.Time{}
 }
 
@@ -189,6 +191,7 @@ func (s *RelayerCacheServer) setLatestBlock(chainID string, providerAddr string,
 	if existingLatest <= latestBlock { // equal refreshes latest if it expired
 		// we are setting this with a futuristic invalidation time, we still want the entry in cache to protect us from putting a lower last block
 		cacheStore := LastestCacheStore{latestBlock: latestBlock, latestExpirationTime: time.Now().Add(DefaultExpirationForNonFinalized)}
+		utils.LavaFormatDebug("setting latest block", utils.Attribute{Key: "providerAddr", Value: providerAddr}, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		s.CacheServer.finalizedCache.Set(latestBlockKey(chainID, providerAddr), cacheStore, cacheStore.Cost()) // no expiration time
 	}
 }
