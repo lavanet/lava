@@ -92,12 +92,12 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 }
 
 // ExportDelegations exports dualstaking delegations data (for genesis)
-func (k Keeper) ExportDelegations(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportDelegations(ctx sdk.Context) commontypes.GenesisState {
 	return k.delegationFS.Export(ctx)
 }
 
 // ExportDelegators exports dualstaking delegators data (for genesis)
-func (k Keeper) ExportDelegators(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportDelegators(ctx sdk.Context) commontypes.GenesisState {
 	return k.delegatorFS.Export(ctx)
 }
 
@@ -107,12 +107,12 @@ func (k Keeper) ExportUnbondings(ctx sdk.Context) []commontypes.RawMessage {
 }
 
 // InitDelegations imports dualstaking delegations data (from genesis)
-func (k Keeper) InitDelegations(ctx sdk.Context, data []commontypes.RawMessage) {
+func (k Keeper) InitDelegations(ctx sdk.Context, data commontypes.GenesisState) {
 	k.delegationFS.Init(ctx, data)
 }
 
 // InitDelegators imports dualstaking delegators data (from genesis)
-func (k Keeper) InitDelegators(ctx sdk.Context, data []commontypes.RawMessage) {
+func (k Keeper) InitDelegators(ctx sdk.Context, data commontypes.GenesisState) {
 	k.delegatorFS.Init(ctx, data)
 }
 

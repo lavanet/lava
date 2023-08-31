@@ -21,6 +21,7 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/common"
+	"github.com/lavanet/lava/common/types"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
@@ -285,8 +286,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
+	ks.Dualstaking.InitDelegations(ctx, *common.DefaultGenesis())
+	ks.Dualstaking.InitDelegators(ctx, *common.DefaultGenesis())
+	ks.Dualstaking.InitUnbondings(ctx, []types.RawMessage{})
 	ks.Plans.InitPlans(ctx, *common.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *common.DefaultGenesis())
+	ks.Subscription.InitSubscriptionsTimers(ctx, []types.RawMessage{})
 	ks.Projects.InitDevelopers(ctx, *common.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *common.DefaultGenesis())
 
