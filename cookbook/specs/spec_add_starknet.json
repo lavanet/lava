@@ -475,11 +475,10 @@
                                 "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxHashes\",\"params\":[{\"block_number\":%d}],\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "block_hash"
+                                        "3"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL",
-                                    "encoding": "hex"
+                                    "parser_func": "PARSE_BY_ARG",
+                                    "encoding": "base64"
                                 },
                                 "api_name": "starknet_getBlockWithTxHashes"
                             },
