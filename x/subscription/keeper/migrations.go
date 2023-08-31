@@ -100,6 +100,10 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	return m.keeper.subsFS.MigrateVersion(ctx)
 }
 
+// Migrate4to5 implements store migration from v4 to v5:
+// -- rename the DurationTotal field to DurationBought
+// -- introduce two new fields: DurationTotal (with new meaning) and cluster
+// -- assign the subscription's cluster
 func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate 4->5: subscriptions")
 
