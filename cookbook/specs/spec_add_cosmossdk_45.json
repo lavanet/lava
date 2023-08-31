@@ -1,17 +1,13 @@
 {
     "proposal": {
-        "title": "Add Specs: Canto",
-        "description": "Adding new specification support for relaying Canto data on Lava",
+        "title": "Add Specs: Cosmos SDK v0.45",
+        "description": "Adding default Cosmos SDK v0.45 deprecated apis specification",
         "specs": [
             {
-                "index": "CANTO",
-                "name": "canto mainnet",
-                "enabled": true,
-                "imports": [
-                    "ETH1",
-                    "COSMOSSDK",
-                    "COSMOSSDK45DEP"
-                ],
+                "index": "COSMOSSDK45DEP",
+                "name": "cosmos sdk deprecated apis",
+                "enabled": false,
+                "imports": [],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
@@ -37,7 +33,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/canto/epochs/v1/current_epoch",
+                                "name": "/blocks/latest",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -55,7 +51,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/epochs/v1/epochs",
+                                "name": "/txs",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -65,15 +61,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/erc20/v1/params",
+                                "name": "/txs/{hash}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -83,15 +80,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/erc20/v1/token_pairs",
+                                "name": "/bank/balances/{address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -101,15 +99,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/erc20/v1/token_pairs/{token}",
+                                "name": "/bank/total",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -119,15 +118,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/fees/v1/fees",
+                                "name": "/bank/total/{denomination}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -137,15 +137,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/fees/v1/fees/{contract_address}",
+                                "name": "/auth/accounts/{address}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -155,15 +156,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/fees/v1/fees/{deployer_address}",
+                                "name": "/staking/delegators/{delegatorAddr}/delegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -173,15 +175,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/fees/v1/params",
+                                "name": "/staking/delegators/{delegatorAddr}/delegations/{validatorAddr}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -191,15 +194,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/govshuttle/params",
+                                "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -209,15 +213,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/inflation/v1/circulating_supply",
+                                "name": "/staking/delegators/{delegatorAddr}/unbonding_delegations/{validatorAddr}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -227,15 +232,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/inflation/v1/epoch_mint_provision",
+                                "name": "/staking/redelegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -245,15 +251,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/inflation/v1/inflation_rate",
+                                "name": "/staking/delegators/{delegatorAddr}/validators",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -263,15 +270,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/inflation/v1/params",
+                                "name": "/staking/delegators/{delegatorAddr}/validators/{validatorAddr}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -281,15 +289,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/inflation/v1/period",
+                                "name": "/staking/validators",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -299,15 +308,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/inflation/v1/skipped_epochs",
+                                "name": "/staking/validators/{validatorAddr}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -317,15 +327,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/recovery/v1/params",
+                                "name": "/staking/validators/{validatorAddr}/unbonding_delegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -335,15 +346,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/v1/csr/contract/{address}",
+                                "name": "/staking/pool",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -353,15 +365,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/v1/csr/csrs",
+                                "name": "/staking/parameters",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -371,15 +384,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/v1/csr/nft/{nftId}",
+                                "name": "/slashing/signing_infos",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -389,15 +403,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/v1/csr/params",
+                                "name": "/slashing/parameters",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -407,15 +422,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/v1/csr/turnstile",
+                                "name": "/minting/parameters",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -425,15 +441,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/canto/vesting/v1/balances/{address}",
+                                "name": "/minting/inflation",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -443,15 +460,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/account/{address}",
+                                "name": "/minting/annual-provisions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -461,15 +479,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/balances/{address}",
+                                "name": "/staking/validators/{validatorAddr}/delegations",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -479,15 +498,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/base_fee",
+                                "name": "/gov/proposals",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -497,15 +517,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/codes/{address}",
+                                "name": "/gov/proposals/{proposalId}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -515,15 +536,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/cosmos_account/{address}",
+                                "name": "/gov/proposals/{proposalId}/proposer",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -533,15 +555,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/estimate_gas",
+                                "name": "/gov/proposals/{proposalId}/deposits",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -551,15 +574,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/eth_call",
+                                "name": "/gov/proposals/{proposalId}/deposits/{depositor}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -569,15 +593,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/params",
+                                "name": "/gov/proposals/{proposalId}/votes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -587,15 +612,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/storage/{address}/{key}",
+                                "name": "/gov/proposals/{proposalId}/votes/{voter}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -605,15 +631,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/trace_block",
+                                "name": "/gov/proposals/{proposalId}/tally",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -623,15 +650,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/trace_tx",
+                                "name": "/gov/parameters/deposit",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -641,15 +669,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/evm/v1/validator_account/{cons_address}",
+                                "name": "/gov/parameters/tallying",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -659,15 +688,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/feemarket/v1/base_fee",
+                                "name": "/gov/parameters/voting",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -677,15 +707,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/feemarket/v1/block_gas",
+                                "name": "/distribution/delegators/{delegatorAddr}/rewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -695,15 +726,16 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ethermint/feemarket/v1/params",
+                                "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -713,10 +745,125 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/validators/{validatorAddr}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/validators/{validatorAddr}/outstanding_rewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/validators/{validatorAddr}/rewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/community_pool",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/parameters",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             }
@@ -724,774 +871,268 @@
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "canto_7700-1"
-                                    }
-                                ]
-                            }
-                        ]
+                        "verifications": []
                     },
                     {
                         "enabled": true,
                         "collection_data": {
-                            "api_interface": "grpc",
-                            "internal_path": "",
-                            "type": "",
-                            "add_on": ""
-                        },
-                        "apis": [
-                            {
-                                "name": "canto.csr.v1.Query/CSRByContract",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.csr.v1.Query/CSRByNFT",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.csr.v1.Query/CSRs",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.csr.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.csr.v1.Query/Turnstile",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.epochs.v1.Query/CurrentEpoch",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.epochs.v1.Query/EpochInfos",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.erc20.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.erc20.v1.Query/TokenPair",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.erc20.v1.Query/TokenPairs",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.fees.v1.Query/DeployerFees",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.fees.v1.Query/Fee",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.fees.v1.Query/Fees",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.fees.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.govshuttle.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.inflation.v1.Query/CirculatingSupply",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.inflation.v1.Query/EpochMintProvision",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.inflation.v1.Query/InflationRate",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.inflation.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.inflation.v1.Query/Period",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.inflation.v1.Query/SkippedEpochs",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.recovery.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "canto.vesting.v1.Query/Balances",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/Account",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/Balance",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/BaseFee",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/Code",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/CosmosAccount",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/EstimateGas",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/EthCall",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/Storage",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/TraceBlock",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/TraceTx",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.evm.v1.Query/ValidatorAccount",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.feemarket.v1.Query/BaseFee",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.feemarket.v1.Query/BlockGas",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ethermint.feemarket.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            }
-                        ],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "canto_7700-1"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "tendermintrpc",
-                            "internal_path": "",
-                            "type": "",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "canto_7700-1"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
+                            "api_interface": "rest",
                             "internal_path": "",
                             "type": "POST",
                             "add_on": ""
                         },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
+                        "apis": [
                             {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0x1e14"
-                                    }
-                                ]
+                                "name": "/txs/encode",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "pruning",
-                                "values": []
+                                "name": "/txs/dencode",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/bank/accounts/{address}/transfers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/slashing/validators/{validatorAddr}/unjail",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/staking/delegators/{delegatorAddr}/redelegations",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/gov/proposals",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/gov/proposals/param_change",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/gov/proposals/{proposalId}/deposits",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/gov/proposals/{proposalId}/votes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/delegators/{delegatorAddr}/rewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/delegators/{delegatorAddr}/rewards/{validatorAddr}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/delegators/{delegatorAddr}/withdraw_address",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/distribution/validators/{validatorAddr}/rewards",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
                             }
-                        ]
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": []
                     }
                 ]
             }
