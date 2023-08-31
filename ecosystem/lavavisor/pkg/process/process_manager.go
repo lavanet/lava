@@ -46,7 +46,7 @@ func StartProcess(processes []*ServiceProcess, process string, serviceDir string
 	return processes
 }
 
-func getBinaryVersion(binaryPath string) (string, error) {
+func GetBinaryVersion(binaryPath string) (string, error) {
 	cmd := exec.Command(binaryPath, "version")
 	output, err := cmd.Output()
 	if err != nil {

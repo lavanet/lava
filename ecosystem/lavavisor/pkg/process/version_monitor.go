@@ -82,7 +82,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 }
 
 func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
-	binaryVersion, err := getBinaryVersion(vm.BinaryPath)
+	binaryVersion, err := GetBinaryVersion(vm.BinaryPath)
 	if err != nil || binaryVersion == "" {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
