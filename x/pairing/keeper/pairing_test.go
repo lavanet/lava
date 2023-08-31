@@ -1063,7 +1063,8 @@ func TestGeolocationPairingScores(t *testing.T) {
 			cluster := subRes.Sub.Cluster
 
 			for i := range stakeEntries {
-				qos := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
+				// TODO: require err to be nil once the providerQosFS's update is implemented
+				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
 				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
 				providerScores = append(providerScores, providerScore)
 			}

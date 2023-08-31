@@ -7,6 +7,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
@@ -84,7 +85,14 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 		}
 
 		if result {
-			providerScore := pairingscores.NewPairingScore(&providers[j], qg.GetQos(ctx, providers[j].Chain, cluster, providers[j].Address))
+			// TODO: uncomment this code once the providerQosFS's update is implemented (it's currently always empty)
+			// qos, err := qg.GetQos(ctx, providers[j].Chain, cluster, providers[j].Address)
+			// if err != nil {
+			// 	// only printing error and skipping provider so pairing won't fail
+			// 	utils.LavaFormatError("could not construct provider qos", err)
+			// 	continue
+			// }
+			providerScore := pairingscores.NewPairingScore(&providers[j], types.QualityOfServiceReport{})
 			providerScore.SlotFiltering = slotFiltering
 			providerScores = append(providerScores, providerScore)
 		}

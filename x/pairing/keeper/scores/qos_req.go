@@ -10,7 +10,7 @@ import (
 const qosReqName = "qos-req"
 
 type QosGetter interface {
-	GetQos(ctx sdk.Context, chainID string, cluster string, provider string) pairingtypes.QualityOfServiceReport
+	GetQos(ctx sdk.Context, chainID string, cluster string, provider string) (pairingtypes.QualityOfServiceReport, error)
 }
 
 // QosReq implements the ScoreReq interface for provider staking requirement(s)
