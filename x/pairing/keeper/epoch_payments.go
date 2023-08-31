@@ -122,6 +122,8 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 		return
 	}
 
+	// TODO: update Qos in providerQosFS. new consumers (cluster.subUsage = 0) get default QoS (what is default?)
+
 	// go over the epochPayments object's providerPaymentStorageKeys
 	userPaymentsStorageKeys := epochPayments.GetProviderPaymentStorageKeys()
 	for _, userPaymentStorageKey := range userPaymentsStorageKeys {

@@ -31,8 +31,7 @@ package scores
 // and so on).
 //
 //
-// To add a new requirement, create an object implementing the ScoreReq interface and update CalcSlots()
-// to assign it to the pairing slots as desired. Lastly, add the new requirement in GetAllReqs().
+// To add a new requirement, create an object implementing the ScoreReq interface and add the new requirement in GetAllReqs().
 
 import (
 	"bytes"
@@ -66,6 +65,7 @@ func GetAllReqs() []ScoreReq {
 	return []ScoreReq{
 		&StakeReq{},
 		&GeoReq{},
+		&QosReq{},
 	}
 }
 
@@ -147,7 +147,7 @@ func CalcPairingScore(scores []*PairingScore, strategy ScoreStrategy, diffSlot P
 				)
 			}
 
-			newScoreComp := req.Score(*score.Provider)
+			newScoreComp := req.Score(*score)
 			if newScoreComp == math.ZeroUint() {
 				return utils.LavaFormatError("new score component is zero", fmt.Errorf("cannot calculate pairing score"),
 					utils.Attribute{Key: "score component", Value: reqName},

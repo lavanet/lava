@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
+	v5 "github.com/lavanet/lava/x/subscription/migrations/v5"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -97,4 +98,31 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 // -- trigger fixation migration (v4->v5), initialize IsLatest field
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 	return m.keeper.subsFS.MigrateVersion(ctx)
+}
+
+// Migrate4to5 implements store migration from v4 to v5:
+// -- rename the DurationTotal field to DurationBought
+// -- introduce two new fields: DurationTotal (with new meaning) and cluster
+// -- assign the subscription's cluster
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate 4->5: subscriptions")
+
+	keeper := m.keeper
+
+	indices := keeper.subsFS.AllEntryIndicesFilter(ctx, "", nil)
+	for _, ind := range indices {
+		blocks := keeper.subsFS.GetAllEntryVersions(ctx, ind)
+
+		for _, block := range blocks {
+			var sub_V5 v5.Subscription
+			keeper.subsFS.ReadEntry(ctx, ind, block, &sub_V5)
+			utils.LavaFormatDebug("migrate:",
+				utils.Attribute{Key: "subscription", Value: sub_V5.Consumer})
+
+			sub_V5.Cluster = v5.GetClusterKey(sub_V5)
+
+			keeper.subsFS.ModifyEntry(ctx, ind, block, &sub_V5)
+		}
+	}
+	return nil
 }

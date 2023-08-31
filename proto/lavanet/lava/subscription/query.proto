@@ -69,11 +69,13 @@ message QueryListResponse {
 message ListInfoStruct {
   string consumer = 1; // beneficiary consumer
   string plan = 2; // plan assosiated with the subscription
-  uint64 duration_total = 3; // total duration in months (purchase/renewal)
+  uint64 duration_bought = 3; // total duration in months (purchase/renewal)
   uint64 duration_left = 4; // remaining duration in months
   uint64 month_expiry = 5; // upcoming expiry (of current month) in unix time
   uint64 month_cu_total = 6; // total CU allowance per month
   uint64 month_cu_left = 7; // remaining CU allowance this month
+  string cluster = 8;
+  uint64 duration_total = 9;
 }
 
 // this line is used by starport scaffolding # 3
