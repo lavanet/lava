@@ -16,8 +16,6 @@ import (
 
 const MONTHS_IN_YEAR = 12
 
-var allClusters []types.Cluster
-
 // NextMonth returns the date of the same day next month (assumes UTC),
 // adjusting for end-of-months differences if needed.
 func NextMonth(date time.Time) time.Time {

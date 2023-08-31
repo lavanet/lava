@@ -12,6 +12,6 @@ func (k Keeper) UpdateProviderQos(epochPayments pairingtypes.EpochPayments) {
 func (k Keeper) GetQos(ctx sdk.Context, chainID string, cluster string, provider string) pairingtypes.QualityOfServiceReport {
 	var qos pairingtypes.QualityOfServiceReport
 	key := pairingtypes.ProviderQosKey(provider, chainID, cluster)
-	k.providerQosFS.FindEntry(ctx, key, uint64(ctx.BlockHeight()), &qos)
+	_ = k.providerQosFS.FindEntry(ctx, key, uint64(ctx.BlockHeight()), &qos)
 	return qos
 }
