@@ -16,7 +16,7 @@ package types
 // the criterion values (like PLAN_CRITERION) and add it to ConstructAllClusters()
 //
 // All clusters:
-// 	1. For each plan (except "free") a cluster for each subUsage
+//  1. For each plan (except "free") a cluster for each subUsage
 //  2. "free" cluster (without regarding subUsage)
 
 import "strconv"

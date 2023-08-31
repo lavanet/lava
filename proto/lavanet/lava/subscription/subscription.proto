@@ -17,5 +17,5 @@ message Subscription {
   uint64 month_cu_left = 11; // CU remaining during current month
   reserved 12;
   string cluster = 13;         // cluster key
-	uint64 duration_total = 14;  // continous subscription usage
+  uint64 duration_total = 14;  // continous subscription usage
 }
