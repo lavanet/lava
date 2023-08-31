@@ -59,13 +59,13 @@ func (k Keeper) burnNotBondedTokens(ctx sdk.Context, amt math.Int) error {
 }
 
 // totalNotBondedTokens total staking tokens supply which is not bonded
-func (k Keeper) totalNotBondedTokens(ctx sdk.Context) math.Int {
-	notBondedPool := k.GetNotBondedPool(ctx)
-	return k.bankKeeper.GetBalance(ctx, notBondedPool.GetAddress(), epochstoragetypes.TokenDenom).Amount
+func (k Keeper) TotalNotBondedTokens(ctx sdk.Context) math.Int {
+	notBondedPoolAddr := k.accountKeeper.GetModuleAddress(types.NotBondedPoolName)
+	return k.bankKeeper.GetBalance(ctx, notBondedPoolAddr, epochstoragetypes.TokenDenom).Amount
 }
 
 // totalBondedTokens total staking tokens supply which is bonded
-func (k Keeper) totalBondedTokens(ctx sdk.Context) math.Int {
-	bondedPool := k.GetBondedPool(ctx)
-	return k.bankKeeper.GetBalance(ctx, bondedPool.GetAddress(), epochstoragetypes.TokenDenom).Amount
+func (k Keeper) TotalBondedTokens(ctx sdk.Context) math.Int {
+	bondedPoolAddr := k.accountKeeper.GetModuleAddress(types.BondedPoolName)
+	return k.bankKeeper.GetBalance(ctx, bondedPoolAddr, epochstoragetypes.TokenDenom).Amount
 }
