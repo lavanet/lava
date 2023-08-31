@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/common/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/slices"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -289,6 +290,58 @@ func (ts *Tester) TxProposalDelPlans(indices ...string) error {
 
 func (ts *Tester) TxProposalAddSpecs(specs ...spectypes.Spec) error {
 	return testkeeper.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, specs)
+}
+
+// TxDualstakingDelegate: implement 'tx dualstaking delegate'
+func (ts *Tester) TxDualstakingDelegate(
+	creator string,
+	provider string,
+	chainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgDelegateResponse, error) {
+	msg := &dualstakingtypes.MsgDelegate{
+		Creator:  creator,
+		Provider: provider,
+		ChainID:  chainID,
+		Amount:   amount,
+	}
+	return ts.Servers.DualstakingServer.Delegate(ts.GoCtx, msg)
+}
+
+// TxDualstakingDelegate: implement 'tx dualstaking delegate'
+func (ts *Tester) TxDualstakingRedelegate(
+	creator string,
+	fromProvider string,
+	toProvider string,
+	fromChainID string,
+	toChainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgRedelegateResponse, error) {
+	msg := &dualstakingtypes.MsgRedelegate{
+		Creator:      creator,
+		FromProvider: fromProvider,
+		ToProvider:   toProvider,
+		FromChainID:  fromChainID,
+		ToChainID:    toChainID,
+		Amount:       amount,
+	}
+	return ts.Servers.DualstakingServer.Redelegate(ts.GoCtx, msg)
+}
+
+// TxDualstakingUnbond: implement 'tx dualstaking unbond'
+func (ts *Tester) TxDualstakingUnbond(
+	creator string,
+	provider string,
+	chainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgUnbondResponse, error) {
+	msg := &dualstakingtypes.MsgUnbond{
+		Creator:  creator,
+		Provider: provider,
+		ChainID:  chainID,
+		Amount:   amount,
+	}
+	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
 }
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
