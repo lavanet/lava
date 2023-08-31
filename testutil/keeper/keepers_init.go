@@ -273,6 +273,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
+	ks.Dualstaking.InitDelegations(ctx, []types.RawMessage{})
+	ks.Dualstaking.InitDelegators(ctx, []types.RawMessage{})
+	ks.Dualstaking.InitUnbondings(ctx, []types.RawMessage{})
 	ks.Plans.InitPlans(ctx, []types.RawMessage{})
 	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
 	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
