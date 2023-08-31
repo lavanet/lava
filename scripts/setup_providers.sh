@@ -17,8 +17,8 @@ PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
 
-screen -d -m -S cache-provider bash -c "source ~/.bashrc; lava-protocol rpcprovider 127.0.0.1:7777 2>&1 | tee $LOGS_DIR/CACHE_PROVIDER.log"
-screen -d -m -S cache-provider bash -c "source ~/.bashrc; lava-protocol rpcprovider 127.0.0.1:7778 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log"
+screen -d -m -S cache-provider bash -c "source ~/.bashrc; lava-protocol cache 127.0.0.1:7777 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_PROVIDER.log"
+screen -d -m -S cache-provider bash -c "source ~/.bashrc; lava-protocol cache 127.0.0.1:7778 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log"
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \

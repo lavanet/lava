@@ -122,6 +122,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized)
 	_ = utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
+		utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(relayCacheSet.Response.Data))},
 		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)})
 	// finalized entries can stay there
 	if relayCacheSet.Finalized {

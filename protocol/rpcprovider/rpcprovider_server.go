@@ -602,7 +602,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
 		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		// }
-
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false

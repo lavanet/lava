@@ -372,18 +372,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 
-			// try using cache before sending relay
-			var reply *pairingtypes.RelayReply
+			if chainMessage.RequestedBlock() != spectypes.NOT_APPLICABLE {
+				// try using cache before sending relay
+				var reply *pairingtypes.RelayReply
+				reply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request, chainMessage.GetApiCollection().CollectionData.ApiInterface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				if errResponse == nil && reply != nil {
+					// Info was fetched from cache, so we don't need to change the state
+					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+					localRelayResult.Reply = reply
+					lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
+					errResponse = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
 
-			reply, errResponse = rpccs.cache.GetEntry(goroutineCtx, relayRequest, chainMessage.GetApiCollection().CollectionData.ApiInterface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
-			if errResponse == nil && reply != nil {
-				// Info was fetched from cache, so we don't need to change the state
-				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-				localRelayResult.Reply = reply
-				lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-				errResponse = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
-
-				return
+					return
+				}
+			} else {
+				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
 			}
 
 			// cache failed, move on to regular relay
@@ -415,13 +418,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
-
 			// set cache in a nonblocking call
 			go func() {
+				if chainMessage.RequestedBlock() == spectypes.NOT_APPLICABLE {
+					return
+				}
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetApiCollection().CollectionData.GetApiInterface(), nil, chainID, dappID, localRelayResult.Reply, localRelayResult.Finalized) // caching in the portal doesn't care about hashes
+				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request, chainMessage.GetApiCollection().CollectionData.GetApiInterface(), nil, chainID, dappID, localRelayResult.Reply, localRelayResult.Finalized) // caching in the portal doesn't care about hashes
 				if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 					utils.LavaFormatWarning("error updating cache with new entry", err2)
 				}
