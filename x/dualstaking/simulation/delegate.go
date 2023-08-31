@@ -19,7 +19,7 @@ func SimulateMsgDelegate(
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		msg := &types.MsgDelegate{
-			Delegator: simAccount.Address.String(),
+			Creator: simAccount.Address.String(),
 		}
 
 		// TODO: Handling the Delegate simulation
@@ -37,7 +37,7 @@ func SimulateMsgRedelegate(
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		msg := &types.MsgRedelegate{
-			Delegator: simAccount.Address.String(),
+			Creator: simAccount.Address.String(),
 		}
 
 		// TODO: Handling the Redelegate simulation
@@ -55,7 +55,7 @@ func SimulateMsgUnbond(
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 		msg := &types.MsgUnbond{
-			Delegator: simAccount.Address.String(),
+			Creator: simAccount.Address.String(),
 		}
 
 		// TODO: Handling the Unbond simulation
