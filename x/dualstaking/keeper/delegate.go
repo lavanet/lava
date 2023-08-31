@@ -6,17 +6,19 @@ package keeper
 // to locking the funds there, delegators get some of the provider’s profit (after
 // commission deduction).
 //
-// The delegated funds are stored in the module's NotBondedPoolName account. Upon
-// request to terminate the delegation, they are moved to the modules BondedPoolName
-// account, and remain locked there for unstakeHoldBlocks witholding period before
-// they are finally released back to the delegator. The timers for bonded funds are
+// The delegated funds are stored in the module's BondedPoolName account. On request
+// to terminate the delegation, they are then moved to the modules NotBondedPoolName
+// account, and remain locked there for staking.UnbondingTime() witholding period
+// before finally released back to the delegator. The timers for bonded funds are
 // tracked are indexed by the delegator, provider, and chainID.
+//
 // The delegation state is stores with fixation using two maps: one for delegations
 // indexed by the combination <provider,chainD,delegator>, used to track delegations
 // and find/access delegations by provider (and chainID); and another for delegators
 // tracking the list of providers for a delegator, indexed by the delegator.
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -27,7 +29,6 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"gopkg.in/yaml.v2"
 )
 
 // getNextEpoch returns the block of next epoch.
@@ -60,8 +61,8 @@ func validateCoins(amount sdk.Coin) error {
 func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
-	prefix := types.DelegationKey(delegator, provider, chainID)
-	found := k.delegationFS.FindEntry(ctx, prefix, nextEpoch, &delegationEntry)
+	index := types.DelegationKey(delegator, provider, chainID)
+	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		// new delegation (i.e. not increase of existing one)
 		delegationEntry = types.NewDelegation(delegator, provider, chainID)
@@ -69,28 +70,30 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 
 	delegationEntry.AddAmount(amount)
 
-	err := k.delegationFS.AppendEntry(ctx, prefix, nextEpoch, &delegationEntry)
+	err := k.delegationFS.AppendEntry(ctx, index, nextEpoch, &delegationEntry)
 	if err != nil {
 		// append should never fail here
 		return utils.LavaFormatError("critical: append delegation entry", err,
 			utils.Attribute{Key: "delegator", Value: delegationEntry.Delegator},
 			utils.Attribute{Key: "provider", Value: delegationEntry.Provider},
+			utils.Attribute{Key: "chainID", Value: delegationEntry.ChainID},
 		)
 	}
 
 	// get, update and append the delegator entry
 	var delegatorEntry types.Delegator
-	prefix = types.DelegatorKey(delegator)
-	_ = k.delegatorFS.FindEntry(ctx, prefix, nextEpoch, &delegatorEntry)
+	index = types.DelegatorKey(delegator)
+	_ = k.delegatorFS.FindEntry(ctx, index, nextEpoch, &delegatorEntry)
 
 	delegatorEntry.AddProvider(provider)
 
-	err = k.delegatorFS.AppendEntry(ctx, prefix, nextEpoch, &delegatorEntry)
+	err = k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
 	if err != nil {
 		// append should never fail here
 		return utils.LavaFormatError("critical: append delegator entry", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
 		)
 	}
 
@@ -109,8 +112,8 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
-	prefix := types.DelegationKey(delegator, provider, chainID)
-	found := k.delegationFS.FindEntry(ctx, prefix, nextEpoch, &delegationEntry)
+	index := types.DelegationKey(delegator, provider, chainID)
+	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		return types.ErrDelegationNotFound
 	}
@@ -124,35 +127,38 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	// if delegation now becomes zero, then remove this entry altogether;
 	// otherwise just append the new version (for next epoch).
 	if delegationEntry.Amount.IsZero() {
-		err := k.delegationFS.DelEntry(ctx, prefix, nextEpoch)
+		err := k.delegationFS.DelEntry(ctx, index, nextEpoch)
 		if err != nil {
 			// delete should never fail here
 			return utils.LavaFormatError("critical: delete delegation entry", err,
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
 			)
 		}
 	} else {
-		err := k.delegationFS.AppendEntry(ctx, prefix, nextEpoch, &delegationEntry)
+		err := k.delegationFS.AppendEntry(ctx, index, nextEpoch, &delegationEntry)
 		if err != nil {
 			// append should never fail here
 			return utils.LavaFormatError("failed to update delegation entry", err,
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
 			)
 		}
 	}
 
 	// get, update and append the delegator entry
 	var delegatorEntry types.Delegator
-	prefix = types.DelegatorKey(delegator)
-	found = k.delegatorFS.FindEntry(ctx, prefix, nextEpoch, &delegatorEntry)
+	index = types.DelegatorKey(delegator)
+	found = k.delegatorFS.FindEntry(ctx, index, nextEpoch, &delegatorEntry)
 	if !found {
 		// we found the delegation above, so the delegator must exist as well
 		return utils.LavaFormatError("critical: delegator entry for delegation not found",
 			types.ErrDelegationNotFound,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
 		)
 	}
 
@@ -162,23 +168,25 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	if delegationEntry.Amount.IsZero() {
 		delegatorEntry.DelProvider(provider)
 		if delegatorEntry.IsEmpty() {
-			err := k.delegatorFS.DelEntry(ctx, prefix, nextEpoch)
+			err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
 			if err != nil {
 				// delete should never fail here
 				return utils.LavaFormatError("critical: delete delegator entry", err,
 					utils.Attribute{Key: "delegator", Value: delegator},
 					utils.Attribute{Key: "provider", Value: provider},
+					utils.Attribute{Key: "chainID", Value: chainID},
 				)
 			}
 		}
 	} else {
 		delegatorEntry.AddProvider(provider)
-		err := k.delegatorFS.AppendEntry(ctx, prefix, nextEpoch, &delegatorEntry)
+		err := k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
 		if err != nil {
 			// append should never fail here
 			return utils.LavaFormatError("failed to update delegator entry", err,
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
 			)
 		}
 	}
@@ -225,7 +233,8 @@ func (k Keeper) updateStakeEntry(ctx sdk.Context, provider, chainID string, amou
 
 	stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
 
-	// fail if amount was negative and the result underflowed the existing total
+	// fail if amount was negative (e.g. redelegate) and the result underflowed the
+	// existing total - not enough funds
 	if stakeEntry.DelegateTotal.IsNegative() {
 		return types.ErrInsufficientDelegation
 	}
@@ -280,22 +289,13 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		)
 	}
 
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, delegatorAddr, types.NotBondedPoolName, sdk.NewCoins(amount))
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, delegatorAddr, types.BondedPoolName, sdk.NewCoins(amount))
 	if err != nil {
 		return utils.LavaFormatError("failed to transfer coins to module", err,
 			utils.Attribute{Key: "balance", Value: balance},
 			utils.Attribute{Key: "amount", Value: amount},
 		)
 	}
-
-	details := map[string]string{
-		"delegator": delegator,
-		"provider":  provider,
-		"chainID":   chainID,
-		"amount":    amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.DelegateEventName, details, "Delegate")
 
 	return nil
 }
@@ -352,18 +352,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 	}
 
 	// no need to transfer funds, because they remain in the dualstaking module
-	// (specifically in types.NotBondedPoolName).
-
-	details := map[string]string{
-		"delegator":     delegator,
-		"from_provider": from,
-		"to_provider":   to,
-		"from_chainID":  fromChainID,
-		"to_chainID":    toChainID,
-		"amount":        amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RedelegateEventName, details, "Redelegate")
+	// (specifically in types.BondedPoolName).
 
 	return nil
 }
@@ -407,15 +396,10 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 	}
 
 	// in unbonding the funds to not return immediately to the delegator; instead
-	// they transfer to the BonderPoolName module account, where they are held for
-	// the hold period before they are finally released.
+	// they transfer to the NotBondedPoolName module account, where they are held
+	// for the hold period before they are finally released.
 
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.NotBondedPoolName, types.BondedPoolName, sdk.NewCoins(amount))
-	if err != nil {
-		return utils.LavaFormatError("failed to unbond delegated coins", err,
-			utils.Attribute{Key: "amount", Value: amount},
-		)
-	}
+	k.bondedTokensToNotBonded(ctx, amount.Amount)
 
 	err = k.setUnbondingTimer(ctx, delegator, provider, chainID, amount)
 	if err != nil {
@@ -423,15 +407,6 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 			utils.Attribute{Key: "amount", Value: amount},
 		)
 	}
-
-	details := map[string]string{
-		"delegator": delegator,
-		"provider":  provider,
-		"chainID":   chainID,
-		"amount":    amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnbondingEventName, details, "Unbond")
 
 	return nil
 }
@@ -481,7 +456,7 @@ func (k Keeper) setUnbondingTimer(ctx sdk.Context, delegator, provider, chainID 
 		return types.ErrUnbondingInProgress
 	}
 
-	data, _ := yaml.Marshal(amount)
+	data, _ := json.Marshal(amount)
 	k.unbondingTS.AddTimerByBlockTime(ctx, uint64(timeout), key, data)
 
 	return nil
@@ -501,7 +476,7 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	)
 
 	var amount sdk.Coin
-	err := yaml.Unmarshal(data, &amount)
+	err := json.Unmarshal(data, &amount)
 	if err != nil {
 		utils.LavaFormatError("critical: finalizeBonding failed to decode", err, attrs...)
 	}
@@ -529,12 +504,12 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	}
 
 	// sanity: verify that BondedPool has enough funds
-	if k.totalBondedTokens(ctx).LT(amount.Amount) {
+	if k.totalNotBondedTokens(ctx).LT(amount.Amount) {
 		utils.LavaFormatError("critical: finalizeBonding insufficient bonds", err, attrs...)
 		return
 	}
 
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.BondedPoolName, delegatorAddr, sdk.NewCoins(amount))
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.NotBondedPoolName, delegatorAddr, sdk.NewCoins(amount))
 	if err != nil {
 		utils.LavaFormatError("critical: finalizeBonding failed to transfer", err, attrs...)
 	}

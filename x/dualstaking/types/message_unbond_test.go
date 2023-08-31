@@ -18,21 +18,21 @@ func TestMsgUnbond_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgUnbond{
-				Delegator: "invalid_address",
-				Amount:    sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator: "invalid_address",
+				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgUnbond{
-				Delegator: sample.AccAddress(),
-				Amount:    sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator: sample.AccAddress(),
+				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
 			},
 		}, {
 			name: "valid amount",
 			msg: MsgUnbond{
-				Delegator: sample.AccAddress(),
-				Amount:    sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator: sample.AccAddress(),
+				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
 			},
 		},
 	}

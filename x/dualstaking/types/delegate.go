@@ -3,6 +3,7 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils/slices"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 func NewDelegation(delegator, provider, chainID string) Delegation {
@@ -10,6 +11,7 @@ func NewDelegation(delegator, provider, chainID string) Delegation {
 		Delegator: delegator,
 		Provider:  provider,
 		ChainID:   chainID,
+		Amount:    sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
 	}
 }
 
