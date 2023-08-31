@@ -42,6 +42,7 @@ func TestGetCluster(t *testing.T) {
 			_, err := ts.TxSubscriptionBuy(tt.sub, tt.sub, tt.plan, 12)
 			require.Nil(t, err)
 
+			prevCluster := ""
 			for i := 0; i < 3; i++ {
 				// get current subscription
 				subRes, err := ts.QuerySubscriptionCurrent(tt.sub)
@@ -51,6 +52,13 @@ func TestGetCluster(t *testing.T) {
 				// create a cluster to get the expected cluster key
 				c := types.GetClusterKey(*sub)
 				require.Equal(t, c, sub.Cluster)
+
+				if tt.plan == types.FREE_PLAN {
+					require.Equal(t, types.FREE_PLAN, c)
+				} else {
+					require.NotEqual(t, prevCluster, c)
+				}
+				prevCluster = c
 
 				// advance months (4 months - 5 sec + epochTime, each iteration should make the sub change clusters)
 				ts.AdvanceMonths(4)
