@@ -82,11 +82,11 @@ func (m *CacheUsage) GetCacheMisses() uint64 {
 }
 
 type RelayCacheGet struct {
-	Request      *RelayRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	ApiInterface string        `protobuf:"bytes,2,opt,name=apiInterface,proto3" json:"apiInterface,omitempty"`
-	BlockHash    []byte        `protobuf:"bytes,3,opt,name=blockHash,proto3" json:"blockHash,omitempty"`
-	ChainID      string        `protobuf:"bytes,4,opt,name=chainID,proto3" json:"chainID,omitempty"`
-	Finalized    bool          `protobuf:"varint,5,opt,name=finalized,proto3" json:"finalized,omitempty"`
+	Request   *RelayPrivateData `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	BlockHash []byte            `protobuf:"bytes,2,opt,name=blockHash,proto3" json:"blockHash,omitempty"`
+	ChainID   string            `protobuf:"bytes,3,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	Finalized bool              `protobuf:"varint,4,opt,name=finalized,proto3" json:"finalized,omitempty"`
+	Provider  string            `protobuf:"bytes,5,opt,name=provider,proto3" json:"provider,omitempty"`
 }
 
 func (m *RelayCacheGet) Reset()         { *m = RelayCacheGet{} }
@@ -122,18 +122,11 @@ func (m *RelayCacheGet) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RelayCacheGet proto.InternalMessageInfo
 
-func (m *RelayCacheGet) GetRequest() *RelayRequest {
+func (m *RelayCacheGet) GetRequest() *RelayPrivateData {
 	if m != nil {
 		return m.Request
 	}
 	return nil
-}
-
-func (m *RelayCacheGet) GetApiInterface() string {
-	if m != nil {
-		return m.ApiInterface
-	}
-	return ""
 }
 
 func (m *RelayCacheGet) GetBlockHash() []byte {
@@ -157,14 +150,20 @@ func (m *RelayCacheGet) GetFinalized() bool {
 	return false
 }
 
+func (m *RelayCacheGet) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
 type RelayCacheSet struct {
-	Request      *RelayRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	ApiInterface string        `protobuf:"bytes,2,opt,name=apiInterface,proto3" json:"apiInterface,omitempty"`
-	BlockHash    []byte        `protobuf:"bytes,3,opt,name=blockHash,proto3" json:"blockHash,omitempty"`
-	ChainID      string        `protobuf:"bytes,4,opt,name=chainID,proto3" json:"chainID,omitempty"`
-	BucketID     string        `protobuf:"bytes,5,opt,name=bucketID,proto3" json:"bucketID,omitempty"`
-	Response     *RelayReply   `protobuf:"bytes,6,opt,name=response,proto3" json:"response,omitempty"`
-	Finalized    bool          `protobuf:"varint,7,opt,name=finalized,proto3" json:"finalized,omitempty"`
+	Request   *RelayPrivateData `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	BlockHash []byte            `protobuf:"bytes,2,opt,name=blockHash,proto3" json:"blockHash,omitempty"`
+	ChainID   string            `protobuf:"bytes,3,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	Response  *RelayReply       `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
+	Finalized bool              `protobuf:"varint,5,opt,name=finalized,proto3" json:"finalized,omitempty"`
+	Provider  string            `protobuf:"bytes,6,opt,name=provider,proto3" json:"provider,omitempty"`
 }
 
 func (m *RelayCacheSet) Reset()         { *m = RelayCacheSet{} }
@@ -200,18 +199,11 @@ func (m *RelayCacheSet) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RelayCacheSet proto.InternalMessageInfo
 
-func (m *RelayCacheSet) GetRequest() *RelayRequest {
+func (m *RelayCacheSet) GetRequest() *RelayPrivateData {
 	if m != nil {
 		return m.Request
 	}
 	return nil
-}
-
-func (m *RelayCacheSet) GetApiInterface() string {
-	if m != nil {
-		return m.ApiInterface
-	}
-	return ""
 }
 
 func (m *RelayCacheSet) GetBlockHash() []byte {
@@ -224,13 +216,6 @@ func (m *RelayCacheSet) GetBlockHash() []byte {
 func (m *RelayCacheSet) GetChainID() string {
 	if m != nil {
 		return m.ChainID
-	}
-	return ""
-}
-
-func (m *RelayCacheSet) GetBucketID() string {
-	if m != nil {
-		return m.BucketID
 	}
 	return ""
 }
@@ -249,6 +234,13 @@ func (m *RelayCacheSet) GetFinalized() bool {
 	return false
 }
 
+func (m *RelayCacheSet) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*CacheUsage)(nil), "lavanet.lava.pairing.CacheUsage")
 	proto.RegisterType((*RelayCacheGet)(nil), "lavanet.lava.pairing.RelayCacheGet")
@@ -260,36 +252,35 @@ func init() {
 }
 
 var fileDescriptor_36fbab536e2bbad1 = []byte{
-	// 449 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x53, 0xbd, 0x8e, 0xd3, 0x40,
-	0x10, 0xf6, 0x1e, 0x47, 0xe2, 0xec, 0x85, 0x66, 0x75, 0x42, 0x96, 0x41, 0x96, 0xb5, 0x08, 0x91,
-	0x6a, 0x2d, 0x1d, 0xed, 0x35, 0x40, 0xd0, 0x25, 0x12, 0x34, 0x1b, 0xd1, 0xd0, 0xad, 0xcd, 0xc4,
-	0x5e, 0x9d, 0xcf, 0x6b, 0xbc, 0x1b, 0x44, 0x78, 0x0a, 0x5e, 0x81, 0xa7, 0x81, 0xf2, 0x4a, 0x4a,
-	0x94, 0xbc, 0x02, 0x0f, 0x80, 0x3c, 0xf9, 0xbb, 0x20, 0x72, 0x50, 0x52, 0xd9, 0xf3, 0xed, 0xf7,
-	0xcd, 0xcc, 0x37, 0x9a, 0xa1, 0x8f, 0x4b, 0xf5, 0x41, 0x55, 0xe0, 0x92, 0xf6, 0x9b, 0xd4, 0x4a,
-	0x37, 0xba, 0xca, 0x93, 0x06, 0x4a, 0x35, 0x7f, 0xa1, 0xb2, 0x02, 0x44, 0xdd, 0x18, 0x67, 0xd8,
-	0xe9, 0x9a, 0x26, 0xda, 0xaf, 0x58, 0xd3, 0xc2, 0xd3, 0xdc, 0xe4, 0x06, 0x09, 0x49, 0xfb, 0xb7,
-	0xe2, 0x86, 0xf1, 0xe1, 0x94, 0x6b, 0xc6, 0x83, 0xdc, 0x98, 0xbc, 0x84, 0x04, 0xa3, 0x74, 0x36,
-	0x4d, 0xe0, 0xaa, 0x76, 0xeb, 0x47, 0xfe, 0x8a, 0x52, 0xac, 0xfc, 0xc6, 0xaa, 0x1c, 0xd8, 0x43,
-	0xda, 0xc3, 0x68, 0xa4, 0x9d, 0x0d, 0x48, 0x4c, 0x06, 0xc7, 0x72, 0x07, 0xb0, 0x98, 0x9e, 0x60,
-	0xf0, 0x5a, 0x5b, 0x0b, 0x36, 0x38, 0xc2, 0xf7, 0x9b, 0x10, 0xff, 0x4a, 0xe8, 0x3d, 0xb9, 0x75,
-	0x73, 0x01, 0x8e, 0x9d, 0xd3, 0x6e, 0x03, 0xef, 0x67, 0x60, 0x1d, 0xe6, 0x3b, 0x39, 0xe3, 0xe2,
-	0x4f, 0xe6, 0x04, 0xaa, 0xe4, 0x8a, 0x29, 0x37, 0x12, 0xc6, 0x69, 0x5f, 0xd5, 0x7a, 0x5c, 0x39,
-	0x68, 0xa6, 0x2a, 0x03, 0x2c, 0xd9, 0x93, 0x7b, 0x58, 0xdb, 0x73, 0x5a, 0x9a, 0xec, 0x72, 0xa4,
-	0x6c, 0x11, 0xdc, 0x89, 0xc9, 0xa0, 0x2f, 0x77, 0x00, 0x0b, 0x68, 0x37, 0x2b, 0x94, 0xae, 0xc6,
-	0xc3, 0xe0, 0x18, 0xc5, 0x9b, 0xb0, 0xd5, 0x4d, 0x75, 0xa5, 0x4a, 0xfd, 0x09, 0xde, 0x05, 0x77,
-	0x63, 0x32, 0xf0, 0xe5, 0x0e, 0xe0, 0x5f, 0x8e, 0x6e, 0x3a, 0x99, 0xfc, 0xd7, 0x4e, 0x42, 0xea,
-	0xa7, 0xb3, 0xec, 0x12, 0xdc, 0x78, 0x88, 0x46, 0x7a, 0x72, 0x1b, 0xb3, 0x73, 0xea, 0x37, 0x60,
-	0x6b, 0x53, 0x59, 0x08, 0x3a, 0xd8, 0x76, 0x7c, 0x6b, 0xdb, 0x75, 0x39, 0x97, 0x5b, 0xc5, 0xfe,
-	0x8c, 0xba, 0xbf, 0xcd, 0xe8, 0xec, 0x27, 0xa1, 0x7d, 0x94, 0x41, 0x83, 0x53, 0x62, 0x13, 0xea,
-	0x5f, 0x80, 0x43, 0x88, 0x3d, 0xba, 0xa5, 0xcc, 0x66, 0x3b, 0xc2, 0xbf, 0xf6, 0xc2, 0x3d, 0x36,
-	0xa6, 0xfe, 0xe4, 0x9f, 0x93, 0x4e, 0xc0, 0x85, 0xf7, 0xc5, 0x6a, 0xe1, 0xc5, 0x66, 0xe1, 0xc5,
-	0xcb, 0x76, 0xe1, 0xb9, 0xc7, 0x86, 0xb4, 0x33, 0x02, 0x55, 0xba, 0x82, 0x1d, 0xe0, 0x1c, 0x6a,
-	0x68, 0x77, 0x22, 0xdc, 0x7b, 0xfe, 0xec, 0xdb, 0x22, 0x22, 0xd7, 0x8b, 0x88, 0xfc, 0x58, 0x44,
-	0xe4, 0xf3, 0x32, 0xf2, 0xae, 0x97, 0x91, 0xf7, 0x7d, 0x19, 0x79, 0x6f, 0x9f, 0xe4, 0xda, 0x15,
-	0xb3, 0x54, 0x64, 0xe6, 0x2a, 0xd9, 0x3b, 0xcb, 0x8f, 0xdb, 0xc3, 0x74, 0xf3, 0x1a, 0x6c, 0xda,
-	0xc1, 0xb2, 0x4f, 0x7f, 0x05, 0x00, 0x00, 0xff, 0xff, 0x87, 0xcd, 0xc8, 0x2e, 0x10, 0x04, 0x00,
-	0x00,
+	// 445 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x53, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0xf6, 0x96, 0x36, 0x75, 0x37, 0xe5, 0xb2, 0xaa, 0x90, 0x65, 0x90, 0x65, 0x19, 0x01, 0x39,
+	0xad, 0xa5, 0x70, 0xe5, 0xc0, 0x4f, 0x50, 0x53, 0x09, 0x24, 0xb4, 0x11, 0x17, 0x6e, 0x6b, 0x77,
+	0x6a, 0xaf, 0x70, 0xbd, 0x66, 0x77, 0x13, 0x11, 0x6e, 0xbc, 0x01, 0xef, 0xc4, 0x85, 0x63, 0x8f,
+	0x1c, 0x51, 0xf2, 0x0a, 0x3c, 0x00, 0xf2, 0xd6, 0x3f, 0x8d, 0x44, 0x02, 0xb7, 0x9e, 0xd6, 0xf3,
+	0xed, 0xf7, 0xcd, 0xcc, 0x37, 0x9e, 0xc5, 0x8f, 0x0a, 0xbe, 0xe0, 0x25, 0x98, 0xb8, 0x3e, 0xe3,
+	0x8a, 0x0b, 0x25, 0xca, 0x2c, 0x56, 0x50, 0xf0, 0xe5, 0x2b, 0x9e, 0xe6, 0x40, 0x2b, 0x25, 0x8d,
+	0x24, 0x27, 0x0d, 0x8d, 0xd6, 0x27, 0x6d, 0x68, 0xfe, 0x49, 0x26, 0x33, 0x69, 0x09, 0x71, 0xfd,
+	0x75, 0xcd, 0xf5, 0xc3, 0xed, 0x29, 0x1b, 0xc6, 0xfd, 0x4c, 0xca, 0xac, 0x80, 0xd8, 0x46, 0xc9,
+	0xfc, 0x22, 0x86, 0xcb, 0xca, 0x34, 0x97, 0xd1, 0x1b, 0x8c, 0x6d, 0xe5, 0xf7, 0x9a, 0x67, 0x40,
+	0x1e, 0xe0, 0x23, 0x1b, 0x4d, 0x85, 0xd1, 0x1e, 0x0a, 0xd1, 0x68, 0x9f, 0xf5, 0x00, 0x09, 0xf1,
+	0xd0, 0x06, 0x6f, 0x85, 0xd6, 0xa0, 0xbd, 0x3d, 0x7b, 0x7f, 0x13, 0x8a, 0xbe, 0x23, 0x7c, 0x97,
+	0x75, 0x6e, 0x4e, 0xc1, 0x90, 0xe7, 0xf8, 0x50, 0xc1, 0xa7, 0x39, 0x68, 0x63, 0xf3, 0x0d, 0xc7,
+	0x8f, 0xe9, 0xdf, 0xcc, 0x51, 0xab, 0x7a, 0xa7, 0xc4, 0x82, 0x1b, 0x98, 0x70, 0xc3, 0x59, 0x2b,
+	0xab, 0x7b, 0x4a, 0x0a, 0x99, 0x7e, 0x9c, 0x72, 0x9d, 0xdb, 0x9a, 0xc7, 0xac, 0x07, 0x88, 0x87,
+	0x0f, 0xd3, 0x9c, 0x8b, 0xf2, 0x6c, 0xe2, 0xdd, 0x09, 0xd1, 0xe8, 0x88, 0xb5, 0x61, 0xad, 0xbb,
+	0x10, 0x25, 0x2f, 0xc4, 0x17, 0x38, 0xf7, 0xf6, 0x43, 0x34, 0x72, 0x59, 0x0f, 0x10, 0x1f, 0xbb,
+	0x95, 0x92, 0x0b, 0x71, 0x0e, 0xca, 0x3b, 0xb0, 0xc2, 0x2e, 0x8e, 0xbe, 0xee, 0xdd, 0x74, 0x31,
+	0xbb, 0x55, 0x17, 0xcf, 0xb0, 0xab, 0x40, 0x57, 0xb2, 0xd4, 0x60, 0x4d, 0x0c, 0xc7, 0xe1, 0x8e,
+	0xd2, 0x0c, 0xaa, 0x62, 0xc9, 0x3a, 0xc5, 0xe6, 0x0c, 0x0e, 0x76, 0xcd, 0x60, 0xb0, 0x39, 0x83,
+	0xf1, 0x6f, 0x84, 0x8f, 0x6d, 0x4a, 0x50, 0x76, 0x0a, 0x64, 0x86, 0xdd, 0x53, 0x30, 0x16, 0x22,
+	0x0f, 0x77, 0xb4, 0xd0, 0xfe, 0x79, 0xff, 0x9f, 0x7d, 0x46, 0x0e, 0x39, 0xc3, 0xee, 0xec, 0xbf,
+	0x93, 0xce, 0xc0, 0xf8, 0xf7, 0xe8, 0xf5, 0x32, 0xd3, 0x76, 0x99, 0xe9, 0xeb, 0x7a, 0x99, 0x23,
+	0x87, 0x4c, 0xf0, 0x60, 0x0a, 0xbc, 0x30, 0x39, 0xd9, 0xc2, 0xd9, 0xd6, 0x50, 0xbf, 0xfe, 0x91,
+	0xf3, 0xf2, 0xc5, 0x8f, 0x55, 0x80, 0xae, 0x56, 0x01, 0xfa, 0xb5, 0x0a, 0xd0, 0xb7, 0x75, 0xe0,
+	0x5c, 0xad, 0x03, 0xe7, 0xe7, 0x3a, 0x70, 0x3e, 0x3c, 0xc9, 0x84, 0xc9, 0xe7, 0x09, 0x4d, 0xe5,
+	0x65, 0xbc, 0xf1, 0xe4, 0x3e, 0x77, 0x8f, 0xce, 0x2c, 0x2b, 0xd0, 0xc9, 0xc0, 0x96, 0x7d, 0xfa,
+	0x27, 0x00, 0x00, 0xff, 0xff, 0x09, 0x12, 0x8f, 0x85, 0xec, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -497,6 +488,13 @@ func (m *RelayCacheGet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.Finalized {
 		i--
 		if m.Finalized {
@@ -505,26 +503,19 @@ func (m *RelayCacheGet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x28
+		dAtA[i] = 0x20
 	}
 	if len(m.ChainID) > 0 {
 		i -= len(m.ChainID)
 		copy(dAtA[i:], m.ChainID)
 		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.ChainID)))
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x1a
 	}
 	if len(m.BlockHash) > 0 {
 		i -= len(m.BlockHash)
 		copy(dAtA[i:], m.BlockHash)
 		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.BlockHash)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.ApiInterface) > 0 {
-		i -= len(m.ApiInterface)
-		copy(dAtA[i:], m.ApiInterface)
-		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.ApiInterface)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -563,6 +554,13 @@ func (m *RelayCacheSet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0x32
+	}
 	if m.Finalized {
 		i--
 		if m.Finalized {
@@ -571,7 +569,7 @@ func (m *RelayCacheSet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0
 		}
 		i--
-		dAtA[i] = 0x38
+		dAtA[i] = 0x28
 	}
 	if m.Response != nil {
 		{
@@ -583,33 +581,19 @@ func (m *RelayCacheSet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintRelayCache(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x32
-	}
-	if len(m.BucketID) > 0 {
-		i -= len(m.BucketID)
-		copy(dAtA[i:], m.BucketID)
-		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.BucketID)))
-		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x22
 	}
 	if len(m.ChainID) > 0 {
 		i -= len(m.ChainID)
 		copy(dAtA[i:], m.ChainID)
 		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.ChainID)))
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x1a
 	}
 	if len(m.BlockHash) > 0 {
 		i -= len(m.BlockHash)
 		copy(dAtA[i:], m.BlockHash)
 		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.BlockHash)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.ApiInterface) > 0 {
-		i -= len(m.ApiInterface)
-		copy(dAtA[i:], m.ApiInterface)
-		i = encodeVarintRelayCache(dAtA, i, uint64(len(m.ApiInterface)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -664,10 +648,6 @@ func (m *RelayCacheGet) Size() (n int) {
 		l = m.Request.Size()
 		n += 1 + l + sovRelayCache(uint64(l))
 	}
-	l = len(m.ApiInterface)
-	if l > 0 {
-		n += 1 + l + sovRelayCache(uint64(l))
-	}
 	l = len(m.BlockHash)
 	if l > 0 {
 		n += 1 + l + sovRelayCache(uint64(l))
@@ -678,6 +658,10 @@ func (m *RelayCacheGet) Size() (n int) {
 	}
 	if m.Finalized {
 		n += 2
+	}
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovRelayCache(uint64(l))
 	}
 	return n
 }
@@ -692,19 +676,11 @@ func (m *RelayCacheSet) Size() (n int) {
 		l = m.Request.Size()
 		n += 1 + l + sovRelayCache(uint64(l))
 	}
-	l = len(m.ApiInterface)
-	if l > 0 {
-		n += 1 + l + sovRelayCache(uint64(l))
-	}
 	l = len(m.BlockHash)
 	if l > 0 {
 		n += 1 + l + sovRelayCache(uint64(l))
 	}
 	l = len(m.ChainID)
-	if l > 0 {
-		n += 1 + l + sovRelayCache(uint64(l))
-	}
-	l = len(m.BucketID)
 	if l > 0 {
 		n += 1 + l + sovRelayCache(uint64(l))
 	}
@@ -714,6 +690,10 @@ func (m *RelayCacheSet) Size() (n int) {
 	}
 	if m.Finalized {
 		n += 2
+	}
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovRelayCache(uint64(l))
 	}
 	return n
 }
@@ -871,45 +851,13 @@ func (m *RelayCacheGet) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Request == nil {
-				m.Request = &RelayRequest{}
+				m.Request = &RelayPrivateData{}
 			}
 			if err := m.Request.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApiInterface", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelayCache
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthRelayCache
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelayCache
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ApiInterface = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BlockHash", wireType)
 			}
@@ -943,7 +891,7 @@ func (m *RelayCacheGet) Unmarshal(dAtA []byte) error {
 				m.BlockHash = []byte{}
 			}
 			iNdEx = postIndex
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
 			}
@@ -975,7 +923,7 @@ func (m *RelayCacheGet) Unmarshal(dAtA []byte) error {
 			}
 			m.ChainID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 5:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Finalized", wireType)
 			}
@@ -995,6 +943,38 @@ func (m *RelayCacheGet) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Finalized = bool(v != 0)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelayCache
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelayCache
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelayCache
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRelayCache(dAtA[iNdEx:])
@@ -1075,45 +1055,13 @@ func (m *RelayCacheSet) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Request == nil {
-				m.Request = &RelayRequest{}
+				m.Request = &RelayPrivateData{}
 			}
 			if err := m.Request.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ApiInterface", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelayCache
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthRelayCache
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelayCache
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ApiInterface = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BlockHash", wireType)
 			}
@@ -1147,7 +1095,7 @@ func (m *RelayCacheSet) Unmarshal(dAtA []byte) error {
 				m.BlockHash = []byte{}
 			}
 			iNdEx = postIndex
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
 			}
@@ -1179,39 +1127,7 @@ func (m *RelayCacheSet) Unmarshal(dAtA []byte) error {
 			}
 			m.ChainID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BucketID", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelayCache
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthRelayCache
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthRelayCache
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.BucketID = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 6:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Response", wireType)
 			}
@@ -1247,7 +1163,7 @@ func (m *RelayCacheSet) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 7:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Finalized", wireType)
 			}
@@ -1267,6 +1183,38 @@ func (m *RelayCacheSet) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Finalized = bool(v != 0)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelayCache
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRelayCache
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelayCache
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRelayCache(dAtA[iNdEx:])

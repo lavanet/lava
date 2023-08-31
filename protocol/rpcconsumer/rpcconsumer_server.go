@@ -375,7 +375,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if chainMessage.RequestedBlock() != spectypes.NOT_APPLICABLE {
 				// try using cache before sending relay
 				var reply *pairingtypes.RelayReply
-				reply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request, chainMessage.GetApiCollection().CollectionData.ApiInterface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				reply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 				if errResponse == nil && reply != nil {
 					// Info was fetched from cache, so we don't need to change the state
 					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
@@ -426,7 +426,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request, chainMessage.GetApiCollection().CollectionData.GetApiInterface(), nil, chainID, dappID, localRelayResult.Reply, localRelayResult.Finalized) // caching in the portal doesn't care about hashes
+				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request.RelayData, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes
 				if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 					utils.LavaFormatWarning("error updating cache with new entry", err2)
 				}

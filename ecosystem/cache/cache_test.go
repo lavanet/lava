@@ -56,18 +56,16 @@ func TestCacheSetGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cacheServer := initTest()
-			request := getRequest3(1230, []byte(StubSig))
+			request := getRequest(1230, []byte(StubSig), StubApiInterface)
 
 			response := &pairingtypes.RelayReply{}
 
 			messageSet := pairingtypes.RelayCacheSet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				BucketID:     "",
-				Response:     response,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Response:  response,
+				Finalized: tt.finalized,
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
@@ -78,11 +76,10 @@ func TestCacheSetGet(t *testing.T) {
 			// now to get it
 
 			messageGet := pairingtypes.RelayCacheGet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Finalized: tt.finalized,
 			}
 			_, err = cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
@@ -94,51 +91,29 @@ func TestCacheSetGet(t *testing.T) {
 	}
 }
 
-func getRequest3(requestedBlock int64, data []byte) *pairingtypes.RelayRequest {
-	request := &pairingtypes.RelayRequest{
-		RelaySession: &pairingtypes.RelaySession{
-			Provider:  StubProviderAddr,
-			SessionId: uint64(1),
-			SpecId:    StubChainID,
-			CuSum:     0,
-			Epoch:     1,
-			RelayNum:  0,
-			Sig:       []byte(StubSig),
-			QosReport: nil,
-		},
-		RelayData: &pairingtypes.RelayPrivateData{
-			ConnectionType: StubConnectionType,
-			ApiUrl:         StubApiUrl,
-			Data:           data,
-			RequestBlock:   requestedBlock,
-		},
+func getRequest(requestedBlock int64, data []byte, apiInterface string) *pairingtypes.RelayPrivateData {
+	request := &pairingtypes.RelayPrivateData{
+		ConnectionType: StubConnectionType,
+		ApiUrl:         StubApiUrl,
+		Data:           data,
+		RequestBlock:   requestedBlock,
+		ApiInterface:   apiInterface,
+		Salt:           []byte{1, 2},
+		Metadata:       []pairingtypes.Metadata{},
+		Addon:          "",
+		Extensions:     []string{},
 	}
 	return request
 }
 
-func shallowCopy(request *pairingtypes.RelayRequest) *pairingtypes.RelayRequest {
-	return &pairingtypes.RelayRequest{
-		RelaySession: &pairingtypes.RelaySession{
-			Provider:              request.RelaySession.Provider,
-			SessionId:             request.RelaySession.SessionId,
-			SpecId:                request.RelaySession.SpecId,
-			CuSum:                 request.RelaySession.CuSum,
-			Epoch:                 request.RelaySession.Epoch,
-			RelayNum:              request.RelaySession.RelayNum,
-			Sig:                   request.RelaySession.Sig,
-			QosReport:             request.RelaySession.QosReport,
-			Badge:                 request.RelaySession.Badge,
-			LavaChainId:           request.RelaySession.LavaChainId,
-			UnresponsiveProviders: request.RelaySession.UnresponsiveProviders,
-		},
-		RelayData: &pairingtypes.RelayPrivateData{
-			ConnectionType: request.RelayData.ConnectionType,
-			ApiUrl:         request.RelayData.ApiUrl,
-			Data:           request.RelayData.Data,
-			Salt:           request.RelayData.Salt,
-			RequestBlock:   request.RelayData.RequestBlock,
-			Metadata:       request.RelayData.Metadata,
-		},
+func shallowCopy(request *pairingtypes.RelayPrivateData) *pairingtypes.RelayPrivateData {
+	return &pairingtypes.RelayPrivateData{
+		ConnectionType: request.ConnectionType,
+		ApiUrl:         request.ApiUrl,
+		Data:           request.Data,
+		Salt:           request.Salt,
+		RequestBlock:   request.RequestBlock,
+		Metadata:       request.Metadata,
 	}
 }
 
@@ -165,16 +140,15 @@ func TestCacheGetWithoutSet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cacheServer := initTest()
 
-			request := getRequest3(1230, []byte(StubSig))
+			request := getRequest(1230, []byte(StubSig), StubApiInterface)
 
 			// now to get it
 
 			messageGet := pairingtypes.RelayCacheGet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Finalized: tt.finalized,
 			}
 			_, err := cacheServer.GetRelay(ctx, &messageGet)
 
@@ -213,18 +187,16 @@ func TestCacheFailSetWithInvalidRequestBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cacheServer := initTest()
 
-			request := getRequest3(tt.invalidRequestValue, []byte(StubSig))
+			request := getRequest(tt.invalidRequestValue, []byte(StubSig), StubApiInterface)
 
 			response := &pairingtypes.RelayReply{}
 
 			messageSet := pairingtypes.RelayCacheSet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				BucketID:     "",
-				Response:     response,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Response:  response,
+				Finalized: tt.finalized,
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
@@ -298,17 +270,15 @@ func TestCacheSetGetLatest(t *testing.T) {
 				latestBlockForRelay = tt.latestBlockForSetRelay
 			}
 
-			request := getRequest3(tt.latestBlockForSetRelay, []byte(StubSig))
+			request := getRequest(tt.latestBlockForSetRelay, []byte(StubSig), StubApiInterface)
 
 			response := &pairingtypes.RelayReply{LatestBlock: tt.latestBlockForSetRelay}
 			messageSet := pairingtypes.RelayCacheSet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				BucketID:     "",
-				Response:     response,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Response:  response,
+				Finalized: tt.finalized,
 			}
 			_ = utils.LavaFormatDebug("next test", utils.Attribute{Key: "name", Value: tt.name})
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
@@ -321,13 +291,12 @@ func TestCacheSetGetLatest(t *testing.T) {
 			// now to get it
 
 			// modify the request to get latest
-			request.RelayData.RequestBlock = spectypes.LATEST_BLOCK
+			request.RequestBlock = spectypes.LATEST_BLOCK
 			messageGet := pairingtypes.RelayCacheGet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Finalized: tt.finalized,
 			}
 
 			reply, err := cacheServer.GetRelay(ctx, &messageGet)
@@ -379,17 +348,15 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 				latestBlockForRelay = tt.latestBlockForSetRelay
 			}
 
-			request := getRequest3(tt.latestBlockForSetRelay, []byte(StubSig))
+			request := getRequest(tt.latestBlockForSetRelay, []byte(StubSig), StubApiInterface)
 
 			response := &pairingtypes.RelayReply{LatestBlock: tt.latestBlockForSetRelay}
 			messageSet := pairingtypes.RelayCacheSet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				BucketID:     "",
-				Response:     response,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Response:  response,
+				Finalized: tt.finalized,
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
@@ -399,13 +366,12 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			// now to get it
 
 			// modify the request to get latest
-			request.RelayData.RequestBlock = spectypes.LATEST_BLOCK
+			request.RequestBlock = spectypes.LATEST_BLOCK
 			messageGet := pairingtypes.RelayCacheGet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Finalized: tt.finalized,
 			}
 
 			reply, err := cacheServer.GetRelay(ctx, &messageGet)
@@ -422,26 +388,23 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			}
 
 			request2 := shallowCopy(request)
-			request2.RelayData.RequestBlock = latestBlockForRelay + 1 // make latest block advance
-			request2.RelayData.Data = []byte(StubData + "nonRelevantData")
+			request2.RequestBlock = latestBlockForRelay + 1 // make latest block advance
+			request2.Data = []byte(StubData + "nonRelevantData")
 
 			messageSet2 := pairingtypes.RelayCacheSet{
-				Request:      shallowCopy(request2),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				BucketID:     "",
-				Response:     response,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request2),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Response:  response,
+				Finalized: tt.finalized,
 			}
 			_, err = cacheServer.SetRelay(ctx, &messageSet2) // we use this to increase latest block received
 			require.NoError(t, err)
 			messageGet = pairingtypes.RelayCacheGet{
-				Request:      shallowCopy(request),
-				ApiInterface: StubApiInterface,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Finalized: tt.finalized,
 			}
 			// repeat our latest block get, this time we expect it to look for a newer block and fail
 			_, err = cacheServer.GetRelay(ctx, &messageGet)
@@ -480,20 +443,18 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			formatIDInJsonResponse := func(idNum int64) []byte {
 				return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","result":0x12345,"id":%d}`, idNum))
 			}
-			request := getRequest3(1230, formatIDInJson(id)) // &pairingtypes.RelayRequest{
+			request := getRequest(1230, formatIDInJson(id), spectypes.APIInterfaceJsonRPC) // &pairingtypes.RelayRequest{
 
 			response := &pairingtypes.RelayReply{
 				Data: formatIDInJsonResponse(id), // response has the old id when cached
 			}
 
 			messageSet := pairingtypes.RelayCacheSet{
-				Request:      shallowCopy(request),
-				ApiInterface: spectypes.APIInterfaceJsonRPC,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				BucketID:     "",
-				Response:     response,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Response:  response,
+				Finalized: tt.finalized,
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
@@ -505,14 +466,13 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 
 			changedID := id + 1
 			// now we change the ID:
-			request.RelayData.Data = formatIDInJson(changedID)
+			request.Data = formatIDInJson(changedID)
 
 			messageGet := pairingtypes.RelayCacheGet{
-				Request:      shallowCopy(request),
-				ApiInterface: spectypes.APIInterfaceJsonRPC,
-				BlockHash:    tt.hash,
-				ChainID:      StubChainID,
-				Finalized:    tt.finalized,
+				Request:   shallowCopy(request),
+				BlockHash: tt.hash,
+				ChainID:   StubChainID,
+				Finalized: tt.finalized,
 			}
 			reply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {

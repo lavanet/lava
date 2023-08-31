@@ -57,7 +57,7 @@ func (cv *LastestCacheStore) Cost() int64 {
 }
 
 func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (reply *pairingtypes.RelayReply, err error) {
-	requestedBlock := relayCacheGet.Request.RelayData.RequestBlock // save requested block
+	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
 
 	reply, err = s.getRelayInner(ctx, relayCacheGet)
 	var hit bool
@@ -68,22 +68,22 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		s.cacheHit(ctx)
 	}
 	// add prometheus metrics
-	s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainID, getMethodFromRequest(relayCacheGet), relayCacheGet.ApiInterface, hit)
+	s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainID, getMethodFromRequest(relayCacheGet), relayCacheGet.Request.ApiInterface, hit)
 	return
 }
 
 func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.RelayReply, error) {
-	inputFormatter, outputFormatter := format.FormatterForRelayRequestAndResponse(relayCacheGet.ApiInterface)
-	relayCacheGet.Request.RelayData.Data = inputFormatter(relayCacheGet.Request.RelayData.Data)
-	requestedBlock := relayCacheGet.Request.RelayData.RequestBlock
-	getLatestBlock := s.getLatestBlock(relayCacheGet.ChainID, relayCacheGet.Request.RelaySession.Provider)
-	relayCacheGet.Request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, getLatestBlock)
-	cacheKey := formatCacheKey(relayCacheGet.ApiInterface, relayCacheGet.ChainID, relayCacheGet.Request)
+	inputFormatter, outputFormatter := format.FormatterForRelayRequestAndResponse(relayCacheGet.Request.ApiInterface)
+	relayCacheGet.Request.Data = inputFormatter(relayCacheGet.Request.Data)
+	requestedBlock := relayCacheGet.Request.RequestBlock
+	getLatestBlock := s.getLatestBlock(relayCacheGet.ChainID, relayCacheGet.Provider)
+	relayCacheGet.Request.RequestBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, getLatestBlock)
+	cacheKey := formatCacheKey(relayCacheGet.Request.ApiInterface, relayCacheGet.ChainID, relayCacheGet.Request, relayCacheGet.Provider)
 	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: relayCacheGet.Finalized},
 		utils.Attribute{Key: "requestedBlock", Value: requestedBlock},
 		utils.Attribute{Key: "requestHash", Value: relayCacheGet.BlockHash},
-		utils.Attribute{Key: "modifiedRequestedBlock", Value: relayCacheGet.Request.RelayData.RequestBlock},
+		utils.Attribute{Key: "getLatestBlock", Value: relayCacheGet.Request.RequestBlock},
 	)
 	cacheVal, cache_source, found := s.findInAllCaches(relayCacheGet.Finalized, cacheKey)
 	// TODO: use the information when a new block is finalized
@@ -113,14 +113,14 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 }
 
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
-	if relayCacheSet.Request.RelayData.RequestBlock < 0 {
-		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.Request.RelayData.RequestBlock})
+	if relayCacheSet.Request.RequestBlock < 0 {
+		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.Request.RequestBlock})
 	}
 	// TODO: make this non-blocking
-	inputFormatter, _ := format.FormatterForRelayRequestAndResponse(relayCacheSet.ApiInterface)
-	relayCacheSet.Request.RelayData.Data = inputFormatter(relayCacheSet.Request.RelayData.Data) // so we can find the entry regardless of id
+	inputFormatter, _ := format.FormatterForRelayRequestAndResponse(relayCacheSet.Request.ApiInterface)
+	relayCacheSet.Request.Data = inputFormatter(relayCacheSet.Request.Data) // so we can find the entry regardless of id
 
-	cacheKey := formatCacheKey(relayCacheSet.ApiInterface, relayCacheSet.ChainID, relayCacheSet.Request)
+	cacheKey := formatCacheKey(relayCacheSet.Request.ApiInterface, relayCacheSet.ChainID, relayCacheSet.Request, relayCacheSet.Provider)
 	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized)
 	_ = utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
@@ -134,7 +134,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache := s.CacheServer.tempCache
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(relayCacheSet.ChainID, relayCacheSet.BlockHash))
 	}
-	s.setLatestBlock(relayCacheSet.ChainID, relayCacheSet.Request.RelaySession.Provider, relayCacheSet.Request.RelayData.RequestBlock)
+	s.setLatestBlock(relayCacheSet.ChainID, relayCacheSet.Provider, relayCacheSet.Request.RequestBlock)
 	return &emptypb.Empty{}, nil
 }
 
@@ -256,17 +256,17 @@ func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey string) (r
 	return CacheValue{}, "", false
 }
 
-func formatCacheKey(apiInterface string, chainID string, request *pairingtypes.RelayRequest) string {
-	return apiInterface + SEP + chainID + SEP + usedFieldsFromRequest(request)
+func formatCacheKey(apiInterface string, chainID string, request *pairingtypes.RelayPrivateData, provider string) string {
+	return chainID + SEP + usedFieldsFromRequest(request, provider)
 }
 
-func usedFieldsFromRequest(request *pairingtypes.RelayRequest) string {
+func usedFieldsFromRequest(request *pairingtypes.RelayPrivateData, provider string) string {
 	// used fields:
 	// RelayData except for salt: because it defines the query
 	// Provider: because we want to keep coherence between calls, assuming different providers can return different forks, useful for cache in rpcconsumer
-	request.RelayData.Salt = nil
-	relayDataStr := request.RelayData.String()
-	return relayDataStr + SEP + request.RelaySession.Provider
+	request.Salt = nil
+	relayDataStr := request.String()
+	return relayDataStr + SEP + provider
 }
 
 func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool) CacheValue {
@@ -285,11 +285,11 @@ func latestBlockKey(chainID string, providerAddr string) string {
 }
 
 func getMethodFromRequest(relayCacheGet *pairingtypes.RelayCacheGet) string {
-	if relayCacheGet.Request.RelayData.ApiUrl != "" {
-		return relayCacheGet.Request.RelayData.ApiUrl
+	if relayCacheGet.Request.ApiUrl != "" {
+		return relayCacheGet.Request.ApiUrl
 	}
 	var msg rpcInterfaceMessages.JsonrpcMessage
-	err := json.Unmarshal(relayCacheGet.Request.RelayData.Data, &msg)
+	err := json.Unmarshal(relayCacheGet.Request.Data, &msg)
 	if err != nil {
 		return "failed_parsing_method"
 	}
