@@ -129,10 +129,7 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 				DurationBought:  sub_V4.DurationTotal,
 			}
 
-			sub_V5.Cluster = keeper.GetCluster(ctx, sub_V5)
-			if sub_V5.Cluster == "" {
-				sub_V5.Cluster = "free"
-			}
+			sub_V5.Cluster = types.GetClusterKey(sub_V5)
 
 			keeper.subsFS.ModifyEntry(ctx, ind, block, &sub_V5)
 		}

@@ -115,14 +115,8 @@ func (k Keeper) CreateSubscription(
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
-		sub.Cluster = k.GetCluster(ctx, sub)
-		if sub.Cluster == "" {
-			// couldn't find cluster - alert and put default cluster: "free"
-			utils.LavaFormatError("cannot assign cluster for new subscription", fmt.Errorf("CreateSubscription failed"),
-				utils.Attribute{Key: "sub", Value: sub},
-			)
-			sub.Cluster = types.FREE_PLAN
-		}
+		sub.Cluster = types.GetClusterKey(sub)
+
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
 		if err != nil {
@@ -250,14 +244,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.DurationTotal += 1
 
 		// since the total duration increases, the cluster might change
-		cluster := k.GetCluster(ctx, sub)
-		if cluster == "" {
-			utils.LavaFormatError("cannot update cluster for existing subscription", fmt.Errorf("CreateSubscription failed"),
-				utils.Attribute{Key: "sub", Value: sub},
-			)
-		} else {
-			sub.Cluster = cluster
-		}
+		sub.Cluster = types.GetClusterKey(sub)
 
 		err := k.subsFS.AppendEntry(ctx, consumer, block, &sub)
 		if err != nil {

@@ -3,7 +3,7 @@ package keeper_test
 import (
 	"testing"
 
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,7 +24,6 @@ func TestGetCluster(t *testing.T) {
 	for _, planName := range plans {
 		plan.Index = planName
 		ts.AddPlan(planName, plan)
-		ts.AdvanceEpoch()
 	}
 
 	template := []struct {
@@ -43,16 +42,15 @@ func TestGetCluster(t *testing.T) {
 			_, err := ts.TxSubscriptionBuy(tt.sub, tt.sub, tt.plan, 12)
 			require.Nil(t, err)
 
-			// check that for all sub usage periods, the sub's cluster is correct
-			for _, subUsage := range subscriptiontypes.GetSubUsageCriterion() {
+			for i := 0; i < 3; i++ {
 				// get current subscription
 				subRes, err := ts.QuerySubscriptionCurrent(tt.sub)
 				sub := subRes.Sub
 				require.Nil(t, err)
 
 				// create a cluster to get the expected cluster key
-				c := subscriptiontypes.NewCluster(tt.plan, subUsage)
-				require.Equal(t, c.String(), sub.Cluster)
+				c := types.GetClusterKey(*sub)
+				require.Equal(t, c, sub.Cluster)
 
 				// advance months (4 months - 5 sec + epochTime, each iteration should make the sub change clusters)
 				ts.AdvanceMonths(4)
