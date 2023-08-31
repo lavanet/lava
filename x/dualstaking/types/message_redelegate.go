@@ -12,7 +12,7 @@ var _ sdk.Msg = &MsgRedelegate{}
 
 func NewMsgRedelegate(delegator string, from_provider string, from_chainID string, to_provider string, to_chainID string, amount sdk.Coin) *MsgRedelegate {
 	return &MsgRedelegate{
-		Delegator:    delegator,
+		Creator:      delegator,
 		FromProvider: from_provider,
 		FromChainID:  from_chainID,
 		ToProvider:   to_provider,
@@ -30,7 +30,7 @@ func (msg *MsgRedelegate) Type() string {
 }
 
 func (msg *MsgRedelegate) GetSigners() []sdk.AccAddress {
-	delegator, err := sdk.AccAddressFromBech32(msg.Delegator)
+	delegator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +43,7 @@ func (msg *MsgRedelegate) GetSignBytes() []byte {
 }
 
 func (msg *MsgRedelegate) ValidateBasic() error {
-	_, err := sdk.AccAddressFromBech32(msg.Delegator)
+	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid delegator address (%s)", err)
 	}

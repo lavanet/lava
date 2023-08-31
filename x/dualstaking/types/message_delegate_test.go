@@ -18,22 +18,22 @@ func TestMsgDelegate_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid delegator address",
 			msg: MsgDelegate{
-				Delegator: "invalid_address",
-				Provider:  sample.AccAddress(),
-				Amount:    sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:  "invalid_address",
+				Provider: sample.AccAddress(),
+				Amount:   sdk.NewCoin("utest", sdk.NewInt(1)),
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		}, {
 			name: "valid address",
 			msg: MsgDelegate{
-				Delegator: sample.AccAddress(),
-				Amount:    sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator: sample.AccAddress(),
+				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
 			},
 		}, {
 			name: "valid amount",
 			msg: MsgDelegate{
-				Delegator: sample.AccAddress(),
-				Amount:    sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator: sample.AccAddress(),
+				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
 			},
 		},
 	}
