@@ -9,6 +9,7 @@ import (
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
+	"github.com/lavanet/lava/ecosystem/cache"
 	"github.com/lavanet/lava/protocol/badgegenerator"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
@@ -51,6 +52,7 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
