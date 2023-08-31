@@ -48,6 +48,16 @@ func (msg *MsgRedelegate) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid delegator address (%s)", err)
 	}
 
+	_, err = sdk.AccAddressFromBech32(msg.FromProvider)
+	if err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (from) provider address (%s)", err)
+	}
+
+	_, err = sdk.AccAddressFromBech32(msg.ToProvider)
+	if err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (to) provider address (%s)", err)
+	}
+
 	if !msg.Amount.IsValid() {
 		return legacyerrors.ErrInvalidCoins
 	}

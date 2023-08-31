@@ -10,30 +10,48 @@ import (
 )
 
 func TestMsgRedelegate_ValidateBasic(t *testing.T) {
+	oneCoin := sdk.NewCoin("utest", sdk.NewInt(1))
+
 	tests := []struct {
 		name string
 		msg  MsgRedelegate
 		err  error
 	}{
 		{
-			name: "invalid address",
+			name: "invalid delegator address",
 			msg: MsgRedelegate{
-				Creator: "invalid_address",
-				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:      "invalid_address",
+				FromProvider: sample.AccAddress(),
+				ToProvider:   sample.AccAddress(),
+				Amount:       oneCoin,
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "invalid provider address",
 			msg: MsgRedelegate{
-				Creator: sample.AccAddress(),
-				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:      sample.AccAddress(),
+				FromProvider: "invalid_address",
+				ToProvider:   sample.AccAddress(),
+				Amount:       oneCoin,
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		}, {
+			name: "valid address and amount",
+			msg: MsgRedelegate{
+				Creator:      sample.AccAddress(),
+				FromProvider: sample.AccAddress(),
+				ToProvider:   sample.AccAddress(),
+				Amount:       oneCoin,
 			},
 		}, {
-			name: "valid amount",
+			name: "invalid amount",
 			msg: MsgRedelegate{
-				Creator: sample.AccAddress(),
-				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:      sample.AccAddress(),
+				FromProvider: sample.AccAddress(),
+				ToProvider:   sample.AccAddress(),
+				Amount:       sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
 			},
+			err: legacyerrors.ErrInvalidCoins,
 		},
 	}
 	for _, tt := range tests {
