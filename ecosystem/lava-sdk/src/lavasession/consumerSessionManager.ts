@@ -27,6 +27,9 @@ import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import BigNumber from "bignumber.js";
 import { Logger } from "../logger/logger";
 import Relayer from "../relayer/relayer";
+import { grpc } from "@improbable-eng/grpc-web";
+import transportAllowInsecure from "../util/browserAllowInsecure";
+import transport from "../util/browser";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -51,14 +54,24 @@ export class ConsumerSessionManager {
 
   private relayer: Relayer;
 
+  private transport: grpc.TransportFactory;
+  private allowInsecureTransport = false;
+
   public constructor(
     relayer: Relayer,
     rpcEndpoint: RPCEndpoint,
-    providerOptimizer: ProviderOptimizer
+    providerOptimizer: ProviderOptimizer,
+    opts?: {
+      transport?: grpc.TransportFactory;
+      allowInsecureTransport?: boolean;
+    }
   ) {
     this.relayer = relayer;
     this.rpcEndpoint = rpcEndpoint;
     this.providerOptimizer = providerOptimizer;
+
+    this.allowInsecureTransport = opts?.allowInsecureTransport ?? false;
+    this.transport = opts?.transport ?? this.getTransport();
   }
 
   public getRpcEndpoint(): string {
@@ -186,7 +199,9 @@ export class ConsumerSessionManager {
         let sessionEpoch = sessionsWithProvider.currentEpoch;
 
         const endpointConn =
-          consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider();
+          consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(
+            this.transport
+          );
 
         if (endpointConn.error) {
           // if all provider endpoints are disabled, block and report provider
@@ -740,7 +755,9 @@ export class ConsumerSessionManager {
     consumerSessionsWithProvider: ConsumerSessionsWithProvider
   ): Promise<{ latency: number; providerAddress: string; error?: Error }> {
     const endpointConn =
-      consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider();
+      consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(
+        this.transport
+      );
     if (endpointConn.error || !endpointConn.connected) {
       return {
         latency: 0,
@@ -839,6 +856,10 @@ export class ConsumerSessionManager {
     task: Promise<ProbeReply>
   ): Promise<ProbeReply | Error> {
     return Promise.race([task, this.timeoutPromise(timeLimit)]);
+  }
+
+  private getTransport(): grpc.TransportFactory {
+    return this.allowInsecureTransport ? transportAllowInsecure : transport;
   }
 
   private timeoutPromise(timeout: number): Promise<Error> {

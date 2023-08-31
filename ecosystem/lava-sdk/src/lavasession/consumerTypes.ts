@@ -17,6 +17,7 @@ import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_p
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { Logger } from "../logger/logger";
 import { Result } from "./helpers";
+import { grpc } from "@improbable-eng/grpc-web";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -415,7 +416,9 @@ export class ConsumerSessionsWithProvider {
     };
   }
 
-  public fetchEndpointConnectionFromConsumerSessionWithProvider(): Result<{
+  public fetchEndpointConnectionFromConsumerSessionWithProvider(
+    transport: grpc.TransportFactory
+  ): Result<{
     connected: boolean;
     endpoint: Endpoint;
     providerAddress: string;
@@ -425,7 +428,7 @@ export class ConsumerSessionsWithProvider {
         endpoint.client = new RelayerClient(
           "https://" + endpoint.networkAddress,
           {
-            transport: transportAllowInsecure,
+            transport,
           }
         );
 
