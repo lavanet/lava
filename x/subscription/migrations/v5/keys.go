@@ -1,4 +1,4 @@
-package types
+package v5
 
 const (
 	// ModuleName defines the module name
@@ -22,7 +22,3 @@ const (
 	// prefix for the subscription fixation store
 	SubsTimerPrefix = "subs-ts"
 )
-
-func KeyPrefix(p string) []byte {
-	return []byte(p)
-}
