@@ -167,9 +167,9 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	content += "[Service]\n"
 	content += "  WorkingDirectory=" + workingDir + "\n"
 	if serviceParams.ServiceType == "consumer" {
-		content += "  ExecStart=" + workingDir + "/lava-protocol rpcconsumer "
+		content += "  ExecStart=" + workingDir + "lava-protocol rpcconsumer "
 	} else if serviceParams.ServiceType == "provider" {
-		content += "  ExecStart=" + workingDir + "/lava-protocol rpcprovider "
+		content += "  ExecStart=" + workingDir + "lava-protocol rpcprovider "
 	}
 	content += ".lava-visor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
