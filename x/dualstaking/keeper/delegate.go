@@ -297,15 +297,6 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		)
 	}
 
-	details := map[string]string{
-		"delegator": delegator,
-		"provider":  provider,
-		"chainID":   chainID,
-		"amount":    amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.DelegateEventName, details, "Delegate")
-
 	return nil
 }
 
@@ -363,17 +354,6 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 	// no need to transfer funds, because they remain in the dualstaking module
 	// (specifically in types.BondedPoolName).
 
-	details := map[string]string{
-		"delegator":     delegator,
-		"from_provider": from,
-		"to_provider":   to,
-		"from_chainID":  fromChainID,
-		"to_chainID":    toChainID,
-		"amount":        amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RedelegateEventName, details, "Redelegate")
-
 	return nil
 }
 
@@ -427,15 +407,6 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 			utils.Attribute{Key: "amount", Value: amount},
 		)
 	}
-
-	details := map[string]string{
-		"delegator": delegator,
-		"provider":  provider,
-		"chainID":   chainID,
-		"amount":    amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnbondingEventName, details, "Unbond")
 
 	return nil
 }
