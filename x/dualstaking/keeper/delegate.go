@@ -463,17 +463,17 @@ func decodeForTimer(encodedKey []byte) (string, string, string) {
 func (k Keeper) setUnbondingTimer(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	key := encodeForTimer(delegator, provider, chainID)
 
-	period := k.stakingKeeper.UnbondingTime(ctx)
-	timeout := ctx.BlockTime().Add(period).UTC().Unix()
+	unholdBlocks := k.getUnbondHoldBlocks(ctx, chainID)
+	timeout := uint64(ctx.BlockHeight()) + unholdBlocks
 
 	// the timer key encodes the unique delegator/provider/chainID combination.
 	// the timer data holds the amount to be released in the future (marshalled).
-	if k.unbondingTS.HasTimerByBlockTime(ctx, uint64(timeout), key) {
+	if k.unbondingTS.HasTimerByBlockHeight(ctx, timeout, key) {
 		return types.ErrUnbondingInProgress
 	}
 
 	data, _ := json.Marshal(amount)
-	k.unbondingTS.AddTimerByBlockTime(ctx, uint64(timeout), key, data)
+	k.unbondingTS.AddTimerByBlockHeight(ctx, timeout, key, data)
 
 	return nil
 }
