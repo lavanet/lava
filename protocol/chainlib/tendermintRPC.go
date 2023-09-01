@@ -335,6 +335,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
 	app.Post("/*", func(c *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -372,6 +375,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	})
 
 	app.Get("/*", func(c *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 
