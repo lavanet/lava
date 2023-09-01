@@ -455,7 +455,6 @@ func New(
 
 		app.BankKeeper,
 		app.AccountKeeper,
-		app.StakingKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
 	)

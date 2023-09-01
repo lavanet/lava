@@ -25,7 +25,6 @@ type (
 		accountKeeper      types.AccountKeeper
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
-		stakingKeeper      types.StakingKeeper
 
 		delegationFS common.FixationStore // map proviers/chainID -> delegations
 		delegatorFS  common.FixationStore // map delegators -> providers
@@ -40,7 +39,6 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
-	stakingKeeper types.StakingKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
 ) *Keeper {
@@ -58,6 +56,7 @@ func NewKeeper(
 		bankKeeper:         bankKeeper,
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
+		specKeeper:         specKeeper,
 	}
 
 	// ensure bonded and not bonded module accounts are set
@@ -76,7 +75,7 @@ func NewKeeper(
 	}
 
 	unbondingTS := *common.NewTimerStore(storeKey, cdc, types.UnbondingPrefix).
-		WithCallbackByBlockTime(timerCallback)
+		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS
 	keeper.delegatorFS = delegatorFS
