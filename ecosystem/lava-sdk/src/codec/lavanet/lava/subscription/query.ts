@@ -45,7 +45,7 @@ export interface ListInfoStruct {
   /** plan assosiated with the subscription */
   plan: string;
   /** total duration in months (purchase/renewal) */
-  durationTotal: Long;
+  durationBought: Long;
   /** remaining duration in months */
   durationLeft: Long;
   /** upcoming expiry (of current month) in unix time */
@@ -54,6 +54,8 @@ export interface ListInfoStruct {
   monthCuTotal: Long;
   /** remaining CU allowance this month */
   monthCuLeft: Long;
+  cluster: string;
+  durationTotal: Long;
 }
 
 function createBaseQueryParamsRequest(): QueryParamsRequest {
@@ -496,11 +498,13 @@ function createBaseListInfoStruct(): ListInfoStruct {
   return {
     consumer: "",
     plan: "",
-    durationTotal: Long.UZERO,
+    durationBought: Long.UZERO,
     durationLeft: Long.UZERO,
     monthExpiry: Long.UZERO,
     monthCuTotal: Long.UZERO,
     monthCuLeft: Long.UZERO,
+    cluster: "",
+    durationTotal: Long.UZERO,
   };
 }
 
@@ -512,8 +516,8 @@ export const ListInfoStruct = {
     if (message.plan !== "") {
       writer.uint32(18).string(message.plan);
     }
-    if (!message.durationTotal.isZero()) {
-      writer.uint32(24).uint64(message.durationTotal);
+    if (!message.durationBought.isZero()) {
+      writer.uint32(24).uint64(message.durationBought);
     }
     if (!message.durationLeft.isZero()) {
       writer.uint32(32).uint64(message.durationLeft);
@@ -526,6 +530,12 @@ export const ListInfoStruct = {
     }
     if (!message.monthCuLeft.isZero()) {
       writer.uint32(56).uint64(message.monthCuLeft);
+    }
+    if (message.cluster !== "") {
+      writer.uint32(66).string(message.cluster);
+    }
+    if (!message.durationTotal.isZero()) {
+      writer.uint32(72).uint64(message.durationTotal);
     }
     return writer;
   },
@@ -556,7 +566,7 @@ export const ListInfoStruct = {
             break;
           }
 
-          message.durationTotal = reader.uint64() as Long;
+          message.durationBought = reader.uint64() as Long;
           continue;
         case 4:
           if (tag != 32) {
@@ -586,6 +596,20 @@ export const ListInfoStruct = {
 
           message.monthCuLeft = reader.uint64() as Long;
           continue;
+        case 8:
+          if (tag != 66) {
+            break;
+          }
+
+          message.cluster = reader.string();
+          continue;
+        case 9:
+          if (tag != 72) {
+            break;
+          }
+
+          message.durationTotal = reader.uint64() as Long;
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -599,11 +623,13 @@ export const ListInfoStruct = {
     return {
       consumer: isSet(object.consumer) ? String(object.consumer) : "",
       plan: isSet(object.plan) ? String(object.plan) : "",
-      durationTotal: isSet(object.durationTotal) ? Long.fromValue(object.durationTotal) : Long.UZERO,
+      durationBought: isSet(object.durationBought) ? Long.fromValue(object.durationBought) : Long.UZERO,
       durationLeft: isSet(object.durationLeft) ? Long.fromValue(object.durationLeft) : Long.UZERO,
       monthExpiry: isSet(object.monthExpiry) ? Long.fromValue(object.monthExpiry) : Long.UZERO,
       monthCuTotal: isSet(object.monthCuTotal) ? Long.fromValue(object.monthCuTotal) : Long.UZERO,
       monthCuLeft: isSet(object.monthCuLeft) ? Long.fromValue(object.monthCuLeft) : Long.UZERO,
+      cluster: isSet(object.cluster) ? String(object.cluster) : "",
+      durationTotal: isSet(object.durationTotal) ? Long.fromValue(object.durationTotal) : Long.UZERO,
     };
   },
 
@@ -611,11 +637,13 @@ export const ListInfoStruct = {
     const obj: any = {};
     message.consumer !== undefined && (obj.consumer = message.consumer);
     message.plan !== undefined && (obj.plan = message.plan);
-    message.durationTotal !== undefined && (obj.durationTotal = (message.durationTotal || Long.UZERO).toString());
+    message.durationBought !== undefined && (obj.durationBought = (message.durationBought || Long.UZERO).toString());
     message.durationLeft !== undefined && (obj.durationLeft = (message.durationLeft || Long.UZERO).toString());
     message.monthExpiry !== undefined && (obj.monthExpiry = (message.monthExpiry || Long.UZERO).toString());
     message.monthCuTotal !== undefined && (obj.monthCuTotal = (message.monthCuTotal || Long.UZERO).toString());
     message.monthCuLeft !== undefined && (obj.monthCuLeft = (message.monthCuLeft || Long.UZERO).toString());
+    message.cluster !== undefined && (obj.cluster = message.cluster);
+    message.durationTotal !== undefined && (obj.durationTotal = (message.durationTotal || Long.UZERO).toString());
     return obj;
   },
 
@@ -627,8 +655,8 @@ export const ListInfoStruct = {
     const message = createBaseListInfoStruct();
     message.consumer = object.consumer ?? "";
     message.plan = object.plan ?? "";
-    message.durationTotal = (object.durationTotal !== undefined && object.durationTotal !== null)
-      ? Long.fromValue(object.durationTotal)
+    message.durationBought = (object.durationBought !== undefined && object.durationBought !== null)
+      ? Long.fromValue(object.durationBought)
       : Long.UZERO;
     message.durationLeft = (object.durationLeft !== undefined && object.durationLeft !== null)
       ? Long.fromValue(object.durationLeft)
@@ -641,6 +669,10 @@ export const ListInfoStruct = {
       : Long.UZERO;
     message.monthCuLeft = (object.monthCuLeft !== undefined && object.monthCuLeft !== null)
       ? Long.fromValue(object.monthCuLeft)
+      : Long.UZERO;
+    message.cluster = object.cluster ?? "";
+    message.durationTotal = (object.durationTotal !== undefined && object.durationTotal !== null)
+      ? Long.fromValue(object.durationTotal)
       : Long.UZERO;
     return message;
   },
