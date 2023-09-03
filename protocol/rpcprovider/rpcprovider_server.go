@@ -611,7 +611,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	if requestedBlockHash != nil || finalized {
 		var cacheReply *pairingtypes.CacheRelayReply
 		cacheReply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
-		reply = cacheReply.Reply
+		reply = cacheReply.GetReply()
 		ignoredMetadata = cacheReply.GetOptionalMetadata()
 		if err != nil && performance.NotConnectedError.Is(err) {
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})

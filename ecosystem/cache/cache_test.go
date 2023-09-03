@@ -306,10 +306,10 @@ func TestCacheSetGetLatest(t *testing.T) {
 			if tt.valid {
 				require.Nil(t, err)
 				if tt.latestIsCorrect {
-					require.Equal(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.GetReply().LatestBlock, tt.latestBlockForSetRelay)
 				} else {
-					require.Greater(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
-					require.Equal(t, cacheReply.Reply.LatestBlock, latestBlockForRelay)
+					require.Greater(t, cacheReply.GetReply().LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.GetReply().LatestBlock, latestBlockForRelay)
 				}
 			} else {
 				require.Error(t, err)
@@ -381,10 +381,10 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			if tt.valid {
 				require.Nil(t, err)
 				if tt.latestIsCorrect {
-					require.Equal(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.GetReply().LatestBlock, tt.latestBlockForSetRelay)
 				} else {
-					require.Greater(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
-					require.Equal(t, cacheReply.Reply.LatestBlock, latestBlockForRelay)
+					require.Greater(t, cacheReply.GetReply().LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.GetReply().LatestBlock, latestBlockForRelay)
 				}
 			} else {
 				require.Error(t, err)
@@ -480,7 +480,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
 				require.Nil(t, err)
-				result := gjson.GetBytes(cacheReply.Reply.Data, format.IDFieldName)
+				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				require.Equal(t, gjson.Number, result.Type)
 				extractedID := result.Int()
 				require.Equal(t, changedID, extractedID)
