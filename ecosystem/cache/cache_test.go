@@ -302,14 +302,14 @@ func TestCacheSetGetLatest(t *testing.T) {
 				Finalized: tt.finalized,
 			}
 
-			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
 				require.Nil(t, err)
 				if tt.latestIsCorrect {
-					require.Equal(t, reply.LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
 				} else {
-					require.Greater(t, reply.LatestBlock, tt.latestBlockForSetRelay)
-					require.Equal(t, reply.LatestBlock, latestBlockForRelay)
+					require.Greater(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.Reply.LatestBlock, latestBlockForRelay)
 				}
 			} else {
 				require.Error(t, err)
@@ -377,14 +377,14 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 				Finalized: tt.finalized,
 			}
 
-			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
 				require.Nil(t, err)
 				if tt.latestIsCorrect {
-					require.Equal(t, reply.LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
 				} else {
-					require.Greater(t, reply.LatestBlock, tt.latestBlockForSetRelay)
-					require.Equal(t, reply.LatestBlock, latestBlockForRelay)
+					require.Greater(t, cacheReply.Reply.LatestBlock, tt.latestBlockForSetRelay)
+					require.Equal(t, cacheReply.Reply.LatestBlock, latestBlockForRelay)
 				}
 			} else {
 				require.Error(t, err)
@@ -477,10 +477,10 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 				ChainID:   StubChainID,
 				Finalized: tt.finalized,
 			}
-			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
 				require.Nil(t, err)
-				result := gjson.GetBytes(reply.Data, format.IDFieldName)
+				result := gjson.GetBytes(cacheReply.Reply.Data, format.IDFieldName)
 				require.Equal(t, gjson.Number, result.Type)
 				extractedID := result.Int()
 				require.Equal(t, changedID, extractedID)

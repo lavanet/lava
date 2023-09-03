@@ -7,9 +7,14 @@ import "google/protobuf/empty.proto";
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service RelayerCache {
-    rpc GetRelay (RelayCacheGet) returns (RelayReply) {}
+    rpc GetRelay (RelayCacheGet) returns (CacheRelayReply) {}
     rpc SetRelay (RelayCacheSet) returns (google.protobuf.Empty) {}
     rpc Health (google.protobuf.Empty) returns (CacheUsage) {}
+}
+
+message CacheRelayReply {
+    RelayReply reply =1;
+    repeated Metadata optional_metadata = 2 [(gogoproto.nullable)   = false];
 }
 
 message CacheUsage {
@@ -32,4 +37,5 @@ message RelayCacheSet {
     RelayReply response =4;
     bool finalized =5;
     string provider =6;
+    repeated Metadata optional_metadata = 7 [(gogoproto.nullable)   = false];
 }

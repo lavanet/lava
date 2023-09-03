@@ -36,7 +36,7 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 	return &cache, nil
 }
 
-func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, finalized bool, provider string) (reply *pairingtypes.RelayReply, err error) {
+func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, finalized bool, provider string) (reply *pairingtypes.CacheRelayReply, err error) {
 	if cache == nil {
 		// TODO: try to connect again once in a while
 		return nil, NotInitialisedError

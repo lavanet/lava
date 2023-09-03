@@ -609,7 +609,10 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	var err error = nil
 	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
-		reply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
+		var cacheReply *pairingtypes.CacheRelayReply
+		cacheReply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
+		reply = cacheReply.Reply
+		ignoredMetadata = cacheReply.GetOptionalMetadata()
 	}
 	if err != nil || reply == nil {
 		if err != nil && performance.NotConnectedError.Is(err) {

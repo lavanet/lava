@@ -374,8 +374,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			if chainMessage.RequestedBlock() != spectypes.NOT_APPLICABLE {
 				// try using cache before sending relay
-				var reply *pairingtypes.RelayReply
-				reply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				var cacheReply *pairingtypes.CacheRelayReply
+				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				reply := cacheReply.Reply
 				if errResponse == nil && reply != nil {
 					// Info was fetched from cache, so we don't need to change the state
 					// so we can return here, no need to update anything and calculate as this info was fetched from the cache

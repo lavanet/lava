@@ -39,8 +39,16 @@ type RelayerCacheServer struct {
 }
 
 type CacheValue struct {
-	Response pairingtypes.RelayReply
-	Hash     []byte
+	Response         pairingtypes.RelayReply
+	Hash             []byte
+	OptionalMetadata []pairingtypes.Metadata
+}
+
+func (cv *CacheValue) ToCacheReply() *pairingtypes.CacheRelayReply {
+	return &pairingtypes.CacheRelayReply{
+		Reply:            &cv.Response,
+		OptionalMetadata: cv.OptionalMetadata,
+	}
 }
 
 func (cv *CacheValue) Cost() int64 {
@@ -56,10 +64,10 @@ func (cv *LastestCacheStore) Cost() int64 {
 	return 8 + 16
 }
 
-func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (reply *pairingtypes.RelayReply, err error) {
+func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (cacheReply *pairingtypes.CacheRelayReply, err error) {
 	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
 
-	reply, err = s.getRelayInner(ctx, relayCacheGet)
+	cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
 	var hit bool
 	if err != nil {
 		s.cacheMiss(ctx, err)
@@ -72,7 +80,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	return
 }
 
-func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.RelayReply, error) {
+func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
 	inputFormatter, outputFormatter := format.FormatterForRelayRequestAndResponse(relayCacheGet.Request.ApiInterface)
 	relayCacheGet.Request.Data = inputFormatter(relayCacheGet.Request.Data)
 	requestedBlock := relayCacheGet.Request.RequestBlock
@@ -97,7 +105,7 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 			utils.Attribute{Key: "hash", Value: "nil"},
 			utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(cacheVal.Response.Data))},
 		)
-		return &cacheVal.Response, nil
+		return cacheVal.ToCacheReply(), nil
 	}
 	// entry found, now we check the hash requested and hash stored
 	if bytes.Equal(cacheVal.Hash, relayCacheGet.BlockHash) {
@@ -106,7 +114,7 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 			utils.Attribute{Key: "hash", Value: "match"},
 			utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(cacheVal.Response.Data))},
 		)
-		return &cacheVal.Response, nil
+		return cacheVal.ToCacheReply(), nil
 	}
 	// TODO: handle case where we have hash stored and it became finalized
 	return nil, HashMismatchError
@@ -121,8 +129,8 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	relayCacheSet.Request.Data = inputFormatter(relayCacheSet.Request.Data) // so we can find the entry regardless of id
 
 	cacheKey := formatCacheKey(relayCacheSet.Request.ApiInterface, relayCacheSet.ChainID, relayCacheSet.Request, relayCacheSet.Provider)
-	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized)
-	_ = utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
+	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata)
+	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
 		utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(relayCacheSet.Response.Data))},
 		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)})
@@ -269,14 +277,22 @@ func usedFieldsFromRequest(request *pairingtypes.RelayPrivateData, provider stri
 	return relayDataStr + SEP + provider
 }
 
-func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool) CacheValue {
+func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool, optionalMetadata []pairingtypes.Metadata) CacheValue {
 	response.Sig = []byte{} // make sure we return a signed value, as the output was modified by our outputParser
 	if !finalized {
 		// hash value is only used on non finalized entries to check for forks
-		return CacheValue{Response: *response, Hash: hash}
+		return CacheValue{
+			Response:         *response,
+			Hash:             hash,
+			OptionalMetadata: optionalMetadata,
+		}
 	}
 	// no need to store the hash value for finalized entries
-	return CacheValue{Response: *response, Hash: nil}
+	return CacheValue{
+		Response:         *response,
+		Hash:             nil,
+		OptionalMetadata: optionalMetadata,
+	}
 }
 
 func latestBlockKey(chainID string, providerAddr string) string {
