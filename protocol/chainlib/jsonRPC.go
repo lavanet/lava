@@ -306,6 +306,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
 	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
