@@ -21,6 +21,7 @@ protoc \
   --ts_proto_opt="esModuleInterop=true,forceLong=long,useOptionals=true" \
   $THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto \
   $THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/query.proto \
+  $THIRD_PARTY_PROTO_DIR/lavanet/lava/pairing/relay.proto \
   $THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/spec.proto \
 
 # Remove unnecessary codec files
