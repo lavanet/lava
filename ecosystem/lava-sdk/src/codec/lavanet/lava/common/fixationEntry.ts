@@ -21,6 +21,18 @@ export interface Entry {
   isLatest: boolean;
 }
 
+export interface GenesisEntries {
+  index: string;
+  isLive: boolean;
+  entries: Entry[];
+}
+
+export interface GenesisState {
+  version: Long;
+  entries: GenesisEntries[];
+  timerstore: RawMessage[];
+}
+
 export interface RawMessage {
   key: Uint8Array;
   value: Uint8Array;
@@ -173,6 +185,188 @@ export const Entry = {
       ? Long.fromValue(object.deleteAt)
       : Long.UZERO;
     message.isLatest = object.isLatest ?? false;
+    return message;
+  },
+};
+
+function createBaseGenesisEntries(): GenesisEntries {
+  return { index: "", isLive: false, entries: [] };
+}
+
+export const GenesisEntries = {
+  encode(message: GenesisEntries, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.index !== "") {
+      writer.uint32(18).string(message.index);
+    }
+    if (message.isLive === true) {
+      writer.uint32(24).bool(message.isLive);
+    }
+    for (const v of message.entries) {
+      Entry.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenesisEntries {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGenesisEntries();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.index = reader.string();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.isLive = reader.bool();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.entries.push(Entry.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GenesisEntries {
+    return {
+      index: isSet(object.index) ? String(object.index) : "",
+      isLive: isSet(object.isLive) ? Boolean(object.isLive) : false,
+      entries: Array.isArray(object?.entries) ? object.entries.map((e: any) => Entry.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: GenesisEntries): unknown {
+    const obj: any = {};
+    message.index !== undefined && (obj.index = message.index);
+    message.isLive !== undefined && (obj.isLive = message.isLive);
+    if (message.entries) {
+      obj.entries = message.entries.map((e) => e ? Entry.toJSON(e) : undefined);
+    } else {
+      obj.entries = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GenesisEntries>, I>>(base?: I): GenesisEntries {
+    return GenesisEntries.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GenesisEntries>, I>>(object: I): GenesisEntries {
+    const message = createBaseGenesisEntries();
+    message.index = object.index ?? "";
+    message.isLive = object.isLive ?? false;
+    message.entries = object.entries?.map((e) => Entry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGenesisState(): GenesisState {
+  return { version: Long.UZERO, entries: [], timerstore: [] };
+}
+
+export const GenesisState = {
+  encode(message: GenesisState, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (!message.version.isZero()) {
+      writer.uint32(8).uint64(message.version);
+    }
+    for (const v of message.entries) {
+      GenesisEntries.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    for (const v of message.timerstore) {
+      RawMessage.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GenesisState {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGenesisState();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.version = reader.uint64() as Long;
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.entries.push(GenesisEntries.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.timerstore.push(RawMessage.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GenesisState {
+    return {
+      version: isSet(object.version) ? Long.fromValue(object.version) : Long.UZERO,
+      entries: Array.isArray(object?.entries) ? object.entries.map((e: any) => GenesisEntries.fromJSON(e)) : [],
+      timerstore: Array.isArray(object?.timerstore) ? object.timerstore.map((e: any) => RawMessage.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: GenesisState): unknown {
+    const obj: any = {};
+    message.version !== undefined && (obj.version = (message.version || Long.UZERO).toString());
+    if (message.entries) {
+      obj.entries = message.entries.map((e) => e ? GenesisEntries.toJSON(e) : undefined);
+    } else {
+      obj.entries = [];
+    }
+    if (message.timerstore) {
+      obj.timerstore = message.timerstore.map((e) => e ? RawMessage.toJSON(e) : undefined);
+    } else {
+      obj.timerstore = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GenesisState>, I>>(base?: I): GenesisState {
+    return GenesisState.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GenesisState>, I>>(object: I): GenesisState {
+    const message = createBaseGenesisState();
+    message.version = (object.version !== undefined && object.version !== null)
+      ? Long.fromValue(object.version)
+      : Long.UZERO;
+    message.entries = object.entries?.map((e) => GenesisEntries.fromPartial(e)) || [];
+    message.timerstore = object.timerstore?.map((e) => RawMessage.fromPartial(e)) || [];
     return message;
   },
 };

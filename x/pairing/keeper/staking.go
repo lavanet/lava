@@ -170,7 +170,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 
 	geolocMapRequired := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
-	geolocations := k.specKeeper.GeolocationCount(ctx)
+	geolocations := len(planstypes.GetAllGeolocations())
 
 	geolocKey := func(intefaceName string, geolocation int32, addon, extension string) epochstoragetypes.EndpointService {
 		return epochstoragetypes.EndpointService{
@@ -180,7 +180,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		}
 	}
 
-	for idx := uint64(0); idx < geolocations; idx++ {
+	for idx := uint64(0); idx < uint64(geolocations); idx++ {
 		// geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {

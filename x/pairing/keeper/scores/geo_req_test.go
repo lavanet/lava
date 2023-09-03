@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
@@ -96,7 +97,8 @@ func TestGeoReqScore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			geoReq.Geo = tt.reqGeo
 			stakeEntry.Geolocation = tt.providerGeo
-			score := geoReq.Score(stakeEntry)
+			pairingScore := NewPairingScore(&stakeEntry, types.QualityOfServiceReport{})
+			score := geoReq.Score(*pairingScore)
 			require.True(t, score.Equal(calculateCostFromLatency(tt.expectedLatency)))
 		})
 	}

@@ -11,9 +11,9 @@
                     "denom": "ulava",
                     "amount": "100000"
                 },
-                "annual_discount_percentage": "20",
-                "allow_overuse": false,
-                "overuse_rate": "0",
+                "annual_discount_percentage": 20,
+                "allow_overuse": true,
+                "overuse_rate": 2,
                 "plan_policy": {
                     "chain_policies": [
                         {
@@ -29,10 +29,14 @@
                             ]
                         }
                     ],
-                    "geolocation_profile": 65535,
-                    "total_cu_limit": "1000000",
-                    "epoch_cu_limit": "100000",
-                    "max_providers_to_pair": "3"
+                    "geolocation_profile": "AU",
+                    "total_cu_limit": 1000000,
+                    "epoch_cu_limit": 100000,
+                    "max_providers_to_pair": 3,
+                    "selected_providers_mode": "MIXED",
+                    "selected_providers": [
+                        "lava@1wvn4slrf2r7cm92fnqdhvl3x470944uev92squ"
+                    ]
                 }
             }
         ]

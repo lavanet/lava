@@ -162,7 +162,7 @@ jobs:
 
       - name: Install telescope dependencies
         run: |
-          sudo apt-get install -y expect
+          go mod tidy
           cd ecosystem/lavajs
           npm install
           npm run e2e-setup

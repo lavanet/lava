@@ -215,7 +215,7 @@ func TestRenewSubscription(t *testing.T) {
 	require.True(t, found)
 
 	require.Equal(t, uint64(12), sub.DurationLeft)
-	require.Equal(t, uint64(9), sub.DurationTotal)
+	require.Equal(t, uint64(9), sub.DurationBought)
 
 	// edit the subscription's plan (allow more CU)
 	cuPerEpoch := plan.PlanPolicy.EpochCuLimit
@@ -229,7 +229,7 @@ func TestRenewSubscription(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
 	require.NotNil(t, err)
 	require.Equal(t, uint64(12), sub.DurationLeft)
-	require.Equal(t, uint64(9), sub.DurationTotal)
+	require.Equal(t, uint64(9), sub.DurationBought)
 
 	// get the subscription's plan and make sure it uses the old plan
 	plan, found = ts.FindPlan(sub.PlanIndex, sub.PlanBlock)
@@ -341,7 +341,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			ts.AdvanceMonths(1).AdvanceEpoch()
 			sub, found = ts.getSubscription(sub1Addr)
 			require.True(t, found)
-			require.Equal(t, sub.DurationTotal-uint64(ti+1), sub.DurationLeft)
+			require.Equal(t, sub.DurationBought-uint64(ti+1), sub.DurationLeft)
 
 			block3 := ts.BlockHeight()
 
@@ -412,7 +412,7 @@ func TestExpiryTime(t *testing.T) {
 
 			sub, found := ts.getSubscription(sub1Addr)
 			require.True(t, found)
-			require.Equal(t, uint64(tt.months), sub.DurationTotal)
+			require.Equal(t, uint64(tt.months), sub.DurationBought)
 
 			// will expire and remove
 			ts.AdvanceMonths(tt.months).AdvanceEpoch()
@@ -680,4 +680,56 @@ func TestDelProjectEndSubscription(t *testing.T) {
 
 	// should not panic
 	ts.AdvanceBlock(2 * commontypes.STALE_ENTRY_TIME)
+}
+
+// TestDurationTotal tests that the total duration of the subscription is updated correctly
+func TestDurationTotal(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	months := 12
+	plan := ts.Plan("mock")
+
+	_, subAddr := ts.Account("sub1")
+	_, err := ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, months)
+	require.Nil(t, err)
+
+	for i := 0; i < months-1; i++ {
+		subRes, err := ts.QuerySubscriptionCurrent(subAddr)
+		sub := subRes.Sub
+		require.Nil(t, err)
+		require.Equal(t, uint64(i), sub.DurationTotal)
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+	}
+
+	// buy extra 4 months and check duration total continues from last count
+	subRes, err := ts.QuerySubscriptionCurrent(subAddr)
+	require.Nil(t, err)
+	durationSoFar := subRes.Sub.DurationTotal
+
+	extraMonths := 4
+	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths)
+	require.Nil(t, err)
+
+	for i := 0; i < extraMonths; i++ {
+		subRes, err := ts.QuerySubscriptionCurrent(subAddr)
+		sub := subRes.Sub
+		require.Nil(t, err)
+		require.Equal(t, uint64(i)+durationSoFar, sub.DurationTotal)
+		ts.AdvanceMonths(1)
+		ts.AdvanceEpoch()
+	}
+
+	// expire subscription and buy a new one. verify duration total starts from scratch
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	subRes, err = ts.QuerySubscriptionCurrent(subAddr)
+	require.Nil(t, err)
+	require.Nil(t, subRes.Sub)
+
+	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths)
+	require.Nil(t, err)
+	subRes, err = ts.QuerySubscriptionCurrent(subAddr)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), subRes.Sub.DurationTotal)
 }

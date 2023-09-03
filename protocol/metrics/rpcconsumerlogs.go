@@ -22,6 +22,8 @@ var ReturnMaskedErrors = "false"
 const (
 	webSocketCloseMessage = "websocket: close 1005 (no status)"
 	RefererHeaderKey      = "Referer"
+	OriginHeaderKey       = "Origin"
+	UserAgentHeaderKey    = "User-Agent"
 )
 
 type RPCConsumerLogs struct {
@@ -29,6 +31,7 @@ type RPCConsumerLogs struct {
 	MetricService           *MetricService
 	StoreMetricData         bool
 	excludeMetricsReferrers string
+	excludedUserAgent       []string
 	consumerMetricsManager  *ConsumerMetricsManager
 }
 
@@ -73,16 +76,20 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager) (*RPCCon
 		rpcConsumerLogs.StoreMetricData = true
 		rpcConsumerLogs.MetricService = NewMetricService()
 		rpcConsumerLogs.excludeMetricsReferrers = os.Getenv("TO_EXCLUDE_METRICS_REFERRERS")
+		agentsValue := os.Getenv("TO_EXCLUDE_METRICS_AGENTS")
+		if len(agentsValue) > 0 {
+			rpcConsumerLogs.excludedUserAgent = strings.Split(agentsValue, ";")
+		}
 	}
 	return rpcConsumerLogs, err
 }
 
-func (pl *RPCConsumerLogs) GetMessageSeed() string {
+func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
-func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
+func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
 	type ErrorData struct {
 		Error_GUID string `json:"Error_GUID"`
 		Error      string `json:"Error,omitempty"`
@@ -104,23 +111,23 @@ func (pl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, ms
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
-func (pl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
+func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
 			utils.LavaFormatInfo("Websocket connection closed by the user, " + err.Error())
 			return
 		}
-		pl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
+		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
 
 		jsonResponse, _ := json.Marshal(fiber.Map{
-			"Error_Received": pl.GetUniqueGuidResponseForError(err, msgSeed),
+			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
 
 		c.WriteMessage(mt, jsonResponse)
 	}
 }
 
-func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, err error) {
+func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, err error) {
 	if hasError && err != nil {
 		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
@@ -128,13 +135,13 @@ func (pl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, m
 	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
-func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
-	if pl.newRelicApplication == nil {
+func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
+	if rpccl.newRelicApplication == nil {
 		return func() {
 		}
 	}
 
-	tx := pl.newRelicApplication.StartTransaction(name)
+	tx := rpccl.newRelicApplication.StartTransaction(name)
 
 	return func() {
 		if tx != nil {
@@ -143,57 +150,67 @@ func (pl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
-func (pl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
-	data.Success = err == nil
-	pl.consumerMetricsManager.SetRelayMetrics(data)
-	if pl.StoreMetricData && pl.shouldCountMetricForHttp(headers) {
-		pl.MetricService.SendData(*data)
-	}
-}
-
-func (pl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
-	data.Success = err == nil
-	pl.consumerMetricsManager.SetRelayMetrics(data)
-	if pl.StoreMetricData && pl.shouldCountMetricForWebSocket(c) {
-		pl.MetricService.SendData(*data)
-	}
-}
-
-func (pl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, metadataValues *metadata.MD) {
-	data.Success = err == nil
-	pl.consumerMetricsManager.SetRelayMetrics(data)
-	if pl.StoreMetricData && pl.shouldCountMetricForGrpc(metadataValues) {
-		pl.MetricService.SendData(*data)
-	}
-}
-
-func (pl *RPCConsumerLogs) shouldCountMetricForHttp(headers map[string]string) bool {
+func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
+	rpccl.consumerMetricsManager.SetRelayMetrics(data)
 	refererHeaderValue := headers[RefererHeaderKey]
-	return pl.shouldCountMetrics(refererHeaderValue)
+	userAgentHeaderValue := headers[UserAgentHeaderKey]
+	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
+		originHeaderValue := headers[OriginHeaderKey]
+		rpccl.SendMetrics(data, err, originHeaderValue)
+	}
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetricForWebSocket(c *websocket.Conn) bool {
-	refererHeaderValue, isHeaderFound := c.Locals(RefererHeaderKey).(string)
-	if !isHeaderFound {
-		return true
+func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
+	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
+	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
+	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
+		originHeaderValue, _ := c.Locals(OriginHeaderKey).(string)
+		rpccl.SendMetrics(data, err, originHeaderValue)
 	}
-	return pl.shouldCountMetrics(refererHeaderValue)
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetricForGrpc(metadataValues *metadata.MD) bool {
-	if metadataValues != nil {
-		refererHeaderValue := metadataValues.Get(RefererHeaderKey)
-		result := len(refererHeaderValue) > 0 && pl.shouldCountMetrics(refererHeaderValue[0])
-		return !result
+func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, metadataValues *metadata.MD) {
+	getMetadataHeaderOrDefault := func(headerKey string) string {
+		headerValues := metadataValues.Get(headerKey)
+		headerValue := ""
+		if len(headerValues) > 0 {
+			headerValue = headerValues[0]
+		}
+		return headerValue
 	}
-	return true
+	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
+	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
+	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
+		originHeaderValue := getMetadataHeaderOrDefault(OriginHeaderKey)
+		rpccl.SendMetrics(data, err, originHeaderValue)
+	}
 }
 
-func (pl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string) bool {
-	if len(pl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
-		return !strings.Contains(refererHeaderValue, pl.excludeMetricsReferrers)
+func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, userAgentHeaderValue string) bool {
+	result := true
+	if len(rpccl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
+		result = !strings.Contains(refererHeaderValue, rpccl.excludeMetricsReferrers)
 	}
-	return true
+	if !result {
+		return false
+	}
+
+	if len(userAgentHeaderValue) > 0 {
+		for _, excludedAgent := range rpccl.excludedUserAgent {
+			if strings.Contains(userAgentHeaderValue, excludedAgent) {
+				return false
+			}
+		}
+	}
+	return result
+}
+
+func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {
+	data.Success = err == nil
+	data.Origin = origin
+	rpccl.MetricService.SendData(*data)
 }
 
 func (rpccl *RPCConsumerLogs) LogTestMode(fiberCtx *fiber.Ctx) {

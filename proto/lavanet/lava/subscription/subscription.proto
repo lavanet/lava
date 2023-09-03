@@ -9,11 +9,13 @@ message Subscription {
   uint64 block = 3; // when the subscription was last recharged
   string plan_index = 4; // index (name) of plan
   uint64 plan_block = 5; // when the plan was created
-  uint64 duration_total = 6; // total requested duration in months
+  uint64 duration_bought = 6; // total requested duration in months
   uint64 duration_left = 7; // remaining duration in months
   uint64 month_expiry_time = 8; // expiry time of current month
   reserved 9;
   uint64 month_cu_total = 10; // CU allowance during current month
   uint64 month_cu_left = 11; // CU remaining during current month
   reserved 12;
+  string cluster = 13;         // cluster key
+  uint64 duration_total = 14;  // continous subscription usage
 }

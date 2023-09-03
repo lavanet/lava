@@ -13,6 +13,10 @@ type GeolocationFilter struct {
 	geolocation int32
 }
 
+func (f *GeolocationFilter) IsMix() bool {
+	return false
+}
+
 func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 	/*
 		if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||

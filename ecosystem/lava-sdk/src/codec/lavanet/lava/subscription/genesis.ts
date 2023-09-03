@@ -1,7 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { RawMessage } from "../common/fixationEntry";
+import { GenesisState as GenesisState1, RawMessage } from "../common/fixationEntry";
 import { Params } from "./params";
 
 export const protobufPackage = "lavanet.lava.subscription";
@@ -9,13 +9,13 @@ export const protobufPackage = "lavanet.lava.subscription";
 /** GenesisState defines the subscription module's genesis state. */
 export interface GenesisState {
   params?: Params;
-  subsFS: RawMessage[];
+  subsFS?: GenesisState1;
   /** this line is used by starport scaffolding # genesis/proto/state */
   subsTS: RawMessage[];
 }
 
 function createBaseGenesisState(): GenesisState {
-  return { params: undefined, subsFS: [], subsTS: [] };
+  return { params: undefined, subsFS: undefined, subsTS: [] };
 }
 
 export const GenesisState = {
@@ -23,8 +23,8 @@ export const GenesisState = {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(10).fork()).ldelim();
     }
-    for (const v of message.subsFS) {
-      RawMessage.encode(v!, writer.uint32(18).fork()).ldelim();
+    if (message.subsFS !== undefined) {
+      GenesisState1.encode(message.subsFS, writer.uint32(18).fork()).ldelim();
     }
     for (const v of message.subsTS) {
       RawMessage.encode(v!, writer.uint32(26).fork()).ldelim();
@@ -51,7 +51,7 @@ export const GenesisState = {
             break;
           }
 
-          message.subsFS.push(RawMessage.decode(reader, reader.uint32()));
+          message.subsFS = GenesisState1.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag != 26) {
@@ -72,7 +72,7 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
-      subsFS: Array.isArray(object?.subsFS) ? object.subsFS.map((e: any) => RawMessage.fromJSON(e)) : [],
+      subsFS: isSet(object.subsFS) ? GenesisState1.fromJSON(object.subsFS) : undefined,
       subsTS: Array.isArray(object?.subsTS) ? object.subsTS.map((e: any) => RawMessage.fromJSON(e)) : [],
     };
   },
@@ -80,11 +80,7 @@ export const GenesisState = {
   toJSON(message: GenesisState): unknown {
     const obj: any = {};
     message.params !== undefined && (obj.params = message.params ? Params.toJSON(message.params) : undefined);
-    if (message.subsFS) {
-      obj.subsFS = message.subsFS.map((e) => e ? RawMessage.toJSON(e) : undefined);
-    } else {
-      obj.subsFS = [];
-    }
+    message.subsFS !== undefined && (obj.subsFS = message.subsFS ? GenesisState1.toJSON(message.subsFS) : undefined);
     if (message.subsTS) {
       obj.subsTS = message.subsTS.map((e) => e ? RawMessage.toJSON(e) : undefined);
     } else {
@@ -102,7 +98,9 @@ export const GenesisState = {
     message.params = (object.params !== undefined && object.params !== null)
       ? Params.fromPartial(object.params)
       : undefined;
-    message.subsFS = object.subsFS?.map((e) => RawMessage.fromPartial(e)) || [];
+    message.subsFS = (object.subsFS !== undefined && object.subsFS !== null)
+      ? GenesisState1.fromPartial(object.subsFS)
+      : undefined;
     message.subsTS = object.subsTS?.map((e) => RawMessage.fromPartial(e)) || [];
     return message;
   },
