@@ -20,7 +20,7 @@ type tester struct {
 }
 
 const (
-	testBalance int64 = 100000000
+	testBalance int64 = 1000000
 	testStake   int64 = 100000
 )
 

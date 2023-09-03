@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 )
 
 func defaultUpgradeHandler(
@@ -50,4 +51,13 @@ var Upgrade_0_20_3 = Upgrade{
 	UpgradeName:          "v0.20.3",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+// Upgrade_0_20_4 adds new module: dualstaking
+var Upgrade_0_20_4 = Upgrade{
+	UpgradeName:          "v0.20.4",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added: []string{dualstakingtypes.StoreKey},
+	},
 }

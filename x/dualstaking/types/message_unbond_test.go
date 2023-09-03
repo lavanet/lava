@@ -10,30 +10,44 @@ import (
 )
 
 func TestMsgUnbond_ValidateBasic(t *testing.T) {
+	oneCoin := sdk.NewCoin("utest", sdk.NewInt(1))
+
 	tests := []struct {
 		name string
 		msg  MsgUnbond
 		err  error
 	}{
 		{
-			name: "invalid address",
+			name: "invalid delegator address",
 			msg: MsgUnbond{
-				Creator: "invalid_address",
-				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:  "invalid_address",
+				Provider: sample.AccAddress(),
+				Amount:   oneCoin,
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		}, {
-			name: "valid address",
+			name: "invalid provider address",
 			msg: MsgUnbond{
-				Creator: sample.AccAddress(),
-				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:  sample.AccAddress(),
+				Provider: "invalid_address",
+				Amount:   oneCoin,
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		}, {
+			name: "valid addresses and amount",
+			msg: MsgUnbond{
+				Creator:  sample.AccAddress(),
+				Provider: sample.AccAddress(),
+				Amount:   oneCoin,
 			},
 		}, {
 			name: "valid amount",
 			msg: MsgUnbond{
-				Creator: sample.AccAddress(),
-				Amount:  sdk.NewCoin("utest", sdk.NewInt(1)),
+				Creator:  sample.AccAddress(),
+				Provider: sample.AccAddress(),
+				Amount:   sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
 			},
+			err: legacyerrors.ErrInvalidCoins,
 		},
 	}
 	for _, tt := range tests {

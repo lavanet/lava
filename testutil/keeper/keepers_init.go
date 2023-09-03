@@ -228,7 +228,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.StakingKeeper = mockStakingKeeper{}
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.StakingKeeper, ks.Epochstorage, ks.Spec)
+	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
@@ -273,6 +273,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
+	ks.Dualstaking.InitDelegations(ctx, []types.RawMessage{})
+	ks.Dualstaking.InitDelegators(ctx, []types.RawMessage{})
+	ks.Dualstaking.InitUnbondings(ctx, []types.RawMessage{})
 	ks.Plans.InitPlans(ctx, []types.RawMessage{})
 	ks.Subscription.InitSubscriptions(ctx, []types.RawMessage{})
 	ks.Projects.InitDevelopers(ctx, []types.RawMessage{})
