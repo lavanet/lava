@@ -252,8 +252,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	return res, nil
 }
 
-func NewChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *ChainFetcher {
-	cf := &ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
+func NewChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint, cache *performance.Cache) *ChainFetcher {
+	cf := &ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint, cache: cache}
 	return cf
 }
 

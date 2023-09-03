@@ -111,9 +111,12 @@ func shallowCopy(request *pairingtypes.RelayPrivateData) *pairingtypes.RelayPriv
 		ConnectionType: request.ConnectionType,
 		ApiUrl:         request.ApiUrl,
 		Data:           request.Data,
-		Salt:           request.Salt,
 		RequestBlock:   request.RequestBlock,
+		ApiInterface:   request.ApiInterface,
+		Salt:           request.Salt,
 		Metadata:       request.Metadata,
+		Addon:          request.Addon,
+		Extensions:     request.Extensions,
 	}
 }
 
