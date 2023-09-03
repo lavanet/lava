@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -12,6 +14,7 @@ import (
 	"github.com/lavanet/lava/app"
 	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
+	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 
 	"github.com/lavanet/lava/protocol/statetracker"
 
@@ -58,7 +61,15 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 
-	versionMonitor := processmanager.NewVersionMonitor(version.ProviderMin, lavavisorPath, services, autoDownload)
+	// Select most recent version set by init command (in the range of min-target version)
+	selectedVersion, err := SelectMostRecentVersionFromDir(lavavisorPath, version)
+	if err != nil {
+		utils.LavaFormatFatal("failed getting most recent version from .lava-visor dir", err)
+	}
+	utils.LavaFormatInfo("Version check OK in '.lava-visor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
+
+	// Initialize version monitor with selected most recent version
+	versionMonitor := processmanager.NewVersionMonitor(selectedVersion, lavavisorPath, services, autoDownload)
 
 	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
 
@@ -147,4 +158,58 @@ func LavavisorStart(cmd *cobra.Command) error {
 	lavavisor := LavaVisor{}
 	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, processes)
 	return err
+}
+
+func SelectMostRecentVersionFromDir(lavavisorPath string, version *protocoltypes.Version) (selectedVersion string, err error) {
+	upgradesDir := filepath.Join(lavavisorPath, "upgrades")
+	// List all directories under lava-visor/upgrades
+	dirs, err := os.ReadDir(upgradesDir)
+	if err != nil {
+		return "", err
+	}
+	// Filter out directories that match the version naming pattern
+	var versions []string
+	for _, dir := range dirs {
+		if dir.IsDir() && strings.HasPrefix(dir.Name(), "v") {
+			versions = append(versions, dir.Name())
+		}
+	}
+	// Sort versions in descending order based on semantic versioning
+	sort.Slice(versions, func(i, j int) bool {
+		v1 := lvutil.ParseToSemanticVersion(strings.TrimPrefix(versions[i], "v"))
+		v2 := lvutil.ParseToSemanticVersion(strings.TrimPrefix(versions[j], "v"))
+		return lvutil.IsVersionGreaterThan(v1, v2)
+	})
+	// Define the version range
+	minVersion := lvutil.ParseToSemanticVersion(version.ProviderMin)
+	targetVersion := lvutil.ParseToSemanticVersion(version.ProviderTarget)
+	// Iterate and check for the most recent valid version within the range
+	selectedVersion = ""
+	for _, ver := range versions {
+		parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(ver, "v"))
+		if lvutil.IsVersionLessThan(parsedVer, minVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+			continue
+		}
+		versionDir := filepath.Join(upgradesDir, ver)
+		binaryPath := filepath.Join(versionDir, "lava-protocol")
+		binaryVersion, err := processmanager.GetBinaryVersion(binaryPath)
+		if err != nil || binaryVersion == "" {
+			continue
+		}
+		binaryVersionSemantic := lvutil.ParseToSemanticVersion(strings.TrimPrefix(ver, "v"))
+		// second check to see if returned protocol binary version is actually in the allowed range
+		if lvutil.IsVersionLessThan(binaryVersionSemantic, minVersion) || lvutil.IsVersionGreaterThan(binaryVersionSemantic, targetVersion) {
+			continue
+		}
+		if binaryVersion == strings.TrimPrefix(ver, "v") {
+			selectedVersion = binaryVersion
+			break
+		}
+	}
+
+	if selectedVersion == "" {
+		return "", utils.LavaFormatError("No valid version found in the range", nil)
+	}
+
+	return selectedVersion, nil
 }

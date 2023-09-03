@@ -119,6 +119,14 @@ func IsVersionLessThan(v1, v2 *SemanticVer) bool {
 	return false
 }
 
+func IsVersionGreaterThan(v1, v2 *SemanticVer) bool {
+	return !IsVersionLessThan(v1, v2) && !IsVersionEqual(v1, v2)
+}
+
+func IsVersionEqual(v1, v2 *SemanticVer) bool {
+	return v1.Major == v2.Major && v1.Minor == v2.Minor && v1.Patch == v2.Patch
+}
+
 // Format the version struct back to a string "vX.Y.Z"
 func FormatFromSemanticVersion(v *SemanticVer) string {
 	return fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)

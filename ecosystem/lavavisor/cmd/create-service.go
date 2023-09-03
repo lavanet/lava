@@ -167,9 +167,9 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	content += "[Service]\n"
 	content += "  WorkingDirectory=" + workingDir + "\n"
 	if serviceParams.ServiceType == "consumer" {
-		content += "  ExecStart=" + workingDir + "/lava-protocol rpcconsumer "
+		content += "  ExecStart=" + workingDir + "lava-protocol rpcconsumer "
 	} else if serviceParams.ServiceType == "provider" {
-		content += "  ExecStart=" + workingDir + "/lava-protocol rpcprovider "
+		content += "  ExecStart=" + workingDir + "lava-protocol rpcprovider "
 	}
 	content += ".lava-visor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
@@ -187,6 +187,12 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	if err != nil {
 		return "", utils.LavaFormatError("error writing to service file", err)
 	}
+
+	// Create a symbolic link to the systemd directory.
+	if err := createSystemdSymlink(filePath, serviceId+".service"); err != nil {
+		return "", utils.LavaFormatError("error creating symbolic link", err)
+	}
+
 	utils.LavaFormatInfo("Service file has been created successfully", utils.Attribute{Key: "Path", Value: filePath})
 	// Extract filename from filePath
 	filename := filepath.Base(filePath)
@@ -217,5 +223,33 @@ func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// Create a symbolic link to the /etc/systemd/system/ directory.
+func createSystemdSymlink(source string, serviceName string) error {
+	target := "/etc/systemd/system/" + serviceName
+	// Check if the target exists
+	if _, err := os.Lstat(target); err == nil || os.IsExist(err) {
+		// Check if it's actually a symlink. If not, return an error.
+		if _, err := os.Readlink(target); err == nil {
+			// If there's a symlink exists, remove it.
+			cmdRemove := exec.Command("sudo", "rm", target)
+			if err := cmdRemove.Run(); err != nil {
+				return utils.LavaFormatError("failed to remove existing link.", nil, utils.Attribute{Key: "Target", Value: target})
+			}
+			utils.LavaFormatInfo("Old service file links are removed.", utils.Attribute{Key: "Path", Value: target})
+		} else {
+			return utils.LavaFormatError("file exists and is not a symlink.", nil, utils.Attribute{Key: "Target", Value: target})
+		}
+	}
+	// Create a new symbolic link pointing to the intended source.
+	// Use 'sudo' to create the symlink with elevated permissions.
+	cmd := exec.Command("sudo", "ln", "-s", source, target)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error creating symbolic link: %v", err)
+	}
+	utils.LavaFormatInfo("Symbolic link for to root has been created successfully.", utils.Attribute{Key: "Path", Value: target})
+
 	return nil
 }
