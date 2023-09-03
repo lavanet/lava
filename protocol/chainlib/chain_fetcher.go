@@ -77,7 +77,7 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "")
+		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
 		if err != nil && !performance.NotInitialisedError.Is(err) {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}

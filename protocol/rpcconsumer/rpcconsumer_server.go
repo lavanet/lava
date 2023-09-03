@@ -427,7 +427,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request.RelayData, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes
+				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request.RelayData, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
 				if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 					utils.LavaFormatWarning("error updating cache with new entry", err2)
 				}
