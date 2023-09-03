@@ -68,6 +68,12 @@ function VerificationKeyToString(key: VerificationKey): VerificationKeyString {
   return JSON.stringify(key);
 }
 
+interface HeadersHandler {
+  filteredHeaders: Metadata[];
+  overwriteRequestedBlock: string;
+  ignoredMetadata: Metadata[];
+}
+
 export class BaseChainParser {
   private taggedApis: Map<functionTag, TaggedContainer>;
   private spec: Spec;
@@ -269,10 +275,4 @@ export class BaseChainParser {
     }
     return [undefined, false];
   }
-}
-
-interface HeadersHandler {
-  filteredHeaders: Metadata[];
-  overwriteRequestedBlock: string;
-  ignoredMetadata: Metadata[];
 }
