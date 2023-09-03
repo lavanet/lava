@@ -71,6 +71,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	}
 	return nil
 }
+
 func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, reply *pairingtypes.RelayReply, requestedBlockHash []byte, finalized bool) {
 	if requestedBlockHash != nil || finalized {
 		new_ctx := context.Background()
