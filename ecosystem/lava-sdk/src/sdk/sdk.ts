@@ -156,7 +156,6 @@ export class LavaSDK {
       relayer,
       this.chainIDRpcInterface,
       {
-        debug: false, //TODO this shit
         geolocation: this.geolocation,
         network: this.network,
       },

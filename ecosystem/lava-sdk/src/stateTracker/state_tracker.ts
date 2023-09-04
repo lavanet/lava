@@ -2,7 +2,7 @@ import { PairingUpdater } from "./updaters/pairing_updater";
 import { StateChainQuery } from "./stateQuery/state_chain_query";
 import { StateBadgeQuery } from "./stateQuery/state_badge_query";
 import { BadgeManager } from "../badge/badgeManager";
-import { debugPrint } from "../util/common";
+import { Logger } from "../logger/logger";
 import { StateQuery } from "./stateQuery/state_query";
 import { Updater } from "./updaters/updater";
 import Relayer from "../relayer/relayer";
@@ -21,7 +21,6 @@ const DEFAULT_RETRY_INTERVAL = 10000;
 export interface Config {
   geolocation: string;
   network: string;
-  debug: boolean;
 }
 
 export class StateTracker {
@@ -40,7 +39,7 @@ export class StateTracker {
     walletAddress: string,
     badgeManager?: BadgeManager
   ) {
-    debugPrint(config.debug, "Initialization of State Tracker started");
+    Logger.debug("Initialization of State Tracker started");
 
     // Save config
     this.config = config;
@@ -95,24 +94,23 @@ export class StateTracker {
     // Register all updaters
     this.registerForUpdates(pairingUpdater);
 
-    debugPrint(config.debug, "Pairing updater added");
+    Logger.debug("Pairing updater added");
   }
 
   async initialize() {
-    debugPrint(this.config.debug, "Initialization of State Tracker started");
+    Logger.debug("Initialization of State Tracker started");
     await this.executeUpdateOnNewEpoch();
   }
 
   // executeUpdateOnNewEpoch executes all updates on every new epoch
   async executeUpdateOnNewEpoch(): Promise<void> {
     try {
-      debugPrint(this.config.debug, "New epoch started, fetching pairing list");
+      Logger.debug("New epoch started, fetching pairing list");
 
       // Fetching all the info including the time_till_next_epoch
       const timeTillNextEpoch = await this.stateQuery.fetchPairing();
 
-      debugPrint(
-        this.config.debug,
+      Logger.debug(
         "Pairing list fetched, started new epoch in: " + timeTillNextEpoch
       );
 
@@ -129,10 +127,7 @@ export class StateTracker {
     } catch (error) {
       console.error("An error occurred during pairing processing:", error);
 
-      debugPrint(
-        this.config.debug,
-        "Retry fetching pairing list in: " + DEFAULT_RETRY_INTERVAL
-      );
+      Logger.debug("Retry fetching pairing list in: " + DEFAULT_RETRY_INTERVAL);
 
       // Retry fetching pairing list after DEFAULT_RETRY_INTERVAL
       setTimeout(() => this.executeUpdateOnNewEpoch(), DEFAULT_RETRY_INTERVAL);
