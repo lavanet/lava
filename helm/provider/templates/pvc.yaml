@@ -1,0 +1,23 @@
+---
+{{- if .Values.pvc.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name:  {{- include "provider.fullname" }}   
+  {{ with .Values.pvc.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}    
+    lavanet.xyz/node_type: "provider"
+    {{- include "provider.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.pvc.storageClassName -}}
+  storageClassName: {{ .Values.pvc.storageClassName -}}
+  {{- end }} 
+  accessModes: {{ .Values.pvc.accessModes }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.size }}
+{{- end }} 

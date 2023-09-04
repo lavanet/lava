@@ -1,0 +1,8 @@
+apiVersion: v2
+name: lava-provider
+description: Helm chart for launching a lava provider
+
+type: application
+version: 0.1.0
+
+appVersion: "0.22.0"

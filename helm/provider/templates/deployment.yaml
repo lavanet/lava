@@ -1,0 +1,87 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{- include "provider.fullname" }}
+  labels:
+    lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}
+    lavanet.xyz/node_type: "provider"
+    {{- include "provider.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}
+      lavanet.xyz/node_type: "provider"
+      {{- include "provider.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}
+        lavanet.xyz/node_type: "provider"
+        {{- include "provider.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{- include "provider.fullname" }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name:  {{- include "provider.fullname" }}-volume
+              mountPath: {{ .Values.chainDataDir }}
+          {{- with .Values.envFrom }}
+          envFrom: 
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env: 
+            - name: LOG_LEVEL
+              value: {{ .Values.logLevel }}
+          {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: {{ .Values.port.name }}
+              containerPort: {{ .Values.port.number }}
+              protocol: {{ .Values.port.protocol }}
+          {{- with .Values.commmand.name }}
+          command: 
+            - {{ . | quote }}
+          {{- end }}
+          {{- with .Values.commmand.args }}
+          args:
+            {{- toYaml . | nindent 12 -}}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name:  {{- include "provider.fullname" }}-volume
+          persistentVolumeClaim:
+            claimName: {{- include "provider.fullname" }}-pvc

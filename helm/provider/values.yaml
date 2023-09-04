@@ -1,0 +1,121 @@
+# set the log level for the node
+logLevel: "warn"
+
+# add custom environment variables to the node using secret of configs
+envFrom: []
+
+# add custom environment variables to the node
+env: []
+
+# provider node moniker, will default to the fullname
+moniker: null
+
+# override the fullname
+fullnameOverride: null
+nameOverride: null
+
+# image to deploy
+image:
+  repository: us-central1-docker.pkg.dev/lavanet-public/growth-staging-us-central1/lavachain
+  pullPolicy: IfNotPresent
+  tag: add0e50ef700d68a61e8a21c7aba68dd62a639e6
+
+# setup ingress for the node
+ingress:
+  className: "nginx"
+  enabled: true
+  tls: []
+  rules: []
+  annotations: {}
+
+# port to expose the node on
+port:
+  name: "rpc-provider"
+  number: 5000
+  protocol: TCP
+
+# service settings
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+  # override .Values.port with these values
+  ports: null
+
+# setup pvc for the node
+persistentVolume:
+  ## If true, will create/use a Persistent Volume Claim
+  ## If false, use emptyDir
+  enabled: true
+
+  ## Must match those of existing PV or dynamic provisioner
+  ## Ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+  accessModes:
+    - ReadWriteOnce
+
+  ## Persistent Volume labels
+  labels: {}
+
+  ## Persistent Volume annotations
+  annotations: {}
+
+  ## Persistent Volume existing claim name
+  ## Requires persistentVolume.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  existingClaim: ""
+
+  ## server data Persistent Volume mount root path
+  mountPath: /data
+
+  ## data Persistent Volume size
+  size: 10Gi
+
+  ## Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  storageClass: null
+
+  ## Subdirectory of data Persistent Volume to mount
+  ## Useful if the volume's root directory is not empty
+  subPath: ""
+
+  ## Persistent Volume Claim Selector
+  ## Useful if Persistent Volumes have been provisioned in advance
+  ## Ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
+  ##
+
+  # selector:
+  #  matchLabels:
+  #    release: "stable"
+  #  matchExpressions:
+  #    - { key: environment, operator: In, values: [ dev ] }
+
+  ## Persistent Volume Name
+  ## Useful if Persistent Volumes have been provisioned in advance and you want to use a specific one
+  ##
+  # volumeName: ""
+
+  emptyDir:
+    ## emptyDir volume size limit
+    sizeLimit: ""
+
+command: {}
+
+# resource limits for the node
+resources:
+  requests:
+    cpu: "250m"
+    memory: 250Mi
+  limits:
+    memory: "2Gi"
+
+imagePullSecrets: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
