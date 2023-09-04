@@ -22,8 +22,8 @@ const WILDCARD_CHAIN_POLICY = "*" // wildcard allows you to define only part of 
 // init policy default values (for fields that their natural zero value is not good)
 // the values were chosen in a way that they will not influence the strictest policy calculation
 var policyDefaultValues = map[string]interface{}{
-	"GeolocationProfile": int32(Geolocation_GL),
-	"MaxProvidersToPair": uint64(math.MaxUint64),
+	"geolocation_profile":   int32(Geolocation_GL),
+	"max_providers_to_pair": uint64(math.MaxUint64),
 }
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
