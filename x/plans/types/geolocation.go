@@ -11,22 +11,30 @@ import (
 
 // for convenience (calculate once only)
 var (
-	allGeoEnumRegionsList []int32
+	allGeoEnumRegionsList []Geolocation
 	allGeoEnumRegions     int32
 )
 
 // initialize convenience vars at start-up
 func init() {
+	var geoAmount int
 	for _, geoloc := range Geolocation_value {
 		if geoloc != int32(Geolocation_GLS) && geoloc != int32(Geolocation_GL) {
-			allGeoEnumRegionsList = append(allGeoEnumRegionsList, geoloc)
+			geoAmount += 1
 			allGeoEnumRegions |= geoloc
 		}
+	}
+
+	for i := 0; i < geoAmount; i++ {
+		allGeoEnumRegionsList = append(allGeoEnumRegionsList, Geolocation(1<<i))
 	}
 }
 
 // IsValidGeoEnum tests the validity of a given geolocation
 func IsValidGeoEnum(geoloc int32) bool {
+	if geoloc == int32(Geolocation_GL) {
+		return true
+	}
 	return geoloc != int32(Geolocation_GLS) && (geoloc & ^allGeoEnumRegions) == 0
 }
 
@@ -41,18 +49,17 @@ func ParseGeoEnum(arg string) (geoloc int32, err error) {
 	geoloc64, err := strconv.ParseUint(arg, 10, 32)
 	geoloc = int32(geoloc64)
 	if err == nil {
-		if geoloc != int32(Geolocation_GL) {
-			if !IsValidGeoEnum(geoloc) {
-				return 0, fmt.Errorf("invalid geolocation value: %s", arg)
-			}
+		if !IsValidGeoEnum(geoloc) {
+			return 0, fmt.Errorf("invalid geolocation value: %s", arg)
 		}
+
 		return geoloc, nil
 	}
 
 	split := strings.Split(arg, ",")
 	for _, s := range split {
 		val, ok := Geolocation_value[s]
-		if !ok || val == int32(Geolocation_GLS) {
+		if !ok {
 			return 0, fmt.Errorf("invalid geolocation code: %s", s)
 		}
 		geoloc |= val
@@ -61,16 +68,21 @@ func ParseGeoEnum(arg string) (geoloc int32, err error) {
 	return geoloc, nil
 }
 
-func GetAllGeolocations() []int32 {
+func GetAllGeolocations() []Geolocation {
 	return allGeoEnumRegionsList
 }
 
 func GetGeolocationsFromUint(geoloc int32) []Geolocation {
 	geoList := []Geolocation{}
 	allGeos := GetAllGeolocations()
-	for _, geo := range allGeos {
-		if geo&geoloc != 0 {
-			geoList = append(geoList, Geolocation(geo))
+
+	if geoloc == int32(Geolocation_GL) {
+		return allGeoEnumRegionsList
+	} else {
+		for i := 0; i < len(allGeos); i++ {
+			if (geoloc>>i)&1 == 1 {
+				geoList = append(geoList, Geolocation(1<<i))
+			}
 		}
 	}
 

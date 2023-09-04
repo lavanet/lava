@@ -6,7 +6,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
+	v1 "github.com/lavanet/lava/x/downtime/v1"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/x/protocol/types"
 )
 
 func defaultUpgradeHandler(
@@ -35,22 +37,23 @@ func defaultUpgradeHandler(
 // 	},
 // }
 
-var Upgrade_0_20_1 = Upgrade{
-	UpgradeName:          "v0.20.1",
-	CreateUpgradeHandler: defaultUpgradeHandler,
+var Upgrade_0_22_0 = Upgrade{
+	UpgradeName:          "v0.22.0",
+	CreateUpgradeHandler: v0_22_0_UpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_0_20_2 = Upgrade{
-	UpgradeName:          "v0.20.2",
-	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
-}
-
-var Upgrade_0_20_3 = Upgrade{
-	UpgradeName:          "v0.20.3",
-	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
+func v0_22_0_UpgradeHandler(
+	m *module.Manager,
+	c module.Configurator,
+	bapm BaseAppParamManager,
+	lk *keepers.LavaKeepers,
+) upgradetypes.UpgradeHandler {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		lk.DowntimeKeeper.SetParams(ctx, v1.DefaultParams())
+		lk.ProtocolKeeper.SetParams(ctx, types.DefaultParams())
+		return m.RunMigrations(ctx, c, vm)
+	}
 }
 
 // Upgrade_0_20_4 adds new module: dualstaking

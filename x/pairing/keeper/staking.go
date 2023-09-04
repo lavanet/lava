@@ -182,7 +182,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 
 	geolocMapRequired := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
-	geolocations := k.specKeeper.GeolocationCount(ctx)
+	geolocations := len(planstypes.GetAllGeolocations())
 
 	geolocKey := func(intefaceName string, geolocation uint64, addon, extension string) epochstoragetypes.EndpointService {
 		return epochstoragetypes.EndpointService{
@@ -192,7 +192,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 		}
 	}
 
-	for idx := uint64(0); idx < geolocations; idx++ {
+	for idx := uint64(0); idx < uint64(geolocations); idx++ {
 		// geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {
@@ -237,4 +237,27 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints [
 
 	// all interfaces and geolocations were implemented
 	return endpoints, nil
+}
+
+func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) (epochstoragetypes.StakeEntry, error) {
+	providerAcc, err := sdk.AccAddressFromBech32(provider)
+	if err != nil {
+		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("invalid provider address", fmt.Errorf("cannot get stake entry"),
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
+	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAcc)
+	if !found {
+		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("provider not staked on chain", fmt.Errorf("cannot get stake entry"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
+	return stakeEntry, nil
+}
+
+func (k Keeper) GetAllChainIDs(ctx sdk.Context) []string {
+	return k.specKeeper.GetAllChainIDs(ctx)
 }

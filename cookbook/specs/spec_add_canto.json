@@ -9,7 +9,8 @@
                 "enabled": true,
                 "imports": [
                     "ETH1",
-                    "COSMOSSDK"
+                    "COSMOSSDK",
+                    "COSMOSSDK45DEP"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,

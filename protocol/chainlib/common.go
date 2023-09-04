@@ -65,7 +65,7 @@ type BaseChainProxy struct {
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	// Read the dappID from the headers
-	dappID = c.Get("dappId")
+	dappID = c.Get("dapp-id")
 	if dappID == "" {
 		dappID = generateNewDappID()
 	}
@@ -94,10 +94,12 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 		dappID := extractDappIDFromFiberContext(c)
 
 		// Store dappID in the local context
-		c.Locals("dappId", dappID)
+		c.Locals("dapp-id", dappID)
 
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
+			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
+			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}

@@ -55,8 +55,8 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version) {
-	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version)
+func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
+	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.eventTracker, version, versionValidator)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {
@@ -107,7 +107,7 @@ func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAd
 	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
-func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error) {
+func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {
 	return pst.stateQuery.VerifyPairing(ctx, consumerAddress, providerAddress, epoch, chainID)
 }
 

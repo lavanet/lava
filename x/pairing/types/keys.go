@@ -13,6 +13,9 @@ const (
 	// QuerierRoute defines the module's query routing key
 	QuerierRoute = ModuleName
 
+	// Proposals router keys
+	ProposalsRouterKey = "pairingproposals"
+
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_pairing"
 )

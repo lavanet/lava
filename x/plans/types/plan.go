@@ -1,6 +1,10 @@
 package types
 
 import (
+	fmt "fmt"
+	"math/big"
+	"reflect"
+
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -8,6 +12,9 @@ import (
 
 // Function to validate a plan object fields
 func (p Plan) ValidatePlan() error {
+	if p.GetIndex() == "" {
+		return sdkerrors.Wrap(ErrInvalidPlanIndex, "plan's index can't be empty")
+	}
 	// validate denom is ulava
 	if p.GetPrice().Denom != epochstoragetypes.TokenDenom {
 		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price denom is not in ulava")
@@ -48,4 +55,36 @@ func (p Plan) ValidatePlan() error {
 	}
 
 	return nil
+}
+
+// PriceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type sdk.Int)
+func PriceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	if t == reflect.TypeOf(sdk.NewInt(0)) {
+		amountStr, ok := data.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected data type for amount field")
+		}
+
+		// Convert the string amount to an sdk.Int
+		amount, ok := new(big.Int).SetString(amountStr, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to convert amount to sdk.Int")
+		}
+		return sdk.NewIntFromBigInt(amount), nil
+	}
+
+	return data, nil
+}
+
+var planMandatoryFields = map[string]struct{}{"index": {}, "price": {}}
+
+func CheckPlanMandatoryFields(unsetFields []string) bool {
+	planValid := true
+	for _, unsetF := range unsetFields {
+		if _, ok := planMandatoryFields[unsetF]; ok {
+			planValid = false
+		}
+	}
+
+	return planValid
 }

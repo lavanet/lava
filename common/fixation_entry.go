@@ -996,37 +996,64 @@ func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
 	store.Set(types.KeyPrefix(types.FixationVersionKey), b)
 }
 
-func (fs *FixationStore) Export(ctx sdk.Context) []types.RawMessage {
-	store := prefix.NewStore(
-		ctx.KVStore(fs.storeKey),
-		types.KeyPrefix(fs.prefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-	defer iterator.Close()
+func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
+	gs := types.GenesisState{}
 
-	data := []types.RawMessage{}
-	for ; iterator.Valid(); iterator.Next() {
-		data = append(data, types.RawMessage{Key: iterator.Key(), Value: iterator.Value()})
+	gs.Version = fs.getVersion(ctx)
+
+	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
+		var entries types.GenesisEntries
+		safeIndex, err := types.SanitizeIndex(index)
+		if err != nil {
+			utils.LavaFormatPanic("fixation export: unsanitized index", err)
+		}
+
+		entries.IsLive = fs.isEntryIndexLive(ctx, safeIndex)
+		blocks := fs.GetAllEntryVersions(ctx, index)
+		for _, block := range blocks {
+			entries.Entries = append(entries.Entries, fs.getEntry(ctx, safeIndex, block))
+		}
+		gs.Entries = append(gs.Entries, entries)
 	}
 
-	return data
+	gs.Timerstore = fs.tstore.Export(ctx)
+
+	return gs
 }
 
-func (fs *FixationStore) Init(ctx sdk.Context, data []types.RawMessage) {
+func DefaultGenesis() *types.GenesisState {
+	return &types.GenesisState{
+		Version: FixationVersion(),
+	}
+}
+
+func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 	// call timer-store's Init (with empty input) to trigger its setVersion() if needed;
 	// the timer-store data is stored in the same namespace/prefix as this fixation store
 	// so the loop below will restore its state too (and overwrite that Init).
 	fs.tstore.Init(ctx, nil)
 
 	// will be overwritten by below if genesis state exists
-	fs.setVersion(ctx, FixationVersion())
+	fs.setVersion(ctx, gs.Version)
 
-	store := prefix.NewStore(
-		ctx.KVStore(fs.storeKey),
-		types.KeyPrefix(fs.prefix))
+	for _, entries := range gs.Entries {
+		safeIndex, err := types.SanitizeIndex(entries.Index)
+		if err != nil {
+			utils.LavaFormatPanic("unsafe fixation index in genesis file", err, utils.Attribute{Key: "Index", Value: entries.Index})
+		}
 
-	for _, data := range data {
-		store.Set(data.Key, data.Value)
+		fs.setEntryIndex(ctx, safeIndex, entries.IsLive)
+
+		for _, entry := range entries.Entries {
+			_, err := types.SanitizeIndex(entry.Index)
+			if err != nil {
+				utils.LavaFormatPanic("unsafe fixation entry in genesis file", err, utils.Attribute{Key: "Index", Value: entry.Index})
+			}
+			fs.setEntry(ctx, entry)
+		}
 	}
+
+	fs.tstore.Init(ctx, gs.Timerstore)
 }
 
 // NewFixationStore returns a new FixationStore object
