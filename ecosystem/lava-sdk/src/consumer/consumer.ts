@@ -18,5 +18,5 @@ export class Consumer {
     return this.consumerSessionManager.updateAllProviders(epoch, pairingList);
   }
 
-  public SetSpec(spec: Spec)
+  public SetSpec(spec: Spec, )
 }
