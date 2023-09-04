@@ -28,9 +28,10 @@ const (
 	FlagTimeout   = "timeout"
 	FlagValue     = "value"
 	FlagEventName = "event"
+	FlagBreak     = "break"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string, shouldBreak bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -114,6 +115,9 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	latestBlock, err := lavaChainFetcher.FetchLatestBlockNum(ctx)
 	if err != nil {
 		return utils.LavaFormatError("failed reading latest block", err)
+	}
+	if shouldBreak {
+		return nil
 	}
 	utils.LavaFormatInfo("Reading blocks Forward", utils.Attribute{Key: "current", Value: latestBlock})
 	blocksToSaveChainTracker := uint64(10) // to avoid reading the same thing twice
@@ -221,6 +225,11 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			if err != nil {
 				utils.LavaFormatFatal("failed to fetch timeout flag", err)
 			}
+
+			shouldBreak, err := cmd.Flags().GetBool(FlagBreak)
+			if err != nil {
+				utils.LavaFormatFatal("failed to fetch break flag", err)
+			}
 			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blocks})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
@@ -232,13 +241,14 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			rand.Seed(time.Now().UnixNano())
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value)
+			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
 	cmdEvents.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
 	cmdEvents.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
 	cmdEvents.Flags().String(FlagValue, "", "the value to look for inside all event attributes")
+	cmdEvents.Flags().Bool(FlagBreak, false, "if true will break after reading the specified amount of blocks instead of listening forward")
 	cmdEvents.Flags().String(FlagEventName, "", "event name/type to look for")
 	cmdEvents.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdEvents.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
