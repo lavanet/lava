@@ -63,7 +63,7 @@ export class LavaSDK {
   private secure: boolean;
   private allowInsecureTransport: boolean;
   private chainIDRpcInterface: ChainIDRpcInterface[];
-  private sessionsWithProviderMap: ConsumerSessionManagersMap;
+  private consumerSessionManagerMap: ConsumerSessionManagersMap;
 
   /**
    * Create Lava-SDK instance
@@ -112,7 +112,7 @@ export class LavaSDK {
     this.lavaChainId = lavaChainId || DEFAULT_LAVA_CHAINID;
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
-    this.sessionsWithProviderMap = new Map();
+    this.consumerSessionManagerMap = new Map();
   }
 
   static async create(options: LavaSDKOptions): Promise<LavaSDK> {
@@ -159,10 +159,12 @@ export class LavaSDK {
         network: this.network,
       },
       this.account,
-      this.sessionsWithProviderMap,
+      this.consumerSessionManagerMap,
       this.walletAddress,
       this.badgeManager
     );
     await tracker.initialize();
+
+    // create a consumer object here
   }
 }

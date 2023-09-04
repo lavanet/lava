@@ -76,24 +76,27 @@ interface HeadersHandler {
 
 export class BaseChainParser {
   private taggedApis: Map<functionTag, TaggedContainer>;
-  private spec: Spec;
+  private spec: Spec | undefined;
   private serverApis: Map<ApiKeyString, ApiContainer>;
   private headers: Map<ApiKeyString, HeaderContainer>;
   private apiCollections: Map<CollectionKey, ApiCollection>;
   // TODO: implement addons.
   private allowedAddons: Set<string>;
   // private extensionParser: ExtensionParser;
-  private apiInterface: string;
+  private apiInterface = "";
   private verifications: Map<VerificationKeyString, VerificationContainer[]>;
 
-  constructor(spec: Spec, apiInterface: string) {
-    this.apiInterface = apiInterface;
+  constructor() {
     this.taggedApis = new Map();
     this.serverApis = new Map();
     this.apiCollections = new Map();
     this.headers = new Map();
     this.allowedAddons = new Set();
     this.verifications = new Map();
+  }
+  // initialize the base chain parser with the spec information
+  public init(spec: Spec, apiInterface: string) {
+    this.apiInterface = apiInterface;
     this.spec = spec;
 
     if (spec.enabled) {

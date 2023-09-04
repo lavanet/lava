@@ -2,6 +2,7 @@ import { StateQuery, PairingResponse } from "../stateQuery/state_query";
 import { debugPrint, parseLong } from "../../util/common";
 import { AccountData } from "@cosmjs/proto-signing";
 import { Config } from "../state_tracker";
+import { Logger } from "../../logger/logger";
 import { ChainIDRpcInterface } from "../../sdk/sdk";
 import {
   ConsumerSessionManager,
@@ -25,7 +26,7 @@ export class PairingUpdater {
     config: Config,
     account: AccountData
   ) {
-    debugPrint(config.debug, "Initialization of Pairing Updater started");
+    Logger.debug("Initialization of Pairing Updater started");
 
     // Save arguments
     this.account = account;
@@ -51,21 +52,17 @@ export class PairingUpdater {
 
   // update updates pairing list on every consumer session manager
   public update() {
-    debugPrint(this.config.debug, "Start updating consumer session managers");
+    Logger.debug("Start updating consumer session managers");
     this.consumerSessionManagerMap.forEach(
       (consumerSessionManagerList, chainID) => {
-        debugPrint(this.config.debug, "Updating pairing list for: ", chainID);
+        Logger.debug("Updating pairing list for: ", chainID);
 
         // Fetch pairing list
         const pairing = this.stateQuery.getPairing(chainID);
         if (pairing == undefined) {
-          debugPrint(
-            this.config.debug,
-            "Failed fetching pairing list for: ",
-            chainID
-          );
+          Logger.debug("Failed fetching pairing list for: ", chainID);
         } else {
-          debugPrint(this.config.debug, "Pairing list fetched: ", pairing);
+          Logger.debug("Pairing list fetched: ", pairing);
         }
 
         // Update each consumer session manager with matching pairing list
@@ -113,7 +110,7 @@ export class PairingUpdater {
       [];
     // Iterate over providers to populate pairing list
     for (const provider of pairing.providers) {
-      debugPrint(this.config.debug, "parsing provider", provider);
+      Logger.debug("parsing provider", provider);
       // Skip providers with no endpoints
       if (provider.endpoints.length == 0) {
         continue;
@@ -147,7 +144,7 @@ export class PairingUpdater {
 
       // skip if we have no endpoints at all.
       if (sameGeoEndpoints.length == 0 && differntGeoEndpoints.length == 0) {
-        debugPrint(this.config.debug, "No endpoints found");
+        Logger.debug("No endpoints found");
         continue;
       }
 
@@ -178,7 +175,7 @@ export class PairingUpdater {
       pairingForSameGeolocation.length == 0 &&
       pairingFromDifferentGeolocation.length == 0
     ) {
-      debugPrint(this.config.debug, "No relevant providers found");
+      Logger.debug("No relevant providers found");
     }
 
     // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]
