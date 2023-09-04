@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"time"
 
@@ -48,8 +49,11 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 
 	printEvent := func(event types.Event) string {
 		st := event.Type + ": "
+		sort.Slice(event.Attributes, func(i, j int) bool {
+			return event.Attributes[i].Key < event.Attributes[j].Key
+		})
 		for _, attr := range event.Attributes {
-			st += fmt.Sprintf("- %s = %s; ", attr.Key, attr.Value)
+			st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
 		}
 		return st
 	}
@@ -64,6 +68,15 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 			utils.LavaFormatError("invalid blockResults status", err)
 			return
 		}
+		for _, event := range blockResults.BeginBlockEvents {
+			if eventName == "" || event.Type == eventName {
+				for _, attribute := range event.Attributes {
+					if value == "" || attribute.Value == value {
+						utils.LavaFormatInfo("Found BBlock event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
+					}
+				}
+			}
+		}
 		transactionResults := blockResults.TxsResults
 		for _, tx := range transactionResults {
 			events := tx.Events
@@ -71,7 +84,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 				if eventName == "" || event.Type == eventName {
 					for _, attribute := range event.Attributes {
 						if value == "" || attribute.Value == value {
-							utils.LavaFormatInfo("Found a matching event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
+							utils.LavaFormatInfo("Found Tx event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
 						}
 					}
 				}
@@ -83,13 +96,26 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		if fromBlock <= 0 {
 			fromBlock = latestHeight - blocks
 		}
-		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: latestHeight}, utils.Attribute{Key: "to", Value: latestHeight - blocks})
+		ticker := time.NewTicker(5 * time.Second)
+		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: fromBlock}, utils.Attribute{Key: "to", Value: fromBlock + blocks})
 		for block := fromBlock; block < fromBlock+blocks; block++ {
 			readEventsFromBlock(block, "")
+			// if the user aborted stop
+			select {
+			case <-signalChan:
+				return nil
+			case <-ticker.C:
+				fmt.Printf("Current Block: %d\r", block)
+			default:
+			}
 		}
 	}
-	utils.LavaFormatInfo("Reading blocks Forward")
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+	latestBlock, err := lavaChainFetcher.FetchLatestBlockNum(ctx)
+	if err != nil {
+		return utils.LavaFormatError("failed reading latest block", err)
+	}
+	utils.LavaFormatInfo("Reading blocks Forward", utils.Attribute{Key: "current", Value: latestBlock})
 	blocksToSaveChainTracker := uint64(10) // to avoid reading the same thing twice
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		BlocksToSave:      blocksToSaveChainTracker,

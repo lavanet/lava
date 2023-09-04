@@ -11,6 +11,7 @@ const (
 	RelayPaymentEventName                          = "relay_payment"
 	UnresponsiveProviderUnstakeFailedEventName     = "unresponsive_provider"
 	ProviderJailedEventName                        = "provider_jailed"
+	ProviderReportedEventName                      = "provider_reported"
 )
 
 // unstake description strings

@@ -278,7 +278,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, clientAddr)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, projectID)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
@@ -287,7 +287,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, clientAddr sdk.AccAddress) error {
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, projectID string) error {
 	var unresponsiveProviders []string
 
 	// check that unresponsiveData exists
@@ -355,7 +355,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 
 		// add complainer's used CU to providerPaymentStorage
 		providerPaymentStorage.ComplainersTotalCu += complainerCuToAdd
-
+		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
 	}

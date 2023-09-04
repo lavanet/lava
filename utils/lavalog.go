@@ -164,7 +164,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 			}
 			logEvent = logEvent.Str(key, st_val)
 		}
-		output = fmt.Sprintf("%s -- %+v", output, attributes)
+		output = fmt.Sprintf("%s %+v", output, attributes)
 	}
 	logEvent.Msg(description)
 	// here we return the same type of the original error message, this handles nil case as well
