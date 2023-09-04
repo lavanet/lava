@@ -581,3 +581,29 @@ func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string) ([]stri
 
 	return delegatorEntry.Providers, nil
 }
+
+func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string) ([]types.Delegation, error) {
+	nextEpoch, err := k.getNextEpoch(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var delegations []types.Delegation
+	indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
+	for _, ind := range indices {
+		var delegation types.Delegation
+		found := k.delegationFS.FindEntry(ctx, ind, nextEpoch, &delegation)
+		if !found {
+			delegator, provider, chainID := types.DelegationKeyDecode(ind)
+			utils.LavaFormatError("critical: delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
+			continue
+		}
+		delegations = append(delegations, delegation)
+	}
+
+	return delegations, nil
+}
