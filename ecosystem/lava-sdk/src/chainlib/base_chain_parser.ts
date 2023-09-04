@@ -163,11 +163,9 @@ export class BaseChainParser {
               addon: apiCollection.collectionData.addOn,
             };
             if (!verification.parseDirective) {
-              throw new Error(
-                Logger.fatal(
-                  "Missing verification parseDirective data in BaseChainParser constructor",
-                  verification
-                )
+              throw Logger.fatal(
+                "Missing verification parseDirective data in BaseChainParser constructor",
+                verification
               );
             }
             const verificationContainer: VerificationContainer = {
@@ -209,11 +207,9 @@ export class BaseChainParser {
     for (const header of metadata) {
       const headerName = header.name.toLowerCase();
       if (!apiCollection.collectionData) {
-        throw new Error(
-          Logger.fatal(
-            "Missing api collection data in handleHeaders",
-            apiCollection
-          )
+        throw Logger.fatal(
+          "Missing api collection data in handleHeaders",
+          apiCollection
         );
       }
       const apiKey: ApiKey = {
