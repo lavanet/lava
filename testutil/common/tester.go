@@ -547,6 +547,14 @@ func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string) (*dualsta
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
 
+// QueryPairingVerifyPairing implements 'q dualstaking provider-delegators'
+func (ts *Tester) QueryDualstakingProviderDelegators(provider string) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
+	msg := &dualstakingtypes.QueryProviderDelegatorsRequest{
+		Provider: provider,
+	}
+	return ts.Keepers.Dualstaking.ProviderDelegators(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
