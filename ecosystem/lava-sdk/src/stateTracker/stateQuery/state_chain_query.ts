@@ -1,8 +1,10 @@
 import { DEFAULT_LAVA_PAIRING_LIST } from "../../config/default";
-import { ChainIDRpcInterface, Config } from "../state_tracker";
+import { Config } from "../state_tracker";
+import { ChainIDRpcInterface } from "../../sdk/sdk";
 import { fetchLavaPairing } from "../../util/lavaPairing";
 import { StateTrackerErrors } from "../errors";
 import { PairingResponse } from "./state_query";
+import { AccountData } from "@cosmjs/proto-signing";
 
 import Long from "long";
 import {
@@ -10,6 +12,7 @@ import {
   generateRPCData,
   debugPrint,
   parseLong,
+  generateRandomInt,
 } from "../../util/common";
 import {
   QueryGetPairingRequest,
@@ -39,12 +42,14 @@ export class StateChainQuery {
   private lavaProviders: ConsumerSessionsWithProvider[]; // Array of Lava providers
   private config: Config; // Config options
   private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
+  private account: AccountData;
 
   constructor(
     pairingListConfig: string,
     chainIdRpcInterfaces: ChainIDRpcInterface[],
     relayer: Relayer,
-    config: Config
+    config: Config,
+    account: AccountData
   ) {
     debugPrint(config.debug, "Initialization of State Chain Query started");
 
@@ -53,6 +58,7 @@ export class StateChainQuery {
     this.chainIDRpcInterfaces = chainIdRpcInterfaces;
     this.relayer = relayer;
     this.config = config;
+    this.account = account;
 
     // Assign lavaProviders to an empty array
     this.lavaProviders = [];
@@ -100,7 +106,7 @@ export class StateChainQuery {
         const pairingResponse = await this.getPairingFromChain(
           {
             chainID: chainIDRpcInterface.chainID,
-            client: this.config.accountAddress,
+            client: this.account.address,
           },
           10
         );
@@ -223,7 +229,8 @@ export class StateChainQuery {
         this.lavaProviders,
         sendRelayOptions,
         relayCu,
-        lavaRPCInterface
+        lavaRPCInterface,
+        lavaChainID
       );
 
       if (jsonResponse.result.response.value == null) {
@@ -403,7 +410,7 @@ export class StateChainQuery {
           0
         );
 
-        const randomSessionId = Math.random();
+        const randomSessionId = generateRandomInt();
         const singleConsumerSession = new SingleConsumerSession(
           randomSessionId,
           newPairing,

@@ -74,8 +74,8 @@ export class ConsumerSessionManager {
     this.transport = opts?.transport ?? this.getTransport();
   }
 
-  public getRpcEndpoint(): string {
-    return this.rpcEndpoint.networkAddress;
+  public getRpcEndpoint(): RPCEndpoint {
+    return this.rpcEndpoint;
   }
 
   public getCurrentEpoch(): number {
@@ -710,163 +710,46 @@ export class ConsumerSessionManager {
     pairingList: ConsumerSessionsWithProvider[],
     epoch: number
   ) {
-    // TODO: better random generator
-    const random = BigNumber.random(10);
-    const guid = random.shiftedBy(random.sd()).toNumber();
-
     Logger.info(
       `providers probe initiated ${JSON.stringify({
         endpoint: this.rpcEndpoint,
-        guid,
         epoch,
       })}`
     );
-
-    const probePromises: Promise<{
-      latency: number;
-      providerAddress: string;
-      error?: Error;
-    }>[] = [];
     for (const consumerSessionWithProvider of pairingList) {
-      probePromises.push(this.probeProvider(guid, consumerSessionWithProvider));
-    }
-
-    const probeResults = await Promise.all(probePromises);
-    for (const probeResult of probeResults) {
-      const { latency, providerAddress, error } = probeResult;
-      this.providerOptimizer.appendProbeRelayData(
-        providerAddress,
-        latency,
-        Boolean(error)
-      );
+      const startTime = performance.now();
+      try {
+        await this.relayer.probeProvider(
+          consumerSessionWithProvider.endpoints[0].networkAddress,
+          this.getRpcEndpoint().apiInterface,
+          this.getRpcEndpoint().chainId
+        );
+        const endTime = performance.now();
+        const latency = endTime - startTime;
+        console.log(
+          "Provider: " +
+            consumerSessionWithProvider.publicLavaAddress +
+            " chainID: " +
+            this.getRpcEndpoint().chainId +
+            " latency: ",
+          latency + " ms"
+        );
+      } catch (err) {
+        console.log(err);
+      }
     }
 
     Logger.debug(
       `providers probe done ${JSON.stringify({
         endpoint: this.rpcEndpoint,
-        guid,
         epoch,
       })}`
     );
   }
 
-  private async probeProvider(
-    guid: number,
-    consumerSessionsWithProvider: ConsumerSessionsWithProvider
-  ): Promise<{ latency: number; providerAddress: string; error?: Error }> {
-    const endpointConn =
-      consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(
-        this.transport
-      );
-    if (endpointConn.error || !endpointConn.connected) {
-      return {
-        latency: 0,
-        // we always have the provider address here
-        providerAddress: endpointConn.providerAddress as string,
-        error: endpointConn.error,
-      };
-    }
-
-    const { endpoint, providerAddress } = endpointConn;
-    const client = endpoint?.client;
-    const relaySentTime = Date.now();
-    if (!client) {
-      Logger.error(
-        `returned null client in endpoint ${JSON.stringify({
-          consumerSessionsWithProvider,
-        })}`
-      );
-
-      return {
-        latency: 0,
-        providerAddress: providerAddress,
-        error: new Error("endpoint client is null"),
-      };
-    }
-
-    try {
-      const response = await this.relayer.probeProvider(
-        endpoint.networkAddress,
-        this.rpcEndpoint.apiInterface,
-        this.rpcEndpoint.chainId
-      );
-      const relayLatency = Date.now() - relaySentTime; // in milliseconds
-
-      const providerGuid = response.getGuid();
-      if (providerGuid !== guid) {
-        Logger.error(
-          `mismatch probe resposne ${JSON.stringify({
-            providerAddress,
-            providerGuid,
-            sentGuid: guid,
-          })}`
-        );
-
-        return {
-          latency: 0,
-          error: new Error("Mismatch probe response"),
-          providerAddress,
-        };
-      }
-
-      const latestBlock = response.getLatestBlock();
-      if (latestBlock === 0) {
-        Logger.error(
-          `provider returned 0 latest block ${JSON.stringify({
-            providerAddress,
-          })}`
-        );
-
-        return {
-          latency: 0,
-          providerAddress: providerAddress,
-          error: new Error("Provider returned 0 latest block"),
-        };
-      }
-
-      consumerSessionsWithProvider.setLatestBlock(latestBlock);
-
-      Logger.debug(
-        `probed provider successfully ${JSON.stringify({
-          latency: relayLatency,
-          providerAddress,
-        })}`
-      );
-
-      return {
-        latency: relayLatency,
-        providerAddress,
-      };
-    } catch (e) {
-      Logger.error(
-        `probe call error ${(e as Error).message} ${JSON.stringify({
-          providerAddress,
-        })}`
-      );
-      return {
-        latency: 0,
-        error: new Error("Probe call error"),
-        providerAddress,
-      };
-    }
-  }
-
-  private async relayWithTimeout(
-    timeLimit: number,
-    task: Promise<ProbeReply>
-  ): Promise<ProbeReply | Error> {
-    return Promise.race([task, this.timeoutPromise(timeLimit)]);
-  }
-
   private getTransport(): grpc.TransportFactory {
     return this.allowInsecureTransport ? transportAllowInsecure : transport;
   }
-
-  private timeoutPromise(timeout: number): Promise<Error> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        reject(new Error("Timeout exceeded"));
-      }, timeout);
-    });
-  }
 }
+
+export type ConsumerSessionManagersMap = Map<string, ConsumerSessionManager[]>;

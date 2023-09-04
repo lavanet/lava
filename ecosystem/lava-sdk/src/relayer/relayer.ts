@@ -21,7 +21,6 @@ import transportAllowInsecure from "../util/browserAllowInsecure";
 import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
 
 class Relayer {
-  private chainID: string;
   private privKey: string;
   private lavaChainId: string;
   private prefix: string;
@@ -29,19 +28,15 @@ class Relayer {
   private badge?: Badge;
 
   constructor(
-    chainID: string,
     privKey: string,
     lavaChainId: string,
     secure: boolean,
-    allowInsecureTransport?: boolean,
-    badge?: Badge
+    allowInsecureTransport?: boolean
   ) {
-    this.chainID = chainID;
     this.privKey = privKey;
     this.lavaChainId = lavaChainId;
     this.prefix = secure ? "https" : "http";
     this.allowInsecureTransport = allowInsecureTransport ?? false;
-    this.badge = badge;
   }
 
   // when an epoch changes we need to update the badge
@@ -91,7 +86,8 @@ class Relayer {
     options: SendRelayOptions,
     consumerProviderSession: ConsumerSessionsWithProvider,
     cuSum: number,
-    apiInterface: string
+    apiInterface: string,
+    chainID: string
   ): Promise<RelayReply> {
     // Extract attributes from options
     const { data, url, connectionType } = options;
@@ -116,8 +112,8 @@ class Relayer {
 
     // create request session
     const requestSession = new RelaySession();
-    requestSession.setSpecId(this.chainID);
-    requestSession.setSessionId(1);
+    requestSession.setSpecId(chainID);
+    requestSession.setSessionId(consumerSession.sessionId);
     requestSession.setCuSum(cuSum);
     requestSession.setProvider(consumerProviderSession.publicLavaAddress);
     requestSession.setRelayNum(consumerSession.relayNum);
@@ -126,6 +122,9 @@ class Relayer {
     requestSession.setContentHash(contentHash);
     requestSession.setSig(new Uint8Array());
     requestSession.setLavaChainId(this.lavaChainId);
+
+    // Increase consumer session relay num
+    consumerSession.relayNum++;
 
     // Sign data
     const signedMessage = await this.signRelay(requestSession, this.privKey);
@@ -364,7 +363,8 @@ class Relayer {
     providers: ConsumerSessionsWithProvider[],
     options: any,
     relayCu: number,
-    rpcInterface: string
+    rpcInterface: string,
+    chainID: string
   ): Promise<any> {
     console.log("Started sending to all providers and race");
     let lastError;
@@ -383,7 +383,8 @@ class Relayer {
           options,
           provider,
           relayCu,
-          rpcInterface
+          rpcInterface,
+          chainID
         );
         allRelays.set(uniqueKey, providerRelayPromise);
       }
@@ -412,7 +413,8 @@ class Relayer {
     options: any,
     lavaRPCEndpoint: ConsumerSessionsWithProvider,
     relayCu: number,
-    rpcInterface: string
+    rpcInterface: string,
+    chainID: string
   ): Promise<any> {
     let response;
 
@@ -422,7 +424,8 @@ class Relayer {
         options,
         lavaRPCEndpoint,
         relayCu,
-        rpcInterface
+        rpcInterface,
+        chainID
       );
     } catch (error) {
       // If error is instace of Error
@@ -445,7 +448,8 @@ class Relayer {
             options,
             lavaRPCEndpoint,
             relayCu,
-            rpcInterface
+            rpcInterface,
+            chainID
           );
         } catch (error) {
           throw error;

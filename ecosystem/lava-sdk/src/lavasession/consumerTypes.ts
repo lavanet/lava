@@ -6,6 +6,7 @@ import {
   MIN_PROVIDERS_FOR_SYNC,
   PERCENTILE_TO_CALCULATE_LATENCY,
 } from "./common";
+import { generateRandomInt } from "../util/common";
 import {
   AllProviderEndpointsDisabledError,
   MaxComputeUnitsExceededError,
@@ -254,13 +255,13 @@ export class RPCEndpoint {
   public networkAddress = "";
   public chainId = "";
   public apiInterface = "";
-  public geolocation = 0;
+  public geolocation = "1";
 
   public constructor(
     address: string,
     chainId: string,
     apiInterface: string,
-    geolocation: number
+    geolocation: string
   ) {
     this.networkAddress = address;
     this.chainId = chainId;
@@ -404,7 +405,7 @@ export class ConsumerSessionsWithProvider {
     }
 
     // TODO: change Math.random to something else
-    const randomSessionId = Math.random();
+    const randomSessionId = generateRandomInt();
     const session = new SingleConsumerSession(randomSessionId, this, endpoint);
     session.lock();
 

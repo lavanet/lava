@@ -46,3 +46,7 @@ export function debugPrint(
     console.log(message, ...optionalParams);
   }
 }
+
+export function generateRandomInt(): number {
+  return Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER + 1));
+}

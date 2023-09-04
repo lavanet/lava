@@ -4,10 +4,13 @@ import {
   TimoutFailureFetchingBadgeError,
 } from "../../badge/badgeManager";
 import { debugPrint } from "../../util/common";
-import { ChainIDRpcInterface, Config } from "../state_tracker";
+import { Config } from "../state_tracker";
+import { ChainIDRpcInterface } from "../../sdk/sdk";
 import { GenerateBadgeResponse } from "../../grpc_web_services/lavanet/lava/pairing/badges_pb";
 import { StateTrackerErrors } from "../errors";
 import { StakeEntry } from "../../codec/lavanet/lava/epochstorage/stake_entry";
+import Relayer from "../../relayer/relayer";
+import { AccountData } from "@cosmjs/proto-signing";
 
 export class StateBadgeQuery {
   private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
@@ -15,12 +18,16 @@ export class StateBadgeQuery {
   private chainIDRpcInterfaces: ChainIDRpcInterface[]; // Array of {chainID, rpcInterface} pairs
   private walletAddress: string;
   private config: Config;
+  private relayer: Relayer;
+  private account: AccountData;
 
   constructor(
     badgeManager: BadgeManager,
     walletAddress: string,
     config: Config,
-    chainIdRpcInterfaces: ChainIDRpcInterface[]
+    account: AccountData,
+    chainIdRpcInterfaces: ChainIDRpcInterface[],
+    relayer: Relayer
   ) {
     debugPrint(config.debug, "Initialization of State Badge Query started");
 
@@ -29,6 +36,8 @@ export class StateBadgeQuery {
     this.walletAddress = walletAddress;
     this.config = config;
     this.chainIDRpcInterfaces = chainIdRpcInterfaces;
+    this.relayer = relayer;
+    this.account = account;
 
     // Initialize pairing to an empty map
     this.pairing = new Map<string, PairingResponse>();
@@ -56,9 +65,9 @@ export class StateBadgeQuery {
         continue;
       }
 
-      // TODO see if we have to update this?
-      // Also to see where to update badge for relayer
-      this.config.accountAddress = badgeResponse.getBadgeSignerAddress();
+      this.relayer.setBadge(badge);
+
+      (this.account as any).address = badgeResponse.getBadgeSignerAddress();
 
       const pairingResponse = badgeResponse.getGetPairingResponse();
 
@@ -84,7 +93,19 @@ export class StateBadgeQuery {
         // Rename 'endpointsList' to 'endpoints' and process its attributes
         if (providerObject.endpointsList) {
           providerObject.endpoints = providerObject.endpointsList.map(
-            (endpoint: any) => this.removeListSuffixFromAttributes(endpoint)
+            (endpoint: any) => {
+              // Process the endpoint attributes if needed
+              const processedEndpoint =
+                this.removeListSuffixFromAttributes(endpoint);
+
+              // Convert the 'ipport' attribute to 'iPPORT'
+              if (processedEndpoint.ipport) {
+                processedEndpoint.iPPORT = processedEndpoint.ipport;
+                delete processedEndpoint.ipport;
+              }
+
+              return processedEndpoint;
+            }
           );
           delete providerObject.endpointsList;
         }

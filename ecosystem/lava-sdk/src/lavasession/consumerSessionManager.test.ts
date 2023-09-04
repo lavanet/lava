@@ -25,8 +25,8 @@ describe("ConsumerSessionManager", () => {
   describe("getSessions", () => {
     it("happy flow", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -75,8 +75,8 @@ describe("ConsumerSessionManager", () => {
 
     it("tests pairing reset", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -127,8 +127,8 @@ describe("ConsumerSessionManager", () => {
 
     it("test pairing reset with failures", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -179,8 +179,8 @@ describe("ConsumerSessionManager", () => {
 
     it("tests pairing reset with multiple failures", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -289,8 +289,8 @@ describe("ConsumerSessionManager", () => {
 
     it("tests success and failure of session with update pairings in the middle", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -421,8 +421,8 @@ describe("ConsumerSessionManager", () => {
 
     it("tests session failure and get reported providers", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -477,8 +477,8 @@ describe("ConsumerSessionManager", () => {
 
     it("tests session failure epoch mismatch", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", true);
@@ -516,8 +516,8 @@ describe("ConsumerSessionManager", () => {
 
     it("tests all providers endpoints disabled", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
       const pairingList = createPairingList("", false);
@@ -539,8 +539,8 @@ describe("ConsumerSessionManager", () => {
     describe("tests pairing with addons", () => {
       test.each(["", "addon"])(`addon: %s`, async (addon) => {
         const cm = new ConsumerSessionManager(
-          new Relayer("stub", "stub", "stub", false, true),
-          new RPCEndpoint("stub", "stub", "stub", 0),
+          new Relayer("stub", "stub", false, true),
+          new RPCEndpoint("stub", "stub", "stub", "0"),
           new RandomProviderOptimizer()
         );
         const pairingList = createPairingList("", true);
@@ -632,8 +632,8 @@ describe("ConsumerSessionManager", () => {
 
       test.each(extensionOptions)(`$name`, async ({ addon, extensions }) => {
         const cm = new ConsumerSessionManager(
-          new Relayer("stub", "stub", "stub", false, true),
-          new RPCEndpoint("stub", "stub", "stub", 0),
+          new Relayer("stub", "stub", false, true),
+          new RPCEndpoint("stub", "stub", "stub", "0"),
           new RandomProviderOptimizer()
         );
         const pairingList = createPairingList("", true);
@@ -701,8 +701,8 @@ describe("ConsumerSessionManager", () => {
   describe("updateAllProviders", () => {
     it("updates providers", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
 
@@ -719,8 +719,8 @@ describe("ConsumerSessionManager", () => {
 
     it("updates all providers with same epoch", async () => {
       const cm = new ConsumerSessionManager(
-        new Relayer("stub", "stub", "stub", false, true),
-        new RPCEndpoint("stub", "stub", "stub", 0),
+        new Relayer("stub", "stub", false, true),
+        new RPCEndpoint("stub", "stub", "stub", "0"),
         new RandomProviderOptimizer()
       );
 

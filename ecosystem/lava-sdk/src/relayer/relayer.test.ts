@@ -48,7 +48,7 @@ describe("Test relay request", () => {
         ]),
       },
     ];
-    const relayer = new Relayer("", "", "", false);
+    const relayer = new Relayer("", "", false);
 
     for (const testCase of testTable) {
       // Test case logic goes here

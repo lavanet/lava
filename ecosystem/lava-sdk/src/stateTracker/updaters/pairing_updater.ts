@@ -1,10 +1,12 @@
 import { StateQuery, PairingResponse } from "../stateQuery/state_query";
 import { debugPrint, parseLong } from "../../util/common";
+import { AccountData } from "@cosmjs/proto-signing";
+import { Config } from "../state_tracker";
+import { ChainIDRpcInterface } from "../../sdk/sdk";
 import {
-  Config,
-  ConsumerSessionManagerMap,
   ConsumerSessionManager,
-} from "../state_tracker";
+  ConsumerSessionManagersMap,
+} from "../../lavasession/consumerSessionManager";
 import {
   ConsumerSessionsWithProvider,
   Endpoint,
@@ -13,20 +15,38 @@ import {
 export class PairingUpdater {
   private stateQuery: StateQuery; // State Query instance
   private config: Config; // Config options
-  private consumerSessionManagerMap: ConsumerSessionManagerMap; // ConsumerSessionManagerMap instance
+  private consumerSessionManagerMap: ConsumerSessionManagersMap; // ConsumerSessionManagerMap instance
+  private account: AccountData;
 
   // Constructor for Pairing Updater
   constructor(
     stateQuery: StateQuery,
-    consumerSessionManagerMap: ConsumerSessionManagerMap,
-    config: Config
+    consumerSessionManagerMap: ConsumerSessionManagersMap,
+    config: Config,
+    account: AccountData
   ) {
     debugPrint(config.debug, "Initialization of Pairing Updater started");
 
     // Save arguments
+    this.account = account;
     this.stateQuery = stateQuery;
     this.config = config;
     this.consumerSessionManagerMap = consumerSessionManagerMap;
+  }
+
+  public registerPairing(consumerSessionManager: ConsumerSessionManager) {
+    const chainID = consumerSessionManager.getRpcEndpoint().chainId;
+
+    if (this.consumerSessionManagerMap.has(chainID)) {
+      // If the chainID exists, fetch the array and push the new manager to it.
+      const managers = this.consumerSessionManagerMap.get(chainID);
+      if (managers) {
+        managers.push(consumerSessionManager);
+      }
+    } else {
+      // If the chainID doesn't exist, initialize a new array with the manager as the first element.
+      this.consumerSessionManagerMap.set(chainID, [consumerSessionManager]);
+    }
   }
 
   // update updates pairing list on every consumer session manager
@@ -72,7 +92,7 @@ export class PairingUpdater {
     // Filter pairing list for specific consumer session manager
     const pairingListForThisCSM = this.filterPairingListByEndpoint(
       pairing,
-      consumerSessionManager.getRpcEndpoint()
+      consumerSessionManager.getRpcEndpoint().apiInterface
     );
 
     // Update specific consumer session manager
@@ -109,7 +129,7 @@ export class PairingUpdater {
         if (!endpoint.apiInterfaces.includes(rpcInterface)) {
           continue;
         }
-        const convertedEndpoint: Endpoint = {
+        const convertedEndpoint = {
           networkAddress: endpoint.iPPORT,
           enabled: true,
           connectionRefusals: 0,
@@ -139,7 +159,7 @@ export class PairingUpdater {
       }
 
       const newPairing = new ConsumerSessionsWithProvider(
-        this.config.accountAddress,
+        provider.address,
         endpointListToStore,
         {},
         pairing.maxCu,

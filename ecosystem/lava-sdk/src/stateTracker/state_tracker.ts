@@ -6,40 +6,23 @@ import { debugPrint } from "../util/common";
 import { StateQuery } from "./stateQuery/state_query";
 import { Updater } from "./updaters/updater";
 import Relayer from "../relayer/relayer";
-import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
+import { AccountData } from "@cosmjs/proto-signing";
+import { RPCEndpoint } from "../lavasession/consumerTypes";
+import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
+import {
+  ConsumerSessionManagersMap,
+  ConsumerSessionManager,
+} from "../lavasession/consumerSessionManager";
+import { ChainIDRpcInterface } from "../sdk/sdk";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 
-// ChainIDRpcInterface
-// TODO Move it to SDK class when we create it
-export interface ChainIDRpcInterface {
-  chainID: string;
-  rpcInterface: string;
-}
-
 // Config interface
-// TODO Move it to SDK class when we create it
 export interface Config {
   geolocation: string;
   network: string;
-  accountAddress: string;
   debug: boolean;
 }
-
-// ConsumerSessionManager interface
-export interface ConsumerSessionManager {
-  getRpcEndpoint(): string;
-  updateAllProviders(
-    epoch: number,
-    providers: ConsumerSessionsWithProvider[]
-  ): Promise<Error | undefined>;
-}
-
-// ConsumerSessionManagerList is an array of ConsumerSessionManager
-export type ConsumerSessionManagerList = ConsumerSessionManager[];
-
-// ConsumerSessionManagerMap is an map where key is chainID and value is ConsumerSessionManagerList
-export type ConsumerSessionManagerMap = Map<string, ConsumerSessionManagerList>;
 
 export class StateTracker {
   private updaters: Updater[] = []; // List of all registered updaters
@@ -50,9 +33,10 @@ export class StateTracker {
   constructor(
     pairingListConfig: string,
     relayer: Relayer,
-    chainIDRpcInterface: ChainIDRpcInterface[],
+    chainIDRpcInterfaces: ChainIDRpcInterface[],
     config: Config,
-    consumerSessionManagerMap: ConsumerSessionManagerMap,
+    account: AccountData,
+    consumerSessionManagerMap: ConsumerSessionManagersMap,
     walletAddress: string,
     badgeManager?: BadgeManager
   ) {
@@ -66,15 +50,18 @@ export class StateTracker {
         badgeManager,
         walletAddress,
         config,
-        chainIDRpcInterface
+        account,
+        chainIDRpcInterfaces,
+        relayer
       );
     } else {
       // Initialize State Query
       this.stateQuery = new StateChainQuery(
         pairingListConfig,
-        chainIDRpcInterface,
+        chainIDRpcInterfaces,
         relayer,
-        config
+        config,
+        account
       );
     }
 
@@ -82,16 +69,38 @@ export class StateTracker {
     const pairingUpdater = new PairingUpdater(
       this.stateQuery,
       consumerSessionManagerMap,
-      config
+      config,
+      account
     );
+
+    // Create Optimizer
+    const optimizer = new RandomProviderOptimizer();
+
+    // Register all pairirings
+    for (const chainIDRpcInterface of chainIDRpcInterfaces) {
+      const sessionManager = new ConsumerSessionManager(
+        relayer,
+        new RPCEndpoint(
+          account.address,
+          chainIDRpcInterface.chainID,
+          chainIDRpcInterface.rpcInterface,
+          config.geolocation
+        ),
+        optimizer
+      );
+
+      pairingUpdater.registerPairing(sessionManager);
+    }
 
     // Register all updaters
     this.registerForUpdates(pairingUpdater);
 
     debugPrint(config.debug, "Pairing updater added");
+  }
 
-    // Call executeUpdateOnNewEpoch method to start the process
-    this.executeUpdateOnNewEpoch();
+  async initialize() {
+    debugPrint(this.config.debug, "Initialization of State Tracker started");
+    await this.executeUpdateOnNewEpoch();
   }
 
   // executeUpdateOnNewEpoch executes all updates on every new epoch
