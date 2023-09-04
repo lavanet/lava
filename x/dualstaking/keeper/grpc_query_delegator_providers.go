@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -17,10 +16,6 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	providers, err := k.GetDelegatorProviders(ctx, req.Delegator)
 	if err != nil {
@@ -29,21 +24,14 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 
 	var delegations []types.Delegation
 	for _, provider := range providers {
-		indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
-		for _, ind := range indices {
-			var delegation types.Delegation
-			found := k.delegationFS.FindEntry(ctx, ind, nextEpoch, &delegation)
-			if !found {
-				delegator, provider, chainID := types.DelegationKeyDecode(ind)
-				utils.LavaFormatError("provider found in delegatorFS but not in delegationFS", fmt.Errorf("provider delegation not found"),
-					utils.Attribute{Key: "delegator", Value: delegator},
-					utils.Attribute{Key: "provider", Value: provider},
-					utils.Attribute{Key: "chainID", Value: chainID},
-				)
-				continue
-			}
-			delegations = append(delegations, delegation)
+		providerDelegations, err := k.GetProviderDelegators(ctx, provider)
+		if err != nil {
+			utils.LavaFormatError("could not get provider's delegators", err,
+				utils.Attribute{Key: "proivder", Value: provider},
+			)
+			continue
 		}
+		delegations = append(delegations, providerDelegations...)
 	}
 
 	return &types.QueryDelegatorProvidersResponse{Delegations: delegations}, nil
