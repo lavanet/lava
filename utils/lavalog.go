@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -116,6 +117,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		// prefix = "Debug:"
 	}
 	output := description
+	attrStrings := []string{}
 	if err != nil {
 		logEvent = logEvent.Err(err)
 		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
@@ -146,6 +148,8 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 				} else {
 					st_val = "false"
 				}
+			case fmt.Stringer:
+				st_val = value.String()
 			case string:
 				st_val = value
 			case int:
@@ -156,19 +160,21 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 				st_val = strconv.FormatUint(value, 10)
 			case error:
 				st_val = value.Error()
-			case fmt.Stringer:
-				st_val = value.String()
+			case []string:
+				st_val = strings.Join(value, ",")
 			// needs to come after stringer so byte inheriting objects will use their string method if implemented (like AccAddress)
 			case []byte:
 				st_val = string(value)
 			case nil:
 				st_val = ""
 			default:
-				st_val = fmt.Sprintf("%v", value)
+				st_val = fmt.Sprintf("%+v", value)
 			}
 			logEvent = logEvent.Str(key, st_val)
+			attrStrings = append(attrStrings, fmt.Sprintf("%s:%s", attr.Key, st_val))
 		}
-		output = fmt.Sprintf("%s %+v", output, attributes)
+		attributesStr := "{" + strings.Join(attrStrings, ",") + "}"
+		output = fmt.Sprintf("%s %+v", output, attributesStr)
 	}
 	logEvent.Msg(description)
 	// here we return the same type of the original error message, this handles nil case as well
