@@ -10,7 +10,7 @@ import { Logger } from "../logger/logger";
 import { parseLong } from "../util/common";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
-import { Relayer, RelayerOptions } from "../relayer/relayer";
+import { Relayer } from "../relayer/relayer";
 
 type ApiInterface = string;
 class RPCConsumer {
