@@ -1,6 +1,6 @@
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
-import { Relayer, RelayerOptions } from "../relayer/relayer";
+import { Relayer } from "../relayer/relayer";
 import { BadgeOptions, BadgeManager } from "../badge/badgeManager";
 import {
   DEFAULT_LAVA_PAIRING_NETWORK,
