@@ -130,6 +130,23 @@ func extractNestedCode(message string) (int, error) {
 
 // External Errors
 func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
+	return handleExternalError(replyData, "jsonrpc")
+}
+
+func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
+	return handleExternalError(replyData, "rest")
+}
+
+func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
+	return handleExternalError(replyData, "grpc")
+}
+
+func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
+	return handleExternalError(replyData, "tendermintrpc")
+}
+
+// external error handling
+func handleExternalError(replyData string, apiMethod string) error {
 	// Try to parse the reply into a JsonRPCResponse
 	var jsonResponse JsonResponse
 	err := json.Unmarshal([]byte(replyData), &jsonResponse)
@@ -143,24 +160,12 @@ func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
 			return utils.LavaFormatProduction("Cannot extract nested error code.", err)
 		}
 		// Check if this internal error code is in our map of allowed errors
-		_, exists := AllowedErrorsMap["jsonrpc"][fmt.Sprintf("%d", nestedCode)]
+		_, exists := AllowedErrorsMap[apiMethod][fmt.Sprintf("%d", nestedCode)]
 		if !exists {
 			// If the error code is not allowed, return a node error
 			errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
 			return utils.LavaFormatProduction(errMsg, nil)
 		}
 	}
-	return nil
-}
-
-func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
-	return nil
-}
-
-func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
-	return nil
-}
-
-func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
 	return nil
 }
