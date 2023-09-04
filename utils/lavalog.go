@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"time"
 
@@ -58,6 +59,9 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 		attributes_str += fmt.Sprintf("%s: %s,", key, val)
 		eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
 	}
+	sort.Slice(eventAttrs, func(i, j int) bool {
+		return eventAttrs[i].Key < eventAttrs[j].Key
+	})
 	logger.Info(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
 	ctx.EventManager().EmitEvent(sdk.NewEvent(EventPrefix+name, eventAttrs...))
 }
