@@ -27,7 +27,9 @@ spec:
         lavanet.xyz/node_type: "provider"
         {{- include "provider.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.serviceAccountName }}
       serviceAccountName: {{ .Values.serviceAccountName }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -37,8 +39,21 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
-            - name:  {{- include "provider.fullname" }}-volume
-              mountPath: {{ .Values.chainDataDir }}
+          {{- range .Values.extraSecretMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
+          {{- range .Values.extraConfigMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
+            - name: data-volume
+              mountPath: {{ .Values.persistentVolume.mountPath }}
+              subPath: "{{ .Values.persistentVolume.subPath }}"
           {{- with .Values.envFrom }}
           envFrom: 
             {{- toYaml . | nindent 12 }}
@@ -82,6 +97,31 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
-        - name:  {{- include "provider.fullname" }}-volume
+        {{- range .Values.extraSecretMounts }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .secretName }}
+            {{- with .optional }}
+            optional: {{ . }}
+            {{- end }}
+        {{- end }}
+        {{- range .Values.extraConfigMounts }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .secretName }}
+            {{- with .optional }}
+            optional: {{ . }}
+            {{- end }}
+        {{- end }}
+        - name: data-volume
+        {{- if .Values.persistentVolume.enabled }}
           persistentVolumeClaim:
-            claimName: {{- include "provider.fullname" }}-pvc
+            claimName: {{ if .Values.persistentVolume.existingClaim }}{{ .Values.persistentVolume.existingClaim }}{{- else }} {{- include "provider.fullname" }}-pvc {{- end }}
+        {{- else }}
+          emptyDir:
+          {{- if .Values.emptyDir.sizeLimit }}
+            sizeLimit: {{ .Values.emptyDir.sizeLimit }}
+          {{- else }}
+            {}
+          {{- end -}}
+        {{- end -}}

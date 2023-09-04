@@ -34,6 +34,9 @@ port:
   number: 5000
   protocol: TCP
 
+# set service account name
+serviceAccountName: null
+
 # service settings
 service:
   enabled: true
@@ -41,6 +44,22 @@ service:
   annotations: {}
   # override .Values.port with these values
   ports: null
+
+# mount secrets as files, useful for mounting key file
+extraSecretMounts: []
+  # - name: node-private-key
+  #   mountPath: /data
+  #   subPath: /keychain/node-private-key
+  #   secretName: node-private-key
+  #   readOnly: true
+
+# mount config as files, useful for mounting the config file
+extraConfigMounts: []
+  # - name: node-config
+  #   mountPath: /etc/config
+  #   subPath: /etc/config/node-config.toml
+  #   configName: node-config
+  #   readOnly: true
 
 # setup pvc for the node
 persistentVolume:
@@ -85,8 +104,8 @@ persistentVolume:
   ## Persistent Volume Claim Selector
   ## Useful if Persistent Volumes have been provisioned in advance
   ## Ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#selector
-  ##
-
+  selector: null
+  ## ex: 
   # selector:
   #  matchLabels:
   #    release: "stable"

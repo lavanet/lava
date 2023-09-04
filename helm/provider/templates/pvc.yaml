@@ -1,23 +1,37 @@
----
-{{- if .Values.pvc.enabled -}}
+{{- if .Values.persistentVolume.enabled -}}
+{{- if not .Values.persistentVolume.existingClaim -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name:  {{- include "provider.fullname" }}   
-  {{ with .Values.pvc.annotations }}
+  {{- if .Values.persistentVolume.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+{{ toYaml .Values.persistentVolume.annotations | indent 4 }}
   {{- end }}
   labels:
-    lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}    
-    lavanet.xyz/node_type: "provider"
     {{- include "provider.labels" . | nindent 4 }}
+  name: {{ template "provider.fullname" . }}
 spec:
-  {{- if .Values.pvc.storageClassName -}}
-  storageClassName: {{ .Values.pvc.storageClassName -}}
-  {{- end }} 
-  accessModes: {{ .Values.pvc.accessModes }}
+  accessModes:
+{{ toYaml .Values.persistentVolume.accessModes | indent 4 }}
+{{- if .Values.persistentVolume.storageClass }}
+{{- if (eq "-" .Values.persistentVolume.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.persistentVolume.storageClass }}"
+{{- end }}
+{{- end }}
+{{- if .Values.persistentVolume.volumeBindingMode }}
+  volumeBindingMode: "{{ .Values.persistentVolume.volumeBindingMode }}"
+{{- end }}
   resources:
     requests:
-      storage: {{ .Values.pvc.size }}
-{{- end }} 
+      storage: "{{ .Values.persistentVolume.size }}"
+{{- if .Values.persistentVolume.selector }}
+  selector:
+  {{- toYaml .Values.persistentVolume.selector | nindent 4 }}
+{{- end -}}
+{{- if .Values.persistentVolume.volumeName }}
+  volumeName: "{{ .Values.persistentVolume.volumeName }}"
+{{- end -}}
+{{- end -}}
+{{- end -}}
