@@ -20,23 +20,31 @@ import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
 
+export interface RelayerOptions {
+  privKey: string;
+  secure: boolean;
+  allowInsecureTransport: boolean;
+  lavaChainId: string;
+  transport?: grpc.TransportFactory;
+}
+
 export class Relayer {
   private privKey: string;
   private lavaChainId: string;
   private prefix: string;
   private allowInsecureTransport: boolean;
   private badge?: Badge;
+  private transport: grpc.TransportFactory | undefined;
 
-  constructor(
-    privKey: string,
-    lavaChainId: string,
-    secure: boolean,
-    allowInsecureTransport?: boolean
-  ) {
-    this.privKey = privKey;
-    this.lavaChainId = lavaChainId;
-    this.prefix = secure ? "https" : "http";
-    this.allowInsecureTransport = allowInsecureTransport ?? false;
+  constructor(relayerOptions: RelayerOptions) {
+    this.privKey = relayerOptions.privKey;
+    this.lavaChainId = relayerOptions.lavaChainId;
+    this.prefix = relayerOptions.secure ? "https" : "http";
+    this.allowInsecureTransport =
+      relayerOptions.allowInsecureTransport ?? false;
+    if (relayerOptions.transport) {
+      this.transport = relayerOptions.transport;
+    }
   }
 
   // when an epoch changes we need to update the badge
@@ -57,7 +65,7 @@ export class Relayer {
   ): Promise<ProbeReply> {
     const client = new RelayerClient(
       this.prefix + "://" + providerAddress,
-      this.getTransport()
+      this.getTransportWrapped()
     );
     const request = new ProbeRequest();
     request.setGuid(123);
@@ -140,14 +148,12 @@ export class Relayer {
     const request = new RelayRequest();
     request.setRelaySession(requestSession);
     request.setRelayData(requestPrivateData);
-
+    const transportation = this.getTransport();
     const requestPromise = new Promise<RelayReply>((resolve, reject) => {
       grpc.invoke(RelayerService.Relay, {
         request: request,
         host: this.prefix + "://" + consumerSession.endpoint.networkAddress,
-        transport: this.allowInsecureTransport
-          ? transportAllowInsecure // if allow insecure we use a transport with rejectUnauthorized disabled
-          : transport, // otherwise normal transport (default to rejectUnauthorized = true)
+        transport: transportation, // otherwise normal transport (default to rejectUnauthorized = true)
         onMessage: (message: RelayReply) => {
           resolve(message);
         },
@@ -180,12 +186,17 @@ export class Relayer {
   }
 
   getTransport() {
+    if (this.transport) {
+      return this.transport;
+    }
+    return this.allowInsecureTransport ? transportAllowInsecure : transport;
+  }
+
+  getTransportWrapped() {
     return {
       // if allow insecure we use a transport with rejectUnauthorized disabled
       // otherwise normal transport (default to rejectUnauthorized = true));}
-      transport: this.allowInsecureTransport
-        ? transportAllowInsecure
-        : transport,
+      transport: this.getTransport(),
     };
   }
 

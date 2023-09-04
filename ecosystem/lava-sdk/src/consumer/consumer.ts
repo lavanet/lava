@@ -10,7 +10,7 @@ import { Logger } from "../logger/logger";
 import { parseLong } from "../util/common";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
-import { Relayer } from "../relayer/relayer";
+import { Relayer, RelayerOptions } from "../relayer/relayer";
 
 type ApiInterface = string;
 class RPCConsumer {
@@ -26,7 +26,8 @@ class RPCConsumer {
   static create(
     pairingResponse: PairingResponse,
     geolocation: string,
-    accountAddress: string
+    accountAddress: string,
+    relayer: Relayer
   ): RPCConsumer {
     const rpcConsumer = new RPCConsumer(geolocation);
     // step 1 set the spec.
@@ -168,10 +169,12 @@ export class Consumer {
   private rpcConsumer: Map<ChainId, RPCConsumer>;
   private geolocation: string;
   private accountAddress: string;
-  constructor(accountAddress: string, geolocation: string) {
+  private relayer: Relayer;
+  constructor(relayer: Relayer, accountAddress: string, geolocation: string) {
     this.rpcConsumer = new Map();
     this.geolocation = geolocation;
     this.accountAddress = accountAddress;
+    this.relayer = relayer;
   }
 
   public async updateAllProviders(
@@ -186,7 +189,8 @@ export class Consumer {
         RPCConsumer.create(
           pairingResponse,
           this.geolocation,
-          this.accountAddress
+          this.accountAddress,
+          this.relayer
         )
       );
       return;

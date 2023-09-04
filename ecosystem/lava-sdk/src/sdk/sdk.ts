@@ -1,6 +1,6 @@
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
-import { Relayer } from "../relayer/relayer";
+import { Relayer, RelayerOptions } from "../relayer/relayer";
 import { BadgeOptions, BadgeManager } from "../badge/badgeManager";
 import {
   DEFAULT_LAVA_PAIRING_NETWORK,
@@ -12,7 +12,6 @@ import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
 import { ConsumerSessionManagersMap } from "../lavasession/consumerSessionManager";
 import { grpc } from "@improbable-eng/grpc-web";
-
 export interface ChainIDRpcInterface {
   chainID: string;
   rpcInterface: string;
@@ -66,6 +65,7 @@ export class LavaSDK {
   private allowInsecureTransport: boolean;
   private chainIDRpcInterface: ChainIDRpcInterface[];
   private consumerSessionManagerMap: ConsumerSessionManagersMap;
+  private transport: any;
 
   /**
    * Create Lava-SDK instance
@@ -115,6 +115,7 @@ export class LavaSDK {
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
     this.consumerSessionManagerMap = new Map();
+    this.transport = options.transport;
   }
 
   static async create(options: LavaSDKOptions): Promise<LavaSDK> {
@@ -125,12 +126,13 @@ export class LavaSDK {
 
   public async init() {
     // Init relayer
-    const relayer = new Relayer(
-      this.privKey,
-      this.lavaChainId,
-      this.secure,
-      this.allowInsecureTransport
-    );
+    const relayer = new Relayer({
+      privKey: this.privKey,
+      lavaChainId: this.lavaChainId,
+      secure: this.secure,
+      allowInsecureTransport: this.allowInsecureTransport,
+      transport: this.transport,
+    });
 
     // Init wallet
     if (!this.badgeManager.isActive()) {
