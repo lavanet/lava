@@ -26,7 +26,7 @@ import {
 import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import BigNumber from "bignumber.js";
 import { Logger } from "../logger/logger";
-import Relayer from "../relayer/relayer";
+import { Relayer } from "../relayer/relayer";
 import { grpc } from "@improbable-eng/grpc-web";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import transport from "../util/browser";

@@ -5,7 +5,7 @@ import { BadgeManager } from "../badge/badgeManager";
 import { Logger } from "../logger/logger";
 import { StateQuery } from "./stateQuery/state_query";
 import { Updater } from "./updaters/updater";
-import Relayer from "../relayer/relayer";
+import { Relayer } from "../relayer/relayer";
 import { AccountData } from "@cosmjs/proto-signing";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";

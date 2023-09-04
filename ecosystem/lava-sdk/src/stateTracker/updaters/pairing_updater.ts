@@ -87,7 +87,7 @@ export class PairingUpdater {
     }
 
     // Filter pairing list for specific consumer session manager
-    const pairingListForThisCSM = this.filterPairingListByEndpoint(
+    const pairingListForThisCSM = this.filterPairingListByEndpoint( // FYI @Aleksao998 I moved this to consumer.ts
       pairing,
       consumerSessionManager.getRpcEndpoint().apiInterface
     );
@@ -97,88 +97,5 @@ export class PairingUpdater {
       pairing.currentEpoch,
       pairingListForThisCSM
     );
-  }
-
-  // filterPairingListByEndpoint filters pairing list and return only the once for rpcInterface
-  private filterPairingListByEndpoint(
-    pairing: PairingResponse,
-    rpcInterface: string
-  ): ConsumerSessionsWithProvider[] {
-    // Initialize ConsumerSessionWithProvider array
-    const pairingForSameGeolocation: Array<ConsumerSessionsWithProvider> = [];
-    const pairingFromDifferentGeolocation: Array<ConsumerSessionsWithProvider> =
-      [];
-    // Iterate over providers to populate pairing list
-    for (const provider of pairing.providers) {
-      Logger.debug("parsing provider", provider);
-      // Skip providers with no endpoints
-      if (provider.endpoints.length == 0) {
-        continue;
-      }
-
-      // Initialize relevantEndpoints array
-      const sameGeoEndpoints: Array<Endpoint> = [];
-      const differntGeoEndpoints: Array<Endpoint> = [];
-
-      // Only take into account endpoints that use the same api interface
-      // And geolocation
-      for (const endpoint of provider.endpoints) {
-        if (!endpoint.apiInterfaces.includes(rpcInterface)) {
-          continue;
-        }
-        const convertedEndpoint = {
-          networkAddress: endpoint.iPPORT,
-          enabled: true,
-          connectionRefusals: 0,
-          addons: new Set(endpoint.addons),
-          extensions: new Set(endpoint.extensions),
-        };
-        if (
-          parseLong(endpoint.geolocation) == Number(this.config.geolocation)
-        ) {
-          sameGeoEndpoints.push(convertedEndpoint); // set same geo location provider endpoint
-        } else {
-          differntGeoEndpoints.push(convertedEndpoint); // set different geo location provider endpoint
-        }
-      }
-
-      // skip if we have no endpoints at all.
-      if (sameGeoEndpoints.length == 0 && differntGeoEndpoints.length == 0) {
-        Logger.debug("No endpoints found");
-        continue;
-      }
-
-      let sameGeoOptions = false; // if we have same geolocation options or not
-      let endpointListToStore: Endpoint[] = differntGeoEndpoints;
-      if (sameGeoEndpoints.length > 0) {
-        sameGeoOptions = true;
-        endpointListToStore = sameGeoEndpoints;
-      }
-
-      const newPairing = new ConsumerSessionsWithProvider(
-        provider.address,
-        endpointListToStore,
-        {},
-        pairing.maxCu,
-        pairing.currentEpoch
-      );
-
-      // Add newly created pairing in the pairing list
-      if (sameGeoOptions) {
-        pairingForSameGeolocation.push(newPairing);
-      } else {
-        pairingFromDifferentGeolocation.push(newPairing);
-      }
-    }
-
-    if (
-      pairingForSameGeolocation.length == 0 &&
-      pairingFromDifferentGeolocation.length == 0
-    ) {
-      Logger.debug("No relevant providers found");
-    }
-
-    // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]
-    return pairingForSameGeolocation.concat(pairingFromDifferentGeolocation);
   }
 }

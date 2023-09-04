@@ -1,6 +1,6 @@
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
-import Relayer from "../relayer/relayer";
+import { Relayer } from "../relayer/relayer";
 import { BadgeOptions, BadgeManager } from "../badge/badgeManager";
 import {
   DEFAULT_LAVA_PAIRING_NETWORK,
@@ -11,6 +11,7 @@ import { Logger, LogLevel } from "../logger/logger";
 import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
 import { ConsumerSessionManagersMap } from "../lavasession/consumerSessionManager";
+import { grpc } from "@improbable-eng/grpc-web";
 
 export interface ChainIDRpcInterface {
   chainID: string;
@@ -49,6 +50,7 @@ export interface LavaSDKOptions {
   secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
   allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
   logLevel?: string | LogLevel; // Optional for log level settings, "debug" | "info" | "warn" | "error" | "success" | "NoPrints"
+  transport?: any; // Optional for transport settings if you would like to change the default transport settings. see utils/browser.ts for the current settings
 }
 
 export class LavaSDK {

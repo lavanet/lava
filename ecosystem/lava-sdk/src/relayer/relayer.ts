@@ -20,7 +20,7 @@ import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
 
-class Relayer {
+export class Relayer {
   private privKey: string;
   private lavaChainId: string;
   private prefix: string;
@@ -514,5 +514,3 @@ interface SendRelayOptions {
   url: string;
   connectionType: string;
 }
-
-export default Relayer;
