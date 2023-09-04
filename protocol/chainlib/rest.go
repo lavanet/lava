@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -442,5 +443,13 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		Data:     body,
 		Metadata: convertToMetadataMapOfSlices(res.Header),
 	}
+
+	// JsonRPC External Error Handling
+	fmt.Println("HERE IN REST! ")
+	err = rcp.HandleExternalError(string(reply.Data))
+	if err != nil {
+		return nil, "", nil, err
+	}
+
 	return reply, "", nil, nil
 }

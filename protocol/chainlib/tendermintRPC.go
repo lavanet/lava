@@ -626,6 +626,12 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		Data: data,
 	}
 
+	// JsonRPC External Error Handling
+	err = cp.HandleExternalError(string(reply.Data))
+	if err != nil {
+		return nil, "", nil, err
+	}
+
 	if ch != nil {
 		// get the params for the rpc call
 		params := nodeMessage.Params

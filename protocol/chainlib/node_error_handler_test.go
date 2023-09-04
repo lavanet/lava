@@ -78,7 +78,7 @@ func TestNodeErrorHandlerGenericErrors(t *testing.T) {
 	err = neh.handleGenericErrors(ctx, errors.New("dummy error"))
 	require.Equal(t, err, nil)
 }
-func TestHandleExternalError(t *testing.T) {
+func TestHandleExternalErrorJSONRPC(t *testing.T) {
 	jeh := &JsonRPCErrorHandler{}
 
 	// 1. Well-formed error response, with an allowed error code
@@ -101,4 +101,51 @@ func TestHandleExternalError(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected non-nil error for ill-formed response")
 	}
+
+	// 4. Well-formed successful relay with "result" field
+	successfulRelayResponse := `{"jsonrpc":"2.0","id":1,"result":{"key":"value"}}`
+	err = jeh.HandleExternalError(successfulRelayResponse)
+	if err != nil {
+		t.Errorf("Expected nil error for successful relay, got: %v", err)
+	}
+}
+
+func TestHandleExternalErrorForREST(t *testing.T) {
+	handler := RestErrorHandler{}
+
+	// Error response 1: "height must be greater than 0, but got -3"
+	replyData1 := `{"code":2,"message":"height must be greater than 0, but got -3","details":[]}`
+	err := handler.HandleExternalError(replyData1)
+	if err != nil {
+		t.Errorf("Expected nil, got %s", err.Error())
+	}
+
+	// Error response 2: "requested block height is bigger then the chain length"
+	replyData2 := `{"code":3,"message":"requested block height is bigger then the chain length","details":[]}`
+	err = handler.HandleExternalError(replyData2)
+	if err != nil {
+		t.Errorf("Expected nil, got %s", err.Error())
+	}
+
+	// Error response 3: Unexpected error code
+	replyData3 := `{"code":999,"message":"unknown error","details":[]}`
+	err = handler.HandleExternalError(replyData3)
+	if err == nil {
+		t.Errorf("Expected an error, got nil")
+	}
+
+	// Successful response 2: Another simplified example of a successful response
+	successfulReply2 := `{"block_id":{"hash":"anotherHash","part_set_header":{"total":1,"hash":"anotherHash"}}}`
+	err = handler.HandleExternalError(successfulReply2)
+	if err != nil {
+		t.Errorf("Expected nil for a successful response, got %s", err.Error())
+	}
+
+	// Malformed response: Neither a successful nor an error response
+	malformedReply := `{"unknownField":"unknownValue"}`
+	err = handler.HandleExternalError(malformedReply)
+	if err == nil {
+		t.Errorf("Expected an error for a malformed response, got nil")
+	}
+
 }

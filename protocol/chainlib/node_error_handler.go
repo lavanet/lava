@@ -100,14 +100,148 @@ type ErrorHandler interface {
 	HandleExternalError(replyData string) error
 }
 
-type JsonResponse struct {
-	Error struct {
+type JsonRPCResponse struct {
+	Result *interface{} `json:"result,omitempty"`
+	Error  *struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
-	} `json:"error"`
+	} `json:"error,omitempty"`
 }
 
-func extractNestedCode(message string) (int, error) {
+// HandleExternalError handles external errors for JSON-RPC calls.
+func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
+	// Try to parse the reply into a JsonRPCResponse
+	var jsonResponse JsonRPCResponse
+	err := json.Unmarshal([]byte(replyData), &jsonResponse)
+	if err != nil {
+		return utils.LavaFormatProduction("Unparsable external provider error detected.", err)
+	}
+
+	// Check if this is a successful response
+	if jsonResponse.Result != nil {
+		return nil // It's a successful response, so just return nil (no error)
+	}
+
+	// Check if there is an "error" in the response
+	if jsonResponse.Error != nil {
+		nestedCode, err := extractRPCNestedCode(jsonResponse.Error.Message)
+		if err != nil {
+			return utils.LavaFormatProduction("Cannot extract nested error code.", err)
+		}
+
+		// Check if this internal error code is in our map of allowed errors
+		allowedErrors, ok := AllowedErrorsMap["jsonrpc"]
+		if !ok {
+			return utils.LavaFormatProduction("allowed errors for json-RPC not configured", nil)
+		}
+
+		_, exists := allowedErrors[fmt.Sprintf("%d", nestedCode)]
+		if !exists {
+			// If the error code is not allowed, return a node error
+			errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
+			return utils.LavaFormatProduction(errMsg, nil)
+		}
+	} else {
+		// Neither Result nor Error field is present
+		return utils.LavaFormatProduction("Received unexpected response: neither Result nor Error is present.", nil)
+	}
+
+	return nil
+}
+
+type RestError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type RestResponse struct {
+	BlockID interface{} `json:"block_id,omitempty"`
+	Block   interface{} `json:"block,omitempty"`
+}
+
+func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
+	// Try parsing for error first
+	var restError RestError
+	err := json.Unmarshal([]byte(replyData), &restError)
+	if err == nil && restError.Code != 0 {
+		// It's a well-formed error message. Proceed with error handling logic.
+		allowedErrors, ok := AllowedErrorsMap["rest"]
+		if !ok {
+			return utils.LavaFormatProduction("allowed errors for REST not configured", nil)
+		}
+
+		if errMsg, ok := allowedErrors[fmt.Sprint(restError.Code)]; ok {
+			utils.LavaFormatInfo("Received allowed error", utils.Attribute{Key: "Code", Value: restError.Code}, utils.Attribute{Key: "Message", Value: errMsg}, utils.Attribute{Key: "Reply", Value: replyData})
+			return nil // It's an allowed error
+		}
+
+		return utils.LavaFormatProduction("received disallowed error in REST api", nil, utils.Attribute{Key: "Code", Value: restError.Code}, utils.Attribute{Key: "ErrorMsg", Value: restError.Message})
+	}
+
+	// Try parsing for successful response
+	var restResponse RestResponse
+	err = json.Unmarshal([]byte(replyData), &restResponse)
+	if err == nil && (restResponse.BlockID != nil || restResponse.Block != nil) {
+		return nil // It's a successful response
+	}
+
+	return utils.LavaFormatProduction("Unparsable external provider response detected.", err)
+}
+
+// Tendermint-RPC error handler
+type TendermintRPCResponse struct {
+	Result *interface{} `json:"result,omitempty"`
+	Error  *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error,omitempty"`
+}
+
+func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
+	// Try to parse the reply into a TendermintRPCResponse
+	var tendermintResponse TendermintRPCResponse
+	err := json.Unmarshal([]byte(replyData), &tendermintResponse)
+	if err != nil {
+		return utils.LavaFormatProduction("Unparsable external provider error detected.", err)
+	}
+
+	// Check if this is a successful response
+	if tendermintResponse.Result != nil {
+		return nil // It's a successful response, so just return nil (no error)
+	}
+
+	// Check if there is an "error" in the response
+	if tendermintResponse.Error != nil {
+		nestedCode, err := extractRPCNestedCode(tendermintResponse.Error.Message)
+		if err != nil {
+			return utils.LavaFormatProduction("Cannot extract nested error code.", err)
+		}
+
+		// Check if this internal error code is in our map of allowed errors
+		allowedErrors, ok := AllowedErrorsMap["tendermint"]
+		if !ok {
+			return utils.LavaFormatProduction("allowed errors for tendermint-RPC not configured", nil)
+		}
+
+		_, exists := allowedErrors[fmt.Sprintf("%d", nestedCode)]
+		if !exists {
+			// If the error code is not allowed, return a node error
+			errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
+			return utils.LavaFormatProduction(errMsg, nil)
+		}
+	} else {
+		// Neither Result nor Error field is present
+		return utils.LavaFormatProduction("Received unexpected response: neither Result nor Error is present.", nil)
+	}
+
+	return nil
+}
+
+func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
+	return nil
+}
+
+func extractRPCNestedCode(message string) (int, error) {
 	idx := strings.Index(message, "\"code\":")
 	if idx == -1 {
 		return 0, utils.LavaFormatError("code field not found", nil)
@@ -126,46 +260,4 @@ func extractNestedCode(message string) (int, error) {
 	}
 
 	return nestedCode, nil
-}
-
-// External Errors
-func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
-	return handleExternalError(replyData, "jsonrpc")
-}
-
-func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
-	return handleExternalError(replyData, "rest")
-}
-
-func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
-	return handleExternalError(replyData, "grpc")
-}
-
-func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
-	return handleExternalError(replyData, "tendermintrpc")
-}
-
-// external error handling
-func handleExternalError(replyData string, apiMethod string) error {
-	// Try to parse the reply into a JsonRPCResponse
-	var jsonResponse JsonResponse
-	err := json.Unmarshal([]byte(replyData), &jsonResponse)
-	if err != nil {
-		return utils.LavaFormatProduction("Unparsable external provider error detected.", err)
-	}
-	// Check if there is an "error" in the response
-	if jsonResponse.Error.Code != 0 {
-		nestedCode, err := extractNestedCode(jsonResponse.Error.Message)
-		if err != nil {
-			return utils.LavaFormatProduction("Cannot extract nested error code.", err)
-		}
-		// Check if this internal error code is in our map of allowed errors
-		_, exists := AllowedErrorsMap[apiMethod][fmt.Sprintf("%d", nestedCode)]
-		if !exists {
-			// If the error code is not allowed, return a node error
-			errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
-			return utils.LavaFormatProduction(errMsg, nil)
-		}
-	}
-	return nil
 }
