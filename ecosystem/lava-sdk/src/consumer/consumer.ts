@@ -23,12 +23,12 @@ class RPCConsumer {
     this.geolocation = geolocation;
   }
 
-  static create(
+  static async create(
     pairingResponse: PairingResponse,
     geolocation: string,
     accountAddress: string,
     relayer: Relayer
-  ): RPCConsumer {
+  ): Promise<RPCConsumer> {
     const rpcConsumer = new RPCConsumer(geolocation);
     // step 1 set the spec.
     rpcConsumer.setSpec(pairingResponse.spec);
@@ -36,6 +36,11 @@ class RPCConsumer {
     // Create Optimizer
     const optimizer = new RandomProviderOptimizer();
     for (const apiInterfaces of rpcConsumer.getApiInterfacesSupported()) {
+      Logger.info(
+        "Creating RPCConsumer for",
+        pairingResponse.spec.index,
+        apiInterfaces
+      );
       const consumerSessionManager: ConsumerSessionManager =
         new ConsumerSessionManager(
           relayer,
@@ -47,13 +52,16 @@ class RPCConsumer {
           ),
           optimizer
         );
-
+      // setup the providers for this api interface.
+      await consumerSessionManager.updateAllProviders(
+        pairingResponse.currentEpoch,
+        rpcConsumer.filterPairingListByEndpoint(pairingResponse, apiInterfaces)
+      );
       rpcConsumer.setConsumerSessionManager(
         consumerSessionManager,
         apiInterfaces
       );
     }
-
     return rpcConsumer;
   }
 
@@ -77,9 +85,31 @@ class RPCConsumer {
     //   }
   }
 
-  updateAllProviders(
-    pairingResponse: PairingResponse
-  ): Promise<Error | undefined> {}
+  async updateAllProviders(pairingResponse: PairingResponse) {
+    for (const apiInterfaces of this.getApiInterfacesSupported()) {
+      Logger.info("Updating provider list for", apiInterfaces);
+      const consumerSessionManager =
+        this.consumerSessionManagerMap.get(apiInterfaces);
+      if (!consumerSessionManager) {
+        throw Logger.fatal(
+          "Consumer session manager was not found for an expected api interface",
+          apiInterfaces
+        );
+      }
+      const err = await consumerSessionManager.updateAllProviders(
+        pairingResponse.currentEpoch,
+        this.filterPairingListByEndpoint(pairingResponse, apiInterfaces)
+      );
+      if (err) {
+        throw Logger.fatal(
+          "Received an error while updating provider list",
+          err,
+          apiInterfaces,
+          pairingResponse.spec.index
+        );
+      }
+    }
+  }
 
   // filterPairingListByEndpoint filters pairing list and return only the once for rpcInterface
   private filterPairingListByEndpoint(
@@ -177,25 +207,21 @@ export class Consumer {
     this.relayer = relayer;
   }
 
-  public async updateAllProviders(
-    pairingResponse: PairingResponse
-  ): Promise<Error | undefined> {
+  public async updateAllProviders(pairingResponse: PairingResponse) {
     const chainId = pairingResponse.spec.index;
-    const rpcConsumer = this.rpcConsumer.get(chainId);
+    let rpcConsumer = this.rpcConsumer.get(chainId);
     if (!rpcConsumer) {
       // initialize the rpcConsumer
-      this.rpcConsumer.set(
-        chainId,
-        RPCConsumer.create(
-          pairingResponse,
-          this.geolocation,
-          this.accountAddress,
-          this.relayer
-        )
+      rpcConsumer = await RPCConsumer.create(
+        pairingResponse,
+        this.geolocation,
+        this.accountAddress,
+        this.relayer
       );
+      this.rpcConsumer.set(chainId, rpcConsumer);
       return;
     }
-    return rpcConsumer.updateAllProviders(pairingResponse);
+    rpcConsumer.updateAllProviders(pairingResponse);
   }
 
   //   public sendRelay()
