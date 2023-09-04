@@ -222,6 +222,7 @@ export class Consumer {
       return;
     }
     rpcConsumer.updateAllProviders(pairingResponse);
+    rpcConsumer.setSpec(pairingResponse.spec);
   }
 
   //   public sendRelay()
