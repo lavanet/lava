@@ -10,7 +10,7 @@ async function getLatestBlockAndValidators(): Promise<[string, string]> {
   // Create dAccess for Juno Mainnet
   // Default rpcInterface for Juno Mainnet is tendermintRPC
   // If you want to use rest it needs to be explicitly defined
-  const lavaSDK = await new LavaSDK({
+  const lavaSDK = await LavaSDK.create({
     // private key with an active subscription
     privateKey: "<lava consumer private key>",
 

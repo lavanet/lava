@@ -113,16 +113,15 @@ export class LavaSDK {
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
     this.sessionsWithProviderMap = new Map();
-
-    // Init sdk
-    return (async (): Promise<LavaSDK> => {
-      await this.init();
-
-      return this;
-    })() as unknown as LavaSDK;
   }
 
-  private async init() {
+  static async create(options: LavaSDKOptions): Promise<LavaSDK> {
+    const sdkInstance = new LavaSDK(options);
+    await sdkInstance.init();
+    return sdkInstance;
+  }
+
+  public async init() {
     // Init relayer
     const relayer = new Relayer(
       this.privKey,

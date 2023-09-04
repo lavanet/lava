@@ -14,7 +14,7 @@ import { LavaSDK } from "../src/sdk/sdk";
 async function getLatestBlock(): Promise<string> {
   // Create dAccess for Ethereum Mainnet
   // Default rpcInterface for Ethereum Mainnet is jsonRPC
-  const ethereum = await new LavaSDK({
+  const ethereum = await LavaSDK.create({
     // private key with an active subscription
     privateKey: "<lava consumer private key>",
 

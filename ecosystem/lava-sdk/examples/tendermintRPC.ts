@@ -14,7 +14,7 @@ import { LavaSDK } from "../src/sdk/sdk";
 async function getLatestBlock(): Promise<string> {
   // Create dAccess for Cosmos Hub
   // Default rpcInterface for Cosmos Hub is tendermintRPC
-  const cosmosHub = await new LavaSDK({
+  const cosmosHub = await LavaSDK.create({
     // private key with an active subscription
     privateKey: "<lava consumer private key>",
 
