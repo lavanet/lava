@@ -95,7 +95,7 @@ import (
 //
 // On every new block, AdvanceBlock() should be called.
 //
-// Entry names (index) must contain only visible ascii characters (ascii values 32-125).
+// Entry names (index) must contain only visible ascii characters (ascii values 32-126).
 // The ascii 'DEL' invisible character is used internally to terminate the index values
 // when stored, to ensure that no two indices can ever overlap, i.e. one being the prefix
 // of the other.
