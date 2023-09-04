@@ -20,7 +20,7 @@ type tester struct {
 }
 
 const (
-	testBalance int64 = 100000000
+	testBalance int64 = 1000000
 	testStake   int64 = 100000
 )
 
@@ -94,7 +94,8 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	}
 
 	ts.addClient(clientsCount)
-	ts.addProvider(providersCount)
+	err := ts.addProvider(providersCount)
+	require.Nil(ts.T, err)
 
 	ts.AdvanceEpoch()
 

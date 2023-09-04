@@ -41,5 +41,6 @@ type PlansKeeper interface {
 	DelPlan(ctx sdk.Context, index string) error
 	FindPlan(ctx sdk.Context, index string, block uint64) (val planstypes.Plan, found bool)
 	PutPlan(ctx sdk.Context, index string, block uint64)
+	GetAllPlanIndices(ctx sdk.Context) []string
 	// Methods imported from planskeeper should be defined here
 }

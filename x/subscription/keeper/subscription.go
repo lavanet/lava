@@ -105,15 +105,17 @@ func (k Keeper) CreateSubscription(
 	if !found {
 		// creeate new subscription with this plan
 		sub = types.Subscription{
-			Creator:   creator,
-			Consumer:  consumer,
-			Block:     block,
-			PlanIndex: planIndex,
-			PlanBlock: plan.Block,
+			Creator:       creator,
+			Consumer:      consumer,
+			Block:         block,
+			PlanIndex:     planIndex,
+			PlanBlock:     plan.Block,
+			DurationTotal: 0,
 		}
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
 		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
+		sub.Cluster = types.GetClusterKey(sub)
 
 		// new subscription needs a default project
 		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
@@ -142,7 +144,7 @@ func (k Keeper) CreateSubscription(
 	}
 
 	// update total (last requested) duration and remaining duration
-	sub.DurationTotal = duration
+	sub.DurationBought = duration
 	sub.DurationLeft += duration
 
 	if err := sub.ValidateSubscription(); err != nil {
@@ -238,6 +240,12 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		expiry := uint64(NextMonth(date).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+
+		sub.DurationTotal += 1
+
+		// since the total duration increases, the cluster might change
+		sub.Cluster = types.GetClusterKey(sub)
+
 		err := k.subsFS.AppendEntry(ctx, consumer, block, &sub)
 		if err != nil {
 			// normally would panic! but ok to ignore - the subscription remains

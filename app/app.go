@@ -108,6 +108,7 @@ import (
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragemoduletypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingmodule "github.com/lavanet/lava/x/pairing"
+	pairingmoduleclient "github.com/lavanet/lava/x/pairing/client"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingmoduletypes "github.com/lavanet/lava/x/pairing/types"
 	plansmodule "github.com/lavanet/lava/x/plans"
@@ -138,9 +139,7 @@ const (
 
 // Upgrades add here future upgrades (upgrades.Upgrade)
 var Upgrades = []upgrades.Upgrade{
-	upgrades.Upgrade_0_20_1,
-	upgrades.Upgrade_0_20_2,
-	upgrades.Upgrade_0_20_3,
+	upgrades.Upgrade_0_22_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -158,6 +157,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		specmoduleclient.SpecAddProposalHandler,
 		plansmoduleclient.PlansAddProposalHandler,
 		plansmoduleclient.PlansDelProposalHandler,
+		pairingmoduleclient.PairingUnstakeProposal,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -424,6 +424,63 @@ func New(
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
+	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[projectsmoduletypes.StoreKey],
+		keys[projectsmoduletypes.MemStoreKey],
+		app.GetSubspace(projectsmoduletypes.ModuleName),
+		app.EpochstorageKeeper,
+	)
+	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
+
+	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
+		appCodec,
+		keys[subscriptionmoduletypes.StoreKey],
+		keys[subscriptionmoduletypes.MemStoreKey],
+		app.GetSubspace(subscriptionmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
+		app.PlansKeeper,
+	)
+	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.DualstakingKeeper = *dualstakingmodulekeeper.NewKeeper(
+		appCodec,
+		keys[dualstakingmoduletypes.StoreKey],
+		keys[dualstakingmoduletypes.MemStoreKey],
+		app.GetSubspace(dualstakingmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.EpochstorageKeeper,
+		app.SpecKeeper,
+	)
+	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// downtime module
+	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
+	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
+
+	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
+		appCodec,
+		keys[pairingmoduletypes.StoreKey],
+		keys[pairingmoduletypes.MemStoreKey],
+		app.GetSubspace(pairingmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
+		app.SubscriptionKeeper,
+		app.PlansKeeper,
+		app.DowntimeKeeper,
+	)
+	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// register the proposal types
 	govRouter := v1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, v1beta1.ProposalHandler).
@@ -434,6 +491,7 @@ func New(
 		AddRoute(paramproposal.RouterKey, specmodule.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		// user defined
 		AddRoute(plansmoduletypes.ProposalsRouterKey, plansmodule.NewPlansProposalsHandler(app.PlansKeeper)).
+		AddRoute(pairingmoduletypes.ProposalsRouterKey, pairingmodule.NewPairingProposalsHandler(app.PairingKeeper)).
 
 		//
 		// default
@@ -468,64 +526,6 @@ func New(
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(),
 	)
-
-	app.ProjectsKeeper = *projectsmodulekeeper.NewKeeper(
-		appCodec,
-		keys[projectsmoduletypes.StoreKey],
-		keys[projectsmoduletypes.MemStoreKey],
-		app.GetSubspace(projectsmoduletypes.ModuleName),
-		app.EpochstorageKeeper,
-	)
-	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
-
-	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
-		appCodec,
-		keys[subscriptionmoduletypes.StoreKey],
-		keys[subscriptionmoduletypes.MemStoreKey],
-		app.GetSubspace(subscriptionmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		&app.EpochstorageKeeper,
-		app.ProjectsKeeper,
-		app.PlansKeeper,
-	)
-	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.DualstakingKeeper = *dualstakingmodulekeeper.NewKeeper(
-		appCodec,
-		keys[dualstakingmoduletypes.StoreKey],
-		keys[dualstakingmoduletypes.MemStoreKey],
-		app.GetSubspace(dualstakingmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.StakingKeeper,
-		app.EpochstorageKeeper,
-		app.SpecKeeper,
-	)
-	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
-
-	// downtime module
-	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
-	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
-
-	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
-		appCodec,
-		keys[pairingmoduletypes.StoreKey],
-		keys[pairingmoduletypes.MemStoreKey],
-		app.GetSubspace(pairingmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.SpecKeeper,
-		&app.EpochstorageKeeper,
-		app.ProjectsKeeper,
-		app.SubscriptionKeeper,
-		app.PlansKeeper,
-		app.DowntimeKeeper,
-	)
-	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
 	app.ConflictKeeper = *conflictmodulekeeper.NewKeeper(
 		appCodec,
@@ -607,6 +607,7 @@ func New(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
+		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -631,7 +632,6 @@ func New(
 		plansmoduletypes.ModuleName,
 		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
-		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName)
 

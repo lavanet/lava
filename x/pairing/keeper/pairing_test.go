@@ -132,7 +132,8 @@ func TestGetPairing(t *testing.T) {
 	// (for the benefit of users) but the "zeroEpoch" test below expects to start at the
 	// same epoch of staking the providers.
 	ts.addClient(1)
-	ts.addProvider(1)
+	err := ts.addProvider(1)
+	require.Nil(t, err)
 
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
 	constBlockTime := testkeeper.BLOCK_TIME
@@ -547,7 +548,7 @@ func TestAddonPairing(t *testing.T) {
 			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
 
-			strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
@@ -576,10 +577,26 @@ func TestAddonPairing(t *testing.T) {
 	}
 }
 
+func countSelectedAddresses(selected []string, expected []string) int {
+	count := 0
+	countPossibilities := map[string]struct{}{}
+	for _, possibility := range expected {
+		countPossibilities[possibility] = struct{}{}
+	}
+	for _, selectedProvider := range selected {
+		_, ok := countPossibilities[selectedProvider]
+		if ok {
+			count++
+		}
+	}
+	return count
+}
+
 func TestSelectedProvidersPairing(t *testing.T) {
 	ts := newTester(t)
 
-	ts.addProvider(200)
+	err := ts.addProvider(200)
+	require.Nil(t, err)
 
 	policy := &planstypes.Policy{
 		GeolocationProfile: math.MaxUint64,
@@ -589,13 +606,16 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	allowed := planstypes.SELECTED_PROVIDERS_MODE_ALLOWED
 	exclusive := planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
 	disabled := planstypes.SELECTED_PROVIDERS_MODE_DISABLED
+	mixed := planstypes.SELECTED_PROVIDERS_MODE_MIXED
 
 	maxProvidersToPair, err := ts.Keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
 		[]*planstypes.Policy{&ts.plan.PlanPolicy, policy},
 	)
 	require.Nil(t, err)
 
-	ts.addProvider(200)
+	err = ts.addProvider(200)
+	require.Nil(t, err)
+
 	_, p1 := ts.GetAccount(common.PROVIDER, 0)
 	_, p2 := ts.GetAccount(common.PROVIDER, 1)
 	_, p3 := ts.GetAccount(common.PROVIDER, 2)
@@ -659,6 +679,13 @@ func TestSelectedProvidersPairing(t *testing.T) {
 		// provider unstake checks cases
 		{"EXCLUSIVE mode provider unstakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
 		{"EXCLUSIVE mode non-staked provider stakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
+
+		{"MIXED mode normal pairing", mixed, mixed, mixed, 0, 0},
+		{"MIXED mode pairing", mixed, mixed, mixed, 1, 1},
+		{"MIXED mode intersection between plan/sub policies", mixed, mixed, mixed, 4, 3},
+		{"MIXED mode intersection between plan/proj policies", mixed, mixed, mixed, 5, 4},
+		{"MIXED mode intersection between sub/proj policies", mixed, mixed, mixed, 6, 5},
+		{"MIXED mode intersection between all policies", mixed, mixed, mixed, 7, 6},
 	}
 
 	var expectedProvidersAfterUnstake []string
@@ -738,6 +765,13 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			// check pairings
 			switch tt.name {
+			case "MIXED mode pairing",
+				"MIXED mode intersection between plan/sub policies",
+				"MIXED mode intersection between plan/proj policies",
+				"MIXED mode intersection between sub/proj policies",
+				"MIXED mode intersection between all policies":
+				count := countSelectedAddresses(providerAddresses1, expectedSelectedProviders[tt.expectedProviders])
+				require.GreaterOrEqual(t, count, len(providerAddresses1)/2)
 			case "ALLOWED mode normal pairing", "DISABLED mode normal pairing":
 				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
@@ -757,7 +791,6 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.True(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Less(t, uint64(len(providerAddresses1)), maxProvidersToPair)
 				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
-
 			case "EXCLUSIVE mode selected more than MaxProvidersToPair providers":
 				require.True(t, slices.IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
 				require.True(t, slices.IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
@@ -1024,15 +1057,22 @@ func TestGeolocationPairingScores(t *testing.T) {
 			require.Nil(t, err)
 			stakeEntries := providersRes.StakeEntry
 			providerScores := []*pairingscores.PairingScore{}
+
+			subRes, err := ts.QuerySubscriptionCurrent(tt.dev.Addr.String())
+			require.Nil(t, err)
+			cluster := subRes.Sub.Cluster
+
 			for i := range stakeEntries {
-				providerScore := pairingscores.NewPairingScore(&stakeEntries[i])
+				// TODO: require err to be nil once the providerQosFS's update is implemented
+				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
+				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
 				providerScores = append(providerScores, providerScore)
 			}
 
 			effectiveGeo, err := ts.Keepers.Pairing.CalculateEffectiveGeolocationFromPolicies(policies)
 			require.Nil(t, err)
 
-			slots := pairingscores.CalcSlots(planstypes.Policy{
+			slots := pairingscores.CalcSlots(&planstypes.Policy{
 				GeolocationProfile: effectiveGeo,
 				MaxProvidersToPair: tt.planPolicy.MaxProvidersToPair,
 			})
@@ -1054,6 +1094,24 @@ func TestGeolocationPairingScores(t *testing.T) {
 			// verify that the slots have all the expected geos
 			for _, found := range geoSeen {
 				require.True(t, found)
+			}
+
+			seenIndexes := map[int]struct{}{}
+			// check indexes are right
+			pairingSlotGroups := pairingscores.GroupSlots(slots)
+			for _, pairingSlotGroup := range pairingSlotGroups {
+				indexes := pairingSlotGroup.Indexes()
+				for _, index := range indexes {
+					_, ok := seenIndexes[index]
+					require.False(t, ok)
+					seenIndexes[index] = struct{}{}
+				}
+			}
+			// verify all slot indexes are in groups
+			require.Equal(t, len(seenIndexes), len(slots))
+			for idx := range slots {
+				_, ok := seenIndexes[idx]
+				require.True(t, ok)
 			}
 		})
 	}
@@ -1215,7 +1273,7 @@ func TestGeoSlotCalc(t *testing.T) {
 			MaxProvidersToPair: 14,
 		}
 
-		slots := pairingscores.CalcSlots(policy)
+		slots := pairingscores.CalcSlots(&policy)
 		for _, slot := range slots {
 			geoReqFromMap := slot.Reqs[geoReqName]
 			geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
@@ -1234,7 +1292,7 @@ func TestGeoSlotCalc(t *testing.T) {
 		GeolocationProfile: uint64(planstypes.Geolocation_GL),
 		MaxProvidersToPair: 14,
 	}
-	slots := pairingscores.CalcSlots(policy)
+	slots := pairingscores.CalcSlots(&policy)
 	for _, slot := range slots {
 		geoReqFromMap := slot.Reqs[geoReqName]
 		geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
@@ -1274,7 +1332,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		{
 			Enabled:        true,
 			CollectionData: mandatory,
-			Extensions:     getExtensions("ext1", "ext2"),
+			Extensions:     getExtensions("ext1", "ext2", "not-supporting-providers"),
 		},
 		{
 			Enabled:        true,
@@ -1313,6 +1371,22 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		Requirements: []planstypes.ChainRequirement{{
 			Collection: mandatory,
 			Extensions: []string{"ext1"},
+		}},
+	}
+	mandatoryExtChainPolicyMix := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"ext1"},
+			Mixed:      true,
+		}},
+	}
+	mandatoryNotSupportingProvidersMix := &planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: mandatory,
+			Extensions: []string{"not-supporting-providers"},
+			Mixed:      true,
 		}},
 	}
 	mandatoryExt2ChainPolicy := &planstypes.ChainPolicy{
@@ -1492,6 +1566,25 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			expectedStrictestPolicies: []string{"ext1"},
 		},
 		{
+			name:                      "mixed mandatory ext in plan",
+			planChainPolicy:           mandatoryExtChainPolicyMix,
+			expectedProviders:         26,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mixed mandatory ext in subsc",
+			subscChainPolicy:          mandatoryExtChainPolicyMix,
+			projChainPolicy:           nil,
+			expectedProviders:         26,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
+			name:                      "mixed mandatory ext in proj",
+			projChainPolicy:           mandatoryExtChainPolicyMix,
+			expectedProviders:         26,
+			expectedStrictestPolicies: []string{"ext1"},
+		},
+		{
 			name:                      "mandatory ext2 in plan",
 			planChainPolicy:           mandatoryExt2ChainPolicy,
 			expectedProviders:         4,
@@ -1651,6 +1744,11 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			projChainPolicy:           allSupportingChainPolicy,
 			expectedProviders:         2,
 			expectedStrictestPolicies: []string{"optional", "addon", "ext1", "ext2"},
+		},
+		{
+			name:              "mixed not supporting providers",
+			projChainPolicy:   mandatoryNotSupportingProvidersMix,
+			expectedProviders: 26,
 		},
 	}
 
@@ -1859,7 +1957,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
 
-			strictestPolicy, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
@@ -1886,9 +1984,226 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			if tt.expectedProviders > 0 {
 				require.Nil(t, err)
 				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
+				if len(tt.expectedStrictestPolicies) > 0 {
+					services := map[string]int{}
+					for _, provider := range pairing.GetProviders() {
+						for _, endpoint := range provider.Endpoints {
+							for _, addon := range endpoint.Addons {
+								services[addon]++
+							}
+							for _, extension := range endpoint.Extensions {
+								services[extension]++
+							}
+							for _, apiInterface := range endpoint.ApiInterfaces {
+								services[apiInterface]++
+							}
+						}
+					}
+					for _, expected := range tt.expectedStrictestPolicies {
+						count, ok := services[expected]
+						require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, services)
+						require.GreaterOrEqual(t, count, len(pairing.Providers)/2) // we expect at least half of the providers to support the expected api interface (for mix it's half)
+					}
+				}
 			} else {
 				require.Error(t, err)
 			}
 		})
+	}
+}
+
+func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
+	specEth, err := testkeeper.GetASpec("ETH1", "../../../", nil, nil)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	ts.spec.ApiCollections = specEth.ApiCollections
+
+	// will overwrite the default "mock" spec
+	ts.AddSpec("mock", ts.spec)
+	specId := ts.spec.Index
+	mandatoryExtChainPolicyMix := planstypes.ChainPolicy{
+		ChainId: specId,
+		Requirements: []planstypes.ChainRequirement{{
+			Collection: spectypes.CollectionData{
+				ApiInterface: "jsonrpc",
+				InternalPath: "",
+				Type:         "POST",
+				AddOn:        "",
+			},
+			Extensions: []string{"archive"},
+			Mixed:      true,
+		}},
+	}
+
+	regularEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{},
+		ApiInterfaces: []string{},
+	}}
+	archiveEndpoints := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{"archive"},
+		ApiInterfaces: []string{},
+	}}
+
+	// mandatory
+	err = ts.addProviderEndpoints(200, regularEndpoints) // ext1 - 2
+	require.NoError(t, err)
+
+	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	_, p3 := ts.GetAccount(common.PROVIDER, 2)
+	_, p4 := ts.GetAccount(common.PROVIDER, 3)
+	_, p5 := ts.GetAccount(common.PROVIDER, 4)
+	selectedProviders := []string{p1, p2, p3, p4, p5}
+	err = ts.addProviderEndpoints(10, archiveEndpoints) // ext1 - 2
+	require.NoError(t, err)
+
+	t.Run("archive selected providers mixed test", func(t *testing.T) {
+		defaultPolicy := func() planstypes.Policy {
+			return planstypes.Policy{
+				ChainPolicies:      []planstypes.ChainPolicy{},
+				GeolocationProfile: math.MaxUint64,
+				MaxProvidersToPair: 30,
+				TotalCuLimit:       math.MaxUint64,
+				EpochCuLimit:       math.MaxUint64,
+			}
+		}
+
+		plan := ts.plan // original mock template
+		plan.PlanPolicy = defaultPolicy()
+		plan.PlanPolicy.SelectedProvidersMode = planstypes.SELECTED_PROVIDERS_MODE_MIXED
+		plan.PlanPolicy.SelectedProviders = selectedProviders
+
+		plan.PlanPolicy.ChainPolicies = []planstypes.ChainPolicy{mandatoryExtChainPolicyMix}
+
+		expectedProviders := plan.PlanPolicy.MaxProvidersToPair
+
+		err := ts.TxProposalAddPlans(plan)
+		require.Nil(t, err)
+
+		_, sub1Addr := ts.AddAccount("sub", 0, 10000)
+
+		_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+		require.Nil(t, err)
+
+		// get the admin project and set its policies
+		subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(subProjects.Projects))
+
+		projectID := subProjects.Projects[0]
+
+		// apply policy change
+		ts.AdvanceEpoch()
+
+		// apply policy change
+		ts.AdvanceEpochs(2)
+
+		project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
+		require.NoError(t, err)
+
+		strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+		require.NoError(t, err)
+
+		require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
+		require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies[0].Requirements))
+		services := map[string]struct{}{}
+		for _, requirement := range strictestPolicy.ChainPolicies[0].Requirements {
+			collection := requirement.Collection
+			if collection.AddOn != "" {
+				services[collection.AddOn] = struct{}{}
+			}
+			for _, extension := range requirement.Extensions {
+				if extension != "" {
+					services[extension] = struct{}{}
+				}
+			}
+		}
+		for _, expected := range []string{"archive"} {
+			_, ok := services[expected]
+			require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, strictestPolicy)
+		}
+
+		pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
+		require.Nil(t, err)
+		require.Equal(t, expectedProviders, uint64(len(pairing.Providers)), "received providers %#v", pairing)
+
+		servicesCount := map[string]int{}
+		for _, provider := range pairing.GetProviders() {
+			for _, endpoint := range provider.Endpoints {
+				for _, addon := range endpoint.Addons {
+					servicesCount[addon]++
+				}
+				for _, extension := range endpoint.Extensions {
+					servicesCount[extension]++
+				}
+				for _, apiInterface := range endpoint.ApiInterfaces {
+					servicesCount[apiInterface]++
+				}
+			}
+		}
+		for _, expected := range []string{"archive"} {
+			count, ok := servicesCount[expected]
+			require.True(t, ok, "did not find addon in strictest policy %s, policy: %#v", expected, services)
+			require.GreaterOrEqual(t, count, len(pairing.Providers)/3) // we expect at least third of the providers to support the expected api interface
+		}
+		// verify selected providers mix count
+		addresses := []string{}
+		for _, provider := range pairing.Providers {
+			addresses = append(addresses, provider.Address)
+		}
+		count := countSelectedAddresses(addresses, selectedProviders)
+		require.Equal(t, count, len(selectedProviders))
+	})
+}
+
+// TestPairingConsistency checks we consistently get the same pairing in the same epoch
+func TestPairingConsistency(t *testing.T) {
+	ts := newTester(t)
+	iterations := 100
+
+	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(3)
+	ts.AddPlan("mock", ts.plan)
+	ts.addClient(1)
+	err := ts.addProviderGeolocation(10, 3)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumers := ts.Accounts(common.CONSUMER)
+
+	res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
+	require.Nil(t, err)
+	prevPairing := res.Providers
+	for i := 0; i < iterations; i++ {
+		res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
+		require.Nil(t, err)
+
+		var prevPairingAddrs []string
+		var currentPairingAddrs []string
+
+		for i := range res.Providers {
+			prevPairingAddrs = append(prevPairingAddrs, prevPairing[i].Address)
+			currentPairingAddrs = append(currentPairingAddrs, res.Providers[i].Address)
+		}
+
+		require.True(t, slices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))
+
+		prevPairing = res.Providers
+	}
+}
+
+// TestNoZeroLatency checks that there are no zero values in GEO_LATENCY_MAP
+func TestNoZeroLatency(t *testing.T) {
+	for _, latencyMap := range pairingscores.GEO_LATENCY_MAP {
+		for _, latency := range latencyMap {
+			require.NotEqual(t, uint64(0), latency)
+		}
 	}
 }

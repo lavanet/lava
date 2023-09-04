@@ -25,7 +25,6 @@ type (
 		accountKeeper      types.AccountKeeper
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
-		stakingKeeper      types.StakingKeeper
 
 		delegationFS common.FixationStore // map proviers/chainID -> delegations
 		delegatorFS  common.FixationStore // map delegators -> providers
@@ -40,7 +39,6 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
-	stakingKeeper types.StakingKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
 ) *Keeper {
@@ -58,6 +56,7 @@ func NewKeeper(
 		bankKeeper:         bankKeeper,
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
+		specKeeper:         specKeeper,
 	}
 
 	// ensure bonded and not bonded module accounts are set
@@ -76,7 +75,7 @@ func NewKeeper(
 	}
 
 	unbondingTS := *common.NewTimerStore(storeKey, cdc, types.UnbondingPrefix).
-		WithCallbackByBlockTime(timerCallback)
+		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS
 	keeper.delegatorFS = delegatorFS
@@ -92,12 +91,12 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 }
 
 // ExportDelegations exports dualstaking delegations data (for genesis)
-func (k Keeper) ExportDelegations(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportDelegations(ctx sdk.Context) commontypes.GenesisState {
 	return k.delegationFS.Export(ctx)
 }
 
 // ExportDelegators exports dualstaking delegators data (for genesis)
-func (k Keeper) ExportDelegators(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportDelegators(ctx sdk.Context) commontypes.GenesisState {
 	return k.delegatorFS.Export(ctx)
 }
 
@@ -107,12 +106,12 @@ func (k Keeper) ExportUnbondings(ctx sdk.Context) []commontypes.RawMessage {
 }
 
 // InitDelegations imports dualstaking delegations data (from genesis)
-func (k Keeper) InitDelegations(ctx sdk.Context, data []commontypes.RawMessage) {
+func (k Keeper) InitDelegations(ctx sdk.Context, data commontypes.GenesisState) {
 	k.delegationFS.Init(ctx, data)
 }
 
 // InitDelegators imports dualstaking delegators data (from genesis)
-func (k Keeper) InitDelegators(ctx sdk.Context, data []commontypes.RawMessage) {
+func (k Keeper) InitDelegators(ctx sdk.Context, data commontypes.GenesisState) {
 	k.delegatorFS.Init(ctx, data)
 }
 

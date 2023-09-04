@@ -98,7 +98,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	}
 
 	// update the stake entry
-	err = k.updateStakeEntry(ctx, provider, chainID, amount)
+	err = k.increaseStakeEntry(ctx, provider, chainID, amount)
 	if err != nil {
 		return err
 	}
@@ -191,41 +191,31 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	// call updateStakeEntry() with the negative amount
-	amount = sdk.NewCoin(amount.Denom, sdk.ZeroInt()).Sub(amount)
-	if err := k.updateStakeEntry(ctx, provider, chainID, amount); err != nil {
+	if err := k.decreaseStakeEntry(ctx, provider, chainID, amount); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// updateStakeEntry updates the (epochstorage) stake-entry of the provider for the
-// given chain. amount can be positive or negative (to increase or decrease).
-func (k Keeper) updateStakeEntry(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+// increaseStakeEntry increases the (epochstorage) stake-entry of the provider for a chain.
+func (k Keeper) increaseStakeEntry(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
-		utils.LavaFormatPanic("updateStakeEntry: invalid provider address", err,
+		utils.LavaFormatPanic("increaseStakeEntry: invalid provider address", err,
 			utils.Attribute{Key: "provider", Value: provider},
 		)
 	}
 
 	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
 	if !exists {
-		// if the stake entry is not found when we try to remove delegated funds,
-		// it means that the provider has been unstaked already: nothing to do.
-		if amount.IsNegative() {
-			return nil
-		}
-		// otherwise, we return an error because delegation to a provider that is
-		// not stake does not make sense.
 		return types.ErrProviderNotStaked
 	}
 
 	// sanity check
 	if stakeEntry.Address != provider {
-		return utils.LavaFormatError("critical: delagate to provider with address mismatch", sdkerrors.ErrInvalidAddress,
+		return utils.LavaFormatError("critical: delegate to provider with address mismatch", sdkerrors.ErrInvalidAddress,
 			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "address", Value: stakeEntry.Address},
 		)
@@ -233,10 +223,37 @@ func (k Keeper) updateStakeEntry(ctx sdk.Context, provider, chainID string, amou
 
 	stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
 
-	// fail if amount was negative (e.g. redelegate) and the result underflowed the
-	// existing total - not enough funds
-	if stakeEntry.DelegateTotal.IsNegative() {
-		return types.ErrInsufficientDelegation
+	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
+
+	return nil
+}
+
+// decreaseStakeEntry decreases the (epochstorage) stake-entry of the provider for a chain.
+func (k Keeper) decreaseStakeEntry(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+	providerAddr, err := sdk.AccAddressFromBech32(provider)
+	if err != nil {
+		// panic:ok: this call was alreadys successful by the caller
+		utils.LavaFormatPanic("decreaseStakeEntry: invalid provider address", err,
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
+	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	if !exists {
+		return nil
+	}
+
+	// sanity check
+	if stakeEntry.Address != provider {
+		return utils.LavaFormatError("critical: un-delegate from provider with address mismatch", sdkerrors.ErrInvalidAddress,
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "address", Value: stakeEntry.Address},
+		)
+	}
+
+	stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
+	if err != nil {
+		return fmt.Errorf("invalid or insufficient funds: %w", err)
 	}
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
@@ -446,18 +463,17 @@ func decodeForTimer(encodedKey []byte) (string, string, string) {
 func (k Keeper) setUnbondingTimer(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	key := encodeForTimer(delegator, provider, chainID)
 
-	period := k.stakingKeeper.UnbondingTime(ctx)
-	timeout := ctx.BlockTime().Add(period).UTC().Unix()
+	unholdBlocks := k.getUnbondHoldBlocks(ctx, chainID)
+	timeout := uint64(ctx.BlockHeight()) + unholdBlocks
 
 	// the timer key encodes the unique delegator/provider/chainID combination.
 	// the timer data holds the amount to be released in the future (marshalled).
-
-	if k.unbondingTS.HasTimerByBlockTime(ctx, uint64(timeout), key) {
+	if k.unbondingTS.HasTimerByBlockHeight(ctx, timeout, key) {
 		return types.ErrUnbondingInProgress
 	}
 
 	data, _ := json.Marshal(amount)
-	k.unbondingTS.AddTimerByBlockTime(ctx, uint64(timeout), key, data)
+	k.unbondingTS.AddTimerByBlockHeight(ctx, timeout, key, data)
 
 	return nil
 }
@@ -504,7 +520,7 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	}
 
 	// sanity: verify that BondedPool has enough funds
-	if k.totalNotBondedTokens(ctx).LT(amount.Amount) {
+	if k.TotalNotBondedTokens(ctx).LT(amount.Amount) {
 		utils.LavaFormatError("critical: finalizeBonding insufficient bonds", err, attrs...)
 		return
 	}

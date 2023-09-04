@@ -1,9 +1,11 @@
 package scores
 
 import (
+	"fmt"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/utils"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
@@ -24,13 +26,13 @@ func (gr GeoReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the geo score of a provider based on preset latency data
 // Note: each GeoReq must have exactly a single geolocation (bit)
-func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) math.Uint {
+func (gr GeoReq) Score(score PairingScore) math.Uint {
 	// check if the provider supports the required geolocation
-	if gr.Geo&^provider.Geolocation == 0 {
+	if gr.Geo&^score.Provider.Geolocation == 0 {
 		return calculateCostFromLatency(minGeoLatency)
 	}
 
-	providerGeoEnums := planstypes.GetGeolocationsFromUint(int32(provider.Geolocation))
+	providerGeoEnums := planstypes.GetGeolocationsFromUint(int32(score.Provider.Geolocation))
 	_, cost := CalcGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
 
 	return cost
@@ -83,6 +85,10 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 }
 
 func calculateCostFromLatency(latency uint64) math.Uint {
+	if latency == 0 {
+		utils.LavaFormatWarning("got latency 0 when calculating geo req score", fmt.Errorf("invalid geo req score"))
+		return math.OneUint()
+	}
 	return sdk.NewUint(maxGeoLatency / latency)
 }
 

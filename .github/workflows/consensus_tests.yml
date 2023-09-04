@@ -40,7 +40,7 @@ jobs:
     ### Run Consensus unitests
     ######################################################
     - name: lava pairing unit Tests
-      run: go test ./x/pairing/ ./x/pairing/keeper ./x/pairing/types 
+      run: go test ./x/pairing/ ./x/pairing/keeper/... ./x/pairing/types 
       
     - name: lava epochstorage unit Tests
       run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types 

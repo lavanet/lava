@@ -28,6 +28,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -47,7 +48,7 @@ var (
 )
 
 type ProviderStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
@@ -56,7 +57,7 @@ type ProviderStateTrackerInf interface {
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
-	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, err error)
+	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
 	GetEpochSize(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
@@ -94,7 +95,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
-	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version)
+	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version, &upgrade.ProtocolVersion{})
 
 	// single reward server
 	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
