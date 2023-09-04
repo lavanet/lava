@@ -116,7 +116,7 @@ spec:
         - name: data-volume
         {{- if .Values.persistentVolume.enabled }}
           persistentVolumeClaim:
-            claimName: {{ if .Values.persistentVolume.existingClaim }}{{ .Values.persistentVolume.existingClaim }}{{- else }} {{- include "provider.fullname" }}-pvc {{- end }}
+            claimName: {{ if .Values.persistentVolume.existingClaim }}{{ .Values.persistentVolume.existingClaim }}{{- else }} {{- include "provider.fullname" }}-data-volume-pvc {{- end }}
         {{- else }}
           emptyDir:
           {{- if .Values.emptyDir.sizeLimit }}
