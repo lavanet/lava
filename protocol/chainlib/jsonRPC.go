@@ -500,6 +500,12 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		Data: retData,
 	}
 
+	// JsonRPC External Error Handling
+	err = cp.HandleExternalError(string(reply.Data))
+	if err != nil {
+		return nil, "", nil, err
+	}
+
 	if ch != nil {
 		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 		if err != nil {

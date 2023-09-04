@@ -78,3 +78,27 @@ func TestNodeErrorHandlerGenericErrors(t *testing.T) {
 	err = neh.handleGenericErrors(ctx, errors.New("dummy error"))
 	require.Equal(t, err, nil)
 }
+func TestHandleExternalError(t *testing.T) {
+	jeh := &JsonRPCErrorHandler{}
+
+	// 1. Well-formed error response, with an allowed error code
+	allowedErrorResponse := `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"429 Too Many Requests: {\"code\":-32001,\"message\":\"some allowed error\",\"data\":{\"some_field\":\"some_value\"}}"}}`
+	err := jeh.HandleExternalError(allowedErrorResponse)
+	if err != nil {
+		t.Errorf("Expected nil error for allowed error code, got: %v", err)
+	}
+
+	// 2. Well-formed error response, but with a disallowed error code
+	disallowedErrorResponse := `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"429 Too Many Requests: {\"code\":-32005,\"message\":\"some disallowed error\",\"data\":{\"some_field\":\"some_value\"}}"}}`
+	err = jeh.HandleExternalError(disallowedErrorResponse)
+	if err == nil {
+		t.Errorf("Expected non-nil error for disallowed error code")
+	}
+
+	// 3. Ill-formed error response
+	illFormedResponse := `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"some random string that doesn't contain a nested code"}}`
+	err = jeh.HandleExternalError(illFormedResponse)
+	if err == nil {
+		t.Errorf("Expected non-nil error for ill-formed response")
+	}
+}

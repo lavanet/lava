@@ -2,9 +2,12 @@ package chainlib
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -94,4 +97,70 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
+	HandleExternalError(replyData string) error
+}
+
+type JsonResponse struct {
+	Error struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+func extractNestedCode(message string) (int, error) {
+	idx := strings.Index(message, "\"code\":")
+	if idx == -1 {
+		return 0, utils.LavaFormatError("code field not found", nil)
+	}
+
+	start := idx + len("\"code\":")
+	end := strings.Index(message[start:], ",")
+	if end == -1 {
+		end = len(message) - start
+	}
+
+	codeStr := message[start : start+end]
+	nestedCode, err := strconv.Atoi(strings.TrimSpace(codeStr))
+	if err != nil {
+		return 0, utils.LavaFormatError("invalid code field", err)
+	}
+
+	return nestedCode, nil
+}
+
+// External Errors
+func (jeh *JsonRPCErrorHandler) HandleExternalError(replyData string) error {
+	// Try to parse the reply into a JsonRPCResponse
+	var jsonResponse JsonResponse
+	err := json.Unmarshal([]byte(replyData), &jsonResponse)
+	if err != nil {
+		return utils.LavaFormatProduction("Unparsable external provider error detected.", err)
+	}
+	// Check if there is an "error" in the response
+	if jsonResponse.Error.Code != 0 {
+		nestedCode, err := extractNestedCode(jsonResponse.Error.Message)
+		if err != nil {
+			return utils.LavaFormatProduction("Cannot extract nested error code.", err)
+		}
+		// Check if this internal error code is in our map of allowed errors
+		_, exists := AllowedErrorsMap["jsonrpc"][fmt.Sprintf("%d", nestedCode)]
+		if !exists {
+			// If the error code is not allowed, return a node error
+			errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
+			return utils.LavaFormatProduction(errMsg, nil)
+		}
+	}
+	return nil
+}
+
+func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
+	return nil
+}
+
+func (teh *TendermintRPCErrorHandler) HandleExternalError(replyData string) error {
+	return nil
+}
+
+func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
+	return nil
 }
