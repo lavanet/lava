@@ -5,12 +5,10 @@ import { fetchLavaPairing } from "../../util/lavaPairing";
 import { StateTrackerErrors } from "../errors";
 import { PairingResponse } from "./state_query";
 import { AccountData } from "@cosmjs/proto-signing";
-
 import Long from "long";
 import {
   base64ToUint8Array,
   generateRPCData,
-  debugPrint,
   parseLong,
   generateRandomInt,
 } from "../../util/common";
@@ -31,6 +29,7 @@ import {
   SingleConsumerSession,
   Endpoint,
 } from "../../lavasession/consumerTypes";
+import { Logger } from "../../logger/logger";
 
 const lavaChainID = "LAV1";
 const lavaRPCInterface = "tendermintrpc";
@@ -51,7 +50,7 @@ export class StateChainQuery {
     config: Config,
     account: AccountData
   ) {
-    debugPrint(config.debug, "Initialization of State Chain Query started");
+    Logger.debug("Initialization of State Chain Query started");
 
     // Save arguments
     this.pairingListConfig = pairingListConfig;
@@ -66,13 +65,13 @@ export class StateChainQuery {
     // Initialize pairing to an empty map
     this.pairing = new Map<string, PairingResponse>();
 
-    debugPrint(config.debug, "Initialization of State Chain Query ended");
+    Logger.debug("Initialization of State Chain Query ended");
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
   public async fetchPairing(): Promise<number> {
     try {
-      debugPrint(this.config.debug, "Fetching pairing started");
+      Logger.debug("Fetching pairing started");
       // Save time till next epoch
       let timeLeftToNextPairing;
 
@@ -144,7 +143,7 @@ export class StateChainQuery {
         throw StateTrackerErrors.errTimeTillNextEpochMissing;
       }
 
-      debugPrint(this.config.debug, "Fetching pairing ended");
+      Logger.debug("Fetching pairing ended");
 
       // Return timeLeftToNextPairing
       return timeLeftToNextPairing;
@@ -164,11 +163,11 @@ export class StateChainQuery {
     pairingListConfig: string
   ): Promise<ConsumerSessionsWithProvider[]> {
     try {
-      debugPrint(this.config.debug, "Fetching lava providers started");
+      Logger.debug("Fetching lava providers started");
 
       // If we have providers return them
       if (this.lavaProviders.length != 0) {
-        debugPrint(this.config.debug, "Return already saved providers");
+        Logger.debug("Return already saved providers");
         return this.lavaProviders;
       }
 
@@ -202,10 +201,7 @@ export class StateChainQuery {
     relayCu: number
   ): Promise<QuerySdkPairingResponse> {
     try {
-      debugPrint(
-        this.config.debug,
-        "Get pairing for:" + request.chainID + " started"
-      );
+      Logger.debug("Get pairing for:" + request.chainID + " started");
       // Encode request
       const requestData = QueryGetPairingRequest.encode(request).finish();
 
@@ -235,7 +231,7 @@ export class StateChainQuery {
 
       if (jsonResponse.result.response.value == null) {
         // If response is null log the error
-        console.error(
+        Logger.error(
           "ERROR, failed to fetch pairing for spec: " +
             request.chainID +
             ",error: " +
@@ -265,10 +261,7 @@ export class StateChainQuery {
         throw ProvidersErrors.errProvidersNotFound;
       }
 
-      debugPrint(
-        this.config.debug,
-        "Get pairing for:" + request.chainID + " ended"
-      );
+      Logger.debug("Get pairing for:" + request.chainID + " ended");
       // Return decoded response
       return decodedResponse;
     } catch (err) {
@@ -292,7 +285,7 @@ export class StateChainQuery {
     chainID: string,
     rpcInterface: string
   ): Promise<number> {
-    debugPrint(this.config.debug, "Get latest block from providers started");
+    Logger.debug("Get latest block from providers started");
     let lastProbeResponse = null;
 
     // Iterate over providers and return first successfull probe response
@@ -330,8 +323,7 @@ export class StateChainQuery {
       throw ProvidersErrors.errProbeResponseUndefined;
     }
 
-    debugPrint(
-      this.config.debug,
+    Logger.debug(
       "Get latest block from providers ended",
       "latest block " + lastProbeResponse.getLavaEpoch()
     );
@@ -342,32 +334,28 @@ export class StateChainQuery {
 
   // fetchLocalLavaPairingList uses local pairingList.json file to load lava providers
   private async fetchLocalLavaPairingList(path: string): Promise<any> {
-    debugPrint(this.config.debug, "Fetch pairing list from local config");
+    Logger.debug("Fetch pairing list from local config");
     try {
       const data = await fetchLavaPairing(path);
       return this.validatePairingData(data);
     } catch (err) {
-      debugPrint(
-        this.config.debug,
-        "Error happened in fetchLocalLavaPairingList" + err
-      );
+      Logger.debug("Error happened in fetchLocalLavaPairingList", err);
       throw err;
     }
   }
 
   // fetchLocalLavaPairingList fetch lava pairing from seed providers list
   private async fetchDefaultLavaPairingList(): Promise<any> {
-    debugPrint(
-      this.config.debug,
-      "Fetch pairing list from seed providers in github"
-    );
+    Logger.debug("Fetch pairing list from seed providers in github");
 
     // Fetch lava providers from seed list
     const response = await fetch(DEFAULT_LAVA_PAIRING_LIST);
 
     // Validate response
     if (!response.ok) {
-      throw new Error(`Unable to fetch pairing list: ${response.statusText}`);
+      throw Logger.fatal(
+        `Unable to fetch pairing list: ${response.statusText}`
+      );
     }
 
     try {
@@ -376,11 +364,10 @@ export class StateChainQuery {
 
       return this.validatePairingData(data);
     } catch (error) {
-      debugPrint(
-        this.config.debug,
-        "Error happened in fetchDefaultLavaPairingList" + error
+      throw Logger.fatal(
+        "Error happened in fetchDefaultLavaPairingList",
+        error
       );
-      throw error;
     }
   }
 
@@ -435,7 +422,7 @@ export class StateChainQuery {
   // validatePairingData validates pairing data
   private validatePairingData(data: any): any {
     if (data[this.config.network] == undefined) {
-      throw new Error(
+      throw Logger.fatal(
         `Unsupported network (${
           this.config.network
         }), supported networks: ${Object.keys(data)}`
@@ -443,7 +430,7 @@ export class StateChainQuery {
     }
 
     if (data[this.config.network][this.config.geolocation] == undefined) {
-      throw new Error(
+      throw Logger.fatal(
         `Unsupported geolocation (${this.config.geolocation}) for network (${
           this.config.network
         }). Supported geolocations: ${Object.keys(data[this.config.network])}`

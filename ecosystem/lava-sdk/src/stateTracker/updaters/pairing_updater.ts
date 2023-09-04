@@ -1,5 +1,5 @@
 import { StateQuery, PairingResponse } from "../stateQuery/state_query";
-import { debugPrint, parseLong } from "../../util/common";
+import { parseLong } from "../../util/common";
 import { AccountData } from "@cosmjs/proto-signing";
 import { Config } from "../state_tracker";
 import { Logger } from "../../logger/logger";

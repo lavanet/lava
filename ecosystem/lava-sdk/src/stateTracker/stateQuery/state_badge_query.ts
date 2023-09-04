@@ -3,7 +3,6 @@ import {
   BadgeManager,
   TimoutFailureFetchingBadgeError,
 } from "../../badge/badgeManager";
-import { debugPrint } from "../../util/common";
 import { Config } from "../state_tracker";
 import { ChainIDRpcInterface } from "../../sdk/sdk";
 import { GenerateBadgeResponse } from "../../grpc_web_services/lavanet/lava/pairing/badges_pb";
@@ -11,6 +10,7 @@ import { StateTrackerErrors } from "../errors";
 import { StakeEntry } from "../../codec/lavanet/lava/epochstorage/stake_entry";
 import Relayer from "../../relayer/relayer";
 import { AccountData } from "@cosmjs/proto-signing";
+import { Logger } from "../../logger/logger";
 
 export class StateBadgeQuery {
   private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
@@ -29,7 +29,7 @@ export class StateBadgeQuery {
     chainIdRpcInterfaces: ChainIDRpcInterface[],
     relayer: Relayer
   ) {
-    debugPrint(config.debug, "Initialization of State Badge Query started");
+    Logger.debug("Initialization of State Badge Query started");
 
     // Save arguments
     this.badgeManager = badgeManager;
@@ -42,12 +42,12 @@ export class StateBadgeQuery {
     // Initialize pairing to an empty map
     this.pairing = new Map<string, PairingResponse>();
 
-    debugPrint(config.debug, "Initialization of State Badge Query ended");
+    Logger.debug("Initialization of State Badge Query ended");
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
   public async fetchPairing(): Promise<number> {
-    debugPrint(this.config.debug, "Fetching pairing started");
+    Logger.debug("Fetching pairing started");
     let timeLeftToNextPairing;
     for (const chainIDRpcInterface of this.chainIDRpcInterfaces) {
       const badgeResponse = await this.fetchNewBadge(
@@ -126,7 +126,7 @@ export class StateBadgeQuery {
       throw StateTrackerErrors.errTimeTillNextEpochMissing;
     }
 
-    debugPrint(this.config.debug, "Fetching pairing ended");
+    Logger.debug("Fetching pairing ended");
 
     return timeLeftToNextPairing;
   }
