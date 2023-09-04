@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.dualstaking;
+
+option go_package = "github.com/lavanet/lava/x/dualstaking/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+message DelegatorReward {
+    string index = 1; // index = provider + chainID + delegator
+    cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];
+}
