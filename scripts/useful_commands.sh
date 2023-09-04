@@ -15,7 +15,7 @@ sleep_until_next_epoch() {
   while true; do
     epoch_now=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
     display_ticker
-    if [ "$epoch_start" -ne "$epoch_now" ]; then
+    if [ "$epoch_start" != "$epoch_now" ]; then
       echo "finished waiting"
       break
     fi
@@ -25,12 +25,12 @@ sleep_until_next_epoch() {
 # Function to wait until next block
 wait_next_block() {
   current=$( lavad q block | jq .block.header.height)
-  echo "Waiting for next block $current"
+  echo "waiting for next block $current"
   while true; do
     display_ticker
     new=$( lavad q block | jq .block.header.height)
-    if [ "$current" -ne "$new" ]; then
-      echo "finished waiting for block $new"
+    if [ "$current" != "$new" ]; then
+      echo "finished waiting at block $new"
       break
     fi
   done
