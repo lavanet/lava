@@ -77,8 +77,15 @@ export class LavaSDK {
    */
   constructor(options: LavaSDKOptions) {
     // Extract attributes from options
-    const { privateKey, badge, chainIDRpcInterface } = options;
-    let { pairingListConfig, network, geolocation, lavaChainId } = options;
+    const {
+      privateKey,
+      badge,
+      chainIDRpcInterface,
+      pairingListConfig,
+      network,
+      geolocation,
+      lavaChainId,
+    } = options;
 
     // Validate attributes
     if (!badge && !privateKey) {
