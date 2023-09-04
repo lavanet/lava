@@ -2,6 +2,9 @@
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
+LOGS_DIR=${__dir}/../testutil/debugging/logs
+mkdir -p $LOGS_DIR
+rm $LOGS_DIR/*.log
 # Making sure old screens are not running
 echo "current vote number $(latest_vote)"
 killall screen
@@ -26,7 +29,7 @@ PROVIDERSTAKE="500000000000ulava"
 PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
-PROVIDER3_LISTENER="127.0.0.1:2224"
+PROVIDER4_LISTENER="127.0.0.1:2224"
 
 sleep 4
 lavad tx  subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -48,28 +51,28 @@ $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
 $PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
-$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log"
+$EXTRA_PROVIDER_FLAGS --chain-id=lava --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log"
 
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER2_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER2_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
 $PROVIDER2_LISTENER LAV1 grpc '$LAVA_GRPC' \
-$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/PROVIDER2.log"
+$EXTRA_PROVIDER_FLAGS --chain-id=lava --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer2 2>&1 | tee $LOGS_DIR/PROVIDER2.log"
 
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER3_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER3_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
 $PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' \
-$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/PROVIDER3.log"
+$EXTRA_PROVIDER_FLAGS --chain-id=lava --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer3 2>&1 | tee $LOGS_DIR/PROVIDER3.log"
 
 screen -d -m -S provider4 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
 $PROVIDER4_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER4_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER4_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
 $PROVIDER4_LISTENER LAV1 grpc '$LAVA_GRPC' \
-$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer4 2>&1 | tee $LOGS_DIR/PROVIDER4.log"
+$EXTRA_PROVIDER_FLAGS --chain-id=lava --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer4 2>&1 | tee $LOGS_DIR/PROVIDER4.log"
 
 # Setup Portal
 screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
@@ -77,7 +80,7 @@ screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
 $EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log"
 
-screen -d -m -S testing bash -c "source ~/.bashrc; lavad test rpcconsumer http://127.0.0.1:3333 ETH1 jsonrpc http://127.0.0.1:3360 LAV1 rest http://127.0.0.1:3361 LAV1 tendermintrpc http://127.0.0.1:3362 LAV1 grpc --chain-id lava | tee $LOGS_DIR/TESTING.log"
+screen -d -m -S testing bash -c "source ~/.bashrc; lavad test rpcconsumer http://127.0.0.1:3333 ETH1 jsonrpc http://127.0.0.1:3360 LAV1 rest http://127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc --chain-id lava 2>&1 | tee $LOGS_DIR/TESTING.log"
 
 echo "running some relays, before terminating provider4"
 
@@ -89,4 +92,4 @@ screen -S provider4 -X quit
 sleep_until_next_epoch
 sleep_until_next_epoch
 
-lavad test 100 --from servicer4 --break
+lavad test events 100 --from servicer4 --break
