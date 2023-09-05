@@ -159,5 +159,4 @@ func TestHandleExternalErrorForREST(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected not nil for an ill response, got %s", err.Error())
 	}
-
 }

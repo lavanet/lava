@@ -193,7 +193,6 @@ func extractRPCNestedCode(message string) (int, error) {
 
 		// Extract the JSON substring
 		jsonSubStr = jsonSubStr[:jsonEnd+1]
-
 	} else {
 		// The message seems to already be a JSON object
 		jsonSubStr = message
