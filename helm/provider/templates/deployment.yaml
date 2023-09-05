@@ -80,7 +80,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
           {{- if .Values.configYaml }}
-            - name: {{ include "provider.fullname" . }}-config-from-values
+            - name: config-volume-from-values
               mountPath: /etc/default/config
               readOnly: true
           {{- end }}
@@ -124,7 +124,7 @@ spec:
           {{- end }}
           # default command
           {{- else }}
-          command: "lavad"
+          command: ["lavad"]
           args: ["rpcprovider", "{{ $configFilePath }}"]
           {{- end }}
           {{- with .Values.resources }}
