@@ -563,19 +563,15 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to
-func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string) ([]string, error) {
+func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch uint64) (providers []string, err error) {
 	var delegatorEntry types.Delegator
 	prefix := types.DelegatorKey(delegator)
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return nil, err
-	}
 
-	found := k.delegatorFS.FindEntry(ctx, prefix, nextEpoch, &delegatorEntry)
+	found := k.delegatorFS.FindEntry(ctx, prefix, epoch, &delegatorEntry)
 	if !found {
 		return nil, utils.LavaFormatWarning("could not get delegator providers", fmt.Errorf("delegator not found"),
 			utils.Attribute{Key: "delegator", Value: delegator},
-			utils.Attribute{Key: "block", Value: nextEpoch},
+			utils.Attribute{Key: "block", Value: epoch},
 		)
 	}
 

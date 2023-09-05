@@ -540,9 +540,10 @@ func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, bl
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
-func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
+func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, showPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{
-		Delegator: delegator,
+		Delegator:             delegator,
+		ShowPendingDelegators: showPending,
 	}
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
