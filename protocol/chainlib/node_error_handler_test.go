@@ -78,6 +78,7 @@ func TestNodeErrorHandlerGenericErrors(t *testing.T) {
 	err = neh.handleGenericErrors(ctx, errors.New("dummy error"))
 	require.Equal(t, err, nil)
 }
+
 func TestHandleExternalErrorJSONRPC(t *testing.T) {
 	jeh := &JsonRPCErrorHandler{}
 
@@ -147,5 +148,4 @@ func TestHandleExternalErrorForREST(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error for a malformed response, got nil")
 	}
-
 }

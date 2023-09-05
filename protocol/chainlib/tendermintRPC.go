@@ -611,7 +611,6 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		if err != nil {
 			return nil, "", nil, err
 		}
-
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
 		if err != nil {
