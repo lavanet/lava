@@ -3,18 +3,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name:  {{- include "provider.fullname" }}
-  {{ with .Values.service.annotations }}
+  name:  {{ include "provider.fullname"  . }}
+  {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{ end }}
   labels:
-    lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}
+    lavanet.xyz/node_moniker:  {{ include "provider.moniker"  . }}
     lavanet.xyz/node_type: "provider"
     {{- include "provider.labels" . | nindent 4 }}
 spec:
   type:  {{ .Values.service.type }}
-  {{ with .Values.service.ports }}
+  {{- with .Values.service.ports }}
   ports:
     {{- toYaml . | nindent 4 }}
   {{ else }}
@@ -22,10 +22,10 @@ spec:
     - name: {{ .Values.port.name }}
       port: {{ .Values.port.number }}
       protocol: {{ .Values.port.protocol }}
-      targetPort: {{ .Values.port.name }
+      targetPort: {{ .Values.port.name }}
   {{- end }}
   selector:
-    lavanet.xyz/node_moniker:  {{- include "provider.moniker" }}
+    lavanet.xyz/node_moniker:  {{ include "provider.moniker"  . }}
     lavanet.xyz/node_type: "provider"
     {{- include "provider.selectorLabels" . | nindent 4 }}
 {{- end }}

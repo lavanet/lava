@@ -121,6 +121,7 @@ serviceAccountName: null
 # service settings
 service:
   enabled: true
+  name: null
   type: ClusterIP
   annotations: {}
   # override .Values.port with these values
