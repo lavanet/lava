@@ -45,33 +45,43 @@ spec:
       ## init container to import key into keyring
       initContainers:
         - name: init-import-key
-          image: busybox:1.28
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           command: 
            - sh
            - -c
            - | 
             # exit when any command fails
             set -e 
-            if [ -f /data/imported ]; then
+
+            # check if its already imported
+            if [ -f {{ .Values.persistentVolume.mountPath }}/imported ]; then
               echo "Key has already been exported, exiting..."
               exit 0
             fi
+
             # import key into keyring
-            echo $KEY_PASSWORD | lavad keys import {{ include "provider.keyname" . }} $KEY_FILE
+            echo $KEY_PASSWORD | lavad keys \
+              import {{ include "provider.keyname" . }} /tmp/keyfile/{{ $keySecretKey }} \
+              --keyring-backend "test" \
+              --home {{ .Values.persistentVolume.mountPath }} \
+              --keyring-dir {{ .Values.persistentVolume.mountPath }}
 
             # mark as imported
-            touch /data/imported
+            touch {{ .Values.persistentVolume.mountPath }}/imported
+          volumeMounts:
+            - name: "private-key-volume"
+              mountPath: /tmp/keyfile/{{ $keySecretKey }}
+              subPath: {{ $keySecretKey }}
+              readOnly: true
+            - name: data-volume
+              mountPath: {{ .Values.persistentVolume.mountPath }}
+              subPath: "{{ .Values.persistentVolume.subPath }}"
           env:
             - name: KEY_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $keyPasswordSecretName }}
                   key: {{ $keyPasswordSecretKey }}
-            - name: KEY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $keySecretName }}
-                  key: {{ $keySecretKey }}
       containers:
         - name: {{ include "provider.fullname"  . }}
           securityContext:
@@ -125,7 +135,14 @@ spec:
           # default command
           {{- else }}
           command: ["lavad"]
-          args: ["rpcprovider", "{{ $configFilePath }}"]
+          args: [
+            "rpcprovider", "{{ $configFilePath }}", 
+            "--from", "{{- include "provider.keyname" . }}",
+            "--home",  "{{ .Values.persistentVolume.mountPath }}", 
+            "--keyring-backend", "test",
+            "--keyring-dir",  "{{ .Values.persistentVolume.mountPath }}",
+            "--geolocation", "{{.Values.geolocation}}"
+          ]
           {{- end }}
           {{- with .Values.resources }}
           resources:
@@ -178,6 +195,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
+        - name: "private-key-volume"
+          secret: 
+            secretName: {{ $keySecretName }}
+            optional: false
         {{- if .Values.configYaml }}
         - name: config-volume-from-values
           configMap:

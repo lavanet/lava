@@ -36,6 +36,19 @@ endpoint: null
 # supportedChainIds: ["ETH1", "COS3"]
 supportedChainIds: null
 
+
+# Set your geolocation
+## Geolocation codes
+#  USC = 1; // US-Center
+#  EU = 2; // Europe
+#  USE = 4; // US-East
+#  USW = 8; // US-West
+#  AF = 16; // Africa
+#  AS = 32; // Asia
+#  AU = 64;  // (Australia, includes NZ)
+#  GL = 65535; // Global
+geolocation: 1
+
 # setup ingress for the node
 # example:
 # ingress:
