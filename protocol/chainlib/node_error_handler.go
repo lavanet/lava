@@ -105,7 +105,7 @@ func (jeh *JsonRPCErrorHandler) HandleExternalError(errorMessage string) error {
 	// Extract the nested error code from the error message
 	errorCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
-		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage", Value: errorMessage})
+		return utils.LavaFormatProduction("Unparsable external JsonRPC error detected", err, utils.Attribute{Key: "errorMessage", Value: errorMessage})
 	}
 	// Check if this internal error code is in our map of allowed errors
 	if allowedErrors, ok := AllowedErrorsMap["jsonrpc"]; !ok {
@@ -154,7 +154,7 @@ func (te *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) er
 	// Extract the nested error code from the error message
 	errorCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
-		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage", Value: errorMessage})
+		return utils.LavaFormatProduction("Unparsable external TendermintRPC error detected", err, utils.Attribute{Key: "errorMessage", Value: errorMessage})
 	}
 	// Check if this internal error code is in our map of allowed errors
 	if allowedErrors, ok := AllowedErrorsMap["tendermintrpc"]; !ok {
