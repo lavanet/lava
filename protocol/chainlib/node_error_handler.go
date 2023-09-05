@@ -118,6 +118,7 @@ func (jeh *JsonRPCErrorHandler) HandleExternalError(errorMessage string) error {
 		errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
 		return utils.LavaFormatProduction(errMsg, nil)
 	}
+	utils.LavaFormatInfo("Allowed error detected in JSONRPC response:", utils.Attribute{Key: "Allowed Error", Value: errorMessage})
 	return nil
 }
 
@@ -169,6 +170,7 @@ func (te *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) er
 		errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
 		return utils.LavaFormatProduction(errMsg, nil)
 	}
+	utils.LavaFormatInfo("Allowed error detected in tendermint-RPC response:", utils.Attribute{Key: "Allowed Error", Value: errorMessage})
 	return nil
 }
 
