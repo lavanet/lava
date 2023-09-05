@@ -105,12 +105,12 @@ func (jeh *JsonRPCErrorHandler) HandleExternalError(errorMessage string) error {
 	// Extract the nested error code from the error message
 	nestedCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
-		return utils.LavaFormatProduction("Cannot extract nested error code.", err)
+		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage:", Value: errorMessage})
 	}
 	// Check if this internal error code is in our map of allowed errors
 	allowedErrors, ok := AllowedErrorsMap["jsonrpc"]
 	if !ok {
-		return utils.LavaFormatProduction("Allowed errors for json-RPC not configured", nil)
+		return utils.LavaFormatProduction("Allowed errors for json-RPC is not configured", nil)
 	}
 	_, exists := allowedErrors[fmt.Sprintf("%d", nestedCode)]
 	if !exists {
@@ -121,54 +121,47 @@ func (jeh *JsonRPCErrorHandler) HandleExternalError(errorMessage string) error {
 	return nil
 }
 
-type RestError struct {
+type RESTErrorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-type RestResponse struct {
-	BlockID interface{} `json:"block_id,omitempty"`
-	Block   interface{} `json:"block,omitempty"`
-}
-
 func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
-	// Try parsing for error first
-	var restError RestError
+	var restError RESTErrorResponse
+	var jsonData map[string]interface{}
+	// Try to unmarshal the data to see if it is a RESTErrorResponse
 	err := json.Unmarshal([]byte(replyData), &restError)
-	if err == nil && restError.Code != 0 {
-		// It's a well-formed error message. Proceed with error handling logic.
+	if err == nil && restError.Code != 0 && restError.Message != "" {
+		// Check if the code is in the allowed errors list
 		allowedErrors, ok := AllowedErrorsMap["rest"]
 		if !ok {
 			return utils.LavaFormatProduction("allowed errors for REST not configured", nil)
 		}
-
-		if errMsg, ok := allowedErrors[fmt.Sprint(restError.Code)]; ok {
-			utils.LavaFormatInfo("Received allowed error", utils.Attribute{Key: "Code", Value: restError.Code}, utils.Attribute{Key: "Message", Value: errMsg}, utils.Attribute{Key: "Reply", Value: replyData})
-			return nil // It's an allowed error
+		if _, exists := allowedErrors[fmt.Sprintf("%d", restError.Code)]; !exists {
+			return utils.LavaFormatProduction(fmt.Sprintf("Disallowed provider error code: %d", restError.Code), nil)
 		}
-
-		return utils.LavaFormatProduction("received disallowed error in REST api", nil, utils.Attribute{Key: "Code", Value: restError.Code}, utils.Attribute{Key: "ErrorMsg", Value: restError.Message})
+		utils.LavaFormatInfo("Allowed error detected in REST response:", utils.Attribute{Key: "Allowed Error", Value: restError})
+		return nil
 	}
 
-	// Try parsing for successful response
-	var restResponse RestResponse
-	err = json.Unmarshal([]byte(replyData), &restResponse)
-	if err == nil && (restResponse.BlockID != nil || restResponse.Block != nil) {
-		return nil // It's a successful response
+	// Try to unmarshal the data to see if it is a general JSON map
+	err = json.Unmarshal([]byte(replyData), &jsonData)
+	if err != nil {
+		return utils.LavaFormatProduction("Unparsable external REST error detected.", err)
 	}
 
-	return utils.LavaFormatProduction("Unparsable external provider response detected.", err)
+	return nil
 }
 
 func (teh *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) error {
 	nestedCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
-		return utils.LavaFormatProduction("Cannot extract nested error code.", err)
+		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage:", Value: errorMessage})
 	}
 	// Check if this internal error code is in our map of allowed errors
 	allowedErrors, ok := AllowedErrorsMap["tendermint"]
 	if !ok {
-		return utils.LavaFormatProduction("allowed errors for tendermint-RPC not configured", nil)
+		return utils.LavaFormatProduction("Allowed errors for tendermint-RPC is not configured", nil)
 	}
 	_, exists := allowedErrors[fmt.Sprintf("%d", nestedCode)]
 	if !exists {
@@ -186,7 +179,7 @@ func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
 func extractRPCNestedCode(message string) (int, error) {
 	idx := strings.Index(message, "\"code\":")
 	if idx == -1 {
-		return 0, utils.LavaFormatError("code field not found", nil)
+		return 0, utils.LavaFormatError("cannot extract nested error code, code field not found", nil)
 	}
 
 	start := idx + len("\"code\":")
