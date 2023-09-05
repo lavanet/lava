@@ -47,7 +47,7 @@ func TestQueryWithUnbonding(t *testing.T) {
 
 	res, err = ts.QueryDualstakingDelegatorProviders(delegator, false)
 	require.Nil(t, err)
-	delegation = res.Delegations[0]
+	delegationRes = res.Delegations[0]
 	require.True(t, delegation.Equal(&delegationRes))
 
 	// unbond completely and query (should not work)
@@ -99,23 +99,14 @@ func TestQueryShowPendingDelegators(t *testing.T) {
 	require.Nil(t, err)
 
 	// delegator2 should show when quering with showPending=true and not show when showPending=false
-	// delegator1 should always show
-	res, err = ts.QueryDualstakingDelegatorProviders(delegator1, true)
-	require.Nil(t, err)
-	require.Equal(t, 2, len(res.Delegations))
-	for _, d := range res.Delegations {
-		if d.Delegator == delegator1 {
-			require.True(t, d.Equal(&delegation1))
-		} else if d.Delegator == delegator2 {
-			require.True(t, d.Equal(&delegation2))
-		}
-	}
-
-	res, err = ts.QueryDualstakingDelegatorProviders(delegator1, false)
+	res, err = ts.QueryDualstakingDelegatorProviders(delegator2, true)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(res.Delegations))
 	delegationRes = res.Delegations[0]
-	require.True(t, delegationRes.Equal(&delegation1))
+	require.True(t, delegationRes.Equal(&delegation2))
+
+	_, err = ts.QueryDualstakingDelegatorProviders(delegator2, false)
+	require.NotNil(t, err)
 }
 
 func TestQueryProviderMultipleDelegators(t *testing.T) {
@@ -225,5 +216,5 @@ func TestQueryDelegatorUnstakedProvider(t *testing.T) {
 
 	// shouldn't be able to delegate to unstaking provider (even though it didn't get its funds back, it's still considered unstaked)
 	_, err = ts.TxDualstakingDelegate(delegator, unstakingProvider, spec.Index, amount)
-	require.Nil(t, err)
+	require.NotNil(t, err)
 }
