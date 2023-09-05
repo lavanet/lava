@@ -7,13 +7,7 @@ import { StateQuery } from "./stateQuery/state_query";
 import { Updater } from "./updaters/updater";
 import { Relayer } from "../relayer/relayer";
 import { AccountData } from "@cosmjs/proto-signing";
-import { RPCEndpoint } from "../lavasession/consumerTypes";
-import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
-import {
-  ConsumerSessionManagersMap,
-  ConsumerSessionManager,
-} from "../lavasession/consumerSessionManager";
-import { ChainIDRpcInterface } from "../sdk/sdk";
+import { Consumer } from "../consumer/consumer";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 
@@ -24,40 +18,35 @@ export interface Config {
 }
 
 export class StateTracker {
-  private updaters: Updater[] = []; // List of all registered updaters
-  private stateQuery: StateQuery; // State Query instance
-  private config: Config; // Config options
+  private updaters: Updater[] = [];
+  private stateQuery: StateQuery;
 
   // Constructor for State Tracker
   constructor(
     pairingListConfig: string,
     relayer: Relayer,
-    chainIDRpcInterfaces: ChainIDRpcInterface[],
+    chainIDs: string[],
     config: Config,
     account: AccountData,
-    consumerSessionManagerMap: ConsumerSessionManagersMap,
+    consumer: Consumer,
     walletAddress: string,
     badgeManager?: BadgeManager
   ) {
     Logger.debug("Initialization of State Tracker started");
 
-    // Save config
-    this.config = config;
-
     if (badgeManager != undefined) {
       this.stateQuery = new StateBadgeQuery(
         badgeManager,
         walletAddress,
-        config,
         account,
-        chainIDRpcInterfaces,
+        chainIDs,
         relayer
       );
     } else {
       // Initialize State Query
       this.stateQuery = new StateChainQuery(
         pairingListConfig,
-        chainIDRpcInterfaces,
+        chainIDs,
         relayer,
         config,
         account
@@ -67,29 +56,9 @@ export class StateTracker {
     // Create Pairing Updater
     const pairingUpdater = new PairingUpdater(
       this.stateQuery,
-      consumerSessionManagerMap,
-      config,
-      account
+      consumer,
+      chainIDs
     );
-
-    // Create Optimizer
-    const optimizer = new RandomProviderOptimizer();
-
-    // Register all pairirings
-    for (const chainIDRpcInterface of chainIDRpcInterfaces) {
-      const sessionManager = new ConsumerSessionManager(
-        relayer,
-        new RPCEndpoint(
-          account.address,
-          chainIDRpcInterface.chainID,
-          chainIDRpcInterface.rpcInterface,
-          config.geolocation
-        ),
-        optimizer
-      );
-
-      pairingUpdater.registerPairing(sessionManager);
-    }
 
     // Register all updaters
     this.registerForUpdates(pairingUpdater);

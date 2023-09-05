@@ -1,101 +1,39 @@
-import { StateQuery, PairingResponse } from "../stateQuery/state_query";
-import { parseLong } from "../../util/common";
-import { AccountData } from "@cosmjs/proto-signing";
-import { Config } from "../state_tracker";
+import { StateQuery } from "../stateQuery/state_query";
 import { Logger } from "../../logger/logger";
-import { ChainIDRpcInterface } from "../../sdk/sdk";
-import {
-  ConsumerSessionManager,
-  ConsumerSessionManagersMap,
-} from "../../lavasession/consumerSessionManager";
-import {
-  ConsumerSessionsWithProvider,
-  Endpoint,
-} from "../../lavasession/consumerTypes";
+import { Consumer } from "../../consumer/consumer";
 
 export class PairingUpdater {
-  private stateQuery: StateQuery; // State Query instance
-  private config: Config; // Config options
-  private consumerSessionManagerMap: ConsumerSessionManagersMap; // ConsumerSessionManagerMap instance
-  private account: AccountData;
+  private stateQuery: StateQuery;
+  private consumer: Consumer;
+  private chainIDs: string[];
 
   // Constructor for Pairing Updater
-  constructor(
-    stateQuery: StateQuery,
-    consumerSessionManagerMap: ConsumerSessionManagersMap,
-    config: Config,
-    account: AccountData
-  ) {
+  constructor(stateQuery: StateQuery, consumer: Consumer, chainIDs: string[]) {
     Logger.debug("Initialization of Pairing Updater started");
 
     // Save arguments
-    this.account = account;
     this.stateQuery = stateQuery;
-    this.config = config;
-    this.consumerSessionManagerMap = consumerSessionManagerMap;
-  }
-
-  public registerPairing(consumerSessionManager: ConsumerSessionManager) {
-    const chainID = consumerSessionManager.getRpcEndpoint().chainId;
-
-    if (this.consumerSessionManagerMap.has(chainID)) {
-      // If the chainID exists, fetch the array and push the new manager to it.
-      const managers = this.consumerSessionManagerMap.get(chainID);
-      if (managers) {
-        managers.push(consumerSessionManager);
-      }
-    } else {
-      // If the chainID doesn't exist, initialize a new array with the manager as the first element.
-      this.consumerSessionManagerMap.set(chainID, [consumerSessionManager]);
-    }
+    this.consumer = consumer;
+    this.chainIDs = chainIDs;
   }
 
   // update updates pairing list on every consumer session manager
   public update() {
     Logger.debug("Start updating consumer session managers");
-    this.consumerSessionManagerMap.forEach(
-      (consumerSessionManagerList, chainID) => {
-        Logger.debug("Updating pairing list for: ", chainID);
 
-        // Fetch pairing list
-        const pairing = this.stateQuery.getPairing(chainID);
-        if (pairing == undefined) {
-          Logger.debug("Failed fetching pairing list for: ", chainID);
-        } else {
-          Logger.debug("Pairing list fetched: ", pairing);
-        }
+    for (const chainID of this.chainIDs) {
+      Logger.debug("Updating pairing list for: ", chainID);
 
-        // Update each consumer session manager with matching pairing list
-        consumerSessionManagerList.forEach((consumerSessionManager) => {
-          this.updateConsummerSessionManager(pairing, consumerSessionManager);
-        });
+      // Fetch pairing list
+      const pairing = this.stateQuery.getPairing(chainID);
+      if (pairing == undefined) {
+        Logger.debug("Failed fetching pairing list for: ", chainID);
+
+        // TODO check how we handle this
+        continue;
       }
-    );
-  }
-
-  // updateConsummerSessionManager filters pairing list and update consuemr session manager
-  private updateConsummerSessionManager(
-    pairing: PairingResponse | undefined,
-    consumerSessionManager: ConsumerSessionManager
-  ) {
-    // If pairing undefined
-    // update consumer session manager with empty provider list
-    if (pairing == undefined) {
-      consumerSessionManager.updateAllProviders(0, []);
-
-      return;
+      Logger.debug("Pairing list fetched: ", pairing);
+      this.consumer.updateAllProviders(pairing);
     }
-
-    // Filter pairing list for specific consumer session manager
-    const pairingListForThisCSM = this.filterPairingListByEndpoint( // FYI @Aleksao998 I moved this to consumer.ts
-      pairing,
-      consumerSessionManager.getRpcEndpoint().apiInterface
-    );
-
-    // Update specific consumer session manager
-    consumerSessionManager.updateAllProviders(
-      pairing.currentEpoch,
-      pairingListForThisCSM
-    );
   }
 }

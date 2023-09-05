@@ -3,30 +3,26 @@ import {
   BadgeManager,
   TimoutFailureFetchingBadgeError,
 } from "../../badge/badgeManager";
-import { Config } from "../state_tracker";
-import { ChainIDRpcInterface } from "../../sdk/sdk";
 import { GenerateBadgeResponse } from "../../grpc_web_services/lavanet/lava/pairing/badges_pb";
 import { StateTrackerErrors } from "../errors";
 import { StakeEntry } from "../../codec/lavanet/lava/epochstorage/stake_entry";
-import Relayer from "../../relayer/relayer";
+import { Relayer } from "../../relayer/relayer";
 import { AccountData } from "@cosmjs/proto-signing";
 import { Logger } from "../../logger/logger";
 
 export class StateBadgeQuery {
-  private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
+  private pairing: Map<string, PairingResponse | undefined>;
   private badgeManager: BadgeManager;
-  private chainIDRpcInterfaces: ChainIDRpcInterface[]; // Array of {chainID, rpcInterface} pairs
+  private chainIDs: string[];
   private walletAddress: string;
-  private config: Config;
   private relayer: Relayer;
   private account: AccountData;
 
   constructor(
     badgeManager: BadgeManager,
     walletAddress: string,
-    config: Config,
     account: AccountData,
-    chainIdRpcInterfaces: ChainIDRpcInterface[],
+    chainIDs: string[],
     relayer: Relayer
   ) {
     Logger.debug("Initialization of State Badge Query started");
@@ -34,8 +30,7 @@ export class StateBadgeQuery {
     // Save arguments
     this.badgeManager = badgeManager;
     this.walletAddress = walletAddress;
-    this.config = config;
-    this.chainIDRpcInterfaces = chainIdRpcInterfaces;
+    this.chainIDs = chainIDs;
     this.relayer = relayer;
     this.account = account;
 
@@ -49,18 +44,12 @@ export class StateBadgeQuery {
   public async fetchPairing(): Promise<number> {
     Logger.debug("Fetching pairing started");
     let timeLeftToNextPairing;
-    for (const chainIDRpcInterface of this.chainIDRpcInterfaces) {
-      const badgeResponse = await this.fetchNewBadge(
-        chainIDRpcInterface.chainID
-      );
+    for (const chainID of this.chainIDs) {
+      const badgeResponse = await this.fetchNewBadge(chainID);
 
       const badge = badgeResponse.getBadge();
       if (badge == undefined) {
-        this.pairing.set(chainIDRpcInterface.chainID, {
-          providers: [],
-          maxCu: -1,
-          currentEpoch: -1,
-        });
+        this.pairing.set(chainID, undefined);
 
         continue;
       }
@@ -72,11 +61,7 @@ export class StateBadgeQuery {
       const pairingResponse = badgeResponse.getGetPairingResponse();
 
       if (pairingResponse == undefined) {
-        this.pairing.set(chainIDRpcInterface.chainID, {
-          providers: [],
-          maxCu: -1,
-          currentEpoch: -1,
-        });
+        this.pairing.set(chainID, undefined);
 
         continue;
       }
@@ -114,11 +99,7 @@ export class StateBadgeQuery {
       }
 
       // Save pairing response for chainID
-      this.pairing.set(chainIDRpcInterface.chainID, {
-        providers: stakeEntry,
-        maxCu: badge.getCuAllocation(),
-        currentEpoch: pairingResponse.getCurrentEpoch(),
-      });
+      this.pairing.set(chainID, undefined);
     }
 
     // If timeLeftToNextPairing undefined return an error

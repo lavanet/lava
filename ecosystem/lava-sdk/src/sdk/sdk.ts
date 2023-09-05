@@ -10,8 +10,6 @@ import {
 import { Logger, LogLevel } from "../logger/logger";
 import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
-import { ConsumerSessionManagersMap } from "../lavasession/consumerSessionManager";
-import { grpc } from "@improbable-eng/grpc-web";
 import { Consumer } from "../consumer/consumer";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.

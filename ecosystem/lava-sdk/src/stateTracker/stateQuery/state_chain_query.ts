@@ -1,6 +1,5 @@
 import { DEFAULT_LAVA_PAIRING_LIST } from "../../config/default";
 import { Config } from "../state_tracker";
-import { ChainIDRpcInterface } from "../../sdk/sdk";
 import { fetchLavaPairing } from "../../util/lavaPairing";
 import { StateTrackerErrors } from "../errors";
 import { PairingResponse } from "./state_query";
@@ -16,14 +15,8 @@ import {
   QueryGetPairingRequest,
   QuerySdkPairingResponse,
 } from "../../codec/lavanet/lava/pairing/query";
-
-// TODO we can make relayer not default
-import Relayer from "../../relayer/relayer";
-
-// TODO remove provider error when we refactor
+import { Relayer } from "../../relayer/relayer";
 import { ProvidersErrors } from "../errors";
-
-// TODO once we refactor consumer session manager we should define new type
 import {
   ConsumerSessionsWithProvider,
   SingleConsumerSession,
@@ -35,17 +28,17 @@ const lavaChainID = "LAV1";
 const lavaRPCInterface = "tendermintrpc";
 
 export class StateChainQuery {
-  private pairingListConfig: string; // Pairing list config, if empty use seed providers form github
-  private relayer: Relayer; // Relayer instance
-  private chainIDRpcInterfaces: ChainIDRpcInterface[]; // Array of {chainID, rpcInterface} pairs
-  private lavaProviders: ConsumerSessionsWithProvider[]; // Array of Lava providers
-  private config: Config; // Config options
-  private pairing: Map<string, PairingResponse>; // Pairing is a map where key is chainID and value is PairingResponse
+  private pairingListConfig: string;
+  private relayer: Relayer;
+  private chainIDs: string[];
+  private lavaProviders: ConsumerSessionsWithProvider[];
+  private config: Config;
+  private pairing: Map<string, PairingResponse | undefined>;
   private account: AccountData;
 
   constructor(
     pairingListConfig: string,
-    chainIdRpcInterfaces: ChainIDRpcInterface[],
+    chainIDs: string[],
     relayer: Relayer,
     config: Config,
     account: AccountData
@@ -54,7 +47,7 @@ export class StateChainQuery {
 
     // Save arguments
     this.pairingListConfig = pairingListConfig;
-    this.chainIDRpcInterfaces = chainIdRpcInterfaces;
+    this.chainIDs = chainIDs;
     this.relayer = relayer;
     this.config = config;
     this.account = account;
@@ -100,11 +93,11 @@ export class StateChainQuery {
       }
 
       // Iterate over chain and construct pairing
-      for (const chainIDRpcInterface of this.chainIDRpcInterfaces) {
+      for (const chainID of this.chainIDs) {
         // Fetch pairing for specified chainID
         const pairingResponse = await this.getPairingFromChain(
           {
-            chainID: chainIDRpcInterface.chainID,
+            chainID: chainID,
             client: this.account.address,
           },
           10
@@ -116,11 +109,7 @@ export class StateChainQuery {
           pairingResponse.pairing == undefined ||
           pairingResponse.spec == undefined
         ) {
-          this.pairing.set(chainIDRpcInterface.chainID, {
-            providers: [],
-            maxCu: -1,
-            currentEpoch: latestNumber,
-          });
+          this.pairing.set(chainID, undefined);
 
           continue;
         }
@@ -131,10 +120,11 @@ export class StateChainQuery {
         );
 
         // Save pairing response for chainID
-        this.pairing.set(chainIDRpcInterface.chainID, {
+        this.pairing.set(chainID, {
           providers: pairingResponse.pairing.providers,
           maxCu: parseLong(pairingResponse.maxCu),
           currentEpoch: latestNumber,
+          spec: pairingResponse.spec,
         });
       }
 
@@ -286,6 +276,7 @@ export class StateChainQuery {
     rpcInterface: string
   ): Promise<number> {
     Logger.debug("Get latest block from providers started");
+
     let lastProbeResponse = null;
 
     // Iterate over providers and return first successfull probe response
@@ -335,6 +326,7 @@ export class StateChainQuery {
   // fetchLocalLavaPairingList uses local pairingList.json file to load lava providers
   private async fetchLocalLavaPairingList(path: string): Promise<any> {
     Logger.debug("Fetch pairing list from local config");
+
     try {
       const data = await fetchLavaPairing(path);
       return this.validatePairingData(data);
