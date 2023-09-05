@@ -37,13 +37,16 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 	for _, provider := range providers {
 		indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
 		for _, ind := range indices {
+			delegator, providerDecode, chainID := types.DelegationKeyDecode(ind)
+			if delegator != req.Delegator {
+				continue
+			}
 			var delegation types.Delegation
 			found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
 			if !found {
-				delegator, provider, chainID := types.DelegationKeyDecode(ind)
 				utils.LavaFormatError("critical: provider found in delegatorFS but not in delegationFS", fmt.Errorf("provider delegation not found"),
 					utils.Attribute{Key: "delegator", Value: delegator},
-					utils.Attribute{Key: "provider", Value: provider},
+					utils.Attribute{Key: "provider", Value: providerDecode},
 					utils.Attribute{Key: "chainID", Value: chainID},
 				)
 				continue
