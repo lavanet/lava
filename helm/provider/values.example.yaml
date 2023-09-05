@@ -1,0 +1,54 @@
+# set the log level for the node
+logLevel: "warn"
+
+# provider node moniker, will default to the fullname
+moniker: "my-node"
+
+# information about the private key to use for the node
+key:
+  name: "my-node-key"
+  secretName: null
+  secretKey: null
+  passwordSecretName: null
+  passwordSecretKey: null
+
+endpoint: null
+supportedChainIds: null
+
+ingress:
+  enabled: true
+  className: "nginx"
+  tls: []
+  rules: []
+  annotations: {}
+
+configYaml: |
+ endpoints:
+  - api-interface: jsonrpc
+    chain-id: ETH1
+    network-address: 127.0.0.1:2221
+    node-urls:
+      - url: wss://eth-rpc/ws
+  - api-interface: tendermintrpc
+    chain-id: COS3
+    network-address: 127.0.0.1:2221
+    node-urls:
+      - url: ws://127.0.0.1:26657/websocket
+      - url: http://127.0.0.1:26657
+  - api-interface: grpc
+    chain-id: COS3
+    network-address: 127.0.0.1:2221
+    node-urls: 
+      - url: 127.0.0.1:9090
+  - api-interface: rest
+    chain-id: COS3
+    network-address: 127.0.0.1:2221
+    node-urls: 
+      - url: http://127.0.0.1:1317
+
+# image to deploy
+image:
+  repository: us-central1-docker.pkg.dev/lavanet-public/lava/lavad
+  pullPolicy: IfNotPresent
+  tag: latest
+

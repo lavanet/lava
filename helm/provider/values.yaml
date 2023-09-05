@@ -87,8 +87,15 @@ ingress:
 #       - url: http://127.0.0.1:1317
 
 # note: This will create a new configMap. 
-# If you want to use an existing configMap, or secret use `extraSecretMounts` or `extraConfigMounts`
+# If you want to use an existing configMap, or secret use `extraSecretMounts` or `extraConfigMounts` 
+# and set `configFilePath`
 configYaml: null
+
+# the path to the config file
+# If you are using `extraConfigMounts` or `extraSecretMounts`, provide the path to the config file
+## example:
+# configFilePath: /etc/config/node-config.toml
+configFilePath: null
 
 # add custom environment variables to the node using secret of configs
 envFrom: []

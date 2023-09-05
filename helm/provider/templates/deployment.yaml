@@ -4,6 +4,10 @@
 {{- $keyPasswordSecretKey := required ".Values.key.passwordSecretKey is required." .Values.key.passwordSecretKey -}}
 {{- $endpoint := required ".Values.endpoint is required." .Values.endpoint -}}
 {{- $supportedChainIds := required ".Values.supportedChainIds is required." .Values.supportedChainIds -}}
+{{- $configFilePath := default "/etc/default/config/provider_config.yaml" .Values.configFilePath  -}}
+{{- if (eq $configFilePath "/etc/default/config/provider_config.yaml") }}
+  {{- _ = required "You must either set .Values.configFilePath OR .Values.configYaml" .Values.configYaml -}}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -109,6 +113,7 @@ spec:
             - name: {{ .Values.port.name }}
               containerPort: {{ .Values.port.number }}
               protocol: {{ .Values.port.protocol }}
+          {{- if .Values.command }}
           {{- with .Values.commmand.name }}
           command: 
             - {{ . | quote }}
@@ -116,6 +121,11 @@ spec:
           {{- with .Values.commmand.args }}
           args:
             {{- toYaml . | nindent 12 -}}
+          {{- end }}
+          # default command
+          {{- else }}
+          command: "lavad"
+          args: ["rpcprovider", "{{ $configFilePath }}"]
           {{- end }}
           {{- with .Values.resources }}
           resources:
