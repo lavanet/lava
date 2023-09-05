@@ -81,33 +81,38 @@ func TestNodeErrorHandlerGenericErrors(t *testing.T) {
 
 func TestHandleExternalErrorJSONRPC(t *testing.T) {
 	jeh := &JsonRPCErrorHandler{}
-
-	// 1. Well-formed error response, with an allowed error code
-	allowedErrorResponse := `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"429 Too Many Requests: {\"code\":-32001,\"message\":\"some allowed error\",\"data\":{\"some_field\":\"some_value\"}}"}}`
+	// 1 Well-formed error response, with an allowed error code
+	allowedErrorResponse := `{"code":-32602,"message":"invalid argument 0: json: cannot unmarshal hex string without 0x prefix into Go value of type common.Hash"}`
 	err := jeh.HandleExternalError(allowedErrorResponse)
 	if err != nil {
 		t.Errorf("Expected nil error for allowed error code, got: %v", err)
 	}
-
-	// 2. Well-formed error response, but with a disallowed error code
-	disallowedErrorResponse := `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"429 Too Many Requests: {\"code\":-32005,\"message\":\"some disallowed error\",\"data\":{\"some_field\":\"some_value\"}}"}}`
+	// 2. Well-formed error response, with an disallowed error code
+	disallowedErrorResponse := `429 Too Many Requests: {\"code\":-32005,\"message\":\"daily request count exceeded, request rate limited\",\"data\":{\"rate\":{\"allowed_rps\":1,\"backoff_seconds\":30,\"current_rps\":1.4333333333333333},\"see\":\"https://infura.io/dashboard\"}}`
 	err = jeh.HandleExternalError(disallowedErrorResponse)
 	if err == nil {
-		t.Errorf("Expected non-nil error for disallowed error code")
+		t.Errorf("Expected not nil error for allowed error code, got: %v", err)
 	}
-
-	// 3. Ill-formed error response
-	illFormedResponse := `{"jsonrpc":"2.0","id":1,"error":{"code":1,"message":"some random string that doesn't contain a nested code"}}`
-	err = jeh.HandleExternalError(illFormedResponse)
+	// 3 Ill-formed error response
+	illErrorResponse := `<head><title>502 Bad Gateway</title></head>
+	<body>
+	<center><h1>502 Bad Gateway</h1></center>
+	<hr><center>nginx/1.18.0 (Ubuntu)</center>
+	</body>
+	</html>`
+	err = jeh.HandleExternalError(illErrorResponse)
 	if err == nil {
-		t.Errorf("Expected non-nil error for ill-formed response")
+		t.Errorf("Expected not nil error for allowed error code, got: %v", err)
 	}
+}
 
-	// 4. Well-formed successful relay with "result" field
-	successfulRelayResponse := `{"jsonrpc":"2.0","id":1,"result":{"key":"value"}}`
-	err = jeh.HandleExternalError(successfulRelayResponse)
+func TestHandleExternalErrorTendermintRPC(t *testing.T) {
+	jeh := &JsonRPCErrorHandler{}
+	// 1 Well-formed error response, with an allowed error code
+	allowedErrorResponse := `{"code":-32602,"message":"Invalid params","data":"error converting http params to arguments: invalid character 'B' after top-level value"}`
+	err := jeh.HandleExternalError(allowedErrorResponse)
 	if err != nil {
-		t.Errorf("Expected nil error for successful relay, got: %v", err)
+		t.Errorf("Expected nil error for allowed error code, got: %v", err)
 	}
 }
 
@@ -115,7 +120,7 @@ func TestHandleExternalErrorForREST(t *testing.T) {
 	handler := RestErrorHandler{}
 
 	// Error response 1: "height must be greater than 0, but got -3"
-	replyData1 := `{"code":2,"message":"height must be greater than 0, but got -3","details":[]}`
+	replyData1 := `{"code":14,"message":"invalid address","details":[]}`
 	err := handler.HandleExternalError(replyData1)
 	if err != nil {
 		t.Errorf("Expected nil, got %s", err.Error())
@@ -142,10 +147,17 @@ func TestHandleExternalErrorForREST(t *testing.T) {
 		t.Errorf("Expected nil for a successful response, got %s", err.Error())
 	}
 
-	// Malformed response: Neither a successful nor an error response
-	malformedReply := `{"unknownField":"unknownValue"}`
-	err = handler.HandleExternalError(malformedReply)
+	// Ill-formed error response
+	illData := ` 429 Too Many Requests: <html>
+	<head><title>429 Too Many Requests</title></head>
+	<body>
+	<center><h1>429 Too Many Requests</h1></center>
+	<hr><center>nginx/1.18.0 (Ubuntu)</center>
+	</body>
+	</html>`
+	err = handler.HandleExternalError(illData)
 	if err == nil {
-		t.Errorf("Expected an error for a malformed response, got nil")
+		t.Errorf("Expected not nil for an ill response, got %s", err.Error())
 	}
+
 }
