@@ -704,6 +704,8 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 
+			ts.AdvanceEpoch()
+
 			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
 			require.Nil(t, err)
 
@@ -749,7 +751,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.Nil(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, ts.spec, 10000000)
+				err := ts.StakeProvider(p1, ts.spec, testBalance/2)
 				require.Nil(t, err)
 			}
 
