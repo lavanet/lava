@@ -172,7 +172,7 @@ func (teh *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) e
 	return nil
 }
 
-func (teh *GRPCErrorHandler) HandleExternalError(replyData string) error {
+func (geh *GRPCErrorHandler) HandleExternalError(replyData string) error {
 	return nil
 }
 

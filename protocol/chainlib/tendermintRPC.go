@@ -607,7 +607,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 			Error:   rpcInterfaceMessages.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
 		}
 		// TendermintRPC External Error Handling
-		err = cp.HandleExternalError(string(replyMsg.Error.Data))
+		err = cp.HandleExternalError(replyMsg.Error.Data)
 		if err != nil {
 			return nil, "", nil, err
 		}
