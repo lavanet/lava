@@ -153,7 +153,7 @@ func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
 	return nil
 }
 
-func (teh *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) error {
+func (te *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) error {
 	nestedCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
 		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage:", Value: errorMessage})
