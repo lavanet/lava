@@ -4,8 +4,8 @@
 {{- $keyPasswordSecretKey := required ".Values.key.passwordSecretKey is required." .Values.key.passwordSecretKey -}}
 {{- $endpoint := required ".Values.endpoint is required." .Values.endpoint -}}
 {{- $supportedChainIds := required ".Values.supportedChainIds is required." .Values.supportedChainIds -}}
-{{- $configFilePath := default "/etc/default/config/provider_config.yaml" .Values.configFilePath  -}}
-{{- if (eq $configFilePath "/etc/default/config/provider_config.yaml") }}
+{{- $configFilePath := default (print .Values.persistentVolume.mountPath "/provider_config.yaml") .Values.configFilePath  -}}
+{{- if (eq $configFilePath (print .Values.persistentVolume.mountPath "/provider_config.yaml") ) }}
   {{- $_ := required "You must either set .Values.configFilePath OR .Values.configYaml" .Values.configYaml -}}
 {{- end }}
 ---
@@ -46,6 +46,7 @@ spec:
       initContainers:
         - name: init-import-key
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: 
            - sh
            - -c
@@ -91,7 +92,8 @@ spec:
           volumeMounts:
           {{- if .Values.configYaml }}
             - name: config-volume-from-values
-              mountPath: /etc/default/config
+              mountPath: "{{ .Values.persistentVolume.mountPath }}/provider_config.yaml"
+              subPath: provider_config.yaml
               readOnly: true
           {{- end }}
           {{- range .Values.extraSecretMounts }}

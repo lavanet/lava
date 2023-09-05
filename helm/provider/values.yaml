@@ -107,7 +107,7 @@ configYaml: null
 # the path to the config file
 # If you are using `extraConfigMounts` or `extraSecretMounts`, provide the path to the config file
 ## example:
-# configFilePath: /etc/config/node-config.toml
+# configFilePath: /data/node-config.toml
 configFilePath: null
 
 # add custom environment variables to the node using secret of configs
@@ -151,8 +151,8 @@ extraSecretMounts: []
 # mount config as files, useful for mounting the config file
 extraConfigMounts: []
   # - name: node-config
-  #   mountPath: /etc/config
-  #   subPath: /etc/config/node-config.toml
+  #   mountPath: /data
+  #   subPath: /data/node-config.toml
   #   configName: node-config
   #   readOnly: true
 
