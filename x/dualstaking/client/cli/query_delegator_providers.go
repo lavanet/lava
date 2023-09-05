@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
-const ShowPendingDelegatorsFlagName = "show-pending"
+const WithPendingDelegatorsFlagName = "with-pending"
 
 func CmdQueryDelegatorProviders() *cobra.Command {
 	cmd := &cobra.Command{
@@ -27,16 +27,16 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			// check if the command includes --show-pending
-			showPendingDelegatorsFlag := cmd.Flags().Lookup(ShowPendingDelegatorsFlagName)
-			if showPendingDelegatorsFlag == nil {
-				return fmt.Errorf("%s flag wasn't found", ShowPendingDelegatorsFlagName)
+			// check if the command includes --with-pending
+			withPendingDelegatorsFlag := cmd.Flags().Lookup(WithPendingDelegatorsFlagName)
+			if withPendingDelegatorsFlag == nil {
+				return fmt.Errorf("%s flag wasn't found", WithPendingDelegatorsFlagName)
 			}
-			showPendingDelegators := showPendingDelegatorsFlag.Changed
+			withPendingDelegators := withPendingDelegatorsFlag.Changed
 
 			res, err := queryClient.DelegatorProviders(cmd.Context(), &types.QueryDelegatorProvidersRequest{
 				Delegator:             delegator,
-				ShowPendingDelegators: showPendingDelegators,
+				WithPendingDelegators: withPendingDelegators,
 			})
 			if err != nil {
 				return err
@@ -47,7 +47,7 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
-	cmd.Flags().Bool(ShowPendingDelegatorsFlagName, false, "shows pending delegators (delegated from next epoch)")
+	cmd.Flags().Bool(WithPendingDelegatorsFlagName, false, "output with pending delegators (delegated from next epoch)")
 
 	return cmd
 }
