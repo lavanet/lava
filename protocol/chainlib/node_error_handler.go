@@ -103,21 +103,17 @@ type ErrorHandler interface {
 // HandleExternalError handles external errors for JSON-RPC calls.
 func (jeh *JsonRPCErrorHandler) HandleExternalError(errorMessage string) error {
 	// Extract the nested error code from the error message
-	nestedCode, err := extractRPCNestedCode(errorMessage)
+	errorCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
-		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage:", Value: errorMessage})
+		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage", Value: errorMessage})
 	}
 	// Check if this internal error code is in our map of allowed errors
-	allowedErrors, ok := AllowedErrorsMap["jsonrpc"]
-	if !ok {
+	if allowedErrors, ok := AllowedErrorsMap["jsonrpc"]; !ok {
 		return utils.LavaFormatProduction("Allowed errors for json-RPC is not configured", nil)
+	} else if _, exists := allowedErrors[strconv.Itoa(errorCode)]; !exists {
+		return utils.LavaFormatProduction(fmt.Sprintf("Disallowed provider error code: %d", errorCode), nil)
 	}
-	_, exists := allowedErrors[fmt.Sprintf("%d", nestedCode)]
-	if !exists {
-		// If the error code is not allowed, return a node error
-		errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
-		return utils.LavaFormatProduction(errMsg, nil)
-	}
+
 	utils.LavaFormatInfo("Allowed error detected in JSONRPC response:", utils.Attribute{Key: "Allowed Error", Value: errorMessage})
 	return nil
 }
@@ -155,22 +151,19 @@ func (geh *RestErrorHandler) HandleExternalError(replyData string) error {
 }
 
 func (te *TendermintRPCErrorHandler) HandleExternalError(errorMessage string) error {
-	nestedCode, err := extractRPCNestedCode(errorMessage)
+	// Extract the nested error code from the error message
+	errorCode, err := extractRPCNestedCode(errorMessage)
 	if err != nil {
-		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage:", Value: errorMessage})
+		return utils.LavaFormatProduction("Disallowed error detected in relay response", err, utils.Attribute{Key: "errorMessage", Value: errorMessage})
 	}
 	// Check if this internal error code is in our map of allowed errors
-	allowedErrors, ok := AllowedErrorsMap["tendermint"]
-	if !ok {
-		return utils.LavaFormatProduction("Allowed errors for tendermint-RPC is not configured", nil)
+	if allowedErrors, ok := AllowedErrorsMap["tendermintrpc"]; !ok {
+		return utils.LavaFormatProduction("Allowed errors for tendermintRPC is not configured", nil)
+	} else if _, exists := allowedErrors[strconv.Itoa(errorCode)]; !exists {
+		return utils.LavaFormatProduction(fmt.Sprintf("Disallowed provider error code: %d", errorCode), nil)
 	}
-	_, exists := allowedErrors[fmt.Sprintf("%d", nestedCode)]
-	if !exists {
-		// If the error code is not allowed, return a node error
-		errMsg := fmt.Sprintf("Disallowed provider error code: %d", nestedCode)
-		return utils.LavaFormatProduction(errMsg, nil)
-	}
-	utils.LavaFormatInfo("Allowed error detected in tendermint-RPC response:", utils.Attribute{Key: "Allowed Error", Value: errorMessage})
+
+	utils.LavaFormatInfo("Allowed error detected in tendermintRPC response:", utils.Attribute{Key: "Allowed Error", Value: errorMessage})
 	return nil
 }
 
@@ -179,22 +172,44 @@ func (geh *GRPCErrorHandler) HandleExternalError(replyData string) error {
 }
 
 func extractRPCNestedCode(message string) (int, error) {
-	idx := strings.Index(message, "\"code\":")
-	if idx == -1 {
-		return 0, utils.LavaFormatError("cannot extract nested error code, code field not found", nil)
+	var jsonSubStr string
+	if strings.Contains(message, "\\\"") {
+		// The message contains escaped characters, try to unquote it
+		unquotedMessage, err := strconv.Unquote("\"" + message + "\"")
+		if err != nil {
+			return 0, utils.LavaFormatProduction("Failed to unquote the message", err)
+		}
+
+		// Find where the JSON starts and ends in the unquoted message
+		jsonStart := strings.Index(unquotedMessage, "{\"code\":")
+		if jsonStart == -1 {
+			return 0, utils.LavaFormatProduction("Cannot find JSON object in message", nil)
+		}
+		jsonSubStr = unquotedMessage[jsonStart:]
+		jsonEnd := strings.LastIndex(jsonSubStr, "}")
+		if jsonEnd == -1 {
+			return 0, utils.LavaFormatProduction("Cannot find the end of the JSON object in message", nil)
+		}
+
+		// Extract the JSON substring
+		jsonSubStr = jsonSubStr[:jsonEnd+1]
+
+	} else {
+		// The message seems to already be a JSON object
+		jsonSubStr = message
 	}
 
-	start := idx + len("\"code\":")
-	end := strings.Index(message[start:], ",")
-	if end == -1 {
-		end = len(message) - start
+	// Now try to unmarshal it
+	var parsedMessage map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonSubStr), &parsedMessage); err != nil {
+		return 0, utils.LavaFormatProduction("Cannot unmarshal the JSON substring", err)
 	}
 
-	codeStr := message[start : start+end]
-	nestedCode, err := strconv.Atoi(strings.TrimSpace(codeStr))
-	if err != nil {
-		return 0, utils.LavaFormatError("invalid code field", err)
+	// Extract the code from the parsed JSON
+	code, exists := parsedMessage["code"].(float64)
+	if !exists {
+		return 0, utils.LavaFormatProduction("Code field not found", nil)
 	}
 
-	return nestedCode, nil
+	return int(code), nil
 }
