@@ -26,7 +26,6 @@ class RPCConsumer {
   static async create(
     pairingResponse: PairingResponse,
     geolocation: string,
-    accountAddress: string,
     relayer: Relayer
   ): Promise<RPCConsumer> {
     const rpcConsumer = new RPCConsumer(geolocation);
@@ -45,7 +44,7 @@ class RPCConsumer {
         new ConsumerSessionManager(
           relayer,
           new RPCEndpoint(
-            accountAddress,
+            "",
             pairingResponse.spec.index,
             apiInterfaces,
             geolocation
@@ -198,12 +197,10 @@ type ChainId = string;
 export class Consumer {
   private rpcConsumer: Map<ChainId, RPCConsumer>;
   private geolocation: string;
-  private accountAddress: string;
   private relayer: Relayer;
-  constructor(relayer: Relayer, accountAddress: string, geolocation: string) {
+  constructor(relayer: Relayer, geolocation: string) {
     this.rpcConsumer = new Map();
     this.geolocation = geolocation;
-    this.accountAddress = accountAddress;
     this.relayer = relayer;
   }
 
@@ -215,7 +212,6 @@ export class Consumer {
       rpcConsumer = await RPCConsumer.create(
         pairingResponse,
         this.geolocation,
-        this.accountAddress,
         this.relayer
       );
       this.rpcConsumer.set(chainId, rpcConsumer);
