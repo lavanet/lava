@@ -12,10 +12,9 @@ import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
 import { ConsumerSessionManagersMap } from "../lavasession/consumerSessionManager";
 import { grpc } from "@improbable-eng/grpc-web";
-export interface ChainIDRpcInterface {
-  chainID: string;
-  rpcInterface: string;
-}
+import { Consumer } from "../consumer/consumer";
+
+export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 
 /**
  * Options for sending RPC relay.
@@ -41,7 +40,7 @@ export interface SendRestRelayOptions {
 export interface LavaSDKOptions {
   privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
   badge?: BadgeOptions; // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
-  chainIDRpcInterface: ChainIDRpcInterface[]; // Required: The ID of the chain you want to query
+  chainIDRpcInterface: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
   pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
   network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
   geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
@@ -63,9 +62,10 @@ export class LavaSDK {
   private account: AccountData | Error;
   private secure: boolean;
   private allowInsecureTransport: boolean;
-  private chainIDRpcInterface: ChainIDRpcInterface[];
-  private consumerSessionManagerMap: ConsumerSessionManagersMap;
+  private chainIDRpcInterface: string[];
   private transport: any;
+  private consumer?: Consumer; // we setup the consumer in the init function as we require extra information
+  private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
 
   /**
    * Create Lava-SDK instance
@@ -105,7 +105,11 @@ export class LavaSDK {
       ? options.allowInsecureTransport
       : false;
 
-    this.chainIDRpcInterface = chainIDRpcInterface;
+    if (typeof chainIDRpcInterface == "string") {
+      this.chainIDRpcInterface = [chainIDRpcInterface];
+    } else {
+      this.chainIDRpcInterface = chainIDRpcInterface;
+    }
     this.privKey = privateKey ? privateKey : "";
     this.walletAddress = "";
     this.badgeManager = new BadgeManager(badge);
@@ -114,7 +118,6 @@ export class LavaSDK {
     this.lavaChainId = lavaChainId || DEFAULT_LAVA_CHAINID;
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
-    this.consumerSessionManagerMap = new Map();
     this.transport = options.transport;
   }
 
@@ -126,13 +129,6 @@ export class LavaSDK {
 
   public async init() {
     // Init relayer
-    const relayer = new Relayer({
-      privKey: this.privKey,
-      lavaChainId: this.lavaChainId,
-      secure: this.secure,
-      allowInsecureTransport: this.allowInsecureTransport,
-      transport: this.transport,
-    });
 
     // Init wallet
     if (!this.badgeManager.isActive()) {
@@ -151,19 +147,29 @@ export class LavaSDK {
       };
     }
 
+    this.relayer = new Relayer({
+      privKey: this.privKey,
+      lavaChainId: this.lavaChainId,
+      secure: this.secure,
+      allowInsecureTransport: this.allowInsecureTransport,
+      transport: this.transport,
+    });
+
+    this.consumer = new Consumer(this.relayer, this.geolocation);
+
     // Init session manager map
 
     // Init state tracker
     const tracker = new StateTracker(
       this.pairingListConfig,
-      relayer,
+      this.relayer,
       this.chainIDRpcInterface,
       {
         geolocation: this.geolocation,
         network: this.network,
       },
       this.account,
-      this.consumerSessionManagerMap,
+      this.consumer,
       this.walletAddress,
       this.badgeManager
     );

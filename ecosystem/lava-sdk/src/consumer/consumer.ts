@@ -76,12 +76,19 @@ class RPCConsumer {
   }
 
   setSpec(spec: Spec) {
-    // if (!apiCollection.enabled) {
-    //     continue;
-    //   }
-    //   if (apiCollection.collectionData?.apiInterface != this.apiInterface) {
-    //     continue;
-    //   }
+    for (const apiCollection of spec.apiCollections) {
+      if (!apiCollection.enabled) {
+        continue;
+      }
+      const apiInterface = apiCollection.collectionData?.apiInterface;
+      if (!apiInterface) {
+        continue;
+      }
+      // reset / set the new spec.
+      const baseChainParser = new BaseChainParser();
+      baseChainParser.init(spec, apiInterface);
+      this.chainParserMap.set(apiInterface, baseChainParser);
+    }
   }
 
   async updateAllProviders(pairingResponse: PairingResponse) {
@@ -217,8 +224,8 @@ export class Consumer {
       this.rpcConsumer.set(chainId, rpcConsumer);
       return;
     }
-    rpcConsumer.updateAllProviders(pairingResponse);
     rpcConsumer.setSpec(pairingResponse.spec);
+    rpcConsumer.updateAllProviders(pairingResponse);
   }
 
   //   public sendRelay()
