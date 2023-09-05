@@ -76,28 +76,29 @@ ingress:
 # config for the node
 ## example
 # configYaml: |
-#  endpoints:
-#   - api-interface: jsonrpc
-#     chain-id: ETH1
-#     network-address: 127.0.0.1:2221
-#     node-urls:
-#       - url: wss://eth-rpc/ws
-#   - api-interface: tendermintrpc
-#     chain-id: COS3
-#     network-address: 127.0.0.1:2221
-#     node-urls:
-#       - url: ws://127.0.0.1:26657/websocket
-#       - url: http://127.0.0.1:26657
-#   - api-interface: grpc
-#     chain-id: COS3
-#     network-address: 127.0.0.1:2221
-#     node-urls: 
-#       - url: 127.0.0.1:9090
-#   - api-interface: rest
-#     chain-id: COS3
-#     network-address: 127.0.0.1:2221
-#     node-urls: 
-#       - url: http://127.0.0.1:1317
+#   endpoints:
+#     - api-interface: tendermintrpc
+#       chain-id: LAV1
+#       network-address:
+#         address: 127.0.0.1:2224
+#         disable-tls: true
+#       node-urls:
+#         - url: ws://127.0.0.1:26657/websocket
+#         - url: http://127.0.0.1:26657
+#     - api-interface: grpc
+#       chain-id: LAV1
+#       network-address:
+#         address: 127.0.0.1:2224
+#         disable-tls: true
+#       node-urls: 
+#         url: 127.0.0.1:9090
+#     - api-interface: rest
+#       chain-id: LAV1
+#       network-address:
+#         address: 127.0.0.1:2224
+#         disable-tls: true
+#       node-urls: 
+#         url: http://127.0.0.1:1317
 
 # note: This will create a new configMap. 
 # If you want to use an existing configMap, or secret use `extraSecretMounts` or `extraConfigMounts` 

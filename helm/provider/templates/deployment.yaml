@@ -4,8 +4,8 @@
 {{- $keyPasswordSecretKey := required ".Values.key.passwordSecretKey is required." .Values.key.passwordSecretKey -}}
 {{- $endpoint := required ".Values.endpoint is required." .Values.endpoint -}}
 {{- $supportedChainIds := required ".Values.supportedChainIds is required." .Values.supportedChainIds -}}
-{{- $configFilePath := default (print .Values.persistentVolume.mountPath "/provider_config.yaml") .Values.configFilePath  -}}
-{{- if (eq $configFilePath (print .Values.persistentVolume.mountPath "/provider_config.yaml") ) }}
+{{- $configFilePath := default "/provider_config.yaml" .Values.configFilePath  -}}
+{{- if (eq $configFilePath "/provider_config.yaml" ) }}
   {{- $_ := required "You must either set .Values.configFilePath OR .Values.configYaml" .Values.configYaml -}}
 {{- end }}
 ---
