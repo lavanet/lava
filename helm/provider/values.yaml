@@ -98,9 +98,9 @@ env: []
 
 # image to deploy
 image:
-  repository: us-central1-docker.pkg.dev/lavanet-public/growth-staging-us-central1/lavachain
+  repository: us-central1-docker.pkg.dev/lavanet-public/lava/lavad
   pullPolicy: IfNotPresent
-  tag: add0e50ef700d68a61e8a21c7aba68dd62a639e6
+  tag: latest
 
 # port to expose the node on
 port:
