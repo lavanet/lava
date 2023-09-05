@@ -433,7 +433,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 		name                         string
 		creator                      string
 		projectID                    string
-		geolocation                  uint64
+		geolocation                  int32
 		chainPolicies                []planstypes.ChainPolicy
 		totalCuLimit                 uint64
 		epochCuLimit                 uint64
@@ -442,7 +442,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 		setSubscriptionPolicySuccess bool
 	}{
 		{
-			"valid policy (admin account)", adm1Addr, projectID, uint64(1),
+			"valid policy (admin account)", adm1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -450,7 +450,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			100, 10, 3, true, false,
 		},
 		{
-			"valid policy (subscription account)", sub1Addr, projectID, uint64(1),
+			"valid policy (subscription account)", sub1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -458,7 +458,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			100, 10, 3, true, true,
 		},
 		{
-			"bad creator (developer account -- not admin)", dev1Addr, projectID, uint64(1),
+			"bad creator (developer account -- not admin)", dev1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -466,7 +466,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			100, 10, 3, false, false,
 		},
 		{
-			"bad projectID (doesn't exist)", dev1Addr, "fakeProjectId", uint64(1),
+			"bad projectID (doesn't exist)", dev1Addr, "fakeProjectId", 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -474,7 +474,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			100, 10, 3, false, false,
 		},
 		{
-			"invalid geolocation (0)", dev1Addr, projectID, uint64(0),
+			"invalid geolocation (0)", dev1Addr, projectID, 0,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -483,7 +483,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 		},
 		{
 			// note: currently, we don't verify the chain policies
-			"bad chainID (doesn't exist)", sub1Addr, projectID, uint64(1),
+			"bad chainID (doesn't exist)", sub1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: "LOL",
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -492,7 +492,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 		},
 		{
 			// note: currently, we don't verify the chain policies
-			"bad API (doesn't exist)", sub1Addr, projectID, uint64(1),
+			"bad API (doesn't exist)", sub1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{"lol"},
@@ -501,7 +501,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 		},
 		{
 			// note: currently, we don't verify the chain policies
-			"chainID and API not supported (exist in Lava's specs)", sub1Addr, projectID, uint64(1),
+			"chainID and API not supported (exist in Lava's specs)", sub1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: "ETH1",
 				Apis:    []string{"eth_accounts"},
@@ -509,7 +509,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			100, 10, 3, true, true,
 		},
 		{
-			"epoch CU larger than total CU", sub1Addr, projectID, uint64(1),
+			"epoch CU larger than total CU", sub1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -517,7 +517,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			10, 100, 3, false, false,
 		},
 		{
-			"bad maxProvidersToPair", sub1Addr, projectID, uint64(1),
+			"bad maxProvidersToPair", sub1Addr, projectID, 1,
 			[]planstypes.ChainPolicy{{
 				ChainId: spec.Index,
 				Apis:    []string{spec.ApiCollections[0].Apis[0].Name},
@@ -1089,10 +1089,10 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
 	// for convinience
-	GLS := uint64(planstypes.Geolocation_value["GLS"])
-	GL := uint64(planstypes.Geolocation_value["GL"])
-	USE := uint64(planstypes.Geolocation_value["USE"])
-	EU := uint64(planstypes.Geolocation_value["EU"])
+	GLS := planstypes.Geolocation_value["GLS"]
+	GL := planstypes.Geolocation_value["GL"]
+	USE := planstypes.Geolocation_value["USE"]
+	EU := planstypes.Geolocation_value["EU"]
 	USE_EU := USE + EU
 
 	// propose all plans
@@ -1148,8 +1148,8 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 		name           string
 		dev            common.Account
 		planIndex      int
-		setGeo         uint64
-		expectedGeo    uint64
+		setGeo         int32
+		expectedGeo    int32
 		setPolicyValid bool
 		badGeo         bool // config that results in geo = 0
 	}{

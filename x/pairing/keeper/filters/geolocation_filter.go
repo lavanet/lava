@@ -10,7 +10,7 @@ import (
 // will be used in the future to exclude geolocations (thus keeping this code)
 
 type GeolocationFilter struct {
-	geolocation uint64
+	geolocation int32
 }
 
 func (f *GeolocationFilter) IsMix() bool {
@@ -39,6 +39,6 @@ func (f *GeolocationFilter) Filter(ctx sdk.Context, providers []epochstoragetype
 	return filterResult
 }
 
-func isGeolocationSupported(policyGeolocation, providerGeolocation uint64) bool {
+func isGeolocationSupported(policyGeolocation, providerGeolocation int32) bool {
 	return policyGeolocation&providerGeolocation != 0
 }

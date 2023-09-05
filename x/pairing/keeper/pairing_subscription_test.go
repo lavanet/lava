@@ -211,16 +211,16 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 
 	geolocationTestTemplates := []struct {
 		name                   string
-		geolocationAdminPolicy uint64
-		geolocationSubPolicy   uint64
+		geolocationAdminPolicy int32
+		geolocationSubPolicy   int32
 		expectedProviderPaired int
 		validPairing           bool
 	}{
-		{"effective geo = 1", uint64(1), uint64(1), len(ts.Accounts(common.PROVIDER)), true},
-		{"effective geo = 3 (includes geo=1)", uint64(3), uint64(3), len(ts.Accounts(common.PROVIDER)), true},
-		{"effective geo = 2", uint64(3), uint64(2), len(ts.Accounts(common.PROVIDER)), true},
-		{"effective geo = 0 (planPolicy & subPolicy = 1)", uint64(2), uint64(1), 0, false},
-		{"effective geo = 0 (planPolicy & adminPolicy = 1)", uint64(1), uint64(2), 0, false},
+		{"effective geo = 1", int32(1), int32(1), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 3 (includes geo=1)", int32(3), int32(3), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 2", int32(3), int32(2), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 0 (planPolicy & subPolicy = 1)", int32(2), int32(1), 0, false},
+		{"effective geo = 0 (planPolicy & adminPolicy = 1)", int32(1), int32(2), 0, false},
 	}
 
 	for _, tt := range geolocationTestTemplates {
