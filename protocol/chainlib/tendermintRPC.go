@@ -606,6 +606,12 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 			ID:      id,
 			Error:   rpcInterfaceMessages.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
 		}
+		// TendermintRPC External Error Handling
+		err = cp.HandleExternalError(string(replyMsg.Error.Data))
+		if err != nil {
+			return nil, "", nil, err
+		}
+
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
 		if err != nil {
@@ -624,12 +630,6 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	// create a new relay reply struct
 	reply := &pairingtypes.RelayReply{
 		Data: data,
-	}
-
-	// JsonRPC External Error Handling
-	err = cp.HandleExternalError(string(reply.Data))
-	if err != nil {
-		return nil, "", nil, err
 	}
 
 	if ch != nil {

@@ -424,7 +424,9 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
+		fmt.Println("REST - err:", err)
 		if parsedError := rcp.HandleNodeError(ctx, err); parsedError != nil {
+			fmt.Println("parsedError:", parsedError)
 			return nil, "", nil, parsedError
 		}
 		return nil, "", nil, err
@@ -442,13 +444,6 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	reply := &pairingtypes.RelayReply{
 		Data:     body,
 		Metadata: convertToMetadataMapOfSlices(res.Header),
-	}
-
-	// JsonRPC External Error Handling
-	fmt.Println("HERE IN REST! ")
-	err = rcp.HandleExternalError(string(reply.Data))
-	if err != nil {
-		return nil, "", nil, err
 	}
 
 	return reply, "", nil, nil

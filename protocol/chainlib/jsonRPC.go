@@ -483,6 +483,12 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			Message: fmt.Sprintf("%s", err),
 		}
 		// this later causes returning an error
+
+		// JsonRPC External Error Handling
+		err = cp.HandleExternalError(replyMsg.Error.Message)
+		if err != nil {
+			return nil, "", nil, err
+		}
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 		if err != nil {
@@ -498,12 +504,6 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	reply := &pairingtypes.RelayReply{
 		Data: retData,
-	}
-
-	// JsonRPC External Error Handling
-	err = cp.HandleExternalError(string(reply.Data))
-	if err != nil {
-		return nil, "", nil, err
 	}
 
 	if ch != nil {
