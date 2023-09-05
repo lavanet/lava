@@ -32,7 +32,6 @@ type EpochstorageKeeper interface {
 	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
 	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
 	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
-	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	// Methods imported from epochstorage should be defined here
 }
 

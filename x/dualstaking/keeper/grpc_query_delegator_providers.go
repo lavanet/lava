@@ -18,14 +18,12 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var epoch uint64
+	epoch := uint64(ctx.BlockHeight())
 	if req.WithPendingDelegators {
 		epoch, err = k.getNextEpoch(ctx)
-	} else {
-		epoch, _, err = k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	providers, err := k.GetDelegatorProviders(ctx, req.Delegator, epoch)
@@ -37,7 +35,7 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 	for _, provider := range providers {
 		indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
 		for _, ind := range indices {
-			delegator, providerDecode, chainID := types.DelegationKeyDecode(ind)
+			delegator, _, chainID := types.DelegationKeyDecode(ind)
 			if delegator != req.Delegator {
 				continue
 			}
@@ -46,7 +44,7 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 			if !found {
 				utils.LavaFormatError("critical: provider found in delegatorFS but not in delegationFS", fmt.Errorf("provider delegation not found"),
 					utils.Attribute{Key: "delegator", Value: delegator},
-					utils.Attribute{Key: "provider", Value: providerDecode},
+					utils.Attribute{Key: "provider", Value: provider},
 					utils.Attribute{Key: "chainID", Value: chainID},
 				)
 				continue
