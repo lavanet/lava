@@ -1,35 +1,106 @@
 # set the log level for the node
 logLevel: "warn"
 
+# override the fullname
+fullnameOverride: null
+nameOverride: null
+
+# provider node moniker, will default to the fullname
+moniker: null
+
+# information about the private key to use for the node
+key:
+  # will default to the moniker 
+  name: "" 
+
+  # REQUIRED: the kubernetes secret name containing the private key
+  secretName: null
+
+  # REQUIRED: the key in the kubernetes secret to use
+  secretKey: null
+
+  # REQUIRED: the kubernetes secret that contains the password for the private key
+  passwordSecretName: null
+
+  # REQUIRED: the key in the kubernetes secret that contains the password for the private key
+  passwordSecretKey: null
+
+# REQUIRED: the endpoint the node will expose, this is the endpoint that the node will listen on
+# note: this should match your ingress config
+## example
+# endpoint: lava-provider.example.com
+endpoint: null
+
+# REQUIRED: the chain ids for the chains the node will serve
+## example
+# supportedChainIds: ["ETH1", "COS3"]
+supportedChainIds: null
+
+# setup ingress for the node
+# example:
+# ingress:
+#  enabled: true
+#  tls:
+#    - secretName: lava-provider-tls
+#      hosts:
+#        - lava-provider.example.com
+#  rules:
+#    - host: lava-provider.example.com
+#      http:
+#        paths:
+#          - path: /
+#            backend:
+#              serviceName: lava-provider
+#              servicePort: 5000
+#  annotations: {}
+ingress:
+  enabled: true
+  className: "nginx"
+  tls: []
+  rules: []
+  annotations: {}
+
+# config for the node
+## example
+# configYaml: |
+#  endpoints:
+#   - api-interface: jsonrpc
+#     chain-id: ETH1
+#     network-address: 127.0.0.1:2221
+#     node-urls:
+#       - url: wss://eth-rpc/ws
+#   - api-interface: tendermintrpc
+#     chain-id: COS3
+#     network-address: 127.0.0.1:2221
+#     node-urls:
+#       - url: ws://127.0.0.1:26657/websocket
+#       - url: http://127.0.0.1:26657
+#   - api-interface: grpc
+#     chain-id: COS3
+#     network-address: 127.0.0.1:2221
+#     node-urls: 
+#       - url: 127.0.0.1:9090
+#   - api-interface: rest
+#     chain-id: COS3
+#     network-address: 127.0.0.1:2221
+#     node-urls: 
+#       - url: http://127.0.0.1:1317
+
+# note: This will create a new configMap. 
+# If you want to use an existing configMap, or secret use `extraSecretMounts` or `extraConfigMounts`
+configYaml: null
+
 # add custom environment variables to the node using secret of configs
 envFrom: []
 
 # add custom environment variables to the node
 env: []
 
-# provider node moniker, will default to the fullname
-moniker: null
-
-# override the fullname
-fullnameOverride: null
-nameOverride: null
-
-# start command to start the provider
-command: {}
-
 # image to deploy
 image:
   repository: us-central1-docker.pkg.dev/lavanet-public/growth-staging-us-central1/lavachain
   pullPolicy: IfNotPresent
   tag: add0e50ef700d68a61e8a21c7aba68dd62a639e6
-
-# setup ingress for the node
-ingress:
-  className: "nginx"
-  enabled: true
-  tls: []
-  rules: []
-  annotations: {}
 
 # port to expose the node on
 port:
@@ -127,7 +198,6 @@ persistentVolume:
     ## emptyDir volume size limit
     sizeLimit: ""
 
-
 # resource limits for the node
 resources:
   requests:
@@ -135,6 +205,41 @@ resources:
     memory: 250Mi
   limits:
     memory: "2Gi"
+
+# override the start command to start the provider
+command: null
+
+# enable default readiness, using `endpoint` and `supportedChainIds`
+defaultReadinessProbe:
+  enabled: true
+
+# enable default readiness, using `endpoint` and `supportedChainIds`
+defaultLivenessProbe:
+  enabled: true
+
+# use a custom readiness probe
+customReadinessProbe:
+  enabled: false
+  # httpGet:
+  #   path: /health
+  #   port: 5000
+  # initialDelaySeconds: 30
+  # periodSeconds: 10
+  # timeoutSeconds: 5
+  # successThreshold: 1
+  # failureThreshold: 3
+
+# use a custom liveness probe
+customLivenessProbe:
+  enabled: false
+  # httpGet:
+  #   path: /health
+  #   port: 5000
+  # initialDelaySeconds: 30
+  # periodSeconds: 10
+  # timeoutSeconds: 5
+  # successThreshold: 1
+  # failureThreshold: 3
 
 imagePullSecrets: []
 nodeSelector: {}

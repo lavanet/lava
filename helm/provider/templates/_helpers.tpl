@@ -41,6 +41,21 @@ Moniker name for the provider
 {{- end }}
 {{- end }}
 
+{{/*
+Key name
+*/}}
+{{- define "provider.keyname" -}}
+{{- if .Values.key.name }}
+{{- .Values.key.name }}
+{{- else if .Values.moniker }}
+{{- .Values.moniker }}
+{{- else if .Values.fullnameOverride }}
+{{- .Values.fullnameOverride }}
+{{- else }}
+{{- "default-key" }}
+{{- end }}
+{{- end }}
+
 
 {{/*
 Create chart name and version as used by the chart label.

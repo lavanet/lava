@@ -1,3 +1,9 @@
+{{- $keySecretName := required ".Values.key.secretName is required." .Values.key.secretName -}}
+{{- $keySecretKey := required ".Values.key.secretKey is required." .Values.key.secretKey -}}
+{{- $keyPasswordSecretName := required ".Values.key.passwordSecretName is required." .Values.key.passwordSecretName -}}
+{{- $keyPasswordSecretKey := required ".Values.key.passwordSecretKey is required." .Values.key.passwordSecretKey -}}
+{{- $endpoint := required ".Values.endpoint is required." .Values.endpoint -}}
+{{- $supportedChainIds := required ".Values.supportedChainIds is required." .Values.supportedChainIds -}}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -32,6 +38,36 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      ## init container to import key into keyring
+      initContainers:
+        - name: init-import-key
+          image: busybox:1.28
+          command: 
+           - sh
+           - -c
+           - | 
+            # exit when any command fails
+            set -e 
+            if [ -f /data/imported ]; then
+              echo "Key has already been exported, exiting..."
+              exit 0
+            fi
+            # import key into keyring
+            echo $KEY_PASSWORD | lavad keys import {{ include "provider.keyname" }} $KEY_FILE
+
+            # mark as imported
+            touch /data/imported
+          env:
+            - name: KEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $keyPasswordSecretName }}
+                  key: {{ $keyPasswordSecretKey }}
+            - name: KEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $keySecretName }}
+                  key: {{ $keySecretKey }}
       containers:
         - name: {{- include "provider.fullname" }}
           securityContext:
@@ -39,6 +75,11 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           volumeMounts:
+          {{- if .Values.configYaml }}
+            - name: {{ include "provider.fullname" }}-config-from-values
+              mountPath: /etc/default/config
+              readOnly: true
+          {{- end }}
           {{- range .Values.extraSecretMounts }}
             - name: {{ .name }}
               mountPath: {{ .mountPath }}
@@ -80,6 +121,39 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{ if .Values.defaultLivenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command: ["lavad", "test", "rpcprovider", 
+               "--from",  "{{- include "provider.keyname" }}", 
+               "--endpoint", "{{ $endpoint }}:443,{{ $supportedChainIds[0]}}"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            # {{- with $healthChecks.livenessConfig }}
+            #   {{- toYaml . | nindent 12 }}
+            # {{- end }}
+          {{ else if .Values.customLivenessProbe.enabled}}
+          livenessProbe:
+            {{- toYaml .Values.customLivenessProbe | nindent 12 }}
+          {{- end }}
+          {{ if .Values.defaultLivenessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command: ["lavad", "test", "rpcprovider", 
+               "--from",  "{{- include "provider.keyname" }}", 
+               "--endpoint", "{{ $endpoint }}:443,{{ $supportedChainIds[0]}}"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          {{ else if .Values.customReadinessProbe.enabled}}
+          readinessProbe:
+            {{- toYaml .Values.customReadinessProbe | nindent 12 }}
+          {{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -97,6 +171,11 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
+        {{- if .Values.configYaml }}
+        - name: config-volume-from-values
+          configMap:
+            name: {{ include "provider.fullname" }}-config-from-values
+        {{- end }}
         {{- range .Values.extraSecretMounts }}
         - name: {{ .name }}
           secret:

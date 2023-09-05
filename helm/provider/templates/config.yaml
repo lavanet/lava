@@ -1,0 +1,10 @@
+---
+{{- if .Values.configYaml }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "provider.fullname" }}-config-from-values
+data:
+  provider_config.yaml: |
+    {{ .Values.configYaml | toYaml | nindent 4 }}
+{{- end -}}
