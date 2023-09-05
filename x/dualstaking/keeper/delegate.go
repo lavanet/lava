@@ -359,7 +359,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		)
 	}
 
-	err = k.increaseDelegation(ctx, delegator, to, fromChainID, amount, nextEpoch)
+	err = k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to increase delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
