@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -287,28 +286,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, projectID string) error {
-	var unresponsiveProviders []string
-
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, projectID string) error {
 	// check that unresponsiveData exists
-	if len(unresponsiveData) == 0 {
+	if len(unresponsiveProviders) == 0 {
 		return nil
 	}
 
 	// check that servicersToPair is bigger than 1
 	if servicersToPair <= 1 {
-		servicersToPair = 2
-	}
-
-	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
-	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
-	if err != nil {
-		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, []utils.Attribute{{Key: "UnresponsiveProviders", Value: unresponsiveData}, {Key: "dataLength", Value: len(unresponsiveData)}}...)
-	}
-
-	// check there are unresponsive providers
-	if len(unresponsiveProviders) == 0 {
-		// nothing to do.
 		return nil
 	}
 
@@ -318,7 +303,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	// iterate over the unresponsive providers list and update their complainers_total_cu
 	for _, unresponsiveProvider := range unresponsiveProviders {
 		// get provider address
-		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider)
+		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider.GetAddress())
 		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
 			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
 			continue
@@ -355,7 +340,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 
 		// add complainer's used CU to providerPaymentStorage
 		providerPaymentStorage.ComplainersTotalCu += complainerCuToAdd
-		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
+		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"disconnections": strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10), "errors": strconv.FormatUint(unresponsiveProvider.GetErrors(), 10), "project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
 	}

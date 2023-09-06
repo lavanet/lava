@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -148,8 +147,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
-	unresponsiveProvidersData, err := json.Marshal([]string{provider2Addr})
-	require.Nil(t, err)
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider2Addr}}
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
@@ -163,7 +161,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 		relays = append(relays, relaySession)
 	}
 
-	_, err = ts.TxPairingRelayPayment(provider1Addr, relays...)
+	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
 	require.Nil(t, err)
 
 	// test that the provider was not unstaked
@@ -186,21 +184,17 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 
 	// move to epoch 3 so we can check enough epochs in the past
 	ts.AdvanceEpochs(2)
-
-	unresponsiveProvidersData := make([]([]byte), 4)
+	unresponsiveProvidersData := make([](*types.ReportedProvider), 4)
 
 	// test multiple bad data types
-	inputData := []interface{}{
-		[]int{1, 2, 3, 4, 5},
-		[]string{"bad", "data", "cosmosBadAddress"},
-		"cosmosBadAddress",
-		[]byte("cosmosBadAddress"),
+	inputData := []string{
+		"123",
+		"baddatacosmosBadAddress",
+		"lava@cosmosBadAddress",
 	}
 	// badData2, err := json.Marshal([]string{"bad", "data", "cosmosBadAddress"}) // test bad data
 	for i := 0; i < clientsCount; i++ {
-		badData, err := json.Marshal(inputData[i])
-		require.Nil(t, err)
-		unresponsiveProvidersData[i] = badData
+		unresponsiveProvidersData[i].Address = inputData[i]
 	}
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
@@ -209,7 +203,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	var relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
-		relaySession.UnresponsiveProviders = unresponsiveProvidersData[clientIndex]
+		relaySession.UnresponsiveProviders = []*types.ReportedProvider{unresponsiveProvidersData[clientIndex]}
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
 		require.Nil(t, err)
@@ -252,8 +246,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 		ts.AdvanceEpoch() // after payment move one epoch
 	}
 
-	unresponsiveProvidersData, err := json.Marshal([]string{provider2Addr})
-	require.Nil(t, err)
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider2Addr}}
 
 	var relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
@@ -265,7 +258,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 		relays = append(relays, relaySession)
 	}
 
-	_, err = ts.TxPairingRelayPayment(provider1Addr, relays...)
+	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
 	require.Nil(t, err)
 
 	// test that the provider was not unstaked.

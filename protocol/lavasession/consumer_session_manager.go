@@ -356,11 +356,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			}
 
 			// we get the reported providers here after we try to connect, so if any provider didn't respond he will already be added to the list.
-			reportedProviders, err := csm.GetReportedProviders(sessionEpoch)
-			if err != nil {
-				// if failed to GetReportedProviders just log the error and continue.
-				utils.LavaFormatError("Failed Unmarshal Error in GetReportedProviders", err)
-			}
+			reportedProviders := csm.GetReportedProviders(sessionEpoch)
 
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
 			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
@@ -752,9 +748,9 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 }
 
 // Get the reported providers currently stored in the session manager.
-func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) ([]byte, error) {
+func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairingtypes.ReportedProvider {
 	if epoch != csm.atomicReadCurrentEpoch() {
-		return []byte{}, nil // if epochs are not equal, we will return an empty list.
+		return nil // if epochs are not equal, we will return an empty list.
 	}
 	return csm.reportedProviders.GetReportedProviders()
 }

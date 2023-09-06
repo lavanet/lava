@@ -1,19 +1,25 @@
 package lavasession
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type ReportedProviders struct {
-	addedToPurgeAndReport map[string]struct{} // list of purged providers to report for QoS unavailability. (easier to search maps.)
+	addedToPurgeAndReport map[string]ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
 }
 
+type ReportedProviderEntry struct {
+	Disconnections  uint64
+	Errors          uint64
+	shouldReconnect bool
+}
+
 func (rp *ReportedProviders) Reset() {
-	rp.addedToPurgeAndReport = make(map[string]struct{}, 0)
+	rp.addedToPurgeAndReport = make(map[string]ReportedProviderEntry, 0)
 }
 
 func NewReportedProviders() ReportedProviders {
@@ -22,21 +28,33 @@ func NewReportedProviders() ReportedProviders {
 	return ret
 }
 
-func (rp *ReportedProviders) GetReportedProviders() ([]byte, error) {
+func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProvider {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	keys := make([]string, 0, len(rp.addedToPurgeAndReport))
-	for k := range rp.addedToPurgeAndReport {
-		keys = append(keys, k)
+	reportedProviders := make([]*pairingtypes.ReportedProvider, 0, len(rp.addedToPurgeAndReport))
+	for provider, reportedProviderEntry := range rp.addedToPurgeAndReport {
+		reportedProvider := pairingtypes.ReportedProvider{
+			Address:        provider,
+			Disconnections: reportedProviderEntry.Disconnections,
+			Errors:         reportedProviderEntry.Errors,
+		}
+		reportedProviders = append(reportedProviders, &reportedProvider)
 	}
-	bytes, err := json.Marshal(keys)
-	return bytes, err
+	return reportedProviders
 }
 
 func (rp *ReportedProviders) ReportProvider(address string) {
 	if _, ok := rp.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
 		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: address})
-		rp.addedToPurgeAndReport[address] = struct{}{}
+		// TODO: add disconnections, errors, should reconnect
+		rp.addedToPurgeAndReport[address] = ReportedProviderEntry{}
 	}
 
+}
+
+func (rp *ReportedProviders) IsReported(address string) bool {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	_, ok := rp.addedToPurgeAndReport[address]
+	return ok
 }

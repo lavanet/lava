@@ -23,7 +23,7 @@ var AllowInsecureConnectionToProviders = false
 type SessionInfo struct {
 	Session           *SingleConsumerSession
 	Epoch             uint64
-	ReportedProviders []byte
+	ReportedProviders []*pairingtypes.ReportedProvider
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
