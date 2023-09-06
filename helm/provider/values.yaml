@@ -126,7 +126,7 @@ image:
 # port to expose the node on
 port:
   name: "rpc-provider"
-  number: 5000
+  number: 2224
   protocol: TCP
 
 # set service account name
