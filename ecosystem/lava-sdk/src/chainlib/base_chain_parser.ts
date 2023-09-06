@@ -10,10 +10,10 @@ import { Metadata } from "../codec/lavanet/lava/pairing/relay";
 import { Spec } from "../codec/lavanet/lava/spec/spec";
 import { Logger } from "../logger/logger";
 
-// const APIInterfaceJsonRPC = "jsonrpc";
-// const APIInterfaceTendermintRPC = "tendermintrpc";
-const APIInterfaceRest = "rest";
-// const APIInterfaceGrpc = "grpc";
+export const APIInterfaceJsonRPC = "jsonrpc";
+export const APIInterfaceTendermintRPC = "tendermintrpc";
+export const APIInterfaceRest = "rest";
+export const APIInterfaceGrpc = "grpc";
 
 interface ApiKey {
   name: string;

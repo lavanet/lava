@@ -11,36 +11,22 @@ import { parseLong } from "../util/common";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { Relayer } from "../relayer/relayer";
-
-/**
- * Options for sending RPC relay.
- */
-export interface SendRelayOptions {
-  method: string; // Required: The RPC method to be called
-  params: Array<any>; // Required: An array of parameters to be passed to the RPC method
-  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
-}
-
-/**
- * Options for sending Rest relay.
- */
-export interface SendRestRelayOptions {
-  connectionType: string; // Required: The HTTP method to be used (e.g., "GET", "POST")
-  url: string; // Required: The API Path (URL) (e.g Cosmos: "/cosmos/base/tendermint/v1beta1/blocks/latest", Aptos: "/transactions" )
-  // eslint-disable-next-line
-  data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
-  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
-}
+import {
+  SendRelayOptions,
+  SendRestRelayOptions,
+  ChainParser,
+} from "../chainlib/chainlib_interface";
+import { getChainParser } from "../chainlib/utils";
 
 type ApiInterface = string;
 export class RPCConsumer {
-  private consumerSessionManagerMap: Map<ApiInterface, ConsumerSessionManager>;
-  private chainParserMap: Map<ApiInterface, BaseChainParser>;
+  private chainParser: Map<ApiInterface, ChainParser>;
   private geolocation: string;
-  constructor(geolocation: string) {
-    this.consumerSessionManagerMap = new Map();
-    this.chainParserMap = new Map();
+  private relayer: Relayer;
+  constructor(geolocation: string, relayer: Relayer) {
+    this.chainParser = new Map();
     this.geolocation = geolocation;
+    this.relayer = relayer;
   }
 
   static async create(
@@ -48,7 +34,7 @@ export class RPCConsumer {
     geolocation: string,
     relayer: Relayer
   ): Promise<RPCConsumer> {
-    const rpcConsumer = new RPCConsumer(geolocation);
+    const rpcConsumer = new RPCConsumer(geolocation, relayer);
     // step 1 set the spec.
     rpcConsumer.setSpec(pairingResponse.spec);
     // step 2 create the consumer session manager map for each api interface.
@@ -85,14 +71,19 @@ export class RPCConsumer {
   }
 
   public getApiInterfacesSupported(): IterableIterator<string> {
-    return this.chainParserMap.keys();
+    return this.chainParser.keys();
   }
 
   setConsumerSessionManager(
     consumerSessionManager: ConsumerSessionManager,
     apiInterface: ApiInterface
   ) {
-    this.consumerSessionManagerMap.set(apiInterface, consumerSessionManager);
+    let chainParser = this.chainParser.get(apiInterface);
+    if (!chainParser) {
+      chainParser = getChainParser(apiInterface, this.relayer); // create a new chain parser if missing.
+    }
+    chainParser.setConsumerSessionManager(consumerSessionManager);
+    this.chainParser.set(apiInterface, chainParser);
   }
 
   setSpec(spec: Spec) {
@@ -107,24 +98,31 @@ export class RPCConsumer {
       // reset / set the new spec.
       const baseChainParser = new BaseChainParser();
       baseChainParser.init(spec, apiInterface);
-      this.chainParserMap.set(apiInterface, baseChainParser);
+
+      let chainParser = this.chainParser.get(apiInterface);
+      if (!chainParser) {
+        chainParser = getChainParser(apiInterface, this.relayer); // create a new chain parser if missing.
+      }
+      chainParser.setBaseChainParser(baseChainParser);
+      this.chainParser.set(apiInterface, chainParser);
     }
   }
 
   async updateAllProviders(pairingResponse: PairingResponse) {
     for (const apiInterfaces of this.getApiInterfacesSupported()) {
       Logger.info("Updating provider list for", apiInterfaces);
-      const consumerSessionManager =
-        this.consumerSessionManagerMap.get(apiInterfaces);
-      if (!consumerSessionManager) {
+      const chainParser = this.chainParser.get(apiInterfaces);
+      if (!chainParser) {
         throw Logger.fatal(
           "Consumer session manager was not found for an expected api interface",
           apiInterfaces
         );
       }
-      const err = await consumerSessionManager.updateAllProviders(
+      const filteredEndpoints: ConsumerSessionsWithProvider[] =
+        this.filterPairingListByEndpoint(pairingResponse, apiInterfaces);
+      const err = await chainParser.updateAllProviders(
         pairingResponse.currentEpoch,
-        this.filterPairingListByEndpoint(pairingResponse, apiInterfaces)
+        filteredEndpoints
       );
       if (err) {
         throw Logger.fatal(
@@ -216,5 +214,11 @@ export class RPCConsumer {
     // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]
     // TODO: might need to fix this, check after optimizer.
     return pairingForSameGeolocation.concat(pairingFromDifferentGeolocation);
+  }
+
+  public async sendRelay(
+    relayOptions: SendRelayOptions | SendRestRelayOptions
+  ) {
+    // Todo
   }
 }

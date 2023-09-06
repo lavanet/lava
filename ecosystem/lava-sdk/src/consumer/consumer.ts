@@ -1,11 +1,11 @@
 import { PairingResponse } from "../stateTracker/stateQuery/state_query";
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
+import { RPCConsumer } from "./rpc_consumer";
 import {
-  RPCConsumer,
   SendRelayOptions,
   SendRestRelayOptions,
-} from "./rpc_consumer";
+} from "../chainlib/chainlib_interface";
 
 type ChainId = string;
 
@@ -49,6 +49,7 @@ export class Consumer {
           this.rpcConsumer.keys()
         );
       }
+      return await rpcConsumer.sendRelay(relayOptions);
     }
   }
 }
