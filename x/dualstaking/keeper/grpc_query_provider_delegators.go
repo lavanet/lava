@@ -16,6 +16,11 @@ func (k Keeper) ProviderDelegators(goCtx context.Context, req *types.QueryProvid
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
+	_, err := sdk.AccAddressFromBech32(req.Provider)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	nextEpoch, err := k.getNextEpoch(ctx)
 	if err != nil {
@@ -29,7 +34,7 @@ func (k Keeper) ProviderDelegators(goCtx context.Context, req *types.QueryProvid
 		found := k.delegationFS.FindEntry(ctx, ind, nextEpoch, &delegation)
 		if !found {
 			delegator, provider, chainID := types.DelegationKeyDecode(ind)
-			utils.LavaFormatError("critical: delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
+			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chainID", Value: chainID},

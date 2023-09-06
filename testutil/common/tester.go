@@ -548,7 +548,7 @@ func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPendi
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
 
-// QueryPairingVerifyPairing implements 'q dualstaking provider-delegators'
+// QueryDualstakingProviderDelegators implements 'q dualstaking provider-delegators'
 func (ts *Tester) QueryDualstakingProviderDelegators(provider string) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
 	msg := &dualstakingtypes.QueryProviderDelegatorsRequest{
 		Provider: provider,

@@ -17,14 +17,14 @@ service Query {
   }
 
   // Queries a delegator for all its providers.
-	rpc DelegatorProviders(QueryDelegatorProvidersRequest) returns (QueryDelegatorProvidersResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/delegator_providers/{delegator}";
-	}
+  rpc DelegatorProviders(QueryDelegatorProvidersRequest) returns (QueryDelegatorProvidersResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/delegator_providers/{delegator}";
+  }
 
   // Queries a provider for all its delegators.
-	rpc ProviderDelegators(QueryProviderDelegatorsRequest) returns (QueryProviderDelegatorsResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/provider_delegators/{provider}";
-	}
+  rpc ProviderDelegators(QueryProviderDelegatorsRequest) returns (QueryProviderDelegatorsResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/provider_delegators/{provider}";
+  }
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
