@@ -75,9 +75,9 @@ jobs:
           -X POST \
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: $(file -b --mime-type build/lava-protocol)" \
-          --data-binary @build/lava-protocol \
-          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lava-protocol-${{ github.event.release.tag_name }}-linux-amd64/g')
+          -H "Content-Type: $(file -b --mime-type build/lavap)" \
+          --data-binary @build/lavap \
+          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavap-${{ github.event.release.tag_name }}-linux-amd64/g')
 
           curl \
           -X POST \

@@ -27,11 +27,11 @@ Here are the operations that `lava-visor init` performs:
 3. Using the acquired version, it searches for the corresponding protocol binary in `.lava-visor/upgrades/<version-tag>/`.
 4. If the binary isn't found at the target location, it tries to download the binary from GitHub using the fetched version (note: the `auto-download` flag must be enabled).
 5. Validates the fetched binary.
-6. Verifies if a `lava-protocol` binary already exists in the system path. If not, it copies the fetched binary to the system path.
+6. Verifies if a `lavap` binary already exists in the system path. If not, it copies the fetched binary to the system path.
 7. Establishes a symbolic link between the fetched binary in `.lava-visor/upgrades/<version-tag>/` and the protocol binary in the system path.
 
 ### Known Issue:
-Some older versions of `lava-protocol` lack the `version` command, which LavaVisor employs to validate binary versions. When these older version binaries are downloaded using the auto-download option, LavaVisor will accept these binaries without signaling an error. However, when restarting LavaVisor with this binary, an error will be raised. This is because the binary validation will fail since the version command cannot be executed.
+Some older versions of `lavap` lack the `version` command, which LavaVisor employs to validate binary versions. When these older version binaries are downloaded using the auto-download option, LavaVisor will accept these binaries without signaling an error. However, when restarting LavaVisor with this binary, an error will be raised. This is because the binary validation will fail since the version command cannot be executed.
 
 **Workaround**: 
 - Use the latest version of the protocol.

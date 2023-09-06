@@ -142,9 +142,9 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 
 func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	// working dir:
-	out, err := exec.LookPath("lava-protocol")
+	out, err := exec.LookPath("lavap")
 	if err != nil {
-		return "", utils.LavaFormatError("could not detect a linked lava-protocol binary", err)
+		return "", utils.LavaFormatError("could not detect a linked lavap binary", err)
 	}
 	workingDir := strings.TrimSpace(filepath.Dir(out) + "/")
 
@@ -167,9 +167,9 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	content += "[Service]\n"
 	content += "  WorkingDirectory=" + workingDir + "\n"
 	if serviceParams.ServiceType == "consumer" {
-		content += "  ExecStart=" + workingDir + "lava-protocol rpcconsumer "
+		content += "  ExecStart=" + workingDir + "lavap rpcconsumer "
 	} else if serviceParams.ServiceType == "provider" {
-		content += "  ExecStart=" + workingDir + "lava-protocol rpcprovider "
+		content += "  ExecStart=" + workingDir + "lavap rpcprovider "
 	}
 	content += ".lava-visor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
