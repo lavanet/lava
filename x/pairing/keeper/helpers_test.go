@@ -4,8 +4,10 @@ import (
 	"strconv"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -84,6 +86,14 @@ func (ts *tester) addProviderExtra(
 	return nil
 }
 
+// addDelegators adds CONSUMER accounts without buying a subscription to be used as delegators
+func (ts *tester) addDelegators(count int) {
+	start := len(ts.Accounts(common.CONSUMER))
+	for i := 0; i < count; i++ {
+		_, _ = ts.AddAccount(common.CONSUMER, start+i, testBalance)
+	}
+}
+
 // setupForPayments creates staked providers and clients with subscriptions. They can be accessed
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
@@ -118,6 +128,7 @@ func (ts *tester) payAndVerifyBalance(
 	providerAddr sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
+	delegations []dualstakingtypes.Delegation,
 ) {
 	// get consumer's project and subscription before payment
 	balance := ts.GetBalance(providerAddr)
@@ -172,9 +183,18 @@ func (ts *tester) payAndVerifyBalance(
 		totalPaid += cuUsed
 	}
 
+	providerReward := totalPaid
+	if delegations != nil {
+		totalPaidInt := math.NewIntFromUint64(totalPaid)
+		stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
+		require.True(ts.T, found)
+		providerRewardInt := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, totalPaidInt)
+		providerReward = providerRewardInt.Uint64()
+	}
+
 	// verify provider's balance
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	want := mint.MulInt64(int64(totalPaid))
+	want := mint.MulInt64(int64(providerReward))
 	require.Equal(ts.T, balance+want.TruncateInt64(), ts.GetBalance(providerAddr))
 
 	// verify each project balance

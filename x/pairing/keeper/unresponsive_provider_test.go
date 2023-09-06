@@ -90,7 +90,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		}
 
 		// send relay payment and check the funds did transfer normally
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, providerSdkAddress, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, providerSdkAddress, true, true, nil)
 	}
 
 	// advance enough epochs so the unresponsive providers will be punished
@@ -160,7 +160,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, nil)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -235,7 +235,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		Relays:  slices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(relayPaymentMessage, clients[0].Addr, provider0_addr, true, true)
+	ts.payAndVerifyBalance(relayPaymentMessage, clients[0].Addr, provider0_addr, true, true, nil)
 
 	// advance enough epochs so the unresponsive provider will be punished
 	if largerConst < recommendedEpochNumToCollectPayment {
@@ -262,7 +262,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, nil)
 	}
 
 	// test the provider is still unstaked
@@ -334,7 +334,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, nil)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
