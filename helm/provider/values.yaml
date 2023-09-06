@@ -16,6 +16,7 @@ chainId: "lava-testnet-2"
 # rpcNodeUrl: "https://public-rpc-testnet2.lavanet.xyz:443"
 rpcNodeUrl: null
 
+
 # information about the private key to use for the node
 key:
   # will default to the moniker 
@@ -55,7 +56,7 @@ supportedChainIds: null
 #  AS = 32; // Asia
 #  AU = 64;  // (Australia, includes NZ)
 #  GL = 65535; // Global
-geolocation: 1
+geolocation: "1"
 
 # setup ingress for the node
 # example:

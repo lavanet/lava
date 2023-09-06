@@ -10,15 +10,20 @@ rpcNodeUrl: "https://public-rpc-testnet2.lavanet.xyz:443"
 # information about the private key to use for the node
 key:
   name: "my-node-key"
+  # name of the secret in secret.example.yaml
   secretName: provider-key-secret
   secretKey: key.txt
   passwordSecretName: provider-key-secret
   passwordSecretKey: password
 
+# the url where your provider can be reached
 endpoint: "myprovider-provider-helm-test.mydomain.xyz"
+
+# which chain ids your provider will support
 supportedChainIds: 
   - LAV1
 
+# setup ingress for your provider
 ingress:
   enabled: true
   className: "nginx"
@@ -42,6 +47,7 @@ ingress:
     external-dns.alpha.kubernetes.io/set-identifier: my-cluster-name
     external-dns.custom.kubernetes.io/public-load-balancer: 'true'
 
+# configuration for the provider
 configYaml: |
   endpoints:
     - api-interface: tendermintrpc
