@@ -259,16 +259,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, relay.Provider, uint64(relay.Epoch))
-			if err != nil {
-				return nil, utils.LavaFormatError("cannot get provider's delegators", err)
-			}
-
-			providerRewardCoins, err := k.calculateProviderDelegatorsRewards(ctx, providerAddr, delegations, relay.SpecId, rewardCoins)
+			providerReward, err := k.calculateProviderDelegatorsRewards(ctx, providerAddr, relay.SpecId, reward.TruncateInt())
 			if err != nil {
 				return nil, utils.LavaFormatError("cannot calculate provider reward and update delegator reward map", err)
 			}
 
+			providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
 			if err != nil {
 				// panic:ok: reward transfer should never fail
@@ -276,6 +272,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.Attribute{Key: "provider", Value: providerAddr},
 					utils.Attribute{Key: "reward", Value: providerRewardCoins},
 				)
+			}
+
+			delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, relay.Provider, uint64(relay.Epoch))
+			if err != nil {
+				return nil, utils.LavaFormatError("cannot get provider's delegators", err)
+			}
+
+			err = k.updateDelegatorsRewardMap(ctx, providerAddr, delegations, relay.SpecId, reward.TruncateInt())
+			if err != nil {
+				return nil, utils.LavaFormatError("cannot update delegators reward map", err)
 			}
 		}
 
@@ -407,68 +413,51 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 }
 
 // calculateProviderDelegatorsRewards returns the provider reward amount and updates the delegator reward map
-func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk.AccAddress, delegations []dualstakingtypes.Delegation, chainID string, totalRewards sdk.Coins) (sdk.Coins, error) {
-	if len(delegations) == 0 {
-		return totalRewards, nil
+func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk.AccAddress, chainID string, totalReward math.Int) (math.Int, error) {
+	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	if !found {
+		return math.Int{}, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "totalRewards", Value: totalReward},
+		)
 	}
 
-	var providerRewards sdk.Coins
-	for _, totalReward := range totalRewards {
-		stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	// sanity check
+	if stakeEntry.DelegateCommission > 100 {
+		return math.Int{}, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("invalid provider delegation commission value"),
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "commission", Value: stakeEntry.DelegateCommission},
+		)
+	}
+
+	return k.dualStakingKeeper.CalcProviderReward(stakeEntry, totalReward), nil
+}
+
+func (k Keeper) updateDelegatorsRewardMap(ctx sdk.Context, provider sdk.AccAddress, delegations []dualstakingtypes.Delegation, chainID string, totalReward math.Int) error {
+	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	if !found {
+		return utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "totalRewards", Value: totalReward},
+		)
+	}
+
+	for _, delegation := range delegations {
+		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(stakeEntry, totalReward, delegation)
+		rewardMapKey := dualstakingtypes.DelegationKey(delegation.Delegator, provider.String(), delegation.ChainID)
+
+		delegatorReward, found := k.dualStakingKeeper.GetDelegatorReward(ctx, rewardMapKey)
 		if !found {
-			return nil, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-				utils.Attribute{Key: "totalRewards", Value: totalRewards},
-			)
-		}
-
-		stake := stakeEntry.Stake.Amount
-		totalDelegations := stakeEntry.DelegateTotal.Amount
-		delegationsLimit := stakeEntry.DelegateLimit.Amount
-		delegationCommission := stakeEntry.DelegateCommission
-
-		if delegationCommission > 100 {
-			return nil, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("invalid provider delegation commission value"),
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-				utils.Attribute{Key: "commission", Value: delegationCommission},
-			)
-		}
-
-		var effectiveDelegations math.Int
-		if totalDelegations.LTE(delegationsLimit) {
-			effectiveDelegations = totalDelegations
+			delegatorReward.Index = rewardMapKey
+			delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
 		} else {
-			effectiveDelegations = delegationsLimit
+			delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
 		}
-
-		effectiveStake := effectiveDelegations.Add(stake)
-
-		// delegatorsReward = totalReward * (effectiveDelegations*(1-commission) / effectiveStake)
-		delegatorsReward := effectiveDelegations.MulRaw(int64((100 - delegationCommission) / 100)).Quo(effectiveStake)
-		delegatorsReward = delegatorsReward.Mul(totalReward.Amount)
-
-		for _, delegation := range delegations {
-			// delegatorReward = (delegatorsReward * delegatorStake) / totalDelegations
-			delegatorRewardAmount := delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
-			rewardMapKey := dualstakingtypes.DelegationKey(delegation.Delegator, provider.String(), delegation.ChainID)
-
-			delegatorReward, found := k.dualStakingKeeper.GetDelegatorReward(ctx, rewardMapKey)
-			if !found {
-				delegatorReward.Index = rewardMapKey
-				delegatorReward.Amount = sdk.NewCoin(totalReward.Denom, delegatorRewardAmount)
-			} else {
-				delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
-			}
-			k.dualStakingKeeper.SetDelegatorReward(ctx, delegatorReward)
-		}
-
-		// providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effective stake)
-		providerReward := effectiveDelegations.MulRaw(int64(delegationCommission / 100)).Add(stake).Quo(effectiveStake)
-		providerReward = providerReward.Mul(totalReward.Amount)
-		providerRewards = append(providerRewards, sdk.NewCoin(totalReward.Denom, providerReward))
+		k.dualStakingKeeper.SetDelegatorReward(ctx, delegatorReward)
 	}
 
-	return providerRewards, nil
+	return nil
 }
