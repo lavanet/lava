@@ -28,15 +28,15 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			// check if the command includes --with-pending
-			withPendingDelegatorsFlag := cmd.Flags().Lookup(WithPendingDelegatorsFlagName)
-			if withPendingDelegatorsFlag == nil {
+			withPendingDelegationsFlag := cmd.Flags().Lookup(WithPendingDelegatorsFlagName)
+			if withPendingDelegationsFlag == nil {
 				return fmt.Errorf("%s flag wasn't found", WithPendingDelegatorsFlagName)
 			}
-			withPendingDelegators := withPendingDelegatorsFlag.Changed
+			withPendingDelegations := withPendingDelegationsFlag.Changed
 
 			res, err := queryClient.DelegatorProviders(cmd.Context(), &types.QueryDelegatorProvidersRequest{
 				Delegator:   delegator,
-				WithPending: withPendingDelegators,
+				WithPending: withPendingDelegations,
 			})
 			if err != nil {
 				return err
@@ -47,7 +47,7 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
-	cmd.Flags().Bool(WithPendingDelegatorsFlagName, false, "output with pending delegators (delegated from next epoch)")
+	cmd.Flags().Bool(WithPendingDelegatorsFlagName, false, "output with pending delegations (applied from next epoch)")
 
 	return cmd
 }

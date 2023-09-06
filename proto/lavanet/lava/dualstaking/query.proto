@@ -47,6 +47,7 @@ message QueryDelegatorProvidersResponse {
 
 message QueryProviderDelegatorsRequest {
   string provider = 1;
+  bool with_pending = 2;
 }
 
 message QueryProviderDelegatorsResponse {

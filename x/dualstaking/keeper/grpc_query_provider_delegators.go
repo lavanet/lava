@@ -22,16 +22,19 @@ func (k Keeper) ProviderDelegators(goCtx context.Context, req *types.QueryProvid
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return nil, err
+	epoch := uint64(ctx.BlockHeight())
+	if req.WithPending {
+		epoch, err = k.getNextEpoch(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var delegations []types.Delegation
 	indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, req.Provider)
 	for _, ind := range indices {
 		var delegation types.Delegation
-		found := k.delegationFS.FindEntry(ctx, ind, nextEpoch, &delegation)
+		found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
 		if !found {
 			delegator, provider, chainID := types.DelegationKeyDecode(ind)
 			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
