@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
@@ -23,7 +25,17 @@ func CmdQueryProviderDelegators() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			res, err := queryClient.ProviderDelegators(cmd.Context(), &types.QueryProviderDelegatorsRequest{Provider: provider})
+			// check if the command includes --with-pending
+			withPendingDelegationsFlag := cmd.Flags().Lookup(WithPendingDelegatorsFlagName)
+			if withPendingDelegationsFlag == nil {
+				return fmt.Errorf("%s flag wasn't found", WithPendingDelegatorsFlagName)
+			}
+			withPendingDelegations := withPendingDelegationsFlag.Changed
+
+			res, err := queryClient.ProviderDelegators(cmd.Context(), &types.QueryProviderDelegatorsRequest{
+				Provider:    provider,
+				WithPending: withPendingDelegations,
+			})
 			if err != nil {
 				return err
 			}
@@ -33,6 +45,7 @@ func CmdQueryProviderDelegators() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().Bool(WithPendingDelegatorsFlagName, false, "output with pending delegations (applied from next epoch)")
 
 	return cmd
 }

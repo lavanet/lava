@@ -89,7 +89,7 @@ type DowntimeKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	GetProviderDelegators(ctx sdk.Context, provider string) ([]dualstakingtypes.Delegation, error)
+	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)
 	GetDelegatorReward(ctx sdk.Context, index string) (val dualstakingtypes.DelegatorReward, found bool)
 	SetDelegatorReward(ctx sdk.Context, delegatorReward dualstakingtypes.DelegatorReward)
 }

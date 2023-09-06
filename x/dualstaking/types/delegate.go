@@ -27,6 +27,16 @@ func (delegation *Delegation) IsZero() bool {
 	return delegation.Amount.IsZero()
 }
 
+func (delegation *Delegation) Equal(other *Delegation) bool {
+	if delegation.Delegator != other.Delegator ||
+		delegation.Provider != other.Provider ||
+		delegation.ChainID != other.ChainID ||
+		!delegation.Amount.IsEqual(other.Amount) {
+		return false
+	}
+	return true
+}
+
 func NewDelegator(delegator, provider string) Delegator {
 	return Delegator{
 		Providers: []string{provider},

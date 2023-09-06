@@ -259,7 +259,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, relay.Provider)
+			delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, relay.Provider, uint64(relay.Epoch))
 			if err != nil {
 				return nil, utils.LavaFormatError("cannot get provider's delegators", err)
 			}

@@ -1,12 +1,16 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
+
+const WithPendingDelegatorsFlagName = "with-pending"
 
 func CmdQueryDelegatorProviders() *cobra.Command {
 	cmd := &cobra.Command{
@@ -23,7 +27,17 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			res, err := queryClient.DelegatorProviders(cmd.Context(), &types.QueryDelegatorProvidersRequest{Delegator: delegator})
+			// check if the command includes --with-pending
+			withPendingDelegationsFlag := cmd.Flags().Lookup(WithPendingDelegatorsFlagName)
+			if withPendingDelegationsFlag == nil {
+				return fmt.Errorf("%s flag wasn't found", WithPendingDelegatorsFlagName)
+			}
+			withPendingDelegations := withPendingDelegationsFlag.Changed
+
+			res, err := queryClient.DelegatorProviders(cmd.Context(), &types.QueryDelegatorProvidersRequest{
+				Delegator:   delegator,
+				WithPending: withPendingDelegations,
+			})
 			if err != nil {
 				return err
 			}
@@ -33,6 +47,7 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().Bool(WithPendingDelegatorsFlagName, false, "output with pending delegations (applied from next epoch)")
 
 	return cmd
 }

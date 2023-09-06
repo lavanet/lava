@@ -359,7 +359,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		)
 	}
 
-	err = k.increaseDelegation(ctx, delegator, to, fromChainID, amount, nextEpoch)
+	err = k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to increase delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -563,39 +563,37 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to
-func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string) ([]string, error) {
-	var delegatorEntry types.Delegator
-	prefix := types.DelegatorKey(delegator)
-	nextEpoch, err := k.getNextEpoch(ctx)
+func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch uint64) (providers []string, err error) {
+	_, err = sdk.AccAddressFromBech32(delegator)
 	if err != nil {
-		return nil, err
-	}
-
-	found := k.delegatorFS.FindEntry(ctx, prefix, nextEpoch, &delegatorEntry)
-	if !found {
-		return nil, utils.LavaFormatWarning("could not get delegator providers", fmt.Errorf("delegator not found"),
+		return nil, utils.LavaFormatWarning("cannot get delegator's providers", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
-			utils.Attribute{Key: "block", Value: nextEpoch},
 		)
 	}
+
+	var delegatorEntry types.Delegator
+	prefix := types.DelegatorKey(delegator)
+	k.delegatorFS.FindEntry(ctx, prefix, epoch, &delegatorEntry)
 
 	return delegatorEntry.Providers, nil
 }
 
-func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string) ([]types.Delegation, error) {
-	nextEpoch, err := k.getNextEpoch(ctx)
+func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]types.Delegation, error) {
+	_, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("cannot get provider's delegators", err,
+			utils.Attribute{Key: "provider", Value: provider},
+		)
 	}
 
 	var delegations []types.Delegation
 	indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
 	for _, ind := range indices {
 		var delegation types.Delegation
-		found := k.delegationFS.FindEntry(ctx, ind, nextEpoch, &delegation)
+		found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
 		if !found {
 			delegator, provider, chainID := types.DelegationKeyDecode(ind)
-			utils.LavaFormatError("critical: delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
+			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chainID", Value: chainID},
