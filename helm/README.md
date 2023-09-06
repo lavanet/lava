@@ -7,9 +7,20 @@ Running a lava provider on Kubernetes is a 2 step process.
 
 ## 1. Run the provider using the Helm chart
 
-**Prerequisite**: Before running the provider we need to create a kubernetes secret with your account key (`lavad keys export ...`) and the password.
+#### Helm Command
+
+```bash
+helm install myprovider \
+    oci://us-central1-docker.pkg.dev/lavanet-public/charts/lava-provider \
+    --values myvalues.yaml
+```
+
+#### Prerequisite
+
+Before running the provider we need to create a kubernetes secret with your account key (`lavad keys export ...`) and the password.
 Please see the [secret.example.yaml](secret.example.yaml) file for an example.
 
+#### Required Config
 To run the Helm chart you need to provider some `REQUIRED` values. Anything marked at required in the [values.yaml](provider/values.yaml) file is required.
 
 Please see [values.example.yaml](values.example.yaml) file for an example for what values you will need to provide.
