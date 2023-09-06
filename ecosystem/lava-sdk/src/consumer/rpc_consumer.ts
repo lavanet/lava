@@ -12,6 +12,26 @@ import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { Relayer } from "../relayer/relayer";
 
+/**
+ * Options for sending RPC relay.
+ */
+export interface SendRelayOptions {
+  method: string; // Required: The RPC method to be called
+  params: Array<any>; // Required: An array of parameters to be passed to the RPC method
+  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
+}
+
+/**
+ * Options for sending Rest relay.
+ */
+export interface SendRestRelayOptions {
+  connectionType: string; // Required: The HTTP method to be used (e.g., "GET", "POST")
+  url: string; // Required: The API Path (URL) (e.g Cosmos: "/cosmos/base/tendermint/v1beta1/blocks/latest", Aptos: "/transactions" )
+  // eslint-disable-next-line
+  data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
+  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
+}
+
 type ApiInterface = string;
 export class RPCConsumer {
   private consumerSessionManagerMap: Map<ApiInterface, ConsumerSessionManager>;

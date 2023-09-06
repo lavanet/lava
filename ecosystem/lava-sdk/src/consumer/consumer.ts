@@ -1,7 +1,7 @@
 import { PairingResponse } from "../stateTracker/stateQuery/state_query";
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
-import { RPCConsumer } from "./rpc_consumer";
+import { RPCConsumer, SendRelayOptions, SendRestRelayOptions } from "./rpc_consumer";
 
 type ChainId = string;
 
@@ -32,7 +32,19 @@ export class Consumer {
     rpcConsumer.updateAllProviders(pairingResponse);
   }
 
-  public async sendRelay() {
-    
+  public async sendRelay(
+    relayOptions: SendRelayOptions | SendRestRelayOptions
+  ) {
+    if (relayOptions.chainId) {
+      // if we have a chainId, field validate we have the RPC consumer instance
+      const rpcConsumer = this.rpcConsumer.get(relayOptions.chainId);
+      if (!rpcConsumer) {
+        throw Logger.fatal(
+          "Missing chainId in RPC Consumer map, validate sdk initialization",
+          "Available Consumers:",
+          this.rpcConsumer.keys()
+        );
+      }
+    }
   }
 }
