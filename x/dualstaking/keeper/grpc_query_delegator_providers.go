@@ -11,18 +11,22 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelegatorProvidersRequest) (*types.QueryDelegatorProvidersResponse, error) {
+func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelegatorProvidersRequest) (res *types.QueryDelegatorProvidersResponse, err error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return nil, err
+
+	epoch := uint64(ctx.BlockHeight())
+	if req.WithPending {
+		epoch, err = k.getNextEpoch(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	providers, err := k.GetDelegatorProviders(ctx, req.Delegator)
+	providers, err := k.GetDelegatorProviders(ctx, req.Delegator, epoch)
 	if err != nil {
 		return nil, err
 	}
@@ -31,11 +35,14 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 	for _, provider := range providers {
 		indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
 		for _, ind := range indices {
+			delegator, _, chainID := types.DelegationKeyDecode(ind)
+			if delegator != req.Delegator {
+				continue
+			}
 			var delegation types.Delegation
-			found := k.delegationFS.FindEntry(ctx, ind, nextEpoch, &delegation)
+			found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
 			if !found {
-				delegator, provider, chainID := types.DelegationKeyDecode(ind)
-				utils.LavaFormatError("provider found in delegatorFS but not in delegationFS", fmt.Errorf("provider delegation not found"),
+				utils.LavaFormatError("critical: provider found in delegatorFS but not in delegationFS", fmt.Errorf("provider delegation not found"),
 					utils.Attribute{Key: "delegator", Value: delegator},
 					utils.Attribute{Key: "provider", Value: provider},
 					utils.Attribute{Key: "chainID", Value: chainID},

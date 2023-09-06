@@ -36,7 +36,7 @@ func KeyPrefix(p string) []byte {
 // the address (and is the only visible character that can be safely used).
 // (reference https://en.bitcoin.it/wiki/BIP_0173#Specification)
 func DelegationKey(delegator, provider, chainID string) string {
-	return provider + "  " + chainID + " " + delegator
+	return provider + " " + chainID + " " + delegator
 }
 
 func DelegationKeyDecode(prefix string) (delegator, provider, chainID string) {
