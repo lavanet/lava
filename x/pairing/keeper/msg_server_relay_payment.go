@@ -259,29 +259,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			providerReward, err := k.calculateProviderDelegatorsRewards(ctx, providerAddr, relay.SpecId, reward.TruncateInt())
+			err = k.distributeRewards(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), reward.TruncateInt())
 			if err != nil {
-				return nil, utils.LavaFormatError("cannot calculate provider reward and update delegator reward map", err)
-			}
-
-			providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
-			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
-			if err != nil {
-				// panic:ok: reward transfer should never fail
-				utils.LavaFormatPanic("critical: failed to send reward to provider", err,
-					utils.Attribute{Key: "provider", Value: providerAddr},
-					utils.Attribute{Key: "reward", Value: providerRewardCoins},
-				)
-			}
-
-			delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, relay.Provider, uint64(relay.Epoch))
-			if err != nil {
-				return nil, utils.LavaFormatError("cannot get provider's delegators", err)
-			}
-
-			err = k.updateDelegatorsReward(ctx, providerAddr, delegations, relay.SpecId, reward.TruncateInt())
-			if err != nil {
-				return nil, utils.LavaFormatError("cannot update delegators reward map", err)
+				return nil, utils.LavaFormatError("could not districute rewards for provider and delegators", err)
 			}
 		}
 
@@ -410,6 +390,36 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 		to[key+"."+sessionIDStr] = value
 	}
 	return to
+}
+
+// distributeRewards is the main function for reward distribution for providers and delegators
+func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, epoch uint64, totalReward math.Int) error {
+	providerReward, err := k.calculateProviderDelegatorsRewards(ctx, providerAddr, chainID, totalReward)
+	if err != nil {
+		return utils.LavaFormatError("cannot calculate provider reward and update delegator reward map", err)
+	}
+
+	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
+	if err != nil {
+		// panic:ok: reward transfer should never fail
+		utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+			utils.Attribute{Key: "provider", Value: providerAddr},
+			utils.Attribute{Key: "reward", Value: providerRewardCoins},
+		)
+	}
+
+	delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, providerAddr.String(), epoch)
+	if err != nil {
+		return utils.LavaFormatError("cannot get provider's delegators", err)
+	}
+
+	err = k.updateDelegatorsReward(ctx, providerAddr, delegations, chainID, totalReward)
+	if err != nil {
+		return utils.LavaFormatError("cannot update delegators reward map", err)
+	}
+
+	return nil
 }
 
 // calculateProviderDelegatorsRewards returns the provider reward amount and updates the delegator reward map
