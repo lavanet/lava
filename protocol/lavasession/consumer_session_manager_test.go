@@ -504,7 +504,6 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 			require.True(t, csm.reportedProviders.IsReported(providerReported.Address))
 			require.True(t, csm.reportedProviders.IsReported(cs.Session.Client.PublicLavaAddress))
 		}
-
 	}
 }
 
