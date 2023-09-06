@@ -9,7 +9,8 @@ nameOverride: null
 moniker: null
 
 # REQUIRED: The url for a lava RPC node
-# example: https://public-rpc-testnet2.lavanet.xyz/rpc/
+## example 
+# rpcNodeUrl: "https://public-rpc-testnet2.lavanet.xyz:443"
 rpcNodeUrl: null
 
 # information about the private key to use for the node
@@ -84,7 +85,7 @@ ingress:
 #     - api-interface: tendermintrpc
 #       chain-id: LAV1
 #       network-address:
-#         address: 127.0.0.1:2224
+#         address: 0.0.0.0:2224
 #         disable-tls: true
 #       node-urls:
 #         - url: ws://127.0.0.1:26657/websocket
@@ -92,14 +93,14 @@ ingress:
 #     - api-interface: grpc
 #       chain-id: LAV1
 #       network-address:
-#         address: 127.0.0.1:2224
+#         address: 0.0.0.0:2224
 #         disable-tls: true
 #       node-urls: 
 #         url: 127.0.0.1:9090
 #     - api-interface: rest
 #       chain-id: LAV1
 #       network-address:
-#         address: 127.0.0.1:2224
+#         address: 0.0.0.0:2224
 #         disable-tls: true
 #       node-urls: 
 #         url: http://127.0.0.1:1317
@@ -129,7 +130,7 @@ image:
 
 # port to expose the node on
 port:
-  name: "rpc-provider"
+  name: default
   number: 2224
   protocol: TCP
 
