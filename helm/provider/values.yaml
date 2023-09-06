@@ -247,7 +247,7 @@ defaultReadinessProbe:
   periodSeconds: 10
   timeoutSeconds: 5
   successThreshold: 1
-  failureThreshold: 5
+  failureThreshold: 10
 
 # enable default readiness, using `endpoint` and `supportedChainIds`
 defaultLivenessProbe:
