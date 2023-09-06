@@ -8,6 +8,10 @@ nameOverride: null
 # provider node moniker, will default to the fullname
 moniker: null
 
+# REQUIRED: The url for a lava RPC node
+# example: https://public-rpc-testnet2.lavanet.xyz/rpc/
+rpcNodeUrl: null
+
 # information about the private key to use for the node
 key:
   # will default to the moniker 

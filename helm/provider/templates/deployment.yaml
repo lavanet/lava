@@ -4,6 +4,7 @@
 {{- $keyPasswordSecretKey := required ".Values.key.passwordSecretKey is required." .Values.key.passwordSecretKey -}}
 {{- $endpoint := required ".Values.endpoint is required." .Values.endpoint -}}
 {{- $supportedChainIds := required ".Values.supportedChainIds is required." .Values.supportedChainIds -}}
+{{- $rpcNodeUrl := required ".Values.rpcNodeUrl is required." .Values.rpcNodeUrl -}}
 {{- $configFilePath := default "/provider_config.yaml" .Values.configFilePath  -}}
 {{- if (eq $configFilePath "/provider_config.yaml" ) }}
   {{- $_ := required "You must either set .Values.configFilePath OR .Values.configYaml" .Values.configYaml -}}
@@ -143,7 +144,8 @@ spec:
             "--home",  "{{ .Values.persistentVolume.mountPath }}", 
             "--keyring-backend", "test",
             "--keyring-dir",  "{{ .Values.persistentVolume.mountPath }}",
-            "--geolocation", "{{.Values.geolocation}}"
+            "--geolocation", "{{.Values.geolocation}}",
+            "--node", "{{ $rpcNodeUrl }}",
           ]
           {{- end }}
           {{- with .Values.resources }}
