@@ -279,7 +279,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				return nil, utils.LavaFormatError("cannot get provider's delegators", err)
 			}
 
-			err = k.updateDelegatorsRewardMap(ctx, providerAddr, delegations, relay.SpecId, reward.TruncateInt())
+			err = k.updateDelegatorsReward(ctx, providerAddr, delegations, relay.SpecId, reward.TruncateInt())
 			if err != nil {
 				return nil, utils.LavaFormatError("cannot update delegators reward map", err)
 			}
@@ -435,7 +435,7 @@ func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk
 	return k.dualStakingKeeper.CalcProviderReward(stakeEntry, totalReward), nil
 }
 
-func (k Keeper) updateDelegatorsRewardMap(ctx sdk.Context, provider sdk.AccAddress, delegations []dualstakingtypes.Delegation, chainID string, totalReward math.Int) error {
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, provider sdk.AccAddress, delegations []dualstakingtypes.Delegation, chainID string, totalReward math.Int) error {
 	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if !found {
 		return utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),

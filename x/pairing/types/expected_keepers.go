@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
@@ -92,4 +93,8 @@ type DualStakingKeeper interface {
 	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)
 	GetDelegatorReward(ctx sdk.Context, index string) (val dualstakingtypes.DelegatorReward, found bool)
 	SetDelegatorReward(ctx sdk.Context, delegatorReward dualstakingtypes.DelegatorReward)
+	CalcProviderReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) math.Int
+	CalcDelegatorsReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) math.Int
+	CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int)
+	CalcDelegatorReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegation dualstakingtypes.Delegation) math.Int
 }
