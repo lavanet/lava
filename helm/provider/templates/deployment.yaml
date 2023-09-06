@@ -146,6 +146,7 @@ spec:
             "--keyring-dir",  "{{ .Values.persistentVolume.mountPath }}",
             "--geolocation", "{{.Values.geolocation}}",
             "--node", "{{ $rpcNodeUrl }}",
+            "--chain-id", "{{.Values.chainId}}"
           ]
           {{- end }}
           {{- with .Values.resources }}
@@ -155,30 +156,60 @@ spec:
           {{ if .Values.defaultLivenessProbe.enabled }}
           livenessProbe:
             exec:
-              command: ["lavad", "test", "rpcprovider", 
-               "--from",  {{ include "provider.keyname" . | quote }}, 
-               "--endpoint", "{{ $endpoint }}:443,{{ index $supportedChainIds 0 }}"]
+              command: 
+                - lavad
+                - test
+                - rpcprovider
+                - "--home"
+                - "{{ .Values.persistentVolume.mountPath }}"
+                - "--keyring-backend"
+                - "test"
+                - "--keyring-dir"
+                - "{{ .Values.persistentVolume.mountPath }}"
+                - "--node"
+                - "{{ $rpcNodeUrl }}"
+                - --from
+                - {{ include "provider.keyname" . | quote }}
+                - --endpoints
+                {{- range .Values.supportedChainIds }}
+                - "{{ $endpoint }}:443,{{ . }}"
+                {{- end }}
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 3
-          {{ else if .Values.customLivenessProbe.enabled}}
+          {{ else if .Values.customLivenessProbe.enabled }}
           livenessProbe:
             {{- toYaml .Values.customLivenessProbe | nindent 12 }}
           {{- end }}
-          {{ if .Values.defaultLivenessProbe.enabled }}
+          {{ if .Values.defaultReadinessProbe.enabled }}
           readinessProbe:
             exec:
-              command: ["lavad", "test", "rpcprovider", 
-               "--from",  {{- include "provider.keyname" . | quote }}, 
-               "--endpoint", "{{ $endpoint }}:443,{{ index $supportedChainIds 0 }}"]
+              command: 
+                - lavad
+                - test
+                - rpcprovider
+                - "--home"
+                - "{{ .Values.persistentVolume.mountPath }}"
+                - "--keyring-backend"
+                - "test"
+                - "--keyring-dir"
+                - "{{ .Values.persistentVolume.mountPath }}"
+                - "--node"
+                - "{{ $rpcNodeUrl }}"
+                - --from
+                - {{ include "provider.keyname" . | quote }}
+                - --endpoints
+                {{- range .Values.supportedChainIds }}
+                - "{{ $endpoint }}:443,{{ . }}"
+                {{- end }}
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 3
-          {{ else if .Values.customReadinessProbe.enabled}}
+          {{ else if .Values.customReadinessProbe.enabled }}
           readinessProbe:
             {{- toYaml .Values.customReadinessProbe | nindent 12 }}
           {{ end }}
