@@ -1,9 +1,13 @@
 ---
+{{- $serviceName := include "provider.fullname" .  -}}
+{{- if .Values.service.name -}}
+{{- $serviceName = .Values.service.name -}}
+{{- end -}}
 {{- if .Values.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name:  {{ include "provider.fullname"  . }}
+  name: {{ $serviceName }}
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
