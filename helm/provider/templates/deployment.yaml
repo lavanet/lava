@@ -204,11 +204,11 @@ spec:
                 {{- range .Values.supportedChainIds }}
                 - "{{ $endpoint }}:443,{{ . }}"
                 {{- end }}
-            initialDelaySeconds: 30
-            periodSeconds: 30
+            initialDelaySeconds: 15
+            periodSeconds: 15
             timeoutSeconds: 5
             successThreshold: 1
-            failureThreshold: 3
+            failureThreshold: 5
           {{ else if .Values.customReadinessProbe.enabled }}
           readinessProbe:
             {{- toYaml .Values.customReadinessProbe | nindent 12 }}
