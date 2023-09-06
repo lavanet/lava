@@ -178,7 +178,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	connected, endpoint, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
 	if err != nil || !connected {
 		if AllProviderEndpointsDisabledError.Is(err) {
-			csm.blockProvider(providerAddress, true, epoch) // reporting and blocking provider this epoch
+			csm.blockProvider(providerAddress, true, epoch, MaxConsecutiveConnectionAttempts, 0) // reporting and blocking provider this epoch
 		}
 		return 0, providerAddress, err
 	}
@@ -337,7 +337,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
 				if AllProviderEndpointsDisabledError.Is(err) {
-					err = csm.blockProvider(providerAddress, true, sessionEpoch) // reporting and blocking provider this epoch
+					err = csm.blockProvider(providerAddress, true, sessionEpoch, MaxConsecutiveConnectionAttempts, 0) // reporting and blocking provider this epoch
 					if err != nil {
 						if !EpochMismatchError.Is(err) {
 							// only acceptable error is EpochMismatchError so if different, throw fatal
@@ -367,7 +367,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				} else if MaximumNumberOfBlockListedSessionsError.Is(err) {
 					// provider has too many block listed sessions. we block it until the next epoch.
-					err = csm.blockProvider(providerAddress, false, sessionEpoch)
+					err = csm.blockProvider(providerAddress, false, sessionEpoch, 0, 0)
 					if err != nil {
 						utils.LavaFormatError("Failed to block provider: ", err)
 					}
@@ -571,7 +571,7 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
 // Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
-func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64) error {
+func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64, disconnections uint64, errors uint64) error {
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
 		return EpochMismatchError
@@ -594,7 +594,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	}
 
 	if reportProvider { // Report provider flow
-		csm.reportedProviders.ReportProvider(address)
+		csm.reportedProviders.ReportProvider(address, disconnections, errors)
 	}
 
 	return nil
@@ -659,6 +659,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 
 	parentConsumerSessionsWithProvider := consumerSession.Client // must read this pointer before unlocking
+	reportErrors := consumerSession.ConsecutiveNumberOfFailures
 	// finished with consumerSession here can unlock.
 	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
@@ -687,7 +688,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	if blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
-		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch)
+		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, reportErrors)
 		if err != nil {
 			if EpochMismatchError.Is(err) {
 				return nil // no effects this epoch has been changed
@@ -787,7 +788,7 @@ func (csm *ConsumerSessionManager) fetchEndpointFromConsumerSessionsWithProvider
 		if err != nil {
 			// verify err is AllProviderEndpointsDisabled and report.
 			if AllProviderEndpointsDisabledError.Is(err) {
-				err = csm.blockProvider(providerAddress, true, sessionEpoch) // reporting and blocking provider this epoch
+				err = csm.blockProvider(providerAddress, true, sessionEpoch, MaxConsecutiveConnectionAttempts, 0) // reporting and blocking provider this epoch
 				if err != nil {
 					if !EpochMismatchError.Is(err) {
 						// only acceptable error is EpochMismatchError so if different, throw fatal
@@ -900,7 +901,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 
 	if blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
-		err := csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch)
+		err := csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, 0)
 		if err != nil {
 			if EpochMismatchError.Is(err) {
 				return nil // no effects this epoch has been changed

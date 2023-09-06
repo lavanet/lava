@@ -18,12 +18,6 @@ type BadgeData struct {
 	BadgeSigner sdk.AccAddress
 }
 
-const (
-	maxComplaintsPerEpoch                     = 3
-	collectPaymentsFromNumberOfPreviousEpochs = 2
-	providerPaymentMultiplier                 = 2 // multiplying the amount of payments to protect provider from unstaking
-)
-
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)

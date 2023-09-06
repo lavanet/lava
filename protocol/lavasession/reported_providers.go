@@ -2,13 +2,14 @@ package lavasession
 
 import (
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type ReportedProviders struct {
-	addedToPurgeAndReport map[string]ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
+	addedToPurgeAndReport map[string]*ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
 }
 
@@ -16,16 +17,15 @@ type ReportedProviderEntry struct {
 	Disconnections  uint64
 	Errors          uint64
 	shouldReconnect bool
+	addedTime       time.Time
 }
 
 func (rp *ReportedProviders) Reset() {
-	rp.addedToPurgeAndReport = make(map[string]ReportedProviderEntry, 0)
+	rp.addedToPurgeAndReport = make(map[string]*ReportedProviderEntry, 0)
 }
 
 func NewReportedProviders() ReportedProviders {
-	ret := ReportedProviders{}
-	ret.Reset()
-	return ret
+	return ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}}
 }
 
 func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProvider {
@@ -43,13 +43,17 @@ func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProv
 	return reportedProviders
 }
 
-func (rp *ReportedProviders) ReportProvider(address string) {
+func (rp *ReportedProviders) ReportProvider(address string, errors uint64, disconnections uint64) {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
 	if _, ok := rp.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
 		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: address})
-		// TODO: add disconnections, errors, should reconnect
-		rp.addedToPurgeAndReport[address] = ReportedProviderEntry{}
+		rp.addedToPurgeAndReport[address] = &ReportedProviderEntry{}
 	}
-
+	rp.addedToPurgeAndReport[address].Disconnections += disconnections
+	rp.addedToPurgeAndReport[address].Errors += errors
+	rp.addedToPurgeAndReport[address].shouldReconnect = true
+	rp.addedToPurgeAndReport[address].addedTime = time.Now()
 }
 
 func (rp *ReportedProviders) IsReported(address string) bool {
