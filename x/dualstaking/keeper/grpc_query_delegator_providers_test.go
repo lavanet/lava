@@ -60,7 +60,7 @@ func TestQueryWithUnbonding(t *testing.T) {
 	require.Equal(t, 0, len(res.Delegations))
 }
 
-func TestQueryShowPendingDelegators(t *testing.T) {
+func TestQueryWithPendingDelegations(t *testing.T) {
 	ts := newTester(t)
 
 	ts.setupForDelegation(2, 1, 0, 0) // 2 delegators, 1 staked provider
@@ -92,9 +92,22 @@ func TestQueryShowPendingDelegators(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 0, len(res.Delegations))
 
-	// advance epoch, delegate delegator2 and query again
+	// advance epoch, delegator1 should show in both flag values
 	ts.AdvanceEpoch()
 
+	res, err = ts.QueryDualstakingDelegatorProviders(delegator1, true)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
+	delegationRes = res.Delegations[0]
+	require.True(t, delegationRes.Equal(&delegation1))
+
+	res, err = ts.QueryDualstakingDelegatorProviders(delegator1, false)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
+	delegationRes = res.Delegations[0]
+	require.True(t, delegationRes.Equal(&delegation1))
+
+	// delegate delegator2 and query again
 	delegation2 := types.NewDelegation(delegator2, provider, spec.Index)
 	delegation2.Amount = amount
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, spec.Index, amount)
