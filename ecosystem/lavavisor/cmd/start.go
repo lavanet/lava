@@ -191,7 +191,7 @@ func SelectMostRecentVersionFromDir(lavavisorPath string, version *protocoltypes
 			continue
 		}
 		versionDir := filepath.Join(upgradesDir, ver)
-		binaryPath := filepath.Join(versionDir, "lava-protocol")
+		binaryPath := filepath.Join(versionDir, "lavap")
 		binaryVersion, err := processmanager.GetBinaryVersion(binaryPath)
 		if err != nil || binaryVersion == "" {
 			continue

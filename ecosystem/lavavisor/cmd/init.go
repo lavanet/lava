@@ -78,7 +78,7 @@ func LavavisorInit(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	// fetch lava-protocol version from consensus
+	// fetch lavap version from consensus
 	protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
 		return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)

@@ -33,11 +33,11 @@ wait_next_block
 lavad tx pairing stake-provider "FVM" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep_until_next_epoch
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER FVM jsonrpc "$FVM_WS" \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
+screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3360 FVM jsonrpc \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
