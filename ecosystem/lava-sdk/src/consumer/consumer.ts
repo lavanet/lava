@@ -1,15 +1,5 @@
-import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import {
-  ConsumerSessionsWithProvider,
-  Endpoint,
-} from "../lavasession/consumerTypes";
-import { BaseChainParser } from "../chainlib/base_chain_parser";
-import { Spec } from "../codec/lavanet/lava/spec/spec";
 import { PairingResponse } from "../stateTracker/stateQuery/state_query";
 import { Logger } from "../logger/logger";
-import { parseLong } from "../util/common";
-import { RPCEndpoint } from "../lavasession/consumerTypes";
-import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { Relayer } from "../relayer/relayer";
 import { RPCConsumer } from "./rpc_consumer";
 
@@ -42,6 +32,7 @@ export class Consumer {
     rpcConsumer.updateAllProviders(pairingResponse);
   }
 
-  //   public sendRelay()
-  //   implement send relay to the right chain id and rpc interface.
+  public async sendRelay() {
+    
+  }
 }
