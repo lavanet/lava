@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"encoding/json"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -32,10 +31,9 @@ type ConsumerSessionManager struct {
 	pairingAddresses       map[uint64]string // contains all addresses from the initial pairing. and the keys are the indexes
 	pairingAddressesLength uint64
 
-	validAddresses        []string // contains all addresses that are currently valid
-	addonAddresses        map[RouterKey][]string
-	addedToPurgeAndReport map[string]struct{} // list of purged providers to report for QoS unavailability. (easier to search maps.)
-
+	validAddresses    []string // contains all addresses that are currently valid
+	addonAddresses    map[RouterKey][]string
+	reportedProviders ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge      map[string]*ConsumerSessionsWithProvider
@@ -68,7 +66,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// Reset States
 	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
 	csm.pairingAddresses = make(map[uint64]string, 0)
-	csm.addedToPurgeAndReport = make(map[string]struct{}, 0)
+
+	csm.reportedProviders.Reset()
 	csm.pairingAddressesLength = uint64(pairingListLength)
 	csm.numberOfResets = 0
 	csm.RemoveAddonAddresses("", nil)
@@ -178,6 +177,9 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	// TODO: fetch all endpoints not just one
 	connected, endpoint, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
 	if err != nil || !connected {
+		if AllProviderEndpointsDisabledError.Is(err) {
+			csm.blockProvider(providerAddress, true, epoch) // reporting and blocking provider this epoch
+		}
 		return 0, providerAddress, err
 	}
 
@@ -596,10 +598,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	}
 
 	if reportProvider { // Report provider flow
-		if _, ok := csm.addedToPurgeAndReport[address]; !ok { // verify it doesn't exist already
-			utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: address})
-			csm.addedToPurgeAndReport[address] = struct{}{}
-		}
+		csm.reportedProviders.ReportProvider(address)
 	}
 
 	return nil
@@ -754,18 +753,10 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 
 // Get the reported providers currently stored in the session manager.
 func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) ([]byte, error) {
-	csm.lock.RLock()
-	defer csm.lock.RUnlock()
 	if epoch != csm.atomicReadCurrentEpoch() {
 		return []byte{}, nil // if epochs are not equal, we will return an empty list.
 	}
-	keys := make([]string, 0, len(csm.addedToPurgeAndReport))
-	for k := range csm.addedToPurgeAndReport {
-		keys = append(keys, k)
-	}
-	bytes, err := json.Marshal(keys)
-
-	return bytes, err
+	return csm.reportedProviders.GetReportedProviders()
 }
 
 // Data Reliability Section:
@@ -926,7 +917,9 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 }
 
 func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer) *ConsumerSessionManager {
-	csm := ConsumerSessionManager{}
+	csm := ConsumerSessionManager{
+		reportedProviders: NewReportedProviders(),
+	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
 	return &csm

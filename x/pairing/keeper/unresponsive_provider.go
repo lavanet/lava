@@ -69,15 +69,24 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 		}
 	}
 
+	// check all supported geolocations form all providers prior to making decisions
+	existingProviders := map[uint64]map[string]struct{}{}
+	for _, providerStakeStorage := range providerStakeStorageList {
+		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
+		// count providers per geolocation
+		for _, providerStakeEntry := range providerStakeEntriesForChain {
+			for _, endpoint := range providerStakeEntry.Endpoints {
+				_, ok := existingProviders[endpoint.Geolocation]
+				if !ok {
+					existingProviders[endpoint.Geolocation] = map[string]struct{}{}
+				}
+				existingProviders[endpoint.Geolocation][providerStakeEntry.Address] = struct{}{}
+			}
+		}
+	}
 	// Go over the staked provider entries (on all chains)
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
-		existingProviders := map[uint64]uint64{}
-		// count providers per geolocation
-		for _, providerStakeEntry := range providerStakeEntriesForChain {
-			existingProviders[providerStakeEntry.Geolocation]++
-		}
-
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
 			if minHistoryBlock < providerStakeEntry.StakeAppliedBlock {
 				// this staked provider has too short history (either since staking
@@ -94,14 +103,13 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.Geolocation] > minProviders {
+			if len(providerPaymentStorageKeyList) != 0 && uint64(len(existingProviders[providerStakeEntry.Geolocation])) > minProviders {
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
-				existingProviders[providerStakeEntry.Geolocation]--
+				delete(existingProviders[providerStakeEntry.Geolocation], providerStakeEntry.Address)
 				if err != nil {
 					utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
 						utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},
 					)
-					continue
 				}
 			}
 		}

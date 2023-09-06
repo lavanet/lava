@@ -34,7 +34,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting status", err)
 	}
 	if txFactory.ChainID() != status.NodeInfo.Network {
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
@@ -43,7 +43,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	eventTracker := &EventTracker{clientCtx: clientCtx}
 	err = eventTracker.updateBlockResults(0)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting blockResults", err)
 	}
 
 	// TODO: fix average block time.

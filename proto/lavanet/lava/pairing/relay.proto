@@ -35,7 +35,7 @@ message RelaySession {
     uint64 relay_num = 6;
     QualityOfServiceReport qos_report = 7;
     int64 epoch = 8;
-    bytes unresponsive_providers = 9;
+    repeated ReportedProvider unresponsive_providers = 9;
     string lava_chain_id = 10;
     bytes sig = 11;
     Badge badge = 12;
@@ -60,6 +60,12 @@ message RelayPrivateData {
     repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
     string addon = 8;
     repeated string extensions = 9;
+}
+
+message ReportedProvider {
+    string address =1;
+    uint64 disconnections =2;
+    uint64 errors =3;
 }
 
 message Metadata {

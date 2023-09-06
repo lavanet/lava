@@ -38,10 +38,10 @@ lavad tx  subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from use
 # MANTLE
 CHAINS="ETH1,LAV1"
 # stake providers on all chains
-lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER2_LISTENER,1" 1 -y --from servicer2 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 -y --from servicer3 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER4_LISTENER,1" 1 -y --from servicer4 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER2_LISTENER,1" 1 -y --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 -y --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER4_LISTENER,1" 1 -y --from servicer4 --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch
@@ -80,6 +80,18 @@ screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
 127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
 $EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log"
 
+
+# need to wait 8 epochs for the provider to be jail eligible
+sleep_until_next_epoch
+sleep_until_next_epoch
+sleep_until_next_epoch
+sleep_until_next_epoch
+sleep_until_next_epoch
+sleep_until_next_epoch
+sleep_until_next_epoch
+sleep_until_next_epoch
+
+
 screen -d -m -S testing bash -c "source ~/.bashrc; lavad test rpcconsumer http://127.0.0.1:3333 ETH1 jsonrpc http://127.0.0.1:3360 LAV1 rest http://127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc --chain-id lava 2>&1 | tee $LOGS_DIR/TESTING.log"
 
 echo "running some relays, before terminating provider4"
@@ -89,7 +101,4 @@ sleep_until_next_epoch
 
 screen -S provider4 -X quit
 
-sleep_until_next_epoch
-sleep_until_next_epoch
-
-lavad test events 100 --from servicer4 --break
+lavad test events 0 --from servicer4

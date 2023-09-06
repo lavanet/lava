@@ -97,7 +97,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
 	if err != nil {
-		return err
+		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
 
