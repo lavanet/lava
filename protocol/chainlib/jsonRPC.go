@@ -477,21 +477,26 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
 		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		replyMsg = rpcInterfaceMessages.JsonrpcMessage{
-			Version: nodeMessage.Version,
-			ID:      nodeMessage.ID,
-		}
-		replyMsg.Error = &rpcclient.JsonError{
-			Code:    1,
-			Message: fmt.Sprintf("%s", err),
-		}
-		// this later causes returning an error
+		return nil, "", nil, err
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		replyMsg = *replyMessage
+
+		reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessage.ID)
+		if idErr != nil {
+			return nil, "", nil, utils.LavaFormatError("Failed parsing ID", idErr)
+		}
+		respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsg.ID)
+		if idErr != nil {
+			return nil, "", nil, utils.LavaFormatError("Failed parsing ID", idErr)
+		}
+
+		if reqId != respId {
+			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
 	}
 
 	retData, err := json.Marshal(replyMsg)
