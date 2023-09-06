@@ -1,0 +1,68 @@
+# set the log level for the node
+logLevel: "warn"
+
+# provider node moniker, will default to the fullname
+moniker: "my-node"
+
+# the url for a lava RPC node
+rpcNodeUrl: "https://public-rpc-testnet2.lavanet.xyz:443"
+
+# information about the private key to use for the node
+key:
+  name: "my-node-key"
+  secretName: provider-key-secret
+  secretKey: key.txt
+  passwordSecretName: provider-key-secret
+  passwordSecretKey: password
+
+endpoint: "myprovider-provider-helm-test.mydomain.xyz"
+supportedChainIds: 
+  - LAV1
+
+ingress:
+  enabled: true
+  className: "nginx"
+  tls:
+    - hosts:
+        - myprovider-provider-helm-test.mydomain.xyz
+      secretName: mydomain-xyz-tls
+  rules:
+    - host: myprovider-provider-helm-test.mydomain.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  '{{- include "provider.fullname" . }}'
+                port:
+                  name: "{{ .Values.port.name }}"
+  annotations:
+    external-dns.alpha.kubernetes.io/aws-region: us-east-1
+    external-dns.alpha.kubernetes.io/set-identifier: my-cluster-name
+    external-dns.custom.kubernetes.io/public-load-balancer: 'true'
+
+configYaml: |
+  endpoints:
+    - api-interface: tendermintrpc
+      chain-id: LAV1
+      network-address:
+        address: 0.0.0.0:2224
+        disable-tls: true
+      node-urls:
+        - url: https://public-rpc-testnet2.lavanet.xyz:443
+        - url: https://public-rpc-testnet2.lavanet.xyz:443
+    - api-interface: rest
+      chain-id: LAV1
+      network-address:
+        address: 0.0.0.0:2224
+        disable-tls: true
+      node-urls: 
+        url: https://public-rpc-testnet2.lavanet.xyz:443/rest
+    - api-interface: grpc
+      chain-id: LAV1
+      network-address:
+        address: 0.0.0.0:2224
+        disable-tls: true
+      node-urls: 
+        url: public-rpc-testnet2.lavanet.xyz:9090
