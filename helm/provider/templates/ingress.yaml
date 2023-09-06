@@ -9,17 +9,19 @@ metadata:
     lavanet.xyz/node_moniker:  {{ include "provider.moniker"  . }}    
     lavanet.xyz/node_type: "provider"
   annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
-  {{- with .Values.ingress.tls }}
+  {{- if .Values.ingress.tls }}
   tls:
-    {{- toYaml . | nindent 4 }}
+    {{- tpl (toYaml .Values.ingress.tls | nindent 4) . }}
   {{- end }}
-  {{- with .Values.ingress.rules }}
+  {{-  if .Values.ingress.rules }}
   rules:
-    {{- toYaml . | nindent 4 }}
+    {{- tpl (toYaml .Values.ingress.rules | nindent 4) . }}
   {{- end }}
 {{- end }}
