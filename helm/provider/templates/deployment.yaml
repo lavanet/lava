@@ -174,14 +174,10 @@ spec:
                 {{- range .Values.supportedChainIds }}
                 - "{{ $endpoint }}:443,{{ . }}"
                 {{- end }}
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 3
+            {{- toYaml (unset .Values.defaultLivenessProbe "enabled") | nindent 12 }}
           {{ else if .Values.customLivenessProbe.enabled }}
           livenessProbe:
-            {{- toYaml .Values.customLivenessProbe | nindent 12 }}
+            {{- toYaml (unset .Values.customLivenessProbe "enabled") | nindent 12 }}
           {{- end }}
           {{ if .Values.defaultReadinessProbe.enabled }}
           readinessProbe:
@@ -204,14 +200,10 @@ spec:
                 {{- range .Values.supportedChainIds }}
                 - "{{ $endpoint }}:443,{{ . }}"
                 {{- end }}
-            initialDelaySeconds: 15
-            periodSeconds: 15
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 5
+            {{- toYaml (unset .Values.defaultReadinessProbe "enabled") | nindent 12 }}
           {{ else if .Values.customReadinessProbe.enabled }}
           readinessProbe:
-            {{- toYaml .Values.customReadinessProbe | nindent 12 }}
+            {{- toYaml (unset .Values.customReadinessProbe "enabled") | nindent 12 }}
           {{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

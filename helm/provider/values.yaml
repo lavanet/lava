@@ -243,10 +243,20 @@ command: null
 # enable default readiness, using `endpoint` and `supportedChainIds`
 defaultReadinessProbe:
   enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
 
 # enable default readiness, using `endpoint` and `supportedChainIds`
 defaultLivenessProbe:
   enabled: true
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 5
 
 # use a custom readiness probe
 customReadinessProbe:
