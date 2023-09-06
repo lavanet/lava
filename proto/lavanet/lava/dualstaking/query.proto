@@ -33,7 +33,7 @@ message QueryParamsResponse {
 
 message QueryDelegatorProvidersRequest {
   string delegator = 1;
-  bool with_pending_delegators = 2;
+  bool with_pending = 2;
 }
 
 message QueryDelegatorProvidersResponse {

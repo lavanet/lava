@@ -35,8 +35,8 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 			withPendingDelegators := withPendingDelegatorsFlag.Changed
 
 			res, err := queryClient.DelegatorProviders(cmd.Context(), &types.QueryDelegatorProvidersRequest{
-				Delegator:             delegator,
-				WithPendingDelegators: withPendingDelegators,
+				Delegator:   delegator,
+				WithPending: withPendingDelegators,
 			})
 			if err != nil {
 				return err

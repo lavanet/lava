@@ -19,7 +19,7 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	epoch := uint64(ctx.BlockHeight())
-	if req.WithPendingDelegators {
+	if req.WithPending {
 		epoch, err = k.getNextEpoch(ctx)
 		if err != nil {
 			return nil, err
