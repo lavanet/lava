@@ -3,6 +3,7 @@ package chainlib
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -449,5 +450,13 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		Data:     body,
 		Metadata: convertToMetadataMapOfSlices(res.Header),
 	}
+
+	// checkin if rest reply data is in json format
+	var jsonData map[string]interface{}
+	err = json.Unmarshal([]byte(reply.Data), &jsonData)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("Rest reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
+	}
+
 	return reply, "", nil, nil
 }
