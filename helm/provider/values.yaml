@@ -8,6 +8,9 @@ nameOverride: null
 # provider node moniker, will default to the fullname
 moniker: null
 
+# chain id of lava
+chainId: "lava-testnet-2"
+
 # REQUIRED: The url for a lava RPC node
 ## example 
 # rpcNodeUrl: "https://public-rpc-testnet2.lavanet.xyz:443"
