@@ -15,6 +15,7 @@ import {
   RelayReply,
   RelayRequest,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import SDKErrors from "../sdk/errors";
 
 const MaxRelayRetries = 4;
 
@@ -50,22 +51,38 @@ export class RPCConsumerServer {
       chainId: this.rpcEndpoint.chainId,
     };
     const relayPrivateData = newRelayData(relayData);
-    const blockOnSyncLoss = true;
+    let blockOnSyncLoss = true;
+    const errors = new Array<Error>();
     for (let retries = 0; retries < MaxRelayRetries; retries++) {
       const relayResult = this.sendRelayToProvider(
         chainMessage,
         relayPrivateData,
         unwantedProviders
       );
-      // if relayResult.ProviderAddress != "" {
-      // 	if blockOnSyncLoss && lavasession.IsSessionSyncLoss(err) {
-      // 		utils.LavaFormatDebug("Identified SyncLoss in provider, not removing it from list for another attempt", utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
-      // 		blockOnSyncLoss = false // on the first sync loss no need to block the provider. give it another chance
-      // 	} else {
-      // 		unwantedProviders[relayResult.ProviderAddress] = struct{}{}
-      // 	}
-      // }
+
+      if (relayResult instanceof RelayError) {
+        if (blockOnSyncLoss && relayResult.err == SDKErrors.sessionSyncLoss) {
+          Logger.debug(
+            "Identified SyncLoss in provider, not removing it from list for another attempt"
+          );
+          blockOnSyncLoss = false;
+        } else {
+          unwantedProviders.add(relayResult.providerAddress);
+        }
+      }
+      if (relayResult instanceof RelayError) {
+        errors.push(relayResult.err);
+      } else if (relayResult instanceof Error) {
+        errors.push(relayResult);
+      } else {
+        if (errors.length > 0) {
+          Logger.debug("relay succeeded but had some errors", ...errors);
+        }
+        return relayResult;
+      }
     }
+    // got here if didn't succeed in any of the relays
+    throw new Error("failed all retries " + errors.join(","));
     // this.consumerSessionManager.getSessions()
 
     //TODO after reply if resolved, parse to json
@@ -84,13 +101,22 @@ export class RPCConsumerServer {
     chainMessage: ChainMessage,
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
-  ): RelayResult {
+  ): RelayResult | RelayError | Error {
     return {
       request: undefined,
       reply: undefined,
       providerAddress: "",
       finalized: false,
     };
+  }
+}
+
+class RelayError {
+  public providerAddress: string;
+  public err: Error;
+  constructor(address: string, err: Error) {
+    this.providerAddress = address;
+    this.err = err;
   }
 }
 

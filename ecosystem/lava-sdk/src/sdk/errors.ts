@@ -30,6 +30,7 @@ class SDKErrors {
   static errRestRelayMethodNotSupported: Error = new Error(
     "SendRestRelay not supported if the SDK is initialized with RPC rpcInterface (tendermintRPC/jsonRPC), use sendRelay method"
   );
+  static sessionSyncLoss: Error = new Error("session out of sync error");
 }
 
 export default SDKErrors;
