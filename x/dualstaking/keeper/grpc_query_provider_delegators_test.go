@@ -10,15 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-/*
-please also test:
-
- - provider with delegations from multiple delegators
- - unstaking provider (with delegations)
- - unstaked provider (with delegations)
- - invalid provider address
-*/
-
 func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	ts := newTester(t)
 
