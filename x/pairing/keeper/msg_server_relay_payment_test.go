@@ -191,10 +191,11 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 		"123",
 		"baddatacosmosBadAddress",
 		"lava@cosmosBadAddress",
+		string([]byte{1, 2, 3}),
 	}
 	// badData2, err := json.Marshal([]string{"bad", "data", "cosmosBadAddress"}) // test bad data
 	for i := 0; i < clientsCount; i++ {
-		unresponsiveProvidersData[i].Address = inputData[i]
+		unresponsiveProvidersData[i] = &types.ReportedProvider{Address: inputData[i]}
 	}
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
