@@ -557,6 +557,15 @@ func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPendin
 	return ts.Keepers.Dualstaking.ProviderDelegators(ts.GoCtx, msg)
 }
 
+// QueryDualstakingDelegatorRewards implements 'q dualstaking delegator-rewards'
+func (ts *Tester) QueryDualstakingDelegatorRewards(delegator string, chainID string) (*dualstakingtypes.QueryDelegatorRewardsResponse, error) {
+	msg := &dualstakingtypes.QueryDelegatorRewardsRequest{
+		Delegator: delegator,
+		ChainId:   chainID,
+	}
+	return ts.Keepers.Dualstaking.DelegatorRewards(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {

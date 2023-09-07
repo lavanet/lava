@@ -61,9 +61,10 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	// ** verify the delegator reward map updates correctly for new entries ** //
 
 	for _, delegation := range expectedDelegations {
-		ind := dualstakingtypes.DelegationKey(delegation.Delegator, provider, ts.spec.Index)
-		dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
-		require.True(t, found)
+		res, err := ts.QueryDualstakingDelegatorRewards(delegation.Delegator, ts.spec.Index)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.Rewards))
+		dReward := res.Rewards[0]
 		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
 		require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
 	}
@@ -74,9 +75,10 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 
 	for _, delegation := range expectedDelegations {
-		ind := dualstakingtypes.DelegationKey(delegation.Delegator, provider, ts.spec.Index)
-		dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
-		require.True(t, found)
+		res, err := ts.QueryDualstakingDelegatorRewards(delegation.Delegator, ts.spec.Index)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.Rewards))
+		dReward := res.Rewards[0]
 		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
 		// the reward saved on the map should be doubled since it's the second time we send relay
 		require.True(t, expectedDReward.MulRaw(2).Equal(dReward.Amount.Amount))
@@ -205,8 +207,10 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
 
 	// the delegator should get no rewards
-	ind := dualstakingtypes.DelegationKey(delegator1, provider, ts.spec.Index)
-	dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
+	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, ts.spec.Index)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(resRewards.Rewards))
+	dReward := resRewards.Rewards[0]
 	require.True(t, found)
 	expectedDReward := math.ZeroInt()
 	require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
@@ -225,8 +229,10 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, balance, newBalance)
 
 	// the delegator should get the total rewards
-	dReward, found = ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
-	require.True(t, found)
+	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, ts.spec.Index)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(resRewards.Rewards))
+	dReward = resRewards.Rewards[0]
 	expectedDRewardForRelay := mint.MulInt64(totalReward.Int64())
 	require.Equal(t, expectedDRewardForRelay.TruncateInt64(), dReward.Amount.Amount.Int64())
 }
