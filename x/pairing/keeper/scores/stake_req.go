@@ -17,7 +17,14 @@ func (sr *StakeReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the the provider score as the normalized stake
 func (sr *StakeReq) Score(score PairingScore) math.Uint {
-	return sdk.NewUint(score.Provider.Stake.Amount.Uint64())
+	stake_score := score.Provider.Stake.Amount
+	if score.Provider.DelegateLimit.Amount.LT(score.Provider.DelegateTotal.Amount) {
+		stake_score.Add(score.Provider.DelegateLimit.Amount)
+	} else {
+		stake_score.Add(score.Provider.DelegateTotal.Amount)
+	}
+
+	return sdk.NewUint(stake_score.Uint64())
 }
 
 func (sr *StakeReq) GetName() string {

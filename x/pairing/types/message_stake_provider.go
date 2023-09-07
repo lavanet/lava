@@ -11,14 +11,16 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string, delegateLimit sdk.Coin, delegatecommission uint64) *MsgStakeProvider {
 	return &MsgStakeProvider{
-		Creator:     creator,
-		ChainID:     chainID,
-		Amount:      amount,
-		Endpoints:   endpoints,
-		Geolocation: geolocation,
-		Moniker:     moniker,
+		Creator:            creator,
+		ChainID:            chainID,
+		Amount:             amount,
+		Endpoints:          endpoints,
+		Geolocation:        geolocation,
+		Moniker:            moniker,
+		DelegateLimit:      delegateLimit,
+		DelegateCommission: delegatecommission,
 	}
 }
 
@@ -55,6 +57,10 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 
 	if len(msg.Moniker) > MAX_LEN_MONIKER {
 		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
+	}
+
+	if msg.DelegateCommission > 100 {
+		return sdkerrors.Wrapf(DelegatecommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
 	}
 
 	return nil

@@ -115,6 +115,25 @@ func CmdModifyProvider() *cobra.Command {
 			if moniker != "" {
 				providerEntry.Moniker = moniker
 			}
+
+			if cmd.Flags().Changed(types.Flagcommission) {
+				providerEntry.DelegateCommission, err = cmd.Flags().GetUint64(types.Flagcommission)
+				if err != nil {
+					return err
+				}
+			}
+
+			if cmd.Flags().Changed(types.FlagDelegationLimit) {
+				delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
+				if err != nil {
+					return err
+				}
+				providerEntry.DelegateLimit, err = sdk.ParseCoinNormalized(delegationLimitStr)
+				if err != nil {
+					return err
+				}
+			}
+
 			// modify fields
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
@@ -123,6 +142,8 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Endpoints,
 				providerEntry.Geolocation,
 				providerEntry.Moniker,
+				providerEntry.DelegateLimit,
+				providerEntry.DelegateCommission,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -134,6 +155,8 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(EndpointsFlagName, "", "The endpoints provider is offering in the format \"endpoint-url,geolocation endpoint-url,geolocation\"")
 	cmd.Flags().String(AmountFlagName, "", "modify the provider's staked amount")
 	cmd.Flags().Uint64(GeolocationFlag, 0, "modify the provider's geolocation")
+	cmd.Flags().Uint64(types.Flagcommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
