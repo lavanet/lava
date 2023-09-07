@@ -39,7 +39,11 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 			)
 			continue
 		}
-		delegations = append(delegations, providerDelegations...)
+		for _, delegation := range providerDelegations {
+			if delegation.Delegator == req.Delegator {
+				delegations = append(delegations, delegation)
+			}
+		}
 	}
 
 	return &types.QueryDelegatorProvidersResponse{Delegations: delegations}, nil
