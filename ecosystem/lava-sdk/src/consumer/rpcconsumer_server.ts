@@ -5,6 +5,7 @@ import {
   BaseChainParser,
   SendRelayOptions,
   SendRestRelayOptions,
+  ChainMessage,
 } from "../chainlib/base_chain_parser";
 import { stringToArrayBuffer } from "@improbable-eng/grpc-web/dist/typings/transports/http/xhr";
 import { newRelayData, SendRelayData } from "./lavaprotocol";
@@ -68,7 +69,7 @@ export class RPCConsumerServer {
   }
 
   private sendRelayToProvider(
-    chainMessage: string,
+    chainMessage: ChainMessage,
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
   ): RelayResult {

@@ -3,6 +3,7 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
   APIInterfaceTendermintRPC,
+  ChainMessage,
 } from "../chainlib/base_chain_parser";
 
 export class TendermintRpcChainParser extends BaseChainParser {
@@ -10,7 +11,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
     super();
     this.apiInterface = APIInterfaceTendermintRPC;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): string {
+  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ChainMessage {
     // TODO implement the parsemsg
     return "";
   }
