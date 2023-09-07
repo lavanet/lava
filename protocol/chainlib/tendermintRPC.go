@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -88,13 +89,15 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	isJsonrpc := string(data) != ""
 	if isJsonrpc {
 		// Fetch pointer to message and error
-		msgPtr, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
+		msgs, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
 			return nil, err
 		}
-
+		if len(msgs) != 1 {
+			return nil, fmt.Errorf("invalid unmarshaled json, got length %d", len(msgs))
+		}
 		// Assign value of pointer to msg
-		msg = *msgPtr
+		msg = msgs[0]
 	} else {
 		// assuming URI
 		var parsedMethod string

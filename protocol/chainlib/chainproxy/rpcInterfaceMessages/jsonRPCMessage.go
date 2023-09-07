@@ -76,13 +76,24 @@ func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 
-func ParseJsonRPCMsg(data []byte) (msgRet *JsonrpcMessage, err error) {
+func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
 	var msg JsonrpcMessage
 	err = json.Unmarshal(data, &msg)
 	if err != nil {
-		return nil, err
+		// we failed unmarshaling
+		// try to parse a batch
+		var batch []JsonrpcMessage
+		errBatch := json.Unmarshal(data, &batch)
+		if errBatch != nil {
+			// failed parsing both as batch and jsonrpc return the first unmarshal error, unless the first charqacter is "["
+			if data[0] == '[' {
+				return nil, errBatch
+			}
+			return nil, err
+		}
+		return batch, err
 	}
-	return &msg, nil
+	return []JsonrpcMessage{msg}, nil
 }

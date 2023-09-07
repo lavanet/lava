@@ -83,11 +83,14 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
-	msg, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
+	msgs, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
 	if err != nil {
 		return nil, err
 	}
-
+	if len(msgs) == 0 {
+		return nil, errors.New("empty unmarshaled json")
+	}
+	msg := msgs[0]
 	// Check api is supported and save it in nodeMsg
 	apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 	if err != nil {
@@ -117,7 +120,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, msg, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &msg, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
