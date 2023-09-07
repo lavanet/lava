@@ -217,6 +217,17 @@ func request_Query_DelegatorRewards_0(ctx context.Context, marshaler runtime.Mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "delegator", err)
 	}
 
+	val, ok = pathParams["provider"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "provider")
+	}
+
+	protoReq.Provider, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider", err)
+	}
+
 	val, ok = pathParams["chain_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "chain_id")
@@ -253,6 +264,17 @@ func local_request_Query_DelegatorRewards_0(ctx context.Context, marshaler runti
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "delegator", err)
+	}
+
+	val, ok = pathParams["provider"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "provider")
+	}
+
+	protoReq.Provider, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider", err)
 	}
 
 	val, ok = pathParams["chain_id"]
@@ -500,7 +522,7 @@ var (
 
 	pattern_Query_ProviderDelegators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "dualstaking", "provider_delegators", "provider"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_DelegatorRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "dualstaking", "delegator_rewards", "delegator", "chain_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_DelegatorRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "dualstaking", "delegator_rewards", "delegator", "provider", "chain_id"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

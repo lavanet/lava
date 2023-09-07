@@ -23,7 +23,8 @@ func (k Keeper) DelegatorRewards(goCtx context.Context, req *types.QueryDelegato
 	}
 
 	for _, delegation := range resProviders.Delegations {
-		if delegation.ChainID == req.ChainId || req.ChainId == "" {
+		if (delegation.ChainID == req.ChainId || req.ChainId == "") &&
+			(delegation.Provider == req.Provider || req.Provider == "") {
 			ind := types.DelegationKey(req.Delegator, delegation.Provider, delegation.ChainID)
 			delegatorReward, found := k.GetDelegatorReward(ctx, ind)
 			if found {

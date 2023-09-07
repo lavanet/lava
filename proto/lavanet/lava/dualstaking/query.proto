@@ -29,7 +29,7 @@ service Query {
 
   // Queries a provider for all its delegators.
   rpc DelegatorRewards(QueryDelegatorRewardsRequest) returns (QueryDelegatorRewardsResponse) {
-    option (google.api.http).get = "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{chain_id}";
+    option (google.api.http).get = "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}";
   }
 }
 
@@ -62,7 +62,8 @@ message QueryProviderDelegatorsResponse {
 
 message QueryDelegatorRewardsRequest {
   string delegator = 1;
-  string chain_id = 2;
+  string provider = 2;
+  string chain_id = 3;
 }
 
 message QueryDelegatorRewardsResponse {
