@@ -7,7 +7,7 @@ import { StateQuery } from "./stateQuery/state_query";
 import { Updater } from "./updaters/updater";
 import { Relayer } from "../relayer/relayer";
 import { AccountData } from "@cosmjs/proto-signing";
-import { Consumer } from "../consumer/consumer";
+import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 
@@ -28,7 +28,6 @@ export class StateTracker {
     chainIDs: string[],
     config: Config,
     account: AccountData,
-    consumer: Consumer,
     walletAddress: string,
     badgeManager?: BadgeManager
   ) {
@@ -52,16 +51,6 @@ export class StateTracker {
         account
       );
     }
-
-    // Create Pairing Updater
-    const pairingUpdater = new PairingUpdater(
-      this.stateQuery,
-      consumer,
-      chainIDs
-    );
-
-    // Register all updaters
-    this.registerForUpdates(pairingUpdater);
 
     Logger.debug("Pairing updater added");
   }

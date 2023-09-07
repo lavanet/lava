@@ -25,7 +25,7 @@ sleep 4
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
 
-PROVIDER1_LISTENER="127.0.0.1:2221"
+PROVIDER1_LISTENER="127.0.0.1:2220"
 
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block

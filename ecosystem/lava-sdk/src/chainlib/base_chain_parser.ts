@@ -15,6 +15,26 @@ export const APIInterfaceTendermintRPC = "tendermintrpc";
 export const APIInterfaceRest = "rest";
 export const APIInterfaceGrpc = "grpc";
 
+/**
+ * Options for sending RPC relay.
+ */
+export interface SendRelayOptions {
+  method: string; // Required: The RPC method to be called
+  params: Array<any>; // Required: An array of parameters to be passed to the RPC method
+  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
+}
+
+/**
+ * Options for sending Rest relay.
+ */
+export interface SendRestRelayOptions {
+  connectionType: string; // Required: The HTTP method to be used (e.g., "GET", "POST")
+  url: string; // Required: The API Path (URL) (e.g Cosmos: "/cosmos/base/tendermint/v1beta1/blocks/latest", Aptos: "/transactions" )
+  // eslint-disable-next-line
+  data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
+  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
+}
+
 interface ApiKey {
   name: string;
   connectionType: string;
@@ -74,17 +94,17 @@ interface HeadersHandler {
   ignoredMetadata: Metadata[];
 }
 
-export class BaseChainParser {
-  private taggedApis: Map<functionTag, TaggedContainer>;
-  private spec: Spec | undefined;
-  private serverApis: Map<ApiKeyString, ApiContainer>;
-  private headers: Map<ApiKeyString, HeaderContainer>;
-  private apiCollections: Map<CollectionKey, ApiCollection>;
+export abstract class BaseChainParser {
+  protected taggedApis: Map<functionTag, TaggedContainer>;
+  protected spec: Spec | undefined;
+  protected serverApis: Map<ApiKeyString, ApiContainer>;
+  protected headers: Map<ApiKeyString, HeaderContainer>;
+  protected apiCollections: Map<CollectionKey, ApiCollection>;
   // TODO: implement addons.
-  private allowedAddons: Set<string>;
+  protected allowedAddons: Set<string>;
   // private extensionParser: ExtensionParser;
-  private apiInterface = "";
-  private verifications: Map<VerificationKeyString, VerificationContainer[]>;
+  public apiInterface = "";
+  protected verifications: Map<VerificationKeyString, VerificationContainer[]>;
 
   constructor() {
     this.taggedApis = new Map();
@@ -189,7 +209,7 @@ export class BaseChainParser {
     }
   }
 
-  handleHeaders(
+  protected handleHeaders(
     metadata: Metadata[],
     apiCollection: ApiCollection,
     headersDirection: Header_HeaderType
@@ -244,15 +264,15 @@ export class BaseChainParser {
     };
   }
 
-  isAddon(addon: string): boolean {
+  protected isAddon(addon: string): boolean {
     return this.allowedAddons.has(addon);
   }
 
-  escapeRegExp(s: string): string {
+  protected escapeRegExp(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  matchSpecApiByName(
+  protected matchSpecApiByName(
     name: string,
     connectionType: string
   ): [ApiContainer | undefined, boolean] {
@@ -274,4 +294,6 @@ export class BaseChainParser {
     }
     return [undefined, false];
   }
+
+  abstract parseMsg(options: SendRelayOptions | SendRestRelayOptions): string;
 }

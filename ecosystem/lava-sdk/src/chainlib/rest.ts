@@ -1,22 +1,14 @@
 import {
-  ChainParser,
+  BaseChainParser,
   SendRelayOptions,
   SendRestRelayOptions,
-} from "./chainlib_interface";
-import { Relayer } from "../relayer/relayer";
-
-export class RestChainParser extends ChainParser {
-  constructor(apiInterface: string, relayer: Relayer) {
-    super(apiInterface, relayer);
+} from "../chainlib/base_chain_parser";
+export class RestChainParser extends BaseChainParser {
+  constructor() {
+    super();
   }
-  parseMsg(): string {
+  parseMsg(options: SendRelayOptions | SendRestRelayOptions): string {
     // TODO implement the parsemsg
-    return "";
-  }
-  async sendRelay(
-    relayOptions: SendRelayOptions | SendRestRelayOptions
-  ): Promise<string> {
-    // TODO implement the send relay
     return "";
   }
 }

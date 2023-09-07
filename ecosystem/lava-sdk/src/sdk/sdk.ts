@@ -10,27 +10,10 @@ import {
 import { Logger, LogLevel } from "../logger/logger";
 import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
-import { Consumer } from "../consumer/consumer";
+import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
-
-/**
- * Options for sending RPC relay.
- */
-export interface SendRelayOptions {
-  method: string; // Required: The RPC method to be called
-  params: Array<any>; // Required: An array of parameters to be passed to the RPC method
-}
-
-/**
- * Options for sending Rest relay.
- */
-export interface SendRestRelayOptions {
-  method: string; // Required: The HTTP method to be used (e.g., "GET", "POST")
-  url: string; // Required: The URL to send the request to
-  // eslint-disable-next-line
-  data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
-}
+type RelayReceiver = string; // chainId + ApiInterface
 
 /**
  * Options for initializing the LavaSDK.
@@ -62,7 +45,7 @@ export class LavaSDK {
   private allowInsecureTransport: boolean;
   private chainIDRpcInterface: string[];
   private transport: any;
-  private consumer?: Consumer; // we setup the consumer in the init function as we require extra information
+  private rpcConsumerServer?: RPCConsumerServer; // we setup the consumer in the init function as we require extra information
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
 
   /**
@@ -153,10 +136,6 @@ export class LavaSDK {
       transport: this.transport,
     });
 
-    this.consumer = new Consumer(this.relayer, this.geolocation);
-
-    // Init session manager map
-
     // Init state tracker
     const tracker = new StateTracker(
       this.pairingListConfig,
@@ -167,12 +146,33 @@ export class LavaSDK {
         network: this.network,
       },
       this.account,
-      this.consumer,
       this.walletAddress,
       this.badgeManager
     );
     await tracker.initialize();
 
-    // create a consumer object here
+    // init rpcconsumer servers
+    for (const chainId of this.chainIDRpcInterface) {
+      // init here
+      /*
+      here the flow is different a bit. first get the 
+      step0 fetch info for chain. tracker.fetchInitInfo()
+
+      for (let apiInterface of spec.apiCollection) {
+
+      }
+      step1.
+      const csm = new ConsumerSessionManager();
+      step2.
+      const chainParser = ???
+      
+      step3. 
+      register for updates both chainPaser, tracker.registerForPairingUpdates
+
+      final step:
+      create RpcConsumerServer(specific api+chain)
+      */
+      // here register for updates.
+    }
   }
 }

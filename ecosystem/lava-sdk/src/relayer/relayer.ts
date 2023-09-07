@@ -18,7 +18,10 @@ import {
 import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
-import { ConsumerSessionsWithProvider } from "../lavasession/consumerTypes";
+import {
+  ConsumerSessionsWithProvider,
+  SingleConsumerSession,
+} from "../lavasession/consumerTypes";
 
 export interface RelayerOptions {
   privKey: string;
@@ -90,21 +93,14 @@ export class Relayer {
     return this.relayWithTimeout(5000, requestPromise);
   }
 
-  async sendRelay(
+  public async sendRelay(
     options: SendRelayOptions,
-    consumerProviderSession: ConsumerSessionsWithProvider,
-    cuSum: number,
-    apiInterface: string,
-    chainID: string
+    singleConsumerSession: SingleConsumerSession
   ): Promise<RelayReply> {
     // Extract attributes from options
     const { data, url, connectionType } = options;
 
     const enc = new TextEncoder();
-
-    const consumerSession = consumerProviderSession.sessions[0];
-    // Increase used compute units
-    consumerProviderSession.addUsedComputeUnits(cuSum);
 
     // create request private data
     const requestPrivateData = new RelayPrivateData();
@@ -112,7 +108,7 @@ export class Relayer {
     requestPrivateData.setApiUrl(url);
     requestPrivateData.setData(enc.encode(data));
     requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
-    requestPrivateData.setApiInterface(apiInterface);
+    requestPrivateData.setApiInterface(options.apiInterface);
     requestPrivateData.setSalt(this.getNewSalt());
 
     const contentHash =
@@ -120,19 +116,16 @@ export class Relayer {
 
     // create request session
     const requestSession = new RelaySession();
-    requestSession.setSpecId(chainID);
-    requestSession.setSessionId(consumerSession.sessionId);
-    requestSession.setCuSum(cuSum);
-    requestSession.setProvider(consumerProviderSession.publicLavaAddress);
-    requestSession.setRelayNum(consumerSession.relayNum);
-    requestSession.setEpoch(consumerProviderSession.getPairingEpoch());
+    requestSession.setSpecId(options.chainId);
+    requestSession.setSessionId(singleConsumerSession.sessionId);
+    requestSession.setCuSum(singleConsumerSession.cuSum);
+    requestSession.setProvider(options.publicProviderLavaAddress);
+    requestSession.setRelayNum(singleConsumerSession.relayNum);
+    requestSession.setEpoch(options.epoch);
     requestSession.setUnresponsiveProviders(new Uint8Array());
     requestSession.setContentHash(contentHash);
     requestSession.setSig(new Uint8Array());
     requestSession.setLavaChainId(this.lavaChainId);
-
-    // Increase consumer session relay num
-    consumerSession.relayNum++;
 
     // Sign data
     const signedMessage = await this.signRelay(requestSession, this.privKey);
@@ -152,7 +145,8 @@ export class Relayer {
     const requestPromise = new Promise<RelayReply>((resolve, reject) => {
       grpc.invoke(RelayerService.Relay, {
         request: request,
-        host: this.prefix + "://" + consumerSession.endpoint.networkAddress,
+        host:
+          this.prefix + "://" + singleConsumerSession.endpoint.networkAddress,
         transport: transportation, // otherwise normal transport (default to rejectUnauthorized = true)
         onMessage: (message: RelayReply) => {
           resolve(message);
@@ -161,21 +155,15 @@ export class Relayer {
           if (code == grpc.Code.OK || msg == undefined) {
             return;
           }
-          // underflow guard
-          if (consumerProviderSession.usedComputeUnits > cuSum) {
-            consumerProviderSession.decreaseUsedComputeUnits(cuSum);
-          }
-
           let additionalInfo = "";
           if (msg.includes("Response closed without headers")) {
             additionalInfo =
               additionalInfo +
               ", provider iPPORT: " +
-              consumerSession.endpoint.networkAddress +
+              singleConsumerSession.endpoint.networkAddress +
               ", provider address: " +
-              consumerProviderSession.publicLavaAddress;
+              options.publicProviderLavaAddress;
           }
-
           const errMessage = this.extractErrorMessage(msg) + additionalInfo;
           reject(new Error(errMessage));
         },
@@ -371,11 +359,7 @@ export class Relayer {
 
   // SendRelayToAllProvidersAndRace sends relay to all lava providers and returns first response
   public async SendRelayToAllProvidersAndRace(
-    providers: ConsumerSessionsWithProvider[],
-    options: any,
-    relayCu: number,
-    rpcInterface: string,
-    chainID: string
+    batch: BatchRelays[]
   ): Promise<any> {
     console.log("Started sending to all providers and race");
     let lastError;
@@ -385,17 +369,13 @@ export class Relayer {
       retryAttempt++
     ) {
       const allRelays: Map<string, Promise<any>> = new Map();
-      let response;
-      for (const provider of providers) {
+      for (const provider of batch) {
         const uniqueKey =
-          provider.publicLavaAddress +
+          provider.options.publicProviderLavaAddress +
           String(Math.floor(Math.random() * 10000000));
-        const providerRelayPromise = this.SendRelayWithRetry(
-          options,
-          provider,
-          relayCu,
-          rpcInterface,
-          chainID
+        const providerRelayPromise = this.sendRelay(
+          provider.options,
+          provider.singleConsumerSession
         );
         allRelays.set(uniqueKey, providerRelayPromise);
       }
@@ -419,86 +399,6 @@ export class Relayer {
     );
   }
 
-  // SendRelayWithRetry tryes to send relay to provider and reties depending on errors
-  private async SendRelayWithRetry(
-    options: any,
-    lavaRPCEndpoint: ConsumerSessionsWithProvider,
-    relayCu: number,
-    rpcInterface: string,
-    chainID: string
-  ): Promise<any> {
-    let response;
-
-    try {
-      // For now we have hardcode relay cu
-      response = await this.sendRelay(
-        options,
-        lavaRPCEndpoint,
-        relayCu,
-        rpcInterface,
-        chainID
-      );
-    } catch (error) {
-      // If error is instace of Error
-      if (error instanceof Error) {
-        // If error is not old blokc height throw and error
-        // Extract current block height from error
-        const currentBlockHeight = this.extractBlockNumberFromError(error);
-
-        // If current block height equal nill throw an error
-        if (currentBlockHeight == null) {
-          throw error;
-        }
-
-        // Save current block height
-        lavaRPCEndpoint.setPairingEpoch(parseInt(currentBlockHeight));
-
-        // Retry same relay with added block height
-        try {
-          response = await this.sendRelay(
-            options,
-            lavaRPCEndpoint,
-            relayCu,
-            rpcInterface,
-            chainID
-          );
-        } catch (error) {
-          throw error;
-        }
-      }
-    }
-
-    // Validate that response is not undefined
-    if (response == undefined) {
-      return "";
-    }
-
-    // Decode response
-    const dec = new TextDecoder();
-    const decodedResponse = dec.decode(response.getData_asU8());
-
-    // Parse response
-    const jsonResponse = JSON.parse(decodedResponse);
-
-    // Return response
-    return jsonResponse;
-  }
-
-  // extractBlockNumberFromError extract block number from error if exists
-  private extractBlockNumberFromError(error: Error): string | null {
-    let currentBlockHeightRegex = /current epoch Value:(\d+)/;
-    let match = error.message.match(currentBlockHeightRegex);
-
-    // Retry with new error
-    if (match == null) {
-      currentBlockHeightRegex = /current epoch: (\d+)/; // older epoch parsing
-
-      match = error.message.match(currentBlockHeightRegex);
-      return match ? match[1] : null;
-    }
-    return match ? match[1] : null;
-  }
-
   getNewSalt(): Uint8Array {
     const salt = this.generateRandomUint();
     const nonceBytes = new Uint8Array(8);
@@ -517,11 +417,20 @@ export class Relayer {
   }
 }
 
+export interface BatchRelays {
+  options: SendRelayOptions;
+  singleConsumerSession: SingleConsumerSession;
+}
+
 /**
  * Options for send relay method.
  */
-interface SendRelayOptions {
+export interface SendRelayOptions {
   data: string;
   url: string;
   connectionType: string;
+  apiInterface: string;
+  chainId: string;
+  publicProviderLavaAddress: string;
+  epoch: number;
 }

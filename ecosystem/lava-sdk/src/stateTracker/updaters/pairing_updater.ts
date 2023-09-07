@@ -1,14 +1,18 @@
 import { StateQuery } from "../stateQuery/state_query";
 import { Logger } from "../../logger/logger";
-import { Consumer } from "../../consumer/consumer";
+import { RPCConsumerServer } from "../../consumer/rpcconsumer_server";
 
 export class PairingUpdater {
   private stateQuery: StateQuery;
-  private consumer: Consumer;
+  private consumer: RPCConsumerServer;
   private chainIDs: string[];
 
   // Constructor for Pairing Updater
-  constructor(stateQuery: StateQuery, consumer: Consumer, chainIDs: string[]) {
+  constructor(
+    stateQuery: StateQuery,
+    consumer: RPCConsumerServer,
+    chainIDs: string[]
+  ) {
     Logger.debug("Initialization of Pairing Updater started");
 
     // Save arguments
