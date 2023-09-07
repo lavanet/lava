@@ -80,17 +80,11 @@ func (k Keeper) CalcDelegatorsReward(stakeEntry epochstoragetypes.StakeEntry, to
 }
 
 // CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
-// effectiveDelegations = min(totalDelegations, delegationsLimit)
+// effectiveDelegations = totalDelegations
 // effective stake = effectiveDelegations + providerStake
 func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int) {
 	totalDelegations := stakeEntry.DelegateTotal.Amount
-	delegationsLimit := stakeEntry.DelegateLimit.Amount
-
-	if totalDelegations.LTE(delegationsLimit) {
-		return totalDelegations, totalDelegations.Add(stakeEntry.Stake.Amount)
-	}
-
-	return delegationsLimit, delegationsLimit.Add(stakeEntry.Stake.Amount)
+	return totalDelegations, totalDelegations.Add(stakeEntry.Stake.Amount)
 }
 
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
