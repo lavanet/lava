@@ -11,7 +11,7 @@ import (
 
 // geo requirement that implements the ScoreReq interface
 type GeoReq struct {
-	Geo uint64
+	Geo int32
 }
 
 const (
@@ -32,7 +32,7 @@ func (gr GeoReq) Score(score PairingScore) math.Uint {
 		return calculateCostFromLatency(minGeoLatency)
 	}
 
-	providerGeoEnums := planstypes.GetGeolocationsFromUint(int32(score.Provider.Geolocation))
+	providerGeoEnums := planstypes.GetGeolocationsFromUint(score.Provider.Geolocation)
 	_, cost := CalcGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
 
 	return cost
@@ -55,9 +55,9 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 // TODO: this function doesn't return the optimal geo reqs for the case
 // that there are more required geos than providers to pair
 func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
-	policyGeoEnums := planstypes.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
+	policyGeoEnums := planstypes.GetGeolocationsFromUint(policy.GeolocationProfile)
 
-	return GeoReq{Geo: uint64(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
+	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }
 
 // a single geolocation and the latency to it (in millieseconds)

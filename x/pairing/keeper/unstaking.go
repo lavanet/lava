@@ -48,7 +48,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 	details := map[string]string{
 		"address":     existingEntry.GetAddress(),
 		"chainID":     existingEntry.GetChain(),
-		"geolocation": strconv.FormatUint(existingEntry.GetGeolocation(), 10),
+		"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
 		"moniker":     existingEntry.GetMoniker(),
 		"stake":       existingEntry.GetStake().Amount.String(),
 	}

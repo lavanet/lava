@@ -12,7 +12,7 @@ message StakeEntry {
   string address = 2; 
   uint64 stake_applied_block = 3; 
   repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
-  uint64 geolocation = 5; 
+  int32 geolocation = 5; 
   string chain = 6;
   string moniker = 8;
 }

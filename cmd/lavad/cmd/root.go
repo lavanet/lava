@@ -107,7 +107,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   "lava-protocol",
+		Use:   "lavap",
 		Short: "Lava Protocol daemon",
 		Long:  "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {

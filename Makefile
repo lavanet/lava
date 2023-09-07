@@ -5,7 +5,7 @@
 #
 # Binaries:
 #   lavad               - binary to run for nodes and validators
-#   lava-protocol       - binary to run for providers
+#   lavap               - binary to run for providers
 #
 # Targets:
 #   (the output of builds goes to $(BUILD_DIR), by default: build/*)
@@ -43,7 +43,7 @@
 #
 # Environment
 #   LAVA_VERSION=...    - select lava version (for 'release')
-#   LAVA_BINARY=...     - select binary to build: "lavad", "lava-protocol", or "all"
+#   LAVA_BINARY=...     - select binary to build: "lavad", "lavap", or "all"
 #   BUILDDIR=...        - select local directory for build output
 #   LEDGER_ENABLED      - (not to be used)
 #
@@ -223,7 +223,7 @@ ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
 endif
 
-LAVA_ALL_BINARIES := lavad lava-protocol lava-visor
+LAVA_ALL_BINARIES := lavad lavap lava-visor
 
 # helper target/build functions
 

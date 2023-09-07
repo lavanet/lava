@@ -70,7 +70,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 	}
 
 	// check all supported geolocations form all providers prior to making decisions
-	existingProviders := map[uint64]map[string]struct{}{}
+	existingProviders := map[int32]map[string]struct{}{}
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
 		// count providers per geolocation
