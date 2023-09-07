@@ -5,7 +5,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
-
+import "google/protobuf/timestamp.proto";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
@@ -66,6 +66,7 @@ message ReportedProvider {
     string address =1;
     uint64 disconnections =2;
     uint64 errors =3;
+    int64 timestamp_s = 4;
 }
 
 message Metadata {

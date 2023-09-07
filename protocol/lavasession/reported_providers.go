@@ -14,10 +14,9 @@ type ReportedProviders struct {
 }
 
 type ReportedProviderEntry struct {
-	Disconnections  uint64
-	Errors          uint64
-	shouldReconnect bool
-	addedTime       time.Time
+	Disconnections uint64
+	Errors         uint64
+	addedTime      time.Time
 }
 
 func (rp *ReportedProviders) Reset() {
@@ -37,6 +36,7 @@ func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProv
 			Address:        provider,
 			Disconnections: reportedProviderEntry.Disconnections,
 			Errors:         reportedProviderEntry.Errors,
+			TimestampS:     reportedProviderEntry.addedTime.Unix(),
 		}
 		reportedProviders = append(reportedProviders, &reportedProvider)
 	}
@@ -52,7 +52,6 @@ func (rp *ReportedProviders) ReportProvider(address string, errors uint64, disco
 	}
 	rp.addedToPurgeAndReport[address].Disconnections += disconnections
 	rp.addedToPurgeAndReport[address].Errors += errors
-	rp.addedToPurgeAndReport[address].shouldReconnect = true
 	rp.addedToPurgeAndReport[address].addedTime = time.Now()
 }
 

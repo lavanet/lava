@@ -594,7 +594,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	}
 
 	if reportProvider { // Report provider flow
-		csm.reportedProviders.ReportProvider(address, disconnections, errors)
+		csm.reportedProviders.ReportProvider(address, errors, disconnections)
 	}
 
 	return nil
