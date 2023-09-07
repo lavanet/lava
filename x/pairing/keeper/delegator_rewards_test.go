@@ -159,3 +159,74 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 	newBalance = ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, expectedReward.TruncateInt64(), newBalance-balance)
 }
+
+func TestProviderRewardWithCommission(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
+	ts.addDelegators(2)
+
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
+	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+
+	ts.AdvanceEpoch() // to apply pairing
+
+	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(100))
+	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
+	require.Nil(t, err)
+	ts.AdvanceEpoch() // apply delegations
+
+	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	require.True(t, found)
+
+	// ** provider's commission is 100% ** //
+
+	stakeEntry.DelegateCommission = 100
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.AdvanceEpoch()
+
+	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
+
+	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
+	totalReward := math.NewInt(int64(relayCuSum))
+	providerReward := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, totalReward)
+	require.True(t, totalReward.Equal(providerReward))
+
+	// check that the expected reward equals to the provider's new balance minus old balance
+	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
+	expectedRewardForRelay := mint.MulInt64(providerReward.Int64())
+
+	balance := ts.GetBalance(providerAcc.Addr)
+	relayPaymentMessage := sendRelay(ts, provider, clientAcc)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	newBalance := ts.GetBalance(providerAcc.Addr)
+	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
+
+	// the delegator should get no rewards
+	ind := dualstakingtypes.DelegationKey(delegator1, provider, ts.spec.Index)
+	dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
+	require.True(t, found)
+	expectedDReward := math.ZeroInt()
+	require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
+
+	// ** provider's commission is 0% ** //
+
+	stakeEntry.DelegateCommission = 0
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.AdvanceEpoch()
+
+	// the expected reward for the provider with 0% commission is no rewards at all
+	balance = ts.GetBalance(providerAcc.Addr)
+	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	newBalance = ts.GetBalance(providerAcc.Addr)
+	require.Equal(t, balance, newBalance)
+
+	// the delegator should get the total rewards
+	dReward, found = ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
+	require.True(t, found)
+	expectedDRewardForRelay := mint.MulInt64(totalReward.Int64())
+	require.Equal(t, expectedDRewardForRelay.TruncateInt64(), dReward.Amount.Amount.Int64())
+}
