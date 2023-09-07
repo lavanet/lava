@@ -10,7 +10,11 @@ import {
 import { stringToArrayBuffer } from "@improbable-eng/grpc-web/dist/typings/transports/http/xhr";
 import { newRelayData, SendRelayData } from "./lavaprotocol";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
-import { RelayPrivateData } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import {
+  RelayPrivateData,
+  RelayReply,
+  RelayRequest,
+} from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 const MaxRelayRetries = 4;
 
@@ -41,7 +45,8 @@ export class RPCConsumerServer {
     const relayData = {
       data: "",
       url: "",
-      connectionType: "",
+      connectionType:
+        chainMessage.getApiCollection().getCollectionData()?.getType() ?? "",
       apiInterface: this.rpcEndpoint.apiInterface,
       chainId: this.rpcEndpoint.chainId,
     };
@@ -53,6 +58,14 @@ export class RPCConsumerServer {
         relayPrivateData,
         unwantedProviders
       );
+      // if relayResult.ProviderAddress != "" {
+      // 	if blockOnSyncLoss && lavasession.IsSessionSyncLoss(err) {
+      // 		utils.LavaFormatDebug("Identified SyncLoss in provider, not removing it from list for another attempt", utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
+      // 		blockOnSyncLoss = false // on the first sync loss no need to block the provider. give it another chance
+      // 	} else {
+      // 		unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+      // 	}
+      // }
     }
     // this.consumerSessionManager.getSessions()
 
@@ -73,13 +86,18 @@ export class RPCConsumerServer {
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
   ): RelayResult {
-    return { request: "", reply: "", providerAddress: "", finalized: false };
+    return {
+      request: undefined,
+      reply: undefined,
+      providerAddress: "",
+      finalized: false,
+    };
   }
 }
 
 interface RelayResult {
-  request: string;
-  reply: string;
+  request: RelayRequest | undefined;
+  reply: RelayReply | undefined;
   providerAddress: string;
   finalized: boolean;
 }
