@@ -25,6 +25,8 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+const SEP = "|"
+
 type JsonRPCChainParser struct {
 	BaseChainParser
 }
@@ -90,37 +92,55 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if len(msgs) == 0 {
 		return nil, errors.New("empty unmarshaled json")
 	}
-	msg := msgs[0]
-	// Check api is supported and save it in nodeMsg
-	apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
-	if err != nil {
-		return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
-	}
-
-	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
-	if err != nil {
-		return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, apiCont.api.Name, err)
-	}
-
-	metadata, overwriteReqBlock, _ := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
-	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
-	msg.BaseMessage = chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective}
-
-	var requestedBlock int64
-	if overwriteReqBlock == "" {
-		// Fetch requested block, it is used for data reliability
-		requestedBlock, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+	var requestedBlock int64 = 0
+	var api *spectypes.Api
+	var apiCollection *spectypes.ApiCollection
+	for idx, msg := range msgs {
+		// Check api is supported and save it in nodeMsg
+		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 		}
-	} else {
-		requestedBlock, err = msg.ParseBlock(overwriteReqBlock)
+
+		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+			return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, apiCont.api.Name, err)
+		}
+
+		metadata, overwriteReqBlock, _ := apip.HandleHeaders(metadata, apiCollectionForMessage, spectypes.Header_pass_send)
+		settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+		msg.BaseMessage = chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective}
+
+		if overwriteReqBlock == "" {
+			// Fetch requested block, it is used for data reliability
+			requestedBlock, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+			if err != nil {
+				return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			}
+		} else {
+			requestedBlock, err = msg.ParseBlock(overwriteReqBlock)
+			if err != nil {
+				return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+			}
+		}
+		if idx == 0 {
+			api = apiCont.api
+			apiCollection = apiCollectionForMessage
+		} else {
+			if api == nil {
+				utils.LavaFormatFatal("invalid parsing, api is nil", nil)
+			}
+			api = &spectypes.Api{
+				Enabled:           true,
+				Name:              api.Name + SEP + apiCont.api.Name,
+				ComputeUnits:      api.ComputeUnits + apiCont.api.ComputeUnits,
+				ExtraComputeUnits: 0,
+				Category:          category,
+				BlockParsing:      blockParsing,
+			}
 		}
 	}
-
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &msg, apiCollection)
+	nodeMsg := apip.newChainMessage(api, requestedBlock, &msg, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
