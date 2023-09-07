@@ -259,6 +259,10 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
 }
 
+func (psm *ProviderSessionManager) UpdateVirtualEpoch(virtualEpoch uint64) {
+
+}
+
 func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
 	// In order to avoid running over the map twice, (1. mark 2. delete.) better technique is to copy and filter
 	// which has better O(n) vs O(2n)

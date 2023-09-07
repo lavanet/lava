@@ -3,6 +3,7 @@ package statetracker
 import (
 	"context"
 	"fmt"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"strconv"
 	"time"
 
@@ -33,6 +34,8 @@ type StateQuery struct {
 	PairingQueryClient      pairingtypes.QueryClient
 	EpochStorageQueryClient epochstoragetypes.QueryClient
 	ProtocolClient          protocoltypes.QueryClient
+	DowntimeClient          downtimev1.QueryClient
+	TendermintClient        client.TendermintRPC
 	ResponsesCache          *ristretto.Cache
 }
 
@@ -42,6 +45,8 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	sq.PairingQueryClient = pairingtypes.NewQueryClient(clientCtx)
 	sq.EpochStorageQueryClient = epochstoragetypes.NewQueryClient(clientCtx)
 	sq.ProtocolClient = protocoltypes.NewQueryClient(clientCtx)
+	sq.DowntimeClient = downtimev1.NewQueryClient(clientCtx)
+	sq.TendermintClient = clientCtx.Client
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -66,6 +71,42 @@ func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, utils.Attribute{Key: "ChainID", Value: chainID})
 	}
 	return &spec.Spec, nil
+}
+
+func (csq *StateQuery) CheckEmergencyMode(ctx context.Context) (isEmergency bool, virtualEpoch uint64, err error) {
+	downtimeParams, err := csq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
+	if err != nil {
+		return false, 0, err
+	}
+
+	status, err := csq.TendermintClient.Status(ctx)
+	if err != nil {
+		return false, 0, err
+	}
+
+	latestBlockTime := status.SyncInfo.LatestBlockTime.UTC()
+	downtimeDuration := downtimeParams.Params.DowntimeDuration
+	now := time.Now().UTC()
+
+	if latestBlockTime.Add(downtimeDuration).Before(now) {
+		details, err := csq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
+		if err != nil {
+			return false, 0, err
+		}
+
+		epochStart := int64(details.EpochDetails.StartBlock)
+
+		block, err := csq.TendermintClient.Block(ctx, &epochStart)
+		if err != nil {
+			return false, 0, err
+		}
+
+		virtualEpoch = uint64(now.Sub(block.Block.Time).Milliseconds() / downtimeParams.Params.EpochDuration.Milliseconds())
+
+		return true, virtualEpoch, nil
+	}
+
+	return false, 0, nil
 }
 
 type ConsumerStateQuery struct {

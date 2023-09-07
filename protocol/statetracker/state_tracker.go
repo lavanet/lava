@@ -55,6 +55,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
+		OldBlockCallback:  cst.oldLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
 		AverageBlockTime:  time.Duration(averageBlockTime) * time.Second,
 		ServerBlockMemory: BlocksToSaveLavaChainTracker,
@@ -73,6 +74,15 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)
 	}
+}
+
+func (st *StateTracker) oldLavaBlock(latestBlock int64) {
+	st.registrationLock.RLock()
+	defer st.registrationLock.RUnlock()
+
+	// call epoch updater to check emergency mode
+	updater := st.newLavaBlockUpdaters[CallbackKeyForEpochUpdate]
+	updater.Update(latestBlock)
 }
 
 func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {

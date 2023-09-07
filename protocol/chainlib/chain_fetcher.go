@@ -3,7 +3,9 @@ package chainlib
 import (
 	"context"
 	"fmt"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -24,6 +26,7 @@ type ChainFetcherIf interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
+	FetchLatestBlockTime(ctx context.Context) (time.Time, error)
 	Validate(ctx context.Context) error
 }
 
@@ -216,6 +219,10 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	return res, nil
 }
 
+func (cf *ChainFetcher) FetchLatestBlockTime(ctx context.Context) (time.Time, error) {
+	return time.Time{}, nil
+}
+
 func NewChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *ChainFetcher {
 	cf := &ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
 	return cf
@@ -243,6 +250,24 @@ func (lcf *LavaChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 		return "", err
 	}
 	return resultStatus.SyncInfo.LatestBlockHash.String(), nil
+}
+
+func (lcf *LavaChainFetcher) IsDowntime(ctx context.Context) (bool, error) {
+	resultStatus, err := lcf.clientCtx.Client.Status(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := downtimev1.NewQueryClient(lcf.clientCtx).QueryParams(ctx, &downtimev1.QueryParamsRequest{})
+	if err != nil {
+		return false, err
+	}
+
+	return resultStatus.SyncInfo.LatestBlockTime.Add(resp.GetParams().DowntimeDuration).Before(time.Now()), nil
+}
+
+func (cf *LavaChainFetcher) FetchLatestBlockTime(ctx context.Context) (time.Time, error) {
+	return time.Time{}, nil
 }
 
 func (lcf *LavaChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
