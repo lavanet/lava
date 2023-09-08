@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import {
   AVAILABILITY_PERCENTAGE,
+  DEFAULT_DECIMAL_PRECISION,
   MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER,
   MAX_SESSIONS_ALLOWED_PER_PROVIDER,
   MIN_PROVIDERS_FOR_SYNC,
@@ -18,6 +19,7 @@ import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_p
 import { Logger } from "../logger/logger";
 import { Result } from "./helpers";
 import { grpc } from "@improbable-eng/grpc-web";
+import { QualityOfServiceReport } from "../codec/lavanet/lava/pairing/relay";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -57,16 +59,10 @@ export interface ProviderOptimizer {
   ): QualityOfServiceReport;
 }
 
-export interface QualityOfServiceReport {
-  latency: number;
-  availability: number;
-  sync: number;
-}
-
 export interface QoSReport {
   lastQoSReport?: QualityOfServiceReport;
   lastExcellenceQoSReport?: QualityOfServiceReport;
-  latencyScoreList: number[];
+  latencyScoreList: string[];
   syncScoreSum: number;
   totalSyncScore: number;
   totalRelays: number;
@@ -74,24 +70,26 @@ export interface QoSReport {
 }
 
 export function calculateAvailabilityScore(qosReport: QoSReport): {
-  downtimePercentage: number;
-  scaledAvailabilityScore: number;
+  downtimePercentage: string;
+  scaledAvailabilityScore: string;
 } {
   const downtimePercentage = BigNumber(
     (qosReport.totalRelays - qosReport.answeredRelays) / qosReport.totalRelays
-  )
-    .precision(1)
-    .toNumber();
+  );
 
-  const scaledAvailabilityScore = BigNumber(
-    (AVAILABILITY_PERCENTAGE - downtimePercentage) / AVAILABILITY_PERCENTAGE
-  )
-    .precision(1)
-    .toNumber();
+  const scaledAvailabilityScore = BigNumber(AVAILABILITY_PERCENTAGE)
+    .minus(downtimePercentage)
+    .div(AVAILABILITY_PERCENTAGE)
+    .toPrecision();
 
   return {
-    downtimePercentage: downtimePercentage,
-    scaledAvailabilityScore: Math.max(0, scaledAvailabilityScore),
+    downtimePercentage: downtimePercentage.toPrecision(
+      DEFAULT_DECIMAL_PRECISION
+    ),
+    scaledAvailabilityScore: BigNumber.max(
+      BigNumber(0),
+      scaledAvailabilityScore
+    ).toPrecision(DEFAULT_DECIMAL_PRECISION),
   };
 }
 
@@ -112,7 +110,7 @@ export class SingleConsumerSession {
   };
   public sessionId = 0;
   public client: ConsumerSessionsWithProvider;
-  public relayNum = 1;
+  public relayNum = 0;
   public latestBlock = 0;
   public endpoint: Endpoint = {
     networkAddress: "",
@@ -172,9 +170,9 @@ export class SingleConsumerSession {
 
     if (!this.qoSInfo.lastQoSReport) {
       this.qoSInfo.lastQoSReport = {
-        latency: 0,
-        availability: 0,
-        sync: 0,
+        latency: "0",
+        availability: "0",
+        sync: "0",
       };
     }
 
@@ -213,7 +211,9 @@ export class SingleConsumerSession {
       const sync = BigNumber(this.qoSInfo.syncScoreSum).div(
         this.qoSInfo.totalSyncScore
       );
-      this.qoSInfo.lastQoSReport.sync = sync.toNumber();
+      this.qoSInfo.lastQoSReport.sync = sync.toPrecision(
+        DEFAULT_DECIMAL_PRECISION
+      );
 
       if (BigNumber(1).gt(sync)) {
         Logger.debug(
@@ -232,12 +232,14 @@ export class SingleConsumerSession {
   private calculateLatencyScore(
     expectedLatency: number,
     latency: number
-  ): number {
+  ): string {
     const oneDec = BigNumber("1");
     const bigExpectedLatency = BigNumber(expectedLatency);
     const bigLatency = BigNumber(latency);
 
-    return BigNumber.min(oneDec, bigExpectedLatency).div(bigLatency).toNumber();
+    return BigNumber.min(oneDec, bigExpectedLatency)
+      .div(bigLatency)
+      .toPrecision(DEFAULT_DECIMAL_PRECISION);
   }
 }
 

@@ -206,17 +206,15 @@ export class LavaSDK {
         );
         tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
 
-        tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
-
         // create chain parser
-        const chainParse = getChainParser(apiInterface);
-        chainParse.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())
+        const chainParser = getChainParser(apiInterface);
+        chainParser.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())
 
         // create rpc consumer server
         const rpcConsuemer = new RPCConsumerServer(
           this.relayer,
           csm,
-          chainParse,
+          chainParser,
           this.geolocation,
           rpcEndpoint,
           this.lavaChainId
