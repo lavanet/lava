@@ -62,6 +62,7 @@
     "grpc-web": "^1.4.2",
     "jest": "^29.3.1",
     "long": "^5.2.1",
+    "lru-cache": "^10.0.1",
     "prettier": "^2.8.0",
     "protobufjs": "^7.1.2",
     "rxjs": "^7.5.7",
