@@ -8,6 +8,7 @@ import {
   ProbeRequest,
   ProbeReply,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { Logger } from "../logger/logger";
 
 interface ProviderDataContainer {
   latestFinalizedBlock: number;
@@ -122,7 +123,107 @@ export class FinalizationConsensus {
 
   public getExpectedBlockHeight(chainParser: BaseChainParser) {
     const chainBlockStats = chainParser.chainBlockStats();
+    let highestBlockNumber = 0;
+    const findAndUpdateHighestBlockNumber = (
+      listProviderHashesConsensus: ProviderHashesConsensus[]
+    ) => {
+      for (const providerHashesConsensus of listProviderHashesConsensus) {
+        for (const [
+          ,
+          providerDataContainer,
+        ] of providerHashesConsensus.agreeingProviders) {
+          if (highestBlockNumber < providerDataContainer.latestFinalizedBlock) {
+            highestBlockNumber = providerDataContainer.latestFinalizedBlock;
+          }
+        }
+      }
+    };
+
+    findAndUpdateHighestBlockNumber(this.prevEpochProviderHashesConsensus);
+    findAndUpdateHighestBlockNumber(this.currentProviderHashesConsensus);
+    const now = performance.now();
+    const calcExpectedBlocks = function (
+      mapExpectedBlockHeights: Map<string, number>,
+      listProviderHashesConsensus: ProviderHashesConsensus[]
+    ) {
+      for (const providerHashesConsensus of listProviderHashesConsensus) {
+        for (const [
+          providerAddress,
+          providerDataContiner,
+        ] of providerHashesConsensus.agreeingProviders) {
+          const interpolation = interpolateBlocks(
+            now,
+            providerDataContiner.latestBlockTime,
+            chainBlockStats.averageBlockTime
+          );
+          let expected =
+            providerDataContiner.latestFinalizedBlock + interpolation;
+          if (expected > highestBlockNumber) {
+            expected = highestBlockNumber;
+          }
+          mapExpectedBlockHeights.set(providerAddress, expected);
+        }
+      }
+    };
+
+    const mapExpectedBlockHeights: Map<string, number> = new Map();
+    calcExpectedBlocks(
+      mapExpectedBlockHeights,
+      this.prevEpochProviderHashesConsensus
+    );
+    calcExpectedBlocks(
+      mapExpectedBlockHeights,
+      this.currentProviderHashesConsensus
+    );
+
+    const median = function (dataMap: Map<string, number>): number {
+      const data: Array<number> = [];
+      for (const latestBlock of dataMap.values()) {
+        data.push(latestBlock);
+      }
+      data.sort((a, b) => a - b);
+      let medianResult = 0;
+      if (data.length == 0) {
+        return 0;
+      } else if (data.length % 2 == 0) {
+        medianResult =
+          (data[data.length / 2 - 1] + data[data.length / 2]) / 2.0;
+      } else {
+        medianResult = data[data.length / 2];
+      }
+      return medianResult;
+    };
+    const medianOfExpectedBlocks = median(mapExpectedBlockHeights);
+    const providersMedianOfLatestBlock =
+      medianOfExpectedBlocks + chainBlockStats.blockDistanceForFinalizedData;
+    if (
+      medianOfExpectedBlocks > 0 &&
+      providersMedianOfLatestBlock > this.latestBlock
+    ) {
+      if (
+        providersMedianOfLatestBlock > this.latestBlock + 1000 &&
+        this.latestBlock > 0
+      ) {
+        Logger.error(
+          "uncontinous jump in finalization data, latestBlock",
+          this.latestBlock,
+          "providersMedianOfLatestBlock",
+          providersMedianOfLatestBlock
+        );
+      }
+    }
   }
+}
+
+function interpolateBlocks(
+  timeNow: number,
+  latestBlockTime: number,
+  averageBlockTime: number
+): number {
+  if (timeNow < latestBlockTime) {
+    return 0;
+  }
+  return Math.floor((timeNow - latestBlockTime) / averageBlockTime);
 }
 
 interface ExpectedBlockHeight {
