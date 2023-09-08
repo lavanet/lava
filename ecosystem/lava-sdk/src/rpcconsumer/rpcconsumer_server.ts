@@ -12,7 +12,6 @@ import {
   constructRelayRequest,
   IsFinalizedBlock,
   newRelayData,
-  SendRelayData,
   UpdateRequestedBlock,
   verifyFinalizationData,
   verifyRelayReply,
@@ -54,7 +53,7 @@ export class RPCConsumerServer {
     this.relayer = relayer;
     this.rpcEndpoint = rpcEndpoint;
     this.lavaChainId = lavaChainId;
-    this.consumerAddress = "TODO";
+    this.consumerAddress = "TODO"; // TODO: this needs to be the public address that the provider signs finalization data with, check on badges if it's the signer or the badge project key
     this.finalizationConsensus = finalizationConsensus;
   }
 
@@ -275,6 +274,7 @@ export class RPCConsumerServer {
       return relayResponse;
     }
     const chainBlockStats = this.chainParser.chainBlockStats();
+    UpdateRequestedBlock(relayData, reply);
     const finalized = IsFinalizedBlock(
       relayData.getRequestBlock(),
       reply.getLatestBlock(),
