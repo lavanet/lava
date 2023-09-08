@@ -9,7 +9,11 @@ import {
   ChainMessage,
 } from "../chainlib/base_chain_parser";
 import { stringToArrayBuffer } from "@improbable-eng/grpc-web/dist/typings/transports/http/xhr";
-import { newRelayData, SendRelayData } from "./lavaprotocol";
+import {
+  constructRelayRequest,
+  newRelayData,
+  SendRelayData,
+} from "./lavaprotocol";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
   RelayPrivateData,
@@ -17,6 +21,7 @@ import {
   RelayRequest,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import SDKErrors from "../sdk/errors";
+import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 
 const MaxRelayRetries = 4;
 
@@ -117,6 +122,10 @@ export class RPCConsumerServer {
       const { averageBlockTime } = this.chainParser.chainBlockStats();
       extraRelayTimeout = averageBlockTime;
     }
+    const relayTimeout =
+      extraRelayTimeout +
+      getTimePerCu(chainMessage.getApi().getComputeUnits()) +
+      AverageWorldLatency;
     try {
       const consumerSessionsMap = this.consumerSessionManager.getSessions(
         chainMessage.getApi().getComputeUnits(),
@@ -144,26 +153,47 @@ export class RPCConsumerServer {
         reply: undefined,
         finalized: false,
       };
-      return this.sendRelayProviderInSession(sessionInfo, extraRelayTimeout);
+
+      const singleConsumerSession = sessionInfo.session;
+      const epoch = sessionInfo.epoch;
+      const reportedProviders = sessionInfo.reportedProviders;
+
+      const relayRequest = constructRelayRequest(
+        lavaChainId,
+        chainID,
+        relayData,
+        providerAddress,
+        singleConsumerSession,
+        epoch,
+        reportedProviders
+      );
+
+      relayResult.request = relayRequest;
+      return await this.sendRelayProviderInSession(
+        sessionInfo,
+        extraRelayTimeout,
+        chainMessage,
+        relayData
+      );
     } catch (err) {
       if (err instanceof Error) {
         return err;
       }
       return new Error("unsupported error " + err);
     }
-
+  }
+  protected async sendRelayProviderInSession(
+    sessionInfo: SessionInfo,
+    relayTimeout: number,
+    chainMessage: ChainMessage,
+    relayData: RelayPrivateData
+  ): Promise<RelayResult | Array<RelayError> | Error> {
     return {
       request: undefined,
       reply: undefined,
       providerAddress: "",
       finalized: false,
     };
-  }
-  protected async sendRelayProviderInSession(
-    sessionInfo: SessionInfo,
-    relayTimeout: number
-  ): Promise<any> {
-    return undefined;
   }
 
   // use this as an initial scaffold to send to several providers
