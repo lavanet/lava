@@ -402,7 +402,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// relay failed need to fail the session advancement
 					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 					if errReport != nil {
-						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
+						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: origErr.Error()})
 					}
 				}
 				go failRelaySession(errResponse, backoff)

@@ -248,6 +248,7 @@ export class LavaSDK {
     return "";
   }
 
+  // the inner async function throws on relay error
   public sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
     const relayReceiver = this.getRelayReceiver(options);
     const rpcConsumerServer = this.rpcConsumerServerRouter.get(relayReceiver);
@@ -260,6 +261,21 @@ export class LavaSDK {
         options?.chainId ?? this.rpcConsumerServerRouter.keys()
       );
     }
-    rpcConsumerServer.sendRelay(options);
+    const relayResult = rpcConsumerServer.sendRelay(options);
+    return relayResult.then((response) => {
+      // // Decode response
+      const reply = response.reply;
+      if (reply == undefined) {
+        throw new Error("empty reply");
+      }
+      const dec = new TextDecoder();
+      const decodedResponse = dec.decode(reply.getData_asU8());
+
+      // Parse response
+      const jsonResponse = JSON.parse(decodedResponse);
+
+      // Return response
+      return jsonResponse;
+    });
   }
 }
