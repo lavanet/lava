@@ -260,10 +260,60 @@ interface FinalizationData {
 export function verifyFinalizationData(
   reply: RelayReply,
   relayRequest: RelayRequest,
-  providerPublicAddress: string,
+  providerAddr: string,
   consumerAddress: string,
-  existingSessionLatestBlock: number,
-  blockDistanceForFinalizedData: number
+  latestSessionBlock: number,
+  blockDistanceForfinalization: number
 ): FinalizationData | Error {
-  return new Error("implement me");
+  // TODO: implement signature extraction on finalization data
+
+  // relayFinalization := pairingtypes.NewRelayFinalization(pairingtypes.NewRelayExchange(*relayRequest, *reply), consumerAcc)
+  // serverKey, err := sigs.RecoverPubKey(relayFinalization)
+  // if err != nil {
+  // 	return nil, nil, err
+  // }
+
+  // serverAddr, err := sdk.AccAddressFromHexUnsafe(serverKey.Address().String())
+  // if err != nil {
+  // 	return nil, nil, err
+  // }
+
+  // if serverAddr.String() != providerAddr {
+  // 	return nil, nil, utils.LavaFormatError("reply server address mismatch in finalization data ", ProviderFinzalizationDataError, utils.Attribute{Key: "parsed Address", Value: serverAddr.String()}, utils.Attribute{Key: "expected address", Value: providerAddr})
+  // }
+
+  const finalizedBlocks = new Map<number, string>();
+  const finalizaedBlocksObj = JSON.parse(
+    reply.getFinalizedBlocksHashes_asB64()
+  );
+  for (const key in finalizaedBlocksObj) {
+    const numericKey = parseInt(key, 10);
+    finalizedBlocks.set(numericKey, finalizaedBlocksObj[key]);
+  }
+  const finalizationConflict = verifyFinalizationDataIntegrity(
+    reply,
+    latestSessionBlock,
+    finalizedBlocks,
+    providerAddr,
+    blockDistanceForfinalization
+  );
+
+  if (finalizationConflict instanceof Error) {
+    return finalizationConflict;
+  }
+  const finalizationData: FinalizationData = {
+    finalizedBlocks: finalizedBlocks,
+    finalizationConflict: finalizationConflict,
+  };
+  return finalizationData;
+}
+
+function verifyFinalizationDataIntegrity(
+  reply: RelayReply,
+  existingSessionLatestBlock: number,
+  finalizedBlocks: Map<number, string>,
+  providerPublicAddress: string,
+  blockDistanceForFinalizedData: number
+): Error | undefined {
+  return undefined;
 }

@@ -223,6 +223,14 @@ export class RPCConsumerServer {
           existingSessionLatestBlock,
           chainBlockStats.blockDistanceForFinalizedData
         );
+        if (finalizationData instanceof Error) {
+          return finalizationData;
+        }
+        if (finalizationData.finalizationConflict != undefined) {
+          // TODO: send a self finalization conflict
+          return new Error("invalid finalization data");
+        }
+        // finalizationConflict, err = this.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
         // if err != nil {
         //   if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
         //     go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
