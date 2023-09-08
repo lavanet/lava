@@ -17,6 +17,7 @@ import {
   constructRelayRequest,
   newRelayData,
   SendRelayData,
+  UpdateRequestedBlock,
 } from "./lavaprotocol";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
@@ -62,6 +63,7 @@ export class RPCConsumerServer {
         chainMessage.getApiCollection().getCollectionData()?.getType() ?? "",
       apiInterface: this.rpcEndpoint.apiInterface,
       chainId: this.rpcEndpoint.chainId,
+      requestedBlock: chainMessage.getRequestedBlock(),
     };
     const relayPrivateData = newRelayData(relayData);
     let blockOnSyncLoss = true;
@@ -187,7 +189,18 @@ export class RPCConsumerServer {
         };
         return [relayError];
       }
+      if (relayResponse.relayReply == undefined) {
+        const relayError: RelayError = {
+          providerAddress: providerAddress,
+          err: new Error("empty reply"),
+        };
+        return [relayError];
+      }
       relayResult.reply = relayResponse.relayReply;
+      UpdateRequestedBlock(relayData, relayResult.reply);
+      const chainBlockStats = this.chainParser.chainBlockStats();
+      // _, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
+      // finalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
       return new Error("not implemented, TODO");
     } catch (err) {
       if (err instanceof Error) {

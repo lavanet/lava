@@ -106,6 +106,8 @@ interface HeadersHandler {
 interface ChainBlockStats {
   allowedBlockLagForQosSync: number;
   averageBlockTime: number;
+  blockDistanceForFinalizedData: number;
+  blocksInFinalizationProof: number;
 }
 
 export abstract class BaseChainParser {
@@ -160,7 +162,12 @@ export abstract class BaseChainParser {
   }
   public chainBlockStats(): ChainBlockStats {
     // TODO: implement this
-    return { allowedBlockLagForQosSync: 0, averageBlockTime: 0 };
+    return {
+      allowedBlockLagForQosSync: 0,
+      averageBlockTime: 0,
+      blockDistanceForFinalizedData: 0,
+      blocksInFinalizationProof: 0,
+    };
   }
 
   // initialize the base chain parser with the spec information
