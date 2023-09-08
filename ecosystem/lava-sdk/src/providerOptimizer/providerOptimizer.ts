@@ -4,6 +4,9 @@ import {
   QualityOfServiceReport,
 } from "../lavasession/consumerTypes";
 import { Logger } from "../logger/logger";
+import random from "random";
+import gammainc from "@stdlib/math-base-special-gammainc";
+import { baseTimePerCU, getTimePerCU } from "../common/timeout";
 
 // TODO: move them somewhere
 const hourInMillis = 60 * 60 * 1000;
@@ -17,6 +20,10 @@ const CACHE_OPTIONS = {
 const HALF_LIFE_TIME = hourInMillis;
 const MAX_HALF_TIME = 14 * 24 * hourInMillis;
 const PROBE_UPDATE_WEIGHT = 0.25;
+const RELAY_UPDATE_WEIGHT = 1;
+const DEFAULT_EXPLORATION_CHANCE = 0.1;
+const COST_EXPLORATION_CHANCE = 0.01;
+const INITIAL_DATA_STALENESS = 24;
 
 // TODO: move this to utils/score/decayScore.ts
 export class ScoreStore {
@@ -58,6 +65,11 @@ export interface ProviderData {
   syncBlock: number;
 }
 
+export interface BlockStore {
+  block: number;
+  time: number;
+}
+
 export enum Strategy {
   Balanced,
   Latency,
@@ -77,8 +89,11 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   ); // todo: ristretto.Cache in go (see what it does)
   private readonly averageBlockTime: number;
   private readonly baseWorldLatency: number;
-  private readonly wantedNumProvidersInConcurrency: number; // todo: see if this is actually needed
-  private readonly latestSyncData: any; // todo: ConcurrentBlockStore in go
+  private readonly wantedNumProvidersInConcurrency: number;
+  private readonly latestSyncData: BlockStore = {
+    block: 0,
+    time: 0,
+  };
 
   public constructor(
     strategy: Strategy,
@@ -136,11 +151,86 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     cu: number,
     syncBlock: number
   ): void {
-    console.log("appendRelayData");
+    this.appendRelay(
+      providerAddress,
+      latency,
+      isHangingApi,
+      true,
+      cu,
+      syncBlock,
+      performance.now()
+    );
   }
 
   public appendRelayFailure(providerAddress: string): void {
-    console.log("appendRelayFailure");
+    this.appendRelay(providerAddress, 0, false, false, 0, 0, performance.now());
+  }
+
+  private appendRelay(
+    providerAddress: string,
+    latency: number,
+    isHangingApi: boolean,
+    success: boolean,
+    cu: number,
+    syncBlock: number,
+    sampleTime: number
+  ) {
+    const { block, time } = this.updateLatestSyncData(syncBlock, sampleTime);
+    let providerData = this.getProviderData(providerAddress);
+    const halfTime = this.calculateHalfTime(providerAddress);
+
+    providerData = this.updateProbeEntryAvailability(
+      providerData,
+      success,
+      RELAY_UPDATE_WEIGHT,
+      halfTime,
+      sampleTime
+    );
+    if (success) {
+      if (latency > 0) {
+        let baseLatency = this.baseWorldLatency + baseTimePerCU(cu);
+        if (isHangingApi) {
+          baseLatency += this.averageBlockTime;
+        }
+        providerData = this.updateProbeEntryLatency(
+          providerData,
+          latency,
+          baseLatency,
+          RELAY_UPDATE_WEIGHT,
+          halfTime,
+          sampleTime
+        );
+      }
+
+      if (syncBlock > providerData.syncBlock) {
+        providerData.syncBlock = syncBlock;
+      }
+
+      const syncLag = this.calculateSyncLag(
+        block,
+        time,
+        providerData.syncBlock,
+        sampleTime
+      );
+      providerData = this.updateProbeEntrySync(
+        providerData,
+        syncLag,
+        this.averageBlockTime,
+        halfTime,
+        sampleTime
+      );
+    }
+
+    this.providersStorage.set(providerAddress, providerData);
+    this.updateRelayTime(providerAddress, sampleTime);
+    Logger.debug(
+      "relay update",
+      syncBlock,
+      cu,
+      providerAddress,
+      latency,
+      success
+    );
   }
 
   public chooseProvider(
@@ -150,7 +240,76 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     requestedBlock: number,
     perturbationPercentage: number
   ): string[] {
-    return [];
+    const returnedProviders: string[] = [];
+    let latencyScore = Number.MAX_VALUE;
+    let syncScore = Number.MAX_VALUE;
+    const numProviders = allAddresses.length;
+
+    for (const providerAddress of allAddresses) {
+      if (ignoredProviders.includes(providerAddress)) {
+        continue;
+      }
+
+      const providerData = this.getProviderData(providerAddress);
+      let latencyScoreCurrent = this.calculateLatencyScore(
+        providerData,
+        cu,
+        requestedBlock
+      );
+      latencyScoreCurrent = perturbWithNormalGaussian(
+        latencyScoreCurrent,
+        perturbationPercentage
+      );
+
+      let syncScoreCurrent = 0;
+      if (requestedBlock < 0) {
+        syncScoreCurrent = this.calculateSyncScore(providerData.sync);
+        syncScoreCurrent = perturbWithNormalGaussian(
+          syncScoreCurrent,
+          perturbationPercentage
+        );
+      }
+
+      Logger.debug("scores information", {
+        providerAddress,
+        latencyScoreCurrent,
+        syncScoreCurrent,
+        latencyScore,
+        syncScore,
+      });
+
+      const isBetterProviderScore = this.isBetterProviderScore(
+        latencyScore,
+        latencyScoreCurrent,
+        syncScore,
+        syncScoreCurrent
+      );
+      if (isBetterProviderScore || returnedProviders.length === 0) {
+        if (
+          returnedProviders[0] !== "" &&
+          this.shouldExplore(returnedProviders.length, numProviders)
+        ) {
+          returnedProviders.push(returnedProviders[0]);
+        }
+
+        returnedProviders[0] = providerAddress;
+        latencyScore = latencyScoreCurrent;
+        syncScore = syncScoreCurrent;
+
+        continue;
+      }
+
+      if (this.shouldExplore(returnedProviders.length, numProviders)) {
+        returnedProviders.push(providerAddress);
+      }
+    }
+
+    Logger.debug("returned providers", {
+      providers: returnedProviders.join(","),
+      cu,
+    });
+
+    return returnedProviders;
   }
 
   public getExcellenceQoSReportForProvider(
@@ -202,17 +361,192 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     return probabilityBlockError;
   }
 
+  private shouldExplore(
+    currentNumProviders: number,
+    numProviders: number
+  ): boolean {
+    if (currentNumProviders >= this.wantedNumProvidersInConcurrency) {
+      return false;
+    }
+
+    let explorationChance = DEFAULT_EXPLORATION_CHANCE;
+    switch (this.strategy) {
+      case Strategy.Latency:
+        return true;
+      case Strategy.Accuracy:
+        return true;
+      case Strategy.Cost:
+        explorationChance = COST_EXPLORATION_CHANCE;
+        break;
+      case Strategy.Privacy:
+        return false;
+    }
+
+    return random.float() < explorationChance / numProviders;
+  }
+
+  private isBetterProviderScore(
+    latencyScore: number,
+    latencyScoreCurrent: number,
+    syncScore: number,
+    syncScoreCurrent: number
+  ): boolean {
+    let latencyWeight: number;
+    switch (this.strategy) {
+      case Strategy.Latency:
+        latencyWeight = 0.9;
+        break;
+      case Strategy.SyncFreshness:
+        latencyWeight = 0.2;
+        break;
+      case Strategy.Privacy:
+        return random.int(0, 2) === 0;
+      default:
+        latencyWeight = 0.8;
+    }
+
+    if (syncScoreCurrent === 0) {
+      return latencyScore > latencyScoreCurrent;
+    }
+
+    return (
+      latencyScore * latencyWeight + syncScore * (1 - latencyWeight) >
+      latencyScoreCurrent * latencyWeight +
+        syncScoreCurrent * (1 - latencyWeight)
+    );
+  }
+
+  private calculateSyncScore(syncScore: ScoreStore): number {
+    let historicalSyncLatency = 0;
+    if (syncScore.denom === 0) {
+      historicalSyncLatency = 0;
+    } else {
+      historicalSyncLatency =
+        (syncScore.num / syncScore.denom) * this.averageBlockTime;
+    }
+
+    return millisToSeconds(historicalSyncLatency);
+  }
+
+  private calculateLatencyScore(
+    providerData: ProviderData,
+    cu: number,
+    requestedBlock: number
+  ): number {
+    const baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
+    const timeoutDuration = getTimePerCU(cu);
+
+    let historicalLatency = 0;
+    if (providerData.latency.denom === 0) {
+      historicalLatency = baseLatency;
+    } else {
+      historicalLatency =
+        (baseLatency * providerData.latency.num) / providerData.latency.denom;
+    }
+
+    if (historicalLatency > timeoutDuration) {
+      historicalLatency = timeoutDuration;
+    }
+
+    const probabilityBlockError = this.calculateProbabilityOfBlockError(
+      requestedBlock,
+      providerData
+    );
+    const probabilityOfTimeout = this.calculateProbabilityOfTimeout(
+      providerData.availability
+    );
+    const probabilityOfSuccess =
+      (1 - probabilityBlockError) * (1 - probabilityOfTimeout);
+
+    const historicalLatencySeconds = millisToSeconds(historicalLatency);
+    const baseLatencySeconds = millisToSeconds(baseLatency);
+    const costBlockError = historicalLatencySeconds + baseLatencySeconds;
+    const costTimeout = millisToSeconds(timeoutDuration) + baseLatencySeconds;
+    const costSuccess = historicalLatencySeconds;
+
+    Logger.debug("latency calculation breakdown", {
+      probabilityBlockError,
+      costBlockError,
+      probabilityOfTimeout,
+      costTimeout,
+      probabilityOfSuccess,
+      costSuccess,
+    });
+
+    return (
+      probabilityBlockError * costBlockError +
+      probabilityOfTimeout * costTimeout +
+      probabilityOfSuccess * costSuccess
+    );
+  }
+
+  private calculateSyncLag(
+    latestSync: number,
+    timeSync: number,
+    providerBlock: number,
+    sampleTime: number
+  ): number {
+    if (latestSync <= providerBlock) {
+      return 0;
+    }
+
+    const timeLag = sampleTime - timeSync;
+    const firstBlockLag = Math.min(this.averageBlockTime, timeLag);
+    const blocksGap = latestSync - providerBlock - 1;
+    const blocksGapTime = blocksGap * this.averageBlockTime;
+
+    return firstBlockLag + blocksGapTime;
+  }
+
+  private updateLatestSyncData(
+    providerLatestBlock: number,
+    sampleTime: number
+  ): BlockStore {
+    const latestBlock = this.latestSyncData.block;
+
+    if (latestBlock < providerLatestBlock) {
+      this.latestSyncData.block = providerLatestBlock;
+      this.latestSyncData.time = sampleTime;
+    }
+
+    return this.latestSyncData;
+  }
+
   private getProviderData(providerAddress: string): ProviderData {
     let data = this.providersStorage.get(providerAddress);
     if (data === undefined) {
+      const time = -1 * INITIAL_DATA_STALENESS * hourInMillis;
       data = {
-        availability: new ScoreStore(0.99, 1, performance.now() - hourInMillis),
-        latency: new ScoreStore(2, 1, performance.now() - hourInMillis),
-        sync: new ScoreStore(2, 1, performance.now() - hourInMillis),
+        availability: new ScoreStore(0.99, 1, performance.now() + time),
+        latency: new ScoreStore(2, 1, performance.now() + time),
+        sync: new ScoreStore(2, 1, performance.now() + time),
         syncBlock: 0,
       };
     }
     return data;
+  }
+
+  private updateProbeEntrySync(
+    providerData: ProviderData,
+    sync: number,
+    baseSync: number,
+    halfTime: number,
+    sampleTime: number
+  ): ProviderData {
+    const newScore = new ScoreStore(
+      millisToSeconds(sync),
+      millisToSeconds(baseSync),
+      sampleTime
+    );
+    const oldScore = providerData.sync;
+    providerData.sync = ScoreStore.calculateTimeDecayFunctionUpdate(
+      oldScore,
+      newScore,
+      halfTime,
+      RELAY_UPDATE_WEIGHT,
+      sampleTime
+    );
+    return providerData;
   }
 
   private updateProbeEntryAvailability(
@@ -222,7 +556,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     halfTime: number,
     sampleTime: number
   ): ProviderData {
-    const newNumerator = Number(success);
+    const newNumerator = Number(success); // true = 1, false = 0
     const oldScore = providerData.availability;
     const newScore = new ScoreStore(newNumerator, 1, sampleTime);
     providerData.availability = ScoreStore.calculateTimeDecayFunctionUpdate(
@@ -259,6 +593,12 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     return providerData;
   }
 
+  private updateRelayTime(providerAddress: string, sampleTime: number): void {
+    const relayStatsTime = this.getRelayStatsTime(providerAddress);
+    relayStatsTime.push(sampleTime);
+    this.providerRelayStats.set(providerAddress, relayStatsTime);
+  }
+
   private calculateHalfTime(providerAddress: string): number {
     const relaysHalfTime = this.getRelayStatsTimeDiff(providerAddress);
     let halfTime = HALF_LIFE_TIME;
@@ -288,10 +628,18 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   }
 }
 
-function cumulativeProbabilityFunctionForPoissonDist(
+export function cumulativeProbabilityFunctionForPoissonDist(
   kEvents: number,
   lambda: number
 ): number {
-  // TODO: regularized incomplete Gamma integral implementation
-  return 1 - Math.random();
+  return 1 - gammainc(lambda, kEvents + 1);
+}
+
+export function perturbWithNormalGaussian(
+  orig: number,
+  percentage: number
+): number {
+  const normal = random.normal();
+  const perturb = normal() * percentage * orig;
+  return orig + perturb;
 }
