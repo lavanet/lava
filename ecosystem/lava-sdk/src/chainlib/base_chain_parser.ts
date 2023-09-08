@@ -110,6 +110,11 @@ interface ChainBlockStats {
   blocksInFinalizationProof: number;
 }
 
+interface DataReliabilityParams {
+  enabled: boolean;
+  dataReliabilityThreshold: number;
+}
+
 export abstract class BaseChainParser {
   protected taggedApis: Map<number, TaggedContainer>;
   protected spec: Spec | undefined;
@@ -168,6 +173,11 @@ export abstract class BaseChainParser {
       blockDistanceForFinalizedData: 0,
       blocksInFinalizationProof: 0,
     };
+  }
+
+  public dataReliabilityParams(): DataReliabilityParams {
+    // TODO: implement this
+    return { enabled: true, dataReliabilityThreshold: 0 };
   }
 
   // initialize the base chain parser with the spec information

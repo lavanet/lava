@@ -14,6 +14,7 @@ import {
   newRelayData,
   SendRelayData,
   UpdateRequestedBlock,
+  verifyRelayReply,
 } from "../lavaprotocol/request_builder";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
@@ -201,6 +202,20 @@ export class RPCConsumerServer {
         chainBlockStats.blockDistanceForFinalizedData
       );
       relayResult.finalized = finalized;
+      // TODO: when we add headers
+      // filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+
+      const err = verifyRelayReply(
+        relayResult.reply,
+        relayRequest,
+        providerAddress
+      );
+      if (err instanceof Error) {
+        return err;
+      }
+
+      const dataReliabilityParams = this.chainParser.dataReliabilityParams();
+
       return new Error("not implemented, TODO");
     } catch (err) {
       if (err instanceof Error) {

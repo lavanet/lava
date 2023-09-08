@@ -10,6 +10,7 @@ import {
   RelaySession,
   RelayPrivateData,
   QualityOfServiceReport,
+  RelayReply,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
@@ -240,4 +241,13 @@ export function IsFinalizedBlock(
       }
   }
   return false;
+}
+
+export function verifyRelayReply(
+  reply: RelayReply,
+  relayRequest: RelayRequest,
+  providerAddress: string
+): Error | undefined {
+  // TODO: implement signature verificaion
+  return;
 }
