@@ -103,7 +103,7 @@ interface HeadersHandler {
   ignoredMetadata: Metadata[];
 }
 
-interface ChainBlockStats {
+export interface ChainBlockStats {
   allowedBlockLagForQosSync: number;
   averageBlockTime: number;
   blockDistanceForFinalizedData: number;
@@ -164,15 +164,6 @@ export abstract class BaseChainParser {
       throw Logger.fatal("Api disabled in spec", collectionKey);
     }
     return collection;
-  }
-  public chainBlockStats(): ChainBlockStats {
-    // TODO: implement this
-    return {
-      allowedBlockLagForQosSync: 0,
-      averageBlockTime: 0,
-      blockDistanceForFinalizedData: 0,
-      blocksInFinalizationProof: 0,
-    };
   }
 
   public dataReliabilityParams(): DataReliabilityParams {
@@ -436,6 +427,36 @@ export abstract class BaseChainParser {
   abstract parseMsg(
     options: SendRelayOptions | SendRestRelayOptions
   ): ChainMessage;
+
+  public chainBlockStats(): ChainBlockStats {
+    const averageBlockTime = this.spec?.getAverageBlockTime();
+    if (!averageBlockTime) {
+      throw Logger.fatal("no average block time in spec", this.spec);
+    }
+    const allowedLag = this.spec?.getAllowedBlockLagForQosSync();
+    if (!allowedLag) {
+      throw Logger.fatal("no allowed lag in spec", this.spec);
+    }
+
+    const blockDistanceForFinalizedData =
+      this.spec?.getBlockDistanceForFinalizedData();
+    if (!blockDistanceForFinalizedData) {
+      throw Logger.fatal(
+        "no block distance for finalized data in spec",
+        this.spec
+      );
+    }
+    const blocksInFinalizationProof = this.spec?.getBlocksInFinalizationProof();
+    if (!blocksInFinalizationProof) {
+      throw Logger.fatal("no block in finalization proof in spec", this.spec);
+    }
+    return {
+      allowedBlockLagForQosSync: allowedLag,
+      averageBlockTime: averageBlockTime,
+      blockDistanceForFinalizedData: blockDistanceForFinalizedData,
+      blocksInFinalizationProof: blocksInFinalizationProof,
+    };
+  }
 }
 
 export interface RawRequestData {

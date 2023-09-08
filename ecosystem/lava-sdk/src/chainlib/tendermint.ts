@@ -8,6 +8,7 @@ import {
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
 import { generateRPCData } from "../util/common";
+import { NOT_APPLICABLE } from "../common/common";
 
 const Method = ""; // in tendermint all types are empty (in spec)
 export class TendermintRpcChainParser extends BaseChainParser {
@@ -39,7 +40,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
     );
     // TODO: implement apip.GetParsingByTag to support headers
     const chainMessage = new ChainMessage(
-      -2,
+      NOT_APPLICABLE,
       apiCont.api,
       apiCollection,
       generateRPCData(options.method, options.params),

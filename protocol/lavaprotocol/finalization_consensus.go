@@ -189,8 +189,7 @@ func (s *FinalizationConsensus) LatestBlock() uint64 {
 func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
 	s.providerDataContainersMu.RLock()
 	defer s.providerDataContainersMu.RUnlock()
-	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
-	averageBlockTime_ms := averageBlockTime
+	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
 
 	var highestBlockNumber int64 = 0
 	FindHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) int64 {
