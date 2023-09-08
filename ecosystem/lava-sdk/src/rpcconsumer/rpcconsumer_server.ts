@@ -25,6 +25,7 @@ import {
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
+import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 
 const MaxRelayRetries = 4;
 
@@ -36,13 +37,15 @@ export class RPCConsumerServer {
   private rpcEndpoint: RPCEndpoint;
   private lavaChainId: string;
   private consumerAddress: string;
+  private finalizationConsensus: FinalizationConsensus;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
     chainParser: BaseChainParser,
     geolocation: string,
     rpcEndpoint: RPCEndpoint,
-    lavaChainId: string
+    lavaChainId: string,
+    finalizationConsensus: FinalizationConsensus
   ) {
     this.consumerSessionManager = consumerSessionManager;
     this.geolocation = geolocation;
@@ -51,6 +54,7 @@ export class RPCConsumerServer {
     this.rpcEndpoint = rpcEndpoint;
     this.lavaChainId = lavaChainId;
     this.consumerAddress = "TODO";
+    this.finalizationConsensus = finalizationConsensus;
   }
 
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
@@ -175,76 +179,34 @@ export class RPCConsumerServer {
         reportedProviders
       );
       relayResult.request = relayRequest;
-
-      const relayResponse = await this.sendRelayProviderInSession(
+      const relayResponse = await this.relayInner(
         singleConsumerSession,
         relayResult,
         relayTimeout
       );
-      if (relayResponse instanceof Error) {
+      if (relayResponse.err != undefined) {
+        // TODO: handle session failure
+        // 	const backOffDuration = 0;
+        // 	if backoff_ {
+        // 		backOffDuration = lavasession.BACKOFF_TIME_ON_FAILURE
+        // 	}
+        // 	time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
+        // 	// relay failed need to fail the session advancement
+        // 	errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
+        // 	if errReport != nil {
+        // 		utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
+        // 	}
+        // }
+        // go failRelaySession(errResponse, backoff)
         const relayError: RelayError = {
           providerAddress: providerPublicAddress,
-          err: relayResponse,
+          err: relayResponse.err,
         };
         return [relayError];
       }
-      if (relayResponse.relayReply == undefined) {
-        const relayError: RelayError = {
-          providerAddress: providerPublicAddress,
-          err: new Error("empty reply"),
-        };
-        return [relayError];
-      }
-      const reply = relayResponse.relayReply;
-      relayResult.reply = reply;
-      UpdateRequestedBlock(relayData, reply);
-      const chainBlockStats = this.chainParser.chainBlockStats();
-      const finalized = IsFinalizedBlock(
-        relayData.getRequestBlock(),
-        reply.getLatestBlock(),
-        chainBlockStats.blockDistanceForFinalizedData
-      );
-      relayResult.finalized = finalized;
-      // TODO: when we add headers
-      // filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-
-      const err = verifyRelayReply(reply, relayRequest, providerPublicAddress);
-      if (err instanceof Error) {
-        return err;
-      }
-      const existingSessionLatestBlock = singleConsumerSession.latestBlock;
-      const dataReliabilityParams = this.chainParser.dataReliabilityParams();
-      if (dataReliabilityParams.enabled) {
-        const finalizationData = verifyFinalizationData(
-          reply,
-          relayRequest,
-          providerPublicAddress,
-          this.consumerAddress,
-          existingSessionLatestBlock,
-          chainBlockStats.blockDistanceForFinalizedData
-        );
-        if (finalizationData instanceof Error) {
-          return finalizationData;
-        }
-        if (finalizationData.finalizationConflict != undefined) {
-          // TODO: send a self finalization conflict
-          return new Error("invalid finalization data");
-        }
-        // finalizationConflict, err = this.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
-        // if err != nil {
-        //   if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
-        //     go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
-        //   }
-        //   return relayResult, 0, err, false
-        // }
-
-        // finalizationConflict, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
-        // if err != nil {
-        //   go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
-        //   return relayResult, 0, err, false
-        // }
-      }
-      return new Error("not implemented, TODO");
+      // we got here if everything is valid
+      // TODO: handle session done
+      return new Error("not implemented yet");
     } catch (err) {
       if (err instanceof Error) {
         return err;
@@ -252,18 +214,124 @@ export class RPCConsumerServer {
       return new Error("unsupported error " + err);
     }
   }
+
+  protected async relayInner(
+    singleConsumerSession: SingleConsumerSession,
+    relayResult: RelayResult,
+    relayTimeout: number
+  ): Promise<RelayResponse> {
+    const relayRequest = relayResult.request;
+    const response: RelayResponse = {
+      relayResult: undefined,
+      latency: 0,
+      backoff: false,
+      err: undefined,
+    };
+    if (relayRequest == undefined) {
+      response.err = new Error("relayRequest is empty");
+      return response;
+    }
+    const relaySession = relayRequest.getRelaySession();
+    if (relaySession == undefined) {
+      response.err = new Error("empty relay session");
+      return response;
+    }
+    const relayData = relayRequest.getRelayData();
+    if (relayData == undefined) {
+      response.err = new Error("empty relay data");
+      return response;
+    }
+    const providerPublicAddress = relayResult.providerAddress;
+    const relayResponse = await this.sendRelayProviderInSession(
+      singleConsumerSession,
+      relayResult,
+      relayTimeout
+    );
+    if (relayResponse.err != undefined) {
+      return relayResponse;
+    }
+    if (relayResponse.relayResult == undefined) {
+      relayResponse.err = new Error("empty relayResult");
+      return relayResponse;
+    }
+    relayResult = relayResponse.relayResult;
+    const reply = relayResult.reply;
+    if (reply == undefined) {
+      relayResponse.err = new Error("empty reply");
+      return relayResponse;
+    }
+    const chainBlockStats = this.chainParser.chainBlockStats();
+    const finalized = IsFinalizedBlock(
+      relayData.getRequestBlock(),
+      reply.getLatestBlock(),
+      chainBlockStats.blockDistanceForFinalizedData
+    );
+    relayResult.finalized = finalized;
+    // TODO: when we add headers
+    // filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+
+    const err = verifyRelayReply(reply, relayRequest, providerPublicAddress);
+    if (err instanceof Error) {
+      relayResponse.err = err;
+      return relayResponse;
+    }
+    const existingSessionLatestBlock = singleConsumerSession.latestBlock;
+    const dataReliabilityParams = this.chainParser.dataReliabilityParams();
+    if (dataReliabilityParams.enabled) {
+      const finalizationData = verifyFinalizationData(
+        reply,
+        relayRequest,
+        providerPublicAddress,
+        this.consumerAddress,
+        existingSessionLatestBlock,
+        chainBlockStats.blockDistanceForFinalizedData
+      );
+      if (finalizationData instanceof Error) {
+        relayResponse.err = finalizationData;
+        return relayResponse;
+      }
+      if (finalizationData.finalizationConflict != undefined) {
+        // TODO: send a self finalization conflict
+        relayResponse.err = new Error("invalid finalization data");
+        return relayResponse;
+      }
+
+      const finalizationConflict =
+        this.finalizationConsensus.updateFinalizedHashes(
+          chainBlockStats.blockDistanceForFinalizedData,
+          providerPublicAddress,
+          relaySession,
+          reply
+        );
+      if (finalizationConflict != undefined) {
+        // TODO: send a consensus finalization conflict
+        relayResponse.err = new Error("conflicting finalization data");
+        return relayResponse;
+      }
+    }
+    return relayResponse;
+  }
+
   protected async sendRelayProviderInSession(
     singleConsumerSession: SingleConsumerSession,
     relayResult: RelayResult,
     relayTimeout: number
-  ): Promise<RelayResponse | Error> {
+  ): Promise<RelayResponse> {
     const endpointClient = singleConsumerSession.endpoint.client;
+    const response: RelayResponse = {
+      relayResult: undefined,
+      latency: 0,
+      backoff: false,
+      err: undefined,
+    };
     if (endpointClient == undefined) {
-      return new Error("endpointClient is undefined");
+      response.err = new Error("endpointClient is undefined");
+      return response;
     }
     const relayRequest = relayResult.request;
     if (relayRequest == undefined) {
-      return new Error("relayRequest is undefined");
+      response.err = new Error("relayRequest is undefined");
+      return response;
     }
     const startTime = performance.now();
     try {
@@ -275,12 +343,13 @@ export class RPCConsumerServer {
       if (relayReply instanceof Error) {
         throw relayReply;
       }
+      relayResult.reply = relayReply;
       const measuredLatency = performance.now() - startTime;
       const relayResponse: RelayResponse = {
         backoff: false,
         latency: measuredLatency,
         err: undefined,
-        relayReply: relayReply,
+        relayResult: relayResult,
       };
       return relayResponse;
     } catch (err) {
@@ -300,12 +369,11 @@ export class RPCConsumerServer {
         backoff: backoff,
         latency: measuredLatency,
         err: castedError,
-        relayReply: undefined,
+        relayResult: undefined,
       };
       return relayResponse;
     }
   }
-
   // use this as an initial scaffold to send to several providers
   // protected async sendRelayToAllProvidersAndRace(
   //   consumerSessionsMap: ConsumerSessionsMap,
@@ -372,7 +440,7 @@ interface RelayResult {
 }
 
 export interface RelayResponse {
-  relayReply: RelayReply | undefined;
+  relayResult: RelayResult | undefined;
   latency: number;
   backoff: boolean;
   err: Error | undefined;

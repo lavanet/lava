@@ -103,8 +103,14 @@ export class FinalizationConsensus {
     }
   }
 
-  public updateFinalizedHashes() {
+  public updateFinalizedHashes(
+    blockDistanceForFinalizedData: number,
+    providerPublicAddress: string,
+    relaySession: RelaySession,
+    reply: RelayReply
+  ): undefined | Error {
     // TODO: implement for DR.
+    return undefined;
   }
 
   public newEpoch(epoch: number) {
