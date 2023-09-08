@@ -218,7 +218,8 @@ export class LavaSDK {
           csm,
           chainParse,
           this.geolocation,
-          rpcEndpoint
+          rpcEndpoint,
+          this.lavaChainId
         );
 
         // save rpc consumer server in map

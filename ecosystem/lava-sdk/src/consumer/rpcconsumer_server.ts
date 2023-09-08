@@ -1,6 +1,7 @@
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
+import { ConsumerSessionsMap, SessionInfo } from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
@@ -25,18 +26,21 @@ export class RPCConsumerServer {
   private geolocation: string;
   private relayer: Relayer;
   private rpcEndpoint: RPCEndpoint;
+  private lavaChainId: string;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
     chainParser: BaseChainParser,
     geolocation: string,
-    rpcEndpoint: RPCEndpoint
+    rpcEndpoint: RPCEndpoint,
+    lavaChainId: string
   ) {
     this.consumerSessionManager = consumerSessionManager;
     this.geolocation = geolocation;
     this.chainParser = chainParser;
     this.relayer = relayer;
     this.rpcEndpoint = rpcEndpoint;
+    this.lavaChainId = lavaChainId;
   }
 
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
@@ -54,24 +58,24 @@ export class RPCConsumerServer {
     let blockOnSyncLoss = true;
     const errors = new Array<Error>();
     for (let retries = 0; retries < MaxRelayRetries; retries++) {
-      const relayResult = this.sendRelayToProvider(
+      const relayResult = await this.sendRelayToProvider(
         chainMessage,
         relayPrivateData,
         unwantedProviders
       );
 
-      if (relayResult instanceof RelayError) {
-        if (blockOnSyncLoss && relayResult.err == SDKErrors.sessionSyncLoss) {
-          Logger.debug(
-            "Identified SyncLoss in provider, not removing it from list for another attempt"
-          );
-          blockOnSyncLoss = false;
-        } else {
-          unwantedProviders.add(relayResult.providerAddress);
+      if (relayResult instanceof Array) {
+        for (const oneResult of relayResult) {
+          if (blockOnSyncLoss && oneResult.err == SDKErrors.sessionSyncLoss) {
+            Logger.debug(
+              "Identified SyncLoss in provider, not removing it from list for another attempt"
+            );
+            blockOnSyncLoss = false;
+          } else {
+            unwantedProviders.add(oneResult.providerAddress);
+          }
+          errors.push(oneResult.err);
         }
-      }
-      if (relayResult instanceof RelayError) {
-        errors.push(relayResult.err);
       } else if (relayResult instanceof Error) {
         errors.push(relayResult);
       } else {
@@ -83,7 +87,7 @@ export class RPCConsumerServer {
     }
     // got here if didn't succeed in any of the relays
     throw new Error("failed all retries " + errors.join(","));
-    // this.consumerSessionManager.getSessions()
+    //
 
     //TODO after reply if resolved, parse to json
     // // Decode response
@@ -97,11 +101,57 @@ export class RPCConsumerServer {
     // return jsonResponse;
   }
 
-  private sendRelayToProvider(
+  private async sendRelayToProvider(
     chainMessage: ChainMessage,
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
-  ): RelayResult | RelayError | Error {
+  ): Promise<RelayResult | Array<RelayError> | Error> {
+    if (chainMessage.getApi().getCategory()?.getSubscription() == true) {
+      return new Error("subscription currently not supported");
+    }
+    const chainID = this.rpcEndpoint.chainId;
+    const lavaChainId = this.lavaChainId;
+
+    let extraRelayTimeout = 0;
+    if (chainMessage.getApi().getCategory()?.getHangingApi() == true) {
+      const { averageBlockTime } = this.chainParser.chainBlockStats();
+      extraRelayTimeout = averageBlockTime;
+    }
+    try {
+      const consumerSessionsMap = this.consumerSessionManager.getSessions(
+        chainMessage.getApi().getComputeUnits(),
+        unwantedProviders,
+        chainMessage.getRequestedBlock(),
+        "",
+        []
+      );
+      if (consumerSessionsMap instanceof Error) {
+        return consumerSessionsMap;
+      }
+      // TODO: send to several
+      // return this.sendRelayToAllProvidersAndRace(
+      //   consumerSessionsMap,
+      //   extraRelayTimeout
+      // );
+      const firstEntry = consumerSessionsMap.entries().next();
+      if (firstEntry.done) {
+        return new Error("returned empty consumerSessionsMap");
+      }
+      const [providerAddress, sessionInfo] = firstEntry.value;
+      const relayResult: RelayResult = {
+        providerAddress: providerAddress,
+        request: undefined,
+        reply: undefined,
+        finalized: false,
+      };
+      return this.sendRelayProviderInSession(sessionInfo, extraRelayTimeout);
+    } catch (err) {
+      if (err instanceof Error) {
+        return err;
+      }
+      return new Error("unsupported error " + err);
+    }
+
     return {
       request: undefined,
       reply: undefined,
@@ -109,6 +159,60 @@ export class RPCConsumerServer {
       finalized: false,
     };
   }
+  protected async sendRelayProviderInSession(
+    sessionInfo: SessionInfo,
+    relayTimeout: number
+  ): Promise<any> {
+    return undefined;
+  }
+
+  // use this as an initial scaffold to send to several providers
+  // protected async sendRelayToAllProvidersAndRace(
+  //   consumerSessionsMap: ConsumerSessionsMap,
+  //   timeoutMs: number
+  // ): Promise<any> {
+  //   let lastError;
+  //   const allRelays: Map<string, Promise<any>> = new Map();
+  //   function addTimeoutToPromise(
+  //     promise: Promise<any>,
+  //     timeoutMs: number
+  //   ): Promise<any> {
+  //     return Promise.race([
+  //       promise,
+  //       new Promise((_, reject) =>
+  //         setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+  //       ),
+  //     ]);
+  //   }
+  //   for (const [providerAddress, sessionInfo] of consumerSessionsMap) {
+  //     const providerRelayPromise = this.relayer.sendRelay(
+  //       provider.options,
+  //       sessionInfo.session
+  //     );
+  //     allRelays.set(
+  //       providerAddress,
+  //       addTimeoutToPromise(providerRelayPromise, timeoutMs)
+  //     );
+  //   }
+
+  //   while (allRelays.size > 0) {
+  //     const returnedResponse = await Promise.race([...allRelays.values()]);
+  //     if (returnedResponse) { // maybe change this if the promise returns an Error and not throws it
+  //       console.log("Ended sending to all providers and race");
+  //       return returnedResponse;
+  //     }
+  //     // Handle removal of completed promises separately (Optional and based on your needs)
+  //     allRelays.forEach((promise, key) => {
+  //       promise
+  //         .then(() => allRelays.delete(key))
+  //         .catch(() => allRelays.delete(key));
+  //     });
+  //   }
+
+  //   throw new Error(
+  //     "Failed all promises SendRelayToAllProvidersAndRace: " + String(lastError)
+  //   );
+  // }
 }
 
 class RelayError {

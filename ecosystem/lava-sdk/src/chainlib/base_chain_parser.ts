@@ -103,6 +103,11 @@ interface HeadersHandler {
   ignoredMetadata: Metadata[];
 }
 
+interface ChainBlockStats {
+  allowedBlockLagForQosSync: number;
+  averageBlockTime: number;
+}
+
 export abstract class BaseChainParser {
   protected taggedApis: Map<number, TaggedContainer>;
   protected spec: Spec | undefined;
@@ -135,6 +140,11 @@ export abstract class BaseChainParser {
     }
     return collection;
   }
+  public chainBlockStats(): ChainBlockStats {
+    // TODO: implement this
+    return { allowedBlockLagForQosSync: 0, averageBlockTime: 0 };
+  }
+
   // initialize the base chain parser with the spec information
   public init(spec: Spec) {
     if (this.apiInterface == "") {

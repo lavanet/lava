@@ -164,7 +164,7 @@ export class ConsumerSessionManager {
 
   public getSessions(
     cuNeededForSession: number,
-    initUnwantedProviders: string[],
+    initUnwantedProviders: Set<string>,
     requestedBlock: number,
     addon: string,
     extensions: string[]
