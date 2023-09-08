@@ -22,6 +22,7 @@ import {
   ConsumerSessionsWithProvider,
   SingleConsumerSession,
 } from "../lavasession/consumerTypes";
+import SDKErrors from "../sdk/errors";
 
 export interface RelayerOptions {
   privKey: string;
@@ -94,6 +95,44 @@ export class Relayer {
   }
 
   public async sendRelay(
+    client: RelayerClient,
+    relayRequest: RelayRequest,
+    timeout: number
+  ): Promise<RelayReply | Error> {
+    const requestSession = relayRequest.getRelaySession();
+    if (requestSession == undefined) {
+      return new Error("empty request session");
+    }
+    requestSession.setSig(new Uint8Array());
+    // Sign data
+    const signedMessage = await this.signRelay(requestSession, this.privKey);
+    requestSession.setSig(signedMessage);
+    if (this.badge) {
+      // Badge is separated from the signature!
+      requestSession.setBadge(this.badge);
+    }
+    relayRequest.setRelaySession(requestSession);
+    const requestPromise = new Promise<RelayReply>((resolve, reject) => {
+      client.relay(
+        relayRequest,
+        (err: ServiceError | null, result: RelayReply | null) => {
+          if (err != null) {
+            console.log("failed sending relay", err);
+            reject(err);
+          }
+
+          if (result != null) {
+            resolve(result);
+          }
+          reject(new Error("Didn't get an error nor result"));
+        }
+      );
+    });
+
+    return this.relayWithTimeout(timeout, requestPromise);
+  }
+
+  public async constructAndSendRelay(
     options: SendRelayOptions,
     singleConsumerSession: SingleConsumerSession
   ): Promise<RelayReply> {
@@ -207,7 +246,7 @@ export class Relayer {
     let timeout;
     const timeoutPromise = new Promise((resolve, reject) => {
       timeout = setTimeout(() => {
-        reject(new Error("Timeout exceeded"));
+        reject(SDKErrors.relayTimeout);
       }, timeLimit);
     });
     const response = await Promise.race([task, timeoutPromise]);
@@ -373,7 +412,7 @@ export class Relayer {
         const uniqueKey =
           provider.options.publicProviderLavaAddress +
           String(Math.floor(Math.random() * 10000000));
-        const providerRelayPromise = this.sendRelay(
+        const providerRelayPromise = this.constructAndSendRelay(
           provider.options,
           provider.singleConsumerSession
         );
