@@ -1,10 +1,14 @@
 import {
+  COST_EXPLORATION_CHANCE,
   cumulativeProbabilityFunctionForPoissonDist,
   perturbWithNormalGaussian,
+  ProviderData,
   ProviderOptimizer,
   Strategy,
 } from "./providerOptimizer";
 import random from "random";
+import BigNumber from "bignumber.js";
+import { now } from "../util/time";
 
 const TEST_AVERAGE_BLOCK_TIME = 10 * 1000; // 10 seconds in milliseconds
 const TEST_BASE_WORLD_LATENCY = 150; // in milliseconds
@@ -149,6 +153,537 @@ describe("ProviderOptimizer", () => {
     );
     expect(returnedProviders).toHaveLength(1);
     expect(returnedProviders[0]).not.toBe(providers[skipIndex]);
+  });
+
+  it("tests provider optimizer availability relay data", () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 100;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const requestBlock = 1000;
+    const perturbationPercentage = 0.0;
+    const skipIndex = random.int(0, providersCount);
+
+    for (let i = 0; i < providersCount; i++) {
+      if (i === skipIndex) {
+        continue;
+      }
+
+      providerOptimizer.appendRelayFailure(providers[i]);
+    }
+
+    let returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[skipIndex]);
+
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [providers[skipIndex]],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).not.toBe(providers[skipIndex]);
+  });
+
+  it("tests provider optimizer availability block error", async () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 100;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const requestBlock = 1000;
+    const perturbationPercentage = 0.0;
+    const syncBlock = requestBlock;
+    const chosenIndex = random.int(0, providersCount);
+
+    for (let i = 0; i < providersCount; i++) {
+      await sleep(4);
+
+      if (i === chosenIndex) {
+        providerOptimizer.appendRelayData(
+          providers[i],
+          TEST_BASE_WORLD_LATENCY + 10,
+          false,
+          requestCU,
+          syncBlock
+        );
+        continue;
+      }
+
+      providerOptimizer.appendRelayData(
+        providers[i],
+        TEST_BASE_WORLD_LATENCY,
+        false,
+        requestCU,
+        syncBlock - 1
+      );
+    }
+
+    let returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[chosenIndex]);
+
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [providers[chosenIndex]],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).not.toBe(providers[chosenIndex]);
+  });
+
+  it("tests provider optimizer updating latency", async () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 2;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const requestBlock = 1000;
+    const syncBlock = requestBlock;
+
+    const getProviderData = (providerAddress: string) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      return providerOptimizer.getProviderData(providerAddress);
+    };
+    const calculateLatencyScore = (
+      providerData: ProviderData,
+      requestCU: number,
+      requestBlock: number
+    ) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      return providerOptimizer.calculateLatencyScore(
+        providerData,
+        requestCU,
+        requestBlock
+      );
+    };
+
+    let providerAddress = providers[0];
+    for (let i = 0; i < 10; i++) {
+      let providerData = getProviderData(providerAddress);
+      const currentLatencyScore = calculateLatencyScore(
+        providerData,
+        requestCU,
+        requestBlock
+      );
+      providerOptimizer.appendProbeRelayData(
+        providerAddress,
+        TEST_BASE_WORLD_LATENCY,
+        true
+      );
+
+      await sleep(4);
+
+      providerData = getProviderData(providerAddress);
+      const newLatencyScore = calculateLatencyScore(
+        providerData,
+        requestCU,
+        requestBlock
+      );
+      expect(currentLatencyScore).toBeGreaterThan(newLatencyScore);
+    }
+
+    providerAddress = providers[1];
+    for (let i = 0; i < 10; i++) {
+      let providerData = getProviderData(providerAddress);
+      const currentLatencyScore = calculateLatencyScore(
+        providerData,
+        requestCU,
+        requestBlock
+      );
+      providerOptimizer.appendRelayData(
+        providerAddress,
+        TEST_BASE_WORLD_LATENCY,
+        false,
+        requestCU,
+        syncBlock
+      );
+
+      await sleep(4);
+
+      providerData = getProviderData(providerAddress);
+      const newLatencyScore = calculateLatencyScore(
+        providerData,
+        requestCU,
+        requestBlock
+      );
+      expect(currentLatencyScore).toBeGreaterThan(newLatencyScore);
+    }
+  });
+
+  it("tests provider optimizer strategies provider count", async () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 5;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const requestBlock = 1000;
+    const perturbationPercentage = 0.0;
+    const syncBlock = requestBlock;
+
+    for (let i = 0; i < 10; i++) {
+      for (const address of providers) {
+        providerOptimizer.appendRelayData(
+          address,
+          TEST_BASE_WORLD_LATENCY * 2,
+          false,
+          requestCU,
+          syncBlock
+        );
+      }
+
+      await sleep(4);
+    }
+
+    const testProvidersCount = (iterations: number) => {
+      let exploration = 0;
+      for (let i = 0; i < iterations; i++) {
+        const returnedProviders = providerOptimizer.chooseProvider(
+          providers,
+          [],
+          requestCU,
+          requestBlock,
+          perturbationPercentage
+        );
+
+        if (returnedProviders.length > 1) {
+          exploration++;
+        }
+      }
+
+      return exploration;
+    };
+
+    const setProviderOptimizerStrategy = (strategy: Strategy) => {
+      // @ts-expect-error private property but we need it for testing without exposing it
+      providerOptimizer.strategy = strategy;
+    };
+    const setProviderOptimizerConcurrencyProviders = (concurrency: number) => {
+      // @ts-expect-error private property but we need it for testing without exposing it
+      providerOptimizer.wantedNumProvidersInConcurrency = concurrency;
+    };
+
+    // with a cost strategy we expect only one provider, two with a change of 1/100
+    setProviderOptimizerStrategy(Strategy.Cost);
+    setProviderOptimizerConcurrencyProviders(2);
+    const iterations = 10000;
+    let exploration = testProvidersCount(iterations);
+    expect(exploration).toBeLessThan(
+      1.3 * iterations * providersCount * COST_EXPLORATION_CHANCE
+    );
+
+    setProviderOptimizerStrategy(Strategy.Balanced);
+    exploration = testProvidersCount(iterations);
+    expect(exploration).toBeLessThan(1.3 * iterations * providersCount * 0.5);
+
+    setProviderOptimizerStrategy(Strategy.Privacy);
+    exploration = testProvidersCount(iterations);
+    expect(exploration).toBe(0);
+  });
+
+  it("tests provider optimizer sync score", async () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providers = setupProvidersForTest(10);
+
+    const requestCU = 10;
+    const requestBlock = -2; // from golang spectypes.LATEST_BLOCK (-2)
+    const perturbationPercentage = 0.0;
+    const syncBlock = 1000;
+
+    const chosenIndex = random.int(0, providers.length);
+    let sampleTime = now();
+    const appendRelayData = (
+      providerAddress: string,
+      latency: number,
+      syncBlock: number,
+      sampleTime: number
+    ) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      providerOptimizer.appendRelay(
+        providerAddress,
+        latency,
+        false,
+        true,
+        requestCU,
+        syncBlock,
+        sampleTime
+      );
+    };
+    for (let j = 0; j < 3; j++) {
+      for (let i = 0; i < providers.length; i++) {
+        await sleep(4);
+
+        if (i === chosenIndex) {
+          appendRelayData(
+            providers[i],
+            TEST_BASE_WORLD_LATENCY * 2 + 1 / 1000, // 1 microsecond
+            syncBlock + 5,
+            sampleTime
+          );
+          continue;
+        }
+
+        appendRelayData(
+          providers[i],
+          TEST_BASE_WORLD_LATENCY * 2,
+          syncBlock,
+          sampleTime
+        );
+      }
+
+      sampleTime += 5;
+    }
+
+    await sleep(4);
+    let returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[chosenIndex]);
+
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      syncBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).not.toBe(providers[chosenIndex]);
+  });
+
+  it("tests provider optimizer strategies scoring", async () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 5;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const requestBlock = -2; // from golang spectypes.LATEST_BLOCK (-2)
+    const syncBlock = 1000;
+    const perturbationPercentage = 0.0;
+
+    for (let i = 0; i < 10; i++) {
+      for (const address of providers) {
+        providerOptimizer.appendRelayData(
+          address,
+          TEST_BASE_WORLD_LATENCY * 2,
+          false,
+          requestCU,
+          syncBlock
+        );
+      }
+
+      await sleep(4);
+    }
+
+    await sleep(4);
+
+    for (let i = 0; i < providers.length; i++) {
+      const address = providers[i];
+      if (i !== 2) {
+        providerOptimizer.appendProbeRelayData(
+          address,
+          TEST_BASE_WORLD_LATENCY * 2,
+          false
+        );
+        await sleep(4);
+      }
+
+      providerOptimizer.appendProbeRelayData(
+        address,
+        TEST_BASE_WORLD_LATENCY * 2,
+        true
+      );
+      await sleep(4);
+      providerOptimizer.appendProbeRelayData(
+        address,
+        TEST_BASE_WORLD_LATENCY * 2,
+        false
+      );
+      await sleep(4);
+      providerOptimizer.appendProbeRelayData(
+        address,
+        TEST_BASE_WORLD_LATENCY * 2,
+        true
+      );
+      await sleep(4);
+      providerOptimizer.appendProbeRelayData(
+        address,
+        TEST_BASE_WORLD_LATENCY * 2,
+        true
+      );
+      await sleep(4);
+    }
+
+    let sampleTime = now();
+    const improvedLatency = 270; // milliseconds
+    const normalLatency = TEST_BASE_WORLD_LATENCY * 2;
+    const improvedBlock = syncBlock + 1;
+
+    const appendRelayData = (
+      providerAddress: string,
+      latency: number,
+      syncBlock: number,
+      sampleTime: number
+    ) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      providerOptimizer.appendRelay(
+        providerAddress,
+        latency,
+        false,
+        true,
+        requestCU,
+        syncBlock,
+        sampleTime
+      );
+    };
+
+    // provider 0 gets a good latency
+    appendRelayData(providers[0], improvedLatency, syncBlock, sampleTime);
+
+    // providers 3, 4 get a regular entry
+    appendRelayData(providers[3], normalLatency, syncBlock, sampleTime);
+    appendRelayData(providers[4], normalLatency, syncBlock, sampleTime);
+
+    // provider 1 gets a good sync
+    appendRelayData(providers[1], normalLatency, improvedBlock, sampleTime);
+
+    sampleTime = sampleTime + 10;
+    appendRelayData(providers[0], improvedLatency, syncBlock, sampleTime);
+    appendRelayData(providers[3], normalLatency, syncBlock, sampleTime);
+    appendRelayData(providers[4], normalLatency, syncBlock, sampleTime);
+    appendRelayData(providers[1], normalLatency, improvedBlock, sampleTime);
+
+    const setProviderStrategy = (strategy: Strategy) => {
+      // @ts-expect-error private property but we need it for testing without exposing it
+      providerOptimizer.strategy = strategy;
+    };
+
+    await sleep(4);
+
+    setProviderStrategy(Strategy.Balanced);
+    // a balanced strategy should pick provider 2 because of it's high availability
+    let returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[2]);
+
+    setProviderStrategy(Strategy.Cost);
+    // with a cost strategy we expect the same as balanced
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[2]);
+
+    setProviderStrategy(Strategy.Latency);
+    // latency strategy should pick the best latency
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [providers[2]],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[0]);
+
+    setProviderStrategy(Strategy.SyncFreshness);
+    // with a cost strategy we expect the same as balanced
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [providers[2]],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).toBe(providers[1]);
+  });
+
+  it("tests excellence report", async () => {
+    const floatVal = 0.25;
+    const floatNew = BigNumber(floatVal).precision(8).toNumber();
+    expect(floatNew).toEqual(floatVal);
+
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 5;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const syncBlock = 1000;
+
+    const appendRelayData = (
+      providerAddress: string,
+      latency: number,
+      syncBlock: number,
+      sampleTime: number
+    ) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      providerOptimizer.appendRelay(
+        providerAddress,
+        latency,
+        false,
+        true,
+        requestCU,
+        syncBlock,
+        sampleTime
+      );
+    };
+
+    const sampleTime = now();
+
+    for (let i = 0; i < 10; i++) {
+      for (const address of providers) {
+        appendRelayData(
+          address,
+          TEST_BASE_WORLD_LATENCY * 2,
+          syncBlock,
+          sampleTime
+        );
+      }
+      await sleep(4);
+    }
+
+    const report = providerOptimizer.getExcellenceQoSReportForProvider(
+      providers[0]
+    );
+    expect(report).not.toBeUndefined();
+    const report2 = providerOptimizer.getExcellenceQoSReportForProvider(
+      providers[1]
+    );
+    expect(report2).not.toBeUndefined();
+    expect(report2).toEqual(report);
   });
 
   describe("perturbWithNormalGaussian", () => {

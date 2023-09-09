@@ -58,7 +58,7 @@ export interface ProviderOptimizer {
 
   getExcellenceQoSReportForProvider(
     providerAddress: string
-  ): QualityOfServiceReport;
+  ): QualityOfServiceReport | undefined;
 }
 
 export interface QoSReport {
