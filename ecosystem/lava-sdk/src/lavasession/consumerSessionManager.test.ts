@@ -1,5 +1,4 @@
 import { ConsumerSessionManager } from "./consumerSessionManager";
-import { RandomProviderOptimizer } from "./providerOptimizer";
 import {
   ConsumerSessionsWithProvider,
   Endpoint,
@@ -8,6 +7,11 @@ import {
 } from "./consumerTypes";
 import { PairingListEmptyError, ReportAndBlockProviderError } from "./errors";
 import { Relayer } from "../relayer/relayer";
+import {
+  ProviderOptimizer,
+  Strategy,
+} from "../providerOptimizer/providerOptimizer";
+import { AVERAGE_WORLD_LATENCY } from "../common/timeout";
 
 const NUMBER_OF_PROVIDERS = 10;
 const NUMBER_OF_RESETS_TO_TEST = 10;
@@ -21,19 +25,25 @@ const LATEST_RELAY_CU_AFTER_DONE = 0;
 const NUMBER_OF_ALLOWED_SESSIONS_PER_CONSUMER = 10;
 const CU_SUM_ON_FAILURE = 0;
 
+function setupConsumerSessionManager() {
+  const cm = new ConsumerSessionManager(
+    new Relayer({
+        allowInsecureTransport: true,
+        lavaChainId: "lava",
+        privKey: "",
+        secure: true,
+    }),
+    new RPCEndpoint("stub", "stub", "stub", "0"),
+    new ProviderOptimizer(Strategy.Balanced, 0, AVERAGE_WORLD_LATENCY / 2, 1)
+  );
+
+  return cm;
+}
+
 describe("ConsumerSessionManager", () => {
   describe("getSessions", () => {
     it("happy flow", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -79,16 +89,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("tests pairing reset", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       cm.validAddresses = [];
@@ -136,16 +137,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("test pairing reset with failures", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -193,16 +185,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("tests pairing reset with multiple failures", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -225,19 +208,20 @@ describe("ConsumerSessionManager", () => {
             []
           );
 
-          if (consumerSessions instanceof Error) {
-            if (
-              cm.validAddresses.length === 0 &&
-              consumerSessions instanceof PairingListEmptyError
-            ) {
-              break;
-            } else {
-              throw consumerSessions;
+          if (consumerSessions instanceof Map) {
+            for (const consumerSession of consumerSessions.values()) {
+              const error = cm.onSessionFailure(consumerSession.session);
+              if (error) {
+                throw error;
+              }
             }
           }
 
-          for (const consumerSession of consumerSessions.values()) {
-            cm.onSessionFailure(consumerSession.session);
+          if (
+            cm.validAddresses.length === 0 &&
+            consumerSessions instanceof PairingListEmptyError
+          ) {
+            break;
           }
         }
 
@@ -308,16 +292,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("tests success and failure of session with update pairings in the middle", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -445,16 +420,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("tests session failure and get reported providers", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -506,16 +472,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("tests session failure epoch mismatch", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -550,16 +507,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("tests all providers endpoints disabled", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", false);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
@@ -578,16 +526,7 @@ describe("ConsumerSessionManager", () => {
 
     describe("tests pairing with addons", () => {
       test.each(["", "addon"])(`addon: %s`, async (addon) => {
-        const cm = new ConsumerSessionManager(
-          new Relayer({
-            allowInsecureTransport: true,
-            lavaChainId: "lava",
-            privKey: "",
-            secure: true,
-          }),
-          new RPCEndpoint("stub", "stub", "stub", "0"),
-          new RandomProviderOptimizer()
-        );
+        const cm = setupConsumerSessionManager();
         const pairingList = createPairingList("", true);
         await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, [])).not.toEqual(0);
@@ -676,16 +615,7 @@ describe("ConsumerSessionManager", () => {
       ];
 
       test.each(extensionOptions)(`$name`, async ({ addon, extensions }) => {
-        const cm = new ConsumerSessionManager(
-          new Relayer({
-            allowInsecureTransport: true,
-            lavaChainId: "lava",
-            privKey: "",
-            secure: true,
-          }),
-          new RPCEndpoint("stub", "stub", "stub", "0"),
-          new RandomProviderOptimizer()
-        );
+        const cm = setupConsumerSessionManager();
         const pairingList = createPairingList("", true);
         await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, extensions)).not.toEqual(0);
@@ -750,17 +680,7 @@ describe("ConsumerSessionManager", () => {
 
   describe("updateAllProviders", () => {
     it("updates providers", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
-
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
@@ -773,17 +693,7 @@ describe("ConsumerSessionManager", () => {
     });
 
     it("updates all providers with same epoch", async () => {
-      const cm = new ConsumerSessionManager(
-        new Relayer({
-          allowInsecureTransport: true,
-          lavaChainId: "lava",
-          privKey: "",
-          secure: true,
-        }),
-        new RPCEndpoint("stub", "stub", "stub", "0"),
-        new RandomProviderOptimizer()
-      );
-
+      const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
