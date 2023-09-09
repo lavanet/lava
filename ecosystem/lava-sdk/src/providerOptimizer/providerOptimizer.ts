@@ -7,12 +7,8 @@ import { Logger } from "../logger/logger";
 import random from "random";
 import gammainc from "@stdlib/math-base-special-gammainc";
 import { baseTimePerCU, getTimePerCU } from "../common/timeout";
-
-// TODO: move them somewhere
-const hourInMillis = 60 * 60 * 1000;
-function millisToSeconds(millis: number): number {
-  return millis / 1000;
-}
+import BigNumber from "bignumber.js";
+import { hourInMillis, millisToSeconds, now } from "../util/time";
 
 const CACHE_OPTIONS = {
   max: 2000,
@@ -21,9 +17,10 @@ const HALF_LIFE_TIME = hourInMillis;
 const MAX_HALF_TIME = 14 * 24 * hourInMillis;
 const PROBE_UPDATE_WEIGHT = 0.25;
 const RELAY_UPDATE_WEIGHT = 1;
-const DEFAULT_EXPLORATION_CHANCE = 0.1;
-const COST_EXPLORATION_CHANCE = 0.01;
 const INITIAL_DATA_STALENESS = 24;
+const WANTED_PRECISION = 8;
+export const DEFAULT_EXPLORATION_CHANCE = 0.1;
+export const COST_EXPLORATION_CHANCE = 0.01;
 
 // TODO: move this to utils/score/decayScore.ts
 export class ScoreStore {
@@ -118,7 +115,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     success: boolean
   ): void {
     let providerData = this.getProviderData(providerAddress);
-    const sampleTime = performance.now();
+    const sampleTime = now();
     const halfTime = this.calculateHalfTime(providerAddress);
 
     providerData = this.updateProbeEntryAvailability(
@@ -158,12 +155,12 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       true,
       cu,
       syncBlock,
-      performance.now()
+      now()
     );
   }
 
   public appendRelayFailure(providerAddress: string): void {
-    this.appendRelay(providerAddress, 0, false, false, 0, 0, performance.now());
+    this.appendRelay(providerAddress, 0, false, false, 0, 0, now());
   }
 
   private appendRelay(
@@ -314,8 +311,34 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
   public getExcellenceQoSReportForProvider(
     providerAddress: string
-  ): QualityOfServiceReport {
-    return {} as unknown as QualityOfServiceReport;
+  ): QualityOfServiceReport | undefined {
+    const providerData = this.providersStorage.get(providerAddress);
+    if (providerData === undefined) {
+      return;
+    }
+
+    const precision = WANTED_PRECISION;
+    const latencyScore = BigNumber(
+      providerData.latency.num / providerData.latency.denom
+    ).precision(precision);
+    const syncScore = BigNumber(
+      providerData.sync.num / providerData.sync.denom
+    ).precision(precision);
+    const availabilityScore = BigNumber(
+      providerData.availability.num / providerData.availability.denom
+    ).precision(precision);
+
+    const report: QualityOfServiceReport = {
+      latency: latencyScore.toNumber(),
+      availability: availabilityScore.toNumber(),
+      sync: syncScore.toNumber(),
+    };
+    Logger.debug("QoS excellence for provider", {
+      providerAddress,
+      report,
+    });
+
+    return report;
   }
 
   public calculateProbabilityOfTimeout(
@@ -346,7 +369,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       const blockDistanceRequired = requestedBlock - providerData.syncBlock;
       if (blockDistanceRequired > 0) {
         const timeSinceSyncReceived = millisToSeconds(
-          performance.now() - providerData.sync.time
+          now() - providerData.sync.time
         );
         const eventRate = timeSinceSyncReceived / averageBlockTime;
         probabilityBlockError = cumulativeProbabilityFunctionForPoissonDist(
@@ -517,9 +540,9 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     if (data === undefined) {
       const time = -1 * INITIAL_DATA_STALENESS * hourInMillis;
       data = {
-        availability: new ScoreStore(0.99, 1, performance.now() + time),
-        latency: new ScoreStore(2, 1, performance.now() + time),
-        sync: new ScoreStore(2, 1, performance.now() + time),
+        availability: new ScoreStore(0.99, 1, now() + time),
+        latency: new ScoreStore(2, 1, now() + time),
+        sync: new ScoreStore(2, 1, now() + time),
         syncBlock: 0,
       };
     }
@@ -620,7 +643,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       return 0;
     }
     const idx = Math.floor((relayStatsTime.length - 1) / 2);
-    return performance.now() - relayStatsTime[idx];
+    return now() - relayStatsTime[idx];
   }
 
   private getRelayStatsTime(providerAddress: string): number[] {
