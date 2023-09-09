@@ -540,7 +540,7 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RefundedEventName, details, "Refunded")
 }
 
-// TODO: this is duplicated in x/pairing/keeper/unstaking.go; merge into one call
+// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
 func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {

@@ -126,7 +126,7 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epoch
 	}
 }
 
-// TODO: this is duplicated in x/dualstaking/keeper/delegate.go; merge into one call
+// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
 func (k Keeper) getUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
