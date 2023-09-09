@@ -43,8 +43,8 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 
 	utils.LavaFormatDebug("migrate: epochstorage")
 
-	storage := m.keeper.GetAllStakeStorage(ctx)
-	for _, storage := range storage {
+	allStakeStorage := m.keeper.GetAllStakeStorage(ctx)
+	for _, storage := range allStakeStorage {
 		if storage.Index[:len(ProviderKey)] != ProviderKey {
 			utils.LavaFormatDebug("migrate: skip storage with key",
 				utils.Attribute{Key: "index", Value: storage.Index})
@@ -66,5 +66,6 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 		}
 		m.keeper.SetStakeStorage(ctx, storage)
 	}
+
 	return nil
 }
