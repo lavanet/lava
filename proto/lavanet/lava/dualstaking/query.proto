@@ -16,9 +16,14 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/dualstaking/params";
   }
 
-  // Queries a list of ListProjects items.
+  // Queries a delegator for all its providers.
   rpc DelegatorProviders(QueryDelegatorProvidersRequest) returns (QueryDelegatorProvidersResponse) {
     option (google.api.http).get = "/lavanet/lava/subscription/delegator_providers/{delegator}";
+  }
+
+  // Queries a provider for all its delegators.
+  rpc ProviderDelegators(QueryProviderDelegatorsRequest) returns (QueryProviderDelegatorsResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/provider_delegators/{provider}";
   }
 }
 
@@ -37,5 +42,14 @@ message QueryDelegatorProvidersRequest {
 }
 
 message QueryDelegatorProvidersResponse {
+  repeated Delegation delegations = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryProviderDelegatorsRequest {
+  string provider = 1;
+  bool with_pending = 2;
+}
+
+message QueryProviderDelegatorsResponse {
   repeated Delegation delegations = 1 [(gogoproto.nullable) = false];
 }

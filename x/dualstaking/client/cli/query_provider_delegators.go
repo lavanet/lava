@@ -10,15 +10,13 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
-const WithPendingDelegatorsFlagName = "with-pending"
-
-func CmdQueryDelegatorProviders() *cobra.Command {
+func CmdQueryProviderDelegators() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delegator-providers [delegator]",
-		Short: "shows all the providers the delegator delegated to",
+		Use:   "provider-delegators [provider]",
+		Short: "shows all the delegators of a specific provider",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			delegator := args[0]
+			provider := args[0]
 
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -34,8 +32,8 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 			}
 			withPendingDelegations := withPendingDelegationsFlag.Changed
 
-			res, err := queryClient.DelegatorProviders(cmd.Context(), &types.QueryDelegatorProvidersRequest{
-				Delegator:   delegator,
+			res, err := queryClient.ProviderDelegators(cmd.Context(), &types.QueryProviderDelegatorsRequest{
+				Provider:    provider,
 				WithPending: withPendingDelegations,
 			})
 			if err != nil {

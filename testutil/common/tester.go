@@ -548,6 +548,15 @@ func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPendi
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
 
+// QueryDualstakingProviderDelegators implements 'q dualstaking provider-delegators'
+func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPending bool) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
+	msg := &dualstakingtypes.QueryProviderDelegatorsRequest{
+		Provider:    provider,
+		WithPending: withPending,
+	}
+	return ts.Keepers.Dualstaking.ProviderDelegators(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
