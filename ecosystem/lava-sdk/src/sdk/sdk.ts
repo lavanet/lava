@@ -211,5 +211,7 @@ export class LavaSDK {
         this.rpcConsumerServer.set(chainId + apiInterface, rpcConsuemer);
       }
     }
+
+    await tracker.startTracking();
   }
 }
