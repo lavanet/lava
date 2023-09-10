@@ -21,7 +21,7 @@ export interface Config {
 export class StateTracker {
   private updaters: Map<string, Updater>;
   private stateQuery: StateQuery;
-  private timeTillNextEpoch: number = 0;
+  private timeTillNextEpoch = 0;
 
   // Constructor for State Tracker
   constructor(
@@ -77,7 +77,7 @@ export class StateTracker {
   async startTracking() {
     Logger.debug("State Tracker started");
     // Call update method on all registered updaters
-    for (let updater of this.updaters.values()) {
+    for (const updater of this.updaters.values()) {
       updater.update();
     }
 
