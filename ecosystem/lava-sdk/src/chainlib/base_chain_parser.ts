@@ -362,21 +362,42 @@ export abstract class BaseChainParser {
   ): ChainMessage;
 }
 
-export abstract class ChainMessage {
-  protected requestedBlock: number;
-  protected api: Api;
-  protected apiCollection: ApiCollection;
-  constructor(requestedBlock: number, api: Api, apiCollection: ApiCollection) {
+export class ChainMessage {
+  private requestedBlock: number;
+  private api: Api;
+  private apiCollection: ApiCollection;
+  private messageData: string;
+  private messageUrl: string;
+  public headers: Metadata[] = [];
+  constructor(
+    requestedBlock: number,
+    api: Api,
+    apiCollection: ApiCollection,
+    data: string,
+    messageUrl: string
+  ) {
     this.requestedBlock = requestedBlock;
     this.apiCollection = apiCollection;
     this.api = api;
+    this.messageData = data;
+    this.messageUrl = messageUrl;
   }
-  abstract getRequestedBlock(): number;
-  abstract updateLatestBlockInMessage(
+  public getRequestedBlock(): number {
+    return this.requestedBlock;
+  }
+  public updateLatestBlockInMessage(
     latestBlock: number,
     modififyContent: boolean
-  ): boolean;
-  abstract appendHeader(metaData: Metadata[]): void;
-  abstract getApi(): Api;
-  abstract getApiCollection(): ApiCollection;
+  ): boolean {
+    return false; // TODO: implement
+  }
+  public appendHeader(metaData: Metadata[]) {
+    this.headers = [...this.headers, ...metaData];
+  }
+  public getApi(): Api {
+    return this.api;
+  }
+  public getApiCollection(): ApiCollection {
+    return this.apiCollection;
+  }
 }
