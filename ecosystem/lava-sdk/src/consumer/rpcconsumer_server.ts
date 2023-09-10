@@ -43,8 +43,7 @@ export class RPCConsumerServer {
     const unwantedProviders = new Set<string>();
     // TODO: fill data url, connectionType
     const relayData = {
-      data: "",
-      url: "",
+      ...chainMessage.getRawRequestData(), // url and data fields
       connectionType:
         chainMessage.getApiCollection().getCollectionData()?.getType() ?? "",
       apiInterface: this.rpcEndpoint.apiInterface,

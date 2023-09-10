@@ -362,6 +362,11 @@ export abstract class BaseChainParser {
   ): ChainMessage;
 }
 
+export interface RawRequestData {
+  url: string;
+  data: string;
+}
+
 export class ChainMessage {
   private requestedBlock: number;
   private api: Api;
@@ -383,8 +388,8 @@ export class ChainMessage {
     this.messageUrl = messageUrl;
   }
 
-  public getMessageData(): string {
-    return this.messageData;
+  public getRawRequestData(): RawRequestData {
+    return { url: this.messageUrl, data: this.messageData };
   }
 
   public getMessageUrl(): string {
