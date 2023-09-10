@@ -695,7 +695,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			_, sub1Addr := ts.AddAccount("sub", i, 10000)
 
 			// create plan, propose it and buy subscription
-			plan := ts.Plan("mock")
+			plan := ts.Plan("free")
 			providersSet := providerSets[tt.providersSet]
 
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
@@ -2171,7 +2171,7 @@ func TestPairingConsistency(t *testing.T) {
 	iterations := 100
 
 	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(3)
-	ts.AddPlan("mock", ts.plan)
+	ts.AddPlan("free", ts.plan)
 	ts.addClient(1)
 	err := ts.addProviderGeolocation(10, 3)
 	require.Nil(t, err)
