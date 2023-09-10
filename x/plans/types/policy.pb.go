@@ -60,7 +60,7 @@ func (SELECTED_PROVIDERS_MODE) EnumDescriptor() ([]byte, []int) {
 // protobuf expected in YAML format: used "moretags" to simplify parsing
 type Policy struct {
 	ChainPolicies         []ChainPolicy           `protobuf:"bytes,1,rep,name=chain_policies,json=chainPolicies,proto3" json:"chain_policies"`
-	GeolocationProfile    uint64                  `protobuf:"varint,2,opt,name=geolocation_profile,json=geolocationProfile,proto3" json:"geolocation_profile"`
+	GeolocationProfile    int32                   `protobuf:"varint,2,opt,name=geolocation_profile,json=geolocationProfile,proto3" json:"geolocation_profile"`
 	TotalCuLimit          uint64                  `protobuf:"varint,3,opt,name=total_cu_limit,json=totalCuLimit,proto3" json:"total_cu_limit"`
 	EpochCuLimit          uint64                  `protobuf:"varint,4,opt,name=epoch_cu_limit,json=epochCuLimit,proto3" json:"epoch_cu_limit"`
 	MaxProvidersToPair    uint64                  `protobuf:"varint,5,opt,name=max_providers_to_pair,json=maxProvidersToPair,proto3" json:"max_providers_to_pair"`
@@ -108,7 +108,7 @@ func (m *Policy) GetChainPolicies() []ChainPolicy {
 	return nil
 }
 
-func (m *Policy) GetGeolocationProfile() uint64 {
+func (m *Policy) GetGeolocationProfile() int32 {
 	if m != nil {
 		return m.GeolocationProfile
 	}
@@ -804,7 +804,7 @@ func (m *Policy) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.GeolocationProfile |= uint64(b&0x7F) << shift
+				m.GeolocationProfile |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

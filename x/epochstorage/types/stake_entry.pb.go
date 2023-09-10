@@ -98,7 +98,7 @@ func (m *StakeEntry) GetEndpoints() []Endpoint {
 	return nil
 }
 
-func (m *StakeEntry) GetGeolocation() uint64 {
+func (m *StakeEntry) GetGeolocation() int32 {
 	if m != nil {
 		return m.Geolocation
 	}
@@ -502,7 +502,7 @@ func (m *StakeEntry) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Geolocation |= uint64(b&0x7F) << shift
+				m.Geolocation |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

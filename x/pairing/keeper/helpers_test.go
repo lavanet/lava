@@ -52,7 +52,7 @@ func (ts *tester) addProvider(count int) error {
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
-func (ts *tester) addProviderGeolocation(count int, geolocation uint64) error {
+func (ts *tester) addProviderGeolocation(count int, geolocation int32) error {
 	return ts.addProviderExtra(count, nil, geolocation, "")
 }
 
@@ -70,7 +70,7 @@ func (ts *tester) addProviderMoniker(count int, moniker string) error {
 func (ts *tester) addProviderExtra(
 	count int,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))

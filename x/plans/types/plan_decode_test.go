@@ -117,7 +117,7 @@ func TestDecodeJsonPlan(t *testing.T) {
 }
 
 func TestDecodePlanAddProposal(t *testing.T) {
-	defaultGeo, ok := policyDefaultValues["geolocation_profile"].(uint64)
+	defaultGeo, ok := policyDefaultValues["geolocation_profile"].(int32)
 	require.True(t, ok)
 	defaultProvidersToPair, ok := policyDefaultValues["max_providers_to_pair"].(uint64)
 	require.True(t, ok)
