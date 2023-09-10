@@ -382,21 +382,34 @@ export class ChainMessage {
     this.messageData = data;
     this.messageUrl = messageUrl;
   }
+
+  public getMessageData(): string {
+    return this.messageData;
+  }
+
+  public getMessageUrl(): string {
+    return this.messageUrl;
+  }
+
   public getRequestedBlock(): number {
     return this.requestedBlock;
   }
+
   public updateLatestBlockInMessage(
     latestBlock: number,
     modififyContent: boolean
   ): boolean {
     return false; // TODO: implement
   }
+
   public appendHeader(metaData: Metadata[]) {
     this.headers = [...this.headers, ...metaData];
   }
+
   public getApi(): Api {
     return this.api;
   }
+
   public getApiCollection(): ApiCollection {
     return this.apiCollection;
   }
