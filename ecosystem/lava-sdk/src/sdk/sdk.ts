@@ -196,6 +196,8 @@ export class LavaSDK {
           optimizer
         );
 
+        tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
+
         // create chain parser
         const chainParse = getChainParser(apiInterface);
 
