@@ -109,8 +109,6 @@ export class LavaSDK {
   }
 
   public async init() {
-    // Init relayer
-
     // Init wallet
     if (!this.badgeManager.isActive()) {
       const wallet = await createWallet(this.privKey);
