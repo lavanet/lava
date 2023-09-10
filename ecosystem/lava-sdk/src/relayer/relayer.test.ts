@@ -1,5 +1,5 @@
 import { RelayPrivateData } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
-import Relayer from "./relayer";
+import { Relayer } from "./relayer";
 
 describe("Test relay request", () => {
   const getPrivateDataNegativeBlock = (): RelayPrivateData => {
@@ -48,7 +48,12 @@ describe("Test relay request", () => {
         ]),
       },
     ];
-    const relayer = new Relayer("", "", false);
+    const relayer = new Relayer({
+      allowInsecureTransport: true,
+      lavaChainId: "lava",
+      privKey: "",
+      secure: true,
+    });
 
     for (const testCase of testTable) {
       // Test case logic goes here

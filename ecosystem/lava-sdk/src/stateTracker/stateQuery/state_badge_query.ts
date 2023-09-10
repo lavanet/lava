@@ -1,14 +1,13 @@
 import { PairingResponse } from "./state_query";
+import { GenerateBadgeResponse } from "../../grpc_web_services/lavanet/lava/pairing/badges_pb";
+import { StateTrackerErrors } from "../errors";
+import { Relayer } from "../../relayer/relayer";
+import { AccountData } from "@cosmjs/proto-signing";
+import { Logger } from "../../logger/logger";
 import {
   BadgeManager,
   TimoutFailureFetchingBadgeError,
 } from "../../badge/badgeManager";
-import { GenerateBadgeResponse } from "../../grpc_web_services/lavanet/lava/pairing/badges_pb";
-import { StateTrackerErrors } from "../errors";
-import { StakeEntry } from "../../codec/lavanet/lava/epochstorage/stake_entry";
-import { Relayer } from "../../relayer/relayer";
-import { AccountData } from "@cosmjs/proto-signing";
-import { Logger } from "../../logger/logger";
 
 export class StateBadgeQuery {
   private pairing: Map<string, PairingResponse | undefined>;
@@ -43,7 +42,9 @@ export class StateBadgeQuery {
   // fetchPairing fetches pairing for all chainIDs we support
   public async fetchPairing(): Promise<number> {
     Logger.debug("Fetching pairing started");
+
     let timeLeftToNextPairing;
+
     for (const chainID of this.chainIDs) {
       const badgeResponse = await this.fetchNewBadge(chainID);
 
@@ -59,8 +60,9 @@ export class StateBadgeQuery {
       (this.account as any).address = badgeResponse.getBadgeSignerAddress();
 
       const pairingResponse = badgeResponse.getGetPairingResponse();
+      const specResponse = badgeResponse.getSpec();
 
-      if (pairingResponse == undefined) {
+      if (pairingResponse == undefined || specResponse == undefined) {
         this.pairing.set(chainID, undefined);
 
         continue;
@@ -70,36 +72,15 @@ export class StateBadgeQuery {
       timeLeftToNextPairing = pairingResponse.getTimeLeftToNextPairing();
 
       // Generate StakeEntry
-      const stakeEntry: Array<StakeEntry> = [];
-
-      for (const provider of pairingResponse.getProvidersList()) {
-        const providerObject = provider.toObject() as any;
-
-        // Rename 'endpointsList' to 'endpoints' and process its attributes
-        if (providerObject.endpointsList) {
-          providerObject.endpoints = providerObject.endpointsList.map(
-            (endpoint: any) => {
-              // Process the endpoint attributes if needed
-              const processedEndpoint =
-                this.removeListSuffixFromAttributes(endpoint);
-
-              // Convert the 'ipport' attribute to 'iPPORT'
-              if (processedEndpoint.ipport) {
-                processedEndpoint.iPPORT = processedEndpoint.ipport;
-                delete processedEndpoint.ipport;
-              }
-
-              return processedEndpoint;
-            }
-          );
-          delete providerObject.endpointsList;
-        }
-
-        stakeEntry.push(providerObject);
-      }
+      const stakeEntry = pairingResponse.getProvidersList();
 
       // Save pairing response for chainID
-      this.pairing.set(chainID, undefined);
+      this.pairing.set(chainID, {
+        providers: stakeEntry,
+        maxCu: badge.getCuAllocation(),
+        currentEpoch: pairingResponse.getCurrentEpoch(),
+        spec: specResponse,
+      });
     }
 
     // If timeLeftToNextPairing undefined return an error
@@ -116,16 +97,6 @@ export class StateBadgeQuery {
   public getPairing(chainID: string): PairingResponse | undefined {
     // Return pairing for the specific chainId from the map
     return this.pairing.get(chainID);
-  }
-
-  // Helper function to rename attributes by removing the 'List' suffix
-  private removeListSuffixFromAttributes(obj: any): any {
-    const newObj: any = {};
-    for (const key in obj) {
-      const newKey = key.replace("List", "");
-      newObj[newKey] = obj[key];
-    }
-    return newObj;
   }
 
   private async fetchNewBadge(chainID: string): Promise<GenerateBadgeResponse> {

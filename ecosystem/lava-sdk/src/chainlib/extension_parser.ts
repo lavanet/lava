@@ -1,4 +1,4 @@
-import { Extension } from "../codec/lavanet/lava/spec/api_collection";
+import { Extension } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 
 interface ExtensionKey {
   Extension: string;

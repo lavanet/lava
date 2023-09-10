@@ -1,4 +1,3 @@
-import { PairingUpdater } from "./updaters/pairing_updater";
 import { StateChainQuery } from "./stateQuery/state_chain_query";
 import { StateBadgeQuery } from "./stateQuery/state_badge_query";
 import { BadgeManager } from "../badge/badgeManager";
@@ -7,7 +6,9 @@ import { StateQuery } from "./stateQuery/state_query";
 import { Updater } from "./updaters/updater";
 import { Relayer } from "../relayer/relayer";
 import { AccountData } from "@cosmjs/proto-signing";
-import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
+import { PairingResponse } from "../stateTracker/stateQuery/state_query";
+import { PairingUpdater } from "./updaters/pairing_updater";
+import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 
@@ -18,7 +19,7 @@ export interface Config {
 }
 
 export class StateTracker {
-  private updaters: Updater[] = [];
+  private updaters: Map<string, Updater>;
   private stateQuery: StateQuery;
 
   // Constructor for State Tracker
@@ -31,9 +32,11 @@ export class StateTracker {
     walletAddress: string,
     badgeManager?: BadgeManager
   ) {
+    Logger.SetLogLevel(5);
     Logger.debug("Initialization of State Tracker started");
 
-    if (badgeManager != undefined) {
+    this.updaters = new Map();
+    if (badgeManager && badgeManager.isActive()) {
       this.stateQuery = new StateBadgeQuery(
         badgeManager,
         walletAddress,
@@ -52,11 +55,26 @@ export class StateTracker {
       );
     }
 
+    // Create Pairing Updater
+    const pairingUpdater = new PairingUpdater(this.stateQuery, config);
+
+    // Register all updaters
+    this.registerForUpdates(pairingUpdater, "pairingUpdater");
+
     Logger.debug("Pairing updater added");
+  }
+
+  getPairingResponse(chainId: string): PairingResponse | undefined {
+    return this.stateQuery.getPairing(chainId);
   }
 
   async initialize() {
     Logger.debug("Initialization of State Tracker started");
+    await this.stateQuery.fetchPairing();
+  }
+
+  async startTracking() {
+    Logger.debug("State Tracker started");
     await this.executeUpdateOnNewEpoch();
   }
 
@@ -73,7 +91,7 @@ export class StateTracker {
       );
 
       // Call update method on all registered updaters
-      for (const updater of this.updaters) {
+      for (let updater of this.updaters.values()) {
         updater.update();
       }
 
@@ -83,7 +101,7 @@ export class StateTracker {
         timeTillNextEpoch * 1000
       );
     } catch (error) {
-      console.error("An error occurred during pairing processing:", error);
+      Logger.error("An error occurred during pairing processing:", error);
 
       Logger.debug("Retry fetching pairing list in: " + DEFAULT_RETRY_INTERVAL);
 
@@ -92,8 +110,19 @@ export class StateTracker {
     }
   }
 
+  RegisterConsumerSessionManagerForPairingUpdates(
+    consumerSessionManager: ConsumerSessionManager
+  ) {
+    const pairingUpdater = this.updaters.get("pairingUpdater");
+    if (pairingUpdater == undefined) {
+      return;
+    }
+
+    pairingUpdater.registerPairing(consumerSessionManager);
+  }
+
   // registerForUpdates adds new updater
-  private registerForUpdates(updater: Updater) {
-    this.updaters.push(updater);
+  private registerForUpdates(updater: Updater, name: string) {
+    this.updaters.set(name, updater);
   }
 }

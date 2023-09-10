@@ -1,14 +1,14 @@
 import {
-  functionTag,
+  FUNCTION_TAG,
   ParseDirective,
   ApiCollection,
   Api,
   Header,
-  Header_HeaderType,
-} from "../codec/lavanet/lava/spec/api_collection";
-import { Metadata } from "../codec/lavanet/lava/pairing/relay";
-import { Spec } from "../codec/lavanet/lava/spec/spec";
+} from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
+import { Metadata } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { Logger } from "../logger/logger";
+import Long from "long";
 
 export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
@@ -95,7 +95,7 @@ interface HeadersHandler {
 }
 
 export abstract class BaseChainParser {
-  protected taggedApis: Map<functionTag, TaggedContainer>;
+  protected taggedApis: Map<number, TaggedContainer>;
   protected spec: Spec | undefined;
   protected serverApis: Map<ApiKeyString, ApiContainer>;
   protected headers: Map<ApiKeyString, HeaderContainer>;
@@ -119,37 +119,64 @@ export abstract class BaseChainParser {
     this.apiInterface = apiInterface;
     this.spec = spec;
 
-    if (spec.enabled) {
-      for (const apiCollection of spec.apiCollections) {
-        if (!apiCollection.enabled) {
+    if (spec.getEnabled()) {
+      for (const apiCollection of spec.getApiCollectionsList()) {
+        if (!apiCollection.getEnabled()) {
           continue;
         }
-        if (apiCollection.collectionData?.apiInterface != this.apiInterface) {
+        if (
+          apiCollection.getCollectionData()?.getApiInterface() !=
+          this.apiInterface
+        ) {
           continue;
+        }
+
+        const connectionType = apiCollection.getCollectionData()?.getType();
+        if (connectionType == undefined) {
+          //TODO change message
+          throw Logger.fatal(
+            "Missing verification parseDirective data in BaseChainParser constructor"
+          );
+        }
+        const internalPath = apiCollection
+          .getCollectionData()
+          ?.getInternalPath();
+        if (internalPath == undefined) {
+          //TODO change message
+          throw Logger.fatal(
+            "Missing verification parseDirective data in BaseChainParser constructor"
+          );
+        }
+        const addon = apiCollection.getCollectionData()?.getAddOn();
+        if (addon == undefined) {
+          //TODO change message
+          throw Logger.fatal(
+            "Missing verification parseDirective data in BaseChainParser constructor"
+          );
         }
         const collectionKey: CollectionKey = {
-          connectionType: apiCollection.collectionData.type,
-          internalPath: apiCollection.collectionData.internalPath,
-          addon: apiCollection.collectionData.addOn,
+          connectionType: connectionType,
+          internalPath: internalPath,
+          addon: addon,
         };
 
         // parse directives
-        for (const parsing of apiCollection.parseDirectives) {
-          this.taggedApis.set(parsing.functionTag, {
+        for (const parsing of apiCollection.getParseDirectivesList()) {
+          this.taggedApis.set(parsing.getFunctionTag(), {
             parsing: parsing,
             apiCollection: apiCollection,
           });
         }
 
         // parse api collection
-        for (const api of apiCollection.apis) {
-          if (!api.enabled) {
+        for (const api of apiCollection.getApisList()) {
+          if (!api.getEnabled()) {
             continue;
           }
-          let apiName = api.name;
+          let apiName = api.getName();
           if (this.apiInterface == APIInterfaceRest) {
             const re = /{[^}]+}/;
-            apiName = api.name.replace(re, "replace-me-with-regex");
+            apiName = api.getName().replace(re, "replace-me-with-regex");
             apiName = apiName.replace(/replace-me-with-regex/g, "[^\\/\\s]+");
             apiName = this.escapeRegExp(apiName); // Assuming you have a RegExp.escape function
           }
@@ -165,9 +192,9 @@ export abstract class BaseChainParser {
         }
 
         // Parse headers
-        for (const header of apiCollection.headers) {
+        for (const header of apiCollection.getHeadersList()) {
           const apiKeyHeader: ApiKey = {
-            name: header.name,
+            name: header.getName(),
             connectionType: collectionKey.connectionType,
           };
           this.headers.set(ApiKeyToString(apiKeyHeader), {
@@ -176,24 +203,46 @@ export abstract class BaseChainParser {
           });
         }
 
-        for (const verification of apiCollection.verifications) {
-          for (const parseValue of verification.values) {
+        for (const verification of apiCollection.getVerificationsList()) {
+          for (const parseValue of verification.getValuesList()) {
+            const addons = apiCollection.getCollectionData()?.getAddOn();
+            if (addons == undefined) {
+              //TODO change message
+              throw Logger.fatal(
+                "Missing verification parseDirective data in BaseChainParser constructor"
+              );
+            }
+
+            const value = parseValue.toObject();
             const verificationKey: VerificationKey = {
-              extension: parseValue.extension,
-              addon: apiCollection.collectionData.addOn,
+              extension: value.extension,
+              addon: addons,
             };
-            if (!verification.parseDirective) {
+            if (!verification.getParseDirective()) {
               throw Logger.fatal(
                 "Missing verification parseDirective data in BaseChainParser constructor",
                 verification
               );
             }
+            const connectionType = apiCollection.getCollectionData()?.getType();
+            if (connectionType == undefined) {
+              throw Logger.fatal(
+                "Missing verification parseDirective data in BaseChainParser constructor"
+              );
+            }
+            const parseDirective = verification.getParseDirective();
+            if (parseDirective == undefined) {
+              throw Logger.fatal(
+                "Missing verification parseDirective data in BaseChainParser constructor"
+              );
+            }
+
             const verificationContainer: VerificationContainer = {
-              connectionType: apiCollection.collectionData.type,
-              name: verification.name,
-              parseDirective: verification.parseDirective,
-              value: parseValue.expectedValue,
-              latestDistance: parseValue.latestDistance,
+              connectionType: connectionType,
+              name: verification.getName(),
+              parseDirective: parseDirective,
+              value: parseValue.getExpectedValue(),
+              latestDistance: Long.fromNumber(parseValue.getLatestDistance()),
               verificationKey: verificationKey,
             };
             const vfkey = VerificationKeyToString(verificationKey);
@@ -212,7 +261,7 @@ export abstract class BaseChainParser {
   protected handleHeaders(
     metadata: Metadata[],
     apiCollection: ApiCollection,
-    headersDirection: Header_HeaderType
+    headersDirection: Header.HeaderTypeMap
   ): HeadersHandler {
     if (metadata.length == 0) {
       return {
@@ -225,8 +274,16 @@ export abstract class BaseChainParser {
     const ignoredMetadata: Metadata[] = [];
     let overwriteRequestedBlock = "";
     for (const header of metadata) {
-      const headerName = header.name.toLowerCase();
-      if (!apiCollection.collectionData) {
+      const headerName = header.getName().toLowerCase();
+      if (!apiCollection.getCollectionData()) {
+        throw Logger.fatal(
+          "Missing api collection data in handleHeaders",
+          apiCollection
+        );
+      }
+      const connectionType = apiCollection.getCollectionData()?.getType();
+      if (connectionType == undefined) {
+        // TODO fix
         throw Logger.fatal(
           "Missing api collection data in handleHeaders",
           apiCollection
@@ -234,7 +291,7 @@ export abstract class BaseChainParser {
       }
       const apiKey: ApiKey = {
         name: headerName,
-        connectionType: apiCollection.collectionData?.type,
+        connectionType: connectionType,
       };
 
       const headerDirective = this.headers.get(ApiKeyToString(apiKey));
@@ -242,17 +299,20 @@ export abstract class BaseChainParser {
         continue; // this header is not handled
       }
       if (
-        headerDirective.header.kind == headersDirection ||
-        headerDirective.header.kind == Header_HeaderType.pass_both
+        headerDirective.header.getKind() ==
+          <number>(<unknown>headersDirection) ||
+        headerDirective.header.getKind() == Header.HeaderType.PASS_BOTH
       ) {
         retMetaData.push(header);
         if (
-          headerDirective.header.functionTag ==
-          functionTag.SET_LATEST_IN_METADATA
+          headerDirective.header.getFunctionTag() ==
+          FUNCTION_TAG.SET_LATEST_IN_METADATA
         ) {
-          overwriteRequestedBlock = header.value;
+          overwriteRequestedBlock = header.getValue();
         }
-      } else if (headerDirective.header.kind == Header_HeaderType.pass_ignore) {
+      } else if (
+        headerDirective.header.getKind() == Header.HeaderType.PASS_IGNORE
+      ) {
         ignoredMetadata.push(header);
       }
     }

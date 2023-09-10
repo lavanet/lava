@@ -4,17 +4,15 @@ import { fetchLavaPairing } from "../../util/lavaPairing";
 import { StateTrackerErrors } from "../errors";
 import { PairingResponse } from "./state_query";
 import { AccountData } from "@cosmjs/proto-signing";
-import Long from "long";
 import {
   base64ToUint8Array,
   generateRPCData,
-  parseLong,
   generateRandomInt,
 } from "../../util/common";
 import {
   QueryGetPairingRequest,
   QuerySdkPairingResponse,
-} from "../../codec/lavanet/lava/pairing/query";
+} from "../../grpc_web_services/lavanet/lava/pairing/query_pb";
 import { Relayer } from "../../relayer/relayer";
 import { ProvidersErrors } from "../errors";
 import {
@@ -23,6 +21,7 @@ import {
   Endpoint,
 } from "../../lavasession/consumerTypes";
 import { Logger } from "../../logger/logger";
+import { BatchRelays, SendRelayOptions } from "../../relayer/relayer";
 
 const lavaChainID = "LAV1";
 const lavaRPCInterface = "tendermintrpc";
@@ -94,37 +93,46 @@ export class StateChainQuery {
 
       // Iterate over chain and construct pairing
       for (const chainID of this.chainIDs) {
+        const request = new QueryGetPairingRequest();
+        request.setChainid(chainID);
+        request.setClient(this.account.address);
+
         // Fetch pairing for specified chainID
         const pairingResponse = await this.getPairingFromChain(
-          {
-            chainID: chainID,
-            client: this.account.address,
-          },
+          latestNumber,
+          request,
           10
         );
 
         // If pairing is undefined set to empty object
-        if (
-          pairingResponse == undefined ||
-          pairingResponse.pairing == undefined ||
-          pairingResponse.spec == undefined
-        ) {
+        if (!pairingResponse) {
           this.pairing.set(chainID, undefined);
-
           continue;
         }
 
-        // Parse time till next epoch
-        timeLeftToNextPairing = parseLong(
-          pairingResponse.pairing.timeLeftToNextPairing
-        );
+        const pairing = pairingResponse.getPairing();
+
+        if (!pairing) {
+          this.pairing.set(chainID, undefined);
+          continue;
+        }
+
+        const spec = pairingResponse.getSpec();
+
+        if (!spec) {
+          this.pairing.set(chainID, undefined);
+          continue;
+        }
+
+        const providers = pairing.getProvidersList();
+        timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
 
         // Save pairing response for chainID
         this.pairing.set(chainID, {
-          providers: pairingResponse.pairing.providers,
-          maxCu: parseLong(pairingResponse.maxCu),
+          providers: providers,
+          maxCu: pairingResponse.getMaxCu(),
           currentEpoch: latestNumber,
-          spec: pairingResponse.spec,
+          spec: spec,
         });
       }
 
@@ -187,14 +195,16 @@ export class StateChainQuery {
 
   // getPairingFromChain fetch pairing response from lava providers
   private async getPairingFromChain(
+    epoch: number,
     request: QueryGetPairingRequest,
     relayCu: number
-  ): Promise<QuerySdkPairingResponse> {
+  ): Promise<QuerySdkPairingResponse | undefined> {
     try {
-      Logger.debug("Get pairing for:" + request.chainID + " started");
-      // Encode request
-      const requestData = QueryGetPairingRequest.encode(request).finish();
+      Logger.debug("Get pairing for:" + request.getChainid() + " started");
 
+      // Serialize request to binary format
+      const requestData = request.serializeBinary();
+      console.log(requestData);
       // Create hex from data
       const hexData = Buffer.from(requestData).toString("hex");
 
@@ -210,48 +220,60 @@ export class StateChainQuery {
         connectionType: "",
       };
 
+      const batchRelays: BatchRelays[] = [];
+
       // Send relay to all providers and return first response
+      for (const provider of this.lavaProviders) {
+        const options: SendRelayOptions = {
+          apiInterface: lavaRPCInterface,
+          chainId: lavaChainID,
+          connectionType: sendRelayOptions.connectionType,
+          data: sendRelayOptions.data,
+          epoch: epoch,
+          publicProviderLavaAddress:
+            provider.getPublicLavaAddressAndPairingEpoch()
+              .publicProviderAddress,
+          url: sendRelayOptions.url,
+        };
+        const batchRelay: BatchRelays = {
+          options: options,
+          singleConsumerSession: provider.sessions[0],
+        };
+
+        batchRelays.push(batchRelay);
+      }
       const jsonResponse = await this.relayer.SendRelayToAllProvidersAndRace(
-        this.lavaProviders,
-        sendRelayOptions,
-        relayCu,
-        lavaRPCInterface,
-        lavaChainID
+        batchRelays
       );
 
       if (jsonResponse.result.response.value == null) {
         // If response is null log the error
         Logger.error(
           "ERROR, failed to fetch pairing for spec: " +
-            request.chainID +
+            request.getChainid() +
             ",error: " +
             jsonResponse.result.response.log
         );
 
         // Return empty object
         // We do not want to return error because it will stop the state tracker for other chains
-        return {
-          pairing: undefined,
-          spec: undefined,
-          maxCu: Long.fromNumber(-1),
-        };
+        return undefined;
       }
 
-      // Decode response
       const byteArrayResponse = base64ToUint8Array(
         jsonResponse.result.response.value
       );
-      const decodedResponse = QuerySdkPairingResponse.decode(byteArrayResponse);
+
+      // Deserialize the Uint8Array to obtain the protobuf message
+      const decodedResponse =
+        QuerySdkPairingResponse.deserializeBinary(byteArrayResponse);
 
       // If response undefined throw an error
-      if (
-        decodedResponse.pairing == undefined ||
-        decodedResponse.pairing.providers == undefined
-      ) {
+      if (decodedResponse.getPairing() == undefined) {
         throw ProvidersErrors.errProvidersNotFound;
       }
 
-      Logger.debug("Get pairing for:" + request.chainID + " ended");
+      Logger.debug("Get pairing for:" + request.getChainid() + " ended");
       // Return decoded response
       return decodedResponse;
     } catch (err) {
@@ -260,11 +282,7 @@ export class StateChainQuery {
 
       // Return empty object
       // We do not want to return error because it will stop the state tracker for other chains
-      return {
-        pairing: undefined,
-        spec: undefined,
-        maxCu: Long.fromNumber(-1),
-      };
+      return undefined;
     }
   }
 

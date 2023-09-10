@@ -1,5 +1,5 @@
-import { StakeEntry } from "../../codec/lavanet/lava/epochstorage/stake_entry";
-import { Spec } from "../../codec/lavanet/lava/spec/spec";
+import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
+import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 
 export interface StateQuery {
   fetchPairing(): Promise<number>;

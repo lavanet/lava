@@ -23,8 +23,6 @@ import {
   MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION,
   RELAY_NUMBER_INCREMENT,
 } from "./common";
-import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
-import BigNumber from "bignumber.js";
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { grpc } from "@improbable-eng/grpc-web";

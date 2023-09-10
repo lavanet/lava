@@ -11,6 +11,10 @@ import { Logger, LogLevel } from "../logger/logger";
 import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
 import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
+import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
+import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
+import { RPCEndpoint } from "../lavasession/consumerTypes";
+import { getChainParser } from "../chainlib/utils";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -45,7 +49,7 @@ export class LavaSDK {
   private allowInsecureTransport: boolean;
   private chainIDRpcInterface: string[];
   private transport: any;
-  private rpcConsumerServer?: RPCConsumerServer; // we setup the consumer in the init function as we require extra information
+  private rpcConsumerServer: Map<string, RPCConsumerServer>;
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
 
   /**
@@ -100,6 +104,8 @@ export class LavaSDK {
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
     this.transport = options.transport;
+
+    this.rpcConsumerServer = new Map();
   }
 
   static async create(options: LavaSDKOptions): Promise<LavaSDK> {
@@ -134,6 +140,9 @@ export class LavaSDK {
       transport: this.transport,
     });
 
+    // create provider optimizer
+    const optimizer = new RandomProviderOptimizer();
+
     // Init state tracker
     const tracker = new StateTracker(
       this.pairingListConfig,
@@ -147,30 +156,60 @@ export class LavaSDK {
       this.walletAddress,
       this.badgeManager
     );
+
+    /// Fetch init state query
     await tracker.initialize();
 
     // init rpcconsumer servers
     for (const chainId of this.chainIDRpcInterface) {
-      // init here
-      /*
-      here the flow is different a bit. first get the 
-      step0 fetch info for chain. tracker.fetchInitInfo()
+      const pairingResponse = tracker.getPairingResponse(chainId);
 
-      for (let apiInterface of spec.apiCollection) {
-
+      if (pairingResponse == undefined) {
+        Logger.debug("No pairing list provided for chainID: ", chainId);
+        continue;
       }
-      step1.
-      const csm = new ConsumerSessionManager();
-      step2.
-      const chainParser = ???
-      
-      step3. 
-      register for updates both chainPaser, tracker.registerForPairingUpdates
 
-      final step:
-      create RpcConsumerServer(specific api+chain)
-      */
-      // here register for updates.
+      for (let apiCollection of pairingResponse.spec.getApiCollectionsList()) {
+        // Get api interface
+        const apiInterface = apiCollection
+          .getCollectionData()
+          ?.getApiInterface();
+
+        // Validate api interface
+        if (apiInterface == undefined) {
+          Logger.debug("No api interface in spec: ", chainId);
+          continue;
+        }
+
+        // get rpc Endpoint
+        const rpcEndpoint = new RPCEndpoint(
+          "", // We do no need this in sdk as we are not opening any ports
+          chainId,
+          apiInterface,
+          this.geolocation // This is also deprecated
+        );
+
+        // create consumer session manager
+        const csm = new ConsumerSessionManager(
+          this.relayer,
+          rpcEndpoint,
+          optimizer
+        );
+
+        // create chain parser
+        const chainParse = getChainParser(apiInterface);
+
+        // create rpc consumer server
+        const rpcConsuemer = new RPCConsumerServer(
+          this.relayer,
+          csm,
+          chainParse,
+          this.geolocation
+        );
+
+        // save rpc consumer server in map
+        this.rpcConsumerServer.set(chainId + apiInterface, rpcConsuemer);
+      }
     }
   }
 }
