@@ -48,17 +48,17 @@ func (ts *tester) addClient(count int) {
 
 // addProvider: with default endpoints, geolocation, moniker
 func (ts *tester) addProvider(count int) error {
-	return ts.addProviderExtra(count, nil, 0, "") // default: endpoints, geolocation, moniker
+	return ts.addProviderExtra(count, nil, 0, "prov") // default: endpoints, geolocation, moniker
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
 func (ts *tester) addProviderGeolocation(count int, geolocation uint64) error {
-	return ts.addProviderExtra(count, nil, geolocation, "")
+	return ts.addProviderExtra(count, nil, geolocation, "prov")
 }
 
 // addProviderEndpoints: with endpoints, and default geolocation, moniker
 func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
-	return ts.addProviderExtra(count, endpoints, 0, "")
+	return ts.addProviderExtra(count, endpoints, 0, "prov")
 }
 
 // addProviderMoniker: with moniker, and default endpoints, geolocation
