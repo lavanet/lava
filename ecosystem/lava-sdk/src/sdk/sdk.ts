@@ -14,7 +14,7 @@ import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
-import { getChainParser } from "../chainlib/utils";
+import { getChainParser } from "../chainlib/common";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -211,5 +211,7 @@ export class LavaSDK {
         this.rpcConsumerServer.set(chainId + apiInterface, rpcConsuemer);
       }
     }
+
+    await tracker.startTracking();
   }
 }
