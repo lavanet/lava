@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -12,13 +11,11 @@ import (
 func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimRewards) (*types.MsgClaimRewardsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO: implement
-	// err := k.Keeper.ClaimRewards(
-	// 	ctx,
-	// 	msg.Creator,
-	// 	msg.Provider,
-	// )
-	err := fmt.Errorf("delete me")
+	err := k.Keeper.ClaimRewards(
+		ctx,
+		msg.Creator,
+		msg.Provider,
+	)
 	if err == nil {
 		logger := k.Keeper.Logger(ctx)
 		details := map[string]string{

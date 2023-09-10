@@ -4,8 +4,10 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
@@ -94,4 +96,47 @@ func (k Keeper) CalcDelegatorReward(stakeEntry epochstoragetypes.StakeEntry, tot
 
 	delegatorsReward := k.CalcDelegatorsReward(stakeEntry, totalReward)
 	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
+}
+
+func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string) error {
+	res, err := k.DelegatorRewards(ctx.Context(), &types.QueryDelegatorRewardsRequest{Delegator: delegator})
+	if err != nil {
+		return utils.LavaFormatWarning("could not claim delegator rewards", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+		)
+	}
+
+	for _, reward := range res.Rewards {
+		providerAcc, err := sdk.AccAddressFromBech32(reward.Provider)
+		if err != nil {
+			utils.LavaFormatError("could not claim delegator reward from provider", err,
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "provider", Value: provider},
+			)
+			continue
+		}
+
+		rewardToPay := k.pairingKeeper.MintCoinsPerCU(ctx).MulInt64(reward.Amount.Amount.Int64())
+		if rewardToPay.IsZero() {
+			continue
+		}
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: rewardToPay.TruncateInt()}}
+
+		// not minting new coins because they're minted when a provider
+		// asks for payment (and the delegator reward map is updated)
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, providerAcc, rewardCoins)
+		if err != nil {
+			// panic:ok: reward transfer should never fail
+			utils.LavaFormatPanic("critical: failed to send reward to delegator for provider", err,
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "reward", Value: rewardCoins},
+			)
+		}
+
+		ind := types.DelegationKey(delegator, reward.Provider, reward.ChainId)
+		k.RemoveDelegatorReward(ctx, ind)
+	}
+
+	return nil
 }

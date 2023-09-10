@@ -25,6 +25,7 @@ type (
 		accountKeeper      types.AccountKeeper
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
+		pairingKeeper      types.PairingKeeper
 
 		delegationFS common.FixationStore // map proviers/chainID -> delegations
 		delegatorFS  common.FixationStore // map delegators -> providers
@@ -41,6 +42,7 @@ func NewKeeper(
 	accountKeeper types.AccountKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
+	pairingKeeper types.PairingKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -57,6 +59,7 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
 		specKeeper:         specKeeper,
+		pairingKeeper:      pairingKeeper,
 	}
 
 	// ensure bonded and not bonded module accounts are set
