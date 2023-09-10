@@ -55,8 +55,8 @@ import (
 // for instance, to encode a timeout "type" using -say- the first byte to specify such "type".
 //
 // Example:
-//     func callback(ctx sdk.Context, data string) {
-//         println(data)
+//     func callback(ctx sdk.Context, key, data []byte) {
+//         println(string(data))
 //     }
 //
 //     // create TimerStore with a block-height callback

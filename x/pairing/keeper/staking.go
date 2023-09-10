@@ -149,7 +149,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		)
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpointsVerified, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{
+		Stake:              amount,
+		Address:            creator,
+		StakeAppliedBlock:  stakeAppliedBlock,
+		Endpoints:          endpointsVerified,
+		Geolocation:        geolocation,
+		Chain:              chainID,
+		Moniker:            moniker,
+		DelegateTotal:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateCommission: 100,
+	}
+
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 	appended := false
 
