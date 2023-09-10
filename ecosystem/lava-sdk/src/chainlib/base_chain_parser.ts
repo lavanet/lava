@@ -14,6 +14,7 @@ export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
 export const APIInterfaceRest = "rest";
 export const APIInterfaceGrpc = "grpc";
+export const HeadersPassSend = Header.HeaderType.PASS_SEND;
 
 /**
  * Options for sending RPC relay.
@@ -22,6 +23,7 @@ export interface SendRelayOptions {
   method: string; // Required: The RPC method to be called
   params: Array<any>; // Required: An array of parameters to be passed to the RPC method
   chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
+  metadata?: Metadata[]; // Optional headers to be sent with the request.
 }
 
 /**
@@ -33,16 +35,17 @@ export interface SendRestRelayOptions {
   // eslint-disable-next-line
   data?: Record<string, any>; // Optional: An object containing data to be sent in the request body (applicable for methods like "POST" and "PUT")
   chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
+  metadata?: Metadata[]; // Optional headers to be sent with the request.
 }
 
-interface ApiKey {
+export interface ApiKey {
   name: string;
   connectionType: string;
 }
 
-type ApiKeyString = string;
+export type ApiKeyString = string;
 
-function ApiKeyToString(key: ApiKey): ApiKeyString {
+export function ApiKeyToString(key: ApiKey): ApiKeyString {
   return JSON.stringify(key);
 }
 
@@ -51,10 +54,16 @@ interface TaggedContainer {
   apiCollection: ApiCollection;
 }
 
-interface CollectionKey {
+export interface CollectionKey {
   connectionType: string;
   internalPath: string;
   addon: string;
+}
+
+export type CollectionKeyString = string;
+
+export function CollectionKeyToString(key: CollectionKey): CollectionKeyString {
+  return JSON.stringify(key);
 }
 
 interface ApiContainer {
@@ -99,7 +108,7 @@ export abstract class BaseChainParser {
   protected spec: Spec | undefined;
   protected serverApis: Map<ApiKeyString, ApiContainer>;
   protected headers: Map<ApiKeyString, HeaderContainer>;
-  protected apiCollections: Map<CollectionKey, ApiCollection>;
+  protected apiCollections: Map<CollectionKeyString, ApiCollection>;
   // TODO: implement addons.
   protected allowedAddons: Set<string>;
   // private extensionParser: ExtensionParser;
@@ -113,6 +122,18 @@ export abstract class BaseChainParser {
     this.headers = new Map();
     this.allowedAddons = new Set();
     this.verifications = new Map();
+  }
+
+  protected getApiCollection(collectionKey: CollectionKey): ApiCollection {
+    const key = CollectionKeyToString(collectionKey);
+    const collection = this.apiCollections.get(key);
+    if (!collection) {
+      throw Logger.fatal("Api not supported", collectionKey);
+    }
+    if (collection.getEnabled()) {
+      throw Logger.fatal("Api disabled in spec", collectionKey);
+    }
+    return collection;
   }
   // initialize the base chain parser with the spec information
   public init(spec: Spec) {
@@ -256,16 +277,26 @@ export abstract class BaseChainParser {
             }
           }
         }
+        this.apiCollections.set(
+          CollectionKeyToString(collectionKey),
+          apiCollection
+        );
       }
     }
   }
 
+  protected isRest(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): options is SendRestRelayOptions {
+    return "connectionType" in options; // how to check which options were given
+  }
+
   protected handleHeaders(
-    metadata: Metadata[],
+    metadata: Metadata[] | undefined,
     apiCollection: ApiCollection,
-    headersDirection: Header.HeaderTypeMap
+    headersDirection: number
   ): HeadersHandler {
-    if (metadata.length == 0) {
+    if (!metadata || metadata.length == 0) {
       return {
         filteredHeaders: [],
         overwriteRequestedBlock: "",
