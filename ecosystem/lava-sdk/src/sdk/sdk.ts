@@ -206,6 +206,8 @@ export class LavaSDK {
         );
         tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
 
+        tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
+
         // create chain parser
         const chainParse = getChainParser(apiInterface);
         chainParse.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())

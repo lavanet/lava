@@ -77,7 +77,7 @@ export class StateTracker {
   async startTracking() {
     Logger.debug("State Tracker started");
     // Call update method on all registered updaters
-    for (const updater of this.updaters.values()) {
+    for (let [key, updater] of this.updaters) {
       updater.update();
     }
 
@@ -101,7 +101,7 @@ export class StateTracker {
       );
 
       // Call update method on all registered updaters
-      for (const updater of this.updaters.values()) {
+      for (let [key, updater] of this.updaters) {
         updater.update();
       }
 
