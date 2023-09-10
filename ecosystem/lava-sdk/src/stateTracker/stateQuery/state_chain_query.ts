@@ -30,7 +30,7 @@ export class StateChainQuery {
   private pairingListConfig: string;
   private relayer: Relayer;
   private chainIDs: string[];
-  private lavaProviders: ConsumerSessionsWithProvider[];
+  private lavaProviders: ConsumerSessionsWithProvider[]; // TODO: change this to csm. (init on bootstrap)
   private config: Config;
   private pairing: Map<string, PairingResponse | undefined>;
   private account: AccountData;
@@ -76,7 +76,7 @@ export class StateChainQuery {
       }
 
       // Reset pairing
-      this.pairing = new Map<string, PairingResponse>();
+      this.pairing = new Map<string, PairingResponse>(); // TODO: this is supposed to be stored in pairing updater. the state query is supposed to only query info not save it internally this is why we have updaters
 
       // Fetch latest block using probe
       const latestNumber = await this.getLatestBlockFromProviders(
@@ -239,7 +239,6 @@ export class StateChainQuery {
           options: options,
           singleConsumerSession: provider.sessions[0],
         };
-
         batchRelays.push(batchRelay);
       }
       const jsonResponse = await this.relayer.SendRelayToAllProvidersAndRace(

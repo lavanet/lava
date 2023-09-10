@@ -29,7 +29,7 @@ export class PairingUpdater {
   ): Promise<void | Error> {
     const chainID = consumerSessionManager.getRpcEndpoint().chainId;
 
-    let consumerSessionsManagersList =
+    const consumerSessionsManagersList =
       this.consumerSessionManagerMap.get(chainID);
 
     if (!consumerSessionsManagersList) {

@@ -115,8 +115,10 @@ export abstract class BaseChainParser {
     this.verifications = new Map();
   }
   // initialize the base chain parser with the spec information
-  public init(spec: Spec, apiInterface: string) {
-    this.apiInterface = apiInterface;
+  public init(spec: Spec) {
+    if (this.apiInterface == "") {
+      throw Logger.fatal("Chain parser apiInterface is not set");
+    }
     this.spec = spec;
 
     if (spec.getEnabled()) {

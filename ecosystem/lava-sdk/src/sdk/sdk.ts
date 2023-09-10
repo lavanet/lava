@@ -15,6 +15,10 @@ import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { getChainParser } from "../chainlib/common";
+import {
+  SendRelayOptions,
+  SendRestRelayOptions,
+} from "../chainlib/base_chain_parser";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -49,7 +53,7 @@ export class LavaSDK {
   private allowInsecureTransport: boolean;
   private chainIDRpcInterface: string[];
   private transport: any;
-  private rpcConsumerServer: Map<string, RPCConsumerServer>;
+  private rpcConsumerServerRouter: Map<RelayReceiver, RPCConsumerServer>; // routing the right chainID and apiInterface to rpc server
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
 
   /**
@@ -105,7 +109,7 @@ export class LavaSDK {
     this.account = SDKErrors.errAccountNotInitialized;
     this.transport = options.transport;
 
-    this.rpcConsumerServer = new Map();
+    this.rpcConsumerServerRouter = new Map();
   }
 
   static async create(options: LavaSDKOptions): Promise<LavaSDK> {
@@ -158,7 +162,8 @@ export class LavaSDK {
     );
 
     /// Fetch init state query
-    await tracker.initialize();
+    await tracker.initialize(); // TODO: return here consumer session manager for LAV1 tendermint or undefined
+    // TODO: now that we have csm for LAV1 tendermint, populate it with rpcconsumer server if its not undefined
 
     // init rpcconsumer servers
     for (const chainId of this.chainIDRpcInterface) {
@@ -168,9 +173,13 @@ export class LavaSDK {
         Logger.debug("No pairing list provided for chainID: ", chainId);
         continue;
       }
-
-      for (const apiCollection of pairingResponse.spec.getApiCollectionsList()) {
+      const spec = pairingResponse.spec;
+      for (const apiCollection of spec.getApiCollectionsList()) {
         // Get api interface
+        if (!apiCollection.getEnabled()) {
+          continue;
+        }
+
         const apiInterface = apiCollection
           .getCollectionData()
           ?.getApiInterface();
@@ -195,9 +204,11 @@ export class LavaSDK {
           rpcEndpoint,
           optimizer
         );
+        tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
 
         // create chain parser
         const chainParse = getChainParser(apiInterface);
+        chainParse.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())
 
         // create rpc consumer server
         const rpcConsuemer = new RPCConsumerServer(
@@ -208,10 +219,38 @@ export class LavaSDK {
         );
 
         // save rpc consumer server in map
-        this.rpcConsumerServer.set(chainId + apiInterface, rpcConsuemer);
+        this.rpcConsumerServerRouter.set(
+          this.getRouterKey(chainId, apiInterface),
+          rpcConsuemer
+        );
       }
     }
-
     await tracker.startTracking();
+  }
+
+  getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
+    return chainId + "," + apiInterface;
+  }
+
+  getRelayReceiver(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): RelayReceiver {
+    // TODO: implement receiver findings
+    return "";
+  }
+
+  public sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
+    const relayReceiver = this.getRelayReceiver(options);
+    const rpcConsumerServer = this.rpcConsumerServerRouter.get(relayReceiver);
+    if (!rpcConsumerServer) {
+      throw Logger.fatal(
+        "Did not find relay receiver",
+        relayReceiver,
+        "Check you initialized the chains properly",
+        "Chain Requested",
+        options?.chainId ?? this.rpcConsumerServerRouter.keys()
+      );
+    }
+    rpcConsumerServer.sendRelay(options);
   }
 }

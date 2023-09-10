@@ -127,7 +127,8 @@ export class StateTracker {
     if (pairingUpdater == undefined) {
       return;
     }
-
+    // TODO: change the updater interface to include only update method, and here use the instanceof and check if its a specific type of pairing Updater
+    // then use the specific method registerPairing which is not an updater type but a pairingUpdater type.
     pairingUpdater.registerPairing(consumerSessionManager);
   }
 
