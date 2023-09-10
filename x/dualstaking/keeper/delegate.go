@@ -303,6 +303,7 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "amount", Value: amount.String()},
+			utils.Attribute{Key: "chainID", Value: chainID},
 		)
 	}
 

@@ -61,12 +61,17 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	// ** verify the delegator reward map updates correctly for new entries ** //
 
 	for _, delegation := range expectedDelegations {
-		res, err := ts.QueryDualstakingDelegatorRewards(delegation.Delegator, ts.spec.Index)
+		res, err := ts.QueryDualstakingDelegatorRewards(delegation.Delegator, delegation.Provider, delegation.ChainID)
 		require.Nil(t, err)
 		require.Equal(t, 1, len(res.Rewards))
 		dReward := res.Rewards[0]
 		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
 		require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
+
+		// claim delegator rewards and verify balance
+		delegatorAddr, err := sdk.AccAddressFromBech32(delegation.Delegator)
+		require.Nil(t, err)
+		claimRewardsAndVerifyBalance(ts, delegatorAddr, delegation.Provider, delegation.ChainID)
 	}
 
 	// ** verify the delegator reward map updates correctly for existing entries ** //
@@ -75,13 +80,18 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 
 	for _, delegation := range expectedDelegations {
-		res, err := ts.QueryDualstakingDelegatorRewards(delegation.Delegator, ts.spec.Index)
+		res, err := ts.QueryDualstakingDelegatorRewards(delegation.Delegator, delegation.Provider, delegation.ChainID)
 		require.Nil(t, err)
 		require.Equal(t, 1, len(res.Rewards))
 		dReward := res.Rewards[0]
 		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
 		// the reward saved on the map should be doubled since it's the second time we send relay
 		require.True(t, expectedDReward.MulRaw(2).Equal(dReward.Amount.Amount))
+
+		// claim delegator rewards and verify balance
+		delegatorAddr, err := sdk.AccAddressFromBech32(delegation.Delegator)
+		require.Nil(t, err)
+		claimRewardsAndVerifyBalance(ts, delegatorAddr, delegation.Provider, delegation.ChainID)
 	}
 }
 
@@ -169,7 +179,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 
 	ts.AdvanceEpoch() // to apply pairing
 
@@ -207,13 +217,16 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
 
 	// the delegator should get no rewards
-	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, ts.spec.Index)
+	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward := resRewards.Rewards[0]
 	require.True(t, found)
 	expectedDReward := math.ZeroInt()
 	require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
+
+	// claim delegator rewards and verify balance
+	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
 
 	// ** provider's commission is 0% ** //
 
@@ -229,10 +242,30 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, balance, newBalance)
 
 	// the delegator should get the total rewards
-	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, ts.spec.Index)
+	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward = resRewards.Rewards[0]
 	expectedDRewardForRelay := mint.MulInt64(totalReward.Int64())
 	require.Equal(t, expectedDRewardForRelay.TruncateInt64(), dReward.Amount.Amount.Int64())
+
+	// claim delegator rewards and verify balance
+	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
+}
+
+func claimRewardsAndVerifyBalance(ts *tester, delegator sdk.AccAddress, provider string, chainID string) {
+	balance := ts.GetBalance(delegator)
+
+	ind := dualstakingtypes.DelegationKey(delegator.String(), provider, chainID)
+	reward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
+	require.True(ts.T, found)
+
+	_, err := ts.Servers.DualstakingServer.ClaimRewards(ts.Ctx, dualstakingtypes.NewMsgClaimRewards(delegator.String(), provider))
+	require.Nil(ts.T, err)
+
+	newBalance := ts.GetBalance(delegator)
+	require.Equal(ts.T, balance+reward.Amount.Amount.Int64(), newBalance)
+
+	_, found = ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
+	require.False(ts.T, found)
 }

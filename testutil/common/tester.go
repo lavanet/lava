@@ -344,6 +344,18 @@ func (ts *Tester) TxDualstakingUnbond(
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
 }
 
+// TxDualstakingClaimRewards: implement 'tx dualstaking claim-rewards'
+func (ts *Tester) TxDualstakingClaimRewards(
+	creator string,
+	provider string,
+) (*dualstakingtypes.MsgClaimRewardsResponse, error) {
+	msg := &dualstakingtypes.MsgClaimRewards{
+		Creator:  creator,
+		Provider: provider,
+	}
+	return ts.Servers.DualstakingServer.ClaimRewards(ts.GoCtx, msg)
+}
+
 // TxSubscriptionBuy: implement 'tx subscription buy'
 func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
@@ -558,7 +570,7 @@ func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPendin
 }
 
 // QueryDualstakingDelegatorRewards implements 'q dualstaking delegator-rewards'
-func (ts *Tester) QueryDualstakingDelegatorRewards(delegator string, chainID string) (*dualstakingtypes.QueryDelegatorRewardsResponse, error) {
+func (ts *Tester) QueryDualstakingDelegatorRewards(delegator string, provider string, chainID string) (*dualstakingtypes.QueryDelegatorRewardsResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorRewardsRequest{
 		Delegator: delegator,
 		ChainId:   chainID,

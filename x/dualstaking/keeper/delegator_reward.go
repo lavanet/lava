@@ -99,7 +99,8 @@ func (k Keeper) CalcDelegatorReward(stakeEntry epochstoragetypes.StakeEntry, tot
 }
 
 func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string) error {
-	res, err := k.DelegatorRewards(ctx.Context(), &types.QueryDelegatorRewardsRequest{Delegator: delegator})
+	goCtx := sdk.WrapSDKContext(ctx)
+	res, err := k.DelegatorRewards(goCtx, &types.QueryDelegatorRewardsRequest{Delegator: delegator, Provider: provider})
 	if err != nil {
 		return utils.LavaFormatWarning("could not claim delegator rewards", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -107,7 +108,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 	}
 
 	for _, reward := range res.Rewards {
-		providerAcc, err := sdk.AccAddressFromBech32(reward.Provider)
+		delegatorAcc, err := sdk.AccAddressFromBech32(delegator)
 		if err != nil {
 			utils.LavaFormatError("could not claim delegator reward from provider", err,
 				utils.Attribute{Key: "delegator", Value: delegator},
@@ -118,9 +119,9 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.Amount.Amount}}
 
-		// not minting new coins because they're minted when a provider
-		// asks for payment (and the delegator reward map is updated)
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, providerAcc, rewardCoins)
+		// not minting new coins because they're minted when the provider
+		// asked for payment (and the delegator reward map was updated)
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, delegatorAcc, rewardCoins)
 		if err != nil {
 			// panic:ok: reward transfer should never fail
 			utils.LavaFormatPanic("critical: failed to send reward to delegator for provider", err,
