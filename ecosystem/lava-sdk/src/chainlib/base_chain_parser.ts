@@ -357,5 +357,26 @@ export abstract class BaseChainParser {
     return [undefined, false];
   }
 
-  abstract parseMsg(options: SendRelayOptions | SendRestRelayOptions): string;
+  abstract parseMsg(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): ChainMessage;
+}
+
+export abstract class ChainMessage {
+  protected requestedBlock: number;
+  protected api: Api;
+  protected apiCollection: ApiCollection;
+  constructor(requestedBlock: number, api: Api, apiCollection: ApiCollection) {
+    this.requestedBlock = requestedBlock;
+    this.apiCollection = apiCollection;
+    this.api = api;
+  }
+  abstract getRequestedBlock(): number;
+  abstract updateLatestBlockInMessage(
+    latestBlock: number,
+    modififyContent: boolean
+  ): boolean;
+  abstract appendHeader(metaData: Metadata[]): void;
+  abstract getApi(): Api;
+  abstract getApiCollection(): ApiCollection;
 }

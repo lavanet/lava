@@ -25,7 +25,7 @@ export class RPCConsumerServer {
   }
 
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
-    const craftMessage = this.chainParser.parseMsg(options);
+    const chainMessage = this.chainParser.parseMsg(options);
     // this.consumerSessionManager.getSessions()
 
     //TODO after reply if resolved, parse to json
