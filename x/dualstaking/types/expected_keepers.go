@@ -42,7 +42,3 @@ type SpecKeeper interface {
 type StakingKeeper interface {
 	UnbondingTime(ctx sdk.Context) time.Duration
 }
-
-type PairingKeeper interface {
-	MintCoinsPerCU(ctx sdk.Context) (res sdk.Dec)
-}

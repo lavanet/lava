@@ -116,11 +116,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 			continue
 		}
 
-		rewardToPay := k.pairingKeeper.MintCoinsPerCU(ctx).MulInt64(reward.Amount.Amount.Int64())
-		if rewardToPay.IsZero() {
-			continue
-		}
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: rewardToPay.TruncateInt()}}
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.Amount.Amount}}
 
 		// not minting new coins because they're minted when a provider
 		// asks for payment (and the delegator reward map is updated)
