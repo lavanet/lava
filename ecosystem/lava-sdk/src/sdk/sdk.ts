@@ -1,24 +1,28 @@
 import SDKErrors from "./errors";
 import { AccountData } from "@cosmjs/proto-signing";
 import { Relayer } from "../relayer/relayer";
-import { BadgeOptions, BadgeManager } from "../badge/badgeManager";
+import { BadgeManager, BadgeOptions } from "../badge/badgeManager";
 import {
-  DEFAULT_LAVA_PAIRING_NETWORK,
   DEFAULT_GEOLOCATION,
   DEFAULT_LAVA_CHAINID,
+  DEFAULT_LAVA_PAIRING_NETWORK,
 } from "../config/default";
 import { Logger, LogLevel } from "../logger/logger";
-import { createWallet, createDynamicWallet } from "../wallet/wallet";
+import { createDynamicWallet, createWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
 import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { getChainParser } from "../chainlib/common";
 import {
   SendRelayOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
+import {
+  ProviderOptimizer,
+  ProviderOptimizerStrategy,
+} from "../providerOptimizer/providerOptimizer";
+import { AVERAGE_WORLD_LATENCY } from "../common/timeout";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -38,6 +42,8 @@ export interface LavaSDKOptions {
   allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
   logLevel?: string | LogLevel; // Optional for log level settings, "debug" | "info" | "warn" | "error" | "success" | "NoPrints"
   transport?: any; // Optional for transport settings if you would like to change the default transport settings. see utils/browser.ts for the current settings
+  providerOptimizerStrategy?: ProviderOptimizerStrategy; // Optional: the strategy to use to pick providers (default: balanced)
+  maxConcurrentProviders?: number; // Optional: the maximum number of providers to use concurrently (default: 3)
 }
 
 export class LavaSDK {
@@ -55,6 +61,8 @@ export class LavaSDK {
   private transport: any;
   private rpcConsumerServerRouter: Map<RelayReceiver, RPCConsumerServer>; // routing the right chainID and apiInterface to rpc server
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
+  private providerOptimizerStrategy: ProviderOptimizerStrategy;
+  private maxConcurrentProviders: number;
 
   /**
    * Create Lava-SDK instance
@@ -76,6 +84,8 @@ export class LavaSDK {
       network,
       geolocation,
       lavaChainId,
+      providerOptimizerStrategy,
+      maxConcurrentProviders,
     } = options;
 
     // Validate attributes
@@ -110,6 +120,10 @@ export class LavaSDK {
     this.transport = options.transport;
 
     this.rpcConsumerServerRouter = new Map();
+
+    this.providerOptimizerStrategy =
+      providerOptimizerStrategy || ProviderOptimizerStrategy.Balanced;
+    this.maxConcurrentProviders = maxConcurrentProviders || 3;
   }
 
   static async create(options: LavaSDKOptions): Promise<LavaSDK> {
@@ -145,7 +159,12 @@ export class LavaSDK {
     });
 
     // create provider optimizer
-    const optimizer = new RandomProviderOptimizer();
+    const optimizer = new ProviderOptimizer(
+      this.providerOptimizerStrategy,
+      0,
+      AVERAGE_WORLD_LATENCY / 2,
+      this.maxConcurrentProviders
+    );
 
     // Init state tracker
     const tracker = new StateTracker(
