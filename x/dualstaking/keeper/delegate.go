@@ -61,7 +61,7 @@ func validateCoins(amount sdk.Coin) error {
 func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
-	index := types.DelegationKey(delegator, provider, chainID)
+	index := types.DelegationKey(provider, delegator, chainID)
 	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		// new delegation (i.e. not increase of existing one)
@@ -112,7 +112,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
-	index := types.DelegationKey(delegator, provider, chainID)
+	index := types.DelegationKey(provider, delegator, chainID)
 	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		return types.ErrDelegationNotFound
@@ -592,7 +592,7 @@ func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch ui
 		var delegation types.Delegation
 		found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
 		if !found {
-			delegator, provider, chainID := types.DelegationKeyDecode(ind)
+			provider, delegator, chainID := types.DelegationKeyDecode(ind)
 			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},

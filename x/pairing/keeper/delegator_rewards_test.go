@@ -17,8 +17,9 @@ import (
 // Also, it checks that the delegator reward map is updated as expected
 func TestProviderDelegatorsRewards(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -57,6 +58,9 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 
+	totalDelegations := stakeEntry.DelegateTotal.Amount
+	delegatorsReward := ts.Keepers.Dualstaking.CalcDelegatorsReward(stakeEntry, math.NewInt(int64(relayCuSum)))
+
 	// ** verify the delegator reward map updates correctly for new entries ** //
 
 	for _, delegation := range expectedDelegations {
@@ -64,7 +68,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, 1, len(res.Rewards))
 		dReward := res.Rewards[0]
-		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
+		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
 		require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
 	}
 
@@ -78,7 +82,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, 1, len(res.Rewards))
 		dReward := res.Rewards[0]
-		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
+		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
 		// the reward saved on the map should be doubled since it's the second time we send relay
 		require.True(t, expectedDReward.MulRaw(2).Equal(dReward.Amount.Amount))
 	}
@@ -120,8 +124,9 @@ func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs [
 // the provider's reward (the limit should only affect pairing)
 func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -177,8 +182,9 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 
 func TestProviderRewardWithCommission(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -252,8 +258,9 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 func TestQueryDelegatorRewards(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(3, 1, 3) // 3 providers, 1 client, 3 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(3, 1, 3)                   // 3 providers, 1 client, 3 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	provider1Acc, provider1 := ts.GetAccount(common.PROVIDER, 0) // will have stake in "mock" and "mock1"
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1) // will have stake in "mock"

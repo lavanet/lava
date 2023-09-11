@@ -86,14 +86,6 @@ func (ts *tester) addProviderExtra(
 	return nil
 }
 
-// addDelegators adds CONSUMER accounts without buying a subscription to be used as delegators
-func (ts *tester) addDelegators(count int) {
-	start := len(ts.Accounts(common.CONSUMER))
-	for i := 0; i < count; i++ {
-		_, _ = ts.AddAccount(common.CONSUMER, start+i, testBalance)
-	}
-}
-
 // setupForPayments creates staked providers and clients with subscriptions. They can be accessed
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
