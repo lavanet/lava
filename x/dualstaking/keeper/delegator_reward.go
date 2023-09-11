@@ -89,9 +89,6 @@ func (k Keeper) CalcDelegationsSum(stakeEntry epochstoragetypes.StakeEntry) math
 
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
 // delegatorReward = delegatorsReward * (delegatorStake / totalDelegations) = (delegatorsReward * delegatorStake) / totalDelegations
-func (k Keeper) CalcDelegatorReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegation types.Delegation) math.Int {
-	totalDelegations := stakeEntry.DelegateTotal.Amount
-
-	delegatorsReward := k.CalcDelegatorsReward(stakeEntry, totalReward)
+func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
 	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
 }

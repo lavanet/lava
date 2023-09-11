@@ -458,8 +458,11 @@ func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, stakeEntry e
 
 // updateDelegatorsReward updates the delegator rewards map
 func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, delegations []dualstakingtypes.Delegation, totalReward math.Int) error {
+	totalDelegations := stakeEntry.DelegateTotal.Amount
+	delegatorsReward := k.dualStakingKeeper.CalcDelegatorsReward(stakeEntry, totalReward)
+
 	for _, delegation := range delegations {
-		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(stakeEntry, totalReward, delegation)
+		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
 		rewardMapKey := dualstakingtypes.DelegationKey(delegation.Delegator, stakeEntry.Address, delegation.ChainID)
 
 		delegatorReward, found := k.dualStakingKeeper.GetDelegatorReward(ctx, rewardMapKey)

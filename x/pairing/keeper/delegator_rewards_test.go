@@ -18,8 +18,9 @@ import (
 // Also, it checks that the delegator reward map is updated as expected
 func TestProviderDelegatorsRewards(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -58,13 +59,16 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 
+	totalDelegations := stakeEntry.DelegateTotal.Amount
+	delegatorsReward := ts.Keepers.Dualstaking.CalcDelegatorsReward(stakeEntry, math.NewInt(int64(relayCuSum)))
+
 	// ** verify the delegator reward map updates correctly for new entries ** //
 
 	for _, delegation := range expectedDelegations {
 		ind := dualstakingtypes.DelegationKey(delegation.Delegator, provider, ts.spec.Index)
 		dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
 		require.True(t, found)
-		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
+		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
 		require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
 	}
 
@@ -77,7 +81,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 		ind := dualstakingtypes.DelegationKey(delegation.Delegator, provider, ts.spec.Index)
 		dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
 		require.True(t, found)
-		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(stakeEntry, math.NewInt(int64(relayCuSum)), delegation)
+		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
 		// the reward saved on the map should be doubled since it's the second time we send relay
 		require.True(t, expectedDReward.MulRaw(2).Equal(dReward.Amount.Amount))
 	}
@@ -105,8 +109,9 @@ func sendRelay(ts *tester, provider string, clientAcc common.Account) types.MsgR
 // the provider's reward (the limit should only affect pairing)
 func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -162,8 +167,9 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 
 func TestProviderRewardWithCommission(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 1) // 1 provider, 1 client, 1 providersToPair
-	ts.addDelegators(2)
+	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
+	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
+	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)

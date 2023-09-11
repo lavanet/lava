@@ -97,5 +97,5 @@ type DualStakingKeeper interface {
 	CalcProviderReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) math.Int
 	CalcDelegatorsReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) math.Int
 	CalcDelegationsSum(stakeEntry epochstoragetypes.StakeEntry) math.Int
-	CalcDelegatorReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegation dualstakingtypes.Delegation) math.Int
+	CalcDelegatorReward(delegatorsReward math.Int, totalReward math.Int, delegation dualstakingtypes.Delegation) math.Int
 }
