@@ -85,7 +85,7 @@ type RewardsTxSender interface {
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
 
-	existingCU, updatedWithProof = rws.saveProofInternally(ctx, consumerRewardsKey, proof, epoch, consumerAddr)
+	existingCU, updatedWithProof = rws.saveProofInMemory(ctx, consumerRewardsKey, proof, epoch, consumerAddr)
 
 	if updatedWithProof {
 		cpe := &ConsumerProofEntity{
@@ -95,6 +95,7 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 		}
 		err := rws.rewardDB.Save(cpe)
 		if err != nil {
+			// TODO: Handle error with the db save - retries
 			utils.LavaFormatError("failed saving proof to rewardDB", err, utils.Attribute{Key: "proof", Value: proof})
 		}
 	}
@@ -102,7 +103,7 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 	return existingCU, updatedWithProof
 }
 
-func (rws *RewardServer) saveProofInternally(ctx context.Context, consumerRewardsKey string, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool) {
+func (rws *RewardServer) saveProofInMemory(ctx context.Context, consumerRewardsKey string, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool) {
 	rws.lock.Lock() // assuming 99% of the time we will need to write the new entry so there's no use in doing the read lock first to check stuff
 	defer rws.lock.Unlock()
 
@@ -254,12 +255,6 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
 	}
 
-	// TODO: On Bootstrap
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
-	if err != nil {
-		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochsToSave", err)
-	}
-
 	if blockDistanceForEpochValidity > currentEpoch {
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
 	}
@@ -268,17 +263,6 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	for epoch, epochRewards := range rws.rewards {
 		if lavasession.IsEpochValidForUse(epoch, activeEpochThreshold) {
 			// Epoch is still active so we don't claim the rewards yet.
-			continue
-		}
-
-		// TODO: On Bootstrap
-		if epoch < earliestSavedEpoch {
-			err := rws.rewardDB.DeleteEpochRewards(epoch)
-			if err != nil {
-				utils.LavaFormatWarning("failed deleting epoch", err, utils.Attribute{Key: "epoch", Value: epoch})
-			}
-
-			// Epoch is too old, we can't claim the rewards anymore.
 			continue
 		}
 
@@ -317,12 +301,15 @@ func (rws *RewardServer) updateCUPaid(cu uint64) {
 func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string, shardID uint) {
 	// the db itself doesn't need locks. as it self manages locks inside.
 	// but opening a db can race. (NewLocalDB) so we lock this method.
+	// Also, we construct the in-memory rewards from the DB, so that needs a lock as well
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
 	found := rws.rewardDB.DBExists(specId)
 	if !found {
 		rws.rewardDB.AddDB(NewLocalDB(rws.rewardStoragePath, providerPublicAddress, specId, shardID))
 	}
+
+	rws.restoreRewardsFromDB(specId)
 }
 
 func (rws *RewardServer) CloseAllDataBases() error {
@@ -362,6 +349,47 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewardDB = rewardDB
 	rws.rewardStoragePath = rewardStoragePath
 	return rws
+}
+
+func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
+	// Pay Attention! This function should be called inside the RewardServer lock
+
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	if err != nil {
+		return utils.LavaFormatError("restoreRewardsFromDB failed to get earliest block in memory", err)
+	}
+
+	rewards, err := rws.rewardDB.FindAllInDB(specId)
+	if err != nil {
+		return utils.LavaFormatError("restoreRewardsFromDB failed to FindAllInDB", err, utils.Attribute{Key: "specId", Value: specId})
+	}
+
+	for epoch, epochRewardsFromDb := range rewards {
+		if epoch < earliestSavedEpoch {
+			err := rws.rewardDB.DeleteEpochRewards(epoch)
+			if err != nil {
+				utils.LavaFormatWarning("restoreRewardsFromDB failed deleting epoch from rewardDB", err, utils.Attribute{Key: "epoch", Value: epoch})
+			}
+
+			// Epoch is too old, we can't claim the rewards anymore.
+			continue
+		}
+
+		// This is happening for every DB because there might be different rewards from the same epoch but from a different specId
+		epochRewards, ok := rws.rewards[epoch]
+		if !ok {
+			rws.rewards[epoch] = epochRewardsFromDb
+			continue
+		}
+
+		// ConsumerRewardKey is made from a combination of specId + apiInterface + consumerAddress.
+		// So if it's a different DB, it's a different specId, which also means different consumerRewards
+		for consumerRewardsKey, consumerRewardsFromDb := range epochRewardsFromDb.consumerRewards {
+			epochRewards.consumerRewards[consumerRewardsKey] = consumerRewardsFromDb
+		}
+	}
+
+	return nil
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
