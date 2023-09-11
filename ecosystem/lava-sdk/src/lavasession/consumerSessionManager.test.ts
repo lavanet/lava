@@ -28,10 +28,10 @@ const CU_SUM_ON_FAILURE = 0;
 function setupConsumerSessionManager() {
   const cm = new ConsumerSessionManager(
     new Relayer({
-        allowInsecureTransport: true,
-        lavaChainId: "lava",
-        privKey: "",
-        secure: true,
+      allowInsecureTransport: true,
+      lavaChainId: "lava",
+      privKey: "",
+      secure: true,
     }),
     new RPCEndpoint("stub", "stub", "stub", "0"),
     new ProviderOptimizer(Strategy.Balanced, 0, AVERAGE_WORLD_LATENCY / 2, 1)
