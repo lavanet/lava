@@ -389,7 +389,7 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 	msg.ID = nil
 
 	if c.isHTTP {
-		return c.sendHTTP(ctx, op, msg, false)
+		return c.sendHTTP(ctx, op, msg, true)
 	}
 	return c.send(ctx, op, msg)
 }

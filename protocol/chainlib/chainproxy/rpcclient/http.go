@@ -163,7 +163,7 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	if !ok {
 		return fmt.Errorf("sendBatchHTTP - c.writeConn.(*httpConn) - type assertion failed, type:" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msgs, false)
+	respBody, err := hc.doRequest(ctx, msgs, true)
 	if err != nil {
 		return err
 	}
