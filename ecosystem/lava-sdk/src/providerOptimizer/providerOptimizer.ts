@@ -9,6 +9,7 @@ import gammainc from "@stdlib/math-base-special-gammainc";
 import { baseTimePerCU, getTimePerCU } from "../common/timeout";
 import BigNumber from "bignumber.js";
 import { hourInMillis, millisToSeconds, now } from "../util/time";
+import { ScoreStore } from "../util/score/decayScore";
 
 const CACHE_OPTIONS = {
   max: 2000,
@@ -21,39 +22,6 @@ const INITIAL_DATA_STALENESS = 24;
 const WANTED_PRECISION = 8;
 export const DEFAULT_EXPLORATION_CHANCE = 0.1;
 export const COST_EXPLORATION_CHANCE = 0.01;
-
-// TODO: move this to utils/score/decayScore.ts
-export class ScoreStore {
-  public constructor(
-    public readonly num: number,
-    public readonly denom: number,
-    public readonly time: number
-  ) {}
-
-  public static calculateTimeDecayFunctionUpdate(
-    oldScore: ScoreStore,
-    newScore: ScoreStore,
-    halfLife: number,
-    updateWeight: number,
-    sampleTime: number
-  ): ScoreStore {
-    const oldDecayExponent =
-      (Math.LN2 * millisToSeconds(sampleTime - oldScore.time)) /
-      millisToSeconds(halfLife);
-    const oldDecayFactor = Math.exp(-oldDecayExponent);
-    const newDecayExponent =
-      (Math.LN2 * millisToSeconds(sampleTime - newScore.time)) /
-      millisToSeconds(halfLife);
-    const newDecayFactor = Math.exp(-newDecayExponent);
-    const updatedNum =
-      oldScore.num * oldDecayFactor +
-      newScore.num * newDecayFactor * updateWeight;
-    const updatedDenom =
-      oldScore.denom * oldDecayFactor +
-      newScore.denom * newDecayFactor * updateWeight;
-    return new ScoreStore(updatedNum, updatedDenom, sampleTime);
-  }
-}
 
 export interface ProviderData {
   availability: ScoreStore;
@@ -80,10 +48,10 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   private readonly strategy: Strategy;
   private readonly providersStorage = new LRUCache<string, ProviderData>(
     CACHE_OPTIONS
-  ); // todo: ristretto.Cache in go (see what it does)
+  );
   private readonly providerRelayStats = new LRUCache<string, number[]>(
     CACHE_OPTIONS
-  ); // todo: ristretto.Cache in go (see what it does)
+  );
   private readonly averageBlockTime: number;
   private readonly baseWorldLatency: number;
   private readonly wantedNumProvidersInConcurrency: number;
