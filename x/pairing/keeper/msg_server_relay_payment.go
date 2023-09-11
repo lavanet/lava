@@ -422,9 +422,9 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 	return nil
 }
 
-// calculateProviderDelegatorsRewards returns the provider reward amount and updates the delegator reward map
+// calculateProviderDelegatorsRewards returns the provider reward amount
 func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk.AccAddress, chainID string, totalReward math.Int) (math.Int, error) {
-	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	stakeEntry, found, stakeIndex := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if !found {
 		return math.Int{}, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
 			utils.Attribute{Key: "provider", Value: provider},
@@ -435,16 +435,20 @@ func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk
 
 	// sanity check
 	if stakeEntry.DelegateCommission > 100 {
-		return math.Int{}, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("invalid provider delegation commission value"),
+		invalidCommission := stakeEntry.DelegateCommission
+		stakeEntry.DelegateCommission = 100
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stakeEntry.Chain, stakeEntry, stakeIndex)
+		utils.LavaFormatError("changed provider delegation commission to 100%", fmt.Errorf("delegation commission above max value"),
 			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "commission", Value: stakeEntry.DelegateCommission},
+			utils.Attribute{Key: "invalidCommission", Value: invalidCommission},
 		)
 	}
 
 	return k.dualStakingKeeper.CalcProviderReward(stakeEntry, totalReward), nil
 }
 
+// updateDelegatorsReward updates the delegator rewards map
 func (k Keeper) updateDelegatorsReward(ctx sdk.Context, provider sdk.AccAddress, delegations []dualstakingtypes.Delegation, chainID string, totalReward math.Int) error {
 	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if !found {
