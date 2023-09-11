@@ -441,8 +441,8 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		defer res.Body.Close()
 	}
 
-	if res.StatusCode == 504 || res.StatusCode == 429 {
-		utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode})
+	err = rcp.HandleStatusError(res.StatusCode)
+	if err != nil {
 		return nil, "", nil, err
 	}
 

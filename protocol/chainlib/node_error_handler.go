@@ -61,6 +61,13 @@ func (geh *genericErrorHandler) handleCodeErrors(ctx context.Context, code codes
 	return nil
 }
 
+func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
+	if statusCode == 504 || statusCode == 429 {
+		return utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode})
+	}
+	return nil
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
 // Validating if the error is related to the provider connection or not
@@ -94,4 +101,5 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
+	HandleStatusError(int) error
 }
