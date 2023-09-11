@@ -431,7 +431,14 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		return utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 
-	err = k.updateDelegatorsReward(ctx, stakeEntry, delegations, totalReward)
+	var relevantDelegations []dualstakingtypes.Delegation
+	for _, d := range delegations {
+		if d.ChainID == chainID {
+			relevantDelegations = append(relevantDelegations, d)
+		}
+	}
+
+	err = k.updateDelegatorsReward(ctx, stakeEntry, relevantDelegations, totalReward)
 	if err != nil {
 		return utils.LavaFormatError("cannot update delegators reward map", err)
 	}
