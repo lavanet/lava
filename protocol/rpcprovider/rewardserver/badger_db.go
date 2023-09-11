@@ -21,8 +21,6 @@ type BadgerDB struct {
 
 var _ DB = (*BadgerDB)(nil)
 
-const persistThreshold = 100
-
 func (mdb *BadgerDB) Key() string {
 	return mdb.specId
 }
@@ -33,14 +31,12 @@ func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
 
 	mdb.rewards[key] = newEntry(data, ttl)
 
-	if len(mdb.rewards) == persistThreshold {
-		err := mdb.saveAll()
-		if err != nil {
-			return err
-		}
-
-		mdb.rewards = make(map[string]*entryWithTtl, persistThreshold)
+	err := mdb.saveAll()
+	if err != nil {
+		return err
 	}
+
+	mdb.rewards = make(map[string]*entryWithTtl)
 
 	return nil
 }
@@ -183,7 +179,7 @@ func NewMemoryDB(specId string) *BadgerDB {
 
 	return &BadgerDB{
 		specId:  specId,
-		rewards: make(map[string]*entryWithTtl, persistThreshold),
+		rewards: make(map[string]*entryWithTtl),
 		db:      db,
 	}
 }
@@ -203,7 +199,7 @@ func NewLocalDB(storagePath, providerAddr string, specId string, shard uint) *Ba
 		providerAddr: providerAddr,
 		specId:       specId,
 		shardString:  shardString,
-		rewards:      make(map[string]*entryWithTtl, persistThreshold),
+		rewards:      make(map[string]*entryWithTtl),
 		db:           db,
 	}
 }
