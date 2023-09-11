@@ -103,8 +103,15 @@ export class FinalizationConsensus {
     }
   }
 
-  public updateFinalizedHashes() {
+  public updateFinalizedHashes(
+    blockDistanceForFinalizedData: number,
+    providerAddress: string,
+    finalizedBlocks: Map<number, string>,
+    req: RelaySession,
+    reply: RelayReply
+  ) {
     // TODO: implement for DR.
+    const latestBlock = reply.getLatestBlock();
   }
 
   public newEpoch(epoch: number) {

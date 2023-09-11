@@ -19,7 +19,7 @@ import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_p
 import { Logger } from "../logger/logger";
 import { Result } from "./helpers";
 import { grpc } from "@improbable-eng/grpc-web";
-import { QualityOfServiceReport } from "../codec/lavanet/lava/pairing/relay";
+import { QualityOfServiceReport } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -169,20 +169,16 @@ export class SingleConsumerSession {
     this.qoSInfo.answeredRelays++;
 
     if (!this.qoSInfo.lastQoSReport) {
-      this.qoSInfo.lastQoSReport = {
-        latency: "0",
-        availability: "0",
-        sync: "0",
-      };
+      this.qoSInfo.lastQoSReport = new QualityOfServiceReport();
     }
 
     const { downtimePercentage, scaledAvailabilityScore } =
       calculateAvailabilityScore(this.qoSInfo);
-    this.qoSInfo.lastQoSReport.availability = scaledAvailabilityScore;
-    if (BigNumber(1).gt(this.qoSInfo.lastQoSReport.availability)) {
+    this.qoSInfo.lastQoSReport?.setAvailability(scaledAvailabilityScore);
+    if (BigNumber(1).gt(this.qoSInfo.lastQoSReport.getAvailability())) {
       Logger.info(
         `QoS availability report ${JSON.stringify({
-          availability: this.qoSInfo.lastQoSReport.availability,
+          availability: this.qoSInfo.lastQoSReport.getAvailability(),
           downPercent: downtimePercentage,
         })}`
       );
@@ -191,13 +187,14 @@ export class SingleConsumerSession {
     const latencyScore = this.calculateLatencyScore(expectedLatency, latency);
     this.qoSInfo.latencyScoreList.push(latencyScore);
     this.qoSInfo.latencyScoreList = this.qoSInfo.latencyScoreList.sort();
-    this.qoSInfo.lastQoSReport.latency =
+    this.qoSInfo.lastQoSReport.setLatency(
       this.qoSInfo.latencyScoreList[
         // golang int casting just cuts the decimal part
         Math.floor(
           this.qoSInfo.latencyScoreList.length * PERCENTILE_TO_CALCULATE_LATENCY
         )
-      ];
+      ]
+    );
 
     const shouldCalculateSync =
       numOfProviders > Math.ceil(servicersToCount * MIN_PROVIDERS_FOR_SYNC);
@@ -211,14 +208,14 @@ export class SingleConsumerSession {
       const sync = BigNumber(this.qoSInfo.syncScoreSum).div(
         this.qoSInfo.totalSyncScore
       );
-      this.qoSInfo.lastQoSReport.sync = sync.toPrecision(
-        DEFAULT_DECIMAL_PRECISION
+      this.qoSInfo.lastQoSReport.setSync(
+        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
       );
 
       if (BigNumber(1).gt(sync)) {
         Logger.debug(
           `QoS sync report ${JSON.stringify({
-            sync: this.qoSInfo.lastQoSReport.sync,
+            sync: this.qoSInfo.lastQoSReport.getSync(),
             blockDiff: blockHeightDiff,
             syncScore: `${this.qoSInfo.syncScoreSum}/${this.qoSInfo.totalSyncScore}`,
             sessionId: this.sessionId,
