@@ -10,6 +10,7 @@ import {
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
+import { Decimal } from "@cosmjs/math";
 
 export interface SendRelayData {
   connectionType: string;
@@ -87,9 +88,15 @@ function constructRelaySession(
   const newQualityOfServiceReport = new QualityOfServiceReport();
   if (lastQos != undefined) {
     // TODO: needs to serialize the QoS report value like a serialized Dec
-    newQualityOfServiceReport.setLatency(lastQos.latency.toString());
-    newQualityOfServiceReport.setAvailability(lastQos.availability.toString());
-    newQualityOfServiceReport.setSync(lastQos.sync.toString());
+    newQualityOfServiceReport.setLatency(
+      Decimal.fromUserInput(lastQos.latency.toString(), 0).toString()
+    );
+    newQualityOfServiceReport.setAvailability(
+      Decimal.fromUserInput(lastQos.availability.toString(), 0).toString()
+    );
+    newQualityOfServiceReport.setSync(
+      Decimal.fromUserInput(lastQos.sync.toString(), 0).toString()
+    );
   }
   const lastQosExcellence =
     singleConsumerSession.qoSInfo.lastExcellenceQoSReport;
@@ -97,13 +104,16 @@ function constructRelaySession(
   if (lastQosExcellence != undefined) {
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReportExcellence.setLatency(
-      lastQosExcellence.latency.toString()
+      Decimal.fromUserInput(lastQosExcellence.latency.toString(), 0).toString()
     );
     newQualityOfServiceReportExcellence.setAvailability(
-      lastQosExcellence.availability.toString()
+      Decimal.fromUserInput(
+        lastQosExcellence.availability.toString(),
+        0
+      ).toString()
     );
     newQualityOfServiceReportExcellence.setSync(
-      lastQosExcellence.sync.toString()
+      Decimal.fromUserInput(lastQosExcellence.sync.toString(), 0).toString()
     );
   }
   const relaySession = new RelaySession();

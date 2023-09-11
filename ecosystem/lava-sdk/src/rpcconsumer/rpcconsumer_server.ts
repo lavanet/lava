@@ -1,7 +1,7 @@
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import { SessionInfo } from "../lavasession/consumerTypes";
+import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
@@ -65,6 +65,7 @@ export class RPCConsumerServer {
       );
 
       if (relayResult instanceof Array) {
+        // relayResult can be an Array of errors from relaying to multiple providers
         for (const oneResult of relayResult) {
           if (blockOnSyncLoss && oneResult.err == SDKErrors.sessionSyncLoss) {
             Logger.debug(
@@ -162,14 +163,23 @@ export class RPCConsumerServer {
         epoch,
         reportedProviders
       );
-
       relayResult.request = relayRequest;
-      return await this.sendRelayProviderInSession(
-        sessionInfo,
-        extraRelayTimeout,
-        chainMessage,
-        relayData
+
+      const relayResponse = await this.sendRelayProviderInSession(
+        singleConsumerSession,
+        relayResult,
+        relayTimeout,
+        chainMessage
       );
+      if (relayResponse instanceof Error) {
+        const relayError: RelayError = {
+          providerAddress: providerAddress,
+          err: relayResponse,
+        };
+        return [relayError];
+      }
+      relayResult.reply = relayResponse.relayReply;
+      return new Error("not implemented, TODO");
     } catch (err) {
       if (err instanceof Error) {
         return err;
@@ -178,17 +188,60 @@ export class RPCConsumerServer {
     }
   }
   protected async sendRelayProviderInSession(
-    sessionInfo: SessionInfo,
+    singleConsumerSession: SingleConsumerSession,
+    relayResult: RelayResult,
     relayTimeout: number,
-    chainMessage: ChainMessage,
-    relayData: RelayPrivateData
-  ): Promise<RelayResult | Array<RelayError> | Error> {
-    return {
-      request: undefined,
-      reply: undefined,
-      providerAddress: "",
-      finalized: false,
-    };
+    chainMessage: ChainMessage
+  ): Promise<RelayResponse | Error> {
+    const existingSessionLatestBlock = singleConsumerSession.latestBlock;
+    const endpointClient = singleConsumerSession.endpoint.client;
+    if (endpointClient == undefined) {
+      return new Error("endpointClient is undefined");
+    }
+    const providerPublicAddress = relayResult.providerAddress;
+    const relayRequest = relayResult.request;
+    if (relayRequest == undefined) {
+      return new Error("relayRequest is undefined");
+    }
+    const startTime = performance.now();
+    try {
+      const relayReply = await this.relayer.sendRelay(
+        endpointClient,
+        relayRequest,
+        relayTimeout
+      );
+      if (relayReply instanceof Error) {
+        throw relayReply;
+      }
+      const measuredLatency = performance.now() - startTime;
+      const relayResponse: RelayResponse = {
+        backoff: false,
+        latency: measuredLatency,
+        err: undefined,
+        relayReply: relayReply,
+      };
+      return relayResponse;
+    } catch (err) {
+      let backoff = false;
+      let castedError = new Error(
+        "caught unexpected error while sending relay"
+      );
+      if (err instanceof Error) {
+        if (err == SDKErrors.relayTimeout) {
+          // timed out so we need a backoff
+          backoff = true;
+        }
+        castedError = err;
+      }
+      const measuredLatency = performance.now() - startTime;
+      const relayResponse: RelayResponse = {
+        backoff: backoff,
+        latency: measuredLatency,
+        err: castedError,
+        relayReply: undefined,
+      };
+      return relayResponse;
+    }
   }
 
   // use this as an initial scaffold to send to several providers
@@ -254,4 +307,11 @@ interface RelayResult {
   reply: RelayReply | undefined;
   providerAddress: string;
   finalized: boolean;
+}
+
+export interface RelayResponse {
+  relayReply: RelayReply | undefined;
+  latency: number;
+  backoff: boolean;
+  err: Error | undefined;
 }
