@@ -33,7 +33,7 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 
 	var delegations []types.Delegation
 	for _, provider := range providers {
-		indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider+" "+req.Delegator)
+		indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, types.DelegationKey(provider, req.Delegator, ""))
 		for _, ind := range indices {
 			var delegation types.Delegation
 			found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
