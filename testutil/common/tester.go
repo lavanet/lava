@@ -130,7 +130,7 @@ func (ts *Tester) Accounts(name string) []Account {
 }
 
 func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "")
+	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
 }
 
 func (ts *Tester) StakeProviderExtra(
