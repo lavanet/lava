@@ -121,7 +121,9 @@ export class FinalizationConsensus {
     return this.latestBlock;
   }
 
-  public getExpectedBlockHeight(chainParser: BaseChainParser) {
+  public getExpectedBlockHeight(
+    chainParser: BaseChainParser
+  ): ExpectedBlockHeight {
     const chainBlockStats = chainParser.chainBlockStats();
     let highestBlockNumber = 0;
     const findAndUpdateHighestBlockNumber = (
@@ -211,7 +213,14 @@ export class FinalizationConsensus {
           providersMedianOfLatestBlock
         );
       }
+      this.latestBlock = providersMedianOfLatestBlock;
     }
+    return {
+      expectedBlockHeight:
+        providersMedianOfLatestBlock -
+        chainBlockStats.allowedBlockLagForQosSync,
+      numOfProviders: mapExpectedBlockHeights.size,
+    };
   }
 }
 
