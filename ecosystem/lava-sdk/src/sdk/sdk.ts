@@ -19,6 +19,7 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
+import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -210,6 +211,11 @@ export class LavaSDK {
         const chainParser = getChainParser(apiInterface);
         chainParser.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())
 
+        // create finalization consensus
+        const finalizationConsensus = new FinalizationConsensus();
+        // TODO: when this is supported
+        // tracker.RegisterFinalizationConsensusForUpdates(finalizationConsensus);
+
         // create rpc consumer server
         const rpcConsuemer = new RPCConsumerServer(
           this.relayer,
@@ -217,7 +223,8 @@ export class LavaSDK {
           chainParser,
           this.geolocation,
           rpcEndpoint,
-          this.lavaChainId
+          this.lavaChainId,
+          finalizationConsensus
         );
 
         // save rpc consumer server in map
