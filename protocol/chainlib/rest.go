@@ -456,7 +456,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		Metadata: convertToMetadataMapOfSlices(res.Header),
 	}
 
-	// checkin if rest reply data is in json format
+	// checking if rest reply data is in json format
 	var jsonData map[string]interface{}
 	err = json.Unmarshal(reply.Data, &jsonData)
 	if err != nil {
