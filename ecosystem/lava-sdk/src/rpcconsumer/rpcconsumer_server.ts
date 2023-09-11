@@ -300,6 +300,7 @@ export class RPCConsumerServer {
         this.finalizationConsensus.updateFinalizedHashes(
           chainBlockStats.blockDistanceForFinalizedData,
           providerPublicAddress,
+          finalizationData.finalizedBlocks,
           relaySession,
           reply
         );
