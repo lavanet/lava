@@ -120,7 +120,9 @@ export class FinalizationConsensus {
     return this.latestBlock;
   }
 
-  public getExpectedBlockHeight(chainParser: BaseChainParser) {}
+  public getExpectedBlockHeight(chainParser: BaseChainParser) {
+    const chainBlockStats = chainParser.chainBlockStats();
+  }
 }
 
 interface ExpectedBlockHeight {

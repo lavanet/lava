@@ -7,6 +7,7 @@ import {
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
+import { NOT_APPLICABLE } from "../common/common";
 export class RestChainParser extends BaseChainParser {
   constructor() {
     super();
@@ -53,7 +54,7 @@ export class RestChainParser extends BaseChainParser {
     }
     // TODO: add block parsing and use header overwrite.
     const chainMessage = new ChainMessage(
-      -2,
+      NOT_APPLICABLE,
       apiCont.api,
       apiCollection,
       data,
