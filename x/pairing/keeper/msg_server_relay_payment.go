@@ -261,7 +261,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 			err = k.distributeRewards(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), reward.TruncateInt())
 			if err != nil {
-				return nil, utils.LavaFormatError("could not districute rewards for provider and delegators", err)
+				return nil, utils.LavaFormatError("could not distribute rewards for provider and delegators", err)
 			}
 		}
 
@@ -393,7 +393,13 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 }
 
 // distributeRewards is the main function for reward distribution for providers and delegators
-func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, epoch uint64, totalReward math.Int) error {
+func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) error {
+	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("could not calculate provider reward by delegations", err,
+			utils.Attribute{Key: "block", Value: block},
+		)
+	}
 	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageEpoch(ctx, epoch, chainID)
 	if !found {
 		return utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("stake storage for epoch not found"),
@@ -470,7 +476,7 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoraget
 
 	for _, delegation := range delegations {
 		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
-		rewardMapKey := dualstakingtypes.DelegationKey(delegation.Delegator, stakeEntry.Address, delegation.ChainID)
+		rewardMapKey := dualstakingtypes.DelegationKey(stakeEntry.Address, delegation.Delegator, delegation.ChainID)
 
 		delegatorReward, found := k.dualStakingKeeper.GetDelegatorReward(ctx, rewardMapKey)
 		if !found {

@@ -65,7 +65,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	// ** verify the delegator reward map updates correctly for new entries ** //
 
 	for _, delegation := range expectedDelegations {
-		ind := dualstakingtypes.DelegationKey(delegation.Delegator, provider, ts.spec.Index)
+		ind := dualstakingtypes.DelegationKey(provider, delegation.Delegator, ts.spec.Index)
 		dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
 		require.True(t, found)
 		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
@@ -78,7 +78,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 
 	for _, delegation := range expectedDelegations {
-		ind := dualstakingtypes.DelegationKey(delegation.Delegator, provider, ts.spec.Index)
+		ind := dualstakingtypes.DelegationKey(provider, delegation.Delegator, ts.spec.Index)
 		dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
 		require.True(t, found)
 		expectedDReward := ts.Keepers.Dualstaking.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
@@ -211,7 +211,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
 
 	// the delegator should get no rewards
-	ind := dualstakingtypes.DelegationKey(delegator1, provider, ts.spec.Index)
+	ind := dualstakingtypes.DelegationKey(provider, delegator1, ts.spec.Index)
 	dReward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
 	require.True(t, found)
 	expectedDReward := math.ZeroInt()
