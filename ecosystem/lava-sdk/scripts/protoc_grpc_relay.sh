@@ -29,6 +29,7 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/spec/api_collection.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/conflict/conflict_data.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
