@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 import { calculateAvailabilityScore, QoSReport } from "./consumerTypes";
-import { AVAILABILITY_PERCENTAGE } from "./common";
+import { AVAILABILITY_PERCENTAGE, DEFAULT_DECIMAL_PRECISION } from "./common";
 
 describe("consumerTypes", () => {
   it("should test calculate availability score", () => {
@@ -14,8 +14,10 @@ describe("consumerTypes", () => {
     };
 
     let result = calculateAvailabilityScore(qosReport);
-    expect(result.downtimePercentage).toEqual(AVAILABILITY_PERCENTAGE);
-    expect(result.scaledAvailabilityScore).toEqual(0);
+    expect(BigNumber(result.downtimePercentage).toNumber()).toEqual(
+      AVAILABILITY_PERCENTAGE
+    );
+    expect(BigNumber(result.scaledAvailabilityScore).toNumber()).toEqual(0);
 
     qosReport = {
       latencyScoreList: [],
@@ -27,7 +29,11 @@ describe("consumerTypes", () => {
 
     const halfDec = BigNumber("0.5");
     result = calculateAvailabilityScore(qosReport);
-    expect(result.downtimePercentage * 2).toEqual(AVAILABILITY_PERCENTAGE);
-    expect(result.scaledAvailabilityScore).toEqual(halfDec.toNumber());
+    expect(BigNumber(result.downtimePercentage).toNumber() * 2).toEqual(
+      AVAILABILITY_PERCENTAGE
+    );
+    expect(result.scaledAvailabilityScore).toEqual(
+      halfDec.toPrecision(DEFAULT_DECIMAL_PRECISION)
+    );
   });
 });
