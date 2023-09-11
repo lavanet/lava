@@ -8,7 +8,10 @@ import {
   SendRestRelayOptions,
   ChainMessage,
 } from "../chainlib/base_chain_parser";
-import { constructRelayRequest, newRelayData } from "./lavaprotocol";
+import {
+  constructRelayRequest,
+  newRelayData,
+} from "../lavaprotocol/request_builder";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
   RelayPrivateData,
