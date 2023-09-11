@@ -109,9 +109,10 @@ export class FinalizationConsensus {
     finalizedBlocks: Map<number, string>,
     req: RelaySession,
     reply: RelayReply
-  ) {
+  ): undefined {
     // TODO: implement for DR.
     const latestBlock = reply.getLatestBlock();
+    return undefined;
   }
 
   public newEpoch(epoch: number) {
