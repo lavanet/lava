@@ -39,7 +39,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -95,7 +95,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -156,7 +156,7 @@ describe("ConsumerSessionManager", () => {
 
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
-          [],
+          new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
           []
@@ -172,7 +172,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -219,7 +219,7 @@ describe("ConsumerSessionManager", () => {
 
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
-            [],
+            new Set(),
             SERVICED_BLOCK_NUMBER,
             "",
             []
@@ -245,7 +245,7 @@ describe("ConsumerSessionManager", () => {
 
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
-          [],
+          new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
           []
@@ -269,7 +269,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -326,7 +326,7 @@ describe("ConsumerSessionManager", () => {
       for (let i = 0; i < NUMBER_OF_ALLOWED_SESSIONS_PER_CONSUMER; i++) {
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
-          [],
+          new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
           []
@@ -387,7 +387,7 @@ describe("ConsumerSessionManager", () => {
       for (let i = 0; i < NUMBER_OF_ALLOWED_SESSIONS_PER_CONSUMER; i++) {
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
-          [],
+          new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
           []
@@ -460,7 +460,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -521,7 +521,7 @@ describe("ConsumerSessionManager", () => {
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -567,7 +567,7 @@ describe("ConsumerSessionManager", () => {
 
       const sessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        [],
+        new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
         []
@@ -596,7 +596,7 @@ describe("ConsumerSessionManager", () => {
         for (let i = 0; i < initialProvidersLength; i++) {
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
-            [],
+            new Set(),
             SERVICED_BLOCK_NUMBER,
             addon,
             []
@@ -621,7 +621,7 @@ describe("ConsumerSessionManager", () => {
 
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
-          [],
+          new Set(),
           SERVICED_BLOCK_NUMBER,
           addon,
           []
@@ -697,7 +697,7 @@ describe("ConsumerSessionManager", () => {
         for (let i = 0; i < initialProvidersLength; i++) {
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
-            [],
+            new Set(),
             SERVICED_BLOCK_NUMBER,
             addon,
             extensions
@@ -722,7 +722,7 @@ describe("ConsumerSessionManager", () => {
 
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
-          [],
+          new Set(),
           SERVICED_BLOCK_NUMBER,
           addon,
           extensions
