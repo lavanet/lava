@@ -200,6 +200,12 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 	if err != nil {
 		return nil, err
 	}
+
+	err = ValidateStatusCodes(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
 	if isJsonRPC && (resp.StatusCode < 200 || resp.StatusCode >= 300) {
 		var buf bytes.Buffer
 		var body []byte
@@ -214,6 +220,13 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 		}
 	}
 	return resp.Body, nil
+}
+
+func ValidateStatusCodes(statusCode int) error {
+	if statusCode == 504 || statusCode == 429 {
+		return utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode})
+	}
+	return nil
 }
 
 // httpServerConn turns a HTTP connection into a Conn.

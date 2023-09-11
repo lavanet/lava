@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,10 +63,7 @@ func (geh *genericErrorHandler) handleCodeErrors(ctx context.Context, code codes
 }
 
 func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
-	if statusCode == 504 || statusCode == 429 {
-		return utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode})
-	}
-	return nil
+	return rpcclient.ValidateStatusCodes(statusCode)
 }
 
 type RestErrorHandler struct{ genericErrorHandler }
