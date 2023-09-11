@@ -172,21 +172,23 @@ func (ts *tester) payAndVerifyBalance(
 				TruncateInt().
 				Uint64()
 		}
+		if delegations != nil {
+			cuUsedInt := math.NewIntFromUint64(cuUsed)
+			epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, uint64(relay.Epoch))
+			require.Nil(ts.T, err)
+			stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageEpoch(ts.Ctx, epoch, relay.SpecId)
+			require.True(ts.T, found)
+			stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressFromStorage(ts.Ctx, stakeStorage, providerAddr)
+			require.True(ts.T, found)
+			providerRewardInt := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, cuUsedInt)
+			cuUsed = providerRewardInt.Uint64()
+		}
 		totalPaid += cuUsed
-	}
-
-	providerReward := totalPaid
-	if delegations != nil {
-		totalPaidInt := math.NewIntFromUint64(totalPaid)
-		stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-		require.True(ts.T, found)
-		providerRewardInt := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, totalPaidInt)
-		providerReward = providerRewardInt.Uint64()
 	}
 
 	// verify provider's balance
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	want := mint.MulInt64(int64(providerReward))
+	want := mint.MulInt64(int64(totalPaid))
 	require.Equal(ts.T, balance+want.TruncateInt64(), ts.GetBalance(providerAddr))
 
 	// verify each project balance
