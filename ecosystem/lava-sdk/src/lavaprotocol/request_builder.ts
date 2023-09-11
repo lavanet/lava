@@ -1,4 +1,11 @@
 import {
+  EARLIEST_BLOCK,
+  FINALIZED_BLOCK,
+  LATEST_BLOCK,
+  NOT_APPLICABLE,
+  SAFE_BLOCK,
+} from "../common/common";
+import {
   RelayRequest,
   RelaySession,
   RelayPrivateData,
@@ -14,6 +21,7 @@ export interface SendRelayData {
   url: string;
   apiInterface: string;
   chainId: string;
+  requestedBlock: number;
 }
 
 export function newRelayData(relayData: SendRelayData): RelayPrivateData {
@@ -186,4 +194,31 @@ function convertRequestedBlockToUint8Array(requestBlock: number): Uint8Array {
   }
 
   return requestBlockBytes;
+}
+
+export function UpdateRequestedBlock(
+  request: RelayPrivateData,
+  response: RelayReply
+) {
+  request.setRequestBlock(
+    ReplaceRequestedBlock(request.getRequestBlock(), response.getLatestBlock())
+  );
+  return;
+}
+
+export function ReplaceRequestedBlock(
+  requestedBlock: number,
+  latestBlock: number
+): number {
+  switch (requestedBlock) {
+    case LATEST_BLOCK:
+    case SAFE_BLOCK:
+    case FINALIZED_BLOCK:
+      return latestBlock;
+    case EARLIEST_BLOCK:
+      // TODO: add support for earliest block reliability
+      return NOT_APPLICABLE;
+    default:
+      return requestedBlock;
+  }
 }
