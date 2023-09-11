@@ -129,6 +129,24 @@ export abstract class BaseChainParser {
     this.verifications = new Map();
   }
 
+  protected getSupportedApi(
+    name: string,
+    connectionType: string
+  ): ApiContainer {
+    const apiKey: ApiKey = {
+      name,
+      connectionType,
+    };
+    const apiCont = this.serverApis.get(ApiKeyToString(apiKey));
+    if (!apiCont) {
+      throw Logger.fatal("api not supported", name, connectionType);
+    }
+    if (!apiCont.api.getEnabled()) {
+      throw Logger.fatal("api is disabled in spec", name, connectionType);
+    }
+    return apiCont;
+  }
+
   protected getApiCollection(collectionKey: CollectionKey): ApiCollection {
     const key = CollectionKeyToString(collectionKey);
     const collection = this.apiCollections.get(key);

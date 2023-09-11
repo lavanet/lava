@@ -43,6 +43,7 @@ export class RestChainParser extends BaseChainParser {
       apiCollection,
       HeadersPassSend
     );
+    // TODO: implement apip.GetParsingByTag to support headers
     let data = "";
     if (options.data) {
       data = "?";
