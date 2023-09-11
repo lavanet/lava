@@ -222,3 +222,22 @@ export function ReplaceRequestedBlock(
       return requestedBlock;
   }
 }
+
+export function IsFinalizedBlock(
+  requestedBlock: number,
+  latestBlock: number,
+  finalizationCriteria: number
+): boolean {
+  switch (requestedBlock) {
+    case NOT_APPLICABLE:
+      return false;
+    default:
+      if (requestedBlock < 0) {
+        return false;
+      }
+      if (requestedBlock <= latestBlock - finalizationCriteria) {
+        return true;
+      }
+  }
+  return false;
+}

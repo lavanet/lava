@@ -10,6 +10,7 @@ import {
 } from "../chainlib/base_chain_parser";
 import {
   constructRelayRequest,
+  IsFinalizedBlock,
   newRelayData,
   SendRelayData,
   UpdateRequestedBlock,
@@ -194,8 +195,12 @@ export class RPCConsumerServer {
       relayResult.reply = relayResponse.relayReply;
       UpdateRequestedBlock(relayData, relayResult.reply);
       const chainBlockStats = this.chainParser.chainBlockStats();
-      // _, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
-      // finalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
+      const finalized = IsFinalizedBlock(
+        relayData.getRequestBlock(),
+        relayResult.reply.getLatestBlock(),
+        chainBlockStats.blockDistanceForFinalizedData
+      );
+      relayResult.finalized = finalized;
       return new Error("not implemented, TODO");
     } catch (err) {
       if (err instanceof Error) {
