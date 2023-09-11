@@ -573,6 +573,7 @@ func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPendin
 func (ts *Tester) QueryDualstakingDelegatorRewards(delegator string, provider string, chainID string) (*dualstakingtypes.QueryDelegatorRewardsResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorRewardsRequest{
 		Delegator: delegator,
+		Provider:  provider,
 		ChainId:   chainID,
 	}
 	return ts.Keepers.Dualstaking.DelegatorRewards(ts.GoCtx, msg)
