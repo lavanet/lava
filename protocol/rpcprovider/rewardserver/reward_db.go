@@ -18,12 +18,19 @@ const keySeparator = "."
 
 type DB interface {
 	Key() string
-	Save(key string, data []byte, ttl time.Duration) error
+	Save(dbEntry *DBEntry) error
+	BatchSave(dbEntries []*DBEntry) error
 	FindOne(key string) ([]byte, error)
 	FindAll() (map[string][]byte, error)
 	Delete(key string) error
 	DeletePrefix(prefix string) error
 	Close() error
+}
+
+type DBEntry struct {
+	Key  string
+	Data []byte
+	Ttl  time.Duration
 }
 
 type RewardDB struct {
@@ -40,52 +47,48 @@ type RewardEntity struct {
 	Proof        *pairingtypes.RelaySession
 }
 
-func (rs *RewardDB) Save(consumerAddr string, consumerKey string, proof *pairingtypes.RelaySession) (*pairingtypes.RelaySession, bool, error) {
-	key := rs.assembleKey(uint64(proof.Epoch), consumerAddr, proof.SessionId, consumerKey)
-
-	re := &RewardEntity{
-		Epoch:        uint64(proof.Epoch),
-		ConsumerAddr: consumerAddr,
-		ConsumerKey:  consumerKey,
-		SessionId:    proof.SessionId,
-		Proof:        proof,
-	}
-
-	prevReward, err := rs.findOne(key)
-	if err != nil {
-		saved, err := rs.saveInner(key, re)
-		return proof, saved, err
-	}
-
-	if prevReward.Proof.CuSum < proof.CuSum {
-		if prevReward.Proof.Badge != nil && proof.Badge == nil {
-			proof.Badge = prevReward.Proof.Badge
-		}
-
-		saved, err := rs.saveInner(key, re)
-		return proof, saved, err
-	}
-
-	return prevReward.Proof, false, nil
+type ConsumerProofEntity struct {
+	ConsumerAddr string
+	ConsumerKey  string
+	Proof        *pairingtypes.RelaySession
 }
 
-func (rs *RewardDB) saveInner(key string, re *RewardEntity) (bool, error) {
-	buf, err := json.Marshal(re)
-	if err != nil {
-		return false, utils.LavaFormatError("failed to encode proof: %s", err)
+func (rs *RewardDB) Save(cpe *ConsumerProofEntity) error {
+	return rs.BatchSave([]*ConsumerProofEntity{cpe})
+}
+
+func (rs *RewardDB) BatchSave(cpes []*ConsumerProofEntity) (err error) {
+	dbEntriesMap := map[string][]*DBEntry{} // Key is specId
+
+	for _, reward := range cpes {
+		key := rs.assembleKey(uint64(reward.Proof.Epoch), reward.ConsumerAddr, reward.Proof.SessionId, reward.ConsumerKey)
+		buf, err := json.Marshal(reward)
+		if err != nil {
+			return utils.LavaFormatError("failed to encode proof: %s", err)
+		}
+
+		dbEntry := &DBEntry{
+			Key:  key,
+			Data: buf,
+			Ttl:  rs.ttl,
+		}
+
+		dbEntriesMap[reward.Proof.SpecId] = append(dbEntriesMap[reward.Proof.SpecId], dbEntry)
 	}
 
-	db, found := rs.dbs[re.Proof.SpecId]
-	if !found {
-		return false, fmt.Errorf("reward_db: db not found for spec id: %s", re.Proof.SpecId)
+	for specId, rewards := range dbEntriesMap {
+		db, found := rs.dbs[specId]
+		if !found {
+			return fmt.Errorf("reward_db: db not found for spec id: %s", specId)
+		}
+
+		err = db.BatchSave(rewards)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = db.Save(key, buf, rs.ttl)
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
+	return nil
 }
 
 // currently unused

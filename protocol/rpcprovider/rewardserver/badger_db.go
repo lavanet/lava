@@ -25,11 +25,17 @@ func (mdb *BadgerDB) Key() string {
 	return mdb.specId
 }
 
-func (mdb *BadgerDB) Save(key string, data []byte, ttl time.Duration) error {
+func (mdb *BadgerDB) Save(dbEntry *DBEntry) error {
+	return mdb.BatchSave([]*DBEntry{dbEntry})
+}
+
+func (mdb *BadgerDB) BatchSave(dbEntries []*DBEntry) error {
 	mdb.lock.Lock()
 	defer mdb.lock.Unlock()
 
-	mdb.rewards[key] = newEntry(data, ttl)
+	for _, dbEntry := range dbEntries {
+		mdb.rewards[dbEntry.Key] = newEntry(dbEntry.Data, dbEntry.Ttl)
+	}
 
 	err := mdb.saveAll()
 	if err != nil {

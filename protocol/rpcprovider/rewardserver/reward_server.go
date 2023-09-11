@@ -84,17 +84,19 @@ type RewardsTxSender interface {
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
 
-	savedProof, saved, err := rws.rewardDB.Save(consumerAddr, consumerRewardsKey, proof)
+	cpe := &ConsumerProofEntity{
+		ConsumerAddr: consumerAddr,
+		ConsumerKey:  consumerRewardsKey,
+		Proof:        proof,
+	}
+	err := rws.rewardDB.Save(cpe)
 	if err != nil {
 		utils.LavaFormatError("failed saving proof", err, utils.Attribute{Key: "proof", Value: proof})
 		return 0, false
 	}
 
-	if saved {
-		return 0, true
-	}
-
-	return savedProof.CuSum, false
+	// TEMP until next commits
+	return proof.CuSum, false
 }
 
 func (rws *RewardServer) UpdateEpoch(epoch uint64) {

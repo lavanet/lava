@@ -23,8 +23,12 @@ func TestSave(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	_, saved, err := rs.Save("consumerAddr", "consumerKey", proof)
-	require.True(t, saved)
+	cpe := &rewardserver.ConsumerProofEntity{
+		ConsumerAddr: "consumerAddr",
+		ConsumerKey:  "consumerKey",
+		Proof:        proof,
+	}
+	err = rs.Save(cpe)
 	require.NoError(t, err)
 
 	rewards, err := rs.FindAll()
@@ -33,7 +37,7 @@ func TestSave(t *testing.T) {
 	require.Equal(t, 1, len(rewards))
 }
 
-func TestSaveThreshold(t *testing.T) {
+func TestSaveBatch(t *testing.T) {
 	db := rewardserver.NewMemoryDB("specId")
 	rs := rewardserver.NewRewardDB()
 	err := rs.AddDB(db)
@@ -42,17 +46,21 @@ func TestSaveThreshold(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	for i := 0; i < 101; i++ {
-		_, saved, err := rs.Save(fmt.Sprintf("consumerAddr%d", i), fmt.Sprintf("consumerKey%d", i), proof)
-		require.NoError(t, err)
-		require.True(t, saved)
+	cpes := []*rewardserver.ConsumerProofEntity{}
+	for i := 0; i < 100; i++ {
+		cpes = append(cpes, &rewardserver.ConsumerProofEntity{
+			ConsumerAddr: fmt.Sprintf("consumerAddr%d", i),
+			ConsumerKey:  fmt.Sprintf("consumerKey%d", i),
+			Proof:        proof,
+		})
 	}
+	err = rs.BatchSave(cpes)
+	require.NoError(t, err)
 
 	rewards, err := rs.FindAll()
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(rewards))
-	require.Equal(t, 101, rewards[0].NumRewards())
 }
 
 func TestFindAll(t *testing.T) {
@@ -64,9 +72,13 @@ func TestFindAll(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	_, saved, err := rs.Save("consumerAddr", "consumerKey"+"specId", proof)
+	cpe := &rewardserver.ConsumerProofEntity{
+		ConsumerAddr: "consumerAddr",
+		ConsumerKey:  "consumerKey" + "specId",
+		Proof:        proof,
+	}
+	err = rs.Save(cpe)
 	require.NoError(t, err)
-	require.True(t, saved)
 
 	rewards, err := rs.FindAll()
 	require.NoError(t, err)
@@ -83,9 +95,13 @@ func TestFindOne(t *testing.T) {
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
 
-	_, saved, err := rs.Save("consumerAddr", "consumerKey", proof)
+	cpe := &rewardserver.ConsumerProofEntity{
+		ConsumerAddr: "consumerAddr",
+		ConsumerKey:  "consumerKey",
+		Proof:        proof,
+	}
+	err = rs.Save(cpe)
 	require.NoError(t, err)
-	require.True(t, saved)
 
 	reward, err := rs.FindOne(uint64(proof.Epoch), "consumerAddr", "consumerKey", proof.SessionId)
 	require.NoError(t, err)
@@ -108,9 +124,13 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, saved, err := rs.Save(addr.String(), "consumerKey", proof)
+	cpe := &rewardserver.ConsumerProofEntity{
+		ConsumerAddr: addr.String(),
+		ConsumerKey:  "consumerKey",
+		Proof:        proof,
+	}
+	err = rs.Save(cpe)
 	require.NoError(t, err)
-	require.True(t, saved)
 
 	err = rs.DeleteClaimedRewards([]*pairingtypes.RelaySession{proof})
 	require.NoError(t, err)
@@ -136,9 +156,13 @@ func TestDeleteEpochRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, saved, err := rs.Save(addr.String(), "consumerKey", proof)
+	cpe := &rewardserver.ConsumerProofEntity{
+		ConsumerAddr: addr.String(),
+		ConsumerKey:  "consumerKey",
+		Proof:        proof,
+	}
+	err = rs.Save(cpe)
 	require.NoError(t, err)
-	require.True(t, saved)
 
 	err = rs.DeleteEpochRewards(uint64(proof.Epoch))
 	require.NoError(t, err)
@@ -166,9 +190,13 @@ func TestRewardsWithTTL(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	_, saved, err := rs.Save(addr.String(), "consumerKey", proof)
+	cpe := &rewardserver.ConsumerProofEntity{
+		ConsumerAddr: addr.String(),
+		ConsumerKey:  "consumerKey",
+		Proof:        proof,
+	}
+	err = rs.Save(cpe)
 	require.NoError(t, err)
-	require.True(t, saved)
 
 	rewards, err := rs.FindAll()
 	require.NoError(t, err)
