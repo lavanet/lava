@@ -11,7 +11,7 @@ import {
   ProviderOptimizer,
   ProviderOptimizerStrategy,
 } from "../providerOptimizer/providerOptimizer";
-import { AVERAGE_WORLD_LATENCY } from "../common/timeout";
+import { AverageWorldLatency } from "../common/timeout";
 
 const NUMBER_OF_PROVIDERS = 10;
 const NUMBER_OF_RESETS_TO_TEST = 10;
@@ -37,7 +37,7 @@ function setupConsumerSessionManager() {
     new ProviderOptimizer(
       ProviderOptimizerStrategy.Balanced,
       0,
-      AVERAGE_WORLD_LATENCY / 2,
+      AverageWorldLatency / 2,
       1
     )
   );

@@ -22,7 +22,7 @@ import {
   ProviderOptimizer,
   ProviderOptimizerStrategy,
 } from "../providerOptimizer/providerOptimizer";
-import { AVERAGE_WORLD_LATENCY } from "../common/timeout";
+import { AverageWorldLatency } from "../common/timeout";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -162,7 +162,7 @@ export class LavaSDK {
     const optimizer = new ProviderOptimizer(
       this.providerOptimizerStrategy,
       0,
-      AVERAGE_WORLD_LATENCY / 2,
+      AverageWorldLatency / 2,
       this.maxConcurrentProviders
     );
 

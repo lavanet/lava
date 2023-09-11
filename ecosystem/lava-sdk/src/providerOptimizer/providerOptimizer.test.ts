@@ -1,13 +1,13 @@
 import {
   COST_EXPLORATION_CHANCE,
   cumulativeProbabilityFunctionForPoissonDist,
+  floatToBigNumber,
   perturbWithNormalGaussian,
   ProviderData,
   ProviderOptimizer,
   ProviderOptimizerStrategy,
 } from "./providerOptimizer";
 import random from "random";
-import BigNumber from "bignumber.js";
 import { now } from "../util/time";
 
 const TEST_AVERAGE_BLOCK_TIME = 10 * 1000; // 10 seconds in milliseconds
@@ -635,8 +635,8 @@ describe("ProviderOptimizer", () => {
 
   it("tests excellence report", async () => {
     const floatVal = 0.25;
-    const floatNew = BigNumber(floatVal).precision(8).toNumber();
-    expect(floatNew).toEqual(floatVal);
+    const floatNew = floatToBigNumber(floatVal, 8);
+    expect(floatNew.toNumber()).toEqual(floatVal);
 
     const providerOptimizer = setupProviderOptimizer();
     const providersCount = 5;

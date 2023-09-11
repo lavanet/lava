@@ -6,10 +6,10 @@ export function getTimePerCu(computeUnits: number): number {
   return localNodeTimePerCu(computeUnits) + MinimumTimePerRelayDelay;
 }
 
-function localNodeTimePerCu(computeUnits: number): number {
+export function localNodeTimePerCu(computeUnits: number): number {
   return baseTimePerCU(computeUnits) + AverageWorldLatency;
 }
 
-function baseTimePerCU(computeUnits: number): number {
+export function baseTimePerCU(computeUnits: number): number {
   return computeUnits * TimePerCU;
 }

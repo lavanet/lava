@@ -1,15 +1,13 @@
 import { LRUCache } from "lru-cache";
-import {
-  ProviderOptimizer as ProviderOptimizerInterface,
-  QualityOfServiceReport,
-} from "../lavasession/consumerTypes";
+import { ProviderOptimizer as ProviderOptimizerInterface } from "../lavasession/consumerTypes";
 import { Logger } from "../logger/logger";
 import random from "random";
 import gammainc from "@stdlib/math-base-special-gammainc";
-import { baseTimePerCU, getTimePerCU } from "../common/timeout";
+import { baseTimePerCU, getTimePerCu } from "../common/timeout";
 import BigNumber from "bignumber.js";
 import { hourInMillis, millisToSeconds, now } from "../util/time";
 import { ScoreStore } from "../util/score/decayScore";
+import { QualityOfServiceReport } from "../codec/lavanet/lava/pairing/relay";
 
 const CACHE_OPTIONS = {
   max: 2000,
@@ -286,20 +284,23 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     }
 
     const precision = WANTED_PRECISION;
-    const latencyScore = BigNumber(
-      providerData.latency.num / providerData.latency.denom
-    ).precision(precision);
-    const syncScore = BigNumber(
-      providerData.sync.num / providerData.sync.denom
-    ).precision(precision);
-    const availabilityScore = BigNumber(
-      providerData.availability.num / providerData.availability.denom
-    ).precision(precision);
+    const latencyScore = floatToBigNumber(
+      providerData.latency.num / providerData.latency.denom,
+      precision
+    );
+    const syncScore = floatToBigNumber(
+      providerData.sync.num / providerData.sync.denom,
+      precision
+    );
+    const availabilityScore = floatToBigNumber(
+      providerData.availability.num / providerData.availability.denom,
+      precision
+    );
 
     const report: QualityOfServiceReport = {
-      latency: latencyScore.toNumber(),
-      availability: availabilityScore.toNumber(),
-      sync: syncScore.toNumber(),
+      latency: latencyScore.toPrecision(precision),
+      availability: availabilityScore.toPrecision(precision),
+      sync: syncScore.toPrecision(precision),
     };
     Logger.debug("QoS excellence for provider", {
       providerAddress,
@@ -309,9 +310,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     return report;
   }
 
-  public calculateProbabilityOfTimeout(
-    availabilityScore: ScoreStore /* score.ScoreStore */
-  ): number {
+  public calculateProbabilityOfTimeout(availabilityScore: ScoreStore): number {
     const probabilityTimeout = 0;
 
     if (availabilityScore.denom > 0) {
@@ -324,7 +323,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
   public calculateProbabilityOfBlockError(
     requestedBlock: number,
-    providerData: ProviderData /* ProviderData */
+    providerData: ProviderData
   ): number {
     let probabilityBlockError = 0;
 
@@ -425,7 +424,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     requestedBlock: number
   ): number {
     const baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
-    const timeoutDuration = getTimePerCU(cu);
+    const timeoutDuration = getTimePerCu(cu);
 
     let historicalLatency = 0;
     if (providerData.latency.denom === 0) {
@@ -633,4 +632,15 @@ export function perturbWithNormalGaussian(
   const normal = random.normal();
   const perturb = normal() * percentage * orig;
   return orig + perturb;
+}
+
+/**
+ * This function is just to keep parity with the original golang implementation
+ * @param value
+ * @param precision
+ */
+export function floatToBigNumber(value: number, precision: number): BigNumber {
+  const x = Math.pow(10, precision);
+  const intVal = Math.round(value * x);
+  return BigNumber(intVal / x);
 }
