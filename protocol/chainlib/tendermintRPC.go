@@ -544,6 +544,13 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		Data: body,
 	}
 
+	// checking if rest reply data is in json format
+	var jsonData map[string]interface{}
+	err = json.Unmarshal(reply.Data, &jsonData)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("Tendermint URI reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
+	}
+
 	return reply, "", nil, nil
 }
 
