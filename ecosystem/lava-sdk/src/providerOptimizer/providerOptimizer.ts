@@ -35,7 +35,7 @@ export interface BlockStore {
   time: number;
 }
 
-export enum Strategy {
+export enum ProviderOptimizerStrategy {
   Balanced,
   Latency,
   SyncFreshness,
@@ -45,7 +45,7 @@ export enum Strategy {
 }
 
 export class ProviderOptimizer implements ProviderOptimizerInterface {
-  private readonly strategy: Strategy;
+  private readonly strategy: ProviderOptimizerStrategy;
   private readonly providersStorage = new LRUCache<string, ProviderData>(
     CACHE_OPTIONS
   );
@@ -61,7 +61,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   };
 
   public constructor(
-    strategy: Strategy,
+    strategy: ProviderOptimizerStrategy,
     averageBlockTime: number,
     baseWorldLatency: number,
     wantedNumProvidersInConcurrency: number
@@ -70,7 +70,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     this.averageBlockTime = averageBlockTime;
     this.baseWorldLatency = baseWorldLatency;
 
-    if (strategy === Strategy.Privacy) {
+    if (strategy === ProviderOptimizerStrategy.Privacy) {
       wantedNumProvidersInConcurrency = 1;
     }
 
@@ -362,14 +362,14 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
     let explorationChance = DEFAULT_EXPLORATION_CHANCE;
     switch (this.strategy) {
-      case Strategy.Latency:
+      case ProviderOptimizerStrategy.Latency:
         return true;
-      case Strategy.Accuracy:
+      case ProviderOptimizerStrategy.Accuracy:
         return true;
-      case Strategy.Cost:
+      case ProviderOptimizerStrategy.Cost:
         explorationChance = COST_EXPLORATION_CHANCE;
         break;
-      case Strategy.Privacy:
+      case ProviderOptimizerStrategy.Privacy:
         return false;
     }
 
@@ -384,13 +384,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   ): boolean {
     let latencyWeight: number;
     switch (this.strategy) {
-      case Strategy.Latency:
+      case ProviderOptimizerStrategy.Latency:
         latencyWeight = 0.9;
         break;
-      case Strategy.SyncFreshness:
+      case ProviderOptimizerStrategy.SyncFreshness:
         latencyWeight = 0.2;
         break;
-      case Strategy.Privacy:
+      case ProviderOptimizerStrategy.Privacy:
         return random.int(0, 2) === 0;
       default:
         latencyWeight = 0.8;

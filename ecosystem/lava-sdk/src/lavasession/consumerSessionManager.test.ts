@@ -9,7 +9,7 @@ import { PairingListEmptyError, ReportAndBlockProviderError } from "./errors";
 import { Relayer } from "../relayer/relayer";
 import {
   ProviderOptimizer,
-  Strategy,
+  ProviderOptimizerStrategy,
 } from "../providerOptimizer/providerOptimizer";
 import { AVERAGE_WORLD_LATENCY } from "../common/timeout";
 
@@ -34,7 +34,12 @@ function setupConsumerSessionManager() {
       secure: true,
     }),
     new RPCEndpoint("stub", "stub", "stub", "0"),
-    new ProviderOptimizer(Strategy.Balanced, 0, AVERAGE_WORLD_LATENCY / 2, 1)
+    new ProviderOptimizer(
+      ProviderOptimizerStrategy.Balanced,
+      0,
+      AVERAGE_WORLD_LATENCY / 2,
+      1
+    )
   );
 
   return cm;
