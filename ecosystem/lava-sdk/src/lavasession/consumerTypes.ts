@@ -110,7 +110,7 @@ export class SingleConsumerSession {
   };
   public sessionId = 0;
   public client: ConsumerSessionsWithProvider;
-  public relayNum = 1;
+  public relayNum = 0;
   public latestBlock = 0;
   public endpoint: Endpoint = {
     networkAddress: "",
