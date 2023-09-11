@@ -528,6 +528,11 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		defer res.Body.Close()
 	}
 
+	if res.StatusCode == 504 || res.StatusCode == 429 {
+		utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode})
+		return nil, "", nil, err
+	}
+
 	// read the response body
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
