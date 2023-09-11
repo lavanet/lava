@@ -251,3 +251,19 @@ export function verifyRelayReply(
   // TODO: implement signature verificaion
   return;
 }
+
+interface FinalizationData {
+  finalizedBlocks: Map<number, string>;
+  finalizationConflict: undefined;
+}
+
+export function verifyFinalizationData(
+  reply: RelayReply,
+  relayRequest: RelayRequest,
+  providerPublicAddress: string,
+  consumerAddress: string,
+  existingSessionLatestBlock: number,
+  blockDistanceForFinalizedData: number
+): FinalizationData | Error {
+  return new Error("implement me");
+}

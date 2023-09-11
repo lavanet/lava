@@ -14,6 +14,7 @@ import {
   newRelayData,
   SendRelayData,
   UpdateRequestedBlock,
+  verifyFinalizationData,
   verifyRelayReply,
 } from "../lavaprotocol/request_builder";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
@@ -34,6 +35,7 @@ export class RPCConsumerServer {
   private relayer: Relayer;
   private rpcEndpoint: RPCEndpoint;
   private lavaChainId: string;
+  private consumerAddress: string;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
@@ -48,6 +50,7 @@ export class RPCConsumerServer {
     this.relayer = relayer;
     this.rpcEndpoint = rpcEndpoint;
     this.lavaChainId = lavaChainId;
+    this.consumerAddress = "TODO";
   }
 
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
@@ -150,9 +153,9 @@ export class RPCConsumerServer {
       if (firstEntry.done) {
         return new Error("returned empty consumerSessionsMap");
       }
-      const [providerAddress, sessionInfo] = firstEntry.value;
+      const [providerPublicAddress, sessionInfo] = firstEntry.value;
       const relayResult: RelayResult = {
-        providerAddress: providerAddress,
+        providerAddress: providerPublicAddress,
         request: undefined,
         reply: undefined,
         finalized: false,
@@ -166,7 +169,7 @@ export class RPCConsumerServer {
         lavaChainId,
         chainID,
         relayData,
-        providerAddress,
+        providerPublicAddress,
         singleConsumerSession,
         epoch,
         reportedProviders
@@ -176,46 +179,63 @@ export class RPCConsumerServer {
       const relayResponse = await this.sendRelayProviderInSession(
         singleConsumerSession,
         relayResult,
-        relayTimeout,
-        chainMessage
+        relayTimeout
       );
       if (relayResponse instanceof Error) {
         const relayError: RelayError = {
-          providerAddress: providerAddress,
+          providerAddress: providerPublicAddress,
           err: relayResponse,
         };
         return [relayError];
       }
       if (relayResponse.relayReply == undefined) {
         const relayError: RelayError = {
-          providerAddress: providerAddress,
+          providerAddress: providerPublicAddress,
           err: new Error("empty reply"),
         };
         return [relayError];
       }
-      relayResult.reply = relayResponse.relayReply;
-      UpdateRequestedBlock(relayData, relayResult.reply);
+      const reply = relayResponse.relayReply;
+      relayResult.reply = reply;
+      UpdateRequestedBlock(relayData, reply);
       const chainBlockStats = this.chainParser.chainBlockStats();
       const finalized = IsFinalizedBlock(
         relayData.getRequestBlock(),
-        relayResult.reply.getLatestBlock(),
+        reply.getLatestBlock(),
         chainBlockStats.blockDistanceForFinalizedData
       );
       relayResult.finalized = finalized;
       // TODO: when we add headers
       // filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 
-      const err = verifyRelayReply(
-        relayResult.reply,
-        relayRequest,
-        providerAddress
-      );
+      const err = verifyRelayReply(reply, relayRequest, providerPublicAddress);
       if (err instanceof Error) {
         return err;
       }
-
+      const existingSessionLatestBlock = singleConsumerSession.latestBlock;
       const dataReliabilityParams = this.chainParser.dataReliabilityParams();
+      if (dataReliabilityParams.enabled) {
+        const finalizationData = verifyFinalizationData(
+          reply,
+          relayRequest,
+          providerPublicAddress,
+          this.consumerAddress,
+          existingSessionLatestBlock,
+          chainBlockStats.blockDistanceForFinalizedData
+        );
+        // if err != nil {
+        //   if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
+        //     go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
+        //   }
+        //   return relayResult, 0, err, false
+        // }
 
+        // finalizationConflict, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
+        // if err != nil {
+        //   go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
+        //   return relayResult, 0, err, false
+        // }
+      }
       return new Error("not implemented, TODO");
     } catch (err) {
       if (err instanceof Error) {
@@ -227,15 +247,12 @@ export class RPCConsumerServer {
   protected async sendRelayProviderInSession(
     singleConsumerSession: SingleConsumerSession,
     relayResult: RelayResult,
-    relayTimeout: number,
-    chainMessage: ChainMessage
+    relayTimeout: number
   ): Promise<RelayResponse | Error> {
-    const existingSessionLatestBlock = singleConsumerSession.latestBlock;
     const endpointClient = singleConsumerSession.endpoint.client;
     if (endpointClient == undefined) {
       return new Error("endpointClient is undefined");
     }
-    const providerPublicAddress = relayResult.providerAddress;
     const relayRequest = relayResult.request;
     if (relayRequest == undefined) {
       return new Error("relayRequest is undefined");
