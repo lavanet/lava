@@ -394,7 +394,24 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 
 // distributeRewards is the main function for reward distribution for providers and delegators
 func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, epoch uint64, totalReward math.Int) error {
-	providerReward, err := k.calculateProviderDelegatorsRewards(ctx, providerAddr, chainID, totalReward)
+	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageEpoch(ctx, epoch, chainID)
+	if !found {
+		return utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("stake storage for epoch not found"),
+			utils.Attribute{Key: "epoch", Value: epoch},
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
+	}
+
+	stakeEntry, found, stakeIndex := k.epochStorageKeeper.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, providerAddr)
+	if !found {
+		return utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
+			utils.Attribute{Key: "provider", Value: providerAddr},
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "totalRewards", Value: totalReward},
+		)
+	}
+
+	providerReward, err := k.calculateProviderDelegatorsRewards(ctx, stakeEntry, stakeIndex, totalReward)
 	if err != nil {
 		return utils.LavaFormatError("cannot calculate provider reward and update delegator reward map", err)
 	}
@@ -414,7 +431,7 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		return utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 
-	err = k.updateDelegatorsReward(ctx, providerAddr, delegations, chainID, totalReward)
+	err = k.updateDelegatorsReward(ctx, stakeEntry, delegations, totalReward)
 	if err != nil {
 		return utils.LavaFormatError("cannot update delegators reward map", err)
 	}
@@ -423,24 +440,15 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 }
 
 // calculateProviderDelegatorsRewards returns the provider reward amount
-func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk.AccAddress, chainID string, totalReward math.Int) (math.Int, error) {
-	stakeEntry, found, stakeIndex := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
-	if !found {
-		return math.Int{}, utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "totalRewards", Value: totalReward},
-		)
-	}
-
+func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, stakeIndex uint64, totalReward math.Int) (math.Int, error) {
 	// sanity check
 	if stakeEntry.DelegateCommission > 100 {
 		invalidCommission := stakeEntry.DelegateCommission
 		stakeEntry.DelegateCommission = 100
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stakeEntry.Chain, stakeEntry, stakeIndex)
 		utils.LavaFormatError("changed provider delegation commission to 100%", fmt.Errorf("delegation commission above max value"),
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "provider", Value: stakeEntry.Address},
+			utils.Attribute{Key: "chainID", Value: stakeEntry.Chain},
 			utils.Attribute{Key: "invalidCommission", Value: invalidCommission},
 		)
 	}
@@ -449,19 +457,10 @@ func (k Keeper) calculateProviderDelegatorsRewards(ctx sdk.Context, provider sdk
 }
 
 // updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, provider sdk.AccAddress, delegations []dualstakingtypes.Delegation, chainID string, totalReward math.Int) error {
-	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
-	if !found {
-		return utils.LavaFormatError("could not calculate provider reward by delegations", fmt.Errorf("provider stake entry not found"),
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "totalRewards", Value: totalReward},
-		)
-	}
-
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, delegations []dualstakingtypes.Delegation, totalReward math.Int) error {
 	for _, delegation := range delegations {
 		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(stakeEntry, totalReward, delegation)
-		rewardMapKey := dualstakingtypes.DelegationKey(delegation.Delegator, provider.String(), delegation.ChainID)
+		rewardMapKey := dualstakingtypes.DelegationKey(delegation.Delegator, stakeEntry.Address, delegation.ChainID)
 
 		delegatorReward, found := k.dualStakingKeeper.GetDelegatorReward(ctx, rewardMapKey)
 		if !found {
