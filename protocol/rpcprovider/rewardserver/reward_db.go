@@ -132,30 +132,39 @@ func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
 func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 	rawRewards := make(map[string]*RewardEntity)
 	for _, db := range rs.dbs {
-		raw, err := db.FindAll()
+		err := rs.retrieveAndProcessRewardsFromDB(&db, &rawRewards)
 		if err != nil {
 			return nil, err
 		}
-
-		for key, reward := range raw {
-			re := RewardEntity{}
-			err := json.Unmarshal(reward, &re)
-			if err != nil {
-				utils.LavaFormatError("failed to decode proof: %s", err)
-				continue
-			}
-
-			rawRewards[key] = &re
-		}
 	}
 
-	result := make(map[uint64]*EpochRewards)
+	return rs.buildEpochRewardsMap(rawRewards), nil
+}
+
+// TODO: Add tests for this func
+func (rs *RewardDB) FindAllInDB(specId string) (map[uint64]*EpochRewards, error) {
+	db, found := rs.dbs[specId]
+	if !found {
+		return nil, utils.LavaFormatWarning("reward db with given spec id was not found", nil, utils.Attribute{Key: "specId", Value: specId})
+	}
+
+	rawRewards := make(map[string]*RewardEntity)
+	err := rs.retrieveAndProcessRewardsFromDB(&db, &rawRewards)
+	if err != nil {
+		return nil, err
+	}
+
+	return rs.buildEpochRewardsMap(rawRewards), nil
+}
+
+func (rs *RewardDB) buildEpochRewardsMap(rawRewards map[string]*RewardEntity) map[uint64]*EpochRewards {
+	resEpochRewards := map[uint64]*EpochRewards{}
 	for _, reward := range rawRewards {
-		epochRewards, ok := result[reward.Epoch]
+		epochRewards, ok := resEpochRewards[reward.Epoch]
 		if !ok {
 			proofs := map[uint64]*pairingtypes.RelaySession{reward.SessionId: reward.Proof}
 			consumerRewards := map[string]*ConsumerRewards{reward.ConsumerKey: {epoch: reward.Epoch, consumer: reward.ConsumerAddr, proofs: proofs}}
-			result[reward.Epoch] = &EpochRewards{epoch: reward.Epoch, consumerRewards: consumerRewards}
+			resEpochRewards[reward.Epoch] = &EpochRewards{epoch: reward.Epoch, consumerRewards: consumerRewards}
 			continue
 		}
 
@@ -173,7 +182,27 @@ func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 		}
 	}
 
-	return result, nil
+	return resEpochRewards
+}
+
+func (rs *RewardDB) retrieveAndProcessRewardsFromDB(db *DB, rawRewards *map[string]*RewardEntity) (err error) {
+	raw, err := (*db).FindAll()
+	if err != nil {
+		return err
+	}
+
+	for key, reward := range raw {
+		re := RewardEntity{}
+		err := json.Unmarshal(reward, &re)
+		if err != nil {
+			utils.LavaFormatError("failed to decode proof: %s", err)
+			continue
+		}
+
+		(*rawRewards)[key] = &re
+	}
+
+	return nil
 }
 
 func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
