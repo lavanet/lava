@@ -10,7 +10,7 @@ import {
 import { Logger, LogLevel } from "../logger/logger";
 import { createWallet, createDynamicWallet } from "../wallet/wallet";
 import { StateTracker } from "../stateTracker/state_tracker";
-import { RPCConsumerServer } from "../consumer/rpcconsumer_server";
+import { RPCConsumerServer } from "../rpcconsumer/rpcconsumer_server";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { RPCEndpoint } from "../lavasession/consumerTypes";

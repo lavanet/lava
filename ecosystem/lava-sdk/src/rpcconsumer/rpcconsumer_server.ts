@@ -1,19 +1,14 @@
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import { ConsumerSessionsMap, SessionInfo } from "../lavasession/consumerTypes";
+import { SessionInfo } from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
   SendRestRelayOptions,
   ChainMessage,
 } from "../chainlib/base_chain_parser";
-import { stringToArrayBuffer } from "@improbable-eng/grpc-web/dist/typings/transports/http/xhr";
-import {
-  constructRelayRequest,
-  newRelayData,
-  SendRelayData,
-} from "./lavaprotocol";
+import { constructRelayRequest, newRelayData } from "./lavaprotocol";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
   RelayPrivateData,
