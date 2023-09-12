@@ -34,11 +34,12 @@ type PaymentRequest struct {
 	UniqueIdentifier    uint64
 	Description         string
 	ChainID             string
+	ConsumerRewardsKey  string
 }
 
 func (pr *PaymentRequest) String() string {
-	return fmt.Sprintf("cu: %d, BlockHeightDeadline: %d, Amount:%s, Client:%s, UniqueIdentifier:%d, Description:%s, chainID:%s",
-		pr.CU, pr.BlockHeightDeadline, pr.Amount.String(), pr.Client.String(), pr.UniqueIdentifier, pr.Description, pr.ChainID)
+	return fmt.Sprintf("cu: %d, BlockHeightDeadline: %d, Amount:%s, Client:%s, UniqueIdentifier:%d, Description:%s, chainID:%s, ConsumerRewardsKey:%s",
+		pr.CU, pr.BlockHeightDeadline, pr.Amount.String(), pr.Client.String(), pr.UniqueIdentifier, pr.Description, pr.ChainID, pr.ConsumerRewardsKey)
 }
 
 type ConsumerRewards struct {
@@ -83,7 +84,7 @@ type RewardsTxSender interface {
 }
 
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
-	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, apiInterface, consumerAddr)
+	consumerRewardsKey := getKeyForConsumerRewards(proof.SpecId, consumerAddr)
 
 	existingCU, updatedWithProof = rws.saveProofInMemory(ctx, consumerRewardsKey, proof, epoch, consumerAddr)
 
@@ -159,7 +160,16 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			utils.LavaFormatError("invalid consumer address extraction from relay", err, utils.Attribute{Key: "relay", Value: relay})
 			continue
 		}
-		expectedPay := PaymentRequest{ChainID: relay.SpecId, CU: relay.CuSum, BlockHeightDeadline: relay.Epoch, Amount: sdk.Coin{}, Client: consumerAddr, UniqueIdentifier: relay.SessionId, Description: strconv.FormatUint(rws.serverID, 10)}
+		expectedPay := PaymentRequest{
+			ChainID:             relay.SpecId,
+			CU:                  relay.CuSum,
+			BlockHeightDeadline: relay.Epoch,
+			Amount:              sdk.Coin{},
+			Client:              consumerAddr,
+			UniqueIdentifier:    relay.SessionId,
+			Description:         strconv.FormatUint(rws.serverID, 10),
+			ConsumerRewardsKey:  getKeyForConsumerRewards(relay.SpecId, consumerAddr.String()),
+		}
 		rws.addExpectedPayment(expectedPay)
 		rws.updateCUServiced(relay.CuSum)
 	}
@@ -332,7 +342,6 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 		removedPayment := rws.RemoveExpectedPayment(payment.CU, payment.Client, payment.BlockHeightDeadline, payment.UniqueIdentifier, payment.ChainID)
 		if !removedPayment {
 			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
-			return
 		}
 
 		// TODO: Delete here from DB. Ask Ran if it should happen without acknowledging removedPayment.
@@ -382,7 +391,7 @@ func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
 			continue
 		}
 
-		// ConsumerRewardKey is made from a combination of specId + apiInterface + consumerAddress.
+		// ConsumerRewardsKey is made from a combination of specId + apiInterface + consumerAddress.
 		// So if it's a different DB, it's a different specId, which also means different consumerRewards
 		for consumerRewardsKey, consumerRewardsFromDb := range epochRewardsFromDb.consumerRewards {
 			epochRewards.consumerRewards[consumerRewardsKey] = consumerRewardsFromDb
@@ -491,6 +500,6 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 	return payments, nil
 }
 
-func getKeyForConsumerRewards(specId, apiInterface, consumerAddress string) string {
-	return specId + apiInterface + consumerAddress
+func getKeyForConsumerRewards(specId string, consumerAddress string) string {
+	return specId + consumerAddress
 }
