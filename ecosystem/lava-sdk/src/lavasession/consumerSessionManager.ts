@@ -96,6 +96,7 @@ export class ConsumerSessionManager {
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
   ): Promise<Error | undefined> {
+    console.log(pairingList);
     if (epoch <= this.currentEpoch) {
       Logger.error(
         `trying to update provider list for older epoch ${JSON.stringify({
@@ -728,11 +729,7 @@ export class ConsumerSessionManager {
   }
 
   public async probeProviders(pairingList: ConsumerSessionsWithProvider[]) {
-    Logger.info(
-      `providers probe initiated ${JSON.stringify({
-        endpoint: this.rpcEndpoint,
-      })}`
-    );
+    Logger.info(`providers probe initiated`);
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
       try {

@@ -306,6 +306,11 @@ export class StateChainQuery {
           0
         );
 
+        const stakeEntry = new StakeEntry();
+        stakeEntry.setEndpointsList(pairingEndpoints);
+
+        pairing.push(stakeEntry);
+
         const randomSessionId = generateRandomInt();
         const singleConsumerSession = new SingleConsumerSession(
           randomSessionId,
@@ -318,11 +323,6 @@ export class StateChainQuery {
         // Add newly created pairing in the pairing list
         csmArr.push(newPairing);
       }
-
-      const stakeEntry = new StakeEntry();
-      stakeEntry.setEndpointsList(pairingEndpoints);
-
-      pairing.push(stakeEntry);
 
       return {
         stakeEntry: pairing,
