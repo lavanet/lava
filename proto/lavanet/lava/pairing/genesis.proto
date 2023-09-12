@@ -25,5 +25,6 @@ message GenesisState {
   repeated EpochPayments epochPaymentsList = 4 [(gogoproto.nullable) = false];
   repeated BadgeUsedCu badgeUsedCuList = 5 [(gogoproto.nullable) = false];
   repeated lavanet.lava.common.RawMessage badgesTS = 6 [(gogoproto.nullable) = false];
+  lavanet.lava.common.GenesisState providerQosFS = 7 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }

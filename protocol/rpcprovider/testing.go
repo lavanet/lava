@@ -61,7 +61,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface, addon string) (time.Duration, int64, error) {
+			checkOneProvider := func(apiInterface string, addon string) (time.Duration, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
@@ -113,7 +113,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 					continue
 				}
 				utils.LavaFormatInfo("successfully verified provider endpoint", utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
-				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String()+"latest block: 0x"+strconv.FormatInt(latestBlockFromProbe, 16))
+				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String()+" latest block: 0x"+strconv.FormatInt(latestBlockFromProbe, 16))
 			}
 		}
 	}

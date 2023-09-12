@@ -91,7 +91,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	// Check api is supported and save it in nodeMsg
 	apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 	if err != nil {
-		return nil, utils.LavaFormatError("getSupportedApi failed", err, utils.Attribute{Key: "method", Value: msg.Method})
+		return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 	}
 
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -306,6 +306,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
 	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()

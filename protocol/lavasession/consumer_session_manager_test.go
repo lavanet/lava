@@ -721,3 +721,14 @@ func TestPairingWithExtensions(t *testing.T) {
 		})
 	}
 }
+
+func TestNoPairingsError(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+	time.Sleep(5 * time.Millisecond) // let probes finish
+	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil)
+	require.Error(t, err)
+	require.True(t, PairingListEmptyError.Is(err))
+}

@@ -20,7 +20,7 @@ func CreateLink(binaryPath string) {
 }
 
 func findLavaProtocolPath(binaryPath string) (string, error) {
-	out, err := exec.LookPath("lava-protocol")
+	out, err := exec.LookPath("lavap")
 	if err == nil {
 		return strings.TrimSpace(out), nil
 	}
@@ -35,14 +35,14 @@ func copyBinaryToSystemPath(binaryPath string) (string, error) {
 
 	goBinPath := strings.TrimSpace(string(gobin)) + "/bin/"
 	validateBinaryExecutable(binaryPath)
-	removeExistingLink(goBinPath + "lava-protocol")
+	removeExistingLink(goBinPath + "lavap")
 
-	err = lvutil.Copy(binaryPath, goBinPath+"lava-protocol")
+	err = lvutil.Copy(binaryPath, goBinPath+"lavap")
 	if err != nil {
 		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
 	}
 
-	out, err := exec.LookPath("lava-protocol")
+	out, err := exec.LookPath("lavap")
 	if err != nil {
 		return "", utils.LavaFormatError("couldn't find the binary in the system path", err)
 	}

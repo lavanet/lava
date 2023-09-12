@@ -95,7 +95,7 @@ import (
 //
 // On every new block, AdvanceBlock() should be called.
 //
-// Entry names (index) must contain only visible ascii characters (ascii values 32-125).
+// Entry names (index) must contain only visible ascii characters (ascii values 32-126).
 // The ascii 'DEL' invisible character is used internally to terminate the index values
 // when stored, to ensure that no two indices can ever overlap, i.e. one being the prefix
 // of the other.
@@ -162,7 +162,8 @@ import (
 // Note that AppendEntry() may add retroactive entry only if it does not precede an
 // existing latest entry. Also, AppendEntry() may not add future entries on or beyond
 // a DeletedAt in the future (adding a future entry maturing on a future DeleteAt is
-// permitted but useless, because it will be deleted straight away).
+// permitted but useless, because it will be deleted straight away). However once the
+// entry is deleted, new entries (future or not) can be appended again.
 //
 // Note also that DelEntry() discards all future entries on or beyond the DeletedAt
 // block (and owing to the previous rule, none will be added until deletes occurs).
@@ -599,9 +600,7 @@ func (fs *FixationStore) trimFutureEntries(ctx sdk.Context, lastEntry types.Entr
 	// they were never referenced hence do not require stale-period.
 
 	for _, entry := range entriesToRemove {
-		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerFutureEntry)
-		fs.tstore.DelTimerByBlockHeight(ctx, entry.Block, key)
-		fs.removeEntry(ctx, entry.SafeIndex(), entry.Block)
+		fs.putFutureEntry(ctx, entry.SafeIndex(), entry.Block)
 	}
 }
 
@@ -790,7 +789,7 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 		// future entries (i.e. cancel of a future append) are deleted immediately:
 		// they were never in use so they need not undergo stale-period.
 		if entry.Block > block {
-			fs.cancelEntry(ctx, entry.SafeIndex(), entry.Block)
+			fs.putFutureEntry(ctx, entry.SafeIndex(), entry.Block)
 			return
 		}
 
@@ -853,18 +852,48 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 
 	// if this is a future delete, then we search for a strictly nearest-smaller
 	// previous entry (rather than nearest-no-later): if there exists an entry at
-	// that block, then we would trim it away (if we let it be, it would anyway be
-	// removed when DeleteAt is reached; and otherwise, it would make appending a
-	// new entry immediately after (and in same block) as the delete messy, since
-	// the new entry would need to overwrite a deleted previous entry (same block);
-	// thus it's simpler to not permit such future entry on the DeleteAt block.
+	// the target block, then we would trim it away. to illustrate, consider this
+	// example (with ctx.BlockHeight=100, "C"/"F" for current/future):
+	//   (C)Entry_95 -> (F)Entry_105 -> (F)Entry_110
+	// in this case, DelEntry(105) will use deletaAt=104 and find (C)Entry_95 and
+	// then trim the two future entries. DelEntry(110) will find (F)Entry_105 and
+	// trim the last future entry.
+	// this is correct because, if we left it intact, it would anyway be removed
+	// when DeleteAt is reached later; this is also useful because without it an
+	// append of a new entry immediately after (and in same block as) this delete
+	// would be messy: the new entry would need to overwrite the deleted previous
+	// entry (since same block); thus it's simpler to not permit such future entry
+	// on the DeleteAt block).
+	// the exception is a (first) future entry that has not matured yet, i.e. that
+	// has no current version of the entry in place (e.g. after adding a new entry
+	// as a future one but before it becomes actual). in this case, a search for
+	// the strictly nearest-smaller previous entry would fail (since none exists
+	// yet). on the other hand, the entry surely has not been used, because there
+	// isn't a current version, so it can be deleted as is, and if there are more
+	// future versions beyond it they can be trimmed too. to illustrate, consider
+	// this example (with ctx.BlockHeight=100, "C"/"F" for current/future):
+	//   (no current) -> (F)Entry_105 -> (F)Entry_110
+	// in this case, DelEntry(105) will use deletaAt=104 and fail to find previous
+	// entry, then will find (F)Entry_105 and trim both future entries.
 
 	deleteAt := block
 	if block > ctxBlock {
+		// future delete: find strictly-nearest-smaller previous entry
 		deleteAt--
 	}
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, deleteAt)
+	if !found {
+		// strictly-nearest-smaller previous entry not found, so test for the
+		// exception: (first) future non-matured entry without current version.
+		entry, found = fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
+		if found {
+			// future delete without previous entry version: trim all
+			entry.DeleteAt = block
+			fs.trimFutureEntries(ctx, entry)
+			return nil
+		}
+	}
 	if !found || entry.HasDeleteAt() {
 		return legacyerrors.ErrNotFound
 	}
@@ -884,8 +913,8 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 	}
 
 	// discard all pending future entries on or beyond the DeleteAt block, since they
-	// will never become the latest; and there will be no new entries on or beyond
-	// DeleteAt block as AppendEntry() does not allow such additions.
+	// will never become the latest; (newer entries on or beyond DeleteAt block may
+	// be added with AppendEntry() going forward).
 
 	fs.trimFutureEntries(ctx, entry)
 
@@ -898,8 +927,10 @@ func (fs *FixationStore) removeEntry(ctx sdk.Context, safeIndex types.SafeIndex,
 	store.Delete(types.EncodeKey(block))
 }
 
-// cancelEntry cancels a future entry from the store
-func (fs *FixationStore) cancelEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
+// putFutureEntry cancels a future entry from the store
+func (fs *FixationStore) putFutureEntry(ctx sdk.Context, safeIndex types.SafeIndex, block uint64) {
+	key := encodeForTimer(safeIndex, block, timerFutureEntry)
+	fs.tstore.DelTimerByBlockHeight(ctx, block, key)
 	fs.removeEntry(ctx, safeIndex, block)
 
 	// in the unusual case that a future entry is added and then removed without
@@ -981,10 +1012,6 @@ func (fs *FixationStore) createEntryStoreKey(index string) string {
 }
 
 func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
-	err := fs.MigrateVersion(ctx)
-	if err != nil {
-		utils.LavaFormatPanic("fixation migration failed", err, utils.Attribute{Key: "fixation"})
-	}
 	fs.tstore.Tick(ctx)
 }
 

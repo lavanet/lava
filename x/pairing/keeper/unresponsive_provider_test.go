@@ -292,7 +292,8 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 
 	ts := newTester(t)
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
-	ts.addProviderGeolocation(2, 2)
+	err := ts.addProviderGeolocation(2, 2)
+	require.Nil(t, err)
 
 	clients := ts.Accounts(common.CONSUMER)
 

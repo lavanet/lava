@@ -107,7 +107,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   "lava-protocol",
+		Use:   "lavap",
 		Short: "Lava Protocol daemon",
 		Long:  "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -161,9 +161,9 @@ func initLavaProtocolRootCmd(
 func NewLavaVisorRootCmd() *cobra.Command {
 	version := "0.1.0"
 	rootCmd := &cobra.Command{
-		Use:     "lava-visor",
-		Short:   `lava-visor is a protocol upgrade manager for Lava protocol binaries.`,
-		Long:    `lava-visor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
+		Use:     "lavavisor",
+		Short:   `lavavisor is a protocol upgrade manager for Lava protocol binaries.`,
+		Long:    `lavavisor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
 		Version: version,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {

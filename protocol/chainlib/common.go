@@ -98,6 +98,8 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
+			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
+			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}

@@ -6,13 +6,12 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
 // geo requirement that implements the ScoreReq interface
 type GeoReq struct {
-	Geo uint64
+	Geo int32
 }
 
 const (
@@ -27,13 +26,13 @@ func (gr GeoReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the geo score of a provider based on preset latency data
 // Note: each GeoReq must have exactly a single geolocation (bit)
-func (gr GeoReq) Score(provider epochstoragetypes.StakeEntry) math.Uint {
+func (gr GeoReq) Score(score PairingScore) math.Uint {
 	// check if the provider supports the required geolocation
-	if gr.Geo&^provider.Geolocation == 0 {
+	if gr.Geo&^score.Provider.Geolocation == 0 {
 		return calculateCostFromLatency(minGeoLatency)
 	}
 
-	providerGeoEnums := planstypes.GetGeolocationsFromUint(int32(provider.Geolocation))
+	providerGeoEnums := planstypes.GetGeolocationsFromUint(score.Provider.Geolocation)
 	_, cost := CalcGeoCost(planstypes.Geolocation(gr.Geo), providerGeoEnums)
 
 	return cost
@@ -56,9 +55,9 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 // TODO: this function doesn't return the optimal geo reqs for the case
 // that there are more required geos than providers to pair
 func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
-	policyGeoEnums := planstypes.GetGeolocationsFromUint(int32(policy.GeolocationProfile))
+	policyGeoEnums := planstypes.GetGeolocationsFromUint(policy.GeolocationProfile)
 
-	return GeoReq{Geo: uint64(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
+	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }
 
 // a single geolocation and the latency to it (in millieseconds)

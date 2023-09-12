@@ -12,7 +12,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string) error {
 	logger := k.Logger(ctx)
 
 	// TODO: basic validation for chain ID
@@ -58,7 +58,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		return nil
 	}
 
-	if !planstypes.IsValidGeoEnum(int32(geolocation)) {
+	if !planstypes.IsValidGeoEnum(geolocation) {
 		return utils.LavaFormatWarning(`geolocations are treated as a bitmap. To configure multiple geolocations, 
 		use the uint representation of the valid geolocations`, fmt.Errorf("missing or invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
@@ -149,7 +149,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		)
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpointsVerified, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{
+		Stake:              amount,
+		Address:            creator,
+		StakeAppliedBlock:  stakeAppliedBlock,
+		Endpoints:          endpointsVerified,
+		Geolocation:        geolocation,
+		Chain:              chainID,
+		Moniker:            moniker,
+		DelegateTotal:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateCommission: 100,
+	}
+
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 	appended := false
 
@@ -164,23 +176,23 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 	return err
 }
 
-func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation uint64, spec spectypes.Spec) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
+func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation int32, spec spectypes.Spec) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
 	expectedInterfaces := k.specKeeper.GetExpectedServicesForExpandedSpec(spec, true)
 	allowedInterfaces := k.specKeeper.GetExpectedServicesForExpandedSpec(spec, false)
 
 	geolocMapRequired := map[epochstoragetypes.EndpointService]struct{}{}
 	geolocMapAllowed := map[epochstoragetypes.EndpointService]struct{}{}
-	geolocations := k.specKeeper.GeolocationCount(ctx)
+	geolocations := len(planstypes.GetAllGeolocations())
 
-	geolocKey := func(intefaceName string, geolocation uint64, addon, extension string) epochstoragetypes.EndpointService {
+	geolocKey := func(intefaceName string, geolocation int32, addon, extension string) epochstoragetypes.EndpointService {
 		return epochstoragetypes.EndpointService{
-			ApiInterface: intefaceName + "_" + strconv.FormatUint(geolocation, 10),
+			ApiInterface: intefaceName + "_" + strconv.FormatInt(int64(geolocation), 10),
 			Addon:        addon,
 			Extension:    extension,
 		}
 	}
 
-	for idx := uint64(0); idx < geolocations; idx++ {
+	for idx := uint64(0); idx < uint64(geolocations); idx++ {
 		// geolocation is a bit mask for areas, each bit turns support for an area
 		geolocZone := geolocation & (1 << idx)
 		if geolocZone != 0 {

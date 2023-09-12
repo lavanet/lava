@@ -23,7 +23,7 @@ type VersionMonitor struct {
 
 func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*ServiceProcess, autoDownload bool) *VersionMonitor {
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
-	binaryPath := filepath.Join(versionDir, "lava-protocol")
+	binaryPath := filepath.Join(versionDir, "lavap")
 
 	return &VersionMonitor{
 		BinaryPath:      binaryPath,
@@ -54,7 +54,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 					utils.LavaFormatFatal("Unknown mismatch type detected in Version Monitor!", nil)
 				}
 				versionDir := filepath.Join(vm.LavavisorPath, "upgrades", "v"+versionToUpgrade)
-				binaryPath := filepath.Join(versionDir, "lava-protocol")
+				binaryPath := filepath.Join(versionDir, "lavap")
 				vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 				// fetcher
@@ -82,8 +82,8 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 }
 
 func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
-	binaryVersion, err := getBinaryVersion(vm.BinaryPath)
-	if err != nil {
+	binaryVersion, err := GetBinaryVersion(vm.BinaryPath)
+	if err != nil || binaryVersion == "" {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
 

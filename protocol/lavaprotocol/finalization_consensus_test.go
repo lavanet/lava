@@ -209,6 +209,7 @@ func TestQoS(t *testing.T) {
 			plannedExpectedBH := int64(202) // this is the most advanced in all finalizations
 			require.Len(t, finalizationConsensus.currentProviderHashesConsensus, 1)
 			expectedBH, numOfProviders := finalizationConsensus.ExpectedBlockHeight(chainParser)
+			require.Equal(t, uint64(plannedExpectedBH), finalizationConsensus.LatestBlock())
 			require.Equal(t, 3, numOfProviders)
 			require.Equal(t, plannedExpectedBH-allowedBlockLagForQosSync, expectedBH)
 

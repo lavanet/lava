@@ -247,6 +247,9 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
 	app.Post("/*", func(c *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
@@ -294,6 +297,9 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 	// Catch the others
 	app.Use("/*", func(c *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -343,6 +349,7 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 	for _, value := range metaData {
 		c.Set(value.Name, value.Value)
 	}
+
 	return c.SendString(data)
 }
 
