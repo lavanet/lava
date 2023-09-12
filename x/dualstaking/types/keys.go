@@ -35,13 +35,13 @@ func KeyPrefix(p string) []byte {
 // Using " " (space) as spearator is safe because Bech32 forbids its use as part of
 // the address (and is the only visible character that can be safely used).
 // (reference https://en.bitcoin.it/wiki/BIP_0173#Specification)
-func DelegationKey(delegator, provider, chainID string) string {
-	return provider + "  " + chainID + " " + delegator
+func DelegationKey(provider, delegator, chainID string) string {
+	return provider + " " + delegator + " " + chainID
 }
 
-func DelegationKeyDecode(prefix string) (delegator, provider, chainID string) {
+func DelegationKeyDecode(prefix string) (provider, delegator, chainID string) {
 	split := strings.Split(prefix, " ")
-	return split[2], split[0], split[1]
+	return split[0], split[1], split[2]
 }
 
 // DelegatorKey returns the key/prefix for the Delegator entry in fixation store.

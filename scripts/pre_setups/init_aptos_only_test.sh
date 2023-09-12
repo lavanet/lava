@@ -33,11 +33,11 @@ lavad tx pairing stake-provider "APT1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 
 
 sleep_until_next_epoch
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER APT1 rest '$APTOS_REST' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
+screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3360 APT1 rest \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --allow-insecure-provider-dialing --chain-id lava 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 

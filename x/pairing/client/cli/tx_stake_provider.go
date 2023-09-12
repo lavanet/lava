@@ -47,8 +47,7 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			argEndpoints, argGeolocation32, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
-			argGeolocation := uint64(argGeolocation32)
+			argEndpoints, argGeolocation, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
 			if err != nil {
 				return err
 			}
@@ -156,20 +155,21 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 				tmpArg := strings.Fields(args[2])
-				argEndpoints := map[uint64]epochstoragetypes.Endpoint{}
+				argEndpoints := map[int32]epochstoragetypes.Endpoint{}
 				for _, endpointStr := range tmpArg {
 					splitted := strings.Split(endpointStr, ",")
 					if len(splitted) != 2 {
 						return nil, fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,geolocation HOST:PORT,geolocation, received: %s", endpointStr)
 					}
-					geoloc, err := strconv.ParseUint(splitted[1], 10, 64)
+					geoloc, err := strconv.ParseInt(splitted[1], 10, 64)
 					if err != nil {
 						return nil, fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
 					}
-					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], Geolocation: geoloc}
-					argEndpoints[geoloc] = endpoint
+					geolocInt32 := int32(geoloc)
+					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], Geolocation: geolocInt32}
+					argEndpoints[geolocInt32] = endpoint
 				}
-				argGeolocation, err := cast.ToUint64E(args[3])
+				argGeolocation, err := cast.ToInt32E(args[3])
 				if err != nil {
 					return nil, err
 				}
@@ -243,10 +243,11 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 
 		if geoloc == int32(planstypes.Geolocation_GL) {
 			// if global ("GL"), append the endpoint in all possible geolocations
-			for _, geoloc := range planstypes.GetAllGeolocations() {
+			for _, geo := range planstypes.GetAllGeolocations() {
+				geoInt := int32(geo)
 				endpoint := epochstoragetypes.Endpoint{
 					IPPORT:      split[0],
-					Geolocation: uint64(geoloc),
+					Geolocation: geoInt,
 				}
 				if len(split) > 2 {
 					endpoint.Addons = split[2:]
@@ -261,7 +262,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			}
 			endpoint := epochstoragetypes.Endpoint{
 				IPPORT:      split[0],
-				Geolocation: uint64(geoloc),
+				Geolocation: geoloc,
 			}
 			if len(split) > 2 {
 				endpoint.Addons = split[2:]

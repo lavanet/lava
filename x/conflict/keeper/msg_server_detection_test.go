@@ -27,7 +27,7 @@ type tester struct {
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 
-	ts.AddPlan("mock", common.CreateMockPlan())
+	ts.AddPlan("free", common.CreateMockPlan())
 	ts.AddSpec("mock", common.CreateMockSpec())
 
 	ts.AdvanceEpoch()
@@ -41,7 +41,7 @@ func (ts *tester) setupForConflict(providersCount int) *tester {
 		stake   int64 = 1000
 	)
 
-	ts.plan = ts.Plan("mock")
+	ts.plan = ts.Plan("free")
 	ts.spec = ts.Spec("mock")
 
 	consumer, consumerAddr := ts.AddAccount("consumer", 0, balance)

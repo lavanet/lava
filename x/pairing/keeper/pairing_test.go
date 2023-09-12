@@ -496,7 +496,7 @@ func TestAddonPairing(t *testing.T) {
 			defaultPolicy := func() planstypes.Policy {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
-					GeolocationProfile: math.MaxUint64,
+					GeolocationProfile: math.MaxInt32,
 					MaxProvidersToPair: 100,
 					TotalCuLimit:       math.MaxUint64,
 					EpochCuLimit:       math.MaxUint64,
@@ -599,7 +599,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	require.Nil(t, err)
 
 	policy := &planstypes.Policy{
-		GeolocationProfile: math.MaxUint64,
+		GeolocationProfile: math.MaxInt32,
 		MaxProvidersToPair: 3,
 	}
 
@@ -695,7 +695,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			_, sub1Addr := ts.AddAccount("sub", i, 10000)
 
 			// create plan, propose it and buy subscription
-			plan := ts.Plan("mock")
+			plan := ts.Plan("free")
 			providersSet := providerSets[tt.providersSet]
 
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
@@ -943,14 +943,14 @@ func TestGeolocationPairingScores(t *testing.T) {
 	ts.setupForPayments(1, 3, 1)
 
 	// for convinience
-	GL := uint64(planstypes.Geolocation_value["GL"])
-	USE := uint64(planstypes.Geolocation_value["USE"])
-	EU := uint64(planstypes.Geolocation_value["EU"])
-	AS := uint64(planstypes.Geolocation_value["AS"])
-	AF := uint64(planstypes.Geolocation_value["AF"])
-	AU := uint64(planstypes.Geolocation_value["AU"])
-	USC := uint64(planstypes.Geolocation_value["USC"])
-	USW := uint64(planstypes.Geolocation_value["USW"])
+	GL := planstypes.Geolocation_value["GL"]
+	USE := planstypes.Geolocation_value["USE"]
+	EU := planstypes.Geolocation_value["EU"]
+	AS := planstypes.Geolocation_value["AS"]
+	AF := planstypes.Geolocation_value["AF"]
+	AU := planstypes.Geolocation_value["AU"]
+	USC := planstypes.Geolocation_value["USC"]
+	USW := planstypes.Geolocation_value["USW"]
 	USE_EU := USE + EU
 
 	freePlanPolicy := planstypes.Policy{
@@ -1010,7 +1010,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
-			err = ts.addProviderGeolocation(5, uint64(geo))
+			err = ts.addProviderGeolocation(5, geo)
 			require.Nil(t, err)
 		}
 	}
@@ -1020,20 +1020,20 @@ func TestGeolocationPairingScores(t *testing.T) {
 		dev          common.Account
 		planPolicy   planstypes.Policy
 		changePolicy bool
-		newGeo       uint64
-		expectedGeo  []uint64
+		newGeo       int32
+		expectedGeo  []int32
 	}{
 		// free plan (cannot change geolocation - verified in another test)
-		{"default free plan", freeAcct, freePlanPolicy, false, 0, []uint64{USE}},
+		{"default free plan", freeAcct, freePlanPolicy, false, 0, []int32{USE}},
 
 		// basic plan (cannot change geolocation - verified in another test)
-		{"default basic plan", basicAcct, basicPlanPolicy, false, 0, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+		{"default basic plan", basicAcct, basicPlanPolicy, false, 0, []int32{AF, AS, AU, EU, USE, USC, USW}},
 
 		// premium plan (geolocation can change)
-		{"default premium plan", premiumAcct, premiumPlanPolicy, false, 0, []uint64{AF, AS, AU, EU, USE, USC, USW}},
-		{"premium plan - set policy regular geo", premiumAcct, premiumPlanPolicy, true, EU, []uint64{EU}},
-		{"premium plan - set policy multiple geo", premiumAcct, premiumPlanPolicy, true, USE_EU, []uint64{EU, USE}},
-		{"premium plan - set policy global geo", premiumAcct, premiumPlanPolicy, true, GL, []uint64{AF, AS, AU, EU, USE, USC, USW}},
+		{"default premium plan", premiumAcct, premiumPlanPolicy, false, 0, []int32{AF, AS, AU, EU, USE, USC, USW}},
+		{"premium plan - set policy regular geo", premiumAcct, premiumPlanPolicy, true, EU, []int32{EU}},
+		{"premium plan - set policy multiple geo", premiumAcct, premiumPlanPolicy, true, USE_EU, []int32{EU, USE}},
+		{"premium plan - set policy global geo", premiumAcct, premiumPlanPolicy, true, GL, []int32{AF, AS, AU, EU, USE, USC, USW}},
 	}
 
 	for _, tt := range templates {
@@ -1079,7 +1079,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 				MaxProvidersToPair: tt.planPolicy.MaxProvidersToPair,
 			})
 
-			geoSeen := map[uint64]bool{}
+			geoSeen := map[int32]bool{}
 			for _, geo := range tt.expectedGeo {
 				geoSeen[geo] = false
 			}
@@ -1131,7 +1131,7 @@ func isGeoInList(geo uint64, geoList []uint64) bool {
 // verifyGeoScoreForTesting is used to testing purposes only!
 // it verifies that the max geo score are for providers that exactly match the geo req
 // this function assumes that all the other reqs are equal (for example, stake req)
-func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot *pairingscores.PairingSlot, expectedGeoSeen map[uint64]bool) bool {
+func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot *pairingscores.PairingSlot, expectedGeoSeen map[int32]bool) bool {
 	if slot == nil || len(providerScores) == 0 {
 		return false
 	}
@@ -1200,7 +1200,7 @@ func TestDuplicateProviders(t *testing.T) {
 
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
-			err := ts.addProviderGeolocation(5, uint64(geo))
+			err := ts.addProviderGeolocation(5, geo)
 			require.Nil(t, err)
 		}
 	}
@@ -1247,7 +1247,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1)
 
 	// add 5 more providers that are not in US-E (the only allowed providers in the free plan)
-	err = ts.addProviderGeolocation(5, uint64(planstypes.Geolocation_value["AS"]))
+	err = ts.addProviderGeolocation(5, planstypes.Geolocation_value["AS"])
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
@@ -1271,7 +1271,7 @@ func TestGeoSlotCalc(t *testing.T) {
 	// not checking 0 because there can never be a policy with geo=0
 	for i := 1; i <= int(maxGeo); i++ {
 		policy := planstypes.Policy{
-			GeolocationProfile: uint64(i),
+			GeolocationProfile: int32(i),
 			MaxProvidersToPair: 14,
 		}
 
@@ -1283,7 +1283,7 @@ func TestGeoSlotCalc(t *testing.T) {
 				require.Fail(t, "slot geo req is not of GeoReq type")
 			}
 
-			if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+			if !planstypes.IsGeoEnumSingleBit(geoReq.Geo) {
 				require.Fail(t, "slot geo is not single bit")
 			}
 		}
@@ -1291,7 +1291,7 @@ func TestGeoSlotCalc(t *testing.T) {
 
 	// make sure the geo "GL" also works
 	policy := planstypes.Policy{
-		GeolocationProfile: uint64(planstypes.Geolocation_GL),
+		GeolocationProfile: int32(planstypes.Geolocation_GL),
 		MaxProvidersToPair: 14,
 	}
 	slots := pairingscores.CalcSlots(&policy)
@@ -1302,7 +1302,7 @@ func TestGeoSlotCalc(t *testing.T) {
 			require.Fail(t, "slot geo req is not of GeoReq type")
 		}
 
-		if !planstypes.IsGeoEnumSingleBit(int32(geoReq.Geo)) {
+		if !planstypes.IsGeoEnumSingleBit(geoReq.Geo) {
 			require.Fail(t, "slot geo is not single bit")
 		}
 	}
@@ -1907,7 +1907,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			defaultPolicy := func() planstypes.Policy {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
-					GeolocationProfile: math.MaxUint64,
+					GeolocationProfile: math.MaxInt32,
 					MaxProvidersToPair: 100,
 					TotalCuLimit:       math.MaxUint64,
 					EpochCuLimit:       math.MaxUint64,
@@ -2070,7 +2070,7 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		defaultPolicy := func() planstypes.Policy {
 			return planstypes.Policy{
 				ChainPolicies:      []planstypes.ChainPolicy{},
-				GeolocationProfile: math.MaxUint64,
+				GeolocationProfile: math.MaxInt32,
 				MaxProvidersToPair: 30,
 				TotalCuLimit:       math.MaxUint64,
 				EpochCuLimit:       math.MaxUint64,
@@ -2171,7 +2171,7 @@ func TestPairingConsistency(t *testing.T) {
 	iterations := 100
 
 	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(3)
-	ts.AddPlan("mock", ts.plan)
+	ts.AddPlan("free", ts.plan)
 	ts.addClient(1)
 	err := ts.addProviderGeolocation(10, 3)
 	require.Nil(t, err)

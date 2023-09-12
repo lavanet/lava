@@ -61,7 +61,7 @@ func validateCoins(amount sdk.Coin) error {
 func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
-	index := types.DelegationKey(delegator, provider, chainID)
+	index := types.DelegationKey(provider, delegator, chainID)
 	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		// new delegation (i.e. not increase of existing one)
@@ -98,7 +98,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	}
 
 	// update the stake entry
-	err = k.increaseStakeEntry(ctx, provider, chainID, amount)
+	err = k.increaseStakeEntryDelegation(ctx, provider, chainID, amount)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
-	index := types.DelegationKey(delegator, provider, chainID)
+	index := types.DelegationKey(provider, delegator, chainID)
 	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		return types.ErrDelegationNotFound
@@ -191,15 +191,15 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if err := k.decreaseStakeEntry(ctx, provider, chainID, amount); err != nil {
+	if err := k.decreaseStakeEntryDelegation(ctx, provider, chainID, amount); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// increaseStakeEntry increases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) increaseStakeEntry(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+// increaseStakeEntryDelegation increases the (epochstorage) stake-entry of the provider for a chain.
+func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
@@ -228,12 +228,12 @@ func (k Keeper) increaseStakeEntry(ctx sdk.Context, provider, chainID string, am
 	return nil
 }
 
-// decreaseStakeEntry decreases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) decreaseStakeEntry(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+// decreaseStakeEntryDelegation decreases the (epochstorage) stake-entry of the provider for a chain.
+func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
-		utils.LavaFormatPanic("decreaseStakeEntry: invalid provider address", err,
+		utils.LavaFormatPanic("decreaseStakeEntryDelegation: invalid provider address", err,
 			utils.Attribute{Key: "provider", Value: provider},
 		)
 	}
@@ -514,8 +514,8 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	if err := validateCoins(amount); err != nil {
 		utils.LavaFormatError("critical: finalizeBonding invalid amount", err, attrs...)
 		return
-	} else if amount.IsZero() || amount.IsNegative() {
-		utils.LavaFormatError("critical: finalizeBonding zero amount", err, attrs...)
+	} else if amount.IsZero() {
+		utils.LavaFormatError("critical: finalizeBonding zero amount", sdkerrors.ErrInsufficientFunds, attrs...)
 		return
 	}
 
@@ -540,7 +540,7 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RefundedEventName, details, "Refunded")
 }
 
-// TODO: this is duplicated in x/pairing/keeper/unstaking.go; merge into one call
+// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
 func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
@@ -560,4 +560,20 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	}
 
 	// NOT REACHED
+}
+
+// GetDelegatorProviders gets all the providers the delegator is delegated to
+func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch uint64) (providers []string, err error) {
+	_, err = sdk.AccAddressFromBech32(delegator)
+	if err != nil {
+		return nil, utils.LavaFormatWarning("cannot get delegator's providers", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+		)
+	}
+
+	var delegatorEntry types.Delegator
+	prefix := types.DelegatorKey(delegator)
+	k.delegatorFS.FindEntry(ctx, prefix, epoch, &delegatorEntry)
+
+	return delegatorEntry.Providers, nil
 }

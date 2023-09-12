@@ -88,7 +88,7 @@ func CmdModifyProvider() *cobra.Command {
 				}
 				providerEntry.Stake = newStake
 			}
-			geolocation, err := cmd.Flags().GetUint64(GeolocationFlag)
+			geolocation, err := cmd.Flags().GetInt32(GeolocationFlag)
 			if err != nil {
 				return err
 			}
@@ -101,7 +101,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			if newEndpointsStr != "" {
 				tmpArg := strings.Fields(newEndpointsStr)
-				argEndpoints, _, err := HandleEndpointsAndGeolocationArgs(tmpArg, strconv.FormatUint(providerEntry.Geolocation, 10))
+				argEndpoints, _, err := HandleEndpointsAndGeolocationArgs(tmpArg, strconv.FormatInt(int64(providerEntry.Geolocation), 10))
 				if err != nil {
 					return err
 				}

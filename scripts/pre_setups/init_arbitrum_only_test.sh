@@ -32,11 +32,11 @@ lavad tx pairing stake-provider "ARB1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 
 
 sleep_until_next_epoch
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER ARB1 jsonrpc '$ARB1_HTTP' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
+screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3348 ARB1 jsonrpc \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
