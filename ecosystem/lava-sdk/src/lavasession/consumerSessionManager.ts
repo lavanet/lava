@@ -96,6 +96,7 @@ export class ConsumerSessionManager {
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
   ): Promise<Error | undefined> {
+    console.log(pairingList);
     if (epoch <= this.currentEpoch) {
       Logger.error(
         `trying to update provider list for older epoch ${JSON.stringify({
@@ -259,7 +260,12 @@ export class ConsumerSessionManager {
           );
 
           tempIgnoredProviders.providers.add(providerAddress);
-          singleConsumerSession.unlock();
+          const unlockError = singleConsumerSession.tryUnlock();
+          if (unlockError) {
+            Logger.error("unlock error", unlockError);
+            return unlockError;
+          }
+
           continue;
         }
 
@@ -317,7 +323,8 @@ export class ConsumerSessionManager {
   public onSessionUnused(
     consumerSession: SingleConsumerSession
   ): Error | undefined {
-    if (consumerSession.tryLock()) {
+    const lockError = consumerSession.tryLock();
+    if (!lockError) {
       return new Error(
         "consumer session must be locked before accessing this method"
       );
@@ -326,7 +333,11 @@ export class ConsumerSessionManager {
     const cuToDecrease = consumerSession.latestRelayCu;
     consumerSession.latestRelayCu = 0;
     const parentConsumerSessionsWithProvider = consumerSession.client;
-    consumerSession.unlock();
+    const unlockError = consumerSession.tryUnlock();
+    if (unlockError) {
+      Logger.error("unlock error", unlockError);
+      return unlockError;
+    }
 
     return parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(
       cuToDecrease
@@ -368,7 +379,11 @@ export class ConsumerSessionManager {
     consumerSession.latestRelayCu = 0;
 
     const parentConsumerSessionsWithProvider = consumerSession.client;
-    consumerSession.unlock();
+    const unlockError = consumerSession.tryUnlock();
+    if (unlockError) {
+      Logger.error("unlock error", unlockError);
+      return unlockError;
+    }
 
     const error =
       parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease);
@@ -433,7 +448,12 @@ export class ConsumerSessionManager {
       specComputeUnits,
       latestServicedBlock
     );
-    consumerSession.unlock();
+
+    const unlockError = consumerSession.tryUnlock();
+    if (unlockError) {
+      Logger.error("unlock error", unlockError);
+      return unlockError;
+    }
   }
 
   public getReportedProviders(epoch: number): string {
@@ -709,11 +729,7 @@ export class ConsumerSessionManager {
   }
 
   public async probeProviders(pairingList: ConsumerSessionsWithProvider[]) {
-    Logger.info(
-      `providers probe initiated ${JSON.stringify({
-        endpoint: this.rpcEndpoint,
-      })}`
-    );
+    Logger.info(`providers probe initiated`);
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
       try {

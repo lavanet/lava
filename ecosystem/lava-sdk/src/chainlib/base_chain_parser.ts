@@ -24,6 +24,7 @@ export interface SendRelayOptions {
   params: Array<any>; // Required: An array of parameters to be passed to the RPC method
   chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
   metadata?: Metadata[]; // Optional headers to be sent with the request.
+  apiInterface?: string; // Optional specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
 }
 
 /**
@@ -63,7 +64,7 @@ export interface CollectionKey {
 export type CollectionKeyString = string;
 
 export function CollectionKeyToString(key: CollectionKey): CollectionKeyString {
-  return JSON.stringify(key);
+  return `'{"addon":"${key.addon}","internalPath":"${key.internalPath}","connectionType":"${key.connectionType}"}'`;
 }
 
 interface ApiContainer {
@@ -157,10 +158,12 @@ export abstract class BaseChainParser {
   protected getApiCollection(collectionKey: CollectionKey): ApiCollection {
     const key = CollectionKeyToString(collectionKey);
     const collection = this.apiCollections.get(key);
+
     if (!collection) {
       throw Logger.fatal("Api not supported", collectionKey);
     }
-    if (collection.getEnabled()) {
+
+    if (!collection.getEnabled()) {
       throw Logger.fatal("Api disabled in spec", collectionKey);
     }
     return collection;
@@ -221,9 +224,9 @@ export abstract class BaseChainParser {
           );
         }
         const collectionKey: CollectionKey = {
-          connectionType: connectionType,
-          internalPath: internalPath,
           addon: addon,
+          internalPath: internalPath,
+          connectionType: connectionType,
         };
 
         // parse directives
