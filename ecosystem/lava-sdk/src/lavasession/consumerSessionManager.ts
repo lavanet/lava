@@ -28,6 +28,11 @@ import { Relayer } from "../relayer/relayer";
 import { grpc } from "@improbable-eng/grpc-web";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import transport from "../util/browser";
+import { secondsToMillis } from "../util/time";
+import { sleep } from "../util/common";
+
+const ALLOWED_PROBE_RETRIES = 5;
+const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -706,7 +711,8 @@ export class ConsumerSessionManager {
 
   private async probeProviders(
     pairingList: ConsumerSessionsWithProvider[],
-    epoch: number
+    epoch: number,
+    retries = 0
   ) {
     Logger.info(
       `providers probe initiated ${JSON.stringify({
@@ -714,17 +720,27 @@ export class ConsumerSessionManager {
         epoch,
       })}`
     );
+
+    const retryPairings = [];
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
       try {
-        await this.relayer.probeProvider(
+        const response = await this.relayer.probeProvider(
           consumerSessionWithProvider.endpoints[0].networkAddress,
           this.getRpcEndpoint().apiInterface,
           this.getRpcEndpoint().chainId
         );
         const endTime = performance.now();
         const latency = endTime - startTime;
-        console.log(
+
+        consumerSessionWithProvider.setLatestBlock(response.getLatestBlock());
+        this.providerOptimizer.appendProbeRelayData(
+          consumerSessionWithProvider.publicLavaAddress,
+          latency,
+          true
+        );
+
+        Logger.debug(
           "Provider: " +
             consumerSessionWithProvider.publicLavaAddress +
             " chainID: " +
@@ -733,7 +749,35 @@ export class ConsumerSessionManager {
           latency + " ms"
         );
       } catch (err) {
-        console.log(err);
+        Logger.error("failed to probe provider", err);
+        this.providerOptimizer.appendProbeRelayData(
+          consumerSessionWithProvider.publicLavaAddress,
+          0,
+          false
+        );
+
+        if (!consumerSessionWithProvider.getLatestBlock()) {
+          retryPairings.push(consumerSessionWithProvider);
+        }
+      }
+    }
+
+    if (retryPairings.length > 0 && retries < ALLOWED_PROBE_RETRIES) {
+      Logger.info(
+        `retrying providers probe ${JSON.stringify({
+          endpoint: this.rpcEndpoint,
+          epoch,
+        })}`
+      );
+
+      await sleep(this.timeoutBetweenProbes());
+
+      const promise = this.probeProviders(retryPairings, epoch, retries + 1);
+
+      // if all providers failed, wait for the promise to resolve
+      // maybe at least one provider will be available next probe
+      if (retryPairings.length === pairingList.length) {
+        await promise;
       }
     }
 
@@ -747,6 +791,10 @@ export class ConsumerSessionManager {
 
   private getTransport(): grpc.TransportFactory {
     return this.allowInsecureTransport ? transportAllowInsecure : transport;
+  }
+
+  private timeoutBetweenProbes(): number {
+    return TIMEOUT_BETWEEN_PROBES;
   }
 }
 

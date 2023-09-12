@@ -46,3 +46,16 @@ export function debugPrint(
 export function generateRandomInt(): number {
   return Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER + 1));
 }
+
+export function sleep(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      resolve();
+      clearTimeout(timeout);
+    }, ms);
+  });
+}

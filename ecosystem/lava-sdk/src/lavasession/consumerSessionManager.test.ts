@@ -12,6 +12,8 @@ import {
   ProviderOptimizerStrategy,
 } from "../providerOptimizer/providerOptimizer";
 import { AverageWorldLatency } from "../common/timeout";
+import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { sleep } from "../util/common";
 
 const NUMBER_OF_PROVIDERS = 10;
 const NUMBER_OF_RESETS_TO_TEST = 10;
@@ -25,14 +27,17 @@ const LATEST_RELAY_CU_AFTER_DONE = 0;
 const NUMBER_OF_ALLOWED_SESSIONS_PER_CONSUMER = 10;
 const CU_SUM_ON_FAILURE = 0;
 
-function setupConsumerSessionManager() {
+function setupConsumerSessionManager(relayer?: Relayer) {
+  if (!relayer) {
+    relayer = setupRelayer();
+    jest.spyOn(relayer, "probeProvider").mockImplementation(() => {
+      const response: ProbeReply = new ProbeReply();
+      response.setLatestBlock(42);
+      return Promise.resolve(response);
+    });
+  }
   const cm = new ConsumerSessionManager(
-    new Relayer({
-      allowInsecureTransport: true,
-      lavaChainId: "lava",
-      privKey: "",
-      secure: true,
-    }),
+    relayer,
     new RPCEndpoint("stub", "stub", "stub", "0"),
     new ProviderOptimizer(
       ProviderOptimizerStrategy.Balanced,
@@ -45,7 +50,20 @@ function setupConsumerSessionManager() {
   return cm;
 }
 
+function setupRelayer(): Relayer {
+  return new Relayer({
+    allowInsecureTransport: true,
+    lavaChainId: "lava",
+    privKey: "",
+    secure: true,
+  });
+}
+
 describe("ConsumerSessionManager", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe("getSessions", () => {
     it("happy flow", async () => {
       const cm = setupConsumerSessionManager();
@@ -714,6 +732,35 @@ describe("ConsumerSessionManager", () => {
         expect(cm.validAddresses[i]).toEqual(`provider${i}`);
       }
     });
+
+    it("retries failing providers", async () => {
+      const pairingList = createPairingList("", true);
+      const relayer = setupRelayer();
+      let providerRetries = 0;
+
+      jest
+        .spyOn(relayer, "probeProvider")
+        .mockImplementation(async (providerAddress: string) => {
+          if (providerAddress === pairingList[1].publicLavaAddress) {
+            providerRetries++;
+            throw new Error("test");
+          }
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          return Promise.resolve(response);
+        });
+
+      const cm = setupConsumerSessionManager(relayer);
+      // @ts-expect-error - we are spying on a private method
+      jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      await sleep(10);
+
+      // 1 for the initial call and 5 retries
+      expect(providerRetries).toEqual(6);
+    });
   });
 });
 
@@ -780,7 +827,12 @@ function createPairingList(
     sessionsWithProvider.push(
       new ConsumerSessionsWithProvider(
         "provider" + providerPrefixAddress + i,
-        endpoints,
+        [
+          {
+            ...endpoints[0],
+            networkAddress: "provider" + providerPrefixAddress + i,
+          },
+        ],
         {},
         200,
         FIRST_EPOCH_HEIGHT

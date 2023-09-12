@@ -7,3 +7,7 @@ export function now(): number {
 export function millisToSeconds(millis: number): number {
   return millis / 1000;
 }
+
+export function secondsToMillis(seconds: number): number {
+  return seconds * 1000;
+}
