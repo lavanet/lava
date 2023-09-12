@@ -23,13 +23,19 @@ type MetricService struct {
 	AggregatedMetricMap *map[string]map[string]map[string]map[RelaySource]map[string]*AggregatedMetric
 	MetricsChannel      chan RelayMetrics
 	ReportUrl           string
+	ReportAuthorization string
 }
 
 func NewMetricService() *MetricService {
 	reportMetricsUrl := os.Getenv("REPORT_METRICS_URL")
+	reportMetricsAuthorization := os.Getenv("METRICS_AUTHORIZATION")
 	intervalData := os.Getenv("METRICS_INTERVAL_FOR_SENDING_DATA_MIN")
 	if reportMetricsUrl == "" || intervalData == "" {
 		return nil
+	}
+
+	if reportMetricsAuthorization == "" {
+		utils.LavaFormatInfo("Authorization is not set for metrics")
 	}
 	intervalForMetrics, _ := strconv.ParseInt(intervalData, 10, 32)
 	metricChannelBufferSizeData := os.Getenv("METRICS_BUFFER_SIZE_NR")
@@ -38,6 +44,7 @@ func NewMetricService() *MetricService {
 	result := &MetricService{
 		MetricsChannel:      mChannel,
 		ReportUrl:           reportMetricsUrl,
+		ReportAuthorization: reportMetricsAuthorization,
 		AggregatedMetricMap: &map[string]map[string]map[string]map[RelaySource]map[string]*AggregatedMetric{},
 	}
 
@@ -81,7 +88,7 @@ func (m *MetricService) SendEachProjectMetricData() {
 
 	for projectKey, projectData := range *m.AggregatedMetricMap {
 		toSendData := prepareArrayForProject(projectData, projectKey)
-		go sendMetricsViaHttp(m.ReportUrl, toSendData)
+		go sendMetricsViaHttp(m.ReportUrl, m.ReportAuthorization, toSendData)
 	}
 	// we reset to be ready for new metric data
 	m.AggregatedMetricMap = &map[string]map[string]map[string]map[RelaySource]map[string]*AggregatedMetric{}
@@ -116,7 +123,7 @@ func prepareArrayForProject(projectData map[string]map[string]map[RelaySource]ma
 	return toSendData
 }
 
-func sendMetricsViaHttp(reportUrl string, data []RelayAnalyticsDTO) error {
+func sendMetricsViaHttp(reportUrl string, authorization string, data []RelayAnalyticsDTO) error {
 	if len(data) == 0 {
 		utils.LavaFormatDebug("no metrics found for this project.")
 		return nil
@@ -126,7 +133,17 @@ func sendMetricsViaHttp(reportUrl string, data []RelayAnalyticsDTO) error {
 		utils.LavaFormatError("error converting data to json", err)
 		return err
 	}
-	resp, err := http.Post(reportUrl, "application/json", bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequest("POST", reportUrl, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		utils.LavaFormatError("error creating request for metrics", err, utils.Attribute{Key: "url", Value: reportUrl})
+		return err
+	}
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		utils.LavaFormatError("error posting data to report url.", err, utils.Attribute{Key: "url", Value: reportUrl})
 		return err
