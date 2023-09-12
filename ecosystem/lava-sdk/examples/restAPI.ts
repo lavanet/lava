@@ -15,7 +15,7 @@ async function getLatestBlockAndValidators(): Promise<[string, string]> {
     privateKey: "<lava consumer private key>",
 
     // chainID for Cosmos Hub
-    chainID: "LAV1",
+    chainIds: "LAV1",
 
     // geolocation 1 for North america - geolocation 2 for Europe providers
     // default value is 1
@@ -23,18 +23,17 @@ async function getLatestBlockAndValidators(): Promise<[string, string]> {
 
     // rpcInterface default is tendermintrpc / jsonrpc for respective chains.
     // in this example we want to test rest so we need to specify it
-    rpcInterface: "rest",
   });
 
   // Get latest block
   const latestBlock = await lavaSDK.sendRelay({
-    method: "GET",
+    connectionType: "GET",
     url: "/cosmos/base/tendermint/v1beta1/node_info",
   });
 
   // Get latest validator-set
   const validators = await lavaSDK.sendRelay({
-    method: "GET",
+    connectionType: "GET",
     url: "/cosmos/base/tendermint/v1beta1/validatorsets/latest",
     data: {
       "pagination.count_total": true,

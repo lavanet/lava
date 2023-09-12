@@ -19,7 +19,7 @@ async function getLatestBlock(): Promise<string> {
     privateKey: "<lava consumer private key>",
 
     // chainID for Cosmos Hub
-    chainID: "LAV1",
+    chainIds: "LAV1",
 
     // geolocation 1 for North america - geolocation 2 for Europe providers
     // default value is 1

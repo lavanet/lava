@@ -34,7 +34,7 @@ type RelayReceiver = string; // chainId + ApiInterface
 export interface LavaSDKOptions {
   privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
   badge?: BadgeOptions; // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
-  chainIDRpcInterface: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
+  chainIds: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
   pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
   network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
   geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
@@ -76,7 +76,7 @@ export class LavaSDK {
     const {
       privateKey,
       badge,
-      chainIDRpcInterface,
+      chainIds: chainIDRpcInterface,
       pairingListConfig,
       network,
       geolocation,
