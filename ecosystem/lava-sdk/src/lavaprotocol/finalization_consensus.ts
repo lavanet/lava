@@ -8,6 +8,7 @@ import {
   ProbeRequest,
   ProbeReply,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { FinalizationConflict } from "../grpc_web_services/lavanet/lava/conflict/conflict_data_pb";
 import { Logger } from "../logger/logger";
 
 interface ProviderDataContainer {
@@ -109,9 +110,56 @@ export class FinalizationConsensus {
     finalizedBlocks: Map<number, string>,
     req: RelaySession,
     reply: RelayReply
-  ): undefined {
-    // TODO: implement for DR.
+  ): FinalizationConflict | undefined {
     const latestBlock = reply.getLatestBlock();
+    if (
+      this.currentProviderHashesConsensus.length == 0 &&
+      this.prevEpochProviderHashesConsensus.length == 0
+    ) {
+      const newHashConsensus = this.newProviderHashesConsensus(
+        blockDistanceForFinalizedData,
+        providerAddress,
+        latestBlock,
+        finalizedBlocks,
+        reply,
+        req
+      );
+      this.currentProviderHashesConsensus.push(newHashConsensus);
+    } else {
+      const inserted = false;
+      for (const consensus of this.currentProviderHashesConsensus) {
+        const ret = this.discrepancyChecker(finalizedBlocks, consensus);
+        // TODO tomorrow: continue;
+      }
+    }
+    return undefined;
+  }
+
+  private discrepancyChecker(
+    finalizedBlocksA: Map<number, string>,
+    consensus: ProviderHashesConsensus
+  ): Error | undefined {
+    let toIterate: Map<number, string> = new Map();
+    let otherBlocks: Map<number, string> = new Map();
+
+    if (finalizedBlocksA.size < consensus.finalizedBlocksHashes.size) {
+      toIterate = finalizedBlocksA;
+      otherBlocks = consensus.finalizedBlocksHashes;
+    } else {
+      toIterate = consensus.finalizedBlocksHashes;
+      otherBlocks = finalizedBlocksA;
+    }
+
+    for (const [blockNum, blockHash] of toIterate.entries()) {
+      const otherHash = otherBlocks.get(blockNum);
+      if (otherHash) {
+        if (blockHash != otherHash) {
+          return Logger.fatal(
+            "Simulation: reliability discrepancy, different hashes detected for block"
+          );
+        }
+      }
+    }
     return undefined;
   }
 
