@@ -69,3 +69,13 @@ export class SendRelayError extends Error {
     super("Send relay error");
   }
 }
+export class AlreadyLockedError extends Error {
+  constructor() {
+    super("Already locked");
+  }
+}
+export class NotLockedError extends Error {
+  constructor() {
+    super("Not locked");
+  }
+}

@@ -1,8 +1,58 @@
 import BigNumber from "bignumber.js";
-import { calculateAvailabilityScore, QoSReport } from "./consumerTypes";
+import {
+  calculateAvailabilityScore,
+  ConsumerSessionsWithProvider,
+  QoSReport,
+  SingleConsumerSession,
+} from "./consumerTypes";
 import { AVAILABILITY_PERCENTAGE, DEFAULT_DECIMAL_PRECISION } from "./common";
+import { AlreadyLockedError, NotLockedError } from "./errors";
 
 describe("consumerTypes", () => {
+  describe("SingleConsumerSession", () => {
+    it("tests locking", () => {
+      const session = new SingleConsumerSession(
+        42,
+        new ConsumerSessionsWithProvider("", [], {}, 0, 0),
+        {
+          networkAddress: "",
+          enabled: true,
+          extensions: new Set(),
+          addons: new Set(),
+          connectionRefusals: 0,
+        }
+      );
+
+      let lockError = session.tryLock();
+      expect(lockError).toBeUndefined();
+
+      lockError = session.tryLock();
+      expect(lockError).toBeInstanceOf(AlreadyLockedError);
+    });
+
+    it("tests unlocking", () => {
+      const session = new SingleConsumerSession(
+        42,
+        new ConsumerSessionsWithProvider("", [], {}, 0, 0),
+        {
+          networkAddress: "",
+          enabled: true,
+          extensions: new Set(),
+          addons: new Set(),
+          connectionRefusals: 0,
+        }
+      );
+
+      session.tryLock();
+
+      let unlockError = session.tryUnlock();
+      expect(unlockError).toBeUndefined();
+
+      unlockError = session.tryUnlock();
+      expect(unlockError).toBeInstanceOf(NotLockedError);
+    });
+  });
+
   it("should test calculate availability score", () => {
     const precision = 10000;
     let qosReport: QoSReport = {

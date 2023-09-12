@@ -10,10 +10,12 @@ import {
 import { generateRandomInt } from "../util/common";
 import {
   AllProviderEndpointsDisabledError,
+  AlreadyLockedError,
   MaxComputeUnitsExceededError,
   MaximumNumberOfBlockListedSessionsError,
   MaximumNumberOfSessionsExceededError,
   NegativeComputeUnitsAmountError,
+  NotLockedError,
 } from "./errors";
 import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
 import { Logger } from "../logger/logger";
@@ -133,24 +135,24 @@ export class SingleConsumerSession {
     this.endpoint = endpoint;
   }
 
-  public tryLock(): boolean {
+  public tryLock(): AlreadyLockedError | undefined {
     if (!this.locked) {
-      this.lock();
-      return true;
+      this.locked = true;
+      return;
     }
 
-    return false;
+    return new AlreadyLockedError();
   }
 
   public isLocked(): boolean {
     return this.locked;
   }
 
-  public lock(): void {
-    this.locked = true;
-  }
+  public tryUnlock(): NotLockedError | undefined {
+    if (!this.locked) {
+      return new NotLockedError();
+    }
 
-  public unlock(): void {
     this.locked = false;
   }
 
@@ -383,10 +385,17 @@ export class ConsumerSessionsWithProvider {
         };
       }
 
-      if (session.tryLock()) {
+      const lockError = session.tryLock();
+      if (!lockError) {
         if (session.blockListed) {
           numberOfBlockedSessions++;
-          session.unlock();
+          const unlockError = session.tryUnlock();
+          if (unlockError) {
+            Logger.error("failed to unlock session", unlockError);
+            return {
+              error: unlockError,
+            };
+          }
 
           continue;
         }
@@ -405,7 +414,13 @@ export class ConsumerSessionsWithProvider {
     // TODO: change Math.random to something else
     const randomSessionId = generateRandomInt();
     const session = new SingleConsumerSession(randomSessionId, this, endpoint);
-    session.lock();
+    const lockError = session.tryLock();
+    if (lockError) {
+      Logger.error("failed to lock session", lockError);
+      return {
+        error: lockError,
+      };
+    }
 
     this.sessions[session.sessionId] = session;
 
