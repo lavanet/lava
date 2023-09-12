@@ -168,7 +168,14 @@ export abstract class BaseChainParser {
 
   public dataReliabilityParams(): DataReliabilityParams {
     // TODO: implement this
-    return { enabled: true, dataReliabilityThreshold: 0 };
+    const spec = this.spec;
+    if (spec == undefined) {
+      throw new Error("spec undefined can't get stats");
+    }
+    return {
+      enabled: spec.getDataReliabilityEnabled(),
+      dataReliabilityThreshold: spec.getReliabilityThreshold(),
+    };
   }
 
   // initialize the base chain parser with the spec information

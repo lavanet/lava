@@ -4,16 +4,11 @@ import { fetchLavaPairing } from "../../util/lavaPairing";
 import { StateTrackerErrors } from "../errors";
 import { PairingResponse } from "./state_query";
 import { AccountData } from "@cosmjs/proto-signing";
-import {
-  base64ToUint8Array,
-  generateRPCData,
-  generateRandomInt,
-} from "../../util/common";
+import { base64ToUint8Array, generateRandomInt } from "../../util/common";
 import {
   QueryGetPairingRequest,
   QuerySdkPairingResponse,
 } from "../../grpc_web_services/lavanet/lava/pairing/query_pb";
-import { Relayer } from "../../relayer/relayer";
 import { ProvidersErrors } from "../errors";
 import {
   ConsumerSessionsWithProvider,
@@ -21,43 +16,65 @@ import {
   Endpoint,
 } from "../../lavasession/consumerTypes";
 import { Logger } from "../../logger/logger";
-import { BatchRelays, SendRelayOptions } from "../../relayer/relayer";
+import { RPCConsumerServer } from "../../rpcconsumer/rpcconsumer_server";
+import { SendRelayOptions } from "../../chainlib/base_chain_parser";
+import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
+import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
+import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
 
-const lavaChainID = "LAV1";
-const lavaRPCInterface = "tendermintrpc";
+interface PairingList {
+  stakeEntry: StakeEntry[];
+  consumerSessionsWithProvider: ConsumerSessionsWithProvider[];
+}
 
 export class StateChainQuery {
   private pairingListConfig: string;
-  private relayer: Relayer;
   private chainIDs: string[];
-  private lavaProviders: ConsumerSessionsWithProvider[]; // TODO: change this to csm. (init on bootstrap)
+  private rpcConsumer: RPCConsumerServer;
   private config: Config;
   private pairing: Map<string, PairingResponse | undefined>;
   private account: AccountData;
+  private latestBlockNumber: number = 0;
+  private lavaSpec: Spec;
 
   constructor(
     pairingListConfig: string,
     chainIDs: string[],
-    relayer: Relayer,
+    rpcConsumer: RPCConsumerServer,
     config: Config,
-    account: AccountData
+    account: AccountData,
+    lavaSpec: Spec
   ) {
     Logger.debug("Initialization of State Chain Query started");
 
     // Save arguments
     this.pairingListConfig = pairingListConfig;
     this.chainIDs = chainIDs;
-    this.relayer = relayer;
+    this.rpcConsumer = rpcConsumer;
     this.config = config;
     this.account = account;
-
-    // Assign lavaProviders to an empty array
-    this.lavaProviders = [];
+    this.lavaSpec = lavaSpec;
 
     // Initialize pairing to an empty map
     this.pairing = new Map<string, PairingResponse>();
 
     Logger.debug("Initialization of State Chain Query ended");
+  }
+
+  public async init(): Promise<void> {
+    const pairing = await this.fetchLavaProviders(this.pairingListConfig);
+
+    this.latestBlockNumber = await this.rpcConsumer.probeProviders(
+      pairing.consumerSessionsWithProvider
+    );
+
+    // Save pairing response for chainID
+    this.pairing.set("LAV1", {
+      providers: pairing.stakeEntry,
+      maxCu: 10000,
+      currentEpoch: this.latestBlockNumber,
+      spec: this.lavaSpec,
+    });
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
@@ -67,29 +84,8 @@ export class StateChainQuery {
       // Save time till next epoch
       let timeLeftToNextPairing;
 
-      // fetch lava providers
-      await this.fetchLavaProviders(this.pairingListConfig);
-
-      // Make sure lava providers are initialized
-      if (this.lavaProviders == null) {
-        throw ProvidersErrors.errLavaProvidersNotInitialized;
-      }
-
       // Reset pairing
       this.pairing = new Map<string, PairingResponse>(); // TODO: this is supposed to be stored in pairing updater. the state query is supposed to only query info not save it internally this is why we have updaters
-
-      // Fetch latest block using probe
-      const latestNumber = await this.getLatestBlockFromProviders(
-        this.relayer,
-        this.lavaProviders,
-        lavaChainID,
-        lavaRPCInterface
-      );
-
-      // Update latest block in lava pairing
-      for (const consumerSessionWithProvider of this.lavaProviders) {
-        consumerSessionWithProvider.setPairingEpoch(latestNumber);
-      }
 
       // Iterate over chain and construct pairing
       for (const chainID of this.chainIDs) {
@@ -98,11 +94,7 @@ export class StateChainQuery {
         request.setClient(this.account.address);
 
         // Fetch pairing for specified chainID
-        const pairingResponse = await this.getPairingFromChain(
-          latestNumber,
-          request,
-          10
-        );
+        const pairingResponse = await this.getPairingFromChain(request);
 
         // If pairing is undefined set to empty object
         if (!pairingResponse) {
@@ -131,7 +123,7 @@ export class StateChainQuery {
         this.pairing.set(chainID, {
           providers: providers,
           maxCu: pairingResponse.getMaxCu(),
-          currentEpoch: latestNumber,
+          currentEpoch: this.latestBlockNumber,
           spec: spec,
         });
       }
@@ -159,15 +151,9 @@ export class StateChainQuery {
   //fetchLavaProviders fetches lava providers from different sources
   private async fetchLavaProviders(
     pairingListConfig: string
-  ): Promise<ConsumerSessionsWithProvider[]> {
+  ): Promise<PairingList> {
     try {
       Logger.debug("Fetching lava providers started");
-
-      // If we have providers return them
-      if (this.lavaProviders.length != 0) {
-        Logger.debug("Return already saved providers");
-        return this.lavaProviders;
-      }
 
       // Else if pairingListConfig exists use it to fetch lava providers from local file
       if (pairingListConfig != "") {
@@ -195,9 +181,7 @@ export class StateChainQuery {
 
   // getPairingFromChain fetch pairing response from lava providers
   private async getPairingFromChain(
-    epoch: number,
-    request: QueryGetPairingRequest,
-    relayCu: number
+    request: QueryGetPairingRequest
   ): Promise<QuerySdkPairingResponse | undefined> {
     try {
       Logger.debug("Get pairing for:" + request.getChainid() + " started");
@@ -209,59 +193,22 @@ export class StateChainQuery {
       const hexData = Buffer.from(requestData).toString("hex");
 
       // Init send relay options
-      const sendRelayOptions = {
-        data: generateRPCData("abci_query", [
-          "/lavanet.lava.pairing.Query/SdkPairing",
-          hexData,
-          "0",
-          false,
-        ]),
-        url: "",
-        connectionType: "",
+      const sendRelayOptions: SendRelayOptions = {
+        method: "abci_query",
+        params: ["/lavanet.lava.pairing.Query/SdkPairing", hexData, "0", false],
       };
 
-      const batchRelays: BatchRelays[] = [];
+      const response = await this.rpcConsumer.sendRelay(sendRelayOptions);
 
-      // Send relay to all providers and return first response
-      for (const provider of this.lavaProviders) {
-        const options: SendRelayOptions = {
-          apiInterface: lavaRPCInterface,
-          chainId: lavaChainID,
-          connectionType: sendRelayOptions.connectionType,
-          data: sendRelayOptions.data,
-          epoch: epoch,
-          publicProviderLavaAddress:
-            provider.getPublicLavaAddressAndPairingEpoch()
-              .publicProviderAddress,
-          url: sendRelayOptions.url,
-        };
-        const batchRelay: BatchRelays = {
-          options: options,
-          singleConsumerSession: provider.sessions[0],
-        };
-        batchRelays.push(batchRelay);
-      }
-      const jsonResponse = await this.relayer.SendRelayToAllProvidersAndRace(
-        batchRelays
-      );
+      const reply = response.reply;
 
-      if (jsonResponse.result.response.value == null) {
-        // If response is null log the error
-        Logger.error(
-          "ERROR, failed to fetch pairing for spec: " +
-            request.getChainid() +
-            ",error: " +
-            jsonResponse.result.response.log
-        );
-
-        // Return empty object
-        // We do not want to return error because it will stop the state tracker for other chains
-        return undefined;
+      if (reply == undefined) {
+        throw new Error("Reply undefined");
       }
 
-      const byteArrayResponse = base64ToUint8Array(
-        jsonResponse.result.response.value
-      );
+      const replyData = reply.getData_asB64();
+
+      const byteArrayResponse = base64ToUint8Array(replyData);
 
       // Deserialize the Uint8Array to obtain the protobuf message
       const decodedResponse =
@@ -283,61 +230,6 @@ export class StateChainQuery {
       // We do not want to return error because it will stop the state tracker for other chains
       return undefined;
     }
-  }
-
-  // getLatestBlockFromProviders tries to fetch latest block using probe
-  private async getLatestBlockFromProviders(
-    relayer: Relayer,
-    providers: ConsumerSessionsWithProvider[],
-    chainID: string,
-    rpcInterface: string
-  ): Promise<number> {
-    Logger.debug("Get latest block from providers started");
-
-    let lastProbeResponse = null;
-
-    // Iterate over providers and return first successfull probe response
-    for (let i = 0; i < providers.length; i++) {
-      try {
-        // Send probe request
-        const probeResponse = await relayer.probeProvider(
-          this.lavaProviders[i].sessions[0].endpoint.networkAddress,
-          rpcInterface,
-          chainID
-        );
-
-        // If no error save response and break
-        lastProbeResponse = probeResponse;
-
-        break;
-      } catch (err) {
-        // If error is instance of Error
-        if (err instanceof Error) {
-          // Store the relay response
-          lastProbeResponse = err;
-        }
-      }
-    }
-
-    // If last provider returned an error
-    // throw it
-    if (lastProbeResponse instanceof Error) {
-      throw lastProbeResponse;
-    }
-
-    // If probe response does not exists return an error
-    // This should never happen
-    if (lastProbeResponse == undefined) {
-      throw ProvidersErrors.errProbeResponseUndefined;
-    }
-
-    Logger.debug(
-      "Get latest block from providers ended",
-      "latest block " + lastProbeResponse.getLavaEpoch()
-    );
-
-    // Return latest block from probe response
-    return lastProbeResponse.getLavaEpoch();
   }
 
   // fetchLocalLavaPairingList uses local pairingList.json file to load lava providers
@@ -381,14 +273,22 @@ export class StateChainQuery {
   }
 
   // constructLavaPairing constructs consumer session with provider list from pairing list
-  private constructLavaPairing(
-    pairingList: any
-  ): ConsumerSessionsWithProvider[] {
+  private constructLavaPairing(pairingList: any): PairingList {
     try {
       // Initialize ConsumerSessionWithProvider array
-      const pairing: Array<ConsumerSessionsWithProvider> = [];
-
+      const pairing: Array<StakeEntry> = [];
+      const pairingEndpoints: Array<PairingEndpoint> = [];
+      // Initialize ConsumerSessionWithProvider array
+      const csmArr: Array<ConsumerSessionsWithProvider> = [];
       for (const provider of pairingList) {
+        const pairingEndpoint = new PairingEndpoint();
+        pairingEndpoint.setIpport(provider.rpcAddress);
+        pairingEndpoint.setApiInterfacesList(["tendermintrpc"]);
+        pairingEndpoint.setGeolocation(Number(this.config.geolocation));
+
+        // Add newly created endpoint in the pairing endpoint list
+        pairingEndpoints.push(pairingEndpoint);
+
         const endpoint: Endpoint = {
           networkAddress: provider.rpcAddress,
           enabled: true,
@@ -416,13 +316,18 @@ export class StateChainQuery {
         newPairing.sessions[0] = singleConsumerSession;
 
         // Add newly created pairing in the pairing list
-        pairing.push(newPairing);
+        csmArr.push(newPairing);
       }
 
-      // Save lava providers
-      this.lavaProviders = pairing;
+      const stakeEntry = new StakeEntry();
+      stakeEntry.setEndpointsList(pairingEndpoints);
 
-      return pairing;
+      pairing.push(stakeEntry);
+
+      return {
+        stakeEntry: pairing,
+        consumerSessionsWithProvider: csmArr,
+      };
     } catch (err) {
       throw err;
     }

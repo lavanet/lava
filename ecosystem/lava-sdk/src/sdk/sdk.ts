@@ -20,6 +20,7 @@ import {
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
+import { getDefaultLavaSpec } from "../chainlib/default_lava_spec";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -148,6 +149,41 @@ export class LavaSDK {
     // create provider optimizer
     const optimizer = new RandomProviderOptimizer();
 
+    const rpcEndpoint = new RPCEndpoint(
+      "", // We do no need this in sdk as we are not opening any ports
+      "LAV1",
+      "tendermintrpc",
+      this.geolocation // This is also deprecated
+    );
+
+    // create consumer session manager for lava tendermint
+    const csm = new ConsumerSessionManager(
+      this.relayer,
+      rpcEndpoint,
+      optimizer
+    );
+
+    // Get default lava spec
+    const spec = getDefaultLavaSpec();
+
+    // Get chain parser for tendermintrpc
+    const chainParse = getChainParser("tendermintrpc");
+
+    // Init lava Spec
+    chainParse.init(spec);
+
+    const finalizationConsensus = new FinalizationConsensus();
+
+    const rpcConsuemer = new RPCConsumerServer(
+      this.relayer,
+      csm,
+      chainParse,
+      this.geolocation,
+      rpcEndpoint,
+      this.lavaChainId,
+      finalizationConsensus
+    );
+
     // Init state tracker
     const tracker = new StateTracker(
       this.pairingListConfig,
@@ -157,14 +193,18 @@ export class LavaSDK {
         geolocation: this.geolocation,
         network: this.network,
       },
+      rpcConsuemer,
+      spec,
       this.account,
       this.walletAddress,
       this.badgeManager
     );
 
-    /// Fetch init state query
-    await tracker.initialize(); // TODO: return here consumer session manager for LAV1 tendermint or undefined
-    // TODO: now that we have csm for LAV1 tendermint, populate it with rpcconsumer server if its not undefined
+    // Register LAVATendermint csm for update
+    tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
+
+    // Fetch init state query
+    await tracker.initialize();
 
     // init rpcconsumer servers
     for (const chainId of this.chainIDRpcInterface) {
@@ -205,6 +245,7 @@ export class LavaSDK {
           rpcEndpoint,
           optimizer
         );
+
         tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
 
         // create chain parser
@@ -248,6 +289,7 @@ export class LavaSDK {
     return "";
   }
 
+  // the inner async function throws on relay error
   public sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
     const relayReceiver = this.getRelayReceiver(options);
     const rpcConsumerServer = this.rpcConsumerServerRouter.get(relayReceiver);
@@ -260,6 +302,21 @@ export class LavaSDK {
         options?.chainId ?? this.rpcConsumerServerRouter.keys()
       );
     }
-    rpcConsumerServer.sendRelay(options);
+    const relayResult = rpcConsumerServer.sendRelay(options);
+    return relayResult.then((response) => {
+      // // Decode response
+      const reply = response.reply;
+      if (reply == undefined) {
+        throw new Error("empty reply");
+      }
+      const dec = new TextDecoder();
+      const decodedResponse = dec.decode(reply.getData_asU8());
+
+      // Parse response
+      const jsonResponse = JSON.parse(decodedResponse);
+
+      // Return response
+      return jsonResponse;
+    });
   }
 }

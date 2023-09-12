@@ -1,7 +1,10 @@
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import { SingleConsumerSession } from "../lavasession/consumerTypes";
+import {
+  SingleConsumerSession,
+  ConsumerSessionsWithProvider,
+} from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
@@ -12,7 +15,6 @@ import {
   constructRelayRequest,
   IsFinalizedBlock,
   newRelayData,
-  SendRelayData,
   UpdateRequestedBlock,
   verifyFinalizationData,
   verifyRelayReply,
@@ -26,6 +28,7 @@ import {
 import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
+import { BACKOFF_TIME_ON_FAILURE } from "../common/common";
 
 const MaxRelayRetries = 4;
 
@@ -53,14 +56,23 @@ export class RPCConsumerServer {
     this.relayer = relayer;
     this.rpcEndpoint = rpcEndpoint;
     this.lavaChainId = lavaChainId;
-    this.consumerAddress = "TODO";
+    this.consumerAddress = "TODO"; // TODO: this needs to be the public address that the provider signs finalization data with, check on badges if it's the signer or the badge project key
     this.finalizationConsensus = finalizationConsensus;
+  }
+
+  async probeProviders(
+    pairingList: ConsumerSessionsWithProvider[]
+  ): Promise<number> {
+    try {
+      return await this.consumerSessionManager.probeProviders(pairingList);
+    } catch (err) {
+      return -1;
+    }
   }
 
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
-    // TODO: fill data url, connectionType
     const relayData = {
       ...chainMessage.getRawRequestData(), // url and data fields
       connectionType:
@@ -103,18 +115,6 @@ export class RPCConsumerServer {
     }
     // got here if didn't succeed in any of the relays
     throw new Error("failed all retries " + errors.join(","));
-    //
-
-    //TODO after reply if resolved, parse to json
-    // // Decode response
-    // const dec = new TextDecoder();
-    // const decodedResponse = dec.decode(response.getData_asU8());
-
-    // // Parse response
-    // const jsonResponse = JSON.parse(decodedResponse);
-
-    // // Return response
-    // return jsonResponse;
   }
 
   private async sendRelayToProvider(
@@ -129,7 +129,9 @@ export class RPCConsumerServer {
     const lavaChainId = this.lavaChainId;
 
     let extraRelayTimeout = 0;
-    if (chainMessage.getApi().getCategory()?.getHangingApi() == true) {
+    const isHangingapi =
+      chainMessage.getApi().getCategory()?.getHangingApi() == true;
+    if (isHangingapi) {
       const { averageBlockTime } = this.chainParser.chainBlockStats();
       extraRelayTimeout = averageBlockTime;
     }
@@ -185,28 +187,50 @@ export class RPCConsumerServer {
         relayTimeout
       );
       if (relayResponse.err != undefined) {
-        // TODO: handle session failure
-        // 	const backOffDuration = 0;
-        // 	if backoff_ {
-        // 		backOffDuration = lavasession.BACKOFF_TIME_ON_FAILURE
-        // 	}
-        // 	time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
-        // 	// relay failed need to fail the session advancement
-        // 	errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
-        // 	if errReport != nil {
-        // 		utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
-        // 	}
-        // }
-        // go failRelaySession(errResponse, backoff)
+        const callSessionFailure = () => {
+          const err = this.consumerSessionManager.onSessionFailure(
+            singleConsumerSession,
+            relayResponse.err
+          );
+          if (err instanceof Error) {
+            Logger.error("failed on session failure %s", err);
+          }
+        };
+        if (relayResponse.backoff) {
+          const backOffDuration = BACKOFF_TIME_ON_FAILURE;
+          setTimeout(callSessionFailure, backOffDuration); // call sessionFailure after a delay
+        } else {
+          callSessionFailure();
+        }
         const relayError: RelayError = {
           providerAddress: providerPublicAddress,
           err: relayResponse.err,
         };
         return [relayError];
       }
+      const reply = relayResult.reply;
+      if (reply == undefined) {
+        return new Error("reply is undefined");
+      }
+
       // we got here if everything is valid
-      // TODO: handle session done
-      return new Error("not implemented yet");
+      const { expectedBlockHeight, numOfProviders } =
+        this.finalizationConsensus.getExpectedBlockHeight(this.chainParser);
+      const pairingAddressesLen =
+        this.consumerSessionManager.getPairingAddressesLength();
+      const latestBlock = reply.getLatestBlock();
+      this.consumerSessionManager.onSessionDone(
+        singleConsumerSession,
+        latestBlock,
+        chainMessage.getApi().getComputeUnits(),
+        relayResponse.latency,
+        singleConsumerSession.calculateExpectedLatency(relayTimeout),
+        expectedBlockHeight,
+        numOfProviders,
+        pairingAddressesLen,
+        isHangingapi
+      );
+      return relayResult;
     } catch (err) {
       if (err instanceof Error) {
         return err;
@@ -261,6 +285,7 @@ export class RPCConsumerServer {
       return relayResponse;
     }
     const chainBlockStats = this.chainParser.chainBlockStats();
+    UpdateRequestedBlock(relayData, reply);
     const finalized = IsFinalizedBlock(
       relayData.getRequestBlock(),
       reply.getLatestBlock(),
