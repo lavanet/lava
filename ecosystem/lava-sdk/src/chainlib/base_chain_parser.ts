@@ -64,7 +64,7 @@ export interface CollectionKey {
 export type CollectionKeyString = string;
 
 export function CollectionKeyToString(key: CollectionKey): CollectionKeyString {
-  return JSON.stringify(key);
+  return `'{"addon":"${key.addon}","internalPath":"${key.internalPath}","connectionType":"${key.connectionType}"}'`;
 }
 
 interface ApiContainer {
@@ -158,10 +158,12 @@ export abstract class BaseChainParser {
   protected getApiCollection(collectionKey: CollectionKey): ApiCollection {
     const key = CollectionKeyToString(collectionKey);
     const collection = this.apiCollections.get(key);
+
     if (!collection) {
       throw Logger.fatal("Api not supported", collectionKey);
     }
-    if (collection.getEnabled()) {
+
+    if (!collection.getEnabled()) {
       throw Logger.fatal("Api disabled in spec", collectionKey);
     }
     return collection;
@@ -222,9 +224,9 @@ export abstract class BaseChainParser {
           );
         }
         const collectionKey: CollectionKey = {
-          connectionType: connectionType,
-          internalPath: internalPath,
           addon: addon,
+          internalPath: internalPath,
+          connectionType: connectionType,
         };
 
         // parse directives

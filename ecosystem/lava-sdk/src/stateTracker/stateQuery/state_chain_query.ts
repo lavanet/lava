@@ -188,7 +188,7 @@ export class StateChainQuery {
 
       // Serialize request to binary format
       const requestData = request.serializeBinary();
-      console.log(requestData);
+
       // Create hex from data
       const hexData = Buffer.from(requestData).toString("hex");
 
@@ -300,7 +300,7 @@ export class StateChainQuery {
         // Create a new pairing object
         const newPairing = new ConsumerSessionsWithProvider(
           provider.publicAddress,
-          [],
+          [endpoint],
           {},
           1000,
           0
