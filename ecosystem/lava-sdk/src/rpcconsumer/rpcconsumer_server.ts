@@ -1,7 +1,10 @@
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import { SingleConsumerSession } from "../lavasession/consumerTypes";
+import {
+  SingleConsumerSession,
+  ConsumerSessionsWithProvider,
+} from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
@@ -57,9 +60,17 @@ export class RPCConsumerServer {
     this.finalizationConsensus = finalizationConsensus;
   }
 
-  async sendRelay(
-    options: SendRelayOptions | SendRestRelayOptions
-  ): Promise<RelayResult> {
+  async probeProviders(
+    pairingList: ConsumerSessionsWithProvider[]
+  ): Promise<number> {
+    try {
+      return await this.consumerSessionManager.probeProviders(pairingList);
+    } catch (err) {
+      return -1;
+    }
+  }
+
+  async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
     const relayData = {

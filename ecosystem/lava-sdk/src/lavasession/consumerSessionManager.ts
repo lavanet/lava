@@ -130,8 +130,12 @@ export class ConsumerSessionManager {
         spec: this.rpcEndpoint.key(),
       })}`
     );
-
-    await this.probeProviders(pairingList, epoch);
+    try {
+      await this.probeProviders(pairingList);
+    } catch (err) {
+      // TODO see what we should to
+      Logger.error(err);
+    }
   }
 
   public removeAddonAddress(addon = "", extensions: string[] = []): void {
@@ -704,20 +708,16 @@ export class ConsumerSessionManager {
     return this.numberOfResets;
   }
 
-  private async probeProviders(
-    pairingList: ConsumerSessionsWithProvider[],
-    epoch: number
-  ) {
+  public async probeProviders(pairingList: ConsumerSessionsWithProvider[]) {
     Logger.info(
       `providers probe initiated ${JSON.stringify({
         endpoint: this.rpcEndpoint,
-        epoch,
       })}`
     );
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
       try {
-        await this.relayer.probeProvider(
+        const probeResponse = await this.relayer.probeProvider(
           consumerSessionWithProvider.endpoints[0].networkAddress,
           this.getRpcEndpoint().apiInterface,
           this.getRpcEndpoint().chainId
@@ -732,17 +732,20 @@ export class ConsumerSessionManager {
             " latency: ",
           latency + " ms"
         );
+
+        Logger.debug(
+          `providers probe done ${JSON.stringify({
+            endpoint: this.rpcEndpoint,
+          })}`
+        );
+
+        return probeResponse.getLavaEpoch();
       } catch (err) {
         console.log(err);
       }
     }
 
-    Logger.debug(
-      `providers probe done ${JSON.stringify({
-        endpoint: this.rpcEndpoint,
-        epoch,
-      })}`
-    );
+    throw Error("Could not probe any provider");
   }
 
   private getTransport(): grpc.TransportFactory {

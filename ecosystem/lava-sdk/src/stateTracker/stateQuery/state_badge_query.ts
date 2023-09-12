@@ -93,6 +93,8 @@ export class StateBadgeQuery {
     return timeLeftToNextPairing;
   }
 
+  public async init(): Promise<void> {}
+
   // getPairing return pairing list for specific chainID
   public getPairing(chainID: string): PairingResponse | undefined {
     // Return pairing for the specific chainId from the map

@@ -9,6 +9,8 @@ import { AccountData } from "@cosmjs/proto-signing";
 import { PairingResponse } from "../stateTracker/stateQuery/state_query";
 import { PairingUpdater } from "./updaters/pairing_updater";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
+import { RPCConsumerServer } from "../rpcconsumer/rpcconsumer_server";
+import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 
@@ -29,6 +31,8 @@ export class StateTracker {
     relayer: Relayer,
     chainIDs: string[],
     config: Config,
+    rpcConsumer: RPCConsumerServer,
+    spec: Spec,
     account: AccountData,
     walletAddress: string,
     badgeManager?: BadgeManager
@@ -50,9 +54,10 @@ export class StateTracker {
       this.stateQuery = new StateChainQuery(
         pairingListConfig,
         chainIDs,
-        relayer,
+        rpcConsumer,
         config,
-        account
+        account,
+        spec
       );
     }
 
@@ -71,15 +76,22 @@ export class StateTracker {
 
   async initialize() {
     Logger.debug("Initialization of State Tracker started");
+
+    // Init state query
+    await this.stateQuery.init();
+
+    // Run all updaters
+    this.update();
+
+    // Fetch Pairing
     this.timeTillNextEpoch = await this.stateQuery.fetchPairing();
   }
 
   async startTracking() {
     Logger.debug("State Tracker started");
+
     // Call update method on all registered updaters
-    for (const [key, updater] of this.updaters) {
-      updater.update();
-    }
+    this.update();
 
     // Set up a timer to call this method again when the next epoch begins
     setTimeout(
@@ -100,10 +112,7 @@ export class StateTracker {
         "Pairing list fetched, started new epoch in: " + timeTillNextEpoch
       );
 
-      // Call update method on all registered updaters
-      for (const [key, updater] of this.updaters) {
-        updater.update();
-      }
+      this.update();
 
       // Set up a timer to call this method again when the next epoch begins
       setTimeout(
@@ -124,12 +133,23 @@ export class StateTracker {
     consumerSessionManager: ConsumerSessionManager
   ) {
     const pairingUpdater = this.updaters.get("pairingUpdater");
-    if (pairingUpdater == undefined) {
-      return;
+
+    if (!pairingUpdater) {
+      throw new Error("Missing pairing updater");
     }
-    // TODO: change the updater interface to include only update method, and here use the instanceof and check if its a specific type of pairing Updater
-    // then use the specific method registerPairing which is not an updater type but a pairingUpdater type.
+
+    if (!(pairingUpdater instanceof PairingUpdater)) {
+      throw new Error("Invalid updater type");
+    }
+
     pairingUpdater.registerPairing(consumerSessionManager);
+  }
+
+  private update() {
+    // Call update method on all registered updaters
+    for (const [key, updater] of this.updaters) {
+      updater.update();
+    }
   }
 
   // registerForUpdates adds new updater
