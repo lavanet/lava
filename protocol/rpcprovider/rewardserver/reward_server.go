@@ -179,12 +179,6 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
 
-		// TODO: One time per reward that has been claimed
-		err = rws.rewardDB.DeleteClaimedRewards(rewardsToClaim)
-		if err != nil {
-			utils.LavaFormatWarning("failed deleting claimed rewards", err)
-		}
-
 		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "number_of_relay_sessions_sent", Value: len(rewardsToClaim)})
 	} else {
 		utils.LavaFormatDebug("no rewards to claim")
@@ -344,7 +338,10 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
 		}
 
-		// TODO: Delete here from DB. Ask Ran if it should happen without acknowledging removedPayment.
+		err = rws.rewardDB.DeleteClaimedRewards(uint64(payment.BlockHeightDeadline), string(payment.Client), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
+		if err != nil {
+			utils.LavaFormatWarning("failed deleting claimed rewards", err)
+		}
 	}
 }
 

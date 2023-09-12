@@ -9,9 +9,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"golang.org/x/exp/slices"
 )
 
 const keySeparator = "."
@@ -205,27 +203,12 @@ func (rs *RewardDB) retrieveAndProcessRewardsFromDB(db *DB, rawRewards *map[stri
 	return nil
 }
 
-func (rs *RewardDB) DeleteClaimedRewards(claimedRewards []*pairingtypes.RelaySession) error {
-	var deletedPrefixes []string
-	for _, claimedReward := range claimedRewards {
-		consumer, err := sigs.ExtractSignerAddress(claimedReward)
-		if err != nil {
-			utils.LavaFormatError("failed to extract consumer address: %s", err)
-			continue
-		}
+func (rs *RewardDB) DeleteClaimedRewards(epoch uint64, consumerAddr string, sessionId uint64, consumerRewardsKey string) (err error) {
+	prefix := rs.assembleKey(epoch, consumerAddr, sessionId, consumerRewardsKey)
 
-		prefix := rs.assembleKey(uint64(claimedReward.Epoch), consumer.String(), claimedReward.SessionId, "")
-		if slices.Contains(deletedPrefixes, prefix) {
-			continue
-		}
-
-		err = rs.deletePrefix(prefix)
-		if err != nil {
-			utils.LavaFormatError("failed to delete rewards: %s", err)
-			continue
-		}
-
-		deletedPrefixes = append(deletedPrefixes, prefix)
+	err = rs.deletePrefix(prefix)
+	if err != nil {
+		return utils.LavaFormatError("failed to delete rewards: %s", err)
 	}
 
 	return nil

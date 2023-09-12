@@ -10,7 +10,6 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -124,15 +123,16 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
+	consumerRewardsKey := "consumerKey"
 	cpe := &rewardserver.ConsumerProofEntity{
 		ConsumerAddr: addr.String(),
-		ConsumerKey:  "consumerKey",
+		ConsumerKey:  consumerRewardsKey,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
 	require.NoError(t, err)
 
-	err = rs.DeleteClaimedRewards([]*pairingtypes.RelaySession{proof})
+	err = rs.DeleteClaimedRewards(uint64(proof.Epoch), addr.String(), proof.SessionId, consumerRewardsKey)
 	require.NoError(t, err)
 
 	rewards, err := rs.FindAll()
