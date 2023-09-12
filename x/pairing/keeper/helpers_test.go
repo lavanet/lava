@@ -180,7 +180,7 @@ func (ts *tester) payAndVerifyBalance(
 		totalPaidInt := math.NewIntFromUint64(totalPaid)
 		stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
 		require.True(ts.T, found)
-		providerRewardInt := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, totalPaidInt)
+		providerRewardInt, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalPaidInt)
 		providerReward = providerRewardInt.Uint64()
 	}
 

@@ -62,29 +62,33 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 	return
 }
 
-// CalcProviderReward calculates the provider reward considering delegations
+// The reward for servicing a consumer is divided between the provider and its delegators.
+// The following terms are used when calculating the reward distribution between them:
+//   1. TotalReward: The total reward before it's divided to the provider and delegators
+//   2. ProviderReward: The provider's part in the reward
+//   3. DelegatorsReward: The total reward for all delegators
+//   4. DelegatorReward: The reward for a specific delegator
+//   5. TotalDelegations: The total sum of delegations of a specific provider
+//   6. DelegationsSum: The provider's stake + TotalDelegations ("effective stake")
+
+// CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((totalDelegations*commission + providerStake) / delegationsSum)
-func (k Keeper) CalcProviderReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) math.Int {
+// delegatorsReward = totalReward - providerReward
+func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
 	providerStake := stakeEntry.Stake.Amount
 	delegationCommission := stakeEntry.DelegateCommission
 	totalDelegations := stakeEntry.DelegateTotal.Amount
 	delegationsSum := k.CalcDelegationsSum(stakeEntry)
 
 	providerRewardPercentage := totalDelegations.MulRaw(int64(delegationCommission / 100)).Add(providerStake).Quo(delegationsSum)
-	return providerRewardPercentage.Mul(totalReward)
-}
-
-// CalcDelegatorsReward calculates the total amount of rewards for all delegators
-// delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcDelegatorsReward(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) math.Int {
-	return totalReward.Sub(k.CalcProviderReward(stakeEntry, totalReward))
+	providerReward = providerRewardPercentage.Mul(totalReward)
+	return providerReward, totalReward.Sub(providerReward)
 }
 
 // CalcDelegationsSum calculates the delegations' sum
 // delegations sum = totalDelegations + providerStake
 func (k Keeper) CalcDelegationsSum(stakeEntry epochstoragetypes.StakeEntry) math.Int {
-	totalDelegations := stakeEntry.DelegateTotal.Amount
-	return totalDelegations.Add(stakeEntry.Stake.Amount)
+	return stakeEntry.DelegateTotal.Amount.Add(stakeEntry.Stake.Amount)
 }
 
 // CalcDelegatorReward calculates a single delegator reward according to its delegation

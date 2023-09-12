@@ -60,7 +60,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 
 	totalDelegations := stakeEntry.DelegateTotal.Amount
-	delegatorsReward := ts.Keepers.Dualstaking.CalcDelegatorsReward(stakeEntry, math.NewInt(int64(relayCuSum)))
+	_, delegatorsReward := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
 
 	// ** verify the delegator reward map updates correctly for new entries ** //
 
@@ -142,7 +142,7 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations))
 
 	// this is the expected reward for the provider. This should not change when changing the delegation limit
-	providerReward := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, math.NewInt(int64(relayCuSum)))
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
 	expectedReward := mint.MulInt64(providerReward.Int64())
 
@@ -197,7 +197,8 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	totalReward := math.NewInt(int64(relayCuSum))
-	providerReward := ts.Keepers.Dualstaking.CalcProviderReward(stakeEntry, totalReward)
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalReward)
+
 	require.True(t, totalReward.Equal(providerReward))
 
 	// check that the expected reward equals to the provider's new balance minus old balance

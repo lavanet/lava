@@ -410,7 +410,7 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		)
 	}
 
-	providerReward := k.dualStakingKeeper.CalcProviderReward(*stakeEntry, totalReward)
+	providerReward, delegatorsReward := k.dualStakingKeeper.CalcRewards(*stakeEntry, totalReward)
 
 	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
 	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
@@ -434,7 +434,7 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		}
 	}
 
-	err = k.updateDelegatorsReward(ctx, *stakeEntry, relevantDelegations, totalReward)
+	err = k.updateDelegatorsReward(ctx, *stakeEntry, relevantDelegations, totalReward, delegatorsReward)
 	if err != nil {
 		return utils.LavaFormatError("cannot update delegators reward map", err)
 	}
@@ -443,9 +443,8 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 }
 
 // updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, delegations []dualstakingtypes.Delegation, totalReward math.Int) error {
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, delegations []dualstakingtypes.Delegation, totalReward math.Int, delegatorsReward math.Int) error {
 	totalDelegations := stakeEntry.DelegateTotal.Amount
-	delegatorsReward := k.dualStakingKeeper.CalcDelegatorsReward(stakeEntry, totalReward)
 
 	for _, delegation := range delegations {
 		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
