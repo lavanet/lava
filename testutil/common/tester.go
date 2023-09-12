@@ -240,7 +240,7 @@ func NewCoin(amount int64) sdk.Coin {
 }
 
 func NewCoins(amount ...int64) []sdk.Coin {
-	return slices.Filter(amount, NewCoin)
+	return slices.Map(amount, NewCoin)
 }
 
 // keeper helpers
