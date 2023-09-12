@@ -69,11 +69,9 @@ export class PairingUpdater {
     pairing: PairingResponse | undefined,
     consumerSessionManager: ConsumerSessionManager
   ) {
-    // If pairing undefined
-    // update consumer session manager with empty provider list
+    // If pairing undefined return + error
     if (pairing == undefined) {
-      consumerSessionManager.updateAllProviders(0, []);
-
+      Logger.error("Pairing response is undefined");
       return;
     }
 
@@ -147,7 +145,7 @@ export class PairingUpdater {
       }
 
       const newPairing = new ConsumerSessionsWithProvider(
-        "",
+        provider.getAddress(),
         endpointListToStore,
         {},
         pairing.maxCu,
@@ -168,7 +166,13 @@ export class PairingUpdater {
     ) {
       Logger.debug("No relevant providers found");
     }
-
+    Logger.debug(
+      "providers initialized",
+      "our geo",
+      pairingForSameGeolocation,
+      "other geo",
+      pairingFromDifferentGeolocation
+    );
     // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]
     return pairingForSameGeolocation.concat(pairingFromDifferentGeolocation);
   }

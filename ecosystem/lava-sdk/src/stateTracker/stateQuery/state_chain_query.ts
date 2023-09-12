@@ -285,7 +285,6 @@ export class StateChainQuery {
         pairingEndpoint.setIpport(provider.rpcAddress);
         pairingEndpoint.setApiInterfacesList(["tendermintrpc"]);
         pairingEndpoint.setGeolocation(Number(this.config.geolocation));
-
         // Add newly created endpoint in the pairing endpoint list
         pairingEndpoints.push(pairingEndpoint);
 
@@ -308,6 +307,7 @@ export class StateChainQuery {
 
         const stakeEntry = new StakeEntry();
         stakeEntry.setEndpointsList(pairingEndpoints);
+        stakeEntry.setAddress(provider.publicAddress);
 
         pairing.push(stakeEntry);
 

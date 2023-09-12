@@ -96,7 +96,13 @@ export class ConsumerSessionManager {
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
   ): Promise<Error | undefined> {
-    console.log(pairingList);
+    Logger.debug(
+      "updateAllProviders called. epoch:",
+      epoch,
+      "providerList",
+      JSON.stringify(pairingList)
+    );
+
     if (epoch <= this.currentEpoch) {
       Logger.error(
         `trying to update provider list for older epoch ${JSON.stringify({
@@ -612,7 +618,6 @@ export class ConsumerSessionManager {
       this.pairingAddresses.forEach((address: string) => {
         this.validAddresses.push(address);
       });
-
       return;
     }
 
@@ -620,7 +625,6 @@ export class ConsumerSessionManager {
       if (this.validAddresses.includes(address)) {
         return;
       }
-
       this.validAddresses.push(address);
     });
 
@@ -740,7 +744,7 @@ export class ConsumerSessionManager {
         );
         const endTime = performance.now();
         const latency = endTime - startTime;
-        console.log(
+        Logger.debug(
           "Provider: " +
             consumerSessionWithProvider.publicLavaAddress +
             " chainID: " +
@@ -757,7 +761,7 @@ export class ConsumerSessionManager {
 
         return probeResponse.getLavaEpoch();
       } catch (err) {
-        console.log(err);
+        Logger.error(err);
       }
     }
 
