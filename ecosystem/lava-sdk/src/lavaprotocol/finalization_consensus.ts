@@ -1,12 +1,7 @@
 import { BaseChainParser } from "../chainlib/base_chain_parser";
 import {
-  RelayRequest,
   RelayReply,
   RelaySession,
-  RelayPrivateData,
-  Badge,
-  ProbeRequest,
-  ProbeReply,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { FinalizationConflict } from "../grpc_web_services/lavanet/lava/conflict/conflict_data_pb";
 import { Logger } from "../logger/logger";

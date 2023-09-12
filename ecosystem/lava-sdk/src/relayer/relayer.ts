@@ -18,10 +18,7 @@ import {
 import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
-import {
-  ConsumerSessionsWithProvider,
-  SingleConsumerSession,
-} from "../lavasession/consumerTypes";
+import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
 
 export interface RelayerOptions {

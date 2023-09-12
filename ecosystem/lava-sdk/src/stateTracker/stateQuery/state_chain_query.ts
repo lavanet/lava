@@ -34,7 +34,7 @@ export class StateChainQuery {
   private config: Config;
   private pairing: Map<string, PairingResponse | undefined>;
   private account: AccountData;
-  private latestBlockNumber: number = 0;
+  private latestBlockNumber = 0;
   private lavaSpec: Spec;
 
   constructor(

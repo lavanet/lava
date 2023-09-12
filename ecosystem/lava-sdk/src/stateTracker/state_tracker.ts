@@ -147,7 +147,7 @@ export class StateTracker {
 
   private update() {
     // Call update method on all registered updaters
-    for (const [key, updater] of this.updaters) {
+    for (const updater of this.updaters.values()) {
       updater.update();
     }
   }
