@@ -153,7 +153,7 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	}
 
 	configChainID := viper.GetString("endpoints.0.chain-id")
-	serviceId := serviceParams.ServiceType + "-" + configChainID
+	serviceId := serviceParams.FromUser + "-" + configChainID
 	configPath := serviceParams.LavavisorServiceConfigDir + "/" + filepath.Base(serviceParams.ServiceConfigFile)
 
 	err = lvutil.Copy(serviceParams.ServiceConfigFile, configPath)
@@ -163,7 +163,7 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 
 	content := "[Unit]\n"
 	content += "  Description=" + serviceId + " daemon\n"
-	content += "  After=network-online.target\n\n"
+	content += "  After=network-online.target\n"
 	content += "[Service]\n"
 	content += "  WorkingDirectory=" + workingDir + "\n"
 	if serviceParams.ServiceType == "consumer" {
@@ -178,7 +178,6 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	content += "  RestartSec=180\n"
 	content += "  LimitNOFILE=infinity\n"
 	content += "  LimitNPROC=infinity\n"
-	content += "  StandardOutput=append:" + serviceParams.LavavisorLogsDir + "/" + serviceId + ".log\n\n"
 	content += "[Install]\n"
 	content += "  WantedBy=multi-user.target\n"
 
