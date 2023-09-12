@@ -28,21 +28,10 @@ export function getDefaultLavaSpec(): Spec {
   const spec = new Spec();
   spec.setEnabled(true);
   spec.setIndex("LAV1");
-  // All of these will panic if we do not set them
-
-  // TODO missing AverageBlockTime
-  spec.setAverageBlockTime(123);
-
-  // TODO misisng AllowedBlockLagForQosSync
-  spec.setAllowedBlockLagForQosSync(12313);
-
-  // TODO missing BlockDistanceForFinalizedData
-  spec.setBlockDistanceForFinalizedData(12313);
-
-  // todo missing BlocksInFinalizationProof
-  spec.setBlocksInFinalizationProof(123123);
-
-  // ----------------
+  spec.setAverageBlockTime(60000);
+  spec.setAllowedBlockLagForQosSync(2);
+  spec.setBlockDistanceForFinalizedData(0);
+  spec.setBlocksInFinalizationProof(1);
 
   spec.setApiCollectionsList(apiCollectionList);
 
