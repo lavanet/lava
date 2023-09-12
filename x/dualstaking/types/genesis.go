@@ -21,7 +21,7 @@ func (gs GenesisState) Validate() error {
 	delegatorRewardIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.DelegatorRewardList {
-		index := string(DelegatorRewardKey(elem.Index))
+		index := DelegationKey(elem.Provider, elem.Delegator, elem.ChainId)
 		if _, ok := delegatorRewardIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for delegatorReward")
 		}

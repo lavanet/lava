@@ -11,9 +11,10 @@ import (
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
 func (k Keeper) SetDelegatorReward(ctx sdk.Context, delegatorReward types.DelegatorReward) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DelegatorRewardKeyPrefix))
+	index := types.DelegationKey(delegatorReward.Provider, delegatorReward.Delegator, delegatorReward.ChainId)
 	b := k.cdc.MustMarshal(&delegatorReward)
 	store.Set(types.DelegatorRewardKey(
-		delegatorReward.Index,
+		index,
 	), b)
 }
 
@@ -75,11 +76,12 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // providerReward = totalReward * ((totalDelegations*commission + providerStake) / delegationsSum)
 // delegatorsReward = totalReward - providerReward
 func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
+	delegationsSum := k.CalcDelegationsSum(stakeEntry)
 	providerReward = totalReward.
 		Mul(stakeEntry.Stake.Amount.
 			Add(stakeEntry.DelegateTotal.Amount.
 				MulRaw(int64(stakeEntry.DelegateCommission)).QuoRaw(100)).
-			Quo(stakeEntry.DelegateTotal.Amount))
+			Quo(delegationsSum))
 	return providerReward, totalReward.Sub(providerReward)
 }
 

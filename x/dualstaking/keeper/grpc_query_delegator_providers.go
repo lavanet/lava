@@ -45,6 +45,7 @@ func (k Keeper) DelegatorProviders(goCtx context.Context, req *types.QueryDelega
 				)
 				continue
 			}
+			delegations = append(delegations, delegation)
 		}
 	}
 

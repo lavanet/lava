@@ -18,8 +18,9 @@ var _ = strconv.IntSize
 func createNDelegatorReward(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.DelegatorReward {
 	items := make([]types.DelegatorReward, n)
 	for i := range items {
-		items[i].Index = strconv.Itoa(i)
-
+		items[i].Provider = "p" + strconv.Itoa(i)
+		items[i].Delegator = "d" + strconv.Itoa(i)
+		items[i].ChainId = "c" + strconv.Itoa(i)
 		keeper.SetDelegatorReward(ctx, items[i])
 	}
 	return items
@@ -29,8 +30,9 @@ func TestDelegatorRewardGet(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
+		index := types.DelegationKey(item.Provider, item.Delegator, item.ChainId)
 		rst, found := keeper.GetDelegatorReward(ctx,
-			item.Index,
+			index,
 		)
 		require.True(t, found)
 		require.Equal(t,
@@ -44,11 +46,12 @@ func TestDelegatorRewardRemove(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
+		index := types.DelegationKey(item.Provider, item.Delegator, item.ChainId)
 		keeper.RemoveDelegatorReward(ctx,
-			item.Index,
+			index,
 		)
 		_, found := keeper.GetDelegatorReward(ctx,
-			item.Index,
+			index,
 		)
 		require.False(t, found)
 	}
