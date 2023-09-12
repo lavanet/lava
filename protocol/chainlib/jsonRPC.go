@@ -25,7 +25,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const SEP = "|"
+const SEP = "&"
 
 type JsonRPCChainParser struct {
 	BaseChainParser
@@ -92,10 +92,11 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if len(msgs) == 0 {
 		return nil, errors.New("empty unmarshaled json")
 	}
-	var requestedBlock int64 = 0
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
+	var requestedBlock int64 = 0
 	for idx, msg := range msgs {
+		var requestedBlockForMessage int64 = 0
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
@@ -113,31 +114,55 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 		if overwriteReqBlock == "" {
 			// Fetch requested block, it is used for data reliability
-			requestedBlock, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
 			if err != nil {
 				return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
 			}
 		} else {
-			requestedBlock, err = msg.ParseBlock(overwriteReqBlock)
+			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
 			if err != nil {
 				return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
 			}
 		}
 		if idx == 0 {
+			// on the first entry store them
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
+			requestedBlock = requestedBlockForMessage
 		} else {
+			// on next entries we need to compare to existing data
 			if api == nil {
 				utils.LavaFormatFatal("invalid parsing, api is nil", nil)
 			}
+			// on a batch request we need to do the following:
+			// 1. create a new api object, since it's not a single one
+			// 2. we need to add the compute units
+			// 3. we need to set the requested block to be the latest of them all or not_applicable
+			// 4. we need to take the most comprehensive apiCollection (addon)
+			// 5. take the strictest category
+			category := api.Category.Combine(apiCont.api.Category)
+			if apiCollectionForMessage.CollectionData.AddOn != "" && apiCollectionForMessage.CollectionData.AddOn != apiCollection.CollectionData.AddOn {
+				if apiCollection.CollectionData.AddOn != "" {
+					return nil, utils.LavaFormatError("unable to parse batch request with api from multiple addons", nil,
+						utils.Attribute{Key: "first addon", Value: apiCollection.CollectionData.AddOn},
+						utils.Attribute{Key: "second addon", Value: apiCollectionForMessage.CollectionData.AddOn})
+				}
+				apiCollection = apiCollectionForMessage // overwrite apiColleciton to take the addon
+			}
 			api = &spectypes.Api{
-				Enabled:           true,
+				Enabled:           api.Enabled && apiCont.api.Enabled,
 				Name:              api.Name + SEP + apiCont.api.Name,
 				ComputeUnits:      api.ComputeUnits + apiCont.api.ComputeUnits,
-				ExtraComputeUnits: 0,
+				ExtraComputeUnits: api.ExtraComputeUnits + apiCont.api.ExtraComputeUnits,
 				Category:          category,
-				BlockParsing:      blockParsing,
+				BlockParsing: spectypes.BlockParser{
+					ParserArg:    []string{},
+					ParserFunc:   spectypes.PARSER_FUNC_EMPTY,
+					DefaultValue: "",
+					Encoding:     "",
+				},
 			}
+			requestedBlock = updateRequestedBlockInBatch(requestedBlock, requestedBlockForMessage)
 		}
 	}
 	nodeMsg := apip.newChainMessage(api, requestedBlock, &msg, apiCollection)
