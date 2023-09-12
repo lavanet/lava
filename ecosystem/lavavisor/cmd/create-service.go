@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -29,6 +30,7 @@ type ServiceParams struct {
 	LavavisorServicesDir      string
 	LavavisorLogsDir          string
 	LavavisorServiceConfigDir string
+	ParallelConnection        uint64
 }
 
 func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
@@ -93,6 +95,8 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			// log-level
 			node, _ := cmd.Flags().GetString(flags.FlagNode)
 
+			parallelConnection, _ := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
+
 			serviceParams := &ServiceParams{
 				ServiceType:               serviceType,
 				ServiceConfigFile:         serviceConfigFile,
@@ -105,6 +109,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 				LavavisorServicesDir:      lavavisorServicesDir,
 				LavavisorLogsDir:          lavavisorLogsDir,
 				LavavisorServiceConfigDir: lavavisorServiceConfigDir,
+				ParallelConnection:        uint64(parallelConnection),
 			}
 
 			utils.LavaFormatInfo("Creating the service file")
@@ -123,7 +128,12 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 				return utils.LavaFormatError("Error reading config file", err)
 			}
 
-			serviceFileName, err := CreateServiceFile(serviceParams)
+			createLink, err := cmd.Flags().GetBool("create-link")
+			if err != nil {
+				return err
+			}
+
+			serviceFileName, err := CreateServiceFile(serviceParams, createLink)
 			if err != nil {
 				return err
 			}
@@ -133,14 +143,16 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 	}
 	flags.AddTxFlagsToCmd(cmdLavavisorCreateService)
 	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagFrom)
+	cmdLavavisorCreateService.Flags().Bool("create-link", false, "Creates a symbolic link to the /etc/systemd/system/ directory")
 	cmdLavavisorCreateService.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdLavavisorCreateService.MarkFlagRequired(common.GeolocationFlag)
 	cmdLavavisorCreateService.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorCreateService.Flags().String(flags.FlagLogLevel, "debug", "log level")
+	cmdLavavisorCreateService.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	return cmdLavavisorCreateService
 }
 
-func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
+func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, error) {
 	// working dir:
 	out, err := exec.LookPath("lavap")
 	if err != nil {
@@ -171,7 +183,7 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	} else if serviceParams.ServiceType == "provider" {
 		content += "  ExecStart=" + workingDir + "lavap rpcprovider "
 	}
-	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
+	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + "--parallel-connections" + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
 	content += "  User=ubuntu\n"
 	content += "  Restart=always\n"
@@ -188,8 +200,10 @@ func CreateServiceFile(serviceParams *ServiceParams) (string, error) {
 	}
 
 	// Create a symbolic link to the systemd directory.
-	if err := createSystemdSymlink(filePath, serviceId+".service"); err != nil {
-		return "", utils.LavaFormatError("error creating symbolic link", err)
+	if createLink {
+		if err := createSystemdSymlink(filePath, serviceId+".service"); err != nil {
+			return "", utils.LavaFormatError("error creating symbolic link", err)
+		}
 	}
 
 	utils.LavaFormatInfo("Service file has been created successfully", utils.Attribute{Key: "Path", Value: filePath})
