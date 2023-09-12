@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -415,12 +416,8 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		return utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 
-	var relevantDelegations []dualstakingtypes.Delegation
-	for _, d := range delegations {
-		if d.ChainID == chainID {
-			relevantDelegations = append(relevantDelegations, d)
-		}
-	}
+	relevantDelegations := slices.Filter(delegations,
+		func(d dualstakingtypes.Delegation) bool { return d.ChainID == chainID })
 
 	providerReward, delegatorsReward := k.dualStakingKeeper.CalcRewards(*stakeEntry, totalReward)
 

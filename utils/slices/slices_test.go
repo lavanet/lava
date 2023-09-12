@@ -267,9 +267,17 @@ func TestUnorderedEqual(t *testing.T) {
 	}
 }
 
-func TestFilter(t *testing.T) {
+func TestFilterField(t *testing.T) {
 	filter := func(_ int) int { return 10 }
+	require.Equal(t, FilterField([]int{}, filter), []int{})
+	require.Equal(t, FilterField([]int{1}, filter), []int{10})
+	require.Equal(t, FilterField([]int{1, 2, 3}, filter), []int{10, 10, 10})
+}
+
+func TestFilter(t *testing.T) {
+	filter := func(num int) bool { return num == 3 }
 	require.Equal(t, Filter([]int{}, filter), []int{})
-	require.Equal(t, Filter([]int{1}, filter), []int{10})
-	require.Equal(t, Filter([]int{1, 2, 3}, filter), []int{10, 10, 10})
+	require.Equal(t, Filter([]int{1, 2}, filter), []int{})
+	require.Equal(t, Filter([]int{1, 2, 3}, filter), []int{3})
+	require.Equal(t, Filter([]int{1, 2, 3, 3}, filter), []int{3, 3})
 }

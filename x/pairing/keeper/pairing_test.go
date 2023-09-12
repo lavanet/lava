@@ -48,8 +48,8 @@ func TestPairingUniqueness(t *testing.T) {
 
 	filter := func(p epochstoragetypes.StakeEntry) string { return p.Address }
 
-	providerAddrs1 := slices.Filter(pairing1.Providers, filter)
-	providerAddrs2 := slices.Filter(pairing2.Providers, filter)
+	providerAddrs1 := slices.FilterField(pairing1.Providers, filter)
+	providerAddrs2 := slices.FilterField(pairing2.Providers, filter)
 
 	require.Equal(t, len(pairing1.Providers), len(pairing2.Providers))
 	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs2))
@@ -60,7 +60,7 @@ func TestPairingUniqueness(t *testing.T) {
 	pairing11, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 	require.Nil(t, err)
 
-	providerAddrs11 := slices.Filter(pairing11.Providers, filter)
+	providerAddrs11 := slices.FilterField(pairing11.Providers, filter)
 
 	require.Equal(t, len(pairing1.Providers), len(pairing11.Providers))
 	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs11))
