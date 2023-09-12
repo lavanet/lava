@@ -290,7 +290,7 @@ export class LavaSDK {
   }
 
   // the inner async function throws on relay error
-  public sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
+  public async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
     const relayReceiver = this.getRelayReceiver(options);
     const rpcConsumerServer = this.rpcConsumerServerRouter.get(relayReceiver);
     if (!rpcConsumerServer) {
@@ -303,7 +303,7 @@ export class LavaSDK {
       );
     }
     const relayResult = rpcConsumerServer.sendRelay(options);
-    return relayResult.then((response) => {
+    return await relayResult.then((response) => {
       // // Decode response
       const reply = response.reply;
       if (reply == undefined) {
