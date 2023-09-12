@@ -158,7 +158,6 @@ function calculateContentHash(relayRequestData: RelayPrivateData): Uint8Array {
   ]);
 
   const hash = sha256(msgData);
-
   return hash;
 }
 
