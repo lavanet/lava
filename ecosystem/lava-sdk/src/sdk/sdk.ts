@@ -16,6 +16,9 @@ import { RandomProviderOptimizer } from "../lavasession/providerOptimizer";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import { getChainParser } from "../chainlib/common";
 import {
+  APIInterfaceJsonRPC,
+  APIInterfaceRest,
+  APIInterfaceTendermintRPC,
   SendRelayOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
@@ -278,25 +281,118 @@ export class LavaSDK {
     await tracker.startTracking();
   }
 
-  getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
+  protected getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
     return chainId + "," + apiInterface;
   }
 
-  getRelayReceiver(
+  protected isRest(
     options: SendRelayOptions | SendRestRelayOptions
-  ): RelayReceiver {
-    // TODO: implement receiver findings
-    return "";
+  ): options is SendRestRelayOptions {
+    return "connectionType" in options; // how to check which options were given
+  }
+
+  private getRpcConsumerServerRaw(
+    chainID: string,
+    apiInterface: string
+  ): RPCConsumerServer | Error {
+    const routerMap = this.rpcConsumerServerRouter;
+    const rpcConsumerServer = routerMap.get(
+      this.getRouterKey(chainID, apiInterface)
+    );
+    if (rpcConsumerServer == undefined) {
+      return new Error(
+        "did not find rpcConsumerServer for " +
+          this.getRouterKey(chainID, apiInterface)
+      );
+    }
+    return rpcConsumerServer;
+  }
+
+  getRpcConsumerServer(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): RPCConsumerServer | Error {
+    const routerMap = this.rpcConsumerServerRouter;
+    if (routerMap.size == 1) {
+      const firstEntry = routerMap.values().next();
+      if (firstEntry.done) {
+        return new Error("returned empty routerMap");
+      }
+      return firstEntry.value;
+    }
+    const chainID = options.chainId;
+    const isRest = this.isRest(options);
+    if (chainID == undefined) {
+      let specId = "";
+      let apiInterface = "";
+      for (const rpcConsumerServer of routerMap.values()) {
+        const supported = rpcConsumerServer.supportedChainAndApiInterface();
+        if (specId != "" && specId != supported.specId) {
+          return new Error(
+            "optional chainID argument must be specified when initializing the lavaSDK with multiple chains"
+          );
+        }
+        specId = supported.specId;
+        if (isRest) {
+          apiInterface = APIInterfaceRest;
+          continue;
+        }
+        if (apiInterface != "" && apiInterface != supported.apiInterface) {
+          return new Error(
+            "optional apiInterface argument must be specified when initializing the lavaSDK with a chain that has multiple apiInterfaces that support SendRelayOptions (tendermintrpc,jsonrpc)"
+          );
+        }
+        apiInterface = supported.apiInterface;
+      }
+      return this.getRpcConsumerServerRaw(specId, apiInterface);
+    } else {
+      if (isRest || options.apiInterface != undefined) {
+        let apiInterface: string;
+        if (isRest) {
+          apiInterface = APIInterfaceRest;
+        } else if (options.apiInterface != undefined) {
+          apiInterface = options.apiInterface;
+        } else {
+          return new Error("unreachable code");
+        }
+        return this.getRpcConsumerServerRaw(chainID, apiInterface);
+      } else {
+        // get here only if chainID is specified and apiInterface is not and it's not rest
+        const jsonRpcConsumerServer = this.getRpcConsumerServerRaw(
+          chainID,
+          APIInterfaceJsonRPC
+        );
+        const tendermintRpcConsumerServer = this.getRpcConsumerServerRaw(
+          chainID,
+          APIInterfaceTendermintRPC
+        );
+
+        if (
+          // check if it only has tendermintrpc
+          jsonRpcConsumerServer instanceof Error &&
+          tendermintRpcConsumerServer instanceof RPCConsumerServer
+        ) {
+          return tendermintRpcConsumerServer;
+        } else if (
+          // check if it only has jsonrpc
+          tendermintRpcConsumerServer instanceof Error &&
+          jsonRpcConsumerServer instanceof RPCConsumerServer
+        ) {
+          return jsonRpcConsumerServer;
+        }
+        return new Error(
+          "optional apiInterface argument must be specified when initializing the lavaSDK with a chain that has multiple apiInterfaces that support SendRelayOptions (tendermintrpc,jsonrpc)"
+        );
+      }
+    }
   }
 
   // the inner async function throws on relay error
   public async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
-    const relayReceiver = this.getRelayReceiver(options);
-    const rpcConsumerServer = this.rpcConsumerServerRouter.get(relayReceiver);
-    if (!rpcConsumerServer) {
+    const rpcConsumerServer = this.getRpcConsumerServer(options);
+    if (rpcConsumerServer instanceof Error) {
       throw Logger.fatal(
         "Did not find relay receiver",
-        relayReceiver,
+        rpcConsumerServer.message,
         "Check you initialized the chains properly",
         "Chain Requested",
         options?.chainId ?? this.rpcConsumerServerRouter.keys()

@@ -60,6 +60,13 @@ export class RPCConsumerServer {
     this.finalizationConsensus = finalizationConsensus;
   }
 
+  public supportedChainAndApiInterface(): SupportedChainAndApiInterface {
+    return {
+      specId: this.rpcEndpoint.chainId,
+      apiInterface: this.rpcEndpoint.apiInterface,
+    };
+  }
+
   async probeProviders(
     pairingList: ConsumerSessionsWithProvider[]
   ): Promise<number> {
@@ -470,4 +477,9 @@ export interface RelayResponse {
   latency: number;
   backoff: boolean;
   err: Error | undefined;
+}
+
+export interface SupportedChainAndApiInterface {
+  specId: string;
+  apiInterface: string;
 }

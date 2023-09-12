@@ -24,6 +24,7 @@ export interface SendRelayOptions {
   params: Array<any>; // Required: An array of parameters to be passed to the RPC method
   chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
   metadata?: Metadata[]; // Optional headers to be sent with the request.
+  apiInterface?: string; // Optional specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
 }
 
 /**
