@@ -410,18 +410,6 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		)
 	}
 
-	providerReward, delegatorsReward := k.dualStakingKeeper.CalcRewards(*stakeEntry, totalReward)
-
-	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
-	if err != nil {
-		// panic:ok: reward transfer should never fail
-		utils.LavaFormatPanic("critical: failed to send reward to provider", err,
-			utils.Attribute{Key: "provider", Value: providerAddr},
-			utils.Attribute{Key: "reward", Value: providerRewardCoins},
-		)
-	}
-
 	delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, providerAddr.String(), epoch)
 	if err != nil {
 		return utils.LavaFormatError("cannot get provider's delegators", err)
@@ -434,17 +422,27 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		}
 	}
 
-	err = k.updateDelegatorsReward(ctx, *stakeEntry, relevantDelegations, totalReward, delegatorsReward)
+	providerReward, delegatorsReward := k.dualStakingKeeper.CalcRewards(*stakeEntry, totalReward)
+
+	leftoverRewards := k.updateDelegatorsReward(ctx, *stakeEntry, relevantDelegations, totalReward, delegatorsReward)
+
+	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward.Add(leftoverRewards))}
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
 	if err != nil {
-		return utils.LavaFormatError("cannot update delegators reward map", err)
+		// panic:ok: reward transfer should never fail
+		utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+			utils.Attribute{Key: "provider", Value: providerAddr},
+			utils.Attribute{Key: "reward", Value: providerRewardCoins},
+		)
 	}
 
 	return nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, delegations []dualstakingtypes.Delegation, totalReward math.Int, delegatorsReward math.Int) error {
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, delegations []dualstakingtypes.Delegation, totalReward math.Int, delegatorsReward math.Int) (leftoverRewards math.Int) {
 	totalDelegations := stakeEntry.DelegateTotal.Amount
+	usedDelegatorRewards := math.ZeroInt() // the delegator rewards are calculated using int division, so there might be leftovers
 
 	for _, delegation := range delegations {
 		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
@@ -458,7 +456,8 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, stakeEntry epochstoraget
 			delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
 		}
 		k.dualStakingKeeper.SetDelegatorReward(ctx, delegatorReward)
+		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward.Amount.Amount)
 	}
 
-	return nil
+	return delegatorsReward.Sub(usedDelegatorRewards)
 }
