@@ -454,7 +454,7 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 			delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
 		}
 		k.dualStakingKeeper.SetDelegatorReward(ctx, delegatorReward)
-		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward.Amount.Amount)
+		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorRewardAmount)
 	}
 
 	return delegatorsReward.Sub(usedDelegatorRewards)

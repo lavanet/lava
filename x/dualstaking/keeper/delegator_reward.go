@@ -70,25 +70,31 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 //   3. DelegatorsReward: The total reward for all delegators
 //   4. DelegatorReward: The reward for a specific delegator
 //   5. TotalDelegations: The total sum of delegations of a specific provider
-//   6. DelegationsSum: The provider's stake + TotalDelegations ("effective stake")
+//   6. effectiveStake: The provider's stake + TotalDelegations ("effective stake")
+//   7. DelegationLimit: The provider's delegation limit (e.g. the max value of delegations the provider uses)
+//   8. effectiveDelegations: min(TotalDelegations, DelegationLimit)
 
 // CalcRewards calculates the provider reward and the total reward for delegators
-// providerReward = totalReward * ((totalDelegations*commission + providerStake) / delegationsSum)
+// providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
 func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
-	delegationsSum := k.CalcDelegationsSum(stakeEntry)
+	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry)
+
 	providerReward = totalReward.
 		Mul(stakeEntry.Stake.Amount.
-			Add(stakeEntry.DelegateTotal.Amount.
-				MulRaw(int64(stakeEntry.DelegateCommission)).QuoRaw(100)).
-			Quo(delegationsSum))
+			Add(effectiveDelegations.MulRaw(int64(stakeEntry.DelegateCommission)).QuoRaw(100))).
+		Quo(effectiveStake)
+
 	return providerReward, totalReward.Sub(providerReward)
 }
 
-// CalcDelegationsSum calculates the delegations' sum
-// delegations sum = totalDelegations + providerStake
-func (k Keeper) CalcDelegationsSum(stakeEntry epochstoragetypes.StakeEntry) math.Int {
-	return stakeEntry.DelegateTotal.Amount.Add(stakeEntry.Stake.Amount)
+// CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
+// effectiveDelegations = min(totalDelegations, delegateLimit)
+// effectiveStake = effectiveDelegations + providerStake
+func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int) {
+	effectiveDelegationsInt64 := math.Min(stakeEntry.DelegateTotal.Amount.Int64(), stakeEntry.DelegateLimit.Amount.Int64())
+	effectiveDelegations = math.NewInt(effectiveDelegationsInt64)
+	return effectiveDelegations, effectiveDelegations.Add(stakeEntry.Stake.Amount)
 }
 
 // CalcDelegatorReward calculates a single delegator reward according to its delegation

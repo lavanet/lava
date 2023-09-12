@@ -105,9 +105,8 @@ func sendRelay(ts *tester, provider string, clientAcc common.Account) types.MsgR
 	return types.MsgRelayPayment{Creator: provider, Relays: slices.Slice(relaySession)}
 }
 
-// TestDelegationLimitNotAffectingProviderReward checks that the delegation limit doesn't influence
-// the provider's reward (the limit should only affect pairing)
-func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
+// TestDelegationLimitAffectingProviderReward checks that the delegation limit influences the provider's reward
+func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
 	ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
@@ -120,8 +119,8 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 
 	ts.AdvanceEpoch() // to apply pairing
 
-	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(100))
-	delegationAmount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(200))
+	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)/2))
+	delegationAmount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)))
 
 	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
@@ -133,15 +132,18 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 	require.True(t, found)
 
 	// modify the stake entry to have a delegation limit higher than the total delegations
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1000))
+	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(2*testStake))
+	stakeEntry.DelegateCommission = 50
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
+	stakeEntry, found, stakeEntryIndex = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	require.True(t, found)
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 
-	// this is the expected reward for the provider. This should not change when changing the delegation limit
+	// check the provider's balance
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
 	expectedReward := mint.MulInt64(providerReward.Int64())
@@ -154,9 +156,12 @@ func TestDelegationLimitNotAffectingProviderReward(t *testing.T) {
 	require.Equal(t, expectedReward.TruncateInt64(), newBalance-balance)
 
 	// modify the stake entry to have a delegation limit lower than the total delegations
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1))
+	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
+
+	providerReward, _ = ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
+	expectedReward = mint.MulInt64(providerReward.Int64())
 
 	balance = ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
@@ -177,7 +182,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	ts.AdvanceEpoch() // to apply pairing
 
-	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(100))
+	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
 	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
@@ -188,8 +193,11 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	// ** provider's commission is 100% ** //
 
 	stakeEntry.DelegateCommission = 100
+	stakeEntry.DelegateLimit = delegationAmount1
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
+	stakeEntry, found, stakeEntryIndex = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	require.True(t, found)
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
@@ -224,16 +232,17 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 
-	// the expected reward for the provider with 0% commission is no rewards at all
+	// the expected reward for the provider with 0% commission is half of the total rewards
+	// (in this test specifically, effectiveDelegations = delegateTotal = providerStake)
 	balance = ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
 	newBalance = ts.GetBalance(providerAcc.Addr)
-	require.Equal(t, balance, newBalance)
+	require.Equal(t, expectedRewardForRelay.TruncateInt64()/2, newBalance-balance)
 
-	// the delegator should get the total rewards
+	// the delegator should get the half of the total rewards
 	dReward, found = ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
 	require.True(t, found)
 	expectedDRewardForRelay := mint.MulInt64(totalReward.Int64())
-	require.Equal(t, expectedDRewardForRelay.TruncateInt64(), dReward.Amount.Amount.Int64())
+	require.Equal(t, expectedDRewardForRelay.TruncateInt64()/2, dReward.Amount.Amount.Int64())
 }

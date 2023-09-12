@@ -95,6 +95,6 @@ type DualStakingKeeper interface {
 	GetDelegatorReward(ctx sdk.Context, index string) (val dualstakingtypes.DelegatorReward, found bool)
 	SetDelegatorReward(ctx sdk.Context, delegatorReward dualstakingtypes.DelegatorReward)
 	CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int)
-	CalcDelegationsSum(stakeEntry epochstoragetypes.StakeEntry) math.Int
+	CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int)
 	CalcDelegatorReward(delegatorsReward math.Int, totalReward math.Int, delegation dualstakingtypes.Delegation) math.Int
 }
