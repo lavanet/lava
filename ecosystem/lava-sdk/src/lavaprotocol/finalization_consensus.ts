@@ -112,6 +112,7 @@ export class FinalizationConsensus {
     reply: RelayReply
   ): FinalizationConflict | undefined {
     const latestBlock = reply.getLatestBlock();
+    let finalizationConflict: FinalizationConflict | undefined;
     if (
       this.currentProviderHashesConsensus.length == 0 &&
       this.prevEpochProviderHashesConsensus.length == 0
@@ -126,10 +127,61 @@ export class FinalizationConsensus {
       );
       this.currentProviderHashesConsensus.push(newHashConsensus);
     } else {
-      const inserted = false;
+      let inserted = false;
       for (const consensus of this.currentProviderHashesConsensus) {
-        const ret = this.discrepancyChecker(finalizedBlocks, consensus);
-        // TODO tomorrow: continue;
+        const err = this.discrepancyChecker(finalizedBlocks, consensus);
+        if (err) {
+          finalizationConflict = new FinalizationConflict();
+          finalizationConflict.setRelayreply0(reply);
+          continue;
+        }
+
+        if (!inserted) {
+          this.insertProviderToConsensus(
+            blockDistanceForFinalizedData,
+            consensus,
+            finalizedBlocks,
+            latestBlock,
+            reply,
+            req,
+            providerAddress
+          );
+          inserted = true;
+        }
+      }
+      if (!inserted) {
+        const newHashConsensus = this.newProviderHashesConsensus(
+          blockDistanceForFinalizedData,
+          providerAddress,
+          latestBlock,
+          finalizedBlocks,
+          reply,
+          req
+        );
+        this.currentProviderHashesConsensus.push(newHashConsensus);
+      }
+      if (finalizationConflict) {
+        Logger.info("Simulation: Conflict found in discrepancyChecker");
+        return finalizationConflict;
+      }
+
+      for (const idx in this.prevEpochProviderHashesConsensus) {
+        const err = this.discrepancyChecker(
+          finalizedBlocks,
+          this.prevEpochProviderHashesConsensus[idx]
+        );
+        if (err) {
+          finalizationConflict = new FinalizationConflict();
+          finalizationConflict.setRelayreply0(reply);
+          Logger.info(
+            "Simulation: prev epoch Conflict found in discrepancyChecker",
+            "Consensus idx",
+            idx,
+            "provider",
+            providerAddress
+          );
+          return finalizationConflict;
+        }
       }
     }
     return undefined;
