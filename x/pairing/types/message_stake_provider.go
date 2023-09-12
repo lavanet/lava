@@ -11,7 +11,7 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string, delegateLimit sdk.Coin, delegatecommission uint64) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation uint64, moniker string, delegateLimit sdk.Coin, delegateCommission uint64) *MsgStakeProvider {
 	return &MsgStakeProvider{
 		Creator:            creator,
 		ChainID:            chainID,
@@ -20,7 +20,7 @@ func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []e
 		Geolocation:        geolocation,
 		Moniker:            moniker,
 		DelegateLimit:      delegateLimit,
-		DelegateCommission: delegatecommission,
+		DelegateCommission: delegateCommission,
 	}
 }
 
@@ -56,7 +56,15 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 	}
 
 	if msg.DelegateCommission > 100 {
-		return sdkerrors.Wrapf(DelegatecommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
+		return sdkerrors.Wrapf(DelegateCommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
+	}
+
+	if err = msg.DelegateLimit.Validate(); err != nil {
+		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
+	}
+
+	if msg.DelegateLimit.Denom != epochstoragetypes.TokenDenom {
+		return sdkerrors.Wrapf(DelegateLimitError, "Coin denomanator is not ulava")
 	}
 
 	return nil

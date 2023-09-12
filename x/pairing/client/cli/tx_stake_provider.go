@@ -63,7 +63,7 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			commission, err := cmd.Flags().GetUint64(types.Flagcommission)
+			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func CmdStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
-	cmd.Flags().Uint64(types.Flagcommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)
@@ -131,7 +131,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
-			commission, err := cmd.Flags().GetUint64(types.Flagcommission)
+			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
 			if err != nil {
 				return err
 			}
@@ -218,7 +218,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
-	cmd.Flags().Uint64(types.Flagcommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)

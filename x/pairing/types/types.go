@@ -22,7 +22,7 @@ const (
 
 const (
 	FlagMoniker         = "provider-moniker"
-	Flagcommission      = "delegate-commission"
+	FlagCommission      = "delegate-commission"
 	FlagDelegationLimit = "delegate-limit"
 	MAX_LEN_MONIKER     = 50
 )
