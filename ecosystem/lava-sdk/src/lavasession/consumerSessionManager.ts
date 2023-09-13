@@ -141,7 +141,7 @@ export class ConsumerSessionManager {
       if (
         epoch === this.currentEpoch &&
         rpcEndpoint.chainId === "LAV1" &&
-        rpcEndpoint.apiInterface === "tendermint" &&
+        rpcEndpoint.apiInterface === "tendermintrpc" &&
         this.allowedUpdateForCurrentEpoch
       ) {
         this.allowedUpdateForCurrentEpoch = false;
