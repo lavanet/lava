@@ -425,10 +425,8 @@ export class LavaSDK {
       }
       const dec = new TextDecoder();
       const decodedResponse = dec.decode(reply.getData_asU8());
-
       // Parse response
       const jsonResponse = JSON.parse(decodedResponse);
-
       // Return response
       return jsonResponse;
     });

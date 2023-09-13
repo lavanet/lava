@@ -97,6 +97,7 @@ export class RPCConsumerServer {
         relayPrivateData,
         unwantedProviders
       );
+      // Logger.success(JSON.stringify(relayResult));
 
       if (relayResult instanceof Array) {
         // relayResult can be an Array of errors from relaying to multiple providers

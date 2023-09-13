@@ -90,7 +90,8 @@ export class StateTracker {
 
   async startTracking() {
     Logger.debug("State Tracker started");
-
+    // update all consumer session managers with the provider lists after initialization.
+    await this.update();
     // Set up a timer to call this method again when the next epoch begins
     setTimeout(
       () => this.executeUpdateOnNewEpoch(),
