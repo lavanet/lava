@@ -34,7 +34,6 @@ type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
-	FetchLatestBlockTime(ctx context.Context) (time.Time, error)
 }
 
 type ChainTracker struct {
