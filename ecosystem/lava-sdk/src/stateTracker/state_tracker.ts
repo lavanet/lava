@@ -37,7 +37,6 @@ export class StateTracker {
     walletAddress: string,
     badgeManager?: BadgeManager
   ) {
-    Logger.SetLogLevel(5);
     Logger.debug("Initialization of State Tracker started");
 
     this.updaters = new Map();

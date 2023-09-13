@@ -52,5 +52,6 @@ async function getLatestBlockAndValidators(): Promise<[string, string]> {
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);
+    process.exit(1);
   }
 })();

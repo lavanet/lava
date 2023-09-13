@@ -15,6 +15,7 @@ import {
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
 import { Decimal } from "@cosmjs/math";
+import { Logger } from "../logger/logger";
 
 export interface SendRelayData {
   connectionType: string;
@@ -290,9 +291,10 @@ export function verifyFinalizationData(
   // }
 
   const finalizedBlocks = new Map<number, string>();
-  const finalizaedBlocksObj = JSON.parse(
-    reply.getFinalizedBlocksHashes_asB64()
-  );
+  // const finalizedHashes64 = reply.getFinalizedBlocksHashes_asB64();
+  const dec = new TextDecoder();
+  const decodedResponse = dec.decode(reply.getFinalizedBlocksHashes_asU8());
+  const finalizaedBlocksObj = JSON.parse(decodedResponse);
   for (const key in finalizaedBlocksObj) {
     const numericKey = parseInt(key, 10);
     finalizedBlocks.set(numericKey, finalizaedBlocksObj[key]);
