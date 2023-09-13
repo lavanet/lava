@@ -81,7 +81,11 @@ func (st *StateTracker) oldLavaBlock(latestBlock int64) {
 	defer st.registrationLock.RUnlock()
 
 	// call epoch updater to check emergency mode
-	updater := st.newLavaBlockUpdaters[CallbackKeyForEpochUpdate]
+	updater, ok := st.newLavaBlockUpdaters[CallbackKeyForEpochUpdate]
+	if !ok {
+		utils.LavaFormatDebug("Cannot find epoch updater")
+		return
+	}
 	updater.Update(latestBlock)
 }
 
