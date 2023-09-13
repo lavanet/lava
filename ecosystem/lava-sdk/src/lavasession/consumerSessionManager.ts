@@ -332,6 +332,9 @@ export class ConsumerSessionManager {
         tempIgnoredProviders.providers.add(providerAddress);
 
         if (sessions.size === wantedSessions) {
+          Logger.debug(
+            `returning sessions: ${JSON.stringify(sessions.entries())}`
+          );
           return sessions;
         }
       }

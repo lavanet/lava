@@ -71,7 +71,7 @@ export class PairingUpdater {
       // Update each consumer session manager with matching pairing list
       for (const consumerSessionManager of consumerSessionManagerList) {
         promiseArray.push(
-          this.updateConsummerSessionManager(pairing, consumerSessionManager)
+          this.updateConsumerSessionManager(pairing, consumerSessionManager)
         );
       }
       await Promise.allSettled(promiseArray);
@@ -79,7 +79,7 @@ export class PairingUpdater {
   }
 
   // updateConsummerSessionManager filters pairing list and update consuemr session manager
-  private async updateConsummerSessionManager(
+  private async updateConsumerSessionManager(
     pairing: PairingResponse | undefined,
     consumerSessionManager: ConsumerSessionManager
   ): Promise<void> {
