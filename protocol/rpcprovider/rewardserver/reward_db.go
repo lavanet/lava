@@ -58,8 +58,17 @@ func (rs *RewardDB) Save(cpe *ConsumerProofEntity) error {
 func (rs *RewardDB) BatchSave(cpes []*ConsumerProofEntity) (err error) {
 	dbEntriesMap := map[string][]*DBEntry{} // Key is specId
 
-	for _, reward := range cpes {
-		key := rs.assembleKey(uint64(reward.Proof.Epoch), reward.ConsumerAddr, reward.Proof.SessionId, reward.ConsumerKey)
+	for _, cpe := range cpes {
+		epoch := uint64(cpe.Proof.Epoch)
+		sessionId := cpe.Proof.SessionId
+		key := rs.assembleKey(epoch, cpe.ConsumerAddr, sessionId, cpe.ConsumerKey)
+		reward := &RewardEntity{
+			Epoch:        epoch,
+			ConsumerAddr: cpe.ConsumerAddr,
+			ConsumerKey:  cpe.ConsumerKey,
+			SessionId:    sessionId,
+			Proof:        cpe.Proof,
+		}
 		buf, err := json.Marshal(reward)
 		if err != nil {
 			return utils.LavaFormatError("failed to encode proof: %s", err)
@@ -71,7 +80,7 @@ func (rs *RewardDB) BatchSave(cpes []*ConsumerProofEntity) (err error) {
 			Ttl:  rs.ttl,
 		}
 
-		dbEntriesMap[reward.Proof.SpecId] = append(dbEntriesMap[reward.Proof.SpecId], dbEntry)
+		dbEntriesMap[cpe.Proof.SpecId] = append(dbEntriesMap[cpe.Proof.SpecId], dbEntry)
 	}
 
 	for specId, rewards := range dbEntriesMap {
