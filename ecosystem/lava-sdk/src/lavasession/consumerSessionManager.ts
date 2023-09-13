@@ -37,6 +37,7 @@ export class ConsumerSessionManager {
   >();
   private currentEpoch = 0;
   private numberOfResets = 0;
+  private allowedUpdateForCurrentEpoch = true;
 
   private pairingAddresses: Map<number, string> = new Map<number, string>();
 
@@ -132,14 +133,29 @@ export class ConsumerSessionManager {
     );
 
     if (epoch <= this.currentEpoch) {
-      Logger.error(
-        `trying to update provider list for older epoch ${JSON.stringify({
-          epoch,
-          currentEpoch: this.currentEpoch,
-        })}`
-      );
-      return new Error("Trying to update provider list for older epoch");
+      const rpcEndpoint = this.getRpcEndpoint();
+
+      // For LAVA's initialization, we need to allow the pairing to be updated twice
+      // This condition permits the pairing to be overwritten just once for the same epoch
+      // After this one-time allowance, any attempt to overwrite will result in an error
+      if (
+        epoch === this.currentEpoch &&
+        rpcEndpoint.chainId === "LAV1" &&
+        rpcEndpoint.apiInterface === "tendermint" &&
+        this.allowedUpdateForCurrentEpoch
+      ) {
+        this.allowedUpdateForCurrentEpoch = false;
+      } else {
+        Logger.error(
+          `trying to update provider list for older epoch ${JSON.stringify({
+            epoch,
+            currentEpoch: this.currentEpoch,
+          })}`
+        );
+        return new Error("Trying to update provider list for older epoch");
+      }
     }
+
     this.currentEpoch = epoch;
 
     // reset states
