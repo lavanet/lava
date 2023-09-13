@@ -30,6 +30,7 @@ const (
 type PaymentRequest struct {
 	CU                  uint64
 	BlockHeightDeadline int64
+	PaymentEpoch        uint64
 	Amount              sdk.Coin
 	Client              sdk.AccAddress
 	UniqueIdentifier    uint64
@@ -39,8 +40,8 @@ type PaymentRequest struct {
 }
 
 func (pr *PaymentRequest) String() string {
-	return fmt.Sprintf("cu: %d, BlockHeightDeadline: %d, Amount:%s, Client:%s, UniqueIdentifier:%d, Description:%s, chainID:%s, ConsumerRewardsKey:%s",
-		pr.CU, pr.BlockHeightDeadline, pr.Amount.String(), pr.Client.String(), pr.UniqueIdentifier, pr.Description, pr.ChainID, pr.ConsumerRewardsKey)
+	return fmt.Sprintf("cu: %d, BlockHeightDeadline: %d, PaymentEpoch: %d, Amount:%s, Client:%s, UniqueIdentifier:%d, Description:%s, chainID:%s, ConsumerRewardsKey:%s",
+		pr.CU, pr.BlockHeightDeadline, pr.PaymentEpoch, pr.Amount.String(), pr.Client.String(), pr.UniqueIdentifier, pr.Description, pr.ChainID, pr.ConsumerRewardsKey)
 }
 
 type ConsumerRewards struct {
@@ -500,9 +501,18 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		if !ok {
 			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field descriptionString", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
 		}
+		epochString, ok := attributes["epoch"]
+		if !ok {
+			return nil, utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field epoch", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		epoch, err := strconv.ParseUint(epochString, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 		payment := &PaymentRequest{
 			CU:                  cu,
 			BlockHeightDeadline: block,
+			PaymentEpoch:        epoch,
 			Amount:              mintedCoins,
 			Client:              consumerAddr,
 			Description:         description,
