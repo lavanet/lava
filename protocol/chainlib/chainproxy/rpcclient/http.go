@@ -139,12 +139,12 @@ func DialHTTP(endpoint string) (*Client, error) {
 	return DialHTTPWithClient(endpoint, new(http.Client))
 }
 
-func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}) error {
+func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool) error {
 	hc, ok := c.writeConn.(*httpConn)
 	if !ok {
 		return fmt.Errorf("sendHTTP - c.writeConn.(*httpConn) - type assertion failed" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msg)
+	respBody, err := hc.doRequest(ctx, msg, isJsonRPC)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	if !ok {
 		return fmt.Errorf("sendBatchHTTP - c.writeConn.(*httpConn) - type assertion failed, type:" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msgs)
+	respBody, err := hc.doRequest(ctx, msgs, true)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	return nil
 }
 
-func (hc *httpConn) doRequest(ctx context.Context, msg interface{}) (io.ReadCloser, error) {
+func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bool) (io.ReadCloser, error) {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -200,7 +200,13 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}) (io.ReadClos
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+
+	err = ValidateStatusCodes(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
+	if isJsonRPC && (resp.StatusCode < 200 || resp.StatusCode >= 300) {
 		var buf bytes.Buffer
 		var body []byte
 		if _, err := buf.ReadFrom(resp.Body); err == nil {
@@ -214,6 +220,13 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}) (io.ReadClos
 		}
 	}
 	return resp.Body, nil
+}
+
+func ValidateStatusCodes(statusCode int) error {
+	if statusCode == 504 || statusCode == 429 {
+		return utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode})
+	}
+	return nil
 }
 
 // httpServerConn turns a HTTP connection into a Conn.
