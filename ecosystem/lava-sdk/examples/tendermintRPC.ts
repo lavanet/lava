@@ -33,7 +33,7 @@ async function getLatestBlock(): Promise<string> {
   });
 
   // Parse and extract response
-  const parsedInfo = JSON.parse(info).result.response;
+  const parsedInfo = info.result.response;
 
   // Extract latest block number
   const latestBlockNumber = parsedInfo.last_block_height;
