@@ -329,9 +329,8 @@ func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string
 	found := rws.rewardDB.DBExists(specId)
 	if !found {
 		rws.rewardDB.AddDB(NewLocalDB(rws.rewardStoragePath, providerPublicAddress, specId, shardID))
+		rws.restoreRewardsFromDB(specId)
 	}
-
-	rws.restoreRewardsFromDB(specId)
 }
 
 func (rws *RewardServer) CloseAllDataBases() error {
