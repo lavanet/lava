@@ -81,7 +81,8 @@ export class StateTracker {
     await this.stateQuery.init();
 
     // Run all updaters
-    this.update();
+    // TODO we should not do this for badge
+    await this.update();
 
     // Fetch Pairing
     this.timeTillNextEpoch = await this.stateQuery.fetchPairing();
@@ -89,9 +90,6 @@ export class StateTracker {
 
   async startTracking() {
     Logger.debug("State Tracker started");
-
-    // Call update method on all registered updaters
-    this.update();
 
     // Set up a timer to call this method again when the next epoch begins
     setTimeout(
@@ -112,7 +110,7 @@ export class StateTracker {
         "Pairing list fetched, started new epoch in: " + timeTillNextEpoch
       );
 
-      this.update();
+      await this.update();
 
       // Set up a timer to call this method again when the next epoch begins
       setTimeout(
@@ -145,11 +143,13 @@ export class StateTracker {
     pairingUpdater.registerPairing(consumerSessionManager);
   }
 
-  private update() {
+  private async update() {
     // Call update method on all registered updaters
+    const promiseArray = [];
     for (const updater of this.updaters.values()) {
-      updater.update();
+      promiseArray.push(updater.update());
     }
+    await Promise.allSettled(promiseArray);
   }
 
   // registerForUpdates adds new updater

@@ -42,33 +42,47 @@ export class PairingUpdater {
   }
 
   // update updates pairing list on every consumer session manager
-  public update() {
+  public async update() {
     Logger.debug("Start updating consumer session managers");
-    this.consumerSessionManagerMap.forEach(
-      (consumerSessionManagerList, chainID) => {
-        Logger.debug("Updating pairing list for: ", chainID);
 
-        // Fetch pairing list
-        const pairing = this.stateQuery.getPairing(chainID);
-        if (pairing == undefined) {
-          Logger.debug("Failed fetching pairing list for: ", chainID);
-        } else {
-          Logger.debug("Pairing list fetched: ", pairing);
-        }
+    // Get all chainIDs from the map
+    const chainIDs = Array.from(this.consumerSessionManagerMap.keys());
 
-        // Update each consumer session manager with matching pairing list
-        consumerSessionManagerList.forEach((consumerSessionManager) => {
-          this.updateConsummerSessionManager(pairing, consumerSessionManager);
-        });
+    for (const chainID of chainIDs) {
+      const consumerSessionManagerList =
+        this.consumerSessionManagerMap.get(chainID);
+
+      if (consumerSessionManagerList == undefined) {
+        Logger.debug("Consumer session manager udnefined: ", chainID);
+        continue;
       }
-    );
+
+      Logger.debug("Updating pairing list for: ", chainID);
+
+      // Fetch pairing list
+      const pairing = this.stateQuery.getPairing(chainID);
+      if (pairing == undefined) {
+        Logger.debug("Failed fetching pairing list for: ", chainID);
+      } else {
+        Logger.debug("Pairing list fetched: ", pairing);
+      }
+
+      const promiseArray = [];
+      // Update each consumer session manager with matching pairing list
+      for (const consumerSessionManager of consumerSessionManagerList) {
+        promiseArray.push(
+          this.updateConsummerSessionManager(pairing, consumerSessionManager)
+        );
+      }
+      await Promise.allSettled(promiseArray);
+    }
   }
 
   // updateConsummerSessionManager filters pairing list and update consuemr session manager
-  private updateConsummerSessionManager(
+  private async updateConsummerSessionManager(
     pairing: PairingResponse | undefined,
     consumerSessionManager: ConsumerSessionManager
-  ) {
+  ): Promise<void> {
     // If pairing undefined return + error
     if (pairing == undefined) {
       Logger.error("Pairing response is undefined");
@@ -82,10 +96,12 @@ export class PairingUpdater {
     );
 
     // Update specific consumer session manager
-    consumerSessionManager.updateAllProviders(
+    await consumerSessionManager.updateAllProviders(
       pairing.currentEpoch,
       pairingListForThisCSM
     );
+
+    return;
   }
 
   // filterPairingListByEndpoint filters pairing list and return only the once for rpcInterface

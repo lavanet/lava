@@ -1,3 +1,3 @@
 export interface Updater {
-  update(): void;
+  update(): Promise<any>;
 }

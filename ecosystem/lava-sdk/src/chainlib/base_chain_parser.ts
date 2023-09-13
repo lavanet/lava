@@ -450,14 +450,15 @@ export abstract class BaseChainParser {
 
     const blockDistanceForFinalizedData =
       this.spec?.getBlockDistanceForFinalizedData();
-    if (!blockDistanceForFinalizedData) {
+
+    if (blockDistanceForFinalizedData == undefined) {
       throw Logger.fatal(
         "no block distance for finalized data in spec",
         this.spec
       );
     }
     const blocksInFinalizationProof = this.spec?.getBlocksInFinalizationProof();
-    if (!blocksInFinalizationProof) {
+    if (blocksInFinalizationProof == undefined) {
       throw Logger.fatal("no block in finalization proof in spec", this.spec);
     }
     return {

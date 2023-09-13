@@ -92,6 +92,34 @@ export class ConsumerSessionManager {
     return this.addedToPurgeAndReport;
   }
 
+  public async updateAllProvidersOnBootstrap(
+    pairingList: ConsumerSessionsWithProvider[]
+  ): Promise<Error | undefined> {
+    pairingList.forEach(
+      (provider: ConsumerSessionsWithProvider, idx: number) => {
+        this.pairingAddresses.set(idx, provider.publicLavaAddress);
+        this.pairing.set(provider.publicLavaAddress, provider);
+      }
+    );
+
+    this.setValidAddressesToDefaultValue();
+
+    Logger.debug(
+      `updated providers ${JSON.stringify({
+        epoch: this.currentEpoch,
+        spec: this.rpcEndpoint.key(),
+      })}`
+    );
+    try {
+      const latestLavaBlock = await this.probeProviders(pairingList);
+      this.currentEpoch = latestLavaBlock;
+      return;
+    } catch (err) {
+      // TODO see what we should to
+      Logger.error(err);
+    }
+  }
+
   public async updateAllProviders(
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
@@ -466,6 +494,11 @@ export class ConsumerSessionManager {
     if (epoch != this.currentEpoch) {
       return "";
     }
+    // If the addedToPurgeAndReport is empty return empty string
+    // because "[]" can not be parsed
+    if (this.addedToPurgeAndReport.size == 0) {
+      return "";
+    }
     return JSON.stringify(Array.from(this.addedToPurgeAndReport));
   }
 
@@ -732,8 +765,11 @@ export class ConsumerSessionManager {
     return this.numberOfResets;
   }
 
-  public async probeProviders(pairingList: ConsumerSessionsWithProvider[]) {
-    Logger.info(`providers probe initiated`);
+  public async probeProviders(
+    pairingList: ConsumerSessionsWithProvider[]
+  ): Promise<any> {
+    Logger.debug(`providers probe initiated`);
+    let successfulProbeResponse: any = null;
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
       try {
@@ -759,13 +795,27 @@ export class ConsumerSessionManager {
           })}`
         );
 
-        return probeResponse.getLavaEpoch();
+        const lavaEpoch = probeResponse.getLavaEpoch();
+        Logger.debug(
+          `Lava Epoch for provider ${consumerSessionWithProvider.publicLavaAddress}: ${lavaEpoch}`
+        );
+
+        successfulProbeResponse = lavaEpoch;
       } catch (err) {
-        Logger.error(err);
+        console.log(
+          "Error while probing provider:",
+          consumerSessionWithProvider.publicLavaAddress
+        );
+        //Logger.error(err);
       }
     }
-
-    throw Error("Could not probe any provider");
+    if (successfulProbeResponse) {
+      Logger.debug("Returning successful probe response");
+      return successfulProbeResponse;
+    } else {
+      Logger.debug("No successful probes. Throwing error.");
+      throw Error("Could not probe any provider");
+    }
   }
 
   private getTransport(): grpc.TransportFactory {

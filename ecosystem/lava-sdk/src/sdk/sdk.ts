@@ -163,7 +163,11 @@ export class LavaSDK {
     const csm = new ConsumerSessionManager(
       this.relayer,
       rpcEndpoint,
-      optimizer
+      optimizer,
+      {
+        transport: this.transport,
+        allowInsecureTransport: this.allowInsecureTransport,
+      }
     );
 
     // Get default lava spec
@@ -234,6 +238,11 @@ export class LavaSDK {
           continue;
         }
 
+        if (apiInterface == "grpc") {
+          Logger.debug("Skipping grpc for: ", chainId);
+          continue;
+        }
+
         // get rpc Endpoint
         const rpcEndpoint = new RPCEndpoint(
           "", // We do no need this in sdk as we are not opening any ports
@@ -246,7 +255,11 @@ export class LavaSDK {
         const csm = new ConsumerSessionManager(
           this.relayer,
           rpcEndpoint,
-          optimizer
+          optimizer,
+          {
+            transport: this.transport,
+            allowInsecureTransport: this.allowInsecureTransport,
+          }
         );
 
         tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);

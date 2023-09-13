@@ -36,6 +36,7 @@ export class StateChainQuery {
   private account: AccountData;
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
+  private csp: ConsumerSessionsWithProvider[] = [];
 
   constructor(
     pairingListConfig: string,
@@ -63,11 +64,8 @@ export class StateChainQuery {
 
   public async init(): Promise<void> {
     const pairing = await this.fetchLavaProviders(this.pairingListConfig);
-
-    this.latestBlockNumber = await this.rpcConsumer.probeProviders(
-      pairing.consumerSessionsWithProvider
-    );
-
+    this.csp = pairing.consumerSessionsWithProvider;
+    this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
     // Save pairing response for chainID
     this.pairing.set("LAV1", {
       providers: pairing.stakeEntry,
@@ -83,6 +81,8 @@ export class StateChainQuery {
       Logger.debug("Fetching pairing started");
       // Save time till next epoch
       let timeLeftToNextPairing;
+
+      this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
 
       // Reset pairing
       this.pairing = new Map<string, PairingResponse>(); // TODO: this is supposed to be stored in pairing updater. the state query is supposed to only query info not save it internally this is why we have updaters
@@ -206,22 +206,29 @@ export class StateChainQuery {
         throw new Error("Reply undefined");
       }
 
-      const replyData = reply.getData_asB64();
+      // Decode response
+      const dec = new TextDecoder();
+      const decodedResponse = dec.decode(reply.getData_asU8());
 
-      const byteArrayResponse = base64ToUint8Array(replyData);
+      // Parse response
+      const jsonResponse = JSON.parse(decodedResponse);
+
+      const byteArrayResponse = base64ToUint8Array(
+        jsonResponse.result.response.value
+      );
 
       // Deserialize the Uint8Array to obtain the protobuf message
-      const decodedResponse =
+      const decodedResponse2 =
         QuerySdkPairingResponse.deserializeBinary(byteArrayResponse);
 
       // If response undefined throw an error
-      if (decodedResponse.getPairing() == undefined) {
+      if (decodedResponse2.getPairing() == undefined) {
         throw ProvidersErrors.errProvidersNotFound;
       }
 
       Logger.debug("Get pairing for:" + request.getChainid() + " ended");
       // Return decoded response
-      return decodedResponse;
+      return decodedResponse2;
     } catch (err) {
       // Console log the error
       console.error(err);

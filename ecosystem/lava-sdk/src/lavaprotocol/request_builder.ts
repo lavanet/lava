@@ -90,8 +90,10 @@ function constructRelaySession(
   reportedProviders: string
 ): RelaySession {
   const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
-  const newQualityOfServiceReport = new QualityOfServiceReport();
+  let newQualityOfServiceReport: QualityOfServiceReport | undefined = undefined;
+
   if (lastQos != undefined) {
+    newQualityOfServiceReport = new QualityOfServiceReport();
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReport.setLatency(
       Decimal.fromUserInput(lastQos.getLatency(), 0).toString()
@@ -105,8 +107,13 @@ function constructRelaySession(
   }
   const lastQosExcellence =
     singleConsumerSession.qoSInfo.lastExcellenceQoSReport;
-  const newQualityOfServiceReportExcellence = new QualityOfServiceReport();
+
+  let newQualityOfServiceReportExcellence: QualityOfServiceReport | undefined =
+    undefined;
+
   if (lastQosExcellence != undefined) {
+    newQualityOfServiceReportExcellence = new QualityOfServiceReport();
+
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReportExcellence.setLatency(
       Decimal.fromUserInput(lastQosExcellence.getLatency(), 0).toString()
@@ -118,19 +125,23 @@ function constructRelaySession(
       Decimal.fromUserInput(lastQosExcellence.getSync(), 0).toString()
     );
   }
+
   const relaySession = new RelaySession();
   relaySession.setSpecId(chainID);
   relaySession.setLavaChainId(lavaChainID);
   relaySession.setSessionId(singleConsumerSession.sessionId);
-  relaySession.setCuSum(
-    singleConsumerSession.cuSum + singleConsumerSession.sessionId
-  );
   relaySession.setProvider(providerAddress);
-  relaySession.setQosReport(newQualityOfServiceReport);
-  relaySession.setEpoch(epoch);
-  relaySession.setUnresponsiveProviders(reportedProviders);
-  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence);
+  relaySession.setSig(new Uint8Array());
   relaySession.setContentHash(calculateContentHash(relayData));
+  relaySession.setEpoch(epoch);
+  relaySession.setRelayNum(singleConsumerSession.relayNum);
+  relaySession.setQosReport(newQualityOfServiceReport);
+  relaySession.setCuSum(
+    singleConsumerSession.cuSum + singleConsumerSession.latestRelayCu
+  );
+  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence);
+
+  relaySession.setUnresponsiveProviders(reportedProviders);
   return relaySession;
 }
 
