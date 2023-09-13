@@ -103,20 +103,6 @@ func (csq *StateQuery) CheckEmergencyMode(ctx context.Context) (isEmergency bool
 
 		virtualEpoch = uint64(now.Sub(block.Block.Time).Milliseconds() / downtimeParams.Params.EpochDuration.Milliseconds())
 
-		//utils.LavaFormatDebug("check emergency test", utils.Attribute{
-		//	Key:   "time_from_latest",
-		//	Value: now.Sub(block.Block.Time).Milliseconds(),
-		//}, utils.Attribute{
-		//	Key:   "downtime_param",
-		//	Value: downtimeParams.Params.EpochDuration.Milliseconds(),
-		//}, utils.Attribute{
-		//	Key:   "now",
-		//	Value: now.UTC(),
-		//}, utils.Attribute{
-		//	Key:   "block_time",
-		//	Value: block.Block.Time.UTC(),
-		//})
-
 		return true, virtualEpoch, nil
 	}
 
