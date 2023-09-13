@@ -24,6 +24,7 @@ const (
 	DefaultRewardServerStorage  = ".storage/rewardserver"
 	RewardTTLFlagName           = "reward-ttl"
 	DefaultRewardTTL            = 24 * 60 * time.Minute
+	MaxDBSaveRetries            = 10
 )
 
 type PaymentRequest struct {
@@ -94,14 +95,31 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 			ConsumerKey:  consumerRewardsKey,
 			Proof:        proof,
 		}
-		err := rws.rewardDB.Save(cpe)
-		if err != nil {
-			// TODO: Handle error with the db save - retries
-			utils.LavaFormatError("failed saving proof to rewardDB", err, utils.Attribute{Key: "proof", Value: proof})
-		}
+
+		go rws.trySaveProofToDB(cpe)
 	}
 
 	return existingCU, updatedWithProof
+}
+
+func (rws *RewardServer) trySaveProofToDB(cpe *ConsumerProofEntity) {
+	var err error
+	for i := 0; i < MaxDBSaveRetries; i++ {
+		err = rws.rewardDB.Save(cpe)
+		if err == nil {
+			return
+		}
+
+		utils.LavaFormatWarning("failed saving proof to rewardDB. Retrying...", err,
+			utils.Attribute{Key: "proof", Value: cpe.Proof},
+			utils.Attribute{Key: "attempt", Value: i + 1},
+			utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries},
+		)
+	}
+
+	utils.LavaFormatError("failed saving proof to rewardDB. Reached maximum attempts", err,
+		utils.Attribute{Key: "proof", Value: cpe.Proof},
+		utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries})
 }
 
 func (rws *RewardServer) saveProofInMemory(ctx context.Context, consumerRewardsKey string, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool) {
