@@ -14,8 +14,8 @@ type ProtocolVersion struct {
 }
 
 var lavaProtocolVersion = ProtocolVersion{
-	ConsumerVersion: "0.22.3",
-	ProviderVersion: "0.22.3",
+	ConsumerVersion: protocoltypes.DefaultVersion.ConsumerTarget,
+	ProviderVersion: protocoltypes.DefaultVersion.ProviderTarget,
 }
 
 func GetCurrentVersion() ProtocolVersion {
