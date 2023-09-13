@@ -349,7 +349,12 @@ export class LavaSDK {
           apiInterface = APIInterfaceRest;
           continue;
         }
-        if (apiInterface != "" && apiInterface != supported.apiInterface) {
+        if (
+          apiInterface != "" &&
+          apiInterface != supported.apiInterface &&
+          supported.apiInterface != APIInterfaceRest &&
+          apiInterface != APIInterfaceRest
+        ) {
           return new Error(
             "optional apiInterface argument must be specified when initializing the lavaSDK with a chain that has multiple apiInterfaces that support SendRelayOptions (tendermintrpc,jsonrpc)"
           );
@@ -408,7 +413,7 @@ export class LavaSDK {
         rpcConsumerServer.message,
         "Check you initialized the chains properly",
         "Chain Requested",
-        options?.chainId ?? this.rpcConsumerServerRouter.keys()
+        options?.chainId ?? JSON.stringify(this.rpcConsumerServerRouter.keys())
       );
     }
     const relayResult = rpcConsumerServer.sendRelay(options);
