@@ -7,7 +7,6 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	"github.com/lavanet/lava/common"
-	commontypes "github.com/lavanet/lava/common/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
@@ -71,9 +70,6 @@ func v0_23_0_UpgradeHandler(
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		lk.DualstakingKeeper.InitDelegations(ctx, *common.DefaultGenesis())
-		lk.DualstakingKeeper.InitDelegators(ctx, *common.DefaultGenesis())
-		lk.DualstakingKeeper.InitUnbondings(ctx, []commontypes.RawMessage{})
 		lk.PairingKeeper.InitProviderQoS(ctx, *common.DefaultGenesis())
 		return m.RunMigrations(ctx, c, vm)
 	}
