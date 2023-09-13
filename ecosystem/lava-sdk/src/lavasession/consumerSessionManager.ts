@@ -29,7 +29,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import transport from "../util/browser";
 import { secondsToMillis } from "../util/time";
-import { median, sleep } from "../util/common";
+import { sleep } from "../util/common";
 import { LatestBlockTracker } from "./latestBlockTracker";
 
 const ALLOWED_PROBE_RETRIES = 5;

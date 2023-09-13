@@ -285,7 +285,6 @@ export class ConsumerSessionsWithProvider {
   public sessions: Record<number, SingleConsumerSession>;
   public maxComputeUnits: number;
   public usedComputeUnits = 0;
-  private latestBlock = 0;
   private pairingEpoch: number;
   private conflictFoundAndReported = false; // 0 == not reported, 1 == reported
 
