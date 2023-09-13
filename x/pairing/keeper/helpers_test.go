@@ -4,10 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -114,13 +112,15 @@ func newStubRelayRequest(relaySession *pairingtypes.RelaySession) *pairingtypes.
 
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
+// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
 	clientAddr sdk.AccAddress,
 	providerAddr sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
-	delegations []dualstakingtypes.Delegation,
+	providerRewardPerc uint64,
 ) {
 	// get consumer's project and subscription before payment
 	balance := ts.GetBalance(providerAddr)
@@ -175,14 +175,7 @@ func (ts *tester) payAndVerifyBalance(
 		totalPaid += cuUsed
 	}
 
-	providerReward := totalPaid
-	if delegations != nil {
-		totalPaidInt := math.NewIntFromUint64(totalPaid)
-		stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
-		require.True(ts.T, found)
-		providerRewardInt, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalPaidInt)
-		providerReward = providerRewardInt.Uint64()
-	}
+	providerReward := (totalPaid * providerRewardPerc) / 100
 
 	// verify provider's balance
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
