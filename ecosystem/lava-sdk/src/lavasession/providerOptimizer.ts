@@ -1,6 +1,6 @@
 import { shuffleArray } from "../util/arrays";
 import { ProviderOptimizer } from "./consumerTypes";
-
+import { Logger } from "../logger/logger";
 export class RandomProviderOptimizer implements ProviderOptimizer {
   public chooseProvider(
     allAddresses: string[],
@@ -27,7 +27,7 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
     latency: number,
     success: boolean
   ) {
-    console.log(
+    Logger.warn(
       "RandomProviderOptimizer.appendProbeRelayData() not implemented"
     );
   }
@@ -43,14 +43,14 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
   }
 
   public appendRelayFailure(providerAddress: string) {
-    // console.log("RandomProviderOptimizer.appendRelayFailure() not implemented");
+    // Logger.warn("RandomProviderOptimizer.appendRelayFailure() not implemented");
     return;
   }
 
   public calculateProbabilityOfTimeout(
     availabilityScoreStore: ScoreStore
   ): number {
-    console.log(
+    Logger.warn(
       "RandomProviderOptimizer.calculateProbabilityOfTimeout() not implemented"
     );
     return 0;
@@ -60,14 +60,14 @@ export class RandomProviderOptimizer implements ProviderOptimizer {
     requestedBlock: number,
     providerData: ProviderData
   ): number {
-    console.log(
+    Logger.warn(
       "RandomProviderOptimizer.calculateProbabilityOfBlockError() not implemented"
     );
     return 0;
   }
 
   public getExcellenceQoSReportForProvider(providerAddress: string): any {
-    console.log(
+    Logger.warn(
       "RandomProviderOptimizer.getExcellenceQoSReportForProvider() not implemented"
     );
     return;
