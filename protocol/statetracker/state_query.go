@@ -233,7 +233,16 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 		psq.ResponsesCache.SetWithTTL(MaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
 	}
 
-	return userEntryRes.GetMaxCU(), err
+	isEmergency, virtualEpoch, err := psq.CheckEmergencyMode(ctx)
+	if err != nil {
+		return 0, utils.LavaFormatError("Failed to check emergency mode", err)
+	}
+
+	if isEmergency {
+		return userEntryRes.GetMaxCU() * (virtualEpoch + 1), nil
+	}
+
+	return userEntryRes.GetMaxCU(), nil
 }
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch uint64, providerAddress string) string {

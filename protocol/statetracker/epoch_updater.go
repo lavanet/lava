@@ -1,10 +1,9 @@
 package statetracker
 
 import (
-	"sync"
-	"sync/atomic"
-
+	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/context"
+	"sync"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 
 type EpochUpdatable interface {
 	UpdateEpoch(epoch uint64)
-	UpdateVirtualEpoch(virtualEpoch uint64)
+	UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64)
 }
 
 type EpochUpdater struct {
@@ -39,7 +38,6 @@ func (eu *EpochUpdater) UpdaterKey() string {
 }
 
 func (eu *EpochUpdater) Update(latestBlock int64) {
-	atomic.StoreUint64(&eu.currentVirtualEpoch, eu.currentEpoch)
 	eu.lock.RLock()
 	defer eu.lock.RUnlock()
 	ctx := context.Background()
@@ -49,19 +47,22 @@ func (eu *EpochUpdater) Update(latestBlock int64) {
 		return
 	}
 
-	if isEmergency {
-		for _, epochUpdatable := range eu.epochUpdatables {
-			if epochUpdatable == nil {
-				continue
-			}
-			(*epochUpdatable).UpdateVirtualEpoch(virtualEpoch)
-		}
-	}
-
 	currentEpoch, err := eu.stateQuery.CurrentEpochStart(ctx)
 	if err != nil {
 		return // failed to get the current epoch
 	}
+
+	if isEmergency && virtualEpoch > eu.currentVirtualEpoch {
+		utils.LavaFormatDebug("Emergency mode is turn on", utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch})
+		for _, epochUpdatable := range eu.epochUpdatables {
+			if epochUpdatable == nil {
+				continue
+			}
+			(*epochUpdatable).UpdateVirtualEpoch(currentEpoch, virtualEpoch)
+		}
+	}
+
+	eu.currentVirtualEpoch = virtualEpoch
 
 	if currentEpoch <= eu.currentEpoch {
 		return // still the same epoch

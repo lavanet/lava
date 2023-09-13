@@ -259,8 +259,33 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
 }
 
-func (psm *ProviderSessionManager) UpdateVirtualEpoch(virtualEpoch uint64) {
+func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {
+	if virtualEpoch == 0 {
+		return
+	}
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	// current_max_cu = max_cu + max_cu * prev_virtual_epoch = max_cu * current_virtual_epoch
+	// next_max_cu = max_cu + max_cu * current_virtual_epoch =  max_cu * (current_virtual_epoch + 1)
+	mapOfProviderSessionsWithConsumer := psm.sessionsWithAllConsumers[epoch]
+	for sessionsWithConsumerProjectKey, sessionsWithConsumerProject := range mapOfProviderSessionsWithConsumer.sessionMap {
+		sessionsWithConsumerProject.epochData.MaxComputeUnits =
+			(sessionsWithConsumerProject.epochData.MaxComputeUnits / virtualEpoch) * (virtualEpoch + 1)
 
+		for badgeEpochDataKey, badgeEpochData := range sessionsWithConsumerProject.badgeEpochData {
+			badgeEpochData.MaxComputeUnits = (badgeEpochData.MaxComputeUnits / virtualEpoch) * (virtualEpoch + 1)
+			sessionsWithConsumerProject.badgeEpochData[badgeEpochDataKey] = badgeEpochData
+		}
+
+		for singleSessionKey, singleSession := range sessionsWithConsumerProject.Sessions {
+			singleSession.BadgeUserData.MaxComputeUnits =
+				(singleSession.BadgeUserData.MaxComputeUnits / virtualEpoch) * (virtualEpoch + 1)
+			sessionsWithConsumerProject.Sessions[singleSessionKey] = singleSession
+		}
+
+		mapOfProviderSessionsWithConsumer.sessionMap[sessionsWithConsumerProjectKey] = sessionsWithConsumerProject
+	}
+	psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
 }
 
 func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {

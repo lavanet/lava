@@ -61,7 +61,7 @@ func (s *Server) UpdateEpoch(epoch uint64) {
 	atomic.StoreUint64(&s.virtualEpoch, 0)
 }
 
-func (s *Server) UpdateVirtualEpoch(virtualEpoch uint64) {
+func (s *Server) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {
 	utils.LavaFormatDebug("Got virtual epoch update", utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch})
 	atomic.StoreUint64(&s.virtualEpoch, virtualEpoch)
 }
