@@ -32,7 +32,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	// ** check provider reward without delegators ** //
 
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, nil)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
 
 	// ** check provider reward with delegators ** //
 
@@ -57,7 +57,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations))
 
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
 
 	totalDelegations := stakeEntry.DelegateTotal.Amount
 	_, delegatorsReward := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
@@ -75,7 +75,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 	// ** verify the delegator reward map updates correctly for existing entries ** //
 
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
 
 	for _, delegation := range expectedDelegations {
 		ind := dualstakingtypes.DelegationKey(provider, delegation.Delegator, ts.spec.Index)
@@ -150,7 +150,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	balance := ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
 	newBalance := ts.GetBalance(providerAcc.Addr)
 
 	require.Equal(t, expectedReward.TruncateInt64(), newBalance-balance)
@@ -165,7 +165,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	balance = ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
 	newBalance = ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, expectedReward.TruncateInt64(), newBalance-balance)
 }
@@ -215,7 +215,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	balance := ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
 	newBalance := ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
 
@@ -236,7 +236,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	// (in this test specifically, effectiveDelegations = delegateTotal = providerStake)
 	balance = ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc)
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, res.Delegations)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 50)
 	newBalance = ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, expectedRewardForRelay.TruncateInt64()/2, newBalance-balance)
 
