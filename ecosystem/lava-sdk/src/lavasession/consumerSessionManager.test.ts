@@ -761,6 +761,22 @@ describe("ConsumerSessionManager", () => {
       // 1 for the initial call and 5 retries
       expect(providerRetries).toEqual(6);
     });
+
+    it("returns the median latest block", async () => {
+      const relayer = setupRelayer();
+      let startBlock = 1;
+      jest.spyOn(relayer, "probeProvider").mockImplementation(() => {
+        const response: ProbeReply = new ProbeReply();
+        response.setLatestBlock(startBlock++);
+        return Promise.resolve(response);
+      });
+
+      const cm = setupConsumerSessionManager(relayer);
+      const pairingList = createPairingList("", true);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      expect(cm.getLatestBlock()).toEqual(NUMBER_OF_PROVIDERS / 2);
+    });
   });
 });
 

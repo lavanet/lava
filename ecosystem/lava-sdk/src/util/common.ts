@@ -59,3 +59,18 @@ export function sleep(ms: number): Promise<void> {
     }, ms);
   });
 }
+
+export function median(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  values = [...values].sort((a, b) => a - b);
+  const half = Math.floor(values.length / 2);
+
+  if (values.length % 2) {
+    return values[half];
+  }
+
+  return (values[half - 1] + values[half]) / 2;
+}

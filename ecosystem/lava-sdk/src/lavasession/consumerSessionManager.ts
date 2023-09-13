@@ -29,7 +29,8 @@ import { grpc } from "@improbable-eng/grpc-web";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import transport from "../util/browser";
 import { secondsToMillis } from "../util/time";
-import { sleep } from "../util/common";
+import { median, sleep } from "../util/common";
+import { LatestBlockTracker } from "./latestBlockTracker";
 
 const ALLOWED_PROBE_RETRIES = 5;
 const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
@@ -44,21 +45,16 @@ export class ConsumerSessionManager {
   private numberOfResets = 0;
 
   private pairingAddresses: Map<number, string> = new Map<number, string>();
-
   public validAddresses: string[] = [];
   private addonAddresses: Map<string, string[]> = new Map<string, string[]>();
   private addedToPurgeAndReport: Set<string> = new Set();
 
-  private pairingPurge: Map<string, ConsumerSessionsWithProvider> = new Map<
-    string,
-    ConsumerSessionsWithProvider
-  >();
   private providerOptimizer: ProviderOptimizer;
-
   private relayer: Relayer;
-
   private transport: grpc.TransportFactory;
   private allowInsecureTransport = false;
+
+  private latestBlockTracker = new LatestBlockTracker();
 
   public constructor(
     relayer: Relayer,
@@ -97,6 +93,10 @@ export class ConsumerSessionManager {
     return this.addedToPurgeAndReport;
   }
 
+  public getLatestBlock(): number {
+    return this.latestBlockTracker.getLatestBlock();
+  }
+
   public async updateAllProviders(
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
@@ -117,7 +117,6 @@ export class ConsumerSessionManager {
     this.addedToPurgeAndReport.clear();
     this.numberOfResets = 0;
     this.removeAddonAddress();
-    this.pairingPurge = this.pairing;
     this.pairing = new Map<string, ConsumerSessionsWithProvider>();
 
     pairingList.forEach(
@@ -721,7 +720,7 @@ export class ConsumerSessionManager {
       })}`
     );
 
-    const retryPairings = [];
+    const retryPairings: ConsumerSessionsWithProvider[] = [];
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
       try {
@@ -733,7 +732,10 @@ export class ConsumerSessionManager {
         const endTime = performance.now();
         const latency = endTime - startTime;
 
-        consumerSessionWithProvider.setLatestBlock(response.getLatestBlock());
+        this.latestBlockTracker.setLatestBlockFor(
+          consumerSessionWithProvider,
+          response.getLatestBlock()
+        );
         this.providerOptimizer.appendProbeRelayData(
           consumerSessionWithProvider.publicLavaAddress,
           latency,
@@ -756,7 +758,9 @@ export class ConsumerSessionManager {
           false
         );
 
-        if (!consumerSessionWithProvider.getLatestBlock()) {
+        if (
+          !this.latestBlockTracker.hasLatestBlock(consumerSessionWithProvider)
+        ) {
           retryPairings.push(consumerSessionWithProvider);
         }
       }

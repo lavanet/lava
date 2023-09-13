@@ -303,14 +303,6 @@ export class ConsumerSessionsWithProvider {
     this.pairingEpoch = pairingEpoch;
   }
 
-  public getLatestBlock(): number {
-    return this.latestBlock;
-  }
-
-  public setLatestBlock(block: number) {
-    this.latestBlock = block;
-  }
-
   public getPublicLavaAddressAndPairingEpoch(): {
     publicProviderAddress: string;
     pairingEpoch: number;
