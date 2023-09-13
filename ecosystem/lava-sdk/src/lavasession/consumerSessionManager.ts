@@ -139,10 +139,10 @@ export class ConsumerSessionManager {
       // This condition permits the pairing to be overwritten just once for the same epoch
       // After this one-time allowance, any attempt to overwrite will result in an error
       if (
+        this.allowedUpdateForCurrentEpoch &&
         epoch === this.currentEpoch &&
         rpcEndpoint.chainId === "LAV1" &&
-        rpcEndpoint.apiInterface === "tendermintrpc" &&
-        this.allowedUpdateForCurrentEpoch
+        rpcEndpoint.apiInterface === "tendermintrpc"
       ) {
         this.allowedUpdateForCurrentEpoch = false;
       } else {
