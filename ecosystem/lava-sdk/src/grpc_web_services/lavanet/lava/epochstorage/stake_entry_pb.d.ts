@@ -32,6 +32,19 @@ export class StakeEntry extends jspb.Message {
   getMoniker(): string;
   setMoniker(value: string): void;
 
+  hasDelegateTotal(): boolean;
+  clearDelegateTotal(): void;
+  getDelegateTotal(): cosmos_base_v1beta1_coin_pb.Coin | undefined;
+  setDelegateTotal(value?: cosmos_base_v1beta1_coin_pb.Coin): void;
+
+  hasDelegateLimit(): boolean;
+  clearDelegateLimit(): void;
+  getDelegateLimit(): cosmos_base_v1beta1_coin_pb.Coin | undefined;
+  setDelegateLimit(value?: cosmos_base_v1beta1_coin_pb.Coin): void;
+
+  getDelegateCommission(): number;
+  setDelegateCommission(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): StakeEntry.AsObject;
   static toObject(includeInstance: boolean, msg: StakeEntry): StakeEntry.AsObject;
@@ -51,6 +64,9 @@ export namespace StakeEntry {
     geolocation: number,
     chain: string,
     moniker: string,
+    delegateTotal?: cosmos_base_v1beta1_coin_pb.Coin.AsObject,
+    delegateLimit?: cosmos_base_v1beta1_coin_pb.Coin.AsObject,
+    delegateCommission: number,
   }
 }
 

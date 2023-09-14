@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
@@ -14,6 +14,7 @@ wait_count_blocks 2
 echo "submitted first proposal"
 echo "latest vote2: $(latest_vote)"
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
+wait_count_blocks 4
 echo "voted on first proposal"
 sleep 4
 lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -47,4 +48,3 @@ lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER
 sleep_until_next_epoch
 
 . ${__dir}/setup_providers.sh
-

@@ -889,6 +889,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "lavanet.lava.pairing.Query/SdkPairing",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "lavanet.lava.pairing.Query/GetPairing",
                                 "block_parsing": {
                                     "parser_arg": [

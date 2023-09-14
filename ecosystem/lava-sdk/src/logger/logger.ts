@@ -62,6 +62,10 @@ class LoggerClass {
     }
   }
 
+  public fatal(message?: any, ...optionalParams: any[]): Error {
+    return new Error(chalk.red("[Error]", message, ...optionalParams));
+  }
+
   public emptyLine() {
     console.log();
   }

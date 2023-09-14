@@ -90,7 +90,7 @@ telescope({
       useRecursiveV2encoding: true
     },
     lcdClients: {
-      enabled: false
+      enabled: true
     },
     rpcClients: {
       enabled: true,
