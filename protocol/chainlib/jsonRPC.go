@@ -97,7 +97,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var requestedBlock int64 = 0
 	var nodeMsg *parsedMessage
 	for idx, msg := range msgs {
-		var requestedBlockForMessage int64 = 0
+		var requestedBlockForMessage int64
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
@@ -141,7 +141,8 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			// 3. we need to set the requested block to be the latest of them all or not_applicable
 			// 4. we need to take the most comprehensive apiCollection (addon)
 			// 5. take the strictest category
-			category := api.Category.Combine(apiCont.api.Category)
+			category := api.GetCategory()
+			category = category.Combine(apiCont.api.GetCategory())
 			if apiCollectionForMessage.CollectionData.AddOn != "" && apiCollectionForMessage.CollectionData.AddOn != apiCollection.CollectionData.AddOn {
 				if apiCollection.CollectionData.AddOn != "" {
 					return nil, utils.LavaFormatError("unable to parse batch request with api from multiple addons", nil,
