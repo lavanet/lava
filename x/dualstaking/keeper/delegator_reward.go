@@ -82,10 +82,10 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
 	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry)
 
-	providerReward = totalReward.
-		Mul(stakeEntry.Stake.Amount.
-			Add(effectiveDelegations.MulRaw(int64(stakeEntry.DelegateCommission)).QuoRaw(100))).
-		Quo(effectiveStake)
+	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
+	rawDelegatorsReward := totalReward.Mul(effectiveDelegations).Quo(effectiveStake)
+	providerCommission := rawDelegatorsReward.MulRaw(int64(stakeEntry.DelegateCommission)).QuoRaw(100)
+	providerReward = providerReward.Add(providerCommission)
 
 	return providerReward, totalReward.Sub(providerReward)
 }
