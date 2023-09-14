@@ -1045,7 +1045,7 @@ func runProtocolE2E(timeout time.Duration) {
 	lt := &lavaTest{
 		grpcConn:     grpcConn,
 		lavadPath:    gopath + "/bin/lavad",
-		protocolPath: gopath + "/bin/lava-protocol",
+		protocolPath: gopath + "/bin/lavap",
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
 		logs:         make(map[string]*bytes.Buffer),
