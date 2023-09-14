@@ -56,6 +56,7 @@ func stubPaymentEvents(num int) (tos []map[string]string) {
 		from["reliabilityPay"] = "false"
 		from["Mint"] = from["BasePay"]
 		from["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
+		from["epoch"] = strconv.FormatUint(uint64(relay.Epoch), 10)
 		to = map[string]string{}
 		sessionIDStr := strconv.FormatUint(uniqueIdentifier, 10)
 		for key, value := range from {
