@@ -22,7 +22,7 @@ async function getLatestBlock(): Promise<string> {
     },
 
     // chainID for Ethereum mainnet
-    chainIds: ["ETH1"],
+    chainIds: "ETH1",
 
     // geolocation 1 for North america - geolocation 2 for Europe providers
     // default value is 1
