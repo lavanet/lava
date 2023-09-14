@@ -281,9 +281,27 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	if blockDistanceForEpochValidity > currentEpoch {
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
 	}
+
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	if err != nil {
+		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to get earliest block in memory", err)
+	}
+
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
 
 	for epoch, epochRewards := range rws.rewards {
+		if epoch < earliestSavedEpoch {
+			err := rws.rewardDB.DeleteEpochRewards(epoch)
+			if err != nil {
+				utils.LavaFormatWarning("gatherRewardsForClaim failed deleting epoch from rewardDB", err, utils.Attribute{Key: "epoch", Value: epoch})
+			}
+
+			delete(rws.rewards, epoch)
+
+			// Epoch is too old, we can't claim the rewards anymore.
+			continue
+		}
+
 		if lavasession.IsEpochValidForUse(epoch, activeEpochThreshold) {
 			// Epoch is still active so we don't claim the rewards yet.
 			continue
