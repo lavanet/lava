@@ -91,35 +91,35 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 	existingCU, updatedWithProof = rws.saveProofInMemory(ctx, consumerRewardsKey, proof, epoch, consumerAddr)
 
 	if updatedWithProof {
-		cpe := &ConsumerProofEntity{
+		rewardEntity := &RewardEntity{
 			ConsumerAddr: consumerAddr,
 			ConsumerKey:  consumerRewardsKey,
 			Proof:        proof,
 		}
 
-		go rws.trySaveProofToDB(cpe)
+		go rws.trySaveProofToDB(rewardEntity)
 	}
 
 	return existingCU, updatedWithProof
 }
 
-func (rws *RewardServer) trySaveProofToDB(cpe *ConsumerProofEntity) {
+func (rws *RewardServer) trySaveProofToDB(rewardEntity *RewardEntity) {
 	var err error
 	for i := 0; i < MaxDBSaveRetries; i++ {
-		err = rws.rewardDB.Save(cpe)
+		err = rws.rewardDB.Save(rewardEntity)
 		if err == nil {
 			return
 		}
 
 		utils.LavaFormatWarning("failed saving proof to rewardDB. Retrying...", err,
-			utils.Attribute{Key: "proof", Value: cpe.Proof},
+			utils.Attribute{Key: "proof", Value: rewardEntity.Proof},
 			utils.Attribute{Key: "attempt", Value: i + 1},
 			utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries},
 		)
 	}
 
 	utils.LavaFormatError("failed saving proof to rewardDB. Reached maximum attempts", err,
-		utils.Attribute{Key: "proof", Value: cpe.Proof},
+		utils.Attribute{Key: "proof", Value: rewardEntity.Proof},
 		utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries})
 }
 

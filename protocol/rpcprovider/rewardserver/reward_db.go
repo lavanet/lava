@@ -45,30 +45,15 @@ type RewardEntity struct {
 	Proof        *pairingtypes.RelaySession
 }
 
-type ConsumerProofEntity struct {
-	ConsumerAddr string
-	ConsumerKey  string
-	Proof        *pairingtypes.RelaySession
+func (rs *RewardDB) Save(rewardEntity *RewardEntity) error {
+	return rs.BatchSave([]*RewardEntity{rewardEntity})
 }
 
-func (rs *RewardDB) Save(cpe *ConsumerProofEntity) error {
-	return rs.BatchSave([]*ConsumerProofEntity{cpe})
-}
-
-func (rs *RewardDB) BatchSave(cpes []*ConsumerProofEntity) (err error) {
+func (rs *RewardDB) BatchSave(rewardEntities []*RewardEntity) (err error) {
 	dbEntriesMap := map[string][]*DBEntry{} // Key is specId
 
-	for _, cpe := range cpes {
-		epoch := uint64(cpe.Proof.Epoch)
-		sessionId := cpe.Proof.SessionId
-		key := rs.assembleKey(epoch, cpe.ConsumerAddr, sessionId, cpe.ConsumerKey)
-		reward := &RewardEntity{
-			Epoch:        epoch,
-			ConsumerAddr: cpe.ConsumerAddr,
-			ConsumerKey:  cpe.ConsumerKey,
-			SessionId:    sessionId,
-			Proof:        cpe.Proof,
-		}
+	for _, reward := range rewardEntities {
+		key := rs.assembleKey(reward.Epoch, reward.ConsumerAddr, reward.SessionId, reward.ConsumerKey)
 		buf, err := json.Marshal(reward)
 		if err != nil {
 			return utils.LavaFormatError("failed to encode proof: %s", err)
@@ -80,7 +65,7 @@ func (rs *RewardDB) BatchSave(cpes []*ConsumerProofEntity) (err error) {
 			Ttl:  rs.ttl,
 		}
 
-		dbEntriesMap[cpe.Proof.SpecId] = append(dbEntriesMap[cpe.Proof.SpecId], dbEntry)
+		dbEntriesMap[reward.Proof.SpecId] = append(dbEntriesMap[reward.Proof.SpecId], dbEntry)
 	}
 
 	for specId, rewards := range dbEntriesMap {

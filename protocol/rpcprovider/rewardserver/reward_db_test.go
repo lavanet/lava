@@ -22,9 +22,11 @@ func TestSave(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	cpe := &rewardserver.ConsumerProofEntity{
+	cpe := &rewardserver.RewardEntity{
+		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: "consumerAddr",
 		ConsumerKey:  "consumerKey",
+		SessionId:    proof.SessionId,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
@@ -45,11 +47,13 @@ func TestSaveBatch(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	cpes := []*rewardserver.ConsumerProofEntity{}
+	cpes := []*rewardserver.RewardEntity{}
 	for i := 0; i < 100; i++ {
-		cpes = append(cpes, &rewardserver.ConsumerProofEntity{
+		cpes = append(cpes, &rewardserver.RewardEntity{
+			Epoch:        uint64(proof.Epoch),
 			ConsumerAddr: fmt.Sprintf("consumerAddr%d", i),
 			ConsumerKey:  fmt.Sprintf("consumerKey%d", i),
+			SessionId:    proof.SessionId,
 			Proof:        proof,
 		})
 	}
@@ -71,9 +75,11 @@ func TestFindAll(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 
-	cpe := &rewardserver.ConsumerProofEntity{
+	cpe := &rewardserver.RewardEntity{
+		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: "consumerAddr",
 		ConsumerKey:  "consumerKey" + "specId",
+		SessionId:    proof.SessionId,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
@@ -94,9 +100,11 @@ func TestFindOne(t *testing.T) {
 	proof := common.BuildRelayRequest(ctx, "providerAddr", []byte{}, uint64(0), "specId", nil)
 	proof.Epoch = 1
 
-	cpe := &rewardserver.ConsumerProofEntity{
+	cpe := &rewardserver.RewardEntity{
+		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: "consumerAddr",
 		ConsumerKey:  "consumerKey",
+		SessionId:    proof.SessionId,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
@@ -124,9 +132,11 @@ func TestDeleteClaimedRewards(t *testing.T) {
 	proof.Sig = sig
 
 	consumerRewardsKey := "consumerKey"
-	cpe := &rewardserver.ConsumerProofEntity{
+	cpe := &rewardserver.RewardEntity{
+		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: addr.String(),
 		ConsumerKey:  consumerRewardsKey,
+		SessionId:    proof.SessionId,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
@@ -156,9 +166,11 @@ func TestDeleteEpochRewards(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	cpe := &rewardserver.ConsumerProofEntity{
+	cpe := &rewardserver.RewardEntity{
+		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: addr.String(),
 		ConsumerKey:  "consumerKey",
+		SessionId:    proof.SessionId,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
@@ -190,9 +202,11 @@ func TestRewardsWithTTL(t *testing.T) {
 	require.NoError(t, err)
 	proof.Sig = sig
 
-	cpe := &rewardserver.ConsumerProofEntity{
+	cpe := &rewardserver.RewardEntity{
+		Epoch:        uint64(proof.Epoch),
 		ConsumerAddr: addr.String(),
 		ConsumerKey:  "consumerKey",
+		SessionId:    proof.SessionId,
 		Proof:        proof,
 	}
 	err = rs.Save(cpe)
