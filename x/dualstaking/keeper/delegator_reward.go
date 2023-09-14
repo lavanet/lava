@@ -102,9 +102,7 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
 // delegatorReward = delegatorsReward * (delegatorStake / totalDelegations) = (delegatorsReward * delegatorStake) / totalDelegations
 func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
-	a := delegatorsReward.Mul(delegation.Amount.Amount)
-	b := a.Quo(totalDelegations)
-	return b
+	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
 }
 
 // CalcProviderRewardWithDelegations is the main function handling provider rewards with delegations
