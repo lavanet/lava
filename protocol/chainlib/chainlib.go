@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -70,7 +70,7 @@ type ChainMessage interface {
 
 type ChainMessageForSend interface {
 	GetApi() *spectypes.Api
-	GetRPCMessage() parser.RPCInput
+	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection
 }
 

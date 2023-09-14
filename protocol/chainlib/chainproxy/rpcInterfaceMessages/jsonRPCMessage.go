@@ -2,6 +2,7 @@ package rpcInterfaceMessages
 
 import (
 	"encoding/json"
+	"fmt"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -38,6 +39,26 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 
 	if rpcMsg.Params != nil {
 		msg.Params = rpcMsg.Params
+	}
+
+	return msg, nil
+}
+
+func ConvertBatchElement(batchElement rpcclient.BatchElemWithId) (JsonrpcMessage, error) {
+	JsonError, ok := batchElement.Error.(*rpcclient.JsonError)
+	if !ok {
+		return JsonrpcMessage{}, batchElement.Error
+	}
+	result, ok := batchElement.Result.(json.RawMessage)
+	if !ok {
+		return JsonrpcMessage{}, batchElement.Error
+	}
+	msg := JsonrpcMessage{
+		Version: rpcclient.Vsn,
+		ID:      batchElement.ID,
+		Method:  batchElement.Method,
+		Error:   JsonError,
+		Result:  result,
 	}
 
 	return msg, nil
@@ -96,4 +117,38 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 		return batch, err
 	}
 	return []JsonrpcMessage{msg}, nil
+}
+
+type JsonrpcBatchMessage struct {
+	batch []rpcclient.BatchElemWithId
+	chainproxy.BaseMessage
+}
+
+func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+	return false
+}
+
+func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
+	return jbm.batch
+}
+func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
+	batch := make([]rpcclient.BatchElemWithId, len(msgs))
+	for idx, msg := range msgs {
+		var elementParams []interface{}
+		switch params := msg.Params.(type) {
+		case []interface{}:
+			elementParams = params
+		default:
+			return JsonrpcBatchMessage{}, fmt.Errorf("invalid params in batch, batching only supports ordered arguments %s %+v", msg.Method, params)
+		}
+		element := rpcclient.BatchElemWithId{
+			Method: msg.Method,
+			Args:   elementParams,
+			Result: json.RawMessage{}, // will unmarshal the result here, if it fails it sets Error field
+			Error:  nil,
+			ID:     msg.ID,
+		}
+		batch[idx] = element
+	}
+	return JsonrpcBatchMessage{batch: batch}, nil
 }

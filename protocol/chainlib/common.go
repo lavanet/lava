@@ -11,6 +11,7 @@ import (
 	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/metadata"
@@ -214,4 +215,33 @@ func convertRelayMetaDataToMDMetaData(md []pairingtypes.Metadata) metadata.MD {
 		responseMetaData[v.Name] = append(responseMetaData[v.Name], v.Value)
 	}
 	return responseMetaData
+}
+
+// combine two requested block to the most advanced one
+// the hierarchy is as follows:
+// NOT_APPLICABLE
+// LATEST_BLOCK
+// FINALIZED
+// SAFE
+// numeric value (descending)
+// earliest
+func UpdateRequestedBlockInBatch(requestedBlock int64, newRequestedBlock int64) (combinedRequestedBlock int64) {
+	handleOneNegative := func(first int64, second int64) (ret int64, handled bool) {
+		if first < 0 && second > 0 {
+			if first == spectypes.EARLIEST_BLOCK {
+				return second, true
+			}
+			return first, true
+		}
+		return 0, false
+	}
+	ret, handled := handleOneNegative(requestedBlock, newRequestedBlock)
+	if handled {
+		return ret
+	}
+	ret, handled = handleOneNegative(newRequestedBlock, requestedBlock)
+	if handled {
+		return ret
+	}
+	return slices.Max([]int64{requestedBlock, newRequestedBlock})
 }

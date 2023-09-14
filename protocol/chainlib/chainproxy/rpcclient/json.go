@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	vsn                      = "2.0"
+	Vsn                      = "2.0"
 	serviceMethodSeparator   = "_"
 	subscribeMethodSuffix    = "_subscribe"
 	unsubscribeMethodSuffix  = "_unsubscribe"
@@ -122,11 +122,11 @@ func (msg *JsonrpcMessage) response(result interface{}) *JsonrpcMessage {
 		// TODO: wrap with 'internal server error'
 		return msg.errorResponse(err)
 	}
-	return &JsonrpcMessage{Version: vsn, ID: msg.ID, Result: enc}
+	return &JsonrpcMessage{Version: Vsn, ID: msg.ID, Result: enc}
 }
 
 func errorMessage(err error) *JsonrpcMessage {
-	msg := &JsonrpcMessage{Version: vsn, ID: null, Error: &JsonError{
+	msg := &JsonrpcMessage{Version: Vsn, ID: null, Error: &JsonError{
 		Code:    defaultErrorCode,
 		Message: err.Error(),
 	}}

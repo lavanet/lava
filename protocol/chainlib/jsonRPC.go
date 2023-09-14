@@ -95,6 +95,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
 	var requestedBlock int64 = 0
+	var nodeMsg *parsedMessage
 	for idx, msg := range msgs {
 		var requestedBlockForMessage int64 = 0
 		// Check api is supported and save it in nodeMsg
@@ -129,6 +130,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
 			requestedBlock = requestedBlockForMessage
+
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -162,12 +164,33 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 					Encoding:     "",
 				},
 			}
-			requestedBlock = updateRequestedBlockInBatch(requestedBlock, requestedBlockForMessage)
+			requestedBlock = UpdateRequestedBlockInBatch(requestedBlock, requestedBlockForMessage)
 		}
 	}
-	nodeMsg := apip.newChainMessage(api, requestedBlock, &msg, apiCollection)
+	if len(msgs) == 1 {
+		nodeMsg = apip.newChainMessage(api, requestedBlock, &msgs[0], apiCollection)
+	} else {
+		nodeMsg, err = apip.newBatchChainMessage(api, requestedBlock, msgs, apiCollection)
+		if err != nil {
+			return nil, err
+		}
+	}
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
+}
+
+func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
+	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
+	if err != nil {
+		return nil, err
+	}
+	nodeMsg := &parsedMessage{
+		api:            serviceApi,
+		apiCollection:  apiCollection,
+		requestedBlock: requestedBlock,
+		msg:            &batchMessage,
+	}
+	return nodeMsg, err
 }
 
 func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
@@ -475,6 +498,49 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 	return nil
 }
 
+func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, rpc *rpcclient.Client, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, err error) {
+	if len(nodeMessage.GetHeaders()) > 0 {
+		for _, metadata := range nodeMessage.GetHeaders() {
+			rpc.SetHeader(metadata.Name, metadata.Value)
+			// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
+			defer rpc.SetHeader(metadata.Name, "")
+		}
+	}
+	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetApi().Category.HangingApi {
+		relayTimeout += cp.averageBlockTime
+	}
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	defer cancel()
+	batch := nodeMessage.GetBatch()
+	err = rpc.BatchCallContext(connectCtx, batch)
+	if err != nil {
+		// Validate if the error is related to the provider connection to the node or it is a valid error
+		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
+		if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
+			return nil, parsedError
+		}
+	}
+	var replyMsgs = make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
+	for idx, element := range batch {
+		// convert them because batch elements can't be marshaled back to the user, they are missing tags and flieds
+		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
+		if err != nil {
+			return nil, err
+		}
+	}
+	retData, err := json.Marshal(replyMsgs)
+	if err != nil {
+		return nil, err
+	}
+	reply := &pairingtypes.RelayReply{
+		Data: retData,
+	}
+	return reply, nil
+}
+
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
@@ -486,7 +552,16 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+		// this could be a batch message
+		batchMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcBatchMessage)
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("invalid message type in jsonrpc failed to cast JsonrpcMessage or JsonrpcBatchMessage from chainMessage", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage})
+		}
+		if ch != nil {
+			return nil, "", nil, utils.LavaFormatError("does not support subscribe in a batch", nil)
+		}
+		reply, err := cp.sendBatchMessage(ctx, batchMessage, rpc, chainMessage)
+		return reply, "", nil, err
 	}
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage

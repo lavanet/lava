@@ -58,7 +58,7 @@ const (
 )
 
 // BatchElem is an element in a batch request.
-type BatchElem struct {
+type BatchElemWithId struct {
 	Method string
 	Args   []interface{}
 	// The result is unmarshaled into this field. Result must be set to a
@@ -68,6 +68,7 @@ type BatchElem struct {
 	// Error is set if the server returns an error for this request, or if
 	// unmarshaling into Result fails. It is not set for I/O errors.
 	Error error
+	ID    json.RawMessage // added an ID field because we build our messages with built in ID, this is optional and can be set to nil
 }
 
 // Client represents a connection to an RPC server.
@@ -318,7 +319,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 // a request is reported through the Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCall(b []BatchElem) error {
+func (c *Client) BatchCall(b []BatchElemWithId) error {
 	ctx := context.Background()
 	return c.BatchCallContext(ctx, b)
 }
@@ -332,7 +333,7 @@ func (c *Client) BatchCall(b []BatchElem) error {
 // Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
+func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) error {
 	var (
 		msgs = make([]*JsonrpcMessage, len(b))
 		byID = make(map[string]int, len(b))
@@ -345,6 +346,9 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 		msg, err := c.newMessageArray(elem.Method, elem.Args...)
 		if err != nil {
 			return err
+		}
+		if elem.ID != nil {
+			msg.ID = elem.ID
 		}
 		msgs[i] = msg
 		op.ids[i] = msg.ID
@@ -461,9 +465,9 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, paramsIn interface{}) (*JsonrpcMessage, error) {
 	var msg *JsonrpcMessage
 	if id == nil {
-		msg = &JsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	} else {
-		msg = &JsonrpcMessage{Version: vsn, ID: id, Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: id, Method: method}
 	}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
@@ -475,7 +479,7 @@ func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, params
 }
 
 func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*JsonrpcMessage, error) {
-	msg := &JsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+	msg := &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
 		if msg.Params, err = json.Marshal(paramsIn); err != nil {
@@ -488,9 +492,9 @@ func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*Jsonr
 func (c *Client) newMessageMapWithID(method string, id json.RawMessage, paramsIn map[string]interface{}) (*JsonrpcMessage, error) {
 	var msg *JsonrpcMessage
 	if id == nil {
-		msg = &JsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	} else {
-		msg = &JsonrpcMessage{Version: vsn, ID: id, Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: id, Method: method}
 	}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error

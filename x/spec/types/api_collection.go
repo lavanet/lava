@@ -146,7 +146,7 @@ func (apic *ApiCollection) CombineWithOthers(others []*ApiCollection, combineWit
 	return nil
 }
 
-func (sc *SpecCategory) Combine(other SpecCategory) SpecCategory {
+func (sc SpecCategory) Combine(other SpecCategory) SpecCategory {
 	returnedCategory := SpecCategory{
 		Deterministic: sc.Deterministic && other.Deterministic,
 		Local:         sc.Local || other.Local,

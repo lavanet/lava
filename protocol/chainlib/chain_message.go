@@ -1,13 +1,13 @@
 package chainlib
 
 import (
-	"github.com/lavanet/lava/protocol/parser"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type updatableRPCInput interface {
-	parser.RPCInput
+	rpcInterfaceMessages.GenericMessage
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 }
@@ -36,7 +36,7 @@ func (pm parsedMessage) RequestedBlock() int64 {
 	return pm.requestedBlock
 }
 
-func (pm parsedMessage) GetRPCMessage() parser.RPCInput {
+func (pm parsedMessage) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
 	return pm.msg
 }
 

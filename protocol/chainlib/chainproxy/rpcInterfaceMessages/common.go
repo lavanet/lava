@@ -5,6 +5,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type ParsableRPCInput struct {
@@ -22,4 +23,8 @@ func (pri ParsableRPCInput) GetParams() interface{} {
 
 func (pri ParsableRPCInput) GetResult() json.RawMessage {
 	return pri.Result
+}
+
+type GenericMessage interface {
+	GetHeaders() []pairingtypes.Metadata
 }
