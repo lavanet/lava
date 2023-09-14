@@ -14,9 +14,9 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyVersion     = []byte("Version")
 	DefaultVersion = Version{
-		ProviderTarget: "0.22.3",
+		ProviderTarget: "0.23.0",
 		ProviderMin:    "0.21.0",
-		ConsumerTarget: "0.22.3",
+		ConsumerTarget: "0.23.0",
 		ConsumerMin:    "0.21.0",
 	}
 )

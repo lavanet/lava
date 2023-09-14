@@ -50,16 +50,6 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 
 	allStakeStorage := m.keeper.GetAllStakeStorage(ctx)
 	for _, storage := range allStakeStorage {
-		if storage.Index[:len(ProviderKey)] != ProviderKey {
-			utils.LavaFormatDebug("migrate: skip storage with key",
-				utils.Attribute{Key: "index", Value: storage.Index})
-			continue
-		}
-		if len(storage.Index) <= len(ProviderKey) {
-			utils.LavaFormatDebug("migrate: skip storage with short key",
-				utils.Attribute{Key: "index", Value: storage.Index})
-			continue
-		}
 		utils.LavaFormatDebug("migrate: handle storage with key",
 			utils.Attribute{Key: "index", Value: storage.Index})
 		for i := range storage.StakeEntries {
