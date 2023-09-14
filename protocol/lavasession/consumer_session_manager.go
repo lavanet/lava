@@ -86,6 +86,29 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	return nil
 }
 
+func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpoch uint64) {
+	for key, consumerSessionWithProvider := range csm.pairing {
+		if consumerSessionWithProvider == nil {
+			continue
+		}
+
+		consumerSessionWithProvider.MaxComputeUnits =
+			consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
+		csm.pairing[key] = consumerSessionWithProvider
+	}
+
+	for key, consumerSessionWithProvider := range csm.pairingPurge {
+		if consumerSessionWithProvider == nil {
+			continue
+		}
+
+		consumerSessionWithProvider.MaxComputeUnits =
+			consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
+		csm.pairingPurge[key] = consumerSessionWithProvider
+	}
+
+}
+
 func (csm *ConsumerSessionManager) Initialized() bool {
 	csm.lock.RLock()         // start by locking the class lock.
 	defer csm.lock.RUnlock() // we defer here so in case we return an error it will unlock automatically.

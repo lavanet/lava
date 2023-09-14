@@ -82,11 +82,15 @@ func (st *StateTracker) oldLavaBlock(latestBlock int64) {
 
 	// call epoch updater to check emergency mode
 	updater, ok := st.newLavaBlockUpdaters[CallbackKeyForEpochUpdate]
-	if !ok {
-		utils.LavaFormatDebug("Cannot find epoch updater")
-		return
+	if ok {
+		updater.Update(latestBlock)
 	}
-	updater.Update(latestBlock)
+
+	// call pairing updater to check emergency mode and update CU limits on rpcconsumer side
+	updater, ok = st.newLavaBlockUpdaters[CallbackKeyForPairingUpdate]
+	if ok {
+		updater.Update(latestBlock)
+	}
 }
 
 func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {

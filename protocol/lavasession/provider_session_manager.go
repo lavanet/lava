@@ -118,7 +118,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	}
 
 	mapOfProviderSessionsWithConsumer, foundEpochInMap := psm.sessionsWithAllConsumers[epoch]
-	if !foundEpochInMap {
+	if !foundEpochInMap || len(mapOfProviderSessionsWithConsumer.sessionMap) == 0 {
 		mapOfProviderSessionsWithConsumer = sessionData{sessionMap: make(map[string]*ProviderSessionsWithConsumerProject)}
 		psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
 	}
@@ -276,12 +276,20 @@ func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch
 			sessionsWithConsumerProject.epochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
 
 		for badgeEpochDataKey, badgeEpochData := range sessionsWithConsumerProject.badgeEpochData {
+			if badgeEpochData == nil {
+				continue
+			}
+
 			badgeEpochData.MaxComputeUnits =
 				badgeEpochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
 			sessionsWithConsumerProject.badgeEpochData[badgeEpochDataKey] = badgeEpochData
 		}
 
 		for singleSessionKey, singleSession := range sessionsWithConsumerProject.Sessions {
+			if singleSession == nil || singleSession.BadgeUserData == nil {
+				continue
+			}
+
 			singleSession.BadgeUserData.MaxComputeUnits =
 				singleSession.BadgeUserData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
 			sessionsWithConsumerProject.Sessions[singleSessionKey] = singleSession

@@ -17,6 +17,7 @@ type PairingUpdater struct {
 	lock                       sync.RWMutex
 	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
+	currentVirtualEpoch        uint64
 	stateQuery                 *ConsumerStateQuery
 }
 
@@ -51,9 +52,21 @@ func (pu *PairingUpdater) UpdaterKey() string {
 }
 
 func (pu *PairingUpdater) Update(latestBlock int64) {
-	pu.lock.RLock()
-	defer pu.lock.RUnlock()
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
 	ctx := context.Background()
+
+	isEmergency, virtualEpoch, err := pu.stateQuery.CheckEmergencyMode(ctx)
+	if err != nil {
+		utils.LavaFormatError("failed to check emergency mode", err)
+		return
+	}
+
+	if isEmergency {
+		pu.updateConsumerSessionManagerCULimits(virtualEpoch)
+		pu.currentVirtualEpoch = virtualEpoch
+	}
+
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return
 	}
@@ -83,6 +96,23 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 		}
 	}
 	pu.nextBlockForUpdate = nextBlockForUpdateMin
+}
+
+func (pu *PairingUpdater) updateConsumerSessionManagerCULimits(virtualEpoch uint64) {
+	consumerSessionManagersMap := pu.consumerSessionManagersMap
+	for chainID, consumerSessionManagers := range consumerSessionManagersMap {
+		for i, consumerSessionManager := range consumerSessionManagers {
+			if consumerSessionManager == nil {
+				continue
+			}
+			consumerSessionManager.UpdateMaxCULimit(virtualEpoch, pu.currentVirtualEpoch)
+			consumerSessionManagers[i] = consumerSessionManager
+		}
+
+		consumerSessionManagersMap[chainID] = consumerSessionManagers
+	}
+
+	pu.consumerSessionManagersMap = consumerSessionManagersMap
 }
 
 func (pu *PairingUpdater) updateConsummerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
