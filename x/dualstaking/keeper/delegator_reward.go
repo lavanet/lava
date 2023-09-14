@@ -4,6 +4,8 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
@@ -100,5 +102,65 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
 // delegatorReward = delegatorsReward * (delegatorStake / totalDelegations) = (delegatorsReward * delegatorStake) / totalDelegations
 func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
-	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
+	a := delegatorsReward.Mul(delegation.Amount.Amount)
+	b := a.Quo(totalDelegations)
+	return b
+}
+
+// CalcProviderRewardWithDelegations is the main function handling provider rewards with delegations
+// it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
+func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error) {
+	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
+	if err != nil {
+		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
+			utils.Attribute{Key: "block", Value: block},
+		)
+	}
+	stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
+	if err != nil {
+		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
+			utils.Attribute{Key: "provider", Value: providerAddr},
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "epoch", Value: epoch},
+			utils.Attribute{Key: "totalRewards", Value: totalReward},
+		)
+	}
+
+	delegations, err := k.GetProviderDelegators(ctx, providerAddr.String(), epoch)
+	if err != nil {
+		return math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
+	}
+
+	relevantDelegations := slices.Filter(delegations,
+		func(d types.Delegation) bool { return d.ChainID == chainID })
+
+	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
+
+	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward)
+
+	return providerReward.Add(leftoverRewards), nil
+}
+
+// updateDelegatorsReward updates the delegator rewards map
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, totalReward math.Int, delegatorsReward math.Int) (leftoverRewards math.Int) {
+	usedDelegatorRewards := math.ZeroInt() // the delegator rewards are calculated using int division, so there might be leftovers
+
+	for _, delegation := range delegations {
+		delegatorRewardAmount := k.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
+		rewardMapKey := types.DelegationKey(delegation.Provider, delegation.Delegator, delegation.ChainID)
+
+		delegatorReward, found := k.GetDelegatorReward(ctx, rewardMapKey)
+		if !found {
+			delegatorReward.Provider = delegation.Provider
+			delegatorReward.Delegator = delegation.Delegator
+			delegatorReward.ChainId = delegation.ChainID
+			delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
+		} else {
+			delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
+		}
+		k.SetDelegatorReward(ctx, delegatorReward)
+		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorRewardAmount)
+	}
+
+	return delegatorsReward.Sub(usedDelegatorRewards)
 }

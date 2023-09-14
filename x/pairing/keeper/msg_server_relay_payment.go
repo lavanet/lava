@@ -11,8 +11,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
@@ -208,7 +206,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
+		coinsPerCu := k.Keeper.MintCoinsPerCU(ctx)
+		reward := coinsPerCu.MulInt64(int64(relay.CuSum))
 		if reward.IsZero() {
 			continue
 		}
@@ -395,35 +394,17 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 
 // distributeRewards is the main function for reward distribution for providers and delegators
 func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) error {
-	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, block)
+	providerReward, err := k.dualStakingKeeper.CalcProviderRewardWithDelegations(ctx, providerAddr, chainID, block, totalReward)
 	if err != nil {
 		return utils.LavaFormatError(types.ProviderRewardError.Error(), err,
-			utils.Attribute{Key: "block", Value: block},
-		)
-	}
-	stakeEntry, err := k.epochStorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
-	if err != nil {
-		return utils.LavaFormatError(types.ProviderRewardError.Error(), err,
-			utils.Attribute{Key: "provider", Value: providerAddr},
+			utils.Attribute{Key: "provider", Value: providerAddr.String()},
 			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "epoch", Value: epoch},
-			utils.Attribute{Key: "totalRewards", Value: totalReward},
+			utils.Attribute{Key: "block", Value: block},
+			utils.Attribute{Key: "totalReward", Value: totalReward},
 		)
 	}
 
-	delegations, err := k.dualStakingKeeper.GetProviderDelegators(ctx, providerAddr.String(), epoch)
-	if err != nil {
-		return utils.LavaFormatError("cannot get provider's delegators", err)
-	}
-
-	relevantDelegations := slices.Filter(delegations,
-		func(d dualstakingtypes.Delegation) bool { return d.ChainID == chainID })
-
-	providerReward, delegatorsReward := k.dualStakingKeeper.CalcRewards(*stakeEntry, totalReward)
-
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward)
-
-	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward.Add(leftoverRewards))}
+	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
 	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
 	if err != nil {
 		// panic:ok: reward transfer should never fail
@@ -434,28 +415,4 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 	}
 
 	return nil
-}
-
-// updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []dualstakingtypes.Delegation, totalReward math.Int, delegatorsReward math.Int) (leftoverRewards math.Int) {
-	usedDelegatorRewards := math.ZeroInt() // the delegator rewards are calculated using int division, so there might be leftovers
-
-	for _, delegation := range delegations {
-		delegatorRewardAmount := k.dualStakingKeeper.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
-		rewardMapKey := dualstakingtypes.DelegationKey(delegation.Provider, delegation.Delegator, delegation.ChainID)
-
-		delegatorReward, found := k.dualStakingKeeper.GetDelegatorReward(ctx, rewardMapKey)
-		if !found {
-			delegatorReward.Provider = delegation.Provider
-			delegatorReward.Delegator = delegation.Delegator
-			delegatorReward.ChainId = delegation.ChainID
-			delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
-		} else {
-			delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
-		}
-		k.dualStakingKeeper.SetDelegatorReward(ctx, delegatorReward)
-		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorRewardAmount)
-	}
-
-	return delegatorsReward.Sub(usedDelegatorRewards)
 }

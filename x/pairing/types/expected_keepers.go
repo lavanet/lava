@@ -4,7 +4,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -50,7 +49,6 @@ type EpochstorageKeeper interface {
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
-	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
 }
 
 type AccountKeeper interface {
@@ -91,10 +89,5 @@ type DowntimeKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)
-	GetDelegatorReward(ctx sdk.Context, index string) (val dualstakingtypes.DelegatorReward, found bool)
-	SetDelegatorReward(ctx sdk.Context, delegatorReward dualstakingtypes.DelegatorReward)
-	CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int)
-	CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int)
-	CalcDelegatorReward(delegatorsReward math.Int, totalReward math.Int, delegation dualstakingtypes.Delegation) math.Int
+	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error)
 }

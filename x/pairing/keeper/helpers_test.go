@@ -180,7 +180,9 @@ func (ts *tester) payAndVerifyBalance(
 	// verify provider's balance
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
 	want := mint.MulInt64(int64(providerReward))
-	require.Equal(ts.T, balance+want.TruncateInt64(), ts.GetBalance(providerAddr))
+	expectedReward := balance + want.TruncateInt64()
+	actualReward := ts.GetBalance(providerAddr)
+	require.Equal(ts.T, expectedReward, actualReward)
 
 	// verify each project balance
 	// (project used-cu should increase and respective subscription cu-left should decrease)
