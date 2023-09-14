@@ -26,6 +26,8 @@ message MsgStakeProvider {
   repeated lavanet.lava.epochstorage.Endpoint endpoints = 4 [(gogoproto.nullable) = false];
   int32 geolocation = 5;
   string moniker = 6;
+  cosmos.base.v1beta1.Coin delegate_limit = 7 [(gogoproto.nullable) = false];
+  uint64 delegate_commission = 8; // delegation commission (precentage 0-100)
 }
 
 message MsgStakeProviderResponse {

@@ -130,7 +130,7 @@ func (ts *Tester) Accounts(name string) []Account {
 }
 
 func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "")
+	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
 }
 
 func (ts *Tester) StakeProviderExtra(
@@ -240,7 +240,7 @@ func NewCoin(amount int64) sdk.Coin {
 }
 
 func NewCoins(amount ...int64) []sdk.Coin {
-	return slices.Filter(amount, NewCoin)
+	return slices.Map(amount, NewCoin)
 }
 
 // keeper helpers
@@ -427,12 +427,14 @@ func (ts *Tester) TxPairingStakeProvider(
 	moniker string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:     addr,
-		ChainID:     chainID,
-		Amount:      amount,
-		Geolocation: geoloc,
-		Endpoints:   endpoints,
-		Moniker:     moniker,
+		Creator:            addr,
+		ChainID:            chainID,
+		Amount:             amount,
+		Geolocation:        geoloc,
+		Endpoints:          endpoints,
+		Moniker:            moniker,
+		DelegateLimit:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateCommission: 100,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
