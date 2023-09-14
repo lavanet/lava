@@ -357,7 +357,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
 		}
 
-		err = rws.rewardDB.DeleteClaimedRewards(uint64(payment.PaymentEpoch), payment.Client.String(), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
+		err = rws.rewardDB.DeleteClaimedRewards(payment.PaymentEpoch, payment.Client.String(), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		}
