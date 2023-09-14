@@ -270,7 +270,11 @@ func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch
 	latestVirtualEpoch := psm.latestVirtualEpoch
 	// current_max_cu = max_cu + max_cu * prev_virtual_epoch = max_cu * current_virtual_epoch
 	// next_max_cu = max_cu + max_cu * current_virtual_epoch =  max_cu * (current_virtual_epoch + 1)
-	mapOfProviderSessionsWithConsumer := psm.sessionsWithAllConsumers[epoch]
+	mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]
+	if !ok {
+		return
+	}
+
 	for sessionsWithConsumerProjectKey, sessionsWithConsumerProject := range mapOfProviderSessionsWithConsumer.sessionMap {
 		sessionsWithConsumerProject.epochData.MaxComputeUnits =
 			sessionsWithConsumerProject.epochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
