@@ -122,7 +122,7 @@ proto.lavanet.lava.plans.Policy.deserializeBinaryFromReader = function(msg, read
       msg.addChainPolicies(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readUint64());
+      var value = /** @type {number} */ (reader.readInt32());
       msg.setGeolocationProfile(value);
       break;
     case 3:
@@ -184,7 +184,7 @@ proto.lavanet.lava.plans.Policy.serializeBinaryToWriter = function(message, writ
   }
   f = message.getGeolocationProfile();
   if (f !== 0) {
-    writer.writeUint64(
+    writer.writeInt32(
       2,
       f
     );
@@ -259,7 +259,7 @@ proto.lavanet.lava.plans.Policy.prototype.clearChainPoliciesList = function() {
 
 
 /**
- * optional uint64 geolocation_profile = 2;
+ * optional int32 geolocation_profile = 2;
  * @return {number}
  */
 proto.lavanet.lava.plans.Policy.prototype.getGeolocationProfile = function() {

@@ -19,8 +19,8 @@ export class Subscription extends jspb.Message {
   getPlanBlock(): number;
   setPlanBlock(value: number): void;
 
-  getDurationTotal(): number;
-  setDurationTotal(value: number): void;
+  getDurationBought(): number;
+  setDurationBought(value: number): void;
 
   getDurationLeft(): number;
   setDurationLeft(value: number): void;
@@ -33,6 +33,12 @@ export class Subscription extends jspb.Message {
 
   getMonthCuLeft(): number;
   setMonthCuLeft(value: number): void;
+
+  getCluster(): string;
+  setCluster(value: string): void;
+
+  getDurationTotal(): number;
+  setDurationTotal(value: number): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Subscription.AsObject;
@@ -51,11 +57,13 @@ export namespace Subscription {
     block: number,
     planIndex: string,
     planBlock: number,
-    durationTotal: number,
+    durationBought: number,
     durationLeft: number,
     monthExpiryTime: number,
     monthCuTotal: number,
     monthCuLeft: number,
+    cluster: string,
+    durationTotal: number,
   }
 }
 

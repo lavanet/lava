@@ -64,11 +64,13 @@ proto.lavanet.lava.subscription.Subscription.toObject = function(includeInstance
     block: jspb.Message.getFieldWithDefault(msg, 3, 0),
     planIndex: jspb.Message.getFieldWithDefault(msg, 4, ""),
     planBlock: jspb.Message.getFieldWithDefault(msg, 5, 0),
-    durationTotal: jspb.Message.getFieldWithDefault(msg, 6, 0),
+    durationBought: jspb.Message.getFieldWithDefault(msg, 6, 0),
     durationLeft: jspb.Message.getFieldWithDefault(msg, 7, 0),
     monthExpiryTime: jspb.Message.getFieldWithDefault(msg, 8, 0),
     monthCuTotal: jspb.Message.getFieldWithDefault(msg, 10, 0),
-    monthCuLeft: jspb.Message.getFieldWithDefault(msg, 11, 0)
+    monthCuLeft: jspb.Message.getFieldWithDefault(msg, 11, 0),
+    cluster: jspb.Message.getFieldWithDefault(msg, 13, ""),
+    durationTotal: jspb.Message.getFieldWithDefault(msg, 14, 0)
   };
 
   if (includeInstance) {
@@ -127,7 +129,7 @@ proto.lavanet.lava.subscription.Subscription.deserializeBinaryFromReader = funct
       break;
     case 6:
       var value = /** @type {number} */ (reader.readUint64());
-      msg.setDurationTotal(value);
+      msg.setDurationBought(value);
       break;
     case 7:
       var value = /** @type {number} */ (reader.readUint64());
@@ -144,6 +146,14 @@ proto.lavanet.lava.subscription.Subscription.deserializeBinaryFromReader = funct
     case 11:
       var value = /** @type {number} */ (reader.readUint64());
       msg.setMonthCuLeft(value);
+      break;
+    case 13:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setCluster(value);
+      break;
+    case 14:
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setDurationTotal(value);
       break;
     default:
       reader.skipField();
@@ -209,7 +219,7 @@ proto.lavanet.lava.subscription.Subscription.serializeBinaryToWriter = function(
       f
     );
   }
-  f = message.getDurationTotal();
+  f = message.getDurationBought();
   if (f !== 0) {
     writer.writeUint64(
       6,
@@ -241,6 +251,20 @@ proto.lavanet.lava.subscription.Subscription.serializeBinaryToWriter = function(
   if (f !== 0) {
     writer.writeUint64(
       11,
+      f
+    );
+  }
+  f = message.getCluster();
+  if (f.length > 0) {
+    writer.writeString(
+      13,
+      f
+    );
+  }
+  f = message.getDurationTotal();
+  if (f !== 0) {
+    writer.writeUint64(
+      14,
       f
     );
   }
@@ -323,16 +347,16 @@ proto.lavanet.lava.subscription.Subscription.prototype.setPlanBlock = function(v
 
 
 /**
- * optional uint64 duration_total = 6;
+ * optional uint64 duration_bought = 6;
  * @return {number}
  */
-proto.lavanet.lava.subscription.Subscription.prototype.getDurationTotal = function() {
+proto.lavanet.lava.subscription.Subscription.prototype.getDurationBought = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
 };
 
 
 /** @param {number} value */
-proto.lavanet.lava.subscription.Subscription.prototype.setDurationTotal = function(value) {
+proto.lavanet.lava.subscription.Subscription.prototype.setDurationBought = function(value) {
   jspb.Message.setProto3IntField(this, 6, value);
 };
 
@@ -394,6 +418,36 @@ proto.lavanet.lava.subscription.Subscription.prototype.getMonthCuLeft = function
 /** @param {number} value */
 proto.lavanet.lava.subscription.Subscription.prototype.setMonthCuLeft = function(value) {
   jspb.Message.setProto3IntField(this, 11, value);
+};
+
+
+/**
+ * optional string cluster = 13;
+ * @return {string}
+ */
+proto.lavanet.lava.subscription.Subscription.prototype.getCluster = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 13, ""));
+};
+
+
+/** @param {string} value */
+proto.lavanet.lava.subscription.Subscription.prototype.setCluster = function(value) {
+  jspb.Message.setProto3StringField(this, 13, value);
+};
+
+
+/**
+ * optional uint64 duration_total = 14;
+ * @return {number}
+ */
+proto.lavanet.lava.subscription.Subscription.prototype.getDurationTotal = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 14, 0));
+};
+
+
+/** @param {number} value */
+proto.lavanet.lava.subscription.Subscription.prototype.setDurationTotal = function(value) {
+  jspb.Message.setProto3IntField(this, 14, value);
 };
 
 
