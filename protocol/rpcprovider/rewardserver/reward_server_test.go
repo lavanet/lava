@@ -147,9 +147,9 @@ func TestSendNewProof(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20)
 		existingCU, updatedWithProf := uint64(0), false
 		for _, proof := range testCase.Proofs {
-			rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20)
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
 		}
 		require.Equal(t, testCase.ExpectedExistingCu, existingCU)
