@@ -107,7 +107,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 	for _, reward := range res.Rewards {
 		delegatorAcc, err := sdk.AccAddressFromBech32(delegator)
 		if err != nil {
-			utils.LavaFormatError("could not claim delegator reward from provider", err,
+			utils.LavaFormatError("critical: could not claim delegator reward from provider", err,
 				utils.Attribute{Key: "delegator", Value: delegator},
 				utils.Attribute{Key: "provider", Value: provider},
 			)

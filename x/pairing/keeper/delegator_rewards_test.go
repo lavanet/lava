@@ -275,18 +275,19 @@ func TestProviderRewardWithCommission(t *testing.T) {
 func claimRewardsAndVerifyBalance(ts *tester, delegator sdk.AccAddress, provider string, chainID string) {
 	balance := ts.GetBalance(delegator)
 
-	ind := dualstakingtypes.DelegationKey(provider, delegator.String(), chainID)
-	reward, found := ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
-	require.True(ts.T, found)
+	res, err := ts.QueryDualstakingDelegatorRewards(delegator.String(), provider, chainID)
+	require.Nil(ts.T, err)
+	reward := res.Rewards[0]
 
-	_, err := ts.Servers.DualstakingServer.ClaimRewards(ts.Ctx, dualstakingtypes.NewMsgClaimRewards(delegator.String(), provider))
+	_, err = ts.Servers.DualstakingServer.ClaimRewards(ts.Ctx, dualstakingtypes.NewMsgClaimRewards(delegator.String(), provider))
 	require.Nil(ts.T, err)
 
 	newBalance := ts.GetBalance(delegator)
 	require.Equal(ts.T, balance+reward.Amount.Amount.Int64(), newBalance)
 
-	_, found = ts.Keepers.Dualstaking.GetDelegatorReward(ts.Ctx, ind)
-	require.False(ts.T, found)
+	res, err = ts.QueryDualstakingDelegatorRewards(delegator.String(), provider, chainID)
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, 0, len(res.Rewards))
 }
 
 func TestQueryDelegatorRewards(t *testing.T) {
