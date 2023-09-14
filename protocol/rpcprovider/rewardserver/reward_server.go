@@ -11,6 +11,7 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/desertbit/timer"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -98,37 +99,11 @@ func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.R
 
 	existingCU, updatedWithProof = rws.saveProofInMemory(ctx, consumerRewardsKey, proof, epoch, consumerAddr)
 
-	if updatedWithProof {
-		rewardEntity := &RewardEntity{
-			ConsumerAddr: consumerAddr,
-			ConsumerKey:  consumerRewardsKey,
-			Proof:        proof,
-		}
-
-		go rws.trySaveProofToDB(rewardEntity)
+	if proof.RelayNum%rws.rewardsSnapshotThreshold == 0 {
+		rws.rewardsSnapshotThresholdCh <- struct{}{}
 	}
 
 	return existingCU, updatedWithProof
-}
-
-func (rws *RewardServer) trySaveProofToDB(rewardEntity *RewardEntity) {
-	var err error
-	for i := 0; i < MaxDBSaveRetries; i++ {
-		err = rws.rewardDB.Save(rewardEntity)
-		if err == nil {
-			return
-		}
-
-		utils.LavaFormatWarning("failed saving proof to rewardDB. Retrying...", err,
-			utils.Attribute{Key: "proof", Value: rewardEntity.Proof},
-			utils.Attribute{Key: "attempt", Value: i + 1},
-			utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries},
-		)
-	}
-
-	utils.LavaFormatError("failed saving proof to rewardDB. Reached maximum attempts", err,
-		utils.Attribute{Key: "proof", Value: rewardEntity.Proof},
-		utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries})
 }
 
 func (rws *RewardServer) saveProofInMemory(ctx context.Context, consumerRewardsKey string, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string) (existingCU uint64, updatedWithProof bool) {
@@ -402,7 +377,64 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec * uint(time.Second))
 	rws.rewardsSnapshotTimer = timer.NewTimer(rws.rewardsSnapshotTimeoutDuration)
 	rws.rewardsSnapshotThresholdCh = make(chan struct{})
+
+	go rws.saveRewardsSnapshotToDBJob()
 	return rws
+}
+
+func (rws *RewardServer) saveRewardsSnapshotToDBJob() {
+	for {
+		select {
+		case <-rws.rewardsSnapshotTimer.C:
+			rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+		case <-rws.rewardsSnapshotThresholdCh:
+			rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+		}
+	}
+}
+
+func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer() {
+	// We lock without defer because the DB is already locking itself
+	rws.lock.RLock()
+	rws.rewardsSnapshotTimer.Reset(rws.rewardsSnapshotTimeoutDuration)
+
+	rewardEntities := []*RewardEntity{}
+	for epoch, epochRewards := range rws.rewards {
+		for consumerAddr, consumerRewards := range epochRewards.consumerRewards {
+			for sessionId, proof := range consumerRewards.proofs {
+				rewardEntity := &RewardEntity{
+					Epoch:        epoch,
+					ConsumerAddr: consumerAddr,
+					ConsumerKey:  getKeyForConsumerRewards(proof.SpecId, consumerAddr),
+					SessionId:    sessionId,
+					Proof:        proof,
+				}
+				rewardEntities = append(rewardEntities, rewardEntity)
+			}
+		}
+	}
+	rws.lock.RUnlock()
+	if len(rewardEntities) == 0 {
+		return
+	}
+
+	utils.LavaFormatDebug("saving rewards snapshot to the DB", utils.Attribute{Key: "rewards", Value: len(rewardEntities)})
+
+	var err error
+	for i := 0; i < MaxDBSaveRetries; i++ {
+		err = rws.rewardDB.BatchSave(rewardEntities)
+		if err == nil {
+			return
+		}
+
+		utils.LavaFormatWarning("failed saving proofs snapshot to rewardDB. Retrying...", err,
+			utils.Attribute{Key: "attempt", Value: i + 1},
+			utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries},
+		)
+	}
+
+	utils.LavaFormatError("failed saving proofs snapshot to rewardDB. Reached maximum attempts", err,
+		utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries})
 }
 
 func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
