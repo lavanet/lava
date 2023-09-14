@@ -605,17 +605,3 @@ func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch ui
 
 	return delegations, nil
 }
-
-func (k Keeper) GetAllDelegations(ctx sdk.Context) []types.Delegation {
-	var ds []types.Delegation
-	inds := k.delegationFS.GetAllEntryIndices(ctx)
-	for _, ind := range inds {
-		blocks := k.delegationFS.GetAllEntryVersions(ctx, ind)
-		for _, block := range blocks {
-			var d types.Delegation
-			k.delegationFS.FindEntry(ctx, ind, block, &d)
-			ds = append(ds, d)
-		}
-	}
-	return ds
-}

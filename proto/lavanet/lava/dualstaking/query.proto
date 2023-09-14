@@ -27,7 +27,7 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/dualstaking/provider_delegators/{provider}";
   }
 
-  // Queries a provider for all its delegators.
+  // Queries a the unclaimed rewards of a delegator.
   rpc DelegatorRewards(QueryDelegatorRewardsRequest) returns (QueryDelegatorRewardsResponse) {
     option (google.api.http).get = "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}";
   }
