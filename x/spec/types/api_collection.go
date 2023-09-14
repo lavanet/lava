@@ -155,5 +155,4 @@ func (sc SpecCategory) Combine(other SpecCategory) SpecCategory {
 		HangingApi:    sc.HangingApi || other.HangingApi,
 	}
 	return returnedCategory
-
 }

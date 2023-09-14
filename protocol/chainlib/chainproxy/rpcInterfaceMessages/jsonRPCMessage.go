@@ -138,6 +138,7 @@ func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, m
 func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
 	return jbm.batch
 }
+
 func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 	batch := make([]rpcclient.BatchElemWithId, len(msgs))
 	for idx, msg := range msgs {

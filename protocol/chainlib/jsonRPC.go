@@ -130,7 +130,6 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
 			requestedBlock = requestedBlockForMessage
-
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -524,7 +523,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		}
 		return nil, err
 	}
-	var replyMsgs = make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
+	replyMsgs := make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
 	for idx, element := range batch {
 		// convert them because batch elements can't be marshaled back to the user, they are missing tags and flieds
 		replyMsgs[idx], err = rpcInterfaceMessages.ConvertBatchElement(element)
