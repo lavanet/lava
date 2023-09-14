@@ -20,11 +20,15 @@ import (
 )
 
 const (
-	RewardServerStorageFlagName = "reward-server-storage"
-	DefaultRewardServerStorage  = ".storage/rewardserver"
-	RewardTTLFlagName           = "reward-ttl"
-	DefaultRewardTTL            = 24 * 60 * time.Minute
-	MaxDBSaveRetries            = 10
+	RewardServerStorageFlagName       = "reward-server-storage"
+	DefaultRewardServerStorage        = ".storage/rewardserver"
+	RewardTTLFlagName                 = "reward-ttl"
+	DefaultRewardTTL                  = 24 * 60 * time.Minute
+	MaxDBSaveRetries                  = 10
+	RewardsSnapshotThresholdFlagName  = "proofs-snapshot-threshold"
+	DefaultRewardsSnapshotThreshold   = 1000
+	RewardsSnapshotTimeoutSecFlagName = "proofs-snapshot-timeout-sec"
+	DefaultRewardsSnapshotTimeoutSec  = 30
 )
 
 type PaymentRequest struct {
@@ -67,16 +71,20 @@ func (eprw *EpochRewards) NumRewards() int {
 }
 
 type RewardServer struct {
-	rewardsTxSender   RewardsTxSender
-	lock              sync.RWMutex
-	serverID          uint64
-	expectedPayments  []PaymentRequest
-	totalCUServiced   uint64
-	totalCUPaid       uint64
-	providerMetrics   *metrics.ProviderMetricsManager
-	rewards           map[uint64]*EpochRewards
-	rewardDB          *RewardDB
-	rewardStoragePath string
+	rewardsTxSender                RewardsTxSender
+	lock                           sync.RWMutex
+	serverID                       uint64
+	expectedPayments               []PaymentRequest
+	totalCUServiced                uint64
+	totalCUPaid                    uint64
+	providerMetrics                *metrics.ProviderMetricsManager
+	rewards                        map[uint64]*EpochRewards
+	rewardDB                       *RewardDB
+	rewardStoragePath              string
+	rewardsSnapshotThreshold       uint64
+	rewardsSnapshotTimeoutDuration time.Duration
+	rewardsSnapshotTimer           *timer.Timer
+	rewardsSnapshotThresholdCh     chan struct{}
 }
 
 type RewardsTxSender interface {
@@ -381,7 +389,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB, rewardStoragePath string) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB, rewardStoragePath string, rewardsSnapshotThreshold uint, rewardsSnapshotTimeoutSec uint) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
@@ -390,6 +398,10 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewards = map[uint64]*EpochRewards{}
 	rws.rewardDB = rewardDB
 	rws.rewardStoragePath = rewardStoragePath
+	rws.rewardsSnapshotThreshold = uint64(rewardsSnapshotThreshold)
+	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec * uint(time.Second))
+	rws.rewardsSnapshotTimer = timer.NewTimer(rws.rewardsSnapshotTimeoutDuration)
+	rws.rewardsSnapshotThresholdCh = make(chan struct{})
 	return rws
 }
 

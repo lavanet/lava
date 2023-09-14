@@ -75,7 +75,7 @@ type RPCProvider struct {
 	lock                 sync.Mutex
 }
 
-func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string, rewardTTL time.Duration, shardID uint) (err error) {
+func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string, rewardTTL time.Duration, shardID uint, rewardsSnapshotThreshold uint, rewardsSnapshotTimeoutSec uint) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -140,7 +140,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 	// single reward server
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB, rewardStoragePath)
+	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager, rewardDB, rewardStoragePath, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
 
@@ -473,8 +473,12 @@ rpcprovider 127.0.0.1:3333 OSMO tendermintrpc "wss://www.node-path.com:80,https:
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
 			shardID := viper.GetUint(ShardIDFlagName)
+			rewardsSnapshotThreshold := viper.GetUint(rewardserver.RewardsSnapshotThresholdFlagName)
+			rewardsSnapshotTimeoutSec := viper.GetUint(rewardserver.RewardsSnapshotTimeoutSecFlagName)
 			rpcProvider := RPCProvider{}
-			err = rpcProvider.Start(ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr, rewardStoragePath, rewardTTL, shardID)
+			err = rpcProvider.Start(
+				ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr,
+				rewardStoragePath, rewardTTL, shardID, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec)
 			return err
 		},
 	}
@@ -493,6 +497,8 @@ rpcprovider 127.0.0.1:3333 OSMO tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().String(rewardserver.RewardServerStorageFlagName, rewardserver.DefaultRewardServerStorage, "the path to store reward server data")
 	cmdRPCProvider.Flags().Duration(rewardserver.RewardTTLFlagName, rewardserver.DefaultRewardTTL, "reward time to live")
 	cmdRPCProvider.Flags().Uint(ShardIDFlagName, DefaultShardID, "shard id")
+	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotThresholdFlagName, rewardserver.DefaultRewardsSnapshotThreshold, "the number of rewards to wait until making snapshot of the rewards memory")
+	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
 
 	return cmdRPCProvider
 }

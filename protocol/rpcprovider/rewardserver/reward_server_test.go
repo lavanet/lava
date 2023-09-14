@@ -149,7 +149,7 @@ func TestSendNewProof(t *testing.T) {
 	for _, testCase := range testCases {
 		existingCU, updatedWithProf := uint64(0), false
 		for _, proof := range testCase.Proofs {
-			rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test")
+			rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20)
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
 		}
 		require.Equal(t, testCase.ExpectedExistingCu, existingCU)
@@ -165,7 +165,7 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
 	prevProof := common.BuildRelayRequestWithBadge(ctx, "providerAddr", []byte{}, uint64(1), uint64(0), "specId", nil, &pairingtypes.Badge{})
 	prevProof.Epoch = int64(1)
@@ -187,7 +187,7 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
 	providerAddr := "providerAddr"
 	specId := "specId"
@@ -213,7 +213,7 @@ func TestUpdateEpoch(t *testing.T) {
 		err := rewardDB.AddDB(db)
 		require.NoError(t, err)
 
-		rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test")
+		rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 10)
 
 		return rws, &stubRewardsTxSender, rewardDB
 	}
@@ -289,7 +289,7 @@ func BenchmarkSendNewProofInMemory(b *testing.B) {
 	err = rewardStore.AddDB(db2)
 	require.NoError(b, err)
 
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
 	b.ResetTimer()
@@ -313,7 +313,7 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	defer func() {
 		rewardStore.Close()
 	}()
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test")
+	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
