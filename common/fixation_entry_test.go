@@ -502,6 +502,25 @@ func TestDelEntrySameFuture(t *testing.T) {
 	testWithFixationTemplate(t, playbook, 2, 1)
 }
 
+func TestDelEntryFutureNoPrevious(t *testing.T) {
+	block0 := int64(10)
+	block1 := block0 + int64(10)
+	block2 := block1 + int64(10)
+
+	playbook := []fixationTemplate{
+		{op: "append", name: "entry #1 version 0 (future)", count: -block0, coin: 0},
+		{op: "append", name: "entry #1 version 1 (future)", count: -block1, coin: 1},
+		{op: "append", name: "entry #1 version 2 (future)", count: -block2, coin: 2},
+		{op: "getvers", name: "to check 3 versions", count: 3},
+		{op: "del", name: "del entry #1 version 2", count: block2},
+		{op: "getvers", name: "to check 2 versions", count: 2},
+		{op: "del", name: "cancel entry #1 version 0", count: block0},
+		{op: "getvers", name: "to check 0 versions", count: 0},
+	}
+
+	testWithFixationTemplate(t, playbook, 3, 1)
+}
+
 func TestDeleletdStaleStays(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + 10

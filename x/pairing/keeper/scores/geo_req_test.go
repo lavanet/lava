@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
@@ -56,8 +57,8 @@ func TestGeoReqScore(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		reqGeo          uint64
-		providerGeo     uint64
+		reqGeo          int32
+		providerGeo     int32
 		expectedLatency uint64
 	}{
 		{
@@ -75,19 +76,19 @@ func TestGeoReqScore(t *testing.T) {
 		{
 			name:            "happy flow - provider supports global",
 			reqGeo:          1,
-			providerGeo:     uint64(planstypes.Geolocation_GL),
+			providerGeo:     int32(planstypes.Geolocation_GL),
 			expectedLatency: minGeoLatency,
 		},
 		{
 			name:            "provider doesn't support geo req but is neighbor",
 			reqGeo:          1,
-			providerGeo:     uint64(planstypes.Geolocation_USE),
+			providerGeo:     int32(planstypes.Geolocation_USE),
 			expectedLatency: GEO_LATENCY_MAP[planstypes.Geolocation_USC][planstypes.Geolocation_USE],
 		},
 		{
 			name:            "provider doesn't support geo req but isn't neighbor",
 			reqGeo:          1,
-			providerGeo:     uint64(planstypes.Geolocation_AS),
+			providerGeo:     int32(planstypes.Geolocation_AS),
 			expectedLatency: GEO_LATENCY_MAP[planstypes.Geolocation_USC][planstypes.Geolocation_AS],
 		},
 	}
@@ -96,7 +97,8 @@ func TestGeoReqScore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			geoReq.Geo = tt.reqGeo
 			stakeEntry.Geolocation = tt.providerGeo
-			score := geoReq.Score(stakeEntry)
+			pairingScore := NewPairingScore(&stakeEntry, types.QualityOfServiceReport{})
+			score := geoReq.Score(*pairingScore)
 			require.True(t, score.Equal(calculateCostFromLatency(tt.expectedLatency)))
 		})
 	}

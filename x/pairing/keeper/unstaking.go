@@ -48,17 +48,13 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 	details := map[string]string{
 		"address":     existingEntry.GetAddress(),
 		"chainID":     existingEntry.GetChain(),
-		"geolocation": strconv.FormatUint(existingEntry.GetGeolocation(), 10),
+		"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
 		"moniker":     existingEntry.GetMoniker(),
 		"stake":       existingEntry.GetStake().Amount.String(),
 	}
 	utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, unstakeDescription)
 
-	unstakeHoldBlocks, err := k.unstakeHoldBlocks(ctx, existingEntry.Chain)
-	if err != nil {
-		return err
-	}
-
+	unstakeHoldBlocks := k.getUnstakeHoldBlocks(ctx, existingEntry.Chain)
 	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 }
 
@@ -130,15 +126,24 @@ func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epoch
 	}
 }
 
-func (k Keeper) unstakeHoldBlocks(ctx sdk.Context, chainID string) (uint64, error) {
-	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
+func (k Keeper) getUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64 {
+	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
-		return 0, fmt.Errorf("coult not find spec %s", chainID)
+		utils.LavaFormatError("critical: failed to get spec for chainID",
+			fmt.Errorf("unknown chainID"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
 	}
 
-	if spec.ProvidersTypes == spectypes.Spec_static {
-		return k.epochStorageKeeper.UnstakeHoldBlocksStatic(ctx, uint64(ctx.BlockHeight())), nil
+	// note: if spec was not found, the default choice is Spec_dynamic == 0
+
+	block := uint64(ctx.BlockHeight())
+	if providerType == spectypes.Spec_static {
+		return k.epochStorageKeeper.UnstakeHoldBlocksStatic(ctx, block)
 	} else {
-		return k.epochStorageKeeper.UnstakeHoldBlocks(ctx, uint64(ctx.BlockHeight())), nil
+		return k.epochStorageKeeper.UnstakeHoldBlocks(ctx, block)
 	}
+
+	// NOT REACHED
 }

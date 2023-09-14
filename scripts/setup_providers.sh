@@ -16,7 +16,7 @@ PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
 $PROVIDER1_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -59,7 +59,7 @@ $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 # $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
-screen -d -m -S provider2 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER2_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
 $PROVIDER2_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -102,7 +102,7 @@ $PROVIDER2_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 # $PROVIDER2_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
-screen -d -m -S provider3 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER3_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER3_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
 $PROVIDER3_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
@@ -146,7 +146,7 @@ $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain
 # $PROVIDER3_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
 # Setup Portal
-screen -d -m -S portals bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
+screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3333 ETH1 jsonrpc \
 127.0.0.1:3334 GTH1 jsonrpc \
 127.0.0.1:3335 FTM250 jsonrpc \
