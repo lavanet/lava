@@ -28,6 +28,12 @@ import { Relayer } from "../relayer/relayer";
 import { grpc } from "@improbable-eng/grpc-web";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import transport from "../util/browser";
+import { secondsToMillis } from "../util/time";
+import { sleep } from "../util/common";
+import { ProviderEpochTracker } from "./providerEpochTracker";
+
+export const ALLOWED_PROBE_RETRIES = 3;
+export const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -55,6 +61,7 @@ export class ConsumerSessionManager {
 
   private transport: grpc.TransportFactory;
   private allowInsecureTransport = false;
+  private epochTracker = new ProviderEpochTracker();
 
   public constructor(
     relayer: Relayer,
@@ -71,6 +78,10 @@ export class ConsumerSessionManager {
 
     this.allowInsecureTransport = opts?.allowInsecureTransport ?? false;
     this.transport = opts?.transport ?? this.getTransport();
+  }
+
+  public getEpoch(): number {
+    return this.epochTracker.getEpoch();
   }
 
   public getRpcEndpoint(): RPCEndpoint {
@@ -93,34 +104,6 @@ export class ConsumerSessionManager {
     return this.addedToPurgeAndReport;
   }
 
-  public async updateAllProvidersOnBootstrap(
-    pairingList: ConsumerSessionsWithProvider[]
-  ): Promise<Error | undefined> {
-    pairingList.forEach(
-      (provider: ConsumerSessionsWithProvider, idx: number) => {
-        this.pairingAddresses.set(idx, provider.publicLavaAddress);
-        this.pairing.set(provider.publicLavaAddress, provider);
-      }
-    );
-
-    this.setValidAddressesToDefaultValue();
-
-    Logger.debug(
-      `updated providers ${JSON.stringify({
-        epoch: this.currentEpoch,
-        spec: this.rpcEndpoint.key(),
-      })}`
-    );
-    try {
-      const latestLavaBlock = await this.probeProviders(pairingList);
-      this.currentEpoch = latestLavaBlock;
-      return;
-    } catch (err) {
-      // TODO see what we should to
-      Logger.error(err);
-    }
-  }
-
   public async updateAllProviders(
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
@@ -128,8 +111,8 @@ export class ConsumerSessionManager {
     Logger.debug(
       "updateAllProviders called. epoch:",
       epoch,
-      "providerList",
-      JSON.stringify(pairingList)
+      "Provider list length",
+      pairingList.length
     );
 
     if (epoch <= this.currentEpoch) {
@@ -155,7 +138,7 @@ export class ConsumerSessionManager {
         return new Error("Trying to update provider list for older epoch");
       }
     }
-
+    this.epochTracker.reset();
     this.currentEpoch = epoch;
 
     // reset states
@@ -182,7 +165,7 @@ export class ConsumerSessionManager {
       })}`
     );
     try {
-      await this.probeProviders(pairingList);
+      await this.probeProviders(pairingList, epoch);
     } catch (err) {
       // TODO see what we should to
       Logger.error(err);
@@ -786,60 +769,103 @@ export class ConsumerSessionManager {
   }
 
   public async probeProviders(
-    pairingList: ConsumerSessionsWithProvider[]
+    pairingList: ConsumerSessionsWithProvider[],
+    epoch: number,
+    retry = 0
   ): Promise<any> {
-    Logger.debug(`providers probe initiated`);
-    let successfulProbeResponse: any = null;
-    for (const consumerSessionWithProvider of pairingList) {
-      const startTime = performance.now();
-      try {
-        const probeResponse = await this.relayer.probeProvider(
-          consumerSessionWithProvider.endpoints[0].networkAddress,
-          this.getRpcEndpoint().apiInterface,
-          this.getRpcEndpoint().chainId
+    if (retry != 0) {
+      await sleep(this.timeoutBetweenProbes());
+      if (this.currentEpoch != epoch) {
+        // incase epoch has passed we no longer need to probe old providers
+        Logger.info(
+          "during old probe providers epoch passed no need to query old providers."
         );
-        const endTime = performance.now();
-        const latency = endTime - startTime;
-        Logger.debug(
-          "Provider: " +
-            consumerSessionWithProvider.publicLavaAddress +
-            " chainID: " +
-            this.getRpcEndpoint().chainId +
-            " latency: ",
-          latency + " ms"
-        );
-
-        Logger.debug(
-          `providers probe done ${JSON.stringify({
-            endpoint: this.rpcEndpoint,
-          })}`
-        );
-
-        const lavaEpoch = probeResponse.getLavaEpoch();
-        Logger.debug(
-          `Lava Epoch for provider ${consumerSessionWithProvider.publicLavaAddress}: ${lavaEpoch}`
-        );
-
-        successfulProbeResponse = lavaEpoch;
-      } catch (err) {
-        console.log(
-          "Error while probing provider:",
-          consumerSessionWithProvider.publicLavaAddress
-        );
-        //Logger.error(err);
+        return;
       }
     }
-    if (successfulProbeResponse) {
-      Logger.debug("Returning successful probe response");
-      return successfulProbeResponse;
-    } else {
-      Logger.debug("No successful probes. Throwing error.");
-      throw Error("Could not probe any provider");
+
+    Logger.debug(`providers probe initiated`);
+    const promiseProbeArray: Array<Promise<any>> = [];
+    const retryProbing: ConsumerSessionsWithProvider[] = [];
+    for (const consumerSessionWithProvider of pairingList) {
+      const startTime = performance.now();
+      promiseProbeArray.push(
+        this.relayer
+          .probeProvider(
+            consumerSessionWithProvider.endpoints[0].networkAddress,
+            this.getRpcEndpoint().apiInterface,
+            this.getRpcEndpoint().chainId
+          )
+          .then((probeReply) => {
+            const endTime = performance.now();
+            const latency = endTime - startTime;
+            Logger.debug(
+              "Provider: " +
+                consumerSessionWithProvider.publicLavaAddress +
+                " chainID: " +
+                this.getRpcEndpoint().chainId +
+                " latency: ",
+              latency + " ms"
+            );
+
+            const lavaEpoch = probeReply.getLavaEpoch();
+            if (epoch == 0 && this.currentEpoch == 0) {
+              this.currentEpoch = lavaEpoch; // setting the epoch for initialization.
+            }
+            Logger.debug(
+              `Lava Epoch for provider ${consumerSessionWithProvider.publicLavaAddress}: ${lavaEpoch}`
+            );
+            this.epochTracker.setLatestBlockFor(
+              consumerSessionWithProvider.publicLavaAddress,
+              lavaEpoch
+            );
+          })
+          .catch((e) => {
+            Logger.warn(
+              "Failed fetching probe from provider",
+              consumerSessionWithProvider.getPublicLavaAddressAndPairingEpoch(),
+              "Error:",
+              e
+            );
+            retryProbing.push(consumerSessionWithProvider);
+          })
+      );
     }
+    if (!retry) {
+      for (const index in pairingList) {
+        await Promise.race(promiseProbeArray);
+        const epochFromProviders = this.epochTracker.getEpoch();
+        if (epochFromProviders != -1) {
+          Logger.debug(
+            `providers probe done ${JSON.stringify({
+              endpoint: this.rpcEndpoint,
+              Epoch: epochFromProviders,
+              NumberOfProvidersProbedUntilFinishedInit:
+                this.epochTracker.getProviderListSize(),
+            })}`
+          );
+          break;
+        }
+      }
+    } else {
+      await Promise.allSettled(promiseProbeArray);
+    }
+    // stop if we have no more providers to probe or we hit limit
+    if (retryProbing.length == 0 || retry >= ALLOWED_PROBE_RETRIES) {
+      return;
+    }
+
+    // launch retry probing on failed providers; this needs to run asynchronously without waiting!
+    // Must NOT "await" this method.
+    this.probeProviders(retryProbing, epoch, retry + 1);
   }
 
   private getTransport(): grpc.TransportFactory {
     return this.allowInsecureTransport ? transportAllowInsecure : transport;
+  }
+
+  private timeoutBetweenProbes(): number {
+    return TIMEOUT_BETWEEN_PROBES;
   }
 }
 

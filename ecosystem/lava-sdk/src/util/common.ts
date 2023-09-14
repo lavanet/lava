@@ -46,3 +46,31 @@ export function debugPrint(
 export function generateRandomInt(): number {
   return Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER + 1));
 }
+
+export function sleep(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      resolve();
+      clearTimeout(timeout);
+    }, ms);
+  });
+}
+
+export function median(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  values = [...values].sort((a, b) => a - b);
+  const half = Math.floor(values.length / 2);
+
+  if (values.length % 2) {
+    return values[half];
+  }
+
+  return (values[half - 1] + values[half]) / 2;
+}

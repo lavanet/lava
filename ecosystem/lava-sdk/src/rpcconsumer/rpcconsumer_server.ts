@@ -67,16 +67,6 @@ export class RPCConsumerServer {
     };
   }
 
-  async probeProviders(
-    pairingList: ConsumerSessionsWithProvider[]
-  ): Promise<number> {
-    try {
-      return await this.consumerSessionManager.probeProviders(pairingList);
-    } catch (err) {
-      return -1;
-    }
-  }
-
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
