@@ -162,7 +162,7 @@ func UnionByFunc[T ComparableByFunc](arrays ...[]T) []T {
 	return res
 }
 
-func FilterField[T, V any](slice []T, filter func(T) V) []V {
+func Map[T, V any](slice []T, filter func(T) V) []V {
 	values := make([]V, len(slice))
 	for i := range slice {
 		values[i] = filter(slice[i])
@@ -171,13 +171,13 @@ func FilterField[T, V any](slice []T, filter func(T) V) []V {
 }
 
 func Filter[T any](slice []T, filter func(T) bool) []T {
-	result := []T{}
-	for _, item := range slice {
-		if filter(item) {
-			result = append(result, item)
+	values := make([]T, 0)
+	for _, v := range slice {
+		if filter(v) {
+			values = append(values, v)
 		}
 	}
-	return result
+	return values
 }
 
 func UnorderedEqual[T comparable](slices ...[]T) bool {

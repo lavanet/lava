@@ -67,7 +67,7 @@ func versionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version number",
 		Run: func(cmd *cobra.Command, args []string) {
-			// Print the lava-protocol version
+			// Print the lavap version
 			version := upgrade.GetCurrentVersion()
 			fmt.Println(version.ProviderVersion) // currently we have only one version.
 		},

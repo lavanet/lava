@@ -27,7 +27,7 @@ const (
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 
-	ts.plan = ts.AddPlan("mock", common.CreateMockPlan()).Plan("mock")
+	ts.plan = ts.AddPlan("free", common.CreateMockPlan()).Plan("free")
 	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
 
 	ts.AdvanceEpoch()
@@ -48,17 +48,17 @@ func (ts *tester) addClient(count int) {
 
 // addProvider: with default endpoints, geolocation, moniker
 func (ts *tester) addProvider(count int) error {
-	return ts.addProviderExtra(count, nil, 0, "") // default: endpoints, geolocation, moniker
+	return ts.addProviderExtra(count, nil, 0, "prov") // default: endpoints, geolocation, moniker
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
-func (ts *tester) addProviderGeolocation(count int, geolocation uint64) error {
-	return ts.addProviderExtra(count, nil, geolocation, "")
+func (ts *tester) addProviderGeolocation(count int, geolocation int32) error {
+	return ts.addProviderExtra(count, nil, geolocation, "prov")
 }
 
 // addProviderEndpoints: with endpoints, and default geolocation, moniker
 func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
-	return ts.addProviderExtra(count, endpoints, 0, "")
+	return ts.addProviderExtra(count, endpoints, 0, "prov")
 }
 
 // addProviderMoniker: with moniker, and default endpoints, geolocation
@@ -70,7 +70,7 @@ func (ts *tester) addProviderMoniker(count int, moniker string) error {
 func (ts *tester) addProviderExtra(
 	count int,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
@@ -88,9 +88,9 @@ func (ts *tester) addProviderExtra(
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
 	if providersToPair > 0 {
-		// will overwrite the default "mock" plan
+		// will overwrite the default "free" plan
 		ts.plan.PlanPolicy.MaxProvidersToPair = uint64(providersToPair)
-		ts.AddPlan("mock", ts.plan)
+		ts.AddPlan("free", ts.plan)
 	}
 
 	ts.addClient(clientsCount)

@@ -507,7 +507,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 			projecttypes.ProjectDeveloperKey(dev1Addr),
 		},
 		Policy: &planstypes.Policy{
-			GeolocationProfile: uint64(1),
+			GeolocationProfile: int32(1),
 			MaxProvidersToPair: 3,
 			TotalCuLimit:       1000,
 			EpochCuLimit:       100,
