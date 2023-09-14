@@ -4,12 +4,15 @@ LavaVisor serves as a service manager for the Lava protocol application binaries
 When an upgrade becomes necessary, either because the current protocol version has dropped below the minimum version or not compliant with the recommended target version, LavaVisor’s responsibility begin. LavaVisor orchestrates the necessary upgrade process in an automated manner, ensuring that the protocol version is aligned with the current standards and capabilities set by the minimum and target versions.
 
 ## Setup
-Lavavisor is added as a `LAVA_ALL_BINARIES` parameter in the Makefile. Any script that executes install-all such as `start_env_dev.sh` will automatically install Lavavisor binary.
+**`make install-all`** → Creates lavavisor binary (under ~/go/bin/)
+
+## Prerequisites
+Go version above than 1.19
 
 ## Usage
 
 ### Commands:
-- **`lavavisor init`**: Initializes LavaVisor for operation.
+1- **`lavavisor init`**: Initializes LavaVisor for operation.
 
   **Optional Flags**:
   - `--directory`
@@ -17,7 +20,7 @@ Lavavisor is added as a `LAVA_ALL_BINARIES` parameter in the Makefile. Any scrip
   - `--auto-start`
 
   **Example usage:**
-  `lavavisor init --auto-download --auto-start``
+  `lavavisor init --auto-download`
 
 Prepares the local environment for the operation of LavaVisor.
 Here are the operations that `lavavisor init` performs:
@@ -36,8 +39,9 @@ Some older versions of `lavap` lack the `version` command, which LavaVisor emplo
 **Workaround**: 
 - Use the latest version of the protocol.
 - Set up the binaries manually.
+___
 
-- **`lavavisor create-service`**: Creates system files according to given consumer / provider config file and configuration flags.
+2- **`lavavisor create-service`**: Creates system files according to given consumer / provider config file and configuration flags.
 
   **Arguments**:
   `[service-type: "provider" or "consumer"]`
@@ -48,19 +52,22 @@ Some older versions of `lavap` lack the `version` command, which LavaVisor emplo
   - `--from`
 
   **Optional Flags**:
+  - `--create-link`
   - `--log-level`
   - `--directory`
 
   **Example usage:**
-  `lavavisor create-service consumer /home/ubuntu/config/consumer-ETH1.yml --geolocation 1 --from user1 --log_level info --keyring-backend test --chain-id lava --node http://127.0.0.1:26657`
+  `lavavisor create-service consumer /home/ubuntu/config/consumer-ETH1.yml --geolocation 1 --from user1 --log_level info --keyring-backend test --chain-id lava --node http://127.0.0.1:26657 --create-link`
 
   This command generates the service file in '.lavavisor/' directory so that consumer & provider processes can be started in a robust manner. Additionally, it creates a `./logs` directory, so that service logs can be easily accessed. Finally, it updates the `config.yml` file by appending the name of the service created by this command, allowing the created process to be read by the lavavisor start command.
 
-- **`lavavisor start`**: Starts provider/consumer processes given with linked binary and starts lavavisor version monitor.
+ Use the `--create-link` flag to create a symbolic link to the `/etc/systemd/system/` directory; it is highly recommended for ensuring service files are set up properly.
+___
+ 3- **`lavavisor start`**: Starts provider/consumer processes given with linked binary and starts lavavisor version monitor.
 
   **Optional Flags**:
-  - `--directory`
   - `--auto-download`
+  - `--directory`
 
   **Example usage:**
   `lavavisor start --auto-download`
@@ -68,6 +75,7 @@ Some older versions of `lavap` lack the `version` command, which LavaVisor emplo
 This command reads the `config.yml` file to determine the list of services. Once identified, it starts each service using the linked binary. Concurrently, it also launches the LavaVisor version monitor. This monitor is designed to detect when an upgrade is necessary and will automatically carry out the upgrade process as soon as it's triggered.
 Here are the operations that `lavavisor start` performs:
 
+**Usage of `--auto-download` flag is recommended for auto-fetching of upgraded binary** (target binary must be exist in GitHub releases).
 1. Ensures the `.lavavisor` directory is present.
 2. Reads the `config.yml` to determine the list of services. Each service is then initiated using the binary linked by the `init` command.
 3. Sets up state tracker parameters and registers its state tracker for protocol version updates.
@@ -83,7 +91,7 @@ Here are the operations that `lavavisor start` performs:
 2. Instead of creating service files manually, execute `lavavisor create-service` command to generate a the service files. 
 3. Validate `.lavavisor/services` folder created and with generated service files.
 4. Validate `config.yml` is updated and includes all of the target service names.
-5. Execute `lavavisor start`, and you should observe all services running. Additionally, the version monitor will begin validating versions.
+5. Execute `lavavisor start --auto-start`, and you should observe all services running. Additionally, the version monitor will begin validating versions.
 6. Now we need to make an upgrade proposal by using `/gov` module, so that protocol version will change in the consensus and LavaVisor will detect & initiate auto-upgrade.
 Here is the script for sending version update proposal transaction (for Cosmos SDK v0.47.0):
 ```bash
@@ -120,5 +128,7 @@ wait_next_block
 # vote ID, use the 'lavad q gov proposals' query to check the latest proposal ID, and put here the latest ID + 1.
 lavad tx gov vote 4 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices "0.000000001ulava"
 ```
+
 (Fix proposal ID 4 according to your state - if you didn’t run ‘init_chain_commands’ you should put 1 there)
+
 7. After the proposal passed, LavaVisor will detect the event and update the binaries. Then, it will reboot the processes with the new established symbolic link:
