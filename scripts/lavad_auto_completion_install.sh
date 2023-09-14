@@ -52,13 +52,13 @@ case $terminal_type in
 		echo " * Sourced $comp_dir/_lavad"
 
 		# create the completion script
-		lava-protocol completion > /tmp/_lava-protocol
+		lavap completion > /tmp/_lavap
 		comp_dir="$HOME/.bash_completion.d"
-		# move the completion script to /etc/bash_completion.d/lava-protocol
+		# move the completion script to /etc/bash_completion.d/lavap
 		if [ ! -d $comp_dir ]; then
 			mkdir $comp_dir
 		fi
-		mv /tmp/_lava-protocol $comp_dir
+		mv /tmp/_lavap $comp_dir
 		echo " * Created an auto-completion script in $comp_dir"
 
 		bashrc_file="$HOME/.bashrc"
@@ -75,7 +75,7 @@ case $terminal_type in
 			echo "fi" >> $bashrc_file
 		fi
 
-		echo " * Sourced $comp_dir/_lava-protocol"
+		echo " * Sourced $comp_dir/_lavap"
 		;;
 	zsh)
                 # create the completion script
@@ -92,14 +92,14 @@ case $terminal_type in
 		# add necessary lines to $HOME/.zshrc
                 echo 'fpath=(~/.zsh/completion $fpath)' >> ~/.zshenv
 
-		lava-protocol completion --zsh > /tmp/_lava-protocol
+		lavap completion --zsh > /tmp/_lavap
 		comp_dir="$HOME/.zsh/completion"
 
                 # move the completion script to $HOME/.zsh/completion
                 if [ ! -d $comp_dir ]; then
                         mkdir -p $comp_dir
                 fi
-                mv /tmp/_lava-protocol $comp_dir
+                mv /tmp/_lavap $comp_dir
 		echo " * Created an auto-completion script in $comp_dir"
 
 		# add necessary lines to $HOME/.zshrc

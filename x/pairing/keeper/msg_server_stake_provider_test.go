@@ -25,7 +25,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 	}{
 		{"NormalMoniker", "exampleMoniker", true, true},
 		{"WeirdCharsMoniker", "ビッグファームへようこそ", true, true},
-		{"OversizedMoniker", "aReallyReallyReallyReallyReallyReallyReallyLongMoniker", true, false}, // too long
+		{"OversizedMoniker", "aReallyReallyReallyReallyReallyReallyReallyLongMoniker", false, false}, // too long
 	}
 
 	for it, tt := range tests {
@@ -34,7 +34,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 
 			// Note: using the same "ts" means each provider added gets a new index ("it")
 			err := ts.addProviderMoniker(1, tt.moniker)
-			require.Nil(t, err)
+			require.Equal(t, tt.validStake, err == nil)
 			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
 
 			ts.AdvanceEpoch()
@@ -248,7 +248,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, ts.spec.Index, ts.spec.MinStakeProvider, endpoints, uint64(geo), "")
+				_, err = ts.TxPairingStakeProvider(provider, ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
 				require.Nil(t, err)
 			} else {
 				require.NotNil(t, err)
@@ -354,7 +354,7 @@ func TestStakeEndpoints(t *testing.T) {
 		host string,
 		apiInterfaces []string,
 		addons []string,
-		geoloc uint64,
+		geoloc int32,
 	) epochstoragetypes.Endpoint {
 		return epochstoragetypes.Endpoint{
 			IPPORT:        host,
@@ -368,7 +368,7 @@ func TestStakeEndpoints(t *testing.T) {
 		host string,
 		apiInterfaces []string,
 		addons []string,
-		geoloc uint64,
+		geoloc int32,
 		extensions []string,
 	) epochstoragetypes.Endpoint {
 		return epochstoragetypes.Endpoint{
@@ -384,7 +384,7 @@ func TestStakeEndpoints(t *testing.T) {
 		name        string
 		endpoints   []epochstoragetypes.Endpoint
 		success     bool
-		geolocation uint64
+		geolocation int32
 		addons      int
 		extensions  int
 	}
@@ -701,7 +701,7 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, ts.spec.Index, amount, play.endpoints, play.geolocation, "")
+			_, err := ts.TxPairingStakeProvider(providerAddr, ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
 			if play.success {
 				require.NoError(t, err)
 

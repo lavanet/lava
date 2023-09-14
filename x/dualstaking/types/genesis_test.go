@@ -23,10 +23,14 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: &types.GenesisState{
 				DelegatorRewardList: []types.DelegatorReward{
 					{
-						Index: "0",
+						Provider:  "p0",
+						Delegator: "d0",
+						ChainId:   "c0",
 					},
 					{
-						Index: "1",
+						Provider:  "p1",
+						Delegator: "d1",
+						ChainId:   "c1",
 					},
 				},
 				// this line is used by starport scaffolding # types/genesis/validField
@@ -38,10 +42,14 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: &types.GenesisState{
 				DelegatorRewardList: []types.DelegatorReward{
 					{
-						Index: "0",
+						Provider:  "p0",
+						Delegator: "d0",
+						ChainId:   "c0",
 					},
 					{
-						Index: "0",
+						Provider:  "p0",
+						Delegator: "d0",
+						ChainId:   "c0",
 					},
 				},
 			},

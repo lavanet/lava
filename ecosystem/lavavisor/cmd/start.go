@@ -64,9 +64,9 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	// Select most recent version set by init command (in the range of min-target version)
 	selectedVersion, err := SelectMostRecentVersionFromDir(lavavisorPath, version)
 	if err != nil {
-		utils.LavaFormatFatal("failed getting most recent version from .lava-visor dir", err)
+		utils.LavaFormatFatal("failed getting most recent version from .lavavisor dir", err)
 	}
-	utils.LavaFormatInfo("Version check OK in '.lava-visor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
+	utils.LavaFormatInfo("Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
 
 	// Initialize version monitor with selected most recent version
 	versionMonitor := processmanager.NewVersionMonitor(selectedVersion, lavavisorPath, services, autoDownload)
@@ -162,7 +162,7 @@ func LavavisorStart(cmd *cobra.Command) error {
 
 func SelectMostRecentVersionFromDir(lavavisorPath string, version *protocoltypes.Version) (selectedVersion string, err error) {
 	upgradesDir := filepath.Join(lavavisorPath, "upgrades")
-	// List all directories under lava-visor/upgrades
+	// List all directories under lavavisor/upgrades
 	dirs, err := os.ReadDir(upgradesDir)
 	if err != nil {
 		return "", err
@@ -191,7 +191,7 @@ func SelectMostRecentVersionFromDir(lavavisorPath string, version *protocoltypes
 			continue
 		}
 		versionDir := filepath.Join(upgradesDir, ver)
-		binaryPath := filepath.Join(versionDir, "lava-protocol")
+		binaryPath := filepath.Join(versionDir, "lavap")
 		binaryVersion, err := processmanager.GetBinaryVersion(binaryPath)
 		if err != nil || binaryVersion == "" {
 			continue

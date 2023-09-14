@@ -33,14 +33,14 @@ wait_next_block
 lavad tx pairing stake-provider "CANTO" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep_until_next_epoch
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lava-protocol rpcprovider \
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER CANTO jsonrpc '$CANTO_RPC' \
 $PROVIDER1_LISTENER CANTO tendermintrpc '$CANTO_TENDERMINT,$CANTO_TENDERMINT' \
 $PROVIDER1_LISTENER CANTO rest '$CANTO_REST' \
 $PROVIDER1_LISTENER CANTO grpc '$CANTO_GRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lava-protocol rpcconsumer \
+screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3373 CANTO jsonrpc 127.0.0.1:3374 CANTO rest 127.0.0.1:3375 CANTO tendermintrpc 127.0.0.1:3376 CANTO grpc \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 

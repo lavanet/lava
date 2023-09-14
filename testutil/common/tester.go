@@ -130,7 +130,7 @@ func (ts *Tester) Accounts(name string) []Account {
 }
 
 func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "")
+	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
 }
 
 func (ts *Tester) StakeProviderExtra(
@@ -138,7 +138,7 @@ func (ts *Tester) StakeProviderExtra(
 	spec spectypes.Spec,
 	amount int64,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) error {
 	// if geoloc left zero, use default 1
@@ -149,13 +149,13 @@ func (ts *Tester) StakeProviderExtra(
 	// if necessary, generate mock endpoints
 	if endpoints == nil {
 		apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
-		geolocations := planstypes.GetGeolocationsFromUint(int32(geoloc))
+		geolocations := planstypes.GetGeolocationsFromUint(geoloc)
 
 		for _, geo := range geolocations {
 			endpoint := epochstoragetypes.Endpoint{
 				IPPORT:        "123",
 				ApiInterfaces: []string{apiInterface},
-				Geolocation:   uint64(geo),
+				Geolocation:   int32(geo),
 			}
 			endpoints = append(endpoints, endpoint)
 		}
@@ -240,7 +240,7 @@ func NewCoin(amount int64) sdk.Coin {
 }
 
 func NewCoins(amount ...int64) []sdk.Coin {
-	return slices.Filter(amount, NewCoin)
+	return slices.Map(amount, NewCoin)
 }
 
 // keeper helpers
@@ -435,16 +435,18 @@ func (ts *Tester) TxPairingStakeProvider(
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:     addr,
-		ChainID:     chainID,
-		Amount:      amount,
-		Geolocation: geoloc,
-		Endpoints:   endpoints,
-		Moniker:     moniker,
+		Creator:            addr,
+		ChainID:            chainID,
+		Amount:             amount,
+		Geolocation:        geoloc,
+		Endpoints:          endpoints,
+		Moniker:            moniker,
+		DelegateLimit:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateCommission: 100,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
