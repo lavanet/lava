@@ -522,6 +522,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, parsedError
 		}
+		return nil, err
 	}
 	var replyMsgs = make([]rpcInterfaceMessages.JsonrpcMessage, len(batch))
 	for idx, element := range batch {

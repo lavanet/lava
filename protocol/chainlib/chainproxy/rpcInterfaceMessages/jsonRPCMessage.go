@@ -45,18 +45,25 @@ func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error
 }
 
 func ConvertBatchElement(batchElement rpcclient.BatchElemWithId) (JsonrpcMessage, error) {
-	JsonError, ok := batchElement.Error.(*rpcclient.JsonError)
-	if !ok {
-		return JsonrpcMessage{}, batchElement.Error
+	var JsonError *rpcclient.JsonError
+	var ok bool
+	if batchElement.Error != nil {
+		JsonError, ok = batchElement.Error.(*rpcclient.JsonError)
+		if !ok {
+			return JsonrpcMessage{}, batchElement.Error
+		}
 	}
-	result, ok := batchElement.Result.(json.RawMessage)
-	if !ok {
-		return JsonrpcMessage{}, batchElement.Error
+	var result json.RawMessage
+	if batchElement.Result != nil {
+		resultRef, ok := batchElement.Result.(*json.RawMessage)
+		if !ok {
+			return JsonrpcMessage{}, batchElement.Error
+		}
+		result = *resultRef
 	}
 	msg := JsonrpcMessage{
 		Version: rpcclient.Vsn,
 		ID:      batchElement.ID,
-		Method:  batchElement.Method,
 		Error:   JsonError,
 		Result:  result,
 	}
@@ -114,7 +121,7 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 			}
 			return nil, err
 		}
-		return batch, err
+		return batch, nil
 	}
 	return []JsonrpcMessage{msg}, nil
 }
@@ -144,7 +151,7 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 		element := rpcclient.BatchElemWithId{
 			Method: msg.Method,
 			Args:   elementParams,
-			Result: json.RawMessage{}, // will unmarshal the result here, if it fails it sets Error field
+			Result: &json.RawMessage{}, // will unmarshal the result here, if it fails it sets Error field
 			Error:  nil,
 			ID:     msg.ID,
 		}

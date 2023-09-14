@@ -234,3 +234,36 @@ func TestExtensions(t *testing.T) {
 		closeServer()
 	}
 }
+
+func TestJsonRpcBatchCall(t *testing.T) {
+	ctx := context.Background()
+	gotCalled := false
+	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":2,"result":[]},{"jsonrpc":"2.0","id":3,"result":"0x114b56b"}]`
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotCalled = true
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, response)
+	})
+
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+
+	batchCallData := `[{"method":"eth_chainId","params":[],"id":1,"jsonrpc":"2.0"},{"method":"eth_accounts","params":[],"id":2,"jsonrpc":"2.0"},{"method":"eth_blockNumber","params":[],"id":3,"jsonrpc":"2.0"}]`
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, 0)
+	require.NoError(t, err)
+	require.Equal(t, spectypes.LATEST_BLOCK, chainMessage.RequestedBlock())
+	relayReply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
+	require.True(t, gotCalled)
+	require.NoError(t, err)
+	require.NotNil(t, relayReply)
+	require.Equal(t, response, string(relayReply.Data))
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+}
