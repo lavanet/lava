@@ -19,13 +19,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func stubPaymentEvents(num int) (tos []map[string]string) {
+func stubPaymentEvents(num int, specId string, sessionId uint64) (tos []map[string]string) {
 	generateOne := func(uniqueIdentifier uint64) (to map[string]string) {
 		// stub data
 		relay := pairingtypes.RelaySession{
-			SpecId:      "stub-spec",
+			SpecId:      specId,
 			ContentHash: []byte{},
-			SessionId:   123,
+			SessionId:   sessionId,
 			CuSum:       100,
 			Provider:    "lava@test0",
 			RelayNum:    5,
@@ -70,15 +70,19 @@ func stubPaymentEvents(num int) (tos []map[string]string) {
 	return tos
 }
 
-func TestPayments(t *testing.T) {
-	internalRelays := 5
-	attributesList := stubPaymentEvents(internalRelays)
-	var eventAttrs []terderminttypes.EventAttribute
+func paymentEventsToEventAttributes(attributesList []map[string]string) (eventAttrs []terderminttypes.EventAttribute) {
 	for _, attributes := range attributesList {
 		for key, val := range attributes {
 			eventAttrs = append(eventAttrs, terderminttypes.EventAttribute{Key: key, Value: val})
 		}
 	}
+	return
+}
+
+func TestPayments(t *testing.T) {
+	internalRelays := 5
+	attributesList := stubPaymentEvents(internalRelays, "spec", 1)
+	eventAttrs := paymentEventsToEventAttributes(attributesList)
 	event := terderminttypes.Event{Type: utils.EventPrefix + pairingtypes.RelayPaymentEventName, Attributes: eventAttrs}
 	paymentRequests, err := BuildPaymentFromRelayPaymentEvent(event, 500)
 	require.Nil(t, err)
