@@ -833,6 +833,13 @@ export class ConsumerSessionManager {
               "Error:",
               e
             );
+
+            this.providerOptimizer.appendProbeRelayData(
+              consumerSessionWithProvider.publicLavaAddress,
+              0,
+              false
+            );
+
             retryProbing.push(consumerSessionWithProvider);
           })
       );
