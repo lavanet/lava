@@ -123,6 +123,19 @@ describe("ProviderOptimizer", () => {
     const perturbationPercentage = 0.0;
     const skipIndex = random.int(0, providersCount);
 
+    // append at least one successful probe, otherwise the providers get outright ignored
+    for (let i = 0; i < providersCount; i++) {
+      if (i === skipIndex) {
+        continue;
+      }
+
+      providerOptimizer.appendProbeRelayData(
+        providers[i],
+        TEST_BASE_WORLD_LATENCY,
+        true
+      );
+    }
+
     for (let i = 0; i < providersCount; i++) {
       if (i === skipIndex) {
         continue;
@@ -634,6 +647,50 @@ describe("ProviderOptimizer", () => {
     expect(returnedProviders[0]).toBe(providers[1]);
   });
 
+  it("tests provider optimizer ignores probe failing provider", async () => {
+    const providerOptimizer = setupProviderOptimizer(
+      2,
+      ProviderOptimizerStrategy.Latency
+    );
+    const providers = setupProvidersForTest(2);
+
+    const requestCU = 10;
+    const requestBlock = 1000;
+    const perturbationPercentage = 0.0;
+
+    providerOptimizer.appendProbeRelayData(providers[0], 0, false);
+
+    await sleep(4);
+
+    let returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(1);
+    expect(returnedProviders[0]).not.toBe(providers[0]);
+
+    providerOptimizer.appendProbeRelayData(
+      providers[0],
+      TEST_BASE_WORLD_LATENCY / 2,
+      true
+    );
+
+    await sleep(4);
+
+    returnedProviders = providerOptimizer.chooseProvider(
+      providers,
+      [],
+      requestCU,
+      requestBlock,
+      perturbationPercentage
+    );
+    expect(returnedProviders).toHaveLength(2);
+    expect(returnedProviders[1]).toBe(providers[0]);
+  });
+
   it("tests excellence report", async () => {
     const floatVal = 0.25;
     const floatNew = floatToBigNumber(floatVal, 8);
@@ -726,12 +783,15 @@ describe("ProviderOptimizer", () => {
   });
 });
 
-function setupProviderOptimizer() {
+function setupProviderOptimizer(
+  wantedProviders = 1,
+  strategy: ProviderOptimizerStrategy = ProviderOptimizerStrategy.Balanced
+) {
   return new ProviderOptimizer(
-    ProviderOptimizerStrategy.Balanced,
+    strategy,
     TEST_AVERAGE_BLOCK_TIME,
     TEST_BASE_WORLD_LATENCY,
-    1
+    wantedProviders
   );
 }
 
