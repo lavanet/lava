@@ -310,7 +310,9 @@ func TestSaveRewardsToDB(t *testing.T) {
 		epochRewards, err := rewardDB.FindAllInDB(spec)
 		require.NoError(t, err)
 
-		require.Equal(t, 1, epochRewards[epoch].NumRewards())
+		epochReward, found := epochRewards[epoch]
+		require.True(t, found)
+		require.Equal(t, 1, epochReward.NumRewards())
 	}
 }
 
@@ -344,7 +346,9 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 		epochRewards, err := rewardDB.FindAllInDB(spec)
 		require.NoError(t, err)
 
-		require.Equal(t, 1, epochRewards[epoch].NumRewards())
+		epochReward, found := epochRewards[epoch]
+		require.True(t, found)
+		require.Equal(t, 1, epochReward.NumRewards())
 	}
 
 	for _, spec := range specs {
@@ -359,7 +363,9 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 		epochRewards, err := rewardDB.FindAllInDB(spec)
 		require.NoError(t, err)
 
-		require.Equal(t, 1, epochRewards[epoch].NumRewards())
+		epochReward, found := epochRewards[epoch]
+		require.True(t, found)
+		require.Equal(t, 1, epochReward.NumRewards())
 	}
 }
 
@@ -395,7 +401,9 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 		epochRewards, err := rewardDB.FindAllInDB(spec)
 		require.NoError(t, err)
 
-		require.Equal(t, 1, epochRewards[epoch].NumRewards())
+		epochReward, found := epochRewards[epoch]
+		require.True(t, found)
+		require.Equal(t, 1, epochReward.NumRewards())
 	}
 
 	newEpoch := epoch + 1
