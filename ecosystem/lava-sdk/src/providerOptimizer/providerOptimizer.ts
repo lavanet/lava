@@ -57,6 +57,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     block: 0,
     time: 0,
   };
+  private readonly tempIgnoredProviders = new Set<string>();
 
   public constructor(
     strategy: ProviderOptimizerStrategy,
@@ -92,7 +93,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       sampleTime
     );
 
+    if (!success && !this.providersStorage.has(providerAddress)) {
+      this.tempIgnoredProviders.add(providerAddress);
+    }
+
     if (success && latency > 0) {
+      this.tempIgnoredProviders.delete(providerAddress);
+
       providerData = this.updateProbeEntryLatency(
         providerData,
         latency,
@@ -209,7 +216,10 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     const numProviders = allAddresses.length;
 
     for (const providerAddress of allAddresses) {
-      if (ignoredProviders.includes(providerAddress)) {
+      if (
+        ignoredProviders.includes(providerAddress) ||
+        this.tempIgnoredProviders.has(providerAddress)
+      ) {
         continue;
       }
 
