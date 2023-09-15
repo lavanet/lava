@@ -1,10 +1,7 @@
 import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
-import {
-  SingleConsumerSession,
-  ConsumerSessionsWithProvider,
-} from "../lavasession/consumerTypes";
+import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
@@ -28,7 +25,7 @@ import {
 import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
-import {BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK} from "../common/common";
+import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 
 const MaxRelayRetries = 4;
 
