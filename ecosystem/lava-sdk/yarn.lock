@@ -4975,10 +4975,10 @@ queue-microtask@^1.2.2:
   resolved "https://registry.npmjs.org/queue-microtask/-/queue-microtask-1.2.3.tgz"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
 
-random@3.0.6:
-  version "3.0.6"
-  resolved "https://registry.yarnpkg.com/random/-/random-3.0.6.tgz#c918e9498dee461affde72986c79ac4d9ef486cf"
-  integrity sha512-B53pp/8eFBxULg6sfQgjjmy3vZ2CWVt0Nk4OgkSpvmAf3VXfcEUgGASbNWbXiTiExWe8hCIf5HlddNHzrte9jg==
+random@3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/random/-/random-3.0.4.tgz#c723fe0458295246f08d6a00171a6243592b8a12"
+  integrity sha512-sRiwuLH3C7UGNVQYIVoQzwiSJSUOXN06dvJBBWTENv35ETeo0GQo6V5d/H83yBMvFMrNXbh6D3n5XveimwPFNQ==
   dependencies:
     seedrandom "^3.0.5"
 
