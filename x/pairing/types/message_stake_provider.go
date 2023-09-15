@@ -11,14 +11,16 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegateLimit sdk.Coin, delegateCommission uint64) *MsgStakeProvider {
 	return &MsgStakeProvider{
-		Creator:     creator,
-		ChainID:     chainID,
-		Amount:      amount,
-		Endpoints:   endpoints,
-		Geolocation: geolocation,
-		Moniker:     moniker,
+		Creator:            creator,
+		ChainID:            chainID,
+		Amount:             amount,
+		Endpoints:          endpoints,
+		Geolocation:        geolocation,
+		Moniker:            moniker,
+		DelegateLimit:      delegateLimit,
+		DelegateCommission: delegateCommission,
 	}
 }
 
@@ -49,12 +51,20 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	if msg.Moniker == "" {
-		return sdkerrors.Wrapf(MonikerEmptyError, "invalid moniker (%s)", msg.Moniker)
-	}
-
 	if len(msg.Moniker) > MAX_LEN_MONIKER {
 		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
+	}
+
+	if msg.DelegateCommission > 100 {
+		return sdkerrors.Wrapf(DelegateCommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
+	}
+
+	if err = msg.DelegateLimit.Validate(); err != nil {
+		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
+	}
+
+	if msg.DelegateLimit.Denom != epochstoragetypes.TokenDenom {
+		return sdkerrors.Wrapf(DelegateLimitError, "Coin denomanator is not ulava")
 	}
 
 	return nil

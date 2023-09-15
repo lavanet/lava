@@ -56,6 +56,30 @@ func Average[T Number](slice []T) T {
 	return sum / T(len(slice))
 }
 
+func Contains[T comparable](slice []T, elem T) bool {
+	for _, e := range slice {
+		if e == elem {
+			return true
+		}
+	}
+	return false
+}
+
+// Remove removes the first instance (if exists) of elem from the slice, and
+// returns the new slice and indication if removal took place.
+func Remove[T comparable](slice []T, elem T) ([]T, bool) {
+	for i, e := range slice {
+		if e == elem {
+			last := len(slice) - 1
+			if i < last {
+				slice[i] = slice[last]
+			}
+			return slice[0:last], true
+		}
+	}
+	return slice, false
+}
+
 func IsSubset[T comparable](subset, superset []T) bool {
 	subsetMap := make(map[T]bool)
 	commonMap := make(map[T]bool)
@@ -138,10 +162,20 @@ func UnionByFunc[T ComparableByFunc](arrays ...[]T) []T {
 	return res
 }
 
-func Filter[T, V any](slice []T, filter func(T) V) []V {
+func Map[T, V any](slice []T, filter func(T) V) []V {
 	values := make([]V, len(slice))
 	for i := range slice {
 		values[i] = filter(slice[i])
+	}
+	return values
+}
+
+func Filter[T any](slice []T, filter func(T) bool) []T {
+	values := make([]T, 0)
+	for _, v := range slice {
+		if filter(v) {
+			values = append(values, v)
+		}
 	}
 	return values
 }

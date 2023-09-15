@@ -2,11 +2,10 @@ const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
 
 async function main() {
     // Initialize Lava SDK
-    const lavaSdkRest = await new LavaSDK({
+    const lavaSdkRest = await LavaSDK.create({
         privateKey: process.env.PRIVATE_KEY,
-        chainID: "LAV1",
+        chainIds: ["LAV1"],
         lavaChainId:"lava",
-        rpcInterface:"rest",
         pairingListConfig:process.env.PAIRING_LIST,
         allowInsecureTransport: true,
     }).catch(e => {
@@ -26,7 +25,7 @@ async function main() {
             });
 
             // Parse response
-            const parsedResponse = JSON.parse(result);
+            const parsedResponse = result;
 
             const chainID = parsedResponse["default_node_info"].network;
 
@@ -46,6 +45,7 @@ async function main() {
 (async () => {
     try {
         await main();
+        process.exit(0);
     } catch (error) {
         console.error(" ERR [rest_chainId_fetch] "+error.message);
         process.exit(1);

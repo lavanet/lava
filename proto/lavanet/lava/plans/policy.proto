@@ -21,13 +21,13 @@ message Policy {
 message ChainPolicy {
     string chain_id = 1 [(gogoproto.jsontag) = "chain_id"];
     repeated string apis = 2 [(gogoproto.jsontag) = "apis"];
-    repeated  ChainRequirement requirements = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "requirements"];
+    repeated ChainRequirement requirements = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "requirements"];
 }
 
 message ChainRequirement {
-    lavanet.lava.spec.CollectionData collection  = 1 [(gogoproto.nullable) = false,  (gogoproto.moretags) = "mapstructure:\"collection\"", (gogoproto.jsontag) = "collection"];
-    repeated string extensions = 2 [(gogoproto.moretags) = "mapstructure:\"extensions\"", (gogoproto.jsontag) = "extensions"];
-    bool mixed = 3 [(gogoproto.moretags) = "mapstructure:\"mixed\"", (gogoproto.jsontag) = "mixed"];
+    lavanet.lava.spec.CollectionData collection  = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "collection"];
+    repeated string extensions = 2 [(gogoproto.jsontag) = "extensions"];
+    bool mixed = 3 [(gogoproto.jsontag) = "mixed"];
 }
 
 // the enum below determines the pairing algorithm's behaviour with the selected providers feature
