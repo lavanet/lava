@@ -3,9 +3,10 @@ package statetracker
 import (
 	"context"
 	"fmt"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"strconv"
 	"time"
+
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"

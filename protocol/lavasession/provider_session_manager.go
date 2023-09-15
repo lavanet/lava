@@ -276,16 +276,14 @@ func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch
 	}
 
 	for sessionsWithConsumerProjectKey, sessionsWithConsumerProject := range mapOfProviderSessionsWithConsumer.sessionMap {
-		sessionsWithConsumerProject.epochData.MaxComputeUnits =
-			sessionsWithConsumerProject.epochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
+		sessionsWithConsumerProject.epochData.MaxComputeUnits = sessionsWithConsumerProject.epochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
 
 		for badgeEpochDataKey, badgeEpochData := range sessionsWithConsumerProject.badgeEpochData {
 			if badgeEpochData == nil {
 				continue
 			}
 
-			badgeEpochData.MaxComputeUnits =
-				badgeEpochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
+			badgeEpochData.MaxComputeUnits = badgeEpochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
 			sessionsWithConsumerProject.badgeEpochData[badgeEpochDataKey] = badgeEpochData
 		}
 
@@ -294,8 +292,7 @@ func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch
 				continue
 			}
 
-			singleSession.BadgeUserData.MaxComputeUnits =
-				singleSession.BadgeUserData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
+			singleSession.BadgeUserData.MaxComputeUnits = singleSession.BadgeUserData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
 			sessionsWithConsumerProject.Sessions[singleSessionKey] = singleSession
 		}
 

@@ -92,8 +92,7 @@ func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpo
 			continue
 		}
 
-		consumerSessionWithProvider.MaxComputeUnits =
-			consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
+		consumerSessionWithProvider.MaxComputeUnits = consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
 		csm.pairing[key] = consumerSessionWithProvider
 	}
 
@@ -102,11 +101,9 @@ func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpo
 			continue
 		}
 
-		consumerSessionWithProvider.MaxComputeUnits =
-			consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
+		consumerSessionWithProvider.MaxComputeUnits = consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
 		csm.pairingPurge[key] = consumerSessionWithProvider
 	}
-
 }
 
 func (csm *ConsumerSessionManager) Initialized() bool {

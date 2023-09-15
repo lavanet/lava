@@ -78,7 +78,6 @@ func (s *Server) UpdateEpoch(epoch uint64) {
 	utils.LavaFormatDebug("Got epoch update", utils.Attribute{Key: "epoch", Value: epoch})
 	atomic.StoreUint64(&s.epoch, epoch)
 	// reset virtual epoch after the end of emergency mode
-	utils.LavaFormatDebug("End of emergency mode")
 	atomic.StoreUint64(&s.virtualEpoch, 0)
 }
 

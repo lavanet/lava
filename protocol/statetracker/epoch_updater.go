@@ -1,9 +1,10 @@
 package statetracker
 
 import (
+	"sync"
+
 	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/context"
-	"sync"
 )
 
 const (

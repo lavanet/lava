@@ -277,10 +277,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 				cs.forkCallback(newLatestBlock)
 			}
 		}
-	} else {
-		if cs.oldBlockCallback != nil {
-			cs.oldBlockCallback(newLatestBlock)
-		}
+	} else if cs.oldBlockCallback != nil {
+		cs.oldBlockCallback(newLatestBlock)
 	}
 	return err
 }
