@@ -1,4 +1,4 @@
-package rewardserver_test
+package rewardserver
 
 import (
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -81,7 +80,7 @@ func TestPayments(t *testing.T) {
 		}
 	}
 	event := terderminttypes.Event{Type: utils.EventPrefix + pairingtypes.RelayPaymentEventName, Attributes: eventAttrs}
-	paymentRequests, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, 500)
+	paymentRequests, err := BuildPaymentFromRelayPaymentEvent(event, 500)
 	require.Nil(t, err)
 	require.Equal(t, internalRelays, len(paymentRequests))
 }
@@ -90,9 +89,9 @@ func TestSendNewProof(t *testing.T) {
 	rand.InitRandomSeed()
 	providerAddr := "providerAddr"
 	specId := "specId"
-	db := rewardserver.NewMemoryDB(specId)
-	db2 := rewardserver.NewMemoryDB("newSpec")
-	rewardDB := rewardserver.NewRewardDB()
+	db := NewMemoryDB(specId)
+	db2 := NewMemoryDB("newSpec")
+	rewardDB := NewRewardDB()
 	err := rewardDB.AddDB(db)
 	require.NoError(t, err)
 
@@ -147,7 +146,7 @@ func TestSendNewProof(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20)
+		rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20)
 		existingCU, updatedWithProf := uint64(0), false
 		for _, proof := range testCase.Proofs {
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
@@ -160,12 +159,12 @@ func TestSendNewProof(t *testing.T) {
 func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	rand.InitRandomSeed()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db := rewardserver.NewMemoryDB("specId")
-	rewardStore := rewardserver.NewRewardDB()
+	db := NewMemoryDB("specId")
+	rewardStore := NewRewardDB()
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
 	prevProof := common.BuildRelayRequestWithBadge(ctx, "providerAddr", []byte{}, uint64(1), uint64(0), "specId", nil, &pairingtypes.Badge{})
 	prevProof.Epoch = int64(1)
@@ -182,12 +181,12 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	rand.InitRandomSeed()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db := rewardserver.NewMemoryDB("specId")
-	rewardStore := rewardserver.NewRewardDB()
+	db := NewMemoryDB("specId")
+	rewardStore := NewRewardDB()
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
 	providerAddr := "providerAddr"
 	specId := "specId"
@@ -206,14 +205,14 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 
 func TestUpdateEpoch(t *testing.T) {
 	rand.InitRandomSeed()
-	setupRewardsServer := func() (*rewardserver.RewardServer, *rewardsTxSenderDouble, *rewardserver.RewardDB) {
+	setupRewardsServer := func() (*RewardServer, *rewardsTxSenderDouble, *RewardDB) {
 		stubRewardsTxSender := rewardsTxSenderDouble{}
-		db := rewardserver.NewMemoryDB("spec")
-		rewardDB := rewardserver.NewRewardDB()
+		db := NewMemoryDB("spec")
+		rewardDB := NewRewardDB()
 		err := rewardDB.AddDB(db)
 		require.NoError(t, err)
 
-		rws := rewardserver.NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 10)
+		rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 10)
 
 		return rws, &stubRewardsTxSender, rewardDB
 	}
@@ -280,16 +279,16 @@ func TestUpdateEpoch(t *testing.T) {
 func BenchmarkSendNewProofInMemory(b *testing.B) {
 	rand.InitRandomSeed()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db1 := rewardserver.NewMemoryDB("spec")
-	db2 := rewardserver.NewMemoryDB("spec2")
-	rewardStore := rewardserver.NewRewardDB()
+	db1 := NewMemoryDB("spec")
+	db2 := NewMemoryDB("spec2")
+	rewardStore := NewRewardDB()
 	err := rewardStore.AddDB(db1)
 	require.NoError(b, err)
 
 	err = rewardStore.AddDB(db2)
 	require.NoError(b, err)
 
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
 	b.ResetTimer()
@@ -301,9 +300,9 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	os.RemoveAll("badger_test")
 
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	db1 := rewardserver.NewLocalDB("badger_test", "provider", "spec", 0)
-	db2 := rewardserver.NewLocalDB("badger_test", "provider", "spec2", 0)
-	rewardStore := rewardserver.NewRewardDB()
+	db1 := NewLocalDB("badger_test", "provider", "spec", 0)
+	db2 := NewLocalDB("badger_test", "provider", "spec2", 0)
+	rewardStore := NewRewardDB()
 	err := rewardStore.AddDB(db1)
 	require.NoError(b, err)
 
@@ -313,7 +312,7 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	defer func() {
 		rewardStore.Close()
 	}()
-	rws := rewardserver.NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
@@ -331,7 +330,7 @@ func generateProofs(ctx context.Context, specs []string, n int) []*pairingtypes.
 	return proofs
 }
 
-func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *rewardserver.RewardServer) {
+func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *RewardServer) {
 	for index, proof := range proofs {
 		prefix := index%2 + 1
 		consumerKey := fmt.Sprintf("consumer%d", prefix)
