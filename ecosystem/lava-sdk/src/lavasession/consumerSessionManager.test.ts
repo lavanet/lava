@@ -753,6 +753,7 @@ describe("ConsumerSessionManager", () => {
 
           const response: ProbeReply = new ProbeReply();
           response.setLatestBlock(42);
+          response.setLavaEpoch(20);
           return Promise.resolve(response);
         });
 
@@ -769,10 +770,10 @@ describe("ConsumerSessionManager", () => {
 
     it("returns the median latest block", async () => {
       const relayer = setupRelayer();
-      let startBlock = 1;
+      let startEpoch = 1;
       jest.spyOn(relayer, "probeProvider").mockImplementation(() => {
         const response: ProbeReply = new ProbeReply();
-        response.setLatestBlock(startBlock++);
+        response.setLavaEpoch(startEpoch++);
         return Promise.resolve(response);
       });
 
@@ -780,7 +781,7 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      // expect(cm.getLatestBlock()).toEqual(NUMBER_OF_PROVIDERS / 2);
+      expect(cm.getEpoch()).toEqual(NUMBER_OF_PROVIDERS / 2);
     });
   });
 });
