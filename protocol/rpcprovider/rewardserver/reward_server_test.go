@@ -91,7 +91,7 @@ func TestPayments(t *testing.T) {
 
 func TestSendNewProof(t *testing.T) {
 	rand.InitRandomSeed()
-	providerAddr := "providerAddr"
+	const providerAddr = "providerAddr"
 	specId := "specId"
 	db := NewMemoryDB(specId)
 	db2 := NewMemoryDB("newSpec")
@@ -192,7 +192,7 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 
 	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
 
-	providerAddr := "providerAddr"
+	const providerAddr = "providerAddr"
 	specId := "specId"
 	prevProof := common.BuildRelayRequestWithBadge(ctx, providerAddr, []byte{}, uint64(1), uint64(0), specId, nil, &pairingtypes.Badge{LavaChainId: "43"})
 	prevProof.Epoch = int64(1)
@@ -282,7 +282,7 @@ func TestUpdateEpoch(t *testing.T) {
 
 func TestSaveRewardsToDB(t *testing.T) {
 	rand.InitRandomSeed()
-	providerAddr := "providerAddr"
+	const providerAddr = "providerAddr"
 	specs := []string{"spec1", "spec2"}
 
 	rewardDB := NewRewardDB()
@@ -316,7 +316,7 @@ func TestSaveRewardsToDB(t *testing.T) {
 
 func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 	rand.InitRandomSeed()
-	providerAddr := "providerAddr"
+	const providerAddr = "providerAddr"
 	specs := []string{"spec1", "spec2"}
 
 	rewardDB := NewRewardDB()
@@ -365,7 +365,7 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 
 func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 	rand.InitRandomSeed()
-	providerAddr := "providerAddr"
+	const providerAddr = "providerAddr"
 	specs := []string{"spec1", "spec2"}
 
 	rewardDB := NewRewardDB()
@@ -412,7 +412,7 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 
 func TestRestoreRewardsFromDB(t *testing.T) {
 	rand.InitRandomSeed()
-	providerAddr := "providerAddr"
+	const providerAddr = "providerAddr"
 	specs := []string{"spec1", "spec2"}
 
 	rewardDB := NewRewardDB()
