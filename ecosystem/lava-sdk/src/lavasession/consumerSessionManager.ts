@@ -820,6 +820,11 @@ export class ConsumerSessionManager {
               lavaEpoch
             );
             consumerSessionWithProvider.setPairingEpoch(lavaEpoch); // set the pairing epoch on the specific provider.
+            this.providerOptimizer.appendProbeRelayData(
+              consumerSessionWithProvider.publicLavaAddress,
+              latency,
+              true
+            );
           })
           .catch((e) => {
             Logger.warn(

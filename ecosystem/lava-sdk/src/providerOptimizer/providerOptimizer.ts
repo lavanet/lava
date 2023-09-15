@@ -1,14 +1,12 @@
 import { LRUCache } from "lru-cache";
-import {
-  ProviderOptimizer as ProviderOptimizerInterface,
-  QualityOfServiceReport,
-} from "../lavasession/consumerTypes";
+import { ProviderOptimizer as ProviderOptimizerInterface } from "../lavasession/consumerTypes";
 import { Logger } from "../logger/logger";
 import random from "random";
 import gammainc from "@stdlib/math-base-special-gammainc";
-import { baseTimePerCU, getTimePerCU } from "../common/timeout";
+import { baseTimePerCU, getTimePerCu } from "../common/timeout";
 import BigNumber from "bignumber.js";
 import { hourInMillis, millisToSeconds, now } from "../util/time";
+import { QualityOfServiceReport } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 const CACHE_OPTIONS = {
   max: 2000,
@@ -67,7 +65,7 @@ export interface BlockStore {
   time: number;
 }
 
-export enum Strategy {
+export enum ProviderOptimizerStrategy {
   Balanced,
   Latency,
   SyncFreshness,
@@ -77,7 +75,7 @@ export enum Strategy {
 }
 
 export class ProviderOptimizer implements ProviderOptimizerInterface {
-  private readonly strategy: Strategy;
+  private readonly strategy: ProviderOptimizerStrategy;
   private readonly providersStorage = new LRUCache<string, ProviderData>(
     CACHE_OPTIONS
   ); // todo: ristretto.Cache in go (see what it does)
@@ -93,7 +91,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   };
 
   public constructor(
-    strategy: Strategy,
+    strategy: ProviderOptimizerStrategy,
     averageBlockTime: number,
     baseWorldLatency: number,
     wantedNumProvidersInConcurrency: number
@@ -102,7 +100,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     this.averageBlockTime = averageBlockTime;
     this.baseWorldLatency = baseWorldLatency;
 
-    if (strategy === Strategy.Privacy) {
+    if (strategy === ProviderOptimizerStrategy.Privacy) {
       wantedNumProvidersInConcurrency = 1;
     }
 
@@ -318,21 +316,24 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     }
 
     const precision = WANTED_PRECISION;
-    const latencyScore = BigNumber(
-      providerData.latency.num / providerData.latency.denom
-    ).precision(precision);
-    const syncScore = BigNumber(
-      providerData.sync.num / providerData.sync.denom
-    ).precision(precision);
-    const availabilityScore = BigNumber(
-      providerData.availability.num / providerData.availability.denom
-    ).precision(precision);
+    const latencyScore = floatToBigNumber(
+      providerData.latency.num / providerData.latency.denom,
+      precision
+    );
+    const syncScore = floatToBigNumber(
+      providerData.sync.num / providerData.sync.denom,
+      precision
+    );
+    const availabilityScore = floatToBigNumber(
+      providerData.availability.num / providerData.availability.denom,
+      precision
+    );
 
-    const report: QualityOfServiceReport = {
-      latency: latencyScore.toNumber(),
-      availability: availabilityScore.toNumber(),
-      sync: syncScore.toNumber(),
-    };
+    const report: QualityOfServiceReport = new QualityOfServiceReport();
+    report.setLatency(latencyScore.toPrecision(precision));
+    report.setAvailability(availabilityScore.toPrecision(precision));
+    report.setSync(syncScore.toPrecision(precision));
+
     Logger.debug("QoS excellence for provider", {
       providerAddress,
       report,
@@ -341,9 +342,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     return report;
   }
 
-  public calculateProbabilityOfTimeout(
-    availabilityScore: ScoreStore /* score.ScoreStore */
-  ): number {
+  public calculateProbabilityOfTimeout(availabilityScore: ScoreStore): number {
     const probabilityTimeout = 0;
 
     if (availabilityScore.denom > 0) {
@@ -356,7 +355,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
   public calculateProbabilityOfBlockError(
     requestedBlock: number,
-    providerData: ProviderData /* ProviderData */
+    providerData: ProviderData
   ): number {
     let probabilityBlockError = 0;
 
@@ -394,14 +393,14 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
     let explorationChance = DEFAULT_EXPLORATION_CHANCE;
     switch (this.strategy) {
-      case Strategy.Latency:
+      case ProviderOptimizerStrategy.Latency:
         return true;
-      case Strategy.Accuracy:
+      case ProviderOptimizerStrategy.Accuracy:
         return true;
-      case Strategy.Cost:
+      case ProviderOptimizerStrategy.Cost:
         explorationChance = COST_EXPLORATION_CHANCE;
         break;
-      case Strategy.Privacy:
+      case ProviderOptimizerStrategy.Privacy:
         return false;
     }
 
@@ -416,13 +415,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   ): boolean {
     let latencyWeight: number;
     switch (this.strategy) {
-      case Strategy.Latency:
+      case ProviderOptimizerStrategy.Latency:
         latencyWeight = 0.9;
         break;
-      case Strategy.SyncFreshness:
+      case ProviderOptimizerStrategy.SyncFreshness:
         latencyWeight = 0.2;
         break;
-      case Strategy.Privacy:
+      case ProviderOptimizerStrategy.Privacy:
         return random.int(0, 2) === 0;
       default:
         latencyWeight = 0.8;
@@ -457,7 +456,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     requestedBlock: number
   ): number {
     const baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
-    const timeoutDuration = getTimePerCU(cu);
+    const timeoutDuration = getTimePerCu(cu);
 
     let historicalLatency = 0;
     if (providerData.latency.denom === 0) {
@@ -665,4 +664,15 @@ export function perturbWithNormalGaussian(
   const normal = random.normal();
   const perturb = normal() * percentage * orig;
   return orig + perturb;
+}
+
+/**
+ * This function is just to keep parity with the original golang implementation
+ * @param value
+ * @param precision
+ */
+export function floatToBigNumber(value: number, precision: number): BigNumber {
+  const x = Math.pow(10, precision);
+  const intVal = Math.round(value * x);
+  return BigNumber(intVal / x);
 }

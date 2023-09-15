@@ -1,4 +1,8 @@
-import { ConsumerSessionManager } from "./consumerSessionManager";
+import {
+  ALLOWED_PROBE_RETRIES,
+  ConsumerSessionManager,
+  TIMEOUT_BETWEEN_PROBES,
+} from "./consumerSessionManager";
 import {
   ConsumerSessionsWithProvider,
   Endpoint,
@@ -7,14 +11,14 @@ import {
 } from "./consumerTypes";
 import { PairingListEmptyError, ReportAndBlockProviderError } from "./errors";
 import { Relayer } from "../relayer/relayer";
-import { AverageWorldLatency } from "../common/timeout";
 import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { sleep } from "../util/common";
-import { RandomProviderOptimizer } from "./providerOptimizer";
 import {
-  ALLOWED_PROBE_RETRIES,
-  TIMEOUT_BETWEEN_PROBES,
-} from "./consumerSessionManager";
+  ProviderOptimizer,
+  ProviderOptimizerStrategy,
+} from "../providerOptimizer/providerOptimizer";
+import { AverageWorldLatency } from "../common/timeout";
+
 const NUMBER_OF_PROVIDERS = 10;
 const NUMBER_OF_RESETS_TO_TEST = 10;
 const FIRST_EPOCH_HEIGHT = 20;
@@ -40,7 +44,12 @@ function setupConsumerSessionManager(relayer?: Relayer) {
   const cm = new ConsumerSessionManager(
     relayer,
     new RPCEndpoint("stub", "stub", "stub", "0"),
-    new RandomProviderOptimizer()
+    new ProviderOptimizer(
+      ProviderOptimizerStrategy.Balanced,
+      0,
+      AverageWorldLatency / 2,
+      1
+    )
   );
 
   return cm;

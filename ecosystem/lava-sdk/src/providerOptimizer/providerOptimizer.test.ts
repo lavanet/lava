@@ -1,10 +1,11 @@
 import {
   COST_EXPLORATION_CHANCE,
   cumulativeProbabilityFunctionForPoissonDist,
+  floatToBigNumber,
   perturbWithNormalGaussian,
   ProviderData,
   ProviderOptimizer,
-  Strategy,
+  ProviderOptimizerStrategy,
 } from "./providerOptimizer";
 import random from "random";
 import BigNumber from "bignumber.js";
@@ -371,7 +372,9 @@ describe("ProviderOptimizer", () => {
       return exploration;
     };
 
-    const setProviderOptimizerStrategy = (strategy: Strategy) => {
+    const setProviderOptimizerStrategy = (
+      strategy: ProviderOptimizerStrategy
+    ) => {
       // @ts-expect-error private property but we need it for testing without exposing it
       providerOptimizer.strategy = strategy;
     };
@@ -381,7 +384,7 @@ describe("ProviderOptimizer", () => {
     };
 
     // with a cost strategy we expect only one provider, two with a change of 1/100
-    setProviderOptimizerStrategy(Strategy.Cost);
+    setProviderOptimizerStrategy(ProviderOptimizerStrategy.Cost);
     setProviderOptimizerConcurrencyProviders(2);
     const iterations = 10000;
     let exploration = testProvidersCount(iterations);
@@ -389,11 +392,11 @@ describe("ProviderOptimizer", () => {
       1.3 * iterations * providersCount * COST_EXPLORATION_CHANCE
     );
 
-    setProviderOptimizerStrategy(Strategy.Balanced);
+    setProviderOptimizerStrategy(ProviderOptimizerStrategy.Balanced);
     exploration = testProvidersCount(iterations);
     expect(exploration).toBeLessThan(1.3 * iterations * providersCount * 0.5);
 
-    setProviderOptimizerStrategy(Strategy.Privacy);
+    setProviderOptimizerStrategy(ProviderOptimizerStrategy.Privacy);
     exploration = testProvidersCount(iterations);
     expect(exploration).toBe(0);
   });
@@ -575,14 +578,14 @@ describe("ProviderOptimizer", () => {
     appendRelayData(providers[4], normalLatency, syncBlock, sampleTime);
     appendRelayData(providers[1], normalLatency, improvedBlock, sampleTime);
 
-    const setProviderStrategy = (strategy: Strategy) => {
+    const setProviderStrategy = (strategy: ProviderOptimizerStrategy) => {
       // @ts-expect-error private property but we need it for testing without exposing it
       providerOptimizer.strategy = strategy;
     };
 
     await sleep(4);
 
-    setProviderStrategy(Strategy.Balanced);
+    setProviderStrategy(ProviderOptimizerStrategy.Balanced);
     // a balanced strategy should pick provider 2 because of it's high availability
     let returnedProviders = providerOptimizer.chooseProvider(
       providers,
@@ -594,7 +597,7 @@ describe("ProviderOptimizer", () => {
     expect(returnedProviders).toHaveLength(1);
     expect(returnedProviders[0]).toBe(providers[2]);
 
-    setProviderStrategy(Strategy.Cost);
+    setProviderStrategy(ProviderOptimizerStrategy.Cost);
     // with a cost strategy we expect the same as balanced
     returnedProviders = providerOptimizer.chooseProvider(
       providers,
@@ -606,7 +609,7 @@ describe("ProviderOptimizer", () => {
     expect(returnedProviders).toHaveLength(1);
     expect(returnedProviders[0]).toBe(providers[2]);
 
-    setProviderStrategy(Strategy.Latency);
+    setProviderStrategy(ProviderOptimizerStrategy.Latency);
     // latency strategy should pick the best latency
     returnedProviders = providerOptimizer.chooseProvider(
       providers,
@@ -618,7 +621,7 @@ describe("ProviderOptimizer", () => {
     expect(returnedProviders).toHaveLength(1);
     expect(returnedProviders[0]).toBe(providers[0]);
 
-    setProviderStrategy(Strategy.SyncFreshness);
+    setProviderStrategy(ProviderOptimizerStrategy.SyncFreshness);
     // with a cost strategy we expect the same as balanced
     returnedProviders = providerOptimizer.chooseProvider(
       providers,
@@ -633,8 +636,8 @@ describe("ProviderOptimizer", () => {
 
   it("tests excellence report", async () => {
     const floatVal = 0.25;
-    const floatNew = BigNumber(floatVal).precision(8).toNumber();
-    expect(floatNew).toEqual(floatVal);
+    const floatNew = floatToBigNumber(floatVal, 8);
+    expect(floatNew.toNumber()).toEqual(floatVal);
 
     const providerOptimizer = setupProviderOptimizer();
     const providersCount = 5;
@@ -725,7 +728,7 @@ describe("ProviderOptimizer", () => {
 
 function setupProviderOptimizer() {
   return new ProviderOptimizer(
-    Strategy.Balanced,
+    ProviderOptimizerStrategy.Balanced,
     TEST_AVERAGE_BLOCK_TIME,
     TEST_BASE_WORLD_LATENCY,
     1
