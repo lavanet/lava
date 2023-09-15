@@ -28,7 +28,7 @@ import {
 import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
-import { BACKOFF_TIME_ON_FAILURE } from "../common/common";
+import {BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK} from "../common/common";
 
 const MaxRelayRetries = 4;
 
@@ -140,7 +140,7 @@ export class RPCConsumerServer {
       const consumerSessionsMap = this.consumerSessionManager.getSessions(
         chainMessage.getApi().getComputeUnits(),
         unwantedProviders,
-        chainMessage.getRequestedBlock(),
+        LATEST_BLOCK,
         "",
         []
       );
