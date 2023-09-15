@@ -845,6 +845,11 @@ export class ConsumerSessionManager {
               this.currentEpoch = this.getEpochFromEpochTracker(); // setting the epoch for initialization.
             }
             consumerSessionWithProvider.setPairingEpoch(this.currentEpoch); // set the pairing epoch on the specific provider.
+            this.providerOptimizer.appendProbeRelayData(
+              consumerSessionWithProvider.publicLavaAddress,
+              latency,
+              true
+            );
           })
           .catch((e) => {
             Logger.warn(
