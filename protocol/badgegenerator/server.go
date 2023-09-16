@@ -232,8 +232,12 @@ func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 }
 
 func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeRequest, configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse) error {
+	chainID := response.Badge.LavaChainId
 	if request.SpecId != "" {
-		if configurations.PairingList == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
+		if configurations.PairingList == nil {
+			configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
+		}
+		if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
 			pairings, err := s.grpcFetcher.FetchPairings(request.SpecId, configurations.ProjectPublicKey)
 			if err != nil {
 				utils.LavaFormatError("Failed to get pairings", err,
@@ -242,11 +246,10 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 					utils.Attribute{Key: "ProjectId", Value: request.ProjectId})
 				return err
 			}
-			configurations.PairingList = pairings
+			configurations.PairingList[chainID] = pairings
 			configurations.UpdatedEpoch = response.Badge.Epoch
 		}
-		// return the pairingList we have stored in configurations
-		response.GetPairingResponse = configurations.PairingList
+		response.GetPairingResponse = configurations.PairingList[chainID]
 	}
 	return nil
 }
