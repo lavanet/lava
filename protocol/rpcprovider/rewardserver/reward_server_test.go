@@ -432,22 +432,27 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 
 	stubRewardsTxSender := rewardsTxSenderDouble{}
 
-	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 2, 1000)
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
-	proofs := []*pairingtypes.RelaySession{}
+	privKey, acc := sigs.GenerateFloatingKey()
 	for _, spec := range specs {
-		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), spec, nil))
+		proof := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), spec, nil)
+		proof.Epoch = int64(epoch)
+
+		sig, err := sigs.Sign(privKey, *proof)
+		require.NoError(t, err)
+		proof.Sig = sig
+
+		_, _ = rws.SendNewProof(context.TODO(), proof, epoch, acc.String(), "apiInterface")
 	}
 
-	for _, proof := range proofs {
-		_, _ = rws.SendNewProof(context.TODO(), proof, epoch, "consumerAddress", "apiInterface")
-	}
+	rws.rewardsSnapshotThresholdCh <- struct{}{}
 
 	stubRewardsTxSender = rewardsTxSenderDouble{}
-	rws = NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 2, 1000)
+	rws = NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1)
 
 	for _, spec := range specs {
 		rws.restoreRewardsFromDB(spec)
