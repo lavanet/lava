@@ -141,7 +141,7 @@ func (m *StakeEntry) GetDelegateCommission() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*StakeEntry)(nil), "lavanet.lava.epochstorage.StakeEntry")
+	proto.RegisterType((*StakeEntry)(nil), "lavanet.lava.epochstorage.StakeEntryV4")
 }
 
 func init() {
