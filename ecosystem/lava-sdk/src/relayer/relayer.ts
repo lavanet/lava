@@ -449,9 +449,9 @@ export class Relayer {
         }
       })(key, valueInner);
     }
-    console.log("message: " + serializedRequest);
+    // console.log("message: " + serializedRequest);
     const encodedMessage = enc.encode(serializedRequest);
-    console.log("encodedMessage: " + encodedMessage);
+    // console.log("encodedMessage: " + encodedMessage);
     const hash = sha256(encodedMessage);
 
     return hash;
