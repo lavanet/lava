@@ -22,8 +22,8 @@ func TestReportedProvider(t *testing.T) {
 	for _, reported := range reportedProviders.GetReportedProviders() {
 		if reported.Address == providers[0] {
 			found = true
-			require.Equal(t, reported.Errors, 0)
-			require.Equal(t, reported.Disconnections, 0)
+			require.Equal(t, reported.Errors, uint64(0))
+			require.Equal(t, reported.Disconnections, uint64(0))
 		}
 		require.False(t, reported.Address == providers[1])
 	}
@@ -45,8 +45,8 @@ func TestReportedErrors(t *testing.T) {
 	for _, reported := range reportedProviders.GetReportedProviders() {
 		if reported.Address == providers[0] {
 			found = true
-			require.Equal(t, reported.Errors, 10)
-			require.Equal(t, reported.Disconnections, 0)
+			require.Equal(t, reported.Errors, uint64(10))
+			require.Equal(t, reported.Disconnections, uint64(0))
 		}
 		require.False(t, reported.Address == providers[1])
 	}
