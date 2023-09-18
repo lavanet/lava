@@ -62,6 +62,20 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
+			if err != nil {
+				return err
+			}
+
+			delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
+			if err != nil {
+				return err
+			}
+			delegationLimit, err := sdk.ParseCoinNormalized(delegationLimitStr)
+			if err != nil {
+				return err
+			}
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
@@ -69,6 +83,8 @@ func CmdStakeProvider() *cobra.Command {
 				argEndpoints,
 				argGeolocation,
 				moniker,
+				delegationLimit,
+				commission,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -77,6 +93,8 @@ func CmdStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
+	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)
 
@@ -108,6 +126,20 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 			moniker, err := cmd.Flags().GetString(types.FlagMoniker)
+			if err != nil {
+				return err
+			}
+
+			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
+			if err != nil {
+				return err
+			}
+
+			delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
+			if err != nil {
+				return err
+			}
+			delegationLimit, err := sdk.ParseCoinNormalized(delegationLimitStr)
 			if err != nil {
 				return err
 			}
@@ -161,6 +193,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 						allEndpoints,
 						argGeolocation,
 						moniker,
+						delegationLimit,
+						commission,
 					)
 					if err := msg.ValidateBasic(); err != nil {
 						return nil, err
@@ -184,6 +218,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
+	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)
 

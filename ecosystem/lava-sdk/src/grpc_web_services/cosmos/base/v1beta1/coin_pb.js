@@ -13,6 +13,7 @@ var global = Function('return this')();
 
 var gogoproto_gogo_pb = require('../../../gogoproto/gogo_pb.js');
 var cosmos_proto_cosmos_pb = require('../../../cosmos_proto/cosmos_pb.js');
+var amino_amino_pb = require('../../../amino/amino_pb.js');
 goog.exportSymbol('proto.cosmos.base.v1beta1.Coin', null, global);
 goog.exportSymbol('proto.cosmos.base.v1beta1.DecCoin', null, global);
 goog.exportSymbol('proto.cosmos.base.v1beta1.DecProto', null, global);

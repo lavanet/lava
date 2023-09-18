@@ -1,0 +1,20 @@
+syntax = "proto3";
+package lavanet.lava.protocol;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/protocol/types";
+
+// Params defines the parameters for the module.
+message Version {
+  string provider_target = 1 [(gogoproto.moretags) = "yaml:\"provider_target\""];
+  string provider_min = 2 [(gogoproto.moretags) = "yaml:\"provider_min\""];
+  string consumer_target = 3 [(gogoproto.moretags) = "yaml:\"consumer_target\""];
+  string consumer_min = 4 [(gogoproto.moretags) = "yaml:\"consumer_min\""];
+}
+
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+
+  Version version = 1 [(gogoproto.nullable) = false];
+}

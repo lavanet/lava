@@ -76,7 +76,10 @@ proto.lavanet.lava.epochstorage.StakeEntry.toObject = function(includeInstance, 
     lavanet_lava_epochstorage_endpoint_pb.Endpoint.toObject, includeInstance),
     geolocation: jspb.Message.getFieldWithDefault(msg, 5, 0),
     chain: jspb.Message.getFieldWithDefault(msg, 6, ""),
-    moniker: jspb.Message.getFieldWithDefault(msg, 8, "")
+    moniker: jspb.Message.getFieldWithDefault(msg, 8, ""),
+    delegateTotal: (f = msg.getDelegateTotal()) && cosmos_base_v1beta1_coin_pb.Coin.toObject(includeInstance, f),
+    delegateLimit: (f = msg.getDelegateLimit()) && cosmos_base_v1beta1_coin_pb.Coin.toObject(includeInstance, f),
+    delegateCommission: jspb.Message.getFieldWithDefault(msg, 11, 0)
   };
 
   if (includeInstance) {
@@ -132,7 +135,7 @@ proto.lavanet.lava.epochstorage.StakeEntry.deserializeBinaryFromReader = functio
       msg.addEndpoints(value);
       break;
     case 5:
-      var value = /** @type {number} */ (reader.readUint64());
+      var value = /** @type {number} */ (reader.readInt32());
       msg.setGeolocation(value);
       break;
     case 6:
@@ -142,6 +145,20 @@ proto.lavanet.lava.epochstorage.StakeEntry.deserializeBinaryFromReader = functio
     case 8:
       var value = /** @type {string} */ (reader.readString());
       msg.setMoniker(value);
+      break;
+    case 9:
+      var value = new cosmos_base_v1beta1_coin_pb.Coin;
+      reader.readMessage(value,cosmos_base_v1beta1_coin_pb.Coin.deserializeBinaryFromReader);
+      msg.setDelegateTotal(value);
+      break;
+    case 10:
+      var value = new cosmos_base_v1beta1_coin_pb.Coin;
+      reader.readMessage(value,cosmos_base_v1beta1_coin_pb.Coin.deserializeBinaryFromReader);
+      msg.setDelegateLimit(value);
+      break;
+    case 11:
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setDelegateCommission(value);
       break;
     default:
       reader.skipField();
@@ -204,7 +221,7 @@ proto.lavanet.lava.epochstorage.StakeEntry.serializeBinaryToWriter = function(me
   }
   f = message.getGeolocation();
   if (f !== 0) {
-    writer.writeUint64(
+    writer.writeInt32(
       5,
       f
     );
@@ -220,6 +237,29 @@ proto.lavanet.lava.epochstorage.StakeEntry.serializeBinaryToWriter = function(me
   if (f.length > 0) {
     writer.writeString(
       8,
+      f
+    );
+  }
+  f = message.getDelegateTotal();
+  if (f != null) {
+    writer.writeMessage(
+      9,
+      f,
+      cosmos_base_v1beta1_coin_pb.Coin.serializeBinaryToWriter
+    );
+  }
+  f = message.getDelegateLimit();
+  if (f != null) {
+    writer.writeMessage(
+      10,
+      f,
+      cosmos_base_v1beta1_coin_pb.Coin.serializeBinaryToWriter
+    );
+  }
+  f = message.getDelegateCommission();
+  if (f !== 0) {
+    writer.writeUint64(
+      11,
       f
     );
   }
@@ -318,7 +358,7 @@ proto.lavanet.lava.epochstorage.StakeEntry.prototype.clearEndpointsList = functi
 
 
 /**
- * optional uint64 geolocation = 5;
+ * optional int32 geolocation = 5;
  * @return {number}
  */
 proto.lavanet.lava.epochstorage.StakeEntry.prototype.getGeolocation = function() {
@@ -359,6 +399,81 @@ proto.lavanet.lava.epochstorage.StakeEntry.prototype.getMoniker = function() {
 /** @param {string} value */
 proto.lavanet.lava.epochstorage.StakeEntry.prototype.setMoniker = function(value) {
   jspb.Message.setProto3StringField(this, 8, value);
+};
+
+
+/**
+ * optional cosmos.base.v1beta1.Coin delegate_total = 9;
+ * @return {?proto.cosmos.base.v1beta1.Coin}
+ */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.getDelegateTotal = function() {
+  return /** @type{?proto.cosmos.base.v1beta1.Coin} */ (
+    jspb.Message.getWrapperField(this, cosmos_base_v1beta1_coin_pb.Coin, 9));
+};
+
+
+/** @param {?proto.cosmos.base.v1beta1.Coin|undefined} value */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.setDelegateTotal = function(value) {
+  jspb.Message.setWrapperField(this, 9, value);
+};
+
+
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.clearDelegateTotal = function() {
+  this.setDelegateTotal(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {!boolean}
+ */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.hasDelegateTotal = function() {
+  return jspb.Message.getField(this, 9) != null;
+};
+
+
+/**
+ * optional cosmos.base.v1beta1.Coin delegate_limit = 10;
+ * @return {?proto.cosmos.base.v1beta1.Coin}
+ */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.getDelegateLimit = function() {
+  return /** @type{?proto.cosmos.base.v1beta1.Coin} */ (
+    jspb.Message.getWrapperField(this, cosmos_base_v1beta1_coin_pb.Coin, 10));
+};
+
+
+/** @param {?proto.cosmos.base.v1beta1.Coin|undefined} value */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.setDelegateLimit = function(value) {
+  jspb.Message.setWrapperField(this, 10, value);
+};
+
+
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.clearDelegateLimit = function() {
+  this.setDelegateLimit(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {!boolean}
+ */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.hasDelegateLimit = function() {
+  return jspb.Message.getField(this, 10) != null;
+};
+
+
+/**
+ * optional uint64 delegate_commission = 11;
+ * @return {number}
+ */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.getDelegateCommission = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 11, 0));
+};
+
+
+/** @param {number} value */
+proto.lavanet.lava.epochstorage.StakeEntry.prototype.setDelegateCommission = function(value) {
+  jspb.Message.setProto3IntField(this, 11, value);
 };
 
 

@@ -41,6 +41,7 @@ class NodeHttp implements grpc.Transport {
   responseCallback(response: http.IncomingMessage) {
     this.options.debug && console.log("NodeHttp.response", response.statusCode);
     const headers = filterHeadersForUndefined(response.headers);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.options.onHeaders(new grpc.Metadata(headers), response.statusCode!);
 
     response.on("data", (chunk) => {

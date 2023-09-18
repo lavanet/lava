@@ -46,10 +46,10 @@ func TestPairingUniqueness(t *testing.T) {
 	pairing2, err := ts.QueryPairingGetPairing(ts.spec.Index, sub2Addr)
 	require.Nil(t, err)
 
-	filter := func(p epochstoragetypes.StakeEntry) string { return p.Address }
+	mapFunc := func(p epochstoragetypes.StakeEntry) string { return p.Address }
 
-	providerAddrs1 := slices.Filter(pairing1.Providers, filter)
-	providerAddrs2 := slices.Filter(pairing2.Providers, filter)
+	providerAddrs1 := slices.Map(pairing1.Providers, mapFunc)
+	providerAddrs2 := slices.Map(pairing2.Providers, mapFunc)
 
 	require.Equal(t, len(pairing1.Providers), len(pairing2.Providers))
 	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs2))
@@ -60,7 +60,7 @@ func TestPairingUniqueness(t *testing.T) {
 	pairing11, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 	require.Nil(t, err)
 
-	providerAddrs11 := slices.Filter(pairing11.Providers, filter)
+	providerAddrs11 := slices.Map(pairing11.Providers, mapFunc)
 
 	require.Equal(t, len(pairing1.Providers), len(pairing11.Providers))
 	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs11))
@@ -695,7 +695,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			_, sub1Addr := ts.AddAccount("sub", i, 10000)
 
 			// create plan, propose it and buy subscription
-			plan := ts.Plan("mock")
+			plan := ts.Plan("free")
 			providersSet := providerSets[tt.providersSet]
 
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
@@ -703,6 +703,8 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
+
+			ts.AdvanceEpoch()
 
 			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
 			require.Nil(t, err)
@@ -749,7 +751,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.Nil(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, ts.spec, 10000000)
+				err := ts.StakeProvider(p1, ts.spec, testBalance/2)
 				require.Nil(t, err)
 			}
 
@@ -2169,7 +2171,7 @@ func TestPairingConsistency(t *testing.T) {
 	iterations := 100
 
 	ts.plan.PlanPolicy.MaxProvidersToPair = uint64(3)
-	ts.AddPlan("mock", ts.plan)
+	ts.AddPlan("free", ts.plan)
 	ts.addClient(1)
 	err := ts.addProviderGeolocation(10, 3)
 	require.Nil(t, err)

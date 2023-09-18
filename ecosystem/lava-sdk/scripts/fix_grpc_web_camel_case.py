@@ -2,6 +2,17 @@ import re
 
 files_to_fix = ["./src/grpc_web_services/lavanet/lava/pairing/relay_pb.js","./src/grpc_web_services/lavanet/lava/pairing/badges_pb.js"]
 
+print("""
++++++++++++++++++++++++++++++++++++++++++++++++++++
++                                                 +
++           fix_grpc_web_camel_case               +
++       fixing grpc web protobuf camel case       +
++                                                 +
++             types that are fixed                +
++++++++++++++++++++++++++++++++++++++++++++++++++++
+""")
+      
+
 def camel_to_snake(camel_str):
     snake_str = re.sub('([a-z0-9])([A-Z])', r'\1_\2', camel_str)
     return snake_str.lower()
@@ -28,3 +39,4 @@ for file in files_to_fix:
     with open(file, "w+") as fwrite:
         fwrite.write(data)
 
+print("Finished fix_grpc_web_camel_case.py")

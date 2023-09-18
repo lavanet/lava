@@ -22,7 +22,7 @@ type StateTracker struct {
 	chainTracker         *chaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
-	eventTracker         *EventTracker
+	EventTracker         *EventTracker
 }
 
 type Updater interface {
@@ -52,7 +52,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		averageBlockTime = 30
 	}
 
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
+	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
@@ -68,7 +68,7 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 	// first update event tracker
-	st.eventTracker.updateBlockResults(latestBlock)
+	st.EventTracker.updateBlockResults(latestBlock)
 	// after events were updated we can trigger updaters
 	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)
@@ -88,5 +88,5 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 
 // For lavavisor access
 func (s *StateTracker) GetEventTracker() *EventTracker {
-	return s.eventTracker
+	return s.EventTracker
 }

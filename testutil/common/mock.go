@@ -25,7 +25,7 @@ func CreateMockSpec() spectypes.Spec {
 
 func CreateMockPlan() plantypes.Plan {
 	plan := plantypes.Plan{
-		Index:                    "mock_plan",
+		Index:                    "free",
 		Description:              "plan for testing",
 		Type:                     "rpc",
 		Block:                    100,
