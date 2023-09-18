@@ -377,7 +377,6 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 		require.NoError(t, err)
 
 		rws.PaymentHandler(paymentRequests[0])
-
 	}
 
 	epochRewardsDB, err = rewardDB.FindAll()
