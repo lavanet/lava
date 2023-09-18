@@ -1,7 +1,6 @@
 package types
 
 import (
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 )
 
@@ -12,10 +11,7 @@ func (rs RelaySession) GetSignature() []byte {
 func (rs RelaySession) DataToSign() []byte {
 	rs.Badge = nil // its not a part of the signature, its a separate part
 	rs.Sig = nil
-	if len(rs.UnresponsiveProviders) > 0 {
-		utils.LavaFormatError("DEBUG unresponsive~!", nil, utils.Attribute{"RelayString", rs.UnresponsiveProviders})
-	}
-	utils.LavaFormatError("DEBUG", nil, utils.Attribute{"RelayString", rs.String()})
+	// utils.LavaFormatError("DEBUG", nil, utils.Attribute{"RelayString", rs.String()})
 	return []byte(rs.String())
 }
 
