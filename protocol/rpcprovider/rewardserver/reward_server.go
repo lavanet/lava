@@ -360,6 +360,8 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 		err = rws.rewardDB.DeleteClaimedRewards(payment.PaymentEpoch, payment.Client.String(), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
+		} else {
+			utils.LavaFormatDebug("deleted claimed rewards successfully")
 		}
 	}
 }
