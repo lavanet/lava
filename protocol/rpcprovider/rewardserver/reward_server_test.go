@@ -328,7 +328,7 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 2, 1000)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 100)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
@@ -341,6 +341,8 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 	for _, proof := range proofs {
 		_, _ = rws.SendNewProof(context.TODO(), proof, epoch, "consumerAddress", "apiInterface")
 	}
+
+	rws.rewardsSnapshotThresholdCh <- struct{}{}
 
 	for _, spec := range specs {
 		epochRewards, err := rewardDB.FindAllInDB(spec)
@@ -383,7 +385,7 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 
 	stubRewardsTxSender := rewardsTxSenderDouble{}
 
-	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 2, 1000)
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 100)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
