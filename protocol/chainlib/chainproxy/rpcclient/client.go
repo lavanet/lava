@@ -71,7 +71,7 @@ type BatchElemWithId struct {
 	ID    json.RawMessage // added an ID field because we build our messages with built in ID, this is optional and can be set to nil
 }
 
-func NewBatchElementWithId(method string, args interface{}, result interface{}, ID json.RawMessage) (BatchElemWithId, error) {
+func NewBatchElementWithId(method string, args interface{}, result interface{}, iD json.RawMessage) (BatchElemWithId, error) {
 	_, ok := args.([]interface{})
 	_, ok2 := args.(map[string]interface{})
 	if !ok && !ok2 {
@@ -81,7 +81,7 @@ func NewBatchElementWithId(method string, args interface{}, result interface{}, 
 		Method: method,
 		args:   args,
 		Result: result,
-		ID:     ID,
+		ID:     iD,
 	}, nil
 }
 
