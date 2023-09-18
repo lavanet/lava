@@ -95,7 +95,6 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
-	var nodeMsg *parsedMessage
 	for idx, msg := range msgs {
 		var requestedBlockForMessage int64
 		// Check api is supported and save it in nodeMsg
@@ -167,6 +166,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
 		}
 	}
+	var nodeMsg *parsedMessage
 	if len(msgs) == 1 {
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &msgs[0], apiCollection)
 	} else {
@@ -499,7 +499,13 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 	return nil
 }
 
-func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, rpc *rpcclient.Client, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, err error) {
+func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, err error) {
+	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
+	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer cp.conn[internalPath].ReturnRpc(rpc)
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
 			rpc.SetHeader(metadata.Name, metadata.Value)
@@ -545,12 +551,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
-	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
-	if err != nil {
-		return nil, "", nil, err
-	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
@@ -562,9 +563,15 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if ch != nil {
 			return nil, "", nil, utils.LavaFormatError("does not support subscribe in a batch", nil)
 		}
-		reply, err := cp.sendBatchMessage(ctx, batchMessage, rpc, chainMessage)
+		reply, err := cp.sendBatchMessage(ctx, batchMessage, chainMessage)
 		return reply, "", nil, err
 	}
+	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
+	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer cp.conn[internalPath].ReturnRpc(rpc)
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
 	var replyMessage *rpcInterfaceMessages.JsonrpcMessage
