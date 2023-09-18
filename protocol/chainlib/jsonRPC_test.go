@@ -124,7 +124,8 @@ func TestJSONParseMessage(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
-	assert.Equal(t, msg.RequestedBlock(), int64(-2))
+	requestedBlock, _ := msg.RequestedBlock()
+	assert.Equal(t, requestedBlock, int64(-2))
 	assert.Equal(t, msg.GetApiCollection().CollectionData.ApiInterface, spectypes.APIInterfaceJsonRPC)
 }
 
@@ -255,7 +256,8 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	batchCallData := `[{"method":"eth_chainId","params":[],"id":1,"jsonrpc":"2.0"},{"method":"eth_accounts","params":[],"id":2,"jsonrpc":"2.0"},{"method":"eth_blockNumber","params":[],"id":3,"jsonrpc":"2.0"}]`
 	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, 0)
 	require.NoError(t, err)
-	require.Equal(t, spectypes.LATEST_BLOCK, chainMessage.RequestedBlock())
+	requestedBlock, _ := chainMessage.RequestedBlock()
+	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
 	relayReply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	require.True(t, gotCalled)
 	require.NoError(t, err)

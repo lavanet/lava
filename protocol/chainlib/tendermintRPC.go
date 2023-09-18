@@ -167,10 +167,10 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		requestedBlock: requestedBlock,
-		msg:            msg,
+		api:                  serviceApi,
+		apiCollection:        apiCollection,
+		latestRequestedBlock: requestedBlock,
+		msg:                  msg,
 	}
 	return nodeMsg
 }

@@ -61,7 +61,7 @@ type ChainParser interface {
 }
 
 type ChainMessage interface {
-	RequestedBlock() int64
+	RequestedBlock() (latest int64, earliest int64)
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 	GetExtensions() []*spectypes.Extension

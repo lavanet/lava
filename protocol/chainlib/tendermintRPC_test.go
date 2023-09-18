@@ -126,7 +126,8 @@ func TestTendermintParseMessage(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
-	assert.Equal(t, msg.RequestedBlock(), int64(-2))
+	requestedBlock, _ := msg.RequestedBlock()
+	assert.Equal(t, requestedBlock, int64(-2))
 }
 
 func TestTendermintRpcChainProxy(t *testing.T) {

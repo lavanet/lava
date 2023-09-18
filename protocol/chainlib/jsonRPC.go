@@ -94,7 +94,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
-	var requestedBlock int64 = 0
+	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
 	var nodeMsg *parsedMessage
 	for idx, msg := range msgs {
 		var requestedBlockForMessage int64
@@ -129,7 +129,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			// on the first entry store them
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
-			requestedBlock = requestedBlockForMessage
+			latestRequestedBlock = requestedBlockForMessage
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -164,13 +164,13 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 					Encoding:     "",
 				},
 			}
-			requestedBlock = UpdateRequestedBlockInBatch(requestedBlock, requestedBlockForMessage)
+			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
 		}
 	}
 	if len(msgs) == 1 {
-		nodeMsg = apip.newChainMessage(api, requestedBlock, &msgs[0], apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &msgs[0], apiCollection)
 	} else {
-		nodeMsg, err = apip.newBatchChainMessage(api, requestedBlock, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, msgs, apiCollection)
 		if err != nil {
 			return nil, err
 		}
@@ -179,26 +179,27 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	return nodeMsg, nil
 }
 
-func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
+func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
 	}
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		requestedBlock: requestedBlock,
-		msg:            &batchMessage,
+		api:                    serviceApi,
+		apiCollection:          apiCollection,
+		latestRequestedBlock:   requestedBlock,
+		msg:                    &batchMessage,
+		earliestRequestedBlock: earliestRequestedBlock,
 	}
 	return nodeMsg, err
 }
 
 func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		requestedBlock: requestedBlock,
-		msg:            msg,
+		api:                  serviceApi,
+		apiCollection:        apiCollection,
+		latestRequestedBlock: requestedBlock,
+		msg:                  msg,
 	}
 	return nodeMsg
 }

@@ -11,7 +11,6 @@ import (
 	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/metadata"
@@ -217,31 +216,42 @@ func convertRelayMetaDataToMDMetaData(md []pairingtypes.Metadata) metadata.MD {
 	return responseMetaData
 }
 
-// combine two requested block to the most advanced one
+// split two requested blocks to the most advanced and most behind
 // the hierarchy is as follows:
 // NOT_APPLICABLE
 // LATEST_BLOCK
-// FINALIZED
+// PENDING_BLOCK
 // SAFE
+// FINALIZED
 // numeric value (descending)
-// earliest
-func UpdateRequestedBlockInBatch(requestedBlock int64, newRequestedBlock int64) (combinedRequestedBlock int64) {
-	handleOneNegative := func(first int64, second int64) (ret int64, handled bool) {
-		if first < 0 && second > 0 {
-			if first == spectypes.EARLIEST_BLOCK {
-				return second, true
-			}
-			return first, true
+// EARLIEST
+func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (latestCombinedBlock int64, earliestCombinedBlock int64) {
+	if firstRequestedBlock == spectypes.EARLIEST_BLOCK {
+		return second, firstRequestedBlock
+	}
+	if second == spectypes.EARLIEST_BLOCK {
+		return firstRequestedBlock, second
+	}
+
+	returnBigger := func(in_first int64, in_second int64) (int64, int64) {
+		if in_first > in_second {
+			return in_first, in_second
 		}
-		return 0, false
+		return in_second, in_first
 	}
-	ret, handled := handleOneNegative(requestedBlock, newRequestedBlock)
-	if handled {
-		return ret
+
+	if firstRequestedBlock < 0 {
+		if second < 0 {
+			// both are negative
+			return returnBigger(firstRequestedBlock, second)
+		}
+		// first is negative non earliest second is positive
+		return firstRequestedBlock, second
 	}
-	ret, handled = handleOneNegative(newRequestedBlock, requestedBlock)
-	if handled {
-		return ret
+	if second < 0 {
+		// second is negative non earliest first is positive
+		return second, firstRequestedBlock
 	}
-	return slices.Max([]int64{requestedBlock, newRequestedBlock})
+	// both are positive
+	return returnBigger(firstRequestedBlock, second)
 }

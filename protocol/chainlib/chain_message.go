@@ -13,11 +13,12 @@ type updatableRPCInput interface {
 }
 
 type parsedMessage struct {
-	api            *spectypes.Api
-	requestedBlock int64
-	msg            updatableRPCInput
-	apiCollection  *spectypes.ApiCollection
-	extensions     []*spectypes.Extension
+	api                    *spectypes.Api
+	latestRequestedBlock   int64
+	earliestRequestedBlock int64
+	msg                    updatableRPCInput
+	apiCollection          *spectypes.ApiCollection
+	extensions             []*spectypes.Extension
 }
 
 func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
@@ -32,8 +33,12 @@ func (pm parsedMessage) GetApiCollection() *spectypes.ApiCollection {
 	return pm.apiCollection
 }
 
-func (pm parsedMessage) RequestedBlock() int64 {
-	return pm.requestedBlock
+func (pm parsedMessage) RequestedBlock() (latest int64, earliest int64) {
+	if pm.earliestRequestedBlock == 0 {
+		// earliest is optional and not set here
+		return pm.latestRequestedBlock, pm.latestRequestedBlock
+	}
+	return pm.latestRequestedBlock, pm.earliestRequestedBlock
 }
 
 func (pm parsedMessage) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
@@ -41,12 +46,13 @@ func (pm parsedMessage) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
 }
 
 func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
-	if latestBlock <= spectypes.NOT_APPLICABLE || pm.RequestedBlock() != spectypes.LATEST_BLOCK {
+	requestedBlock, _ := pm.RequestedBlock()
+	if latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
 		return false
 	}
 	success := pm.msg.UpdateLatestBlockInMessage(uint64(latestBlock), modifyContent)
 	if success {
-		pm.requestedBlock = latestBlock
+		pm.latestRequestedBlock = latestBlock
 		return true
 	}
 	return false
