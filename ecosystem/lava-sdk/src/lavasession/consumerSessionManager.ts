@@ -819,6 +819,7 @@ export class ConsumerSessionManager {
               consumerSessionWithProvider.publicLavaAddress,
               lavaEpoch
             );
+            consumerSessionWithProvider.setPairingEpoch(lavaEpoch); // set the pairing epoch on the specific provider.
           })
           .catch((e) => {
             Logger.warn(
