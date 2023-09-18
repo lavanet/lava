@@ -79,6 +79,29 @@ func paymentEventsToEventAttributes(attributesList []map[string]string) (eventAt
 	return
 }
 
+func deepCompareRewards(t *testing.T, expected map[uint64]*EpochRewards, actual map[uint64]*EpochRewards) {
+	for epoch, epochReward := range expected {
+		epochRewardActual, found := actual[epoch]
+		require.True(t, found)
+
+		for consumerKey, consumerRewards := range epochReward.consumerRewards {
+			consumerRewardActual, found := epochRewardActual.consumerRewards[consumerKey]
+			require.True(t, found)
+
+			for sessionId, proof := range consumerRewards.proofs {
+				proofActual, found := consumerRewardActual.proofs[sessionId]
+				require.True(t, found)
+
+				require.Equal(t, proof.CuSum, proofActual.CuSum)
+				require.Equal(t, proof.LavaChainId, proofActual.LavaChainId)
+				require.Equal(t, proof.RelayNum, proofActual.RelayNum)
+				require.Equal(t, proof.SessionId, proofActual.SessionId)
+				require.Equal(t, proof.Sig, proofActual.Sig)
+			}
+		}
+	}
+}
+
 func TestPayments(t *testing.T) {
 	internalRelays := 5
 	attributesList := stubPaymentEvents(internalRelays, "spec", 1)
@@ -299,21 +322,19 @@ func TestSaveRewardsToDB(t *testing.T) {
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proofs := []*pairingtypes.RelaySession{}
 	for _, spec := range specs {
-		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, uint64(1), uint64(10), spec, nil))
+		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, make([]byte, 0), uint64(1), uint64(10), spec, nil))
 	}
 
 	for _, proof := range proofs {
 		_, _ = rws.SendNewProof(context.TODO(), proof, epoch, "consumerAddress", "apiInterface")
 	}
 
-	for _, spec := range specs {
-		epochRewards, err := rewardDB.FindAllInDB(spec)
-		require.NoError(t, err)
+	rws.rewardsSnapshotThresholdCh <- struct{}{}
 
-		epochReward, found := epochRewards[epoch]
-		require.True(t, found)
-		require.Equal(t, 1, epochReward.NumRewards())
-	}
+	epochRewardsDB, err := rewardDB.FindAll()
+	require.NoError(t, err)
+
+	deepCompareRewards(t, rws.rewards, epochRewardsDB)
 }
 
 func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
@@ -344,14 +365,9 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 
 	rws.rewardsSnapshotThresholdCh <- struct{}{}
 
-	for _, spec := range specs {
-		epochRewards, err := rewardDB.FindAllInDB(spec)
-		require.NoError(t, err)
-
-		epochReward, found := epochRewards[epoch]
-		require.True(t, found)
-		require.Equal(t, 1, epochReward.NumRewards())
-	}
+	epochRewardsDB, err := rewardDB.FindAll()
+	require.NoError(t, err)
+	deepCompareRewards(t, rws.rewards, epochRewardsDB)
 
 	for _, spec := range specs {
 		attributesList := stubPaymentEvents(1, spec, sessionId)
@@ -362,13 +378,11 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 
 		rws.PaymentHandler(paymentRequests[0])
 
-		epochRewards, err := rewardDB.FindAllInDB(spec)
-		require.NoError(t, err)
-
-		epochReward, found := epochRewards[epoch]
-		require.True(t, found)
-		require.Equal(t, 1, epochReward.NumRewards())
 	}
+
+	epochRewardsDB, err = rewardDB.FindAll()
+	require.NoError(t, err)
+	deepCompareRewards(t, rws.rewards, epochRewardsDB)
 }
 
 func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
@@ -399,14 +413,10 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 		_, _ = rws.SendNewProof(context.TODO(), proof, epoch, "consumerAddress", "apiInterface")
 	}
 
-	for _, spec := range specs {
-		epochRewards, err := rewardDB.FindAllInDB(spec)
-		require.NoError(t, err)
+	epochRewardsDB, err := rewardDB.FindAll()
+	require.NoError(t, err)
 
-		epochReward, found := epochRewards[epoch]
-		require.True(t, found)
-		require.Equal(t, 1, epochReward.NumRewards())
-	}
+	deepCompareRewards(t, rws.rewards, epochRewardsDB)
 
 	newEpoch := epoch + 1
 	stubRewardsTxSender.earliestBlockInMemory = newEpoch

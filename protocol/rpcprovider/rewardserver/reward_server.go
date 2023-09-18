@@ -64,7 +64,7 @@ func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes
 
 type EpochRewards struct {
 	epoch           uint64
-	consumerRewards map[string]*ConsumerRewards // key is consumer
+	consumerRewards map[string]*ConsumerRewards // key is consumerRewardsKey
 }
 
 func (eprw *EpochRewards) NumRewards() int {
