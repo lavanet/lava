@@ -11,6 +11,7 @@ import {
   RelayPrivateData,
   QualityOfServiceReport,
   RelayReply,
+  ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
@@ -64,7 +65,7 @@ export function constructRelayRequest(
   providerAddress: string,
   singleConsumerSession: SingleConsumerSession,
   epoch: number,
-  reportedProviders: string
+  reportedProviders: Array<ReportedProvider>
 ): RelayRequest {
   const relayRequest = new RelayRequest();
   relayRequest.setRelayData(relayData);
@@ -88,7 +89,7 @@ function constructRelaySession(
   providerAddress: string,
   singleConsumerSession: SingleConsumerSession,
   epoch: number,
-  reportedProviders: string
+  reportedProviders: Array<ReportedProvider>
 ): RelaySession {
   const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
   let newQualityOfServiceReport: QualityOfServiceReport | undefined = undefined;
@@ -142,7 +143,7 @@ function constructRelaySession(
   );
   relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence);
 
-  relaySession.setUnresponsiveProviders(reportedProviders);
+  relaySession.setUnresponsiveProvidersList(reportedProviders);
   return relaySession;
 }
 

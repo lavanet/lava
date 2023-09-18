@@ -43,13 +43,6 @@ func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProv
 		}
 		reportedProviders = append(reportedProviders, &reportedProvider)
 	}
-	go func() {
-		ticker := time.NewTicker(ReconnectCandidateTime)
-		defer ticker.Stop()
-		for range ticker.C {
-			rp.ReconnectProviders()
-		}
-	}()
 	return reportedProviders
 }
 
@@ -59,10 +52,10 @@ func (rp *ReportedProviders) ReportProvider(address string, errors uint64, disco
 	if _, ok := rp.addedToPurgeAndReport[address]; !ok { // add if it doesn't exist already
 		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: address})
 		rp.addedToPurgeAndReport[address] = &ReportedProviderEntry{}
+		rp.addedToPurgeAndReport[address].addedTime = time.Now()
 	}
 	rp.addedToPurgeAndReport[address].Disconnections += disconnections
 	rp.addedToPurgeAndReport[address].Errors += errors
-	rp.addedToPurgeAndReport[address].addedTime = time.Now()
 	if reconnectCB != nil {
 		rp.addedToPurgeAndReport[address].reconnectCB = reconnectCB
 	}
@@ -119,6 +112,14 @@ func (rp *ReportedProviders) ReconnectProviders() {
 	}
 }
 
-func NewReportedProviders() ReportedProviders {
-	return ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}}
+func NewReportedProviders() *ReportedProviders {
+	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}}
+	go func() {
+		ticker := time.NewTicker(ReconnectCandidateTime)
+		defer ticker.Stop()
+		for range ticker.C {
+			rp.ReconnectProviders()
+		}
+	}()
+	return rp
 }

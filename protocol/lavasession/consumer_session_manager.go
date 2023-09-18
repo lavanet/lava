@@ -922,7 +922,7 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 
 func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer) *ConsumerSessionManager {
 	csm := ConsumerSessionManager{
-		reportedProviders: NewReportedProviders(),
+		reportedProviders: *NewReportedProviders(),
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer

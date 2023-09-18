@@ -10,6 +10,7 @@ import {
   Badge,
   ProbeRequest,
   ProbeReply,
+  ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import {
   Relayer as RelayerService,
@@ -158,7 +159,7 @@ export class Relayer {
     requestSession.setProvider(options.publicProviderLavaAddress);
     requestSession.setRelayNum(singleConsumerSession.relayNum);
     requestSession.setEpoch(options.epoch);
-    requestSession.setUnresponsiveProviders(new Uint8Array());
+    requestSession.setUnresponsiveProvidersList(new Array<ReportedProvider>());
     requestSession.setContentHash(contentHash);
     requestSession.setSig(new Uint8Array());
     requestSession.setLavaChainId(this.lavaChainId);
