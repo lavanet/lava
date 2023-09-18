@@ -74,3 +74,9 @@ func v0_23_0_UpgradeHandler(
 		return m.RunMigrations(ctx, c, vm)
 	}
 }
+
+var Upgrade_0_23_2 = Upgrade{
+	UpgradeName:          "v0.23.2",             // upgrade name
+	CreateUpgradeHandler: defaultUpgradeHandler, // upgrade handler (default)
+	StoreUpgrades:        store.StoreUpgrades{},
+}
