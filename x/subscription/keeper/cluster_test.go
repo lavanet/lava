@@ -19,8 +19,8 @@ func TestGetCluster(t *testing.T) {
 	_, subEnterprise := ts.Account("sub4")
 
 	// add valid plans for clusters
-	plan := ts.Plan("mock")
-	plans := []string{"free", "basic", "premium", "enterprise"}
+	plan := ts.Plan("free")
+	plans := []string{"basic", "premium", "enterprise"}
 	for _, planName := range plans {
 		plan.Index = planName
 		ts.AddPlan(planName, plan)

@@ -14,7 +14,7 @@ import { LavaSDK } from "../src/sdk/sdk";
 async function getLatestBlock(): Promise<string> {
   // Create dAccess for Ethereum Mainnet
   // Default rpcInterface for Ethereum Mainnet is jsonRPC
-  const ethereum = await new LavaSDK({
+  const ethereum = await LavaSDK.create({
     // badge data of an active badge server
     badge: {
       badgeServerAddress: "<badge server address>",
@@ -22,7 +22,7 @@ async function getLatestBlock(): Promise<string> {
     },
 
     // chainID for Ethereum mainnet
-    chainID: "ETH1",
+    chainIds: "ETH1",
 
     // geolocation 1 for North america - geolocation 2 for Europe providers
     // default value is 1
@@ -36,7 +36,7 @@ async function getLatestBlock(): Promise<string> {
   });
 
   // Parse and extract response
-  const parsedResponse = JSON.parse(blockNumberResponse);
+  const parsedResponse = blockNumberResponse;
 
   // Extract latest block number
   const latestBlockNumber = parsedResponse.result;
@@ -57,5 +57,6 @@ async function getLatestBlock(): Promise<string> {
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);
+    process.exit(1);
   }
 })();

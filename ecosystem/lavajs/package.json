@@ -1,9 +1,9 @@
 {
   "name": "@lavanet/lavajs",
-  "version": "0.22.2",
+  "version": "0.22.5",
   "description": "lavajs",
   "author": "Lava Network",
-  "homepage": "https://github.com/lavanet/lava/ecosystem/lavajs#readme",
+  "homepage": "https://github.com/lavanet/lava/tree/main/ecosystem/lavajs#readme",
   "license": "Apache-2.0",
   "main": "dist/codegen/index.js",
   "module": "dist/codegen/index.mjs",
@@ -40,7 +40,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lavanet/lava/ecosystem/lavajs"
+    "url": "git+https://github.com/lavanet/lava"
   },
   "keywords": [],
   "bugs": {

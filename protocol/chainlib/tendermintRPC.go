@@ -531,6 +531,11 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		defer res.Body.Close()
 	}
 
+	err = cp.HandleStatusError(res.StatusCode)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
 	// read the response body
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -540,6 +545,13 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	// create a new relay reply struct with the response body as the data
 	reply := &pairingtypes.RelayReply{
 		Data: body,
+	}
+
+	// checking if rest reply data is in json format
+	var jsonData map[string]interface{}
+	err = json.Unmarshal(reply.Data, &jsonData)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("Tendermint URI reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
 	}
 
 	return reply, "", nil, nil
@@ -593,7 +605,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false)
 		if err != nil {
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -606,15 +618,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	var replyMsg *rpcInterfaceMessages.RPCResponse
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
-		id, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessage.ID)
-		if idErr != nil {
-			return nil, "", nil, utils.LavaFormatError("Failed parsing ID when getting rpc error", idErr)
-		}
-		replyMsg = &rpcInterfaceMessages.RPCResponse{
-			JSONRPC: nodeMessage.Version,
-			ID:      id,
-			Error:   rpcInterfaceMessages.ConvertErrorToRPCError(err.Error(), -1), // TODO: extract code from error status / message
-		}
+		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
+		return nil, "", nil, err
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
 		if err != nil {

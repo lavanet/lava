@@ -34,14 +34,14 @@ func SetupLavavisorDir(dir string) (lavavisorPath string, err error) {
 	if err != nil {
 		return "", err
 	}
-	// Check if ./lava-visor directory exists
+	// Check if ./lavavisor directory exists
 	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
 		// If not, create the directory
 		err = setUpLavavisorDirectory(lavavisorPath)
 		if err != nil {
-			return "", utils.LavaFormatError("unable to create .lava-visor/ directory", err)
+			return "", utils.LavaFormatError("unable to create .lavavisor/ directory", err)
 		}
-		utils.LavaFormatInfo(".lava-visor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
+		utils.LavaFormatInfo(".lavavisor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
 	}
 	return lavavisorPath, nil
 }
@@ -64,15 +64,15 @@ func buildLavavisorPath(dir string) (string, error) {
 		return "", utils.LavaFormatError("unable to expand directory path", err)
 	}
 	// Build path to ./lavavisor
-	return filepath.Join(dir, ".lava-visor"), nil
+	return filepath.Join(dir, ".lavavisor"), nil
 }
 
 func setUpLavavisorDirectory(lavavisorPath string) error {
 	err := os.MkdirAll(lavavisorPath, 0o755)
 	if err != nil {
-		return utils.LavaFormatError("unable to create .lava-visor/ directory", err)
+		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
 	}
-	// Create config.yml file inside .lava-visor and write placeholder text
+	// Create config.yml file inside .lavavisor and write placeholder text
 	configPath := filepath.Join(lavavisorPath, "config.yml")
 	configFile, err := os.Create(configPath)
 	if err != nil {
@@ -80,7 +80,7 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 	}
 	defer configFile.Close() // Close the file
 
-	// Create 'upgrades' directory inside .lava-visor
+	// Create 'upgrades' directory inside .lavavisor
 	upgradesPath := filepath.Join(lavavisorPath, "upgrades")
 	if _, err := os.Stat(upgradesPath); os.IsNotExist(err) {
 		err = os.MkdirAll(upgradesPath, 0o755)

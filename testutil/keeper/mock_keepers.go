@@ -16,6 +16,10 @@ func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) type
 	return nil
 }
 
+func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) types.ModuleAccountI {
+	return nil
+}
+
 func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	return sdk.AccAddress([]byte(moduleName))
 }
@@ -79,9 +83,38 @@ func (k *mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderMod
 	return nil
 }
 
+func (k *mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
+	// TODO support multiple coins
+
+	senderModuleAcc := sdk.AccAddress([]byte(senderModule))
+	recipientModuleAcc := sdk.AccAddress([]byte(recipientModule))
+
+	if amt.Len() > 1 {
+		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
+	}
+	coin := amt[0]
+
+	senderAccountCoin := k.GetBalance(ctx, senderModuleAcc, coin.Denom)
+	if coin.Amount.GT(senderAccountCoin.Amount) {
+		return fmt.Errorf("not enough coins")
+	}
+
+	k.SubFromBalance(senderModuleAcc, amt)
+
+	k.AddToBalance(recipientModuleAcc, amt)
+
+	return nil
+}
+
 func (k *mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
 	acc := sdk.AccAddress([]byte(moduleName))
 	k.AddToBalance(acc, amounts)
+	return nil
+}
+
+func (k *mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+	acc := sdk.AccAddress([]byte(moduleName))
+	k.SubFromBalance(acc, amounts)
 	return nil
 }
 
@@ -109,6 +142,13 @@ func (k *mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) 
 	}
 
 	return nil
+}
+
+// mock staking keeper
+type mockStakingKeeper struct{}
+
+func (k mockStakingKeeper) UnbondingTime(ctx sdk.Context) time.Duration {
+	return time.Minute
 }
 
 type MockBlockStore struct {

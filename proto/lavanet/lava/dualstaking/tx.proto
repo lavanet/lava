@@ -1,0 +1,47 @@
+syntax = "proto3";
+package lavanet.lava.dualstaking;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/dualstaking/types";
+
+// Msg defines the Msg service.
+service Msg {
+      rpc Delegate(MsgDelegate) returns (MsgDelegateResponse);
+      rpc Redelegate(MsgRedelegate) returns (MsgRedelegateResponse);
+      rpc Unbond(MsgUnbond) returns (MsgUnbondResponse);
+// this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgDelegate {
+  string creator = 1;
+  string provider = 2;
+  string chainID = 3;
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgDelegateResponse {
+}
+
+message MsgRedelegate {
+  string creator = 1;
+  string from_provider = 2;
+  string to_provider = 3;
+  string from_chainID = 4;
+  string to_chainID = 5;
+  cosmos.base.v1beta1.Coin amount = 6 [(gogoproto.nullable) = false];
+}
+
+message MsgRedelegateResponse {
+}
+
+message MsgUnbond {
+  string creator = 1;
+  string provider = 2;
+  string chainID = 3;
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+}
+
+message MsgUnbondResponse {
+}

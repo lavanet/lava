@@ -112,7 +112,7 @@ proto.lavanet.lava.epochstorage.Endpoint.deserializeBinaryFromReader = function(
       msg.setIpport(value);
       break;
     case 3:
-      var value = /** @type {number} */ (reader.readUint64());
+      var value = /** @type {number} */ (reader.readInt32());
       msg.setGeolocation(value);
       break;
     case 4:
@@ -165,7 +165,7 @@ proto.lavanet.lava.epochstorage.Endpoint.serializeBinaryToWriter = function(mess
   }
   f = message.getGeolocation();
   if (f !== 0) {
-    writer.writeUint64(
+    writer.writeInt32(
       3,
       f
     );
@@ -210,7 +210,7 @@ proto.lavanet.lava.epochstorage.Endpoint.prototype.setIpport = function(value) {
 
 
 /**
- * optional uint64 geolocation = 3;
+ * optional int32 geolocation = 3;
  * @return {number}
  */
 proto.lavanet.lava.epochstorage.Endpoint.prototype.getGeolocation = function() {

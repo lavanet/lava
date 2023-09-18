@@ -14,12 +14,12 @@ import { LavaSDK } from "../src/sdk/sdk";
 async function getLatestBlock(): Promise<string> {
   // Create dAccess for Cosmos Hub
   // Default rpcInterface for Cosmos Hub is tendermintRPC
-  const cosmosHub = await new LavaSDK({
+  const cosmosHub = await LavaSDK.create({
     // private key with an active subscription
     privateKey: "<lava consumer private key>",
 
     // chainID for Cosmos Hub
-    chainID: "LAV1",
+    chainIds: "LAV1",
 
     // geolocation 1 for North america - geolocation 2 for Europe providers
     // default value is 1
@@ -33,7 +33,7 @@ async function getLatestBlock(): Promise<string> {
   });
 
   // Parse and extract response
-  const parsedInfo = JSON.parse(info).result.response;
+  const parsedInfo = info.result.response;
 
   // Extract latest block number
   const latestBlockNumber = parsedInfo.last_block_height;
@@ -54,5 +54,6 @@ async function getLatestBlock(): Promise<string> {
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);
+    process.exit(1);
   }
 })();

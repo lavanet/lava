@@ -134,6 +134,8 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 		utils.LavaFormatFatal("Error initiating state tracker", err)
 	}
 	stateTracker.RegisterForEpochUpdates(ctx, server)
+	// setting stateTracker in server so we can register for spec updates.
+	server.InitializeStateTracker(stateTracker)
 
 	s := grpc.NewServer()
 	grpc_health_v1.RegisterHealthServer(s, &HealthServer{})
