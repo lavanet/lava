@@ -240,8 +240,13 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	ctx := context.Background()
 	gotCalled := false
 	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":2,"result":[]},{"jsonrpc":"2.0","id":3,"result":"0x114b56b"}]`
+	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]},{"jsonrpc":"2.0","id":2,"method":"eth_accounts","params":[]},{"jsonrpc":"2.0","id":3,"method":"eth_blockNumber","params":[]}]`
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCalled = true
+		data := make([]byte, len([]byte(batchCallData)))
+		r.Body.Read(data)
+		// require.NoError(t, err)
+		require.Equal(t, batchCallData, string(data))
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, response)
@@ -253,7 +258,6 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 
-	batchCallData := `[{"method":"eth_chainId","params":[],"id":1,"jsonrpc":"2.0"},{"method":"eth_accounts","params":[],"id":2,"jsonrpc":"2.0"},{"method":"eth_blockNumber","params":[],"id":3,"jsonrpc":"2.0"}]`
 	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, 0)
 	require.NoError(t, err)
 	requestedBlock, _ := chainMessage.RequestedBlock()

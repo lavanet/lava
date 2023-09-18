@@ -162,3 +162,42 @@ func TestTendermintRpcChainProxy(t *testing.T) {
 		closeServer()
 	}
 }
+
+func TestTendermintRpcBatchCall(t *testing.T) {
+	ctx := context.Background()
+	gotCalled := false
+	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}}]`
+	const response = `[{"jsonrpc":"2.0","id":1,"result":{"block_id":{},"block":{}}},{"jsonrpc":"2.0","id":2,"result":{"block_id":{},"block":{}}}]`
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotCalled = true
+		data := make([]byte, len([]byte(batchCallData)))
+		r.Body.Read(data)
+		// require.NoError(t, err)
+		require.Equal(t, batchCallData, string(data))
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, response)
+	})
+
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), "", nil, 0)
+	require.NoError(t, err)
+	requestedBlock, earliestReqBlock := chainMessage.RequestedBlock()
+	require.Equal(t, int64(100), requestedBlock)
+	require.Equal(t, int64(99), earliestReqBlock)
+	relayReply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
+	require.True(t, gotCalled)
+	require.NoError(t, err)
+	require.NotNil(t, relayReply)
+	require.Equal(t, response, string(relayReply.Data))
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+}

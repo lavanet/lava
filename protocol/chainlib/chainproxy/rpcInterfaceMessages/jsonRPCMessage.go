@@ -142,19 +142,14 @@ func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
 func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 	batch := make([]rpcclient.BatchElemWithId, len(msgs))
 	for idx, msg := range msgs {
-		var elementParams []interface{}
 		switch params := msg.Params.(type) {
-		case []interface{}:
-			elementParams = params
+		case []interface{}, map[string]interface{}:
 		default:
-			return JsonrpcBatchMessage{}, fmt.Errorf("invalid params in batch, batching only supports ordered arguments %s %+v", msg.Method, params)
+			return JsonrpcBatchMessage{}, fmt.Errorf("invalid params in batch, batching only supports ordered or dictionary arguments  %s %+v", msg.Method, params)
 		}
-		element := rpcclient.BatchElemWithId{
-			Method: msg.Method,
-			Args:   elementParams,
-			Result: &json.RawMessage{}, // will unmarshal the result here, if it fails it sets Error field
-			Error:  nil,
-			ID:     msg.ID,
+		element, err := rpcclient.NewBatchElementWithId(msg.Method, msg.Params, &json.RawMessage{}, msg.ID)
+		if err != nil {
+			return JsonrpcBatchMessage{}, err
 		}
 		batch[idx] = element
 	}

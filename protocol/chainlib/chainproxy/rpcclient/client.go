@@ -60,7 +60,7 @@ const (
 // BatchElem is an element in a batch request.
 type BatchElemWithId struct {
 	Method string
-	Args   []interface{}
+	args   interface{}
 	// The result is unmarshaled into this field. Result must be set to a
 	// non-nil pointer value of the desired type, otherwise the response will be
 	// discarded.
@@ -69,6 +69,20 @@ type BatchElemWithId struct {
 	// unmarshaling into Result fails. It is not set for I/O errors.
 	Error error
 	ID    json.RawMessage // added an ID field because we build our messages with built in ID, this is optional and can be set to nil
+}
+
+func NewBatchElementWithId(method string, args interface{}, result interface{}, ID json.RawMessage) (BatchElemWithId, error) {
+	_, ok := args.([]interface{})
+	_, ok2 := args.(map[string]interface{})
+	if !ok && !ok2 {
+		return BatchElemWithId{}, fmt.Errorf("invalid args supported types are []interface{} or map[string]interface{}")
+	}
+	return BatchElemWithId{
+		Method: method,
+		args:   args,
+		Result: result,
+		ID:     ID,
+	}, nil
 }
 
 // Client represents a connection to an RPC server.
@@ -343,7 +357,17 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 		resp: make(chan *JsonrpcMessage, len(b)),
 	}
 	for i, elem := range b {
-		msg, err := c.newMessageArray(elem.Method, elem.Args...)
+		var msg *JsonrpcMessage
+		var err error
+		switch args := elem.args.(type) {
+		case []interface{}:
+			msg, err = c.newMessageArray(elem.Method, args...)
+		case map[string]interface{}:
+			msg, err = c.newMessageMapWithID(elem.Method, elem.ID, args)
+		default:
+			return fmt.Errorf("invalid args type in message %t", args)
+		}
+
 		if err != nil {
 			return err
 		}
