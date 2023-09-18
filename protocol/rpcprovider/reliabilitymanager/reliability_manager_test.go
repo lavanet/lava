@@ -223,7 +223,8 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	}
 	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue, 0)
 	require.NoError(t, err)
-	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/blocks/latest", []byte{}, chainMessage.RequestedBlock(), spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
+	reqBlock, _ := chainMessage.RequestedBlock()
+	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/blocks/latest", []byte{}, reqBlock, spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
 
 	relay, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []byte("stubbytes"))
 	require.Nil(t, err)
