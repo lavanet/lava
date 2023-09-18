@@ -418,7 +418,7 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTim
 		return
 	}
 
-	utils.LavaFormatDebug("saving rewards snapshot to the DB", utils.Attribute{Key: "rewards", Value: len(rewardEntities)})
+	utils.LavaFormatDebug("saving rewards snapshot to the DB", utils.Attribute{Key: "proofs", Value: len(rewardEntities)})
 
 	var err error
 	for i := 0; i < MaxDBSaveRetries; i++ {
