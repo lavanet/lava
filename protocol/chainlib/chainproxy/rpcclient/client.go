@@ -348,9 +348,13 @@ func (c *Client) BatchCall(b []BatchElemWithId) error {
 //
 // Note that batch calls may not be executed atomically on the server side.
 func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) error {
+	type byorder struct {
+		index     int
+		keepOrder bool
+	}
 	var (
 		msgs = make([]*JsonrpcMessage, len(b))
-		byID = make(map[string]int, len(b))
+		byID = make(map[string]byorder, len(b))
 	)
 	op := &requestOp{
 		ids:  make([]json.RawMessage, len(b)),
@@ -376,7 +380,16 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 		}
 		msgs[i] = msg
 		op.ids[i] = msg.ID
-		byID[string(msg.ID)] = i
+		readValue, exists := byID[string(msg.ID)]
+		if exists {
+			readValue.keepOrder = true
+			byID[string(msg.ID)] = readValue
+		} else {
+			byID[string(msg.ID)] = byorder{
+				index:     i,
+				keepOrder: false,
+			}
+		}
 	}
 
 	var err error
@@ -396,13 +409,25 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 		// Find the element corresponding to this response.
 		// The element is guaranteed to be present because dispatch
 		// only sends valid IDs to our channel.
-		elem := &b[byID[string(resp.ID)]]
-		if resp.Error != nil {
-			elem.Error = resp.Error
-			continue
-		}
+		byOrder := byID[string(resp.ID)]
+		if !byOrder.keepOrder {
+			elem := &b[byOrder.index]
+			if resp.Error != nil {
+				elem.Error = resp.Error
+				continue
+			}
 
-		elem.Error = json.Unmarshal(resp.Result, elem.Result)
+			elem.Error = json.Unmarshal(resp.Result, elem.Result)
+		} else {
+			// user overwrote id's to be identical so the order matters and we can't change it
+			elem := &b[n]
+			if resp.Error != nil {
+				elem.Error = resp.Error
+				continue
+			}
+
+			elem.Error = json.Unmarshal(resp.Result, elem.Result)
+		}
 	}
 	return err
 }
