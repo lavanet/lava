@@ -14,7 +14,6 @@ func (rs RelaySession) GetSignature() []byte {
 func (rs RelaySession) DataToSign() []byte {
 	rs.Badge = nil // its not a part of the signature, its a separate part
 	rs.Sig = nil
-
 	pr := ""
 	for _, b := range []byte(rs.String()) {
 		pr += fmt.Sprintf("%d ", b)

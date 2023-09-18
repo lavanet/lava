@@ -269,6 +269,8 @@ export class Relayer {
         output += "\\r";
       } else if (byte === 0x5c) {
         output += "\\\\";
+      } else if (byte === 0x22) {
+        output += '\\"';
       } else if (byte >= 0x20 && byte <= 0x7e) {
         output += String.fromCharCode(byte);
       } else {
@@ -363,27 +365,7 @@ export class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-
-    const setVal = new QualityOfServiceReport();
-    setVal.setAvailability("1");
-    setVal.setSync("0");
-    setVal.setLatency("0");
-    request.setQosReport(setVal);
-    const setVal2 = new QualityOfServiceReport();
-    setVal2.setAvailability("1");
-    setVal2.setSync("1");
-    setVal2.setLatency("1");
-    request.setQosExcellenceReport(setVal2);
-    const reportedProvider = new ReportedProvider();
-    reportedProvider.setAddress("lava@123");
-    request.addUnresponsiveProviders(reportedProvider);
-    const reportedProvider2 = new ReportedProvider();
-    reportedProvider2.setAddress("lava@456");
-    reportedProvider2.setDisconnections(3);
-    reportedProvider2.setTimestampS(4);
-    reportedProvider2.setErrors(5);
-    request.addUnresponsiveProviders(reportedProvider2);
-    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should ocmpile this code into wasm and import it here because it's ugly
+    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should cםmpile this code into wasm and import it here because it's ugly
     let serializedRequest = "";
     for (const [key, valueInner] of Object.entries(request.toObject())) {
       serializedRequest += ((

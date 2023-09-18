@@ -227,6 +227,11 @@ export class SingleConsumerSession {
           })}`
         );
       }
+    } else {
+      const sync = BigNumber(1);
+      this.qoSInfo.lastQoSReport.setSync(
+        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
+      );
     }
     return;
   }
