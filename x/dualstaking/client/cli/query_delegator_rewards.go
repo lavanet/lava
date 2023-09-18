@@ -44,7 +44,9 @@ func CmdQueryDelegatorRewards() *cobra.Command {
 			if chainIDFlag == nil {
 				return fmt.Errorf("%s flag wasn't found", chainIDFlagName)
 			}
-			chainID = chainIDFlag.Value.String()
+			if cmd.Flags().Changed(chainIDFlagName) {
+				chainID = chainIDFlag.Value.String()
+			}
 
 			res, err := queryClient.DelegatorRewards(cmd.Context(), &types.QueryDelegatorRewardsRequest{
 				Delegator: delegator,
