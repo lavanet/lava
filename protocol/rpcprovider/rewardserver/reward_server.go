@@ -402,12 +402,12 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTim
 
 	rewardEntities := []*RewardEntity{}
 	for epoch, epochRewards := range rws.rewards {
-		for consumerAddr, consumerRewards := range epochRewards.consumerRewards {
+		for consumerRewardKey, consumerRewards := range epochRewards.consumerRewards {
 			for sessionId, proof := range consumerRewards.proofs {
 				rewardEntity := &RewardEntity{
 					Epoch:        epoch,
-					ConsumerAddr: consumerAddr,
-					ConsumerKey:  getKeyForConsumerRewards(proof.SpecId, consumerAddr),
+					ConsumerAddr: consumerRewards.consumer,
+					ConsumerKey:  consumerRewardKey,
 					SessionId:    sessionId,
 					Proof:        proof,
 				}
@@ -476,6 +476,8 @@ func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
 			epochRewards.consumerRewards[consumerRewardsKey] = consumerRewardsFromDb
 		}
 	}
+
+	utils.LavaFormatInfo("restored rewards from DB", utils.Attribute{Key: "proofs", Value: len(rewards)})
 
 	return nil
 }
