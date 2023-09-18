@@ -132,11 +132,11 @@ function constructRelaySession(
   relaySession.setContentHash(calculateContentHash(relayData));
   relaySession.setEpoch(epoch);
   relaySession.setRelayNum(singleConsumerSession.relayNum);
-  relaySession.setQosReport(newQualityOfServiceReport);
+  // relaySession.setQosReport(newQualityOfServiceReport); // TODO: this is failing due to unmarshaling
   relaySession.setCuSum(
     singleConsumerSession.cuSum + singleConsumerSession.latestRelayCu
   );
-  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence);
+  // relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence); // TODO: this is failing due to unmarshaling
 
   relaySession.setUnresponsiveProvidersList(reportedProviders);
   return relaySession;
