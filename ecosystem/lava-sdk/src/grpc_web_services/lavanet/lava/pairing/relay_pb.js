@@ -712,7 +712,7 @@ proto.lavanet.lava.pairing.RelaySession.prototype.toObject = function(opt_includ
 proto.lavanet.lava.pairing.RelaySession.toObject = function(includeInstance, msg) {
   var f, obj = {
     spec_id: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    content_hash: msg.getContentHash_asB64(),
+    content_hash: msg.getContentHash_asU8(),
     session_id: jspb.Message.getFieldWithDefault(msg, 3, 0),
     cu_sum: jspb.Message.getFieldWithDefault(msg, 4, 0),
     provider: jspb.Message.getFieldWithDefault(msg, 5, ""),
