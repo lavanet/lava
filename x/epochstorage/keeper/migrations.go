@@ -118,8 +118,8 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate: epochstorage to include delegations")
 
 	StakeStorages := m.keeper.GetAllStakeStorage(ctx)
-	for st, _ := range StakeStorages {
-		for s, _ := range StakeStorages[st].StakeEntries {
+	for st := range StakeStorages {
+		for s := range StakeStorages[st].StakeEntries {
 			StakeStorages[st].StakeEntries[s].DelegateTotal = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
 			StakeStorages[st].StakeEntries[s].DelegateLimit = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
 			StakeStorages[st].StakeEntries[s].DelegateCommission = 100
