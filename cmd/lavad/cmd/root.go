@@ -35,6 +35,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -159,7 +160,7 @@ func initLavaProtocolRootCmd(
 }
 
 func NewLavaVisorRootCmd() *cobra.Command {
-	version := "0.1.0"
+	version := protocoltypes.DefaultVersion.ProviderTarget
 	rootCmd := &cobra.Command{
 		Use:     "lavavisor",
 		Short:   `lavavisor is a protocol upgrade manager for Lava protocol binaries.`,
