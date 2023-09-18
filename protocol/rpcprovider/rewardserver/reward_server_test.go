@@ -412,6 +412,8 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 		_, _ = rws.SendNewProof(context.TODO(), proof, epoch, "consumerAddress", "apiInterface")
 	}
 
+	rws.rewardsSnapshotThresholdCh <- struct{}{}
+
 	epochRewardsDB, err := rewardDB.FindAll()
 	require.NoError(t, err)
 
