@@ -35,7 +35,7 @@ message RelaySession {
     uint64 relay_num = 6;
     QualityOfServiceReport qos_report = 7;
     int64 epoch = 8;
-    repeated ReportedProvider unresponsive_providers = 9;
+    repeated ReportedProvider unresponsive_providers = 9; // sdk needs the suffix _list for repeated fields
     string lava_chain_id = 10;
     bytes sig = 11;
     Badge badge = 12;

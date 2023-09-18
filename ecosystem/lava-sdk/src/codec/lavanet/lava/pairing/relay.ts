@@ -29,6 +29,7 @@ export interface RelaySession {
   relayNum: Long;
   qosReport?: QualityOfServiceReport;
   epoch: Long;
+  /** sdk needs the suffix _list for repeated fields */
   unresponsiveProviders: ReportedProvider[];
   lavaChainId: string;
   sig: Uint8Array;

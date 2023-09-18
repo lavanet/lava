@@ -93,19 +93,14 @@ function constructRelaySession(
 ): RelaySession {
   const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
   let newQualityOfServiceReport: QualityOfServiceReport | undefined = undefined;
-
   if (lastQos != undefined) {
     newQualityOfServiceReport = new QualityOfServiceReport();
     // TODO: needs to serialize the QoS report value like a serialized Dec
-    newQualityOfServiceReport.setLatency(
-      Decimal.fromUserInput(lastQos.getLatency(), 0).toString()
-    );
+    newQualityOfServiceReport.setLatency(lastQos.getLatency().toString());
     newQualityOfServiceReport.setAvailability(
-      Decimal.fromUserInput(lastQos.getAvailability(), 0).toString()
+      lastQos.getAvailability().toString()
     );
-    newQualityOfServiceReport.setSync(
-      Decimal.fromUserInput(lastQos.getSync(), 0).toString()
-    );
+    newQualityOfServiceReport.setSync(lastQos.getSync().toString());
   }
   const lastQosExcellence =
     singleConsumerSession.qoSInfo.lastExcellenceQoSReport;
@@ -118,13 +113,13 @@ function constructRelaySession(
 
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReportExcellence.setLatency(
-      Decimal.fromUserInput(lastQosExcellence.getLatency(), 0).toString()
+      lastQosExcellence.getLatency().toString()
     );
     newQualityOfServiceReportExcellence.setAvailability(
-      Decimal.fromUserInput(lastQosExcellence.getAvailability(), 0).toString()
+      lastQosExcellence.getAvailability().toString()
     );
     newQualityOfServiceReportExcellence.setSync(
-      Decimal.fromUserInput(lastQosExcellence.getSync(), 0).toString()
+      lastQosExcellence.getSync().toString()
     );
   }
 

@@ -361,7 +361,9 @@ export class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-
+    let replaceWith = "";
+    const magic = "_REPLACEMEMAGIC_";
+    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should ocmpile this code into wasm and import it here because it's ugly
     const jsonMessage = JSON.stringify(request.toObject(), (key, value) => {
       if (key == "content_hash") {
         const dataBytes = request.getContentHash();
@@ -377,14 +379,44 @@ export class Relayer {
         }
         return stringByte;
       }
+      if (key == "unresponsive_providers" && typeof value === "object") {
+        if (Object.keys(value).length === 0) {
+          return undefined; // Omit empty unresponsive providers
+        }
+        const retSt: Array<string> = [];
+        for (const objprop of Object.values(value)) {
+          if (objprop instanceof Object) {
+            const st: Array<string> = [];
+            for (const [key, valueInner] of Object.entries(objprop)) {
+              if (
+                valueInner !== null &&
+                valueInner !== 0 &&
+                valueInner !== ""
+              ) {
+                if (typeof valueInner === "number") {
+                  st.push(key + ":" + valueInner.toString());
+                } else {
+                  st.push(key + ':"' + valueInner.toString() + '"');
+                }
+              }
+            }
+            retSt.push(st.join(" "));
+          }
+        }
+        replaceWith = "<" + retSt.join(" > " + key + ":<") + " >";
+        return magic;
+      }
+
       if (value !== null && value !== 0 && value !== "") return value;
     });
-
     const messageReplaced = jsonMessage
+      .replace(RegExp(magic, "g"), replaceWith)
       .replace(/\\\\/g, "\\")
       .replace(/,"/g, ' "')
       .replace(/, "/g, ',"')
       .replace(/"(\w+)"\s*:/g, "$1:")
+      .replace(/>"/g, ">")
+      .replace(/"</g, "<")
       .slice(1, -1);
 
     const encodedMessage = enc.encode(messageReplaced + " ");

@@ -719,7 +719,7 @@ proto.lavanet.lava.pairing.RelaySession.toObject = function(includeInstance, msg
     relay_num: jspb.Message.getFieldWithDefault(msg, 6, 0),
     qos_report: (f = msg.getQosReport()) && proto.lavanet.lava.pairing.QualityOfServiceReport.toObject(includeInstance, f),
     epoch: jspb.Message.getFieldWithDefault(msg, 8, 0),
-    unresponsive_providers_list: jspb.Message.toObjectList(msg.getUnresponsiveProvidersList(),
+    unresponsive_providers: jspb.Message.toObjectList(msg.getUnresponsiveProvidersList(),
     proto.lavanet.lava.pairing.ReportedProvider.toObject, includeInstance),
     lava_chain_id: jspb.Message.getFieldWithDefault(msg, 10, ""),
     sig: msg.getSig_asB64(),
@@ -1622,10 +1622,10 @@ proto.lavanet.lava.pairing.RelayPrivateData.toObject = function(includeInstance,
     request_block: jspb.Message.getFieldWithDefault(msg, 4, 0),
     api_interface: jspb.Message.getFieldWithDefault(msg, 5, ""),
     salt: msg.getSalt_asB64(),
-    metadata_list: jspb.Message.toObjectList(msg.getMetadataList(),
+    metadata: jspb.Message.toObjectList(msg.getMetadataList(),
     proto.lavanet.lava.pairing.Metadata.toObject, includeInstance),
     addon: jspb.Message.getFieldWithDefault(msg, 8, ""),
-    extensions_list: (f = jspb.Message.getRepeatedField(msg, 9)) == null ? undefined : f
+    extensions: (f = jspb.Message.getRepeatedField(msg, 9)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -2670,7 +2670,7 @@ proto.lavanet.lava.pairing.RelayReply.toObject = function(includeInstance, msg) 
     latest_block: jspb.Message.getFieldWithDefault(msg, 4, 0),
     finalized_blocks_hashes: msg.getFinalizedBlocksHashes_asB64(),
     sig_blocks: msg.getSigBlocks_asB64(),
-    metadata_list: jspb.Message.toObjectList(msg.getMetadataList(),
+    metadata: jspb.Message.toObjectList(msg.getMetadataList(),
     proto.lavanet.lava.pairing.Metadata.toObject, includeInstance)
   };
 
