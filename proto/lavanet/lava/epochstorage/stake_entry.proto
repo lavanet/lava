@@ -15,4 +15,7 @@ message StakeEntry {
   int32 geolocation = 5; 
   string chain = 6;
   string moniker = 8;
+  cosmos.base.v1beta1.Coin delegate_total = 9 [(gogoproto.nullable) = false]; // delegation total
+  cosmos.base.v1beta1.Coin delegate_limit = 10 [(gogoproto.nullable) = false]; // delegation limit
+  uint64 delegate_commission = 11; // delegation commission (precentage 0-100)
 }

@@ -12,7 +12,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64) error {
 	logger := k.Logger(ctx)
 
 	// TODO: basic validation for chain ID
@@ -120,6 +120,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpointsVerified
 			existingEntry.Moniker = moniker
+			existingEntry.DelegateCommission = delegationCommission
+			existingEntry.DelegateLimit = delegationLimit
+
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 			detailsMap := map[string]string{}
 			for _, val := range details {
@@ -149,7 +152,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		)
 	}
 
-	stakeEntry := epochstoragetypes.StakeEntry{Stake: amount, Address: creator, StakeAppliedBlock: stakeAppliedBlock, Endpoints: endpointsVerified, Geolocation: geolocation, Chain: chainID, Moniker: moniker}
+	stakeEntry := epochstoragetypes.StakeEntry{
+		Stake:              amount,
+		Address:            creator,
+		StakeAppliedBlock:  stakeAppliedBlock,
+		Endpoints:          endpointsVerified,
+		Geolocation:        geolocation,
+		Chain:              chainID,
+		Moniker:            moniker,
+		DelegateTotal:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateLimit:      delegationLimit,
+		DelegateCommission: delegationCommission,
+	}
+
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 	appended := false
 

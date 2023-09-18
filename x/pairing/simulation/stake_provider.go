@@ -1,7 +1,6 @@
 package simulation
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -40,8 +39,6 @@ func SimulateMsgStakeProvider_HappyFlow(
 		msg := &types.MsgStakeProvider{
 			Creator: simAccount.Address.String(),
 		}
-
-		fmt.Printf("yes we did it")
 
 		return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "StakeProvider simulation not implemented"), nil, nil
 	}

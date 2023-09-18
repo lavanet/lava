@@ -4,6 +4,8 @@ export function base64ToUint8Array(str: string): Uint8Array {
   return new Uint8Array(buffer);
 }
 
+let globalId = 0;
+
 export function generateRPCData(method: string, params: Array<any>): string {
   const stringifyMethod = JSON.stringify(method);
   const stringifyParam = JSON.stringify(params, (key, value) => {
@@ -12,14 +14,8 @@ export function generateRPCData(method: string, params: Array<any>): string {
     }
     return value;
   });
-  // TODO make id changable
-  return (
-    '{"jsonrpc": "2.0", "id": 1, "method": ' +
-    stringifyMethod +
-    ', "params": ' +
-    stringifyParam +
-    "}"
-  );
+  globalId += 1;
+  return `{"jsonrpc": "2.0", "id": ${globalId}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
 }
 
 export function parseLong(long: Long): number {
@@ -35,4 +31,18 @@ export function parseLong(long: Long): number {
     console.log("MAYBE AN ISSUE", high);
   }
   return parsedNumber;
+}
+
+export function debugPrint(
+  debugMode: boolean,
+  message?: any,
+  ...optionalParams: any[]
+) {
+  if (debugMode) {
+    console.log(message, ...optionalParams);
+  }
+}
+
+export function generateRandomInt(): number {
+  return Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER + 1));
 }

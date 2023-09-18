@@ -1,0 +1,17 @@
+syntax = "proto3";
+package lavanet.lava.epochstorage;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/epochstorage/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+  uint64 unstakeHoldBlocks = 1 [(gogoproto.moretags) = "yaml:\"unstake_hold_blocks\""];
+  uint64 epochBlocks = 2 [(gogoproto.moretags) = "yaml:\"epoch_blocks\""];
+  uint64 epochsToSave = 3 [(gogoproto.moretags) = "yaml:\"epochs_to_save\""];
+  uint64 latestParamChange = 4 [(gogoproto.moretags) = "yaml:\"latest_param_change\""];
+  uint64 unstakeHoldBlocksStatic = 5 [(gogoproto.moretags) = "yaml:\"unstake_hold_blocks_static\""];
+}

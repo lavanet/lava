@@ -22,8 +22,10 @@ const (
 )
 
 const (
-	FlagMoniker     = "provider-moniker"
-	MAX_LEN_MONIKER = 50
+	FlagMoniker         = "provider-moniker"
+	FlagCommission      = "delegate-commission"
+	FlagDelegationLimit = "delegate-limit"
+	MAX_LEN_MONIKER     = 50
 )
 
 // unresponsiveness consts

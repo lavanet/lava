@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -61,6 +62,10 @@ func (geh *genericErrorHandler) handleCodeErrors(ctx context.Context, code codes
 	return nil
 }
 
+func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
+	return rpcclient.ValidateStatusCodes(statusCode)
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
 // Validating if the error is related to the provider connection or not
@@ -94,4 +99,5 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
+	HandleStatusError(int) error
 }

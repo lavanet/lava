@@ -176,7 +176,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	providerDR_sk, providerDR_address := ts.Providers[1].SK, ts.Providers[1].Addr
 	unwrapedCtx := sdk.UnwrapSDKContext(ts.Ctx)
 	epoch := int64(ts.Keepers.Epochstorage.GetEpochStart(unwrapedCtx))
-	replyDataBuf := []byte("REPLY-STUB")
+	replyDataBuf := []byte(`{"reply": "REPLY-STUB"}`)
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)

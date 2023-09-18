@@ -23,7 +23,7 @@ type tester struct {
 
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
-	ts.AddPlan("mock", common.CreateMockPlan())
+	ts.AddPlan("free", common.CreateMockPlan())
 	ts.AddPolicy("mock", common.CreateMockPolicy())
 	return ts
 }
@@ -91,7 +91,7 @@ func TestCreateDefaultProject(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 	_, sub1Addr := ts.Account("sub1")
 
 	err := ts.Keepers.Projects.CreateAdminProject(ts.Ctx, sub1Addr, plan)
@@ -114,7 +114,7 @@ func TestCreateProject(t *testing.T) {
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 	ts.setupProjectData()
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 	projectData := ts.ProjectData("pd2")
 
 	_, sub1Addr := ts.Account("sub1")
@@ -197,7 +197,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	_, dev1Addr := ts.Account("dev1")
 	_, dev2Addr := ts.Account("dev2")
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
@@ -235,7 +235,7 @@ func TestDeleteProject(t *testing.T) {
 	ts.SetupAccounts(1, 0, 2) // 1 sub, 0 adm, 2 dev
 	ts.setupProjectData()
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 	projectData := ts.ProjectData("pd2")
 
 	_, sub1Addr := ts.Account("sub1")
@@ -270,7 +270,7 @@ func TestAddDelKeys(t *testing.T) {
 	ts.setupProjectData()
 
 	projectData := ts.ProjectData("pd3")
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	_, sub1Addr := ts.Account("sub1")
 	_, adm1Addr := ts.Account("pd_adm_3")
@@ -373,7 +373,7 @@ func TestAddAdminInTwoProjects(t *testing.T) {
 	ts.setupProjectData()
 
 	projectData := ts.ProjectData("pd1")
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	_, sub1Addr := ts.Account("sub1")
 	_, adm1Addr := ts.Account("pd_adm_1")
@@ -409,7 +409,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 	ts.setupProjectData()
 
 	projectData := ts.ProjectData("pd1")
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	_, sub1Addr := ts.Account("sub1")
 	_, adm1Addr := ts.Account("pd_adm_1")
@@ -569,7 +569,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	ts.setupProjectData()
 
 	projectData := ts.ProjectData("pd1")
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	_, sub1Addr := ts.Account("pd_adm_1")
 	_, dev1Addr := ts.Account("dev1")
@@ -639,7 +639,7 @@ func TestAddAfterDelKeys(t *testing.T) {
 	_, dev1Addr := ts.Account("dev1")
 	_, dev2Addr := ts.Account("dev2")
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	projectData1 := types.ProjectData{
 		Name:        "mockname1",
@@ -708,7 +708,7 @@ func TestAddDelKeysSameEpoch(t *testing.T) {
 	_, dev5Addr := ts.Account("dev5")
 	_, dev6Addr := ts.Account("dev6")
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	projectData1 := types.ProjectData{
 		Name:        "mockname1",
@@ -824,7 +824,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	_, dev1Addr := ts.Account("dev1")
 	_, dev2Addr := ts.Account("dev2")
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	projectsData := []types.ProjectData{
 		{
@@ -940,7 +940,7 @@ func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
 	_, sub2Addr := ts.Account("sub2")
 	_, dev1Addr := ts.Account("dev1")
 
-	plan := ts.Plan("mock")
+	plan := ts.Plan("free")
 
 	projectName1 := "mockname1"
 	projectName2 := "mockname2"
@@ -1040,7 +1040,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			providersSet := providersSets[tt.providerSet]
 
-			plan := ts.Plan("mock")
+			plan := ts.Plan("free")
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 

@@ -195,9 +195,9 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 
 	// make the plan policy's geolocation 7(=111)
 	// (done before setupForPayments() below so subscription will use ths plan)
-	// will overwrite the default "mock" plan
+	// will overwrite the default "free" plan
 	ts.plan.PlanPolicy.GeolocationProfile = 7
-	ts.AddPlan("mock", ts.plan)
+	ts.AddPlan("free", ts.plan)
 
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
