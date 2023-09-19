@@ -80,3 +80,15 @@ var Upgrade_0_23_2 = Upgrade{
 	CreateUpgradeHandler: defaultUpgradeHandler, // upgrade handler (default)
 	StoreUpgrades:        store.StoreUpgrades{},
 }
+
+var Upgrade_0_23_4 = Upgrade{
+	UpgradeName:          "v0.23.4",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_0_23_5 = Upgrade{
+	UpgradeName:          "v0.23.5",
+	CreateUpgradeHandler: v0_23_0_UpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{Added: []string{dualstakingtypes.StoreKey}},
+}
