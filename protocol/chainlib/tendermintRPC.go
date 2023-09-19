@@ -545,10 +545,18 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 
 	// checking if rest reply data is in json format
-	var jsonData map[string]interface{}
+	var jsonData interface{}
 	err = json.Unmarshal(reply.Data, &jsonData)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Tendermint URI reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
+		return nil, "", nil, utils.LavaFormatError("Rest reply is not in JSON format", err, utils.Attribute{Key: "reply.Data", Value: string(reply.Data)})
+	}
+	// Check the type of jsonData: it should be either a map (for JSON objects)
+	// or a slice (for JSON arrays of objects)
+	_, isMap := jsonData.(map[string]interface{})
+	_, isSlice := jsonData.([]interface{})
+
+	if !isMap && !isSlice {
+		return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.Data)})
 	}
 
 	return reply, "", nil, nil
