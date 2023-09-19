@@ -681,7 +681,8 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		Guid:                  probeReq.GetGuid(),
 		LatestBlock:           rpcps.reliabilityManager.GetLatestBlockNum(),
 		FinalizedBlocksHashes: []byte{},
-		LavaEpoch:             uint64(rpcps.stateTracker.LatestBlock()),
+		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpoch(),
+		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
 	return probeReply, nil
 }
