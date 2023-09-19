@@ -31,9 +31,14 @@ type DBEntry struct {
 	Ttl  time.Duration
 }
 
+type LockableDB struct {
+	lock    sync.Mutex
+	innerDB DB
+}
+
 type RewardDB struct {
 	lock sync.RWMutex
-	dbs  map[string]DB // key is spec id
+	dbs  map[string]*LockableDB // key is spec id
 	ttl  time.Duration
 }
 
@@ -74,7 +79,12 @@ func (rs *RewardDB) BatchSave(rewardEntities []*RewardEntity) (err error) {
 			return fmt.Errorf("reward_db: db not found for spec id: %s", specId)
 		}
 
-		err = db.BatchSave(rewards)
+		func() {
+			db.lock.Lock()
+			defer db.lock.Unlock()
+
+			err = db.innerDB.BatchSave(rewards)
+		}()
 		if err != nil {
 			return err
 		}
@@ -101,7 +111,13 @@ func (rs *RewardDB) FindOne(
 
 func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
 	for _, db := range rs.dbs {
-		reward, err := db.FindOne(key)
+		var err error
+		var reward []byte
+		func() {
+			db.lock.Lock()
+			defer db.lock.Unlock()
+			reward, err = db.innerDB.FindOne(key)
+		}()
 		// if not found, continue to next db
 		if err != nil {
 			continue
@@ -124,7 +140,7 @@ func (rs *RewardDB) findOne(key string) (*RewardEntity, error) {
 func (rs *RewardDB) FindAll() (map[uint64]*EpochRewards, error) {
 	rawRewards := make(map[string]*RewardEntity)
 	for _, db := range rs.dbs {
-		err := rs.retrieveAndProcessRewardsFromDB(&db, &rawRewards)
+		err := rs.retrieveAndProcessRewardsFromDB(db, &rawRewards)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +157,7 @@ func (rs *RewardDB) FindAllInDB(specId string) (map[uint64]*EpochRewards, error)
 	}
 
 	rawRewards := make(map[string]*RewardEntity)
-	err := rs.retrieveAndProcessRewardsFromDB(&db, &rawRewards)
+	err := rs.retrieveAndProcessRewardsFromDB(db, &rawRewards)
 	if err != nil {
 		return nil, err
 	}
@@ -177,8 +193,14 @@ func (rs *RewardDB) buildEpochRewardsMap(rawRewards map[string]*RewardEntity) ma
 	return resEpochRewards
 }
 
-func (rs *RewardDB) retrieveAndProcessRewardsFromDB(db *DB, rawRewards *map[string]*RewardEntity) (err error) {
-	raw, err := (*db).FindAll()
+func (rs *RewardDB) retrieveAndProcessRewardsFromDB(db *LockableDB, rawRewards *map[string]*RewardEntity) (err error) {
+	var raw map[string][]byte
+	func() {
+		db.lock.Lock()
+		defer db.lock.Unlock()
+		raw, err = db.innerDB.FindAll()
+	}()
+
 	if err != nil {
 		return err
 	}
@@ -213,9 +235,14 @@ func (rs *RewardDB) DeleteEpochRewards(epoch uint64) error {
 	return rs.deletePrefix(prefix)
 }
 
-func (rs *RewardDB) deletePrefix(prefix string) error {
+func (rs *RewardDB) deletePrefix(prefix string) (err error) {
 	for _, db := range rs.dbs {
-		err := db.DeletePrefix(prefix)
+		func() {
+			db.lock.Lock()
+			defer db.lock.Unlock()
+			err = db.innerDB.DeletePrefix(prefix)
+		}()
+
 		if err != nil {
 			return err
 		}
@@ -234,7 +261,10 @@ func (rs *RewardDB) AddDB(db DB) error {
 	if found {
 		return fmt.Errorf("db already exists for key: %s", dbKey)
 	}
-	rs.dbs[dbKey] = db
+	rs.dbs[dbKey] = &LockableDB{
+		lock:    sync.Mutex{},
+		innerDB: db,
+	}
 	return nil
 }
 
@@ -243,9 +273,14 @@ func (rs *RewardDB) DBExists(specId string) bool {
 	return found
 }
 
-func (rs *RewardDB) Close() error {
+func (rs *RewardDB) Close() (err error) {
 	for _, db := range rs.dbs {
-		err := db.Close()
+		func() {
+			db.lock.Lock()
+			defer db.lock.Unlock()
+			err = db.innerDB.Close()
+		}()
+
 		if err != nil {
 			return err
 		}
@@ -261,7 +296,7 @@ func NewRewardDB() *RewardDB {
 
 func NewRewardDBWithTTL(ttl time.Duration) *RewardDB {
 	return &RewardDB{
-		dbs: map[string]DB{},
+		dbs: map[string]*LockableDB{},
 		ttl: ttl,
 	}
 }
