@@ -237,7 +237,7 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 		if configurations.PairingList == nil {
 			configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
 		}
-		if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
+		if configurations.PairingList[request.SpecId] == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
 			pairings, err := s.grpcFetcher.FetchPairings(request.SpecId, configurations.ProjectPublicKey)
 			if err != nil {
 				utils.LavaFormatError("Failed to get pairings", err,
@@ -246,6 +246,8 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 					utils.Attribute{Key: "ProjectId", Value: request.ProjectId})
 				return err
 			}
+			fmt.Println("CHAINID ", request.SpecId)
+			fmt.Println("PAIRING: ", pairings.Providers)
 			configurations.PairingList[chainID] = pairings
 			configurations.UpdatedEpoch = response.Badge.Epoch
 		}
