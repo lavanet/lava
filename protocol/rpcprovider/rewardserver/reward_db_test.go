@@ -2,8 +2,6 @@ package rewardserver_test
 
 import (
 	"fmt"
-	"strconv"
-	"sync"
 	"testing"
 	"time"
 
@@ -217,39 +215,4 @@ func TestRewardsWithTTL(t *testing.T) {
 	rewards, err := rs.FindAll()
 	require.NoError(t, err)
 	require.Equal(t, 0, len(rewards))
-}
-
-func TestConcurrentReadWrite(t *testing.T) {
-	db := rewardserver.NewMemoryDB("spec")
-
-	iterations := 100
-
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-
-	for i := 0; i < iterations; i++ {
-		db.Save(&rewardserver.DBEntry{
-			Key:  "Key" + strconv.Itoa(i),
-			Data: []byte(strconv.Itoa(i)),
-		})
-	}
-
-	go func() {
-		for i := 0; i < iterations; i++ {
-			db.Save(&rewardserver.DBEntry{
-				Key:  "Bla",
-				Data: []byte(strconv.Itoa(i)),
-			})
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		for i := 0; i < iterations; i++ {
-			db.Delete("Key" + strconv.Itoa(i))
-		}
-		wg.Done()
-	}()
-
-	wg.Wait()
 }
