@@ -460,7 +460,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	var jsonData map[string]interface{}
 	err = json.Unmarshal(reply.Data, &jsonData)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Rest reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
+		return nil, "", nil, utils.LavaFormatError("Rest reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: string(reply.Data)})
 	}
 
 	return reply, "", nil, nil
