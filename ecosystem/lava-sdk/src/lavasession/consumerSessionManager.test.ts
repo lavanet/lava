@@ -780,7 +780,7 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      expect(cm.getEpoch()).toEqual(NUMBER_OF_PROVIDERS / 2);
+      expect(cm.getEpochFromEpochTracker()).toEqual(NUMBER_OF_PROVIDERS / 2);
     });
   });
 });
