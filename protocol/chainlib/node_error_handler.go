@@ -2,12 +2,14 @@ package chainlib
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net"
 	"os"
 	"strings"
 	"syscall"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"google.golang.org/grpc/codes"
@@ -66,6 +68,21 @@ func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
 	return rpcclient.ValidateStatusCodes(statusCode)
 }
 
+func (geh *genericErrorHandler) HandleIDMismatchError(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
+	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
+	if idErr != nil {
+		return utils.LavaFormatError("Failed parsing ID", idErr)
+	}
+	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
+	if idErr != nil {
+		return utils.LavaFormatError("Failed parsing ID", idErr)
+	}
+	if reqId != respId {
+		return utils.LavaFormatError("ID mismatch error", nil)
+	}
+	return nil
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
 // Validating if the error is related to the provider connection or not
@@ -100,4 +117,5 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
 	HandleStatusError(int) error
+	HandleIDMismatchError(json.RawMessage, json.RawMessage) error
 }

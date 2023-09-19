@@ -485,15 +485,8 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 		replyMsg = *replyMessage
 
-		reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessage.ID)
-		if idErr != nil {
-			return nil, "", nil, utils.LavaFormatError("Failed parsing ID", idErr)
-		}
-		respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsg.ID)
-		if idErr != nil {
-			return nil, "", nil, utils.LavaFormatError("Failed parsing ID", idErr)
-		}
-		if reqId != respId {
+		err := cp.HandleIDMismatchError(nodeMessage.ID, replyMessage.ID)
+		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}

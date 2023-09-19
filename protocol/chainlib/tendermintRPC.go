@@ -625,15 +625,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 		replyMsg = replyMessage
 
-		reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessage.ID)
-		if idErr != nil {
-			return nil, "", nil, utils.LavaFormatError("Failed parsing ID", idErr)
-		}
-		respId, idErr := rpcInterfaceMessages.IdFromRawMessage(rpcMessage.ID)
-		if idErr != nil {
-			return nil, "", nil, utils.LavaFormatError("Failed parsing ID", idErr)
-		}
-		if reqId != respId {
+		err := cp.HandleIDMismatchError(nodeMessage.ID, rpcMessage.ID)
+		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
