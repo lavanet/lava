@@ -177,20 +177,25 @@ func (mdb *BadgerDB) Close() error {
 	return mdb.db.Close()
 }
 
-func NewMemoryDB(specId string) *BadgerDB {
+func NewMemoryDB(specId string) DB {
 	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
 	if err != nil {
 		panic(err)
 	}
 
-	return &BadgerDB{
+	badgerDB := &BadgerDB{
 		specId:  specId,
 		rewards: make(map[string]*entryWithTtl),
 		db:      db,
 	}
+
+	return &ThreadSafeDB{
+		lock:    sync.RWMutex{},
+		innerDB: badgerDB,
+	}
 }
 
-func NewLocalDB(storagePath, providerAddr string, specId string, shard uint) *BadgerDB {
+func NewLocalDB(storagePath, providerAddr string, specId string, shard uint) DB {
 	shardString := strconv.FormatUint(uint64(shard), 10)
 	path := filepath.Join(storagePath, providerAddr, specId, shardString)
 	Options := badger.DefaultOptions(path)
@@ -201,12 +206,17 @@ func NewLocalDB(storagePath, providerAddr string, specId string, shard uint) *Ba
 		panic(err)
 	}
 
-	return &BadgerDB{
+	badgerDB := &BadgerDB{
 		providerAddr: providerAddr,
 		specId:       specId,
 		shardString:  shardString,
 		rewards:      make(map[string]*entryWithTtl),
 		db:           db,
+	}
+
+	return &ThreadSafeDB{
+		lock:    sync.RWMutex{},
+		innerDB: badgerDB,
 	}
 }
 
