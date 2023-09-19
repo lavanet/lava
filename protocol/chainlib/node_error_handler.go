@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net"
 	"os"
@@ -66,6 +67,20 @@ func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
 	return rpcclient.ValidateStatusCodes(statusCode)
 }
 
+func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
+	var jsonData map[string]interface{}
+	err := json.Unmarshal(replyData, &jsonData)
+	if err != nil {
+		// if failed to parse might be an array of jsons
+		var jsonArrayData []map[string]interface{}
+		parsingErr := json.Unmarshal(replyData, &jsonArrayData)
+		if parsingErr != nil {
+			return utils.LavaFormatError("Rest reply is not in JSON format", err, utils.Attribute{Key: "reply.Data", Value: string(replyData)})
+		}
+	}
+	return nil
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
 // Validating if the error is related to the provider connection or not
@@ -100,4 +115,5 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
 	HandleStatusError(int) error
+	HandleJSONFormatError([]byte) error
 }
