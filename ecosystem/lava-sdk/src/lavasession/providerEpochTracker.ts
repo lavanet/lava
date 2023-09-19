@@ -12,7 +12,7 @@ export class ProviderEpochTracker {
     return this.providersEpochs.has(providersPublicAddress);
   }
 
-  public setLatestBlockFor(providersPublicAddress: string, epoch: number) {
+  public setEpoch(providersPublicAddress: string, epoch: number) {
     this.providersEpochs.set(providersPublicAddress, epoch);
     this.epoch = Math.floor(median(Array.from(this.providersEpochs.values())));
   }

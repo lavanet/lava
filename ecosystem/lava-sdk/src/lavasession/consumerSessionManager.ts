@@ -80,7 +80,7 @@ export class ConsumerSessionManager {
     this.transport = opts?.transport ?? this.getTransport();
   }
 
-  public getEpoch(): number {
+  public getEpochFromEpochTracker(): number {
     return this.epochTracker.getEpoch();
   }
 
@@ -809,16 +809,18 @@ export class ConsumerSessionManager {
             );
 
             const lavaEpoch = probeReply.getLavaEpoch();
-            if (epoch == 0 && this.currentEpoch == 0) {
-              this.currentEpoch = lavaEpoch; // setting the epoch for initialization.
-            }
             Logger.debug(
               `Lava Epoch for provider ${consumerSessionWithProvider.publicLavaAddress}: ${lavaEpoch}`
             );
-            this.epochTracker.setLatestBlockFor(
+            this.epochTracker.setEpoch(
               consumerSessionWithProvider.publicLavaAddress,
               lavaEpoch
             );
+            // when epoch == 0 this is the initialization of the sdk. meaning we don't have information, we will take the median
+            // reported epoch from the providers probing and change the current epoch value as we probe more providers.
+            if (epoch == 0) {
+              this.currentEpoch = this.getEpochFromEpochTracker(); // setting the epoch for initialization.
+            }
             consumerSessionWithProvider.setPairingEpoch(lavaEpoch); // set the pairing epoch on the specific provider.
           })
           .catch((e) => {
@@ -833,7 +835,7 @@ export class ConsumerSessionManager {
       );
     }
     if (!retry) {
-      for (const index in pairingList) {
+      for (let index = 0; index < pairingList.length; index++) {
         await Promise.race(promiseProbeArray);
         const epochFromProviders = this.epochTracker.getEpoch();
         if (epochFromProviders != -1) {
