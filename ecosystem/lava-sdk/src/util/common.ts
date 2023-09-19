@@ -61,16 +61,18 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export function median(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
+  // First, we need to sort the array in ascending order
+  const sortedValues = values.slice().sort((a, b) => a - b);
+
+  // Calculate the middle index
+  const middleIndex = Math.floor(sortedValues.length / 2);
+
+  // Check if the array length is even or odd
+  if (sortedValues.length % 2 === 0) {
+    // If it's even, return the average of the two middle values
+    return (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2;
+  } else {
+    // If it's odd, return the middle value
+    return sortedValues[middleIndex];
   }
-
-  values = [...values].sort((a, b) => a - b);
-  const half = Math.floor(values.length / 2);
-
-  if (values.length % 2) {
-    return values[half];
-  }
-
-  return (values[half - 1] + values[half]) / 2;
 }
