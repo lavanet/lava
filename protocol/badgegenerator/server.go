@@ -128,9 +128,6 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		LavaChainId:  s.ChainId,
 	}
 
-	fmt.Println("CHAINID ", s.ChainId)
-	fmt.Println("Epoch ", s.GetEpoch())
-
 	result := pairingtypes.GenerateBadgeResponse{
 		Badge:              &badge,
 		BadgeSignerAddress: projectData.ProjectPublicKey,
