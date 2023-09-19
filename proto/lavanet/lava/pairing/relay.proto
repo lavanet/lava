@@ -24,6 +24,7 @@ message ProbeReply {
     int64 latest_block = 2;
     bytes finalized_blocks_hashes = 3;
     uint64 lava_epoch = 4;
+    uint64 lava_latest_block = 5;
 }
 
 message RelaySession {
