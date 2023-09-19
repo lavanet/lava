@@ -6,7 +6,7 @@ type ProjectConfiguration struct {
 	ProjectPublicKey  string                                    `json:"project_public_key"`
 	ProjectPrivateKey string                                    `json:"private_key"`
 	EpochsMaxCu       int64                                     `json:"epochs_max_cu"`
-	UpdatedEpoch      uint64                                    `json:"update_epoch,omitempty"`
+	UpdatedEpoch      map[string]uint64                         `json:"update_epoch,omitempty"`
 	PairingList       map[string]*types.QueryGetPairingResponse `json:"pairing_list,omitempty"`
 }
 

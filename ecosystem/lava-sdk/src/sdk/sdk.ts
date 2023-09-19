@@ -208,7 +208,10 @@ export class LavaSDK {
     );
 
     // Register LAVATendermint csm for update
-    tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
+    // If badge does not exists
+    if (!this.badgeManager.isActive()) {
+      tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
+    }
 
     // Fetch init state query
     await tracker.initialize();
@@ -294,45 +297,18 @@ export class LavaSDK {
     await tracker.startTracking();
   }
 
-  protected getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
-    return chainId + "," + apiInterface;
-  }
-
-  protected isRest(
-    options: SendRelayOptions | SendRestRelayOptions
-  ): options is SendRestRelayOptions {
-    return "connectionType" in options; // how to check which options were given
-  }
-
-  private getRpcConsumerServerRaw(
-    chainID: string,
-    apiInterface: string
-  ): RPCConsumerServer | Error {
-    const routerMap = this.rpcConsumerServerRouter;
-    const rpcConsumerServer = routerMap.get(
-      this.getRouterKey(chainID, apiInterface)
-    );
-    if (rpcConsumerServer == undefined) {
-      return new Error(
-        "did not find rpcConsumerServer for " +
-          this.getRouterKey(chainID, apiInterface)
-      );
-    }
-    return rpcConsumerServer;
-  }
-
   getRpcConsumerServer(
     options: SendRelayOptions | SendRestRelayOptions
   ): RPCConsumerServer | Error {
     const routerMap = this.rpcConsumerServerRouter;
-    if (routerMap.size == 1) {
+    const chainID = options.chainId;
+    if (routerMap.size == 1 && chainID == undefined) {
       const firstEntry = routerMap.values().next();
       if (firstEntry.done) {
         return new Error("returned empty routerMap");
       }
       return firstEntry.value;
     }
-    const chainID = options.chainId;
     const isRest = this.isRest(options);
     if (chainID == undefined) {
       let specId = "";
@@ -430,5 +406,32 @@ export class LavaSDK {
       // Return response
       return jsonResponse;
     });
+  }
+
+  protected getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
+    return chainId + "," + apiInterface;
+  }
+
+  protected isRest(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): options is SendRestRelayOptions {
+    return "connectionType" in options; // how to check which options were given
+  }
+
+  private getRpcConsumerServerRaw(
+    chainID: string,
+    apiInterface: string
+  ): RPCConsumerServer | Error {
+    const routerMap = this.rpcConsumerServerRouter;
+    const rpcConsumerServer = routerMap.get(
+      this.getRouterKey(chainID, apiInterface)
+    );
+    if (rpcConsumerServer == undefined) {
+      return new Error(
+        "did not find rpcConsumerServer for " +
+          this.getRouterKey(chainID, apiInterface)
+      );
+    }
+    return rpcConsumerServer;
   }
 }

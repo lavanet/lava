@@ -127,6 +127,10 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,
 	}
+
+	fmt.Println("CHAINID ", s.ChainId)
+	fmt.Println("Epoch ", s.GetEpoch())
+
 	result := pairingtypes.GenerateBadgeResponse{
 		Badge:              &badge,
 		BadgeSignerAddress: projectData.ProjectPublicKey,
@@ -232,13 +236,16 @@ func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 }
 
 func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeRequest, configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse) error {
-	chainID := response.Badge.LavaChainId
-	if request.SpecId != "" {
+	chainID := request.SpecId
+	if chainID != "" {
 		if configurations.PairingList == nil {
 			configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
 		}
-		if configurations.PairingList[request.SpecId] == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
-			pairings, err := s.grpcFetcher.FetchPairings(request.SpecId, configurations.ProjectPublicKey)
+		if configurations.UpdatedEpoch == nil {
+			configurations.UpdatedEpoch = make(map[string]uint64)
+		}
+		if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch[chainID] {
+			pairings, err := s.grpcFetcher.FetchPairings(chainID, configurations.ProjectPublicKey)
 			if err != nil {
 				utils.LavaFormatError("Failed to get pairings", err,
 					utils.Attribute{Key: "epoch", Value: s.GetEpoch()},
@@ -246,10 +253,8 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 					utils.Attribute{Key: "ProjectId", Value: request.ProjectId})
 				return err
 			}
-			fmt.Println("CHAINID ", request.SpecId)
-			fmt.Println("PAIRING: ", pairings.Providers)
 			configurations.PairingList[chainID] = pairings
-			configurations.UpdatedEpoch = response.Badge.Epoch
+			configurations.UpdatedEpoch[chainID] = response.Badge.Epoch
 		}
 		response.GetPairingResponse = configurations.PairingList[chainID]
 	}
