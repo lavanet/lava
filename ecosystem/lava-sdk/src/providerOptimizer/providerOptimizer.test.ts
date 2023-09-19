@@ -216,7 +216,7 @@ describe("ProviderOptimizer", () => {
     const requestBlock = 1000;
     const perturbationPercentage = 0.0;
     const syncBlock = requestBlock;
-    const chosenIndex = random.int(0, providersCount);
+    const chosenIndex = random.int(0, providersCount - 1);
 
     for (let i = 0; i < providersCount; i++) {
       await sleep(4);
