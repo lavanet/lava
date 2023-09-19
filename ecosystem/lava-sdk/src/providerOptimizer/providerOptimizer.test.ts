@@ -8,7 +8,6 @@ import {
   ProviderOptimizerStrategy,
 } from "./providerOptimizer";
 import random from "random";
-import BigNumber from "bignumber.js";
 import { now } from "../util/time";
 
 const TEST_AVERAGE_BLOCK_TIME = 10 * 1000; // 10 seconds in milliseconds

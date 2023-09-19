@@ -20,6 +20,7 @@ import {
   SessionIsAlreadyBlockListedError,
 } from "./errors";
 import {
+  MAX_CONSECUTIVE_CONNECTION_ATTEMPTS,
   MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION,
   RELAY_NUMBER_INCREMENT,
 } from "./common";
@@ -165,7 +166,7 @@ export class ConsumerSessionManager {
       })}`
     );
     try {
-      await this.probeProviders(pairingList, epoch);
+      await this.probeProviders(new Set(pairingList), epoch);
     } catch (err) {
       // TODO see what we should to
       Logger.error(err);
@@ -769,7 +770,7 @@ export class ConsumerSessionManager {
   }
 
   public async probeProviders(
-    pairingList: ConsumerSessionsWithProvider[],
+    pairingList: Set<ConsumerSessionsWithProvider>,
     epoch: number,
     retry = 0
   ): Promise<any> {
@@ -785,14 +786,67 @@ export class ConsumerSessionManager {
     }
 
     Logger.debug(`providers probe initiated`);
-    const promiseProbeArray: Array<Promise<any>> = [];
-    const retryProbing: ConsumerSessionsWithProvider[] = [];
+    let promiseProbeArray: Array<Promise<any>> = [];
+    const retryProbing: Set<ConsumerSessionsWithProvider> = new Set();
     for (const consumerSessionWithProvider of pairingList) {
-      const startTime = performance.now();
-      promiseProbeArray.push(
+      promiseProbeArray = promiseProbeArray.concat(
+        this.probeProvider(consumerSessionWithProvider, epoch, retryProbing)
+      );
+    }
+    if (!retry) {
+      for (const s of pairingList) {
+        await Promise.race(promiseProbeArray);
+        const epochFromProviders = this.epochTracker.getEpoch();
+        if (epochFromProviders != -1) {
+          Logger.debug(
+            `providers probe done ${JSON.stringify({
+              endpoint: this.rpcEndpoint,
+              Epoch: epochFromProviders,
+              NumberOfProvidersProbedUntilFinishedInit:
+                this.epochTracker.getProviderListSize(),
+            })}`
+          );
+          break;
+        }
+      }
+    } else {
+      await Promise.allSettled(promiseProbeArray);
+    }
+    // stop if we have no more providers to probe or we hit limit
+    if (retryProbing.size == 0 || retry >= ALLOWED_PROBE_RETRIES) {
+      return;
+    }
+
+    // launch retry probing on failed providers; this needs to run asynchronously without waiting!
+    // Must NOT "await" this method.
+    this.probeProviders(retryProbing, epoch, retry + 1);
+  }
+
+  private probeProvider(
+    consumerSessionWithProvider: ConsumerSessionsWithProvider,
+    epoch: number,
+    retryProbing: Set<ConsumerSessionsWithProvider>
+  ) {
+    const startTime = performance.now();
+    const promises = [];
+    for (const endpoint of consumerSessionWithProvider.endpoints) {
+      if (!endpoint.enabled) {
+        continue;
+      }
+
+      if (endpoint.connectionRefusals >= MAX_CONSECUTIVE_CONNECTION_ATTEMPTS) {
+        endpoint.enabled = false;
+        Logger.warn(
+          "disabling provider endpoint for the duration of current epoch",
+          endpoint.networkAddress
+        );
+        continue;
+      }
+
+      promises.push(
         this.relayer
           .probeProvider(
-            consumerSessionWithProvider.endpoints[0].networkAddress,
+            endpoint.networkAddress,
             this.getRpcEndpoint().apiInterface,
             this.getRpcEndpoint().chainId
           )
@@ -825,6 +879,9 @@ export class ConsumerSessionManager {
               latency,
               true
             );
+
+            endpoint.connectionRefusals = 0;
+            retryProbing.delete(consumerSessionWithProvider);
           })
           .catch((e) => {
             Logger.warn(
@@ -840,37 +897,20 @@ export class ConsumerSessionManager {
               false
             );
 
-            retryProbing.push(consumerSessionWithProvider);
+            endpoint.connectionRefusals++;
+            retryProbing.add(consumerSessionWithProvider);
           })
       );
     }
-    if (!retry) {
-      for (const index in pairingList) {
-        await Promise.race(promiseProbeArray);
-        const epochFromProviders = this.epochTracker.getEpoch();
-        if (epochFromProviders != -1) {
-          Logger.debug(
-            `providers probe done ${JSON.stringify({
-              endpoint: this.rpcEndpoint,
-              Epoch: epochFromProviders,
-              NumberOfProvidersProbedUntilFinishedInit:
-                this.epochTracker.getProviderListSize(),
-            })}`
-          );
-          break;
-        }
-      }
-    } else {
-      await Promise.allSettled(promiseProbeArray);
-    }
-    // stop if we have no more providers to probe or we hit limit
-    if (retryProbing.length == 0 || retry >= ALLOWED_PROBE_RETRIES) {
-      return;
+
+    // if no endpoints are enabled, return an error
+    if (promises.length === 0) {
+      // resolve instead of reject to avoid unhandled promise rejection
+      // we do not want to crash the process here, just to resolve probing
+      return Promise.resolve(new AllProviderEndpointsDisabledError());
     }
 
-    // launch retry probing on failed providers; this needs to run asynchronously without waiting!
-    // Must NOT "await" this method.
-    this.probeProviders(retryProbing, epoch, retry + 1);
+    return promises;
   }
 
   private getTransport(): grpc.TransportFactory {
