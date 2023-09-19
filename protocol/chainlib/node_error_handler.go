@@ -68,7 +68,7 @@ func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
 	return rpcclient.ValidateStatusCodes(statusCode)
 }
 
-func (geh *genericErrorHandler) HandleIDMismatchError(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
+func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
 	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
 	if idErr != nil {
 		return utils.LavaFormatError("Failed parsing ID", idErr)
@@ -117,5 +117,5 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
 	HandleStatusError(int) error
-	HandleIDMismatchError(json.RawMessage, json.RawMessage) error
+	ValidateRequestAndResponseIds(json.RawMessage, json.RawMessage) error
 }

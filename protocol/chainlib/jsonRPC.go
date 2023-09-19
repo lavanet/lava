@@ -485,7 +485,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 		replyMsg = *replyMessage
 
-		err := cp.HandleIDMismatchError(nodeMessage.ID, replyMessage.ID)
+		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
