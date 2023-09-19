@@ -81,8 +81,8 @@ var Upgrade_0_23_2 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_0_23_3 = Upgrade{
-	UpgradeName:          "v0.23.3",
+var Upgrade_0_23_4 = Upgrade{
+	UpgradeName:          "v0.23.4",
 	CreateUpgradeHandler: v0_23_0_UpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{Added: []string{dualstakingtypes.StoreKey}},
 }
