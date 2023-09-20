@@ -172,6 +172,7 @@ func (ts *tester) payAndVerifyBalance(
 				TruncateInt().
 				Uint64()
 		}
+
 		totalPaid += cuUsed
 	}
 
