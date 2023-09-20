@@ -108,11 +108,16 @@ export class ConsumerSessionManager {
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
   ): Promise<Error | undefined> {
-    Logger.debug(
+    Logger.info(
       "updateAllProviders called. epoch:",
       epoch,
+      "this.currentEpoch",
+      this.currentEpoch,
       "Provider list length",
-      pairingList.length
+      pairingList.length,
+      "Api Inteface",
+      this.rpcEndpoint.apiInterface,
+      this.rpcEndpoint.chainId
     );
 
     if (epoch <= this.currentEpoch) {
@@ -121,21 +126,23 @@ export class ConsumerSessionManager {
       // For LAVA's initialization, we need to allow the pairing to be updated twice
       // This condition permits the pairing to be overwritten just once for the same epoch
       // After this one-time allowance, any attempt to overwrite will result in an error
-      if (
-        this.allowedUpdateForCurrentEpoch &&
-        epoch === this.currentEpoch &&
-        rpcEndpoint.chainId === "LAV1" &&
-        rpcEndpoint.apiInterface === APIInterfaceTendermintRPC
-      ) {
-        this.allowedUpdateForCurrentEpoch = false;
-      } else {
-        Logger.error(
-          `trying to update provider list for older epoch ${JSON.stringify({
-            epoch,
-            currentEpoch: this.currentEpoch,
-          })}`
-        );
-        return new Error("Trying to update provider list for older epoch");
+      if (epoch != 0) {
+        if (
+          this.allowedUpdateForCurrentEpoch &&
+          epoch === this.currentEpoch &&
+          rpcEndpoint.chainId === "LAV1" &&
+          rpcEndpoint.apiInterface === APIInterfaceTendermintRPC
+        ) {
+          this.allowedUpdateForCurrentEpoch = false;
+        } else {
+          Logger.error(
+            `trying to update provider list for older epoch ${JSON.stringify({
+              epoch,
+              currentEpoch: this.currentEpoch,
+            })}`
+          );
+          return new Error("Trying to update provider list for older epoch");
+        }
       }
     }
     this.epochTracker.reset();
