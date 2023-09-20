@@ -7,11 +7,6 @@ import (
 	"github.com/lavanet/lava/common"
 )
 
-// ManagedFixationStore is an interface for a fixation store that is managed by the fixationstore module.
-// This makes it impossible for the consumers of the API to use the lifecycle management functionalities.
-type ManagedFixationStore interface {
-}
-
 func NewKeeper(cdc codec.BinaryCodec) *Keeper {
 	return &Keeper{
 		cdc: cdc,
