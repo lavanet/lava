@@ -12,8 +12,8 @@ import (
 type ManagedFixationStore interface {
 }
 
-func NewKeeper(cdc codec.BinaryCodec) Keeper {
-	return Keeper{
+func NewKeeper(cdc codec.BinaryCodec) *Keeper {
+	return &Keeper{
 		cdc: cdc,
 	}
 }
@@ -25,13 +25,13 @@ type Keeper struct {
 	cdc             codec.BinaryCodec
 }
 
-func (k Keeper) NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore {
+func (k *Keeper) NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore {
 	fs := common.NewFixationStore(storeKey, k.cdc, prefix)
 	k.fixationsStores = append(k.fixationsStores, fs)
 	return fs
 }
 
-func (k Keeper) BeginBlock(ctx sdk.Context) {
+func (k *Keeper) BeginBlock(ctx sdk.Context) {
 	for _, fs := range k.fixationsStores {
 		fs.AdvanceBlock(ctx)
 	}

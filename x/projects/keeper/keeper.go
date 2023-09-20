@@ -3,10 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/lavanet/lava/x/fixationstore"
-
 	"github.com/cometbft/cometbft/libs/log"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,7 +34,7 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	epochstorageKeeper types.EpochStorageKeeper,
-	fixationStoreKeeper fixationstore.Keeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -58,7 +56,6 @@ func NewKeeper(
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.projectsFS.AdvanceBlock(ctx)
 	k.developerKeysFS.AdvanceBlock(ctx)
 }
 

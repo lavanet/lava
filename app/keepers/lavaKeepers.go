@@ -54,7 +54,7 @@ type LavaKeepers struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
 	// Special Keepers
-	FixationStoreKeeper fixationstore.Keeper
+	FixationStoreKeeper *fixationstore.Keeper
 	SpecKeeper          specmodulekeeper.Keeper
 	SubscriptionKeeper  subscriptionmodulekeeper.Keeper
 	EpochstorageKeeper  epochstoragemodulekeeper.Keeper

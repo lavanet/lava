@@ -58,7 +58,7 @@ const BLOCK_HEADER_LEN = 32
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
-	FixationStoreKeeper fixationstore.Keeper
+	FixationStoreKeeper *fixationstore.Keeper
 	AccountKeeper       mockAccountKeeper
 	BankKeeper          mockBankKeeper
 	StakingKeeper       mockStakingKeeper
