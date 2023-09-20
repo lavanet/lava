@@ -36,6 +36,11 @@ wait_next_block() {
   done
 }
 
+current_block() {
+  current=$(lavad q block | jq -r .block.header.height)
+  echo $current
+}
+
 # function to wait until count ($1) blocks complete
 wait_count_blocks() {
   for i in $(seq 1 $1); do
