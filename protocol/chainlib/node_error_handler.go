@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"google.golang.org/grpc/codes"
@@ -81,6 +82,21 @@ func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
 	return nil
 }
 
+func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
+	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
+	if idErr != nil {
+		return utils.LavaFormatError("Failed parsing ID", idErr)
+	}
+	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
+	if idErr != nil {
+		return utils.LavaFormatError("Failed parsing ID", idErr)
+	}
+	if reqId != respId {
+		return utils.LavaFormatError("ID mismatch error", nil)
+	}
+	return nil
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
 // Validating if the error is related to the provider connection or not
@@ -116,4 +132,5 @@ type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
 	HandleStatusError(int) error
 	HandleJSONFormatError([]byte) error
+	ValidateRequestAndResponseIds(json.RawMessage, json.RawMessage) error
 }

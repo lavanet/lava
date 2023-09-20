@@ -623,6 +623,11 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 
 		replyMsg = replyMessage
+
+		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
 	}
 
 	// marshal the jsonrpc message to json
