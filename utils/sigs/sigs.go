@@ -10,9 +10,13 @@
 package sigs
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"math/rand"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	tendermintcrypto "github.com/cometbft/cometbft/crypto"
@@ -145,4 +149,41 @@ func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddr
 	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
 	addr, _ = sdk.AccAddressFromHexUnsafe(publicBytes.Address().String())
 	return
+}
+
+type ZeroReader struct {
+	Seed int64
+}
+
+func (z ZeroReader) Read(p []byte) (n int, err error) {
+	if len(p) == 1 {
+		p[0] = 45
+		return len(p), nil
+	}
+
+	randSource := rand.NewSource(z.Seed)
+	for i := range p {
+		p[i] = byte(randSource.Int63() & 0xFF) // Generate a random byte
+	}
+	return len(p), nil
+}
+
+func (z *ZeroReader) Inc() {
+	z.Seed++
+}
+
+// GenerateDeterministicFloatingKey creates a new private key with an account address derived from the corresponding public key using a rand source
+func GenerateDeterministicFloatingKey(rand io.Reader) (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
+	secretKey, _ = DeterministicNewPrivateKey(btcSecp256k1.S256(), rand)
+	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
+	addr, _ = sdk.AccAddressFromHexUnsafe(publicBytes.Address().String())
+	return
+}
+
+func DeterministicNewPrivateKey(curve elliptic.Curve, rand io.Reader) (*btcSecp256k1.PrivateKey, error) {
+	key, err := ecdsa.GenerateKey(curve, rand)
+	if err != nil {
+		return nil, err
+	}
+	return (*btcSecp256k1.PrivateKey)(key), nil
 }

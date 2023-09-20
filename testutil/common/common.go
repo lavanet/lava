@@ -6,6 +6,7 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/testutil/keeper"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -23,7 +24,8 @@ type Account struct {
 }
 
 func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc Account) {
-	acc.SK, acc.Addr = sigs.GenerateFloatingKey()
+	acc.SK, acc.Addr = sigs.GenerateDeterministicFloatingKey(keeper.Randomizer)
+	keeper.Randomizer.Inc()
 	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
 	return

@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"context"
-	"crypto/rand"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -22,6 +22,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
@@ -50,10 +51,11 @@ import (
 )
 
 const (
-	BLOCK_TIME = 30 * time.Second
+	BLOCK_TIME       = 30 * time.Second
+	BLOCK_HEADER_LEN = 32
 )
 
-const BLOCK_HEADER_LEN = 32
+var Randomizer = &sigs.ZeroReader{}
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
@@ -141,6 +143,9 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
+	Randomizer.Seed = 1695216058 // time.Now().Unix()
+	fmt.Println("Testing seed ", Randomizer.Seed)
+
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 
@@ -308,7 +313,7 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
 
 	headerHash := make([]byte, BLOCK_HEADER_LEN)
-	rand.Read(headerHash)
+	Randomizer.Read(headerHash)
 	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
 
 	NewBlock(unwrapedCtx, ks)
