@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -131,6 +132,14 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// check the delegators rewards sum up to the expected total
 			totalDelegatorsReward := totalReward.TruncateInt64() * (100 - int64(tt.providerReward)) / 100
 			require.Equal(t, totalDelegatorsReward, d1Reward+d2Reward)
+
+			// claim delegator rewards and verify balance
+			delegator1Addr, err := sdk.AccAddressFromBech32(delegator1)
+			require.Nil(t, err)
+			delegator2Addr, err := sdk.AccAddressFromBech32(delegator2)
+			require.Nil(t, err)
+			claimRewardsAndVerifyBalance(ts, delegator1Addr, provider, stakeEntry.Chain)
+			claimRewardsAndVerifyBalance(ts, delegator2Addr, provider, stakeEntry.Chain)
 		})
 	}
 }
@@ -240,7 +249,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
-	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 
 	ts.AdvanceEpoch() // to apply pairing
 
@@ -282,13 +291,16 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
 
 	// the delegator should get no rewards
-	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, provider, ts.spec.Index)
+	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward := resRewards.Rewards[0]
 	require.True(t, found)
 	expectedDReward := math.ZeroInt()
 	require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
+
+	// claim delegator rewards and verify balance
+	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
 
 	// ** provider's commission is 0% ** //
 
@@ -305,12 +317,33 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, expectedRewardForRelay.TruncateInt64()/2, newBalance-balance)
 
 	// the delegator should get the total rewards
-	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, provider, ts.spec.Index)
+	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward = resRewards.Rewards[0]
 	expectedDRewardForRelay := mint.MulInt64(totalReward.Int64())
 	require.Equal(t, expectedDRewardForRelay.TruncateInt64()/2, dReward.Amount.Amount.Int64())
+
+	// claim delegator rewards and verify balance
+	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
+}
+
+func claimRewardsAndVerifyBalance(ts *tester, delegator sdk.AccAddress, provider string, chainID string) {
+	balance := ts.GetBalance(delegator)
+
+	res, err := ts.QueryDualstakingDelegatorRewards(delegator.String(), provider, chainID)
+	require.Nil(ts.T, err)
+	reward := res.Rewards[0]
+
+	_, err = ts.Servers.DualstakingServer.ClaimRewards(ts.Ctx, dualstakingtypes.NewMsgClaimRewards(delegator.String(), provider))
+	require.Nil(ts.T, err)
+
+	newBalance := ts.GetBalance(delegator)
+	require.Equal(ts.T, balance+reward.Amount.Amount.Int64(), newBalance)
+
+	res, err = ts.QueryDualstakingDelegatorRewards(delegator.String(), provider, chainID)
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, 0, len(res.Rewards))
 }
 
 func TestQueryDelegatorRewards(t *testing.T) {

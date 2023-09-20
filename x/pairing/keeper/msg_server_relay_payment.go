@@ -404,14 +404,16 @@ func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, 
 		)
 	}
 
-	providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
-	if err != nil {
-		// panic:ok: reward transfer should never fail
-		utils.LavaFormatPanic("critical: failed to send reward to provider", err,
-			utils.Attribute{Key: "provider", Value: providerAddr},
-			utils.Attribute{Key: "reward", Value: providerRewardCoins},
-		)
+	if providerReward.GT(math.ZeroInt()) {
+		providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
+		if err != nil {
+			// panic:ok: reward transfer should never fail
+			utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+				utils.Attribute{Key: "provider", Value: providerAddr},
+				utils.Attribute{Key: "reward", Value: providerRewardCoins},
+			)
+		}
 	}
 
 	return nil

@@ -11,6 +11,7 @@ service Msg {
       rpc Delegate(MsgDelegate) returns (MsgDelegateResponse);
       rpc Redelegate(MsgRedelegate) returns (MsgRedelegateResponse);
       rpc Unbond(MsgUnbond) returns (MsgUnbondResponse);
+      rpc ClaimRewards(MsgClaimRewards) returns (MsgClaimRewardsResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -44,4 +45,12 @@ message MsgUnbond {
 }
 
 message MsgUnbondResponse {
+}
+
+message MsgClaimRewards {
+  string creator = 1; // delegator
+  string provider = 2;
+}
+
+message MsgClaimRewardsResponse {
 }

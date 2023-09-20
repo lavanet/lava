@@ -344,6 +344,18 @@ func (ts *Tester) TxDualstakingUnbond(
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
 }
 
+// TxDualstakingClaimRewards: implement 'tx dualstaking claim-rewards'
+func (ts *Tester) TxDualstakingClaimRewards(
+	creator string,
+	provider string,
+) (*dualstakingtypes.MsgClaimRewardsResponse, error) {
+	msg := &dualstakingtypes.MsgClaimRewards{
+		Creator:  creator,
+		Provider: provider,
+	}
+	return ts.Servers.DualstakingServer.ClaimRewards(ts.GoCtx, msg)
+}
+
 // TxSubscriptionBuy: implement 'tx subscription buy'
 func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
