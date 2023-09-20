@@ -21,6 +21,7 @@ import (
 	downtimemodulekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	dualstakingmodulekeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	"github.com/lavanet/lava/x/fixationstore"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
@@ -53,16 +54,17 @@ type LavaKeepers struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
 	// Special Keepers
-	SpecKeeper         specmodulekeeper.Keeper
-	SubscriptionKeeper subscriptionmodulekeeper.Keeper
-	EpochstorageKeeper epochstoragemodulekeeper.Keeper
-	DualstakingKeeper  dualstakingmodulekeeper.Keeper
-	PairingKeeper      pairingmodulekeeper.Keeper
-	ConflictKeeper     conflictmodulekeeper.Keeper
-	ProjectsKeeper     projectsmodulekeeper.Keeper
-	PlansKeeper        plansmodulekeeper.Keeper
-	ProtocolKeeper     protocolmodulekeeper.Keeper
-	DowntimeKeeper     downtimemodulekeeper.Keeper
+	FixationStoreKeeper fixationstore.Keeper
+	SpecKeeper          specmodulekeeper.Keeper
+	SubscriptionKeeper  subscriptionmodulekeeper.Keeper
+	EpochstorageKeeper  epochstoragemodulekeeper.Keeper
+	DualstakingKeeper   dualstakingmodulekeeper.Keeper
+	PairingKeeper       pairingmodulekeeper.Keeper
+	ConflictKeeper      conflictmodulekeeper.Keeper
+	ProjectsKeeper      projectsmodulekeeper.Keeper
+	PlansKeeper         plansmodulekeeper.Keeper
+	ProtocolKeeper      protocolmodulekeeper.Keeper
+	DowntimeKeeper      downtimemodulekeeper.Keeper
 
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 }

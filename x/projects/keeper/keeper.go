@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/lavanet/lava/x/fixationstore"
 
 	"github.com/cometbft/cometbft/libs/log"
 
@@ -35,13 +36,14 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	epochstorageKeeper types.EpochStorageKeeper,
+	fixationStoreKeeper fixationstore.Keeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	projectsfs := common.NewFixationStore(storeKey, cdc, types.ProjectsFixationPrefix)
+	projectsfs := fixationStoreKeeper.NewFixationStore(storeKey, types.ProjectsFixationPrefix)
 	developerKeysfs := common.NewFixationStore(storeKey, cdc, types.DeveloperKeysFixationPrefix)
 
 	return &Keeper{
