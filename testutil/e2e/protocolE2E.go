@@ -754,7 +754,7 @@ func (lt *lavaTest) saveLogs() {
 			if fileName == "00_StartLava" { // TODO remove this and solve the errors
 				break
 			}
-			if strings.Contains(line, " ERR ") {
+			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
 				isAllowedError := false
 				for errorSubstring := range allowedErrors {
 					if strings.Contains(line, errorSubstring) {

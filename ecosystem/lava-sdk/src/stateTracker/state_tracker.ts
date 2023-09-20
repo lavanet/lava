@@ -31,7 +31,7 @@ export class StateTracker {
     relayer: Relayer,
     chainIDs: string[],
     config: Config,
-    rpcConsumer: RPCConsumerServer,
+    rpcConsumer: RPCConsumerServer | undefined,
     spec: Spec,
     account: AccountData,
     walletAddress: string,
@@ -50,6 +50,11 @@ export class StateTracker {
       );
     } else {
       // Initialize State Query
+      if (!rpcConsumer) {
+        throw Logger.fatal(
+          "No rpc consumer server provided in private key flow."
+        );
+      }
       this.stateQuery = new StateChainQuery(
         pairingListConfig,
         chainIDs,

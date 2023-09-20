@@ -31,7 +31,7 @@ import transport from "../util/browser";
 import { secondsToMillis } from "../util/time";
 import { sleep } from "../util/common";
 import { ProviderEpochTracker } from "./providerEpochTracker";
-
+import { APIInterfaceTendermintRPC } from "../chainlib/base_chain_parser";
 export const ALLOWED_PROBE_RETRIES = 3;
 export const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
 
@@ -125,7 +125,7 @@ export class ConsumerSessionManager {
         this.allowedUpdateForCurrentEpoch &&
         epoch === this.currentEpoch &&
         rpcEndpoint.chainId === "LAV1" &&
-        rpcEndpoint.apiInterface === "tendermintrpc"
+        rpcEndpoint.apiInterface === APIInterfaceTendermintRPC
       ) {
         this.allowedUpdateForCurrentEpoch = false;
       } else {
@@ -332,7 +332,7 @@ export class ConsumerSessionManager {
 
         if (sessions.size === wantedSessions) {
           Logger.debug(
-            `returning sessions: ${JSON.stringify(sessions)}`,
+            `returning sessions: ${JSON.stringify(sessions.values())}`,
             sessions.size
           );
           return sessions;
