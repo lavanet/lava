@@ -84,6 +84,7 @@ func TestQueryWithPendingDelegations(t *testing.T) {
 	// query pending delegators
 	res, err := ts.QueryDualstakingDelegatorProviders(delegator1, true)
 	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
 	delegationRes := res.Delegations[0]
 	require.True(t, delegationRes.Equal(&delegation1))
 

@@ -20,4 +20,5 @@ var (
 	GeolocationNotMatchWithEndpointsError              = sdkerrors.New("GeolocationNotMatchWithEndpointsError Error", 693, "The combination of the endpoints' geolocation does not match to the provider's geolocation")
 	DelegateCommissionOOBError                         = sdkerrors.New("DelegateCommissionOOBError Error", 694, "Delegation commission out of bound [0,100]")
 	DelegateLimitError                                 = sdkerrors.New("DelegateLimitError Error", 695, "Delegation limit coin is invalid")
+	ProviderRewardError                                = sdkerrors.New("ProviderRewardError Error", 696, "could not calculate provider reward with delegations")
 )
