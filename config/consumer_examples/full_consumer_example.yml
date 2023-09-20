@@ -32,22 +32,22 @@ endpoints:
     - chain-id: BASET
       api-interface: jsonrpc
       network-address: 127.0.0.1:3353
-    - chain-id: OSMO
+    - chain-id: COS3
       api-interface: rest
       network-address: 127.0.0.1:3354
-    - chain-id: OSMO
+    - chain-id: COS3
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3355
-    - chain-id: OSMO
+    - chain-id: COS3
       api-interface: grpc
       network-address: 127.0.0.1:3356
-    - chain-id: OSMOT
+    - chain-id: COS4
       api-interface: rest
       network-address: 127.0.0.1:3357
-    - chain-id: OSMOT
+    - chain-id: COS4
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3358
-    - chain-id: OSMOT
+    - chain-id: COS4
       api-interface: grpc
       network-address: 127.0.0.1:3359
     - chain-id: LAV1
@@ -59,13 +59,13 @@ endpoints:
     - chain-id: LAV1
       api-interface: grpc
       network-address: 127.0.0.1:3362
-    - chain-id: COSHUB
+    - chain-id: COS5
       api-interface: rest
       network-address: 127.0.0.1:3363
-    - chain-id: COSHUB
+    - chain-id: COS5
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3364
-    - chain-id: COSHUB
+    - chain-id: COS5
       api-interface: grpc
       network-address: 127.0.0.1:3365
     - chain-id: JUN1
