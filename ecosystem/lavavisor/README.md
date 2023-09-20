@@ -33,6 +33,9 @@ Here are the operations that `lavavisor init` performs:
 6. Verifies if a `lavap` binary already exists in the system path. If not, it copies the fetched binary to the system path.
 7. Establishes a symbolic link between the fetched binary in `.lavavisor/upgrades/<version-tag>/` and the protocol binary in the system path.
 
+
+**For a fully automated experience, usage of `--auto-download` flag is suggested**
+
 ### Known Issue:
 Some older versions of `lavap` lack the `version` command, which LavaVisor employs to validate binary versions. When these older version binaries are downloaded using the auto-download option, LavaVisor will accept these binaries without signaling an error. However, when restarting LavaVisor with this binary, an error will be raised. This is because the binary validation will fail since the version command cannot be executed.
 
@@ -61,7 +64,7 @@ ___
 
   This command generates the service file in '.lavavisor/' directory so that consumer & provider processes can be started in a robust manner. Additionally, it creates a `./logs` directory, so that service logs can be easily accessed. Finally, it updates the `config.yml` file by appending the name of the service created by this command, allowing the created process to be read by the lavavisor start command.
 
- Use the `--create-link` flag to create a symbolic link to the `/etc/systemd/system/` directory; it is highly recommended for ensuring service files are set up properly.
+ **Use the `--create-link` flag to create a symbolic link to the `/etc/systemd/system/` directory; it is highly recommended for ensuring service files are set up properly.**
 ___
  3- **`lavavisor start`**: Starts provider/consumer processes given with linked binary and starts lavavisor version monitor.
 
@@ -93,6 +96,28 @@ Here are the operations that `lavavisor start` performs:
 4. Validate `config.yml` is updated and includes all of the target service names.
 5. Execute `lavavisor start --auto-start`, and you should observe all services running. Additionally, the version monitor will begin validating versions.
 6. Now we need to make an upgrade proposal by using `/gov` module, so that protocol version will change in the consensus and LavaVisor will detect & initiate auto-upgrade.
+
+Here is an example `proposal.json` file:
+
+```json
+{
+    "title": "Protocol Version Change",
+    "description": "Update version",
+    "changes": [
+        {
+            "subspace": "protocol",
+            "key": "Version",
+            "value": {
+                "provider_target": "0.23.2",
+                "consumer_target": "0.23.2",
+                "provider_min": "0.22.0",
+                "consumer_min": "0.22.0"
+            }
+        }
+    ],
+    "deposit": "10000000ulava"
+}
+```
 Here is the script for sending version update proposal transaction (for Cosmos SDK v0.47.0):
 ```bash
 #!/bin/bash
