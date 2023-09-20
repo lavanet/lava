@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -67,15 +66,16 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	return rpcInput.ParseBlock(resString)
 }
 
+// This returns the parsed response without decoding
 func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
 	result, err := parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
 		return "", err
 	}
 
-	response, ok := result[0].(string)
+	response, ok := result[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
 	if !ok {
-		return "", errors.New("result is not string parseable")
+		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, utils.Attribute{Key: "blockData", Value: response[spectypes.DEFAULT_PARSED_RESULT_INDEX]})
 	}
 
 	if strings.Contains(response, "\"") {
@@ -88,7 +88,6 @@ func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (strin
 	return response, nil
 }
 
-// this function returns the block that was requested,
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (int64, error) {
 	result, err := ParseFromReply(rpcInput, blockParser)
 	if err != nil {
@@ -97,20 +96,15 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (
 	return rpcInput.ParseBlock(result)
 }
 
-// this function returns the block that was requested,
-func ParseMessageResponse(rpcInput RPCInput, resultParser spectypes.BlockParser) (string, error) {
-	parsedResults, err := parse(rpcInput, resultParser, PARSE_RESULT)
+// This returns the parsed response after decoding
+func ParseFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.BlockParser) (string, error) {
+	response, err := ParseFromReply(rpcInput, resultParser)
 	if err != nil {
 		return "", err
 	}
-	rawResult, ok := parsedResults[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)
-	if !ok {
-		return "", utils.LavaFormatError("Failed to Convert blockData[spectypes.DEFAULT_PARSED_RESULT_INDEX].(string)", nil, utils.Attribute{Key: "blockData", Value: parsedResults[spectypes.DEFAULT_PARSED_RESULT_INDEX]})
-	}
-	return parseResponseByEncoding([]byte(rawResult), resultParser.Encoding)
+	return parseResponseByEncoding([]byte(response), resultParser.Encoding)
 }
 
-// this function returns the block that was requested,
 func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
 	var retval []interface{}
 	var err error
