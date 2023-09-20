@@ -1,7 +1,7 @@
 endpoints:
-    - chain-id: OSMO
+    - chain-id: COS3
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3335
-    - chain-id: OSMO
+    - chain-id: COS3
       api-interface: rest
       network-address: 127.0.0.1:3334

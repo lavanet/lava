@@ -250,7 +250,7 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		Example: `required flags: --geolocation 1 --from alice
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
-rpcconsumer 127.0.0.1:3333 OSMO tendermintrpc 127.0.0.1:3334 OSMO rest <flags>`,
+rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
