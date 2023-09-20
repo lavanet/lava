@@ -598,6 +598,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
+		fixationstore.NewAppModule(app.FixationStoreKeeper),
 		specModule,
 		epochstorageModule,
 		dualstakingModule,
@@ -674,7 +675,9 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
-		downtimemoduletypes.ModuleName) // downtime has no end block but module manager requires it.
+		downtimemoduletypes.ModuleName, // downtime has no end block but module manager requires it.
+		fixationstore.ModuleName,       // fixation store has no end block but module manager requires it.
+	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -708,6 +711,7 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
+		fixationstore.ModuleName,       // fixation store has no init genesis but module manager requires it.
 		conflictmoduletypes.ModuleName, // NOTICE: the last module to initgenesis needs to push fixation in epoch storage
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)

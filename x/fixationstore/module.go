@@ -39,7 +39,7 @@ func (a AppModuleBasic) GetQueryCmd() *cobra.Command { return nil }
 
 // ---- AppModule
 
-func NewAppModule(k Keeper) AppModule {
+func NewAppModule(k *Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		k:              k,
@@ -49,7 +49,7 @@ func NewAppModule(k Keeper) AppModule {
 type AppModule struct {
 	AppModuleBasic
 
-	k Keeper
+	k *Keeper
 }
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
