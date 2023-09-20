@@ -80,8 +80,10 @@ export class StateTracker {
     await this.stateQuery.init();
 
     // Run all updaters
-    // TODO we should not do this for badge
-    await this.update();
+    // Only for chain query
+    if (this.stateQuery instanceof StateChainQuery) {
+      await this.update();
+    }
 
     // Fetch Pairing
     this.timeTillNextEpoch = await this.stateQuery.fetchPairing();

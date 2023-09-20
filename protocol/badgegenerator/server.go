@@ -127,6 +127,7 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,
 	}
+
 	result := pairingtypes.GenerateBadgeResponse{
 		Badge:              &badge,
 		BadgeSignerAddress: projectData.ProjectPublicKey,
@@ -232,9 +233,16 @@ func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 }
 
 func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeRequest, configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse) error {
-	if request.SpecId != "" {
-		if configurations.PairingList == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
-			pairings, err := s.grpcFetcher.FetchPairings(request.SpecId, configurations.ProjectPublicKey)
+	chainID := request.SpecId
+	if chainID != "" {
+		if configurations.PairingList == nil {
+			configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
+		}
+		if configurations.UpdatedEpoch == nil {
+			configurations.UpdatedEpoch = make(map[string]uint64)
+		}
+		if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch[chainID] {
+			pairings, err := s.grpcFetcher.FetchPairings(chainID, configurations.ProjectPublicKey)
 			if err != nil {
 				utils.LavaFormatError("Failed to get pairings", err,
 					utils.Attribute{Key: "epoch", Value: s.GetEpoch()},
@@ -242,11 +250,10 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 					utils.Attribute{Key: "ProjectId", Value: request.ProjectId})
 				return err
 			}
-			configurations.PairingList = pairings
-			configurations.UpdatedEpoch = response.Badge.Epoch
+			configurations.PairingList[chainID] = pairings
+			configurations.UpdatedEpoch[chainID] = response.Badge.Epoch
 		}
-		// return the pairingList we have stored in configurations
-		response.GetPairingResponse = configurations.PairingList
+		response.GetPairingResponse = configurations.PairingList[chainID]
 	}
 	return nil
 }
