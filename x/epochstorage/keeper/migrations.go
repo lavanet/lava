@@ -42,26 +42,8 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 }
 
 // Migrate3to4 implements store migration from v3 to v4:
-// - initialize DelegateTotal, DelegateLimit, DelegateCommission
+// set geolocation to int32
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
-	const ProviderKey = "provider"
-
-	utils.LavaFormatDebug("migrate: epochstorage to include delegations")
-
-	allStakeStorage := m.keeper.GetAllStakeStorage(ctx)
-	for _, storage := range allStakeStorage {
-		utils.LavaFormatDebug("migrate: handle storage with key",
-			utils.Attribute{Key: "index", Value: storage.Index})
-		for i := range storage.StakeEntries {
-			utils.LavaFormatDebug("  StakeEntry",
-				utils.Attribute{Key: "address", Value: storage.StakeEntries[i].Address})
-			storage.StakeEntries[i].DelegateTotal = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
-			storage.StakeEntries[i].DelegateLimit = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
-			storage.StakeEntries[i].DelegateCommission = 100
-		}
-		m.keeper.SetStakeStorage(ctx, storage)
-	}
-
 	utils.LavaFormatDebug("migrate: epochstorage change geolocation from uint64 to int32")
 
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), v3.KeyPrefix(v3.StakeStorageKeyPrefix))
@@ -118,12 +100,31 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 			}
 
 			stakeEntryV4.Endpoints = endpointsV4
+
 			stakeEntriesV4 = append(stakeEntriesV4, stakeEntryV4)
 		}
 		stakeStorageV4.StakeEntries = stakeEntriesV4
 
 		store.Delete(iterator.Key())
 		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV4))
+	}
+
+	return nil
+}
+
+// Migrate4to5 implements store migration from v4 to v5:
+// - initialize DelegateTotal, DelegateLimit, DelegateCommission
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include delegations")
+
+	StakeStorages := m.keeper.GetAllStakeStorage(ctx)
+	for st := range StakeStorages {
+		for s := range StakeStorages[st].StakeEntries {
+			StakeStorages[st].StakeEntries[s].DelegateTotal = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
+			StakeStorages[st].StakeEntries[s].DelegateLimit = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
+			StakeStorages[st].StakeEntries[s].DelegateCommission = 100
+		}
+		m.keeper.SetStakeStorage(ctx, StakeStorages[st])
 	}
 
 	return nil

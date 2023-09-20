@@ -76,7 +76,7 @@ func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finali
 
 func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := NewSpecUpdater(endpoint.ChainID, cst.stateQuery, cst.eventTracker)
+	specUpdater := NewSpecUpdater(endpoint.ChainID, cst.stateQuery, cst.EventTracker)
 	specUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, specUpdater)
 	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
 	if !ok {
@@ -90,7 +90,7 @@ func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumer
 }
 
 func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
-	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.eventTracker, version, versionValidator)
+	versionUpdater := NewVersionUpdater(cst.stateQuery, cst.EventTracker, version, versionValidator)
 	versionUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
 	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
 	if !ok {

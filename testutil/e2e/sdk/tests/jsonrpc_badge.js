@@ -2,12 +2,12 @@ const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
 
 async function main() {
     // Initialize Lava SDK
-    const eth = await new LavaSDK({
+    const eth = await LavaSDK.create({
         badge: {
             badgeServerAddress: process.env.BADGE_SERVER_ADDR,
             projectId: process.env.BADGE_PROJECT_ID,
         },
-        chainID: "ETH1",
+        chainIds: ["ETH1"],
         lavaChainId:"lava",
         pairingListConfig:process.env.PAIRING_LIST, 
         allowInsecureTransport: true,
@@ -27,7 +27,7 @@ async function main() {
             });
 
             // Parse response
-            const parsedResponse = JSON.parse(result);
+            const parsedResponse = result;
 
             const chainID = parsedResponse.result;
 
@@ -47,6 +47,7 @@ async function main() {
 (async () => {
     try {
         await main();
+        process.exit(0);
     } catch (error) {
         console.error(" ERR "+error.message);
         process.exit(1);

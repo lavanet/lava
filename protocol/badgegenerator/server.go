@@ -5,17 +5,21 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"google.golang.org/grpc/metadata"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/lavanet/lava/protocol/badgegenerator/grpc"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+const dummyApiInterface = "badgeApiInterface"
 
 type Server struct {
 	pairingtypes.UnimplementedBadgeGeneratorServer
@@ -25,6 +29,9 @@ type Server struct {
 	ChainId               string
 	IpService             *IpService
 	metrics               *MetricsService
+	stateTracker          *BadgeStateTracker
+	specs                 map[string]spectypes.Spec // holding the specs for all chains
+	specLock              sync.RWMutex
 }
 
 func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server, error) {
@@ -32,6 +39,7 @@ func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server
 		ProjectsConfiguration: map[string]map[string]*ProjectConfiguration{},
 		ChainId:               chainId,
 		IpService:             ipService,
+		specs:                 map[string]spectypes.Spec{},
 	}
 
 	if userData != "" {
@@ -52,6 +60,19 @@ func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server
 	return server, nil
 }
 
+func (s *Server) InitializeStateTracker(tracker *BadgeStateTracker) {
+	if s.stateTracker != nil {
+		utils.LavaFormatFatal("state tracker already initialized", nil)
+	}
+	s.stateTracker = tracker
+}
+
+func (s *Server) SetSpec(specUpdate spectypes.Spec) {
+	s.specLock.Lock()
+	defer s.specLock.Unlock()
+	s.specs[specUpdate.Index] = specUpdate
+}
+
 func (s *Server) UpdateEpoch(epoch uint64) {
 	utils.LavaFormatDebug("Got epoch update", utils.Attribute{Key: "epoch", Value: epoch})
 	atomic.StoreUint64(&s.epoch, epoch)
@@ -61,7 +82,34 @@ func (s *Server) GetEpoch() uint64 {
 	return atomic.LoadUint64(&s.epoch)
 }
 
+func (s *Server) checkSpecExists(specID string) (spectypes.Spec, bool) {
+	s.specLock.RLock()
+	defer s.specLock.RUnlock()
+	spec, found := s.specs[specID]
+	return spec, found
+}
+
+func (s *Server) getSpec(ctx context.Context, specId string) (spectypes.Spec, error) {
+	_, found := s.checkSpecExists(specId)
+	if !found {
+		err := s.stateTracker.RegisterForSpecUpdates(ctx, s, lavasession.RPCEndpoint{ChainID: specId, ApiInterface: dummyApiInterface})
+		if err != nil {
+			return spectypes.Spec{}, utils.LavaFormatError("BadgeServer Failed registering for spec updates", err)
+		}
+	}
+	// we should have the spec now after fetching it from the chain. if we don't have it badge server failed getting the spec
+	spec, found := s.checkSpecExists(specId)
+	if !found {
+		return spectypes.Spec{}, utils.LavaFormatError("Failed fetching spec without getting error, shouldn't get here", nil)
+	}
+	return spec, nil
+}
+
 func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBadgeRequest) (*pairingtypes.GenerateBadgeResponse, error) {
+	spec, err := s.getSpec(ctx, req.SpecId)
+	if err != nil {
+		return nil, utils.LavaFormatError("badge server failed fetching spec", err)
+	}
 	metadata, _ := metadata.FromIncomingContext(ctx)
 	clientAddress := metadata.Get(RefererHeaderKey)
 	ipAddress := ""
@@ -79,10 +127,11 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,
 	}
+
 	result := pairingtypes.GenerateBadgeResponse{
 		Badge:              &badge,
 		BadgeSignerAddress: projectData.ProjectPublicKey,
-		PairingList:        make([]*epochstoragetypes.StakeEntry, 0),
+		Spec:               &spec,
 	}
 
 	err = s.addPairingListToResponse(req, projectData, &result)
@@ -107,6 +156,7 @@ func (s *Server) validateRequest(clientAddress string, in *pairingtypes.Generate
 		return nil, err
 	}
 	if in.BadgeAddress == "" || in.ProjectId == "" {
+		fmt.Println("In: ", in)
 		err := fmt.Errorf("bad request, no valid input data provided")
 		utils.LavaFormatError("Validation failed", err)
 		return nil, err
@@ -183,9 +233,16 @@ func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 }
 
 func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeRequest, configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse) error {
-	if request.SpecId != "" {
-		if configurations.PairingList == nil || response.Badge.Epoch != configurations.UpdatedEpoch {
-			pairings, _, err := s.grpcFetcher.FetchPairings(request.SpecId, configurations.ProjectPublicKey)
+	chainID := request.SpecId
+	if chainID != "" {
+		if configurations.PairingList == nil {
+			configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
+		}
+		if configurations.UpdatedEpoch == nil {
+			configurations.UpdatedEpoch = make(map[string]uint64)
+		}
+		if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch[chainID] {
+			pairings, err := s.grpcFetcher.FetchPairings(chainID, configurations.ProjectPublicKey)
 			if err != nil {
 				utils.LavaFormatError("Failed to get pairings", err,
 					utils.Attribute{Key: "epoch", Value: s.GetEpoch()},
@@ -193,16 +250,10 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 					utils.Attribute{Key: "ProjectId", Value: request.ProjectId})
 				return err
 			}
-			configurations.PairingList = pairings
-			configurations.UpdatedEpoch = response.Badge.Epoch
+			configurations.PairingList[chainID] = pairings
+			configurations.UpdatedEpoch[chainID] = response.Badge.Epoch
 		}
-
-		for _, entry := range *configurations.PairingList {
-			marshalled, _ := entry.Marshal()
-			newEntry := &epochstoragetypes.StakeEntry{}
-			newEntry.Unmarshal(marshalled)
-			response.PairingList = append(response.PairingList, newEntry)
-		}
+		response.GetPairingResponse = configurations.PairingList[chainID]
 	}
 	return nil
 }
