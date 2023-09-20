@@ -95,8 +95,5 @@ ecosystem/lavajs/proto/gogoproto
 ecosystem/lavajs/proto/google
 ecosystem/lavajs/proto/tendermint
 
-
-
-
-
-
+# Badger DB
+.storage/
