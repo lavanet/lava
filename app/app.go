@@ -958,13 +958,13 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(minttypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
-	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) // nolint
+	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
-	paramsKeeper.Subspace(dualstakingmoduletypes.ModuleName)
+	paramsKeeper.Subspace(dualstakingmoduletypes.ModuleName
 	paramsKeeper.Subspace(subscriptionmoduletypes.ModuleName)
 	paramsKeeper.Subspace(pairingmoduletypes.ModuleName)
 	paramsKeeper.Subspace(conflictmoduletypes.ModuleName)
