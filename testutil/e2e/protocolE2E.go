@@ -128,6 +128,7 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 	lt.logs[logName] = new(bytes.Buffer)
 
 	cmd := exec.CommandContext(ctx, "", "")
+	utils.LavaFormatInfo("Executing Command: " + command)
 	cmd.Args = strings.Fields(command)
 	cmd.Path = cmd.Args[0]
 	cmd.Stdout = lt.logs[logName]
@@ -361,9 +362,10 @@ func (lt *lavaTest) checkJSONRPCConsumer(rpcURL string, timeout time.Duration, m
 		if err != nil {
 			continue
 		}
-		_, err = client.BlockNumber(context.Background())
+		res, err := client.BlockNumber(context.Background())
 		if err == nil {
 			utils.LavaFormatInfo(message)
+			utils.LavaFormatInfo("Validated proxy is alive got response", utils.Attribute{Key: "res", Value: res})
 			return
 		}
 		time.Sleep(time.Second)
