@@ -261,6 +261,9 @@ func TestUpdateEpoch(t *testing.T) {
 			_, _ = rws.SendNewProof(context.Background(), proof, epoch, acc.String(), "apiInterface")
 		}
 
+		// Make sure that the rewards are flushed to DB
+		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+
 		rws.UpdateEpoch(1)
 
 		// 2 payments for epoch 1
