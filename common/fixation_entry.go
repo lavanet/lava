@@ -1038,11 +1038,13 @@ func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
 		if err != nil {
 			utils.LavaFormatPanic("fixation export: unsanitized index", err)
 		}
-
+		entries.Index = string(safeIndex)
 		entries.IsLive = fs.isEntryIndexLive(ctx, safeIndex)
 		blocks := fs.GetAllEntryVersions(ctx, index)
 		for _, block := range blocks {
-			entries.Entries = append(entries.Entries, fs.getEntry(ctx, safeIndex, block))
+			entry := fs.getEntry(ctx, safeIndex, block)
+			entry.Index = types.DesanitizeIndex(entry.SafeIndex())
+			entries.Entries = append(entries.Entries, entry)
 		}
 		gs.Entries = append(gs.Entries, entries)
 	}
