@@ -4,6 +4,7 @@ package lavanet.lava.dualstaking;
 import "gogoproto/gogo.proto";
 import "lavanet/lava/dualstaking/params.proto";
 import "lavanet/lava/common/fixationEntry.proto";
+import "lavanet/lava/dualstaking/delegator_reward.proto";
 
 option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
@@ -13,4 +14,5 @@ message GenesisState {
   lavanet.lava.common.GenesisState delegationsFS = 2 [(gogoproto.nullable) = false];
   lavanet.lava.common.GenesisState delegatorsFS = 3 [(gogoproto.nullable) = false];
   repeated lavanet.lava.common.RawMessage unbondingsTS = 4 [(gogoproto.nullable) = false];
+  repeated DelegatorReward delegator_reward_list = 5 [(gogoproto.nullable) = false];
 }

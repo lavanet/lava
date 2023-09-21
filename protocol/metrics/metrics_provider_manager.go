@@ -3,6 +3,7 @@ package metrics
 import (
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -16,14 +17,15 @@ const (
 )
 
 type ProviderMetricsManager struct {
-	providerMetrics           map[string]*ProviderMetrics
-	lock                      sync.RWMutex
-	totalCUServicedMetric     *prometheus.CounterVec
-	totalCUPaidMetric         *prometheus.CounterVec
-	totalRelaysServicedMetric *prometheus.CounterVec
-	totalErroredMetric        *prometheus.CounterVec
-	consumerQoSMetric         *prometheus.GaugeVec
-	blockMetric               *prometheus.GaugeVec
+	providerMetrics             map[string]*ProviderMetrics
+	lock                        sync.RWMutex
+	totalCUServicedMetric       *prometheus.CounterVec
+	totalCUPaidMetric           *prometheus.CounterVec
+	totalRelaysServicedMetric   *prometheus.CounterVec
+	totalErroredMetric          *prometheus.CounterVec
+	consumerQoSMetric           *prometheus.GaugeVec
+	blockMetric                 *prometheus.GaugeVec
+	lastServicedBlockTimeMetric *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -64,6 +66,12 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "The total number of CUs paid to the provider over time.",
 	}, []string{"spec"})
 
+	// Create a new GaugeVec metric to represent the last block update time.
+	lastServicedBlockTimeMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_last_serviced_block_update_time_seconds",
+		Help: "Timestamp of the last block update received from the serviced node.",
+	}, []string{"spec"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -71,19 +79,21 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(totalErroredMetric)
 	prometheus.MustRegister(consumerQoSMetric)
 	prometheus.MustRegister(blockMetric)
+	prometheus.MustRegister(lastServicedBlockTimeMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
 		http.ListenAndServe(networkAddress, nil)
 	}()
 	return &ProviderMetricsManager{
-		providerMetrics:           map[string]*ProviderMetrics{},
-		totalCUServicedMetric:     totalCUServicedMetric,
-		totalCUPaidMetric:         totalCUPaidMetric,
-		totalRelaysServicedMetric: totalRelaysServicedMetric,
-		totalErroredMetric:        totalErroredMetric,
-		consumerQoSMetric:         consumerQoSMetric,
-		blockMetric:               blockMetric,
+		providerMetrics:             map[string]*ProviderMetrics{},
+		totalCUServicedMetric:       totalCUServicedMetric,
+		totalCUPaidMetric:           totalCUPaidMetric,
+		totalRelaysServicedMetric:   totalRelaysServicedMetric,
+		totalErroredMetric:          totalErroredMetric,
+		consumerQoSMetric:           consumerQoSMetric,
+		blockMetric:                 blockMetric,
+		lastServicedBlockTimeMetric: lastServicedBlockTimeMetric,
 	}
 }
 
@@ -119,6 +129,7 @@ func (pme *ProviderMetricsManager) SetLatestBlock(specID string, block uint64) {
 	pme.lock.Lock()
 	defer pme.lock.Unlock()
 	pme.blockMetric.WithLabelValues(specID).Set(float64(block))
+	pme.lastServicedBlockTimeMetric.WithLabelValues(specID).Set(float64(time.Now().Unix()))
 }
 
 func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
