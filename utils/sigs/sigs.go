@@ -166,7 +166,7 @@ func NewZeroReader(seed int64) *ZeroReader {
 func (z ZeroReader) Read(p []byte) (n int, err error) {
 	// fool the non determinism mechanism of crypto
 	if len(p) == 1 {
-		p[0] = byte(z.Seed)
+		p[0] = z.Seed
 		return len(p), nil
 	}
 	return z.rand.Read(p)
