@@ -144,8 +144,9 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	seed := time.Now().Unix()
+	// seed = 1695297312 // uncomment this to debug a specific scenario
 	Randomizer = sigs.NewZeroReader(seed)
-	fmt.Println("Testing seed ", seed)
+	fmt.Println("Reproduce With testing seed: ", seed)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
