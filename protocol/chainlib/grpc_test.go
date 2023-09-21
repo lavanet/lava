@@ -93,9 +93,8 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API2", connectionType_test)
 	assert.Error(t, err)
-	errorData, _, found := strings.Cut(err.Error(), " --")
+	found := strings.Contains(err.Error(), "api not supported")
 	require.True(t, found)
-	assert.Equal(t, "api not supported", errorData)
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &GrpcChainParser{
@@ -105,9 +104,8 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
-	errorData, _, found = strings.Cut(err.Error(), " --")
+	found = strings.Contains(err.Error(), "api is disabled")
 	require.True(t, found)
-	assert.Equal(t, "api is disabled", errorData)
 }
 
 func TestGRPCParseMessage(t *testing.T) {
