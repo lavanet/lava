@@ -55,7 +55,7 @@ const (
 	BLOCK_HEADER_LEN = 32
 )
 
-var Randomizer = &sigs.ZeroReader{}
+var Randomizer *sigs.ZeroReader
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
@@ -143,8 +143,9 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
-	Randomizer.Seed = 1695216058 // time.Now().Unix()
-	fmt.Println("Testing seed ", Randomizer.Seed)
+	seed := time.Now().Unix()
+	Randomizer = sigs.NewZeroReader(seed)
+	fmt.Println("Testing seed ", seed)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
