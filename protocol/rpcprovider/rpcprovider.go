@@ -436,6 +436,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			}
 
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
+			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ProviderVersion)
 			rand.Seed(time.Now().UnixNano())
 			var cache *performance.Cache = nil
 			cacheAddr := viper.GetString(performance.CacheFlagName)
