@@ -11,6 +11,7 @@ import {
   ProbeRequest,
   ProbeReply,
   ReportedProvider,
+  QualityOfServiceReport,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import {
   Relayer as RelayerService,
@@ -21,6 +22,7 @@ import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
+import { jsontag } from "../grpc_web_services/gogoproto/gogo_pb";
 
 export interface RelayerOptions {
   privKey: string;
@@ -267,6 +269,8 @@ export class Relayer {
         output += "\\r";
       } else if (byte === 0x5c) {
         output += "\\\\";
+      } else if (byte === 0x22) {
+        output += '\\"';
       } else if (byte >= 0x20 && byte <= 0x7e) {
         output += String.fromCharCode(byte);
       } else {
@@ -361,66 +365,93 @@ export class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-    let replaceWith = "";
-    const magic = "_REPLACEMEMAGIC_";
-    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should ocmpile this code into wasm and import it here because it's ugly
-    const jsonMessage = JSON.stringify(request.toObject(), (key, value) => {
-      if (key == "content_hash") {
-        const dataBytes = request.getContentHash();
-        const dataUint8Array =
-          dataBytes instanceof Uint8Array
-            ? dataBytes
-            : this.encodeUtf8(dataBytes);
-
-        let stringByte = this.byteArrayToString(dataUint8Array);
-
-        if (stringByte.endsWith(",")) {
-          stringByte += ",";
-        }
-        return stringByte;
-      }
-      if (key == "unresponsive_providers" && typeof value === "object") {
-        if (Object.keys(value).length === 0) {
-          return undefined; // Omit empty unresponsive providers
-        }
-        const retSt: Array<string> = [];
-        for (const objprop of Object.values(value)) {
-          if (objprop instanceof Object) {
-            const st: Array<string> = [];
-            for (const [key, valueInner] of Object.entries(objprop)) {
-              if (
-                valueInner !== null &&
-                valueInner !== 0 &&
-                valueInner !== ""
-              ) {
-                if (typeof valueInner === "number") {
-                  st.push(key + ":" + valueInner.toString());
-                } else {
-                  st.push(key + ':"' + valueInner.toString() + '"');
-                }
+    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should cםmpile this code into wasm and import it here because it's ugly
+    let serializedRequest = "";
+    for (const [key, valueInner] of Object.entries(request.toObject())) {
+      serializedRequest += ((
+        key: string,
+        value:
+          | string
+          | number
+          | Uint8Array
+          | QualityOfServiceReport.AsObject
+          | ReportedProvider.AsObject[]
+          | Badge.AsObject
+      ) => {
+        function handleNumStr(key: string, value: number | string): string {
+          switch (typeof value) {
+            case "string":
+              if (value == "") {
+                return "";
               }
-            }
-            retSt.push(st.join(" "));
+              return key + ':"' + value + '" ';
+            case "number":
+              if (value == 0) {
+                return "";
+              }
+              return key + ":" + value + " ";
           }
         }
-        replaceWith = "<" + retSt.join(" > " + key + ":<") + " >";
-        return magic;
-      }
-
-      if (value !== null && value !== 0 && value !== "") return value;
-    });
-    const messageReplaced = jsonMessage
-      .replace(RegExp(magic, "g"), replaceWith)
-      .replace(/\\\\/g, "\\")
-      .replace(/,"/g, ' "')
-      .replace(/, "/g, ',"')
-      .replace(/"(\w+)"\s*:/g, "$1:")
-      .replace(/>"/g, ">")
-      .replace(/"</g, "<")
-      .slice(1, -1);
-
-    const encodedMessage = enc.encode(messageReplaced + " ");
-
+        if (value == undefined) {
+          return "";
+        }
+        switch (typeof value) {
+          case "string":
+          case "number":
+            return handleNumStr(key, value);
+          case "object":
+            let valueInnerStr = "";
+            if (value instanceof Uint8Array) {
+              valueInnerStr = this.byteArrayToString(value);
+              return key + ':"' + valueInnerStr + '" ';
+            }
+            if (value instanceof Array) {
+              let retst = "";
+              for (const arrayVal of Object.values(value)) {
+                let arrayValstr = "";
+                const entries = Object.entries(arrayVal);
+                for (const [objkey, objVal] of entries) {
+                  const objValStr = handleNumStr(objkey, objVal);
+                  if (objValStr != "") {
+                    arrayValstr += objValStr;
+                  }
+                }
+                if (arrayValstr != "") {
+                  retst += key + ":<" + arrayValstr + "> ";
+                }
+              }
+              return retst;
+            }
+            const entries = Object.entries(value);
+            if (entries.length == 0) {
+              return "";
+            }
+            let retst = "";
+            for (const [objkey, objVal] of entries) {
+              let objValStr = "";
+              switch (typeof objVal) {
+                case "string":
+                case "number":
+                  objValStr = handleNumStr(objkey, objVal);
+                  break;
+                case "object":
+                  objValStr = objkey + ":" + this.byteArrayToString(objVal);
+                  break;
+              }
+              if (objValStr != "") {
+                retst += objValStr;
+              }
+            }
+            if (retst != "") {
+              return key + ":<" + retst + "> ";
+            }
+            return "";
+        }
+      })(key, valueInner);
+    }
+    // console.log("message: " + serializedRequest);
+    const encodedMessage = enc.encode(serializedRequest);
+    // console.log("encodedMessage: " + encodedMessage);
     const hash = sha256(encodedMessage);
 
     return hash;

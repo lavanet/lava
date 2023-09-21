@@ -38,7 +38,7 @@ for file in files_to_fix:
 
     for n in newNames.keys():
         data = data.replace(n, newNames[n])
-
+    data = data.replace("content_hash: msg.getContentHash_asB64(),","content_hash: msg.getContentHash_asU8(),") # we need it as uint8 not as string when serializing
     with open(file, "w+") as fwrite:
         fwrite.write(data)
 

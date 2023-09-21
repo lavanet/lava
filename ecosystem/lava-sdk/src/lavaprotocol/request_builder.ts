@@ -15,8 +15,9 @@ import {
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
-import { Decimal } from "@cosmjs/math";
 import { Logger } from "../logger/logger";
+
+const DecPrecision = 18;
 
 export interface SendRelayData {
   connectionType: string;
@@ -91,38 +92,64 @@ function constructRelaySession(
   epoch: number,
   reportedProviders: Array<ReportedProvider>
 ): RelaySession {
-  const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
   let newQualityOfServiceReport: QualityOfServiceReport | undefined = undefined;
-  if (lastQos != undefined) {
-    newQualityOfServiceReport = new QualityOfServiceReport();
-    // TODO: needs to serialize the QoS report value like a serialized Dec
-    newQualityOfServiceReport.setLatency(lastQos.getLatency().toString());
-    newQualityOfServiceReport.setAvailability(
-      lastQos.getAvailability().toString()
-    );
-    newQualityOfServiceReport.setSync(lastQos.getSync().toString());
+  let newQualityOfServiceReportExcellence: QualityOfServiceReport | undefined =
+    undefined;
+  const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
+
+  function padWithZeros(whole: string, fractions: string): string {
+    if (fractions.length > DecPrecision) {
+      fractions = fractions.slice(0, 18);
+    }
+    const toPad = DecPrecision - fractions.length;
+    return (whole + fractions + "0".repeat(toPad)).replace(/^0+/, "");
+  }
+
+  function serializeToDec(input: string): string {
+    const splitted = input.split(".");
+    if (splitted.length > 2 || splitted.length < 1) {
+      throw new Error("invalid decimal input " + input);
+    }
+    const wholenumber = splitted[0];
+    let fraction = "";
+    if (splitted.length > 1) {
+      fraction = splitted[1];
+    }
+    return padWithZeros(wholenumber, fraction);
+  }
+  try {
+    if (lastQos != undefined) {
+      newQualityOfServiceReport = new QualityOfServiceReport();
+      // TODO: needs to serialize the QoS report value like a serialized Dec
+      newQualityOfServiceReport.setLatency(
+        serializeToDec(lastQos.getLatency())
+      );
+      newQualityOfServiceReport.setAvailability(
+        serializeToDec(lastQos.getAvailability())
+      );
+      newQualityOfServiceReport.setSync(serializeToDec(lastQos.getSync()));
+    }
+  } catch (err) {
+    Logger.warn("failed serializing QoS ", err);
+    newQualityOfServiceReport = undefined;
   }
   const lastQosExcellence =
     singleConsumerSession.qoSInfo.lastExcellenceQoSReport;
-
-  let newQualityOfServiceReportExcellence: QualityOfServiceReport | undefined =
-    undefined;
 
   if (lastQosExcellence != undefined) {
     newQualityOfServiceReportExcellence = new QualityOfServiceReport();
 
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReportExcellence.setLatency(
-      lastQosExcellence.getLatency().toString()
+      serializeToDec(lastQosExcellence.getLatency())
     );
     newQualityOfServiceReportExcellence.setAvailability(
-      lastQosExcellence.getAvailability().toString()
+      serializeToDec(lastQosExcellence.getAvailability())
     );
     newQualityOfServiceReportExcellence.setSync(
-      lastQosExcellence.getSync().toString()
+      serializeToDec(lastQosExcellence.getSync())
     );
   }
-
   const relaySession = new RelaySession();
   relaySession.setSpecId(chainID);
   relaySession.setLavaChainId(lavaChainID);
@@ -132,11 +159,11 @@ function constructRelaySession(
   relaySession.setContentHash(calculateContentHash(relayData));
   relaySession.setEpoch(epoch);
   relaySession.setRelayNum(singleConsumerSession.relayNum);
-  // relaySession.setQosReport(newQualityOfServiceReport); // TODO: this is failing due to unmarshaling
+  relaySession.setQosReport(newQualityOfServiceReport); // TODO: this is failing due to unmarshaling
   relaySession.setCuSum(
     singleConsumerSession.cuSum + singleConsumerSession.latestRelayCu
   );
-  // relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence); // TODO: this is failing due to unmarshaling
+  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence); // TODO: this is failing due to unmarshaling
 
   relaySession.setUnresponsiveProvidersList(reportedProviders);
   return relaySession;
