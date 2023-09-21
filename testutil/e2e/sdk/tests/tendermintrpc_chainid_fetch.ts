@@ -8,6 +8,7 @@ async function main() {
         lavaChainId:"lava",
         pairingListConfig:process.env.PAIRING_LIST, 
         allowInsecureTransport: true,
+        logLevel: "debug",
     }).catch(e => {
         throw new Error(" ERR [tendermintrpc_chainid_fetch] failed setting lava-sdk tendermint test");
     });

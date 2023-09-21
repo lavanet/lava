@@ -152,6 +152,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+      
+      # install ts-node
+      - name: Install ts-node
+        run: npm install -g ts-node
 
         # Install dependencies and build
       - name: Install dependencies and build
@@ -166,6 +170,11 @@ jobs:
           cd ecosystem/lavajs
           npm install
           npm run e2e-setup
+
+      - name: setup test environment
+        run: | 
+          cd testutil/e2e/sdk/tests
+          npm install --save-dev @types/node 
 
       ######################################################
       ### Run Lava E2E Tests 

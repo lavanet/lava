@@ -48,7 +48,11 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && strings.HasSuffix(path, ".js") {
+		if info.IsDir() && info.Name() == "node_modules" {
+			// Skip the "node_modules" directory
+			return filepath.SkipDir
+		}
+		if !info.IsDir() && strings.HasSuffix(path, ".ts") {
 			testFiles = append(testFiles, path)
 		}
 		return nil
@@ -62,7 +66,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 	// Loop through each test file and execute it
 	for _, testFile := range testFiles {
 		// Prepare command for running test
-		cmd := exec.Command("node", testFile)
+		cmd := exec.Command("ts-node", testFile)
 
 		// Get os environment
 		cmd.Env = os.Environ()
@@ -90,10 +94,40 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		if err != nil {
 			utils.LavaFormatError("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
 			testFilesThatFailed = append(testFilesThatFailed, testFile)
+		} else {
+			utils.LavaFormatInfo(logs.String())
 		}
 	}
 	if len(testFilesThatFailed) > 0 {
 		panic(fmt.Sprintf("Test Files failed: %s\n", testFilesThatFailed))
+	}
+}
+
+func CheckTsNode() {
+	// Attempt to run the "ts-node" command to check if it exists
+	cmd := exec.Command("ts-node", "--version")
+
+	// Run the command and capture standard output and standard error
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		// An error occurred, indicating that "ts-node" may not exist
+		fmt.Println("ts-node does not exist or encountered an error:")
+		fmt.Println(err)
+	} else {
+		// The command ran successfully, indicating that "ts-node" exists
+		fmt.Println("ts-node exists. Version information:")
+		fmt.Println(string(output))
+	}
+
+	// You can check the exit status as well
+	exitStatus := cmd.ProcessState.ExitCode()
+
+	if exitStatus == 0 {
+		fmt.Println("Found ts-node locally")
+	} else {
+		fmt.Printf("Exit status: %d (Failure)\n", exitStatus)
+		panic("Didn't find ts-node in the environment")
 	}
 }
 
