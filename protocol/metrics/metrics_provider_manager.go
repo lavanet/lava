@@ -132,16 +132,6 @@ func (pme *ProviderMetricsManager) SetLatestBlock(specID string, block uint64) {
 	pme.lastServicedBlockTimeMetric.WithLabelValues(specID).Set(float64(time.Now().Unix()))
 }
 
-func (pme *ProviderMetricsManager) SetServicedBlockTime(specID string) {
-	if pme == nil {
-		return
-	}
-	pme.lock.Lock()
-	defer pme.lock.Unlock()
-
-	pme.lastServicedBlockTimeMetric.WithLabelValues(specID).Set(float64(time.Now().Unix()))
-}
-
 func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
 	if pme == nil {
 		return
