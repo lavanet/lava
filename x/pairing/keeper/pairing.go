@@ -157,7 +157,6 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return filteredEntries, strictestPolicy.EpochCuLimit, project.Index, nil
 	}
 
-	fmt.Println("epochhash", epochHash, project.Index, chainID)
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
 	prevGroupSlot := pairingscores.NewPairingSlotGroup(pairingscores.NewPairingSlot(-1)) // init dummy slot to compare to
 	for idx, group := range slotGroups {
