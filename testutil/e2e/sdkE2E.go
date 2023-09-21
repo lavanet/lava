@@ -76,6 +76,7 @@ func exportUserPrivateKey(lavaPath, user string) string {
 }
 
 func runSDKE2E(timeout time.Duration) {
+	sdk.CheckTsNode()
 	os.RemoveAll(sdkLogsFolder)
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
