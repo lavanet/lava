@@ -92,56 +92,6 @@ type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
-}
-
-func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
-	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
-func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
-	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
-func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
-	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
-func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
-	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	seed := time.Now().Unix()
 	// seed = 1695297312 // uncomment this to debug a specific scenario
@@ -306,6 +256,56 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ctx = ctx.WithBlockTime(time.Now())
 
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
+}
+
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
+	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
+	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	return
+}
+
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
+	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
+	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
+	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
 }
 
 func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
