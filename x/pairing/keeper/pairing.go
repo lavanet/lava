@@ -308,7 +308,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 		return false, allowedCU, 0, "", err
 	}
 	if epoch != reqEpoch {
-		return false, allowedCU, 0, "", utils.LavaFormatError("requested block is not an epoch start", nil)
+		return false, allowedCU, 0, "", utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
 	}
 
 	validAddresses, allowedCU, projectID, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)

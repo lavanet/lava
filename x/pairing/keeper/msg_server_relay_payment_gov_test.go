@@ -443,7 +443,8 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			ts.AdvanceBlocks(epochTests[ti].blockNum)
 
 			paymentEpoch := startBlock + tt.paymentEpoch
-			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, paymentEpoch, 0)
+
+			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, ts.EpochStart(paymentEpoch), 0)
 			// Sign and send the payment requests
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
