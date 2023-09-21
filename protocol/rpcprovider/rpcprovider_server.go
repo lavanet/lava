@@ -382,7 +382,8 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		} else if request.RelaySession.Epoch == 0 {
 			errorMessage = "user reported lava block 0, either it's test rpcprovider or a consumer that has no node access"
 		}
-		return nil, nil, utils.LavaFormatWarning(errorMessage, lavasession.EpochMismatchError,
+		return nil, nil, utils.LavaFormatInfo(errorMessage,
+			utils.Attribute{Key: "Info Type", Value: lavasession.EpochMismatchError},
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
 			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},

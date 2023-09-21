@@ -261,7 +261,6 @@ export class ConsumerSessionManager {
           continue;
         }
 
-        const reportedProviders = this.getReportedProviders(sessionEpoch);
         const consumerSessionInstance =
           consumerSessionsWithProvider.getConsumerSessionInstanceFromEndpoint(
             endpointConn.endpoint,

@@ -365,7 +365,7 @@ export class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should cםmpile this code into wasm and import it here because it's ugly
+    // TODO: we serialize the message here the same way gogo proto serializes there's no straightforward implementation available, but we should compile this code into wasm and import it here because it's ugly
     let serializedRequest = "";
     for (const [key, valueInner] of Object.entries(request.toObject())) {
       serializedRequest += ((
