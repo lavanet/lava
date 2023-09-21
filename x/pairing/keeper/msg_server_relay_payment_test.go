@@ -64,7 +64,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 
 			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
 			ts.verifyRelayPayment(relaySession, tt.valid)
@@ -104,7 +104,7 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -287,7 +287,7 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 		Relays:  slices.Slice(relaySession, relaySession),
 	}
 
-	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false)
+	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
 }
 
 func TestRelayPaymentDataModification(t *testing.T) {
@@ -402,7 +402,7 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -450,7 +450,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -473,7 +473,7 @@ func TestEpochPaymentDeletion(t *testing.T) {
 		Relays:  slices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true)
+	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
 
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
@@ -536,7 +536,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 		Relays:  slices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(relayPaymentMessage, dev1Acct.Addr, providerAcct.Addr, true, true)
+	ts.payAndVerifyBalance(relayPaymentMessage, dev1Acct.Addr, providerAcct.Addr, true, true, 100)
 
 	sub, err := ts.QuerySubscriptionCurrent(client1Addr)
 	require.Nil(t, err)
@@ -632,7 +632,7 @@ func TestBadgeValidation(t *testing.T) {
 				validConsumer = false
 			}
 
-			ts.payAndVerifyBalance(relayPaymentMessage, tt.badgeSigner.Addr, providerAcct.Addr, validConsumer, tt.valid)
+			ts.payAndVerifyBalance(relayPaymentMessage, tt.badgeSigner.Addr, providerAcct.Addr, validConsumer, tt.valid, 100)
 		})
 	}
 }
@@ -680,7 +680,7 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 		Relays:  relays,
 	}
 
-	ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, true)
+	ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, true, 100)
 }
 
 // Test:
@@ -739,7 +739,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 
 			if tt.valid {
 				usedCuSoFar += tt.cuSum
@@ -820,7 +820,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 				Creator: providerAddr,
 				Relays:  relays,
 			}
-			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 
 			// verify that the badgeUsedCu entry was deleted after it expired (and has the
 			// right value of used cu before expiring)
@@ -876,7 +876,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 			Creator: providers[i].Addr.String(),
 			Relays:  slices.Slice(relaySession),
 		}
-		ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providers[i].Addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providers[i].Addr, true, true, 100)
 
 		badgeUsedCuMapKey := types.BadgeUsedCuKey(badge.ProjectSig, providers[i].Addr.String())
 		badgeUsedCuMapEntry, found := ts.Keepers.Pairing.GetBadgeUsedCu(ts.Ctx, badgeUsedCuMapKey)

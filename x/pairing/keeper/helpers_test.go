@@ -112,12 +112,15 @@ func newStubRelayRequest(relaySession *pairingtypes.RelaySession) *pairingtypes.
 
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
+// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
 	clientAddr sdk.AccAddress,
 	providerAddr sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
+	providerRewardPerc uint64,
 ) {
 	// get consumer's project and subscription before payment
 	balance := ts.GetBalance(providerAddr)
@@ -169,13 +172,18 @@ func (ts *tester) payAndVerifyBalance(
 				TruncateInt().
 				Uint64()
 		}
+
 		totalPaid += cuUsed
 	}
 
+	providerReward := (totalPaid * providerRewardPerc) / 100
+
 	// verify provider's balance
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	want := mint.MulInt64(int64(totalPaid))
-	require.Equal(ts.T, balance+want.TruncateInt64(), ts.GetBalance(providerAddr))
+	want := mint.MulInt64(int64(providerReward))
+	expectedReward := balance + want.TruncateInt64()
+	actualReward := ts.GetBalance(providerAddr)
+	require.Equal(ts.T, expectedReward, actualReward)
 
 	// verify each project balance
 	// (project used-cu should increase and respective subscription cu-left should decrease)

@@ -484,6 +484,11 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		replyMsg = *replyMessage
+
+		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
 	}
 
 	retData, err := json.Marshal(replyMsg)

@@ -84,8 +84,15 @@ export class StateChainQuery {
 
       this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
 
+      // Get lava pairing
+      const lavaPairing = this.getPairing("LAV1");
+
       // Reset pairing
-      this.pairing = new Map<string, PairingResponse>(); // TODO: this is supposed to be stored in pairing updater. the state query is supposed to only query info not save it internally this is why we have updaters
+      this.pairing = new Map<string, PairingResponse>();
+
+      // Save lava pairing
+      // as if we do not have lava in chainID it can fail updating list
+      this.pairing.set("LAV1", lavaPairing);
 
       // Iterate over chain and construct pairing
       for (const chainID of this.chainIDs) {
@@ -213,6 +220,16 @@ export class StateChainQuery {
       // Parse response
       const jsonResponse = JSON.parse(decodedResponse);
 
+      // If log is not empty
+      // return an error
+      if (jsonResponse.result.response.log != "") {
+        Logger.error(
+          "Failed fetching pairing list for: ",
+          request.getChainid()
+        );
+        throw new Error(jsonResponse.result.response.log);
+      }
+
       const byteArrayResponse = base64ToUint8Array(
         jsonResponse.result.response.value
       );
@@ -231,7 +248,7 @@ export class StateChainQuery {
       return decodedResponse2;
     } catch (err) {
       // Console log the error
-      console.error(err);
+      Logger.error(err);
 
       // Return empty object
       // We do not want to return error because it will stop the state tracker for other chains
