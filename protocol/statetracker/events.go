@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"time"
 
@@ -27,9 +28,10 @@ const (
 	FlagTimeout   = "timeout"
 	FlagValue     = "value"
 	FlagEventName = "event"
+	FlagBreak     = "break"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string, shouldBreak bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -48,8 +50,11 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 
 	printEvent := func(event types.Event) string {
 		st := event.Type + ": "
+		sort.Slice(event.Attributes, func(i, j int) bool {
+			return event.Attributes[i].Key < event.Attributes[j].Key
+		})
 		for _, attr := range event.Attributes {
-			st += fmt.Sprintf("- %s = %s; ", attr.Key, attr.Value)
+			st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
 		}
 		return st
 	}
@@ -64,6 +69,15 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 			utils.LavaFormatError("invalid blockResults status", err)
 			return
 		}
+		for _, event := range blockResults.BeginBlockEvents {
+			if eventName == "" || event.Type == eventName {
+				for _, attribute := range event.Attributes {
+					if value == "" || attribute.Value == value {
+						utils.LavaFormatInfo("Found BBlock event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
+					}
+				}
+			}
+		}
 		transactionResults := blockResults.TxsResults
 		for _, tx := range transactionResults {
 			events := tx.Events
@@ -71,7 +85,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 				if eventName == "" || event.Type == eventName {
 					for _, attribute := range event.Attributes {
 						if value == "" || attribute.Value == value {
-							utils.LavaFormatInfo("Found a matching event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
+							utils.LavaFormatInfo("Found Tx event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
 						}
 					}
 				}
@@ -83,13 +97,29 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		if fromBlock <= 0 {
 			fromBlock = latestHeight - blocks
 		}
-		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: latestHeight}, utils.Attribute{Key: "to", Value: latestHeight - blocks})
+		ticker := time.NewTicker(5 * time.Second)
+		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: fromBlock}, utils.Attribute{Key: "to", Value: fromBlock + blocks})
 		for block := fromBlock; block < fromBlock+blocks; block++ {
 			readEventsFromBlock(block, "")
+			// if the user aborted stop
+			select {
+			case <-signalChan:
+				return nil
+			case <-ticker.C:
+				fmt.Printf("Current Block: %d\r", block)
+			default:
+			}
 		}
 	}
-	utils.LavaFormatInfo("Reading blocks Forward")
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
+	latestBlock, err := lavaChainFetcher.FetchLatestBlockNum(ctx)
+	if err != nil {
+		return utils.LavaFormatError("failed reading latest block", err)
+	}
+	if shouldBreak {
+		return nil
+	}
+	utils.LavaFormatInfo("Reading blocks Forward", utils.Attribute{Key: "current", Value: latestBlock})
 	blocksToSaveChainTracker := uint64(10) // to avoid reading the same thing twice
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		BlocksToSave:      blocksToSaveChainTracker,
@@ -195,6 +225,11 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			if err != nil {
 				utils.LavaFormatFatal("failed to fetch timeout flag", err)
 			}
+
+			shouldBreak, err := cmd.Flags().GetBool(FlagBreak)
+			if err != nil {
+				utils.LavaFormatFatal("failed to fetch break flag", err)
+			}
 			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blocks})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
@@ -206,13 +241,14 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			rand.Seed(time.Now().UnixNano())
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value)
+			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
 	cmdEvents.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
 	cmdEvents.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
 	cmdEvents.Flags().String(FlagValue, "", "the value to look for inside all event attributes")
+	cmdEvents.Flags().Bool(FlagBreak, false, "if true will break after reading the specified amount of blocks instead of listening forward")
 	cmdEvents.Flags().String(FlagEventName, "", "event name/type to look for")
 	cmdEvents.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdEvents.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")

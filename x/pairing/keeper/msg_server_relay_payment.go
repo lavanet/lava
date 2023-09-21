@@ -2,10 +2,11 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -18,12 +19,6 @@ type BadgeData struct {
 	Badge       types.Badge
 	BadgeSigner sdk.AccAddress
 }
-
-const (
-	maxComplaintsPerEpoch                     = 3
-	collectPaymentsFromNumberOfPreviousEpochs = 2
-	providerPaymentMultiplier                 = 2 // multiplying the amount of payments to protect provider from unstaking
-)
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -205,7 +200,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		reward := k.Keeper.MintCoinsPerCU(ctx).MulInt64(int64(relay.CuSum))
+		coinsPerCu := k.Keeper.MintCoinsPerCU(ctx)
+		reward := coinsPerCu.MulInt64(int64(relay.CuSum))
 		if reward.IsZero() {
 			continue
 		}
@@ -215,7 +211,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 
 		if relay.QosReport != nil {
 			QoS, err := relay.QosReport.ComputeQoS()
@@ -256,13 +252,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.Attribute{Key: "reward", Value: rewardCoins},
 				)
 			}
-			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, rewardCoins)
+
+			err = k.distributeRewards(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), reward.TruncateInt())
 			if err != nil {
-				// panic:ok: reward transfer should never fail
-				utils.LavaFormatPanic("critical: failed to send reward to provider", err,
-					utils.Attribute{Key: "provider", Value: providerAddr},
-					utils.Attribute{Key: "reward", Value: rewardCoins},
-				)
+				return nil, utils.LavaFormatError("could not distribute rewards for provider and delegators", err)
 			}
 		}
 
@@ -278,7 +271,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, clientAddr)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, projectID)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
@@ -287,28 +280,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveData []byte, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, clientAddr sdk.AccAddress) error {
-	var unresponsiveProviders []string
-
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, projectID string) error {
 	// check that unresponsiveData exists
-	if len(unresponsiveData) == 0 {
+	if len(unresponsiveProviders) == 0 {
 		return nil
 	}
 
 	// check that servicersToPair is bigger than 1
 	if servicersToPair <= 1 {
-		servicersToPair = 2
-	}
-
-	// unmarshal the byte array unresponsiveData to get a list of unresponsive providers Bech32 addresses
-	err := json.Unmarshal(unresponsiveData, &unresponsiveProviders)
-	if err != nil {
-		return utils.LavaFormatError("unable to unmarshal unresponsive providers", err, []utils.Attribute{{Key: "UnresponsiveProviders", Value: unresponsiveData}, {Key: "dataLength", Value: len(unresponsiveData)}}...)
-	}
-
-	// check there are unresponsive providers
-	if len(unresponsiveProviders) == 0 {
-		// nothing to do.
 		return nil
 	}
 
@@ -318,7 +297,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	// iterate over the unresponsive providers list and update their complainers_total_cu
 	for _, unresponsiveProvider := range unresponsiveProviders {
 		// get provider address
-		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider)
+		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider.GetAddress())
 		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
 			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
 			continue
@@ -355,7 +334,8 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 
 		// add complainer's used CU to providerPaymentStorage
 		providerPaymentStorage.ComplainersTotalCu += complainerCuToAdd
-
+		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
+		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"provider": unresponsiveProvider.GetAddress(), "timestamp": timestamp.Format(time.DateTime), "disconnections": strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10), "errors": strconv.FormatUint(unresponsiveProvider.GetErrors(), 10), "project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
 		// set the final provider payment storage state including the complaints
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
 	}
@@ -391,4 +371,31 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 		to[key+"."+sessionIDStr] = value
 	}
 	return to
+}
+
+// distributeRewards is the main function for reward distribution for providers and delegators
+func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) error {
+	providerReward, err := k.dualStakingKeeper.CalcProviderRewardWithDelegations(ctx, providerAddr, chainID, block, totalReward)
+	if err != nil {
+		return utils.LavaFormatError(types.ProviderRewardError.Error(), err,
+			utils.Attribute{Key: "provider", Value: providerAddr.String()},
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "block", Value: block},
+			utils.Attribute{Key: "totalReward", Value: totalReward},
+		)
+	}
+
+	if providerReward.GT(math.ZeroInt()) {
+		providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
+		if err != nil {
+			// panic:ok: reward transfer should never fail
+			utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+				utils.Attribute{Key: "provider", Value: providerAddr},
+				utils.Attribute{Key: "reward", Value: providerRewardCoins},
+			)
+		}
+	}
+
+	return nil
 }

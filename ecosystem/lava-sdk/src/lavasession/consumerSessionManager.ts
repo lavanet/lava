@@ -34,6 +34,8 @@ import { ProviderEpochTracker } from "./providerEpochTracker";
 import { APIInterfaceTendermintRPC } from "../chainlib/base_chain_parser";
 export const ALLOWED_PROBE_RETRIES = 3;
 export const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
+import { ReportedProviders } from "./reported_providers";
+import { ReportedProvider } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -49,7 +51,7 @@ export class ConsumerSessionManager {
 
   public validAddresses: string[] = [];
   private addonAddresses: Map<string, string[]> = new Map<string, string[]>();
-  private addedToPurgeAndReport: Set<string> = new Set();
+  private reportedProviders: ReportedProviders = new ReportedProviders();
 
   private pairingPurge: Map<string, ConsumerSessionsWithProvider> = new Map<
     string,
@@ -100,10 +102,6 @@ export class ConsumerSessionManager {
     return this.pairingAddresses.size;
   }
 
-  public getAddedToPurgeAndReport(): Set<string> {
-    return this.addedToPurgeAndReport;
-  }
-
   public async updateAllProviders(
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[]
@@ -150,7 +148,7 @@ export class ConsumerSessionManager {
 
     // reset states
     this.pairingAddresses.clear();
-    this.addedToPurgeAndReport.clear();
+    this.reportedProviders.reset();
     this.numberOfResets = 0;
     this.removeAddonAddress();
     this.pairingPurge = this.pairing;
@@ -249,7 +247,7 @@ export class ConsumerSessionManager {
         if (endpointConn.error) {
           // if all provider endpoints are disabled, block and report provider
           if (endpointConn.error instanceof AllProviderEndpointsDisabledError) {
-            this.blockProvider(providerAddress, true, sessionEpoch);
+            this.blockProvider(providerAddress, true, sessionEpoch, 0, 1); // endpoints are disabled
           } else {
             // if any other error just throw it
             throw endpointConn.error;
@@ -275,7 +273,7 @@ export class ConsumerSessionManager {
           if (error instanceof MaximumNumberOfSessionsExceededError) {
             tempIgnoredProviders.providers.add(providerAddress);
           } else if (error instanceof MaximumNumberOfBlockListedSessionsError) {
-            this.blockProvider(providerAddress, false, sessionEpoch);
+            this.blockProvider(providerAddress, false, sessionEpoch, 0, 0);
           } else {
             throw error;
           }
@@ -325,7 +323,7 @@ export class ConsumerSessionManager {
         sessions.set(providerAddress, {
           session: singleConsumerSession,
           epoch: sessionEpoch,
-          reportedProviders: reportedProviders,
+          reportedProviders: this.reportedProviders.GetReportedProviders(),
         });
 
         if (singleConsumerSession.relayNum > 1) {
@@ -455,7 +453,13 @@ export class ConsumerSessionManager {
     if (blockProvider) {
       const { publicProviderAddress, pairingEpoch } =
         parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch();
-      this.blockProvider(publicProviderAddress, reportProvider, pairingEpoch);
+      this.blockProvider(
+        publicProviderAddress,
+        reportProvider,
+        pairingEpoch,
+        1,
+        0
+      );
     }
   }
 
@@ -500,22 +504,21 @@ export class ConsumerSessionManager {
     }
   }
 
-  public getReportedProviders(epoch: number): string {
+  public getReportedProviders(epoch: number): Array<ReportedProvider> {
     if (epoch != this.currentEpoch) {
-      return "";
+      return new Array<ReportedProvider>();
     }
     // If the addedToPurgeAndReport is empty return empty string
     // because "[]" can not be parsed
-    if (this.addedToPurgeAndReport.size == 0) {
-      return "";
-    }
-    return JSON.stringify(Array.from(this.addedToPurgeAndReport));
+    return this.reportedProviders.GetReportedProviders();
   }
 
   private blockProvider(
     address: string,
     reportProvider: boolean,
-    sessionEpoch: number
+    sessionEpoch: number,
+    errors: number,
+    disconnections: number
   ): Error | undefined {
     if (sessionEpoch != this.currentEpoch) {
       return new EpochMismatchError();
@@ -528,7 +531,7 @@ export class ConsumerSessionManager {
 
     if (reportProvider) {
       Logger.info(`Reporting provider for unresponsiveness: ${address}`);
-      this.addedToPurgeAndReport.add(address);
+      this.reportedProviders.reportedProvider(address, errors, disconnections);
     }
   }
 

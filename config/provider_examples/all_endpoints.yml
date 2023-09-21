@@ -66,37 +66,37 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: rest
-      chain-id: OSMO
+      chain-id: COS3
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: tendermintrpc
-      chain-id: OSMO
+      chain-id: COS3
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: grpc
-      chain-id: OSMO
+      chain-id: COS3
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: rest
-      chain-id: OSMOT
+      chain-id: COS4
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: tendermintrpc
-      chain-id: OSMOT
+      chain-id: COS4
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: grpc
-      chain-id: OSMOT
+      chain-id: COS4
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
@@ -120,19 +120,19 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: rest
-      chain-id: COSHUB
+      chain-id: COS5
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: tendermintrpc
-      chain-id: COSHUB
+      chain-id: COS5
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: grpc
-      chain-id: COSHUB
+      chain-id: COS5
       network-address:
         address: "127.0.0.1:2221"
       node-urls:

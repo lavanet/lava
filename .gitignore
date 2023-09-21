@@ -68,6 +68,7 @@ ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/cosmos
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/gogoproto
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/google
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/tendermint
+ecosystem/lava-sdk/src/codec
 
 
 # Ignore the bin and dist folders and their content
