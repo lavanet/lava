@@ -152,24 +152,31 @@ func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddr
 }
 
 type ZeroReader struct {
-	Seed int64
+	Seed byte
+	rand *rand.Rand
+}
+
+func NewZeroReader(seed int64) *ZeroReader {
+	return &ZeroReader{
+		Seed: 1,
+		rand: rand.New(rand.NewSource(seed)),
+	}
 }
 
 func (z ZeroReader) Read(p []byte) (n int, err error) {
+	// fool the non determinism mechanism of crypto
 	if len(p) == 1 {
-		p[0] = 45
+		p[0] = byte(z.Seed)
 		return len(p), nil
 	}
-
-	randSource := rand.NewSource(z.Seed)
-	for i := range p {
-		p[i] = byte(randSource.Int63() & 0xFF) // Generate a random byte
-	}
-	return len(p), nil
+	return z.rand.Read(p)
 }
 
 func (z *ZeroReader) Inc() {
 	z.Seed++
+	if z.Seed == 0 {
+		z.Seed++
+	}
 }
 
 // GenerateDeterministicFloatingKey creates a new private key with an account address derived from the corresponding public key using a rand source
