@@ -16,7 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	commonlib "github.com/lavanet/lava/protocol/common"
@@ -371,7 +370,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			rpcConsumer := RPCConsumer{}
 			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
-			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
+			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.Seed(time.Now().UnixNano())
 
 			var cache *performance.Cache = nil
