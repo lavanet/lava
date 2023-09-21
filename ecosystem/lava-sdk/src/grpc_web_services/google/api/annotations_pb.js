@@ -1,4 +1,3 @@
-// source: google/api/annotations.proto
 /**
  * @fileoverview
  * @enhanceable
@@ -13,9 +12,7 @@ var goog = jspb;
 var global = Function('return this')();
 
 var google_api_http_pb = require('../../google/api/http_pb.js');
-goog.object.extend(proto, google_api_http_pb);
 var google_protobuf_descriptor_pb = require('google-protobuf/google/protobuf/descriptor_pb.js');
-goog.object.extend(proto, google_protobuf_descriptor_pb);
 goog.exportSymbol('proto.google.api.http', null, global);
 
 /**

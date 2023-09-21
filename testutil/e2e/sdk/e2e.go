@@ -58,6 +58,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		return
 	}
 
+	testFilesThatFailed := []string{}
 	// Loop through each test file and execute it
 	for _, testFile := range testFiles {
 		// Prepare command for running test
@@ -87,8 +88,12 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 		utils.LavaFormatInfo(fmt.Sprintf("Running test: %s", testFile))
 		err := cmd.Run()
 		if err != nil {
-			panic(fmt.Sprintf("Error running test %s: %v\n", testFile, err))
+			utils.LavaFormatError("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
+			testFilesThatFailed = append(testFilesThatFailed, testFile)
 		}
+	}
+	if len(testFilesThatFailed) > 0 {
+		panic(fmt.Sprintf("Test Files failed: %s\n", testFilesThatFailed))
 	}
 }
 
