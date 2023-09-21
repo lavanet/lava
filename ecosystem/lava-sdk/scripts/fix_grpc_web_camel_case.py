@@ -30,6 +30,9 @@ for file in files_to_fix:
                 continue
             name = name.rsplit(" ",1)[-1]
             newname = camel_to_snake(name)
+            if newname.endswith("_list"):
+                # remove auto appended _list form names since it doesnt work well with protobuf
+                newname = newname[:-5]
             print(f"{name} => {newname}")
             newNames[name] = newname
 

@@ -11,6 +11,7 @@ import {
   RelayPrivateData,
   QualityOfServiceReport,
   RelayReply,
+  ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
@@ -64,7 +65,7 @@ export function constructRelayRequest(
   providerAddress: string,
   singleConsumerSession: SingleConsumerSession,
   epoch: number,
-  reportedProviders: string
+  reportedProviders: Array<ReportedProvider>
 ): RelayRequest {
   const relayRequest = new RelayRequest();
   relayRequest.setRelayData(relayData);
@@ -88,23 +89,18 @@ function constructRelaySession(
   providerAddress: string,
   singleConsumerSession: SingleConsumerSession,
   epoch: number,
-  reportedProviders: string
+  reportedProviders: Array<ReportedProvider>
 ): RelaySession {
   const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
   let newQualityOfServiceReport: QualityOfServiceReport | undefined = undefined;
-
   if (lastQos != undefined) {
     newQualityOfServiceReport = new QualityOfServiceReport();
     // TODO: needs to serialize the QoS report value like a serialized Dec
-    newQualityOfServiceReport.setLatency(
-      Decimal.fromUserInput(lastQos.getLatency(), 0).toString()
-    );
+    newQualityOfServiceReport.setLatency(lastQos.getLatency().toString());
     newQualityOfServiceReport.setAvailability(
-      Decimal.fromUserInput(lastQos.getAvailability(), 0).toString()
+      lastQos.getAvailability().toString()
     );
-    newQualityOfServiceReport.setSync(
-      Decimal.fromUserInput(lastQos.getSync(), 0).toString()
-    );
+    newQualityOfServiceReport.setSync(lastQos.getSync().toString());
   }
   const lastQosExcellence =
     singleConsumerSession.qoSInfo.lastExcellenceQoSReport;
@@ -117,13 +113,13 @@ function constructRelaySession(
 
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReportExcellence.setLatency(
-      Decimal.fromUserInput(lastQosExcellence.getLatency(), 0).toString()
+      lastQosExcellence.getLatency().toString()
     );
     newQualityOfServiceReportExcellence.setAvailability(
-      Decimal.fromUserInput(lastQosExcellence.getAvailability(), 0).toString()
+      lastQosExcellence.getAvailability().toString()
     );
     newQualityOfServiceReportExcellence.setSync(
-      Decimal.fromUserInput(lastQosExcellence.getSync(), 0).toString()
+      lastQosExcellence.getSync().toString()
     );
   }
 
@@ -136,13 +132,13 @@ function constructRelaySession(
   relaySession.setContentHash(calculateContentHash(relayData));
   relaySession.setEpoch(epoch);
   relaySession.setRelayNum(singleConsumerSession.relayNum);
-  relaySession.setQosReport(newQualityOfServiceReport);
+  // relaySession.setQosReport(newQualityOfServiceReport); // TODO: this is failing due to unmarshaling
   relaySession.setCuSum(
     singleConsumerSession.cuSum + singleConsumerSession.latestRelayCu
   );
-  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence);
+  // relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence); // TODO: this is failing due to unmarshaling
 
-  relaySession.setUnresponsiveProviders(reportedProviders);
+  relaySession.setUnresponsiveProvidersList(reportedProviders);
   return relaySession;
 }
 
