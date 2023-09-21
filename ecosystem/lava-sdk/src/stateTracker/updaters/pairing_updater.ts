@@ -193,9 +193,9 @@ export class PairingUpdater {
     Logger.debug(
       "providers initialized",
       "our geo",
-      pairingForSameGeolocation,
+      JSON.stringify(pairingForSameGeolocation),
       "other geo",
-      pairingFromDifferentGeolocation
+      JSON.stringify(pairingFromDifferentGeolocation)
     );
     // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]
     return pairingForSameGeolocation.concat(pairingFromDifferentGeolocation);

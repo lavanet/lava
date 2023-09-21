@@ -282,7 +282,8 @@ export class ConsumerSessionManager {
 
         const { singleConsumerSession, pairingEpoch } = consumerSessionInstance;
 
-        if (pairingEpoch !== sessionEpoch) {
+        if (pairingEpoch !== sessionEpoch && pairingEpoch != 0) {
+          // if pairingEpoch == 0 its currently uninitialized so we keep the this.currentEpoch value
           Logger.error(
             `sessionEpoch and pairingEpoch mismatch sessionEpoch: ${sessionEpoch} pairingEpoch: ${pairingEpoch}`
           );
