@@ -302,10 +302,13 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress, providerAddress sdk.AccAddress, epoch uint64) (isValidPairing bool, allowedCU, pairedProviders uint64, projectID string, errorRet error) {
-	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, epoch)
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress, providerAddress sdk.AccAddress, reqEpoch uint64) (isValidPairing bool, allowedCU, pairedProviders uint64, projectID string, errorRet error) {
+	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, reqEpoch)
 	if err != nil {
 		return false, allowedCU, 0, "", err
+	}
+	if epoch != reqEpoch {
+		return false, allowedCU, 0, "", utils.LavaFormatError("requested block is not an epoch start", nil)
 	}
 
 	validAddresses, allowedCU, projectID, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)
