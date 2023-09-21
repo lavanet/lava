@@ -92,6 +92,8 @@ ecosystem/lavajs/proto/gogoproto
 ecosystem/lavajs/proto/google
 ecosystem/lavajs/proto/tendermint
 
+testutil/e2e/sdk/tests/package-lock.json
+testutil/e2e/sdk/tests/package.json
 
 
 
