@@ -35,6 +35,7 @@
                                 "name": "query",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "0",
                                         "block_id"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
@@ -54,6 +55,7 @@
                                 "name": "EXPERIMENTAL_changes",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "0",
                                         "block_id"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
@@ -73,6 +75,7 @@
                                 "name": "block",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "0",
                                         "block_id"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
@@ -92,6 +95,7 @@
                                 "name": "EXPERIMENTAL_changes_in_block",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "0",
                                         "block_id"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
@@ -111,6 +115,7 @@
                                 "name": "chunk",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "0",
                                         "block_id"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
@@ -167,6 +172,7 @@
                                 "name": "EXPERIMENTAL_protocol_config",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "0",
                                         "block_id"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
@@ -369,8 +375,7 @@
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "chain_id",
-                                            "height"
+                                            "chain_id"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
