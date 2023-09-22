@@ -160,6 +160,7 @@ func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 		}
 	}
 
+	utils.LavaFormatInfo("PairingList Created:", utils.Attribute{Key: "Json File:", Value: pairingList})
 	// Marshal to JSON
 	jsonData, err := json.MarshalIndent(pairingList, "", "  ")
 	if err != nil {
