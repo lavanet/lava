@@ -16,13 +16,12 @@ import {
 import {
   Relayer as RelayerService,
   RelayerClient,
+  ServiceError,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
-import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
-import { jsontag } from "../grpc_web_services/gogoproto/gogo_pb";
 
 export interface RelayerOptions {
   privKey: string;

@@ -47,7 +47,6 @@ export class StateBadgeQuery {
 
     for (const chainID of this.chainIDs) {
       const badgeResponse = await this.fetchNewBadge(chainID);
-
       if (badgeResponse == undefined) {
         this.pairing.set(chainID, undefined);
 
@@ -128,7 +127,7 @@ export class StateBadgeQuery {
 
       return badgeResponse;
     } catch (err) {
-      Logger.error(err);
+      throw Logger.fatal("Failed fetching badge", err);
     }
   }
 }
