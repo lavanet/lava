@@ -1,4 +1,4 @@
-const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
+import { LavaSDK } from "../../../../ecosystem/lava-sdk/bin/src/sdk/sdk";
 
 async function main() {
     // Initialize Lava SDK
@@ -8,6 +8,7 @@ async function main() {
         lavaChainId:"lava",
         pairingListConfig:process.env.PAIRING_LIST,
         allowInsecureTransport: true,
+        logLevel: "debug",
     }).catch(e => {
         throw new Error(" ERR [rest_chainId_fetch] failed initializing lava-sdk rest test");
     });
@@ -18,7 +19,7 @@ async function main() {
         relayArray.push((async () => {
             // Fetch chain id
             const result = await lavaSdkRest.sendRelay({
-                method: "GET",
+                connectionType: "GET",
                 url: "/cosmos/base/tendermint/v1beta1/node_info",
             }).catch(e => {
                 throw new Error(` ERR ${i} [rest_chainId_fetch] failed sending relay rest test`);

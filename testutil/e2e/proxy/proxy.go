@@ -268,7 +268,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	}
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMessage.ID)
 	if idErr != nil {
-		println(err.Error())
+		println(idErr.Error())
 	}
 
 	if fakeResponse && strings.Contains(rawBodyS, "blockNumber") {

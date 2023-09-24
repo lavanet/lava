@@ -65,12 +65,11 @@ export class StateChainQuery {
   public async init(): Promise<void> {
     const pairing = await this.fetchLavaProviders(this.pairingListConfig);
     this.csp = pairing.consumerSessionsWithProvider;
-    this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
     // Save pairing response for chainID
     this.pairing.set("LAV1", {
       providers: pairing.stakeEntry,
       maxCu: 10000,
-      currentEpoch: this.latestBlockNumber,
+      currentEpoch: 0,
       spec: this.lavaSpec,
     });
   }
@@ -82,12 +81,10 @@ export class StateChainQuery {
       // Save time till next epoch
       let timeLeftToNextPairing;
 
-      this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
-
-      // Get lava pairing
       const lavaPairing = this.getPairing("LAV1");
 
       // Reset pairing
+
       this.pairing = new Map<string, PairingResponse>();
 
       // Save lava pairing
@@ -125,12 +122,17 @@ export class StateChainQuery {
 
         const providers = pairing.getProvidersList();
         timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
-
+        const currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
+        if (!currentEpoch) {
+          throw Logger.fatal(
+            "Failed fetching current epoch from pairing request."
+          );
+        }
         // Save pairing response for chainID
         this.pairing.set(chainID, {
           providers: providers,
           maxCu: pairingResponse.getMaxCu(),
-          currentEpoch: this.latestBlockNumber,
+          currentEpoch: currentEpoch,
           spec: spec,
         });
       }

@@ -28,6 +28,10 @@ func (psm *ProviderSessionManager) GetBlockedEpochHeight() uint64 {
 	return psm.atomicReadBlockedEpoch()
 }
 
+func (psm *ProviderSessionManager) GetCurrentEpoch() uint64 {
+	return psm.atomicReadBlockedEpoch() + atomic.LoadUint64(&psm.blockDistanceForEpochValidity)
+}
+
 func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool) {
 	return epoch > psm.atomicReadBlockedEpoch()
 }
