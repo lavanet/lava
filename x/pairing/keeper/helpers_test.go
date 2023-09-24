@@ -20,14 +20,14 @@ type tester struct {
 }
 
 const (
-	testBalance int64 = 100000000
+	testBalance int64 = 1000000
 	testStake   int64 = 100000
 )
 
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 
-	ts.plan = ts.AddPlan("mock", common.CreateMockPlan()).Plan("mock")
+	ts.plan = ts.AddPlan("free", common.CreateMockPlan()).Plan("free")
 	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
 
 	ts.AdvanceEpoch()
@@ -48,17 +48,17 @@ func (ts *tester) addClient(count int) {
 
 // addProvider: with default endpoints, geolocation, moniker
 func (ts *tester) addProvider(count int) error {
-	return ts.addProviderExtra(count, nil, 0, "") // default: endpoints, geolocation, moniker
+	return ts.addProviderExtra(count, nil, 0, "prov") // default: endpoints, geolocation, moniker
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
-func (ts *tester) addProviderGeolocation(count int, geolocation uint64) error {
-	return ts.addProviderExtra(count, nil, geolocation, "")
+func (ts *tester) addProviderGeolocation(count int, geolocation int32) error {
+	return ts.addProviderExtra(count, nil, geolocation, "prov")
 }
 
 // addProviderEndpoints: with endpoints, and default geolocation, moniker
 func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
-	return ts.addProviderExtra(count, endpoints, 0, "")
+	return ts.addProviderExtra(count, endpoints, 0, "prov")
 }
 
 // addProviderMoniker: with moniker, and default endpoints, geolocation
@@ -70,7 +70,7 @@ func (ts *tester) addProviderMoniker(count int, moniker string) error {
 func (ts *tester) addProviderExtra(
 	count int,
 	endpoints []epochstoragetypes.Endpoint,
-	geoloc uint64,
+	geoloc int32,
 	moniker string,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
@@ -88,9 +88,9 @@ func (ts *tester) addProviderExtra(
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
 	if providersToPair > 0 {
-		// will overwrite the default "mock" plan
+		// will overwrite the default "free" plan
 		ts.plan.PlanPolicy.MaxProvidersToPair = uint64(providersToPair)
-		ts.AddPlan("mock", ts.plan)
+		ts.AddPlan("free", ts.plan)
 	}
 
 	ts.addClient(clientsCount)
@@ -112,12 +112,15 @@ func newStubRelayRequest(relaySession *pairingtypes.RelaySession) *pairingtypes.
 
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
+// The providerRewardPerc arg is the part of the provider reward after dedcuting
+// the delegators portion (in percentage)
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
 	clientAddr sdk.AccAddress,
 	providerAddr sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
+	providerRewardPerc uint64,
 ) {
 	// get consumer's project and subscription before payment
 	balance := ts.GetBalance(providerAddr)
@@ -169,13 +172,18 @@ func (ts *tester) payAndVerifyBalance(
 				TruncateInt().
 				Uint64()
 		}
+
 		totalPaid += cuUsed
 	}
 
+	providerReward := (totalPaid * providerRewardPerc) / 100
+
 	// verify provider's balance
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	want := mint.MulInt64(int64(totalPaid))
-	require.Equal(ts.T, balance+want.TruncateInt64(), ts.GetBalance(providerAddr))
+	want := mint.MulInt64(int64(providerReward))
+	expectedReward := balance + want.TruncateInt64()
+	actualReward := ts.GetBalance(providerAddr)
+	require.Equal(ts.T, expectedReward, actualReward)
 
 	// verify each project balance
 	// (project used-cu should increase and respective subscription cu-left should decrease)

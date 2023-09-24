@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+message UniquePaymentStorageClientProvider {
+  string index = 1; 
+  uint64 block = 2; 
+  uint64 usedCU = 3;  
+}
+

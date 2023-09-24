@@ -1,0 +1,33 @@
+syntax = "proto3";
+package lavanet.lava.conflict;
+
+option go_package = "github.com/lavanet/lava/x/conflict/types";
+import "gogoproto/gogo.proto";  
+
+message Provider {
+  string account = 1;
+  bytes response = 2;
+}
+
+message Vote {
+  string address = 1;
+  bytes Hash = 2;
+  int64 Result =3;
+}
+
+message ConflictVote {
+  string index = 1; 
+  string clientAddress = 2;
+  uint64 voteDeadline = 3; 
+  uint64 voteStartBlock = 4;
+  int64 voteState = 5; 
+  string chainID = 6; 
+  string apiUrl = 7; 
+  bytes requestData = 8; 
+  uint64 requestBlock = 9;
+  Provider firstProvider = 10 [(gogoproto.nullable) = false]; 
+  Provider secondProvider = 11 [(gogoproto.nullable) = false]; 
+  repeated Vote votes = 12 [(gogoproto.nullable) = false]; 
+
+}
+

@@ -97,7 +97,7 @@ func TestGetTendermintRPCError(t *testing.T) {
 				Message: "error message",
 				Data:    []int{1, 2, 3},
 			},
-			expectedErr: fmt.Errorf("(rpcMsg.Error.Data).(string) conversion failed -- [{Key:data Value:[1 2 3]}]"),
+			expectedErr: fmt.Errorf("(rpcMsg.Error.Data).(string) conversion failed {data:[1 2 3]}"),
 		},
 		{
 			name: "conversion succeeds",
@@ -292,7 +292,7 @@ func TestConvertTendermintMsg(t *testing.T) {
 			},
 			nil,
 			true,
-			"(rpcMsg.Error.Data).(string) conversion failed -- [{Key:data Value:[1 2 3]}]",
+			"(rpcMsg.Error.Data).(string) conversion failed {data:[1 2 3]}",
 		},
 		{
 			"error in IdFromRawMessage",

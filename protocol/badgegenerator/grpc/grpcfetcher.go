@@ -9,7 +9,6 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/types/query"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/lavanet/lava/utils"
-	epochtypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,7 +41,7 @@ func NewGRPCFetcher(grpcAddr string) (*GRPCFetcher, error) {
 	}, nil
 }
 
-func (fetcher *GRPCFetcher) FetchPairings(chainId, userId string) (*[]epochtypes.StakeEntry, uint64, error) {
+func (fetcher *GRPCFetcher) FetchPairings(chainId, userId string) (*pairingtypes.QueryGetPairingResponse, error) {
 	defer fetcher.CancelFunc()
 	utils.LavaFormatInfo("Fetching pairings for chain",
 		utils.Attribute{Key: "chainId", Value: chainId},
@@ -68,8 +67,8 @@ func (fetcher *GRPCFetcher) FetchPairings(chainId, userId string) (*[]epochtypes
 			err,
 			utils.Attribute{Key: "chainId", Value: chainId},
 			utils.Attribute{Key: "userId", Value: userId})
-		return nil, 0, err
+		return nil, err
 	}
 
-	return &consumerResponse.Providers, consumerResponse.CurrentEpoch, nil
+	return consumerResponse, nil
 }

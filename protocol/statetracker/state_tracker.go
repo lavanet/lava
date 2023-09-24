@@ -22,7 +22,7 @@ type StateTracker struct {
 	chainTracker         *chaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
-	eventTracker         *EventTracker
+	EventTracker         *EventTracker
 }
 
 type Updater interface {
@@ -34,7 +34,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting status", err)
 	}
 	if txFactory.ChainID() != status.NodeInfo.Network {
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
@@ -43,7 +43,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	eventTracker := &EventTracker{clientCtx: clientCtx}
 	err = eventTracker.updateBlockResults(0)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting blockResults", err)
 	}
 
 	// TODO: fix average block time.
@@ -52,7 +52,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		averageBlockTime = 30
 	}
 
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, eventTracker: eventTracker}
+	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
@@ -68,7 +68,7 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 	// first update event tracker
-	st.eventTracker.updateBlockResults(latestBlock)
+	st.EventTracker.updateBlockResults(latestBlock)
 	// after events were updated we can trigger updaters
 	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)
@@ -88,5 +88,5 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 
 // For lavavisor access
 func (s *StateTracker) GetEventTracker() *EventTracker {
-	return s.eventTracker
+	return s.EventTracker
 }

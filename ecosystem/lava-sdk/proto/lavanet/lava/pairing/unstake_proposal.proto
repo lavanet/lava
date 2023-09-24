@@ -1,0 +1,20 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+
+message UnstakeProposal {
+  option (gogoproto.goproto_getters)  = false;
+
+  string title = 1; 
+  string description = 2; 
+  repeated ProviderUnstakeInfo providers_info = 3 [(gogoproto.nullable) = false]; 
+}
+
+message ProviderUnstakeInfo {
+  string provider = 1;
+  string chain_id = 2;
+}

@@ -93,7 +93,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 			}
 
 			// Add the relay request to the Relays array (for relayPaymentMessage())
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
 		})
 	}
 }
@@ -156,7 +156,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -229,7 +229,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -303,7 +303,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -374,7 +374,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -454,7 +454,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -496,7 +496,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 		Relays:  slices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true)
+	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
 
 	// advance another epoch and unstake the provider
 	ts.AdvanceEpoch()
@@ -560,14 +560,14 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true)
+		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
 
 		// Advance epoch and verify the relay payment objects
 		ts.AdvanceEpoch()
 		ts.verifyRelayPayment(relaySession, true)
 
 		// try to get payment again - should fail work because of double spend
-		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false)
+		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
 
 		// Advance enough epochs so the chain will forget the relay payment object. Note that
 		// we already advanced one epoch since epochAfterEpochBlocksChanged.
@@ -577,6 +577,6 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		// try to get payment again - should fail (relay payment object should not exist and if
 		// it exists, the code shouldn't allow double spending)
-		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false)
+		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
 	}
 }

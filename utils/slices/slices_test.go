@@ -103,6 +103,50 @@ func TestAverage(t *testing.T) {
 	}
 }
 
+func TestContains(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		slice  []int
+		elem   int
+		result bool
+	}{
+		{"empty slice", []int{}, 1, false},
+		{"one elem not found", []int{1}, 2, false},
+		{"one elem found", []int{1}, 1, true},
+		{"elem found twice", []int{1, 1, 2}, 1, true},
+		{"elem found last", []int{1, 2}, 2, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			res := Contains(tt.slice, tt.elem)
+			require.Equal(t, tt.result, res)
+		})
+	}
+}
+
+func TestRemove(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		slice  []int
+		elem   int
+		result []int
+		found  bool
+	}{
+		{"empty slice", []int{}, 1, []int{}, false},
+		{"elem not found", []int{1, 2, 3}, 4, []int{1, 2, 3}, false},
+		{"elem found", []int{1, 2, 3, 4}, 2, []int{1, 4, 3}, true},
+		{"elem found (only)", []int{1}, 1, []int{}, true},
+		{"elem found first", []int{1, 2, 3}, 1, []int{3, 2}, true},
+		{"elem found last", []int{1, 2, 3}, 3, []int{1, 2}, true},
+		{"elem found twice", []int{1, 2, 3, 2, 3}, 3, []int{1, 2, 3, 2}, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			res, found := Remove(tt.slice, tt.elem)
+			require.Equal(t, tt.result, res)
+			require.Equal(t, tt.found, found)
+		})
+	}
+}
+
 func TestIsSubset(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
@@ -223,9 +267,16 @@ func TestUnorderedEqual(t *testing.T) {
 	}
 }
 
+func TestMap(t *testing.T) {
+	mapFunc := func(_ int) int { return 10 }
+	require.Equal(t, []int{}, Map([]int{}, mapFunc))
+	require.Equal(t, []int{10}, Map([]int{1}, mapFunc))
+	require.Equal(t, []int{10, 10, 10}, Map([]int{1, 2, 3}, mapFunc))
+}
+
 func TestFilter(t *testing.T) {
-	filter := func(_ int) int { return 10 }
-	require.Equal(t, Filter([]int{}, filter), []int{})
-	require.Equal(t, Filter([]int{1}, filter), []int{10})
-	require.Equal(t, Filter([]int{1, 2, 3}, filter), []int{10, 10, 10})
+	filter := func(v int) bool { return v%2 == 0 }
+	require.Equal(t, []int{}, Filter([]int{}, filter))
+	require.Equal(t, []int{}, Filter([]int{1}, filter))
+	require.Equal(t, []int{2, 4}, Filter([]int{1, 2, 3, 4}, filter))
 }

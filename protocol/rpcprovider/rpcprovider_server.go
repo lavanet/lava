@@ -105,6 +105,17 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "relay extensions", Value: request.RelayData.GetExtensions()},
 	)
 
+	if request.RelaySession.QosExcellenceReport != nil {
+		utils.LavaFormatDebug("DEBUG",
+			utils.Attribute{Key: "qosExc latency", Value: request.RelaySession.GetQosExcellenceReport().Latency.String()},
+		)
+	}
+	if request.RelaySession.QosReport != nil {
+		utils.LavaFormatDebug("DEBUG",
+			utils.Attribute{Key: "qos latency", Value: request.RelaySession.GetQosReport().Latency.String()},
+		)
+	}
+
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
@@ -371,12 +382,14 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		} else if request.RelaySession.Epoch == 0 {
 			errorMessage = "user reported lava block 0, either it's test rpcprovider or a consumer that has no node access"
 		}
-		return nil, nil, utils.LavaFormatWarning(errorMessage, lavasession.EpochMismatchError,
+		utils.LavaFormatInfo(errorMessage,
+			utils.Attribute{Key: "Info Type", Value: lavasession.EpochMismatchError},
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
 			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
 			utils.Attribute{Key: "GUID", Value: ctx},
 		)
+		return nil, nil, lavasession.EpochMismatchError
 	}
 
 	// Check data
@@ -684,7 +697,8 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		Guid:                  probeReq.GetGuid(),
 		LatestBlock:           rpcps.reliabilityManager.GetLatestBlockNum(),
 		FinalizedBlocksHashes: []byte{},
-		LavaEpoch:             uint64(rpcps.stateTracker.LatestBlock()),
+		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpoch(),
+		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
 	return probeReply, nil
 }

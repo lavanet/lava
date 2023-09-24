@@ -306,6 +306,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
 	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+		// Set response header content-type to application/json
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+
 		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -460,7 +463,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params)
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true)
 		if err != nil {
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -474,21 +477,18 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	// the error check here would only wrap errors not from the rpc
 	if err != nil {
 		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		replyMsg = rpcInterfaceMessages.JsonrpcMessage{
-			Version: nodeMessage.Version,
-			ID:      nodeMessage.ID,
-		}
-		replyMsg.Error = &rpcclient.JsonError{
-			Code:    1,
-			Message: fmt.Sprintf("%s", err),
-		}
-		// this later causes returning an error
+		return nil, "", nil, err
 	} else {
 		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		replyMsg = *replyMessage
+
+		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
 	}
 
 	retData, err := json.Marshal(replyMsg)

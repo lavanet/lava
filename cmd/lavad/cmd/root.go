@@ -35,6 +35,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -107,7 +108,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		WithViper("")
 
 	rootCmd := &cobra.Command{
-		Use:   "lava-protocol",
+		Use:   "lavap",
 		Short: "Lava Protocol daemon",
 		Long:  "Lava Protocol daemon featuring RPC consumer / RPC provider / Badge server",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -159,11 +160,11 @@ func initLavaProtocolRootCmd(
 }
 
 func NewLavaVisorRootCmd() *cobra.Command {
-	version := "0.1.0"
+	version := protocoltypes.DefaultVersion.ProviderTarget
 	rootCmd := &cobra.Command{
-		Use:     "lava-visor",
-		Short:   `lava-visor is a protocol upgrade manager for Lava protocol binaries.`,
-		Long:    `lava-visor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
+		Use:     "lavavisor",
+		Short:   `lavavisor is a protocol upgrade manager for Lava protocol binaries.`,
+		Long:    `lavavisor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
 		Version: version,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {

@@ -6,8 +6,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
+	"github.com/lavanet/lava/common"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
-	"github.com/lavanet/lava/x/protocol/types"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 func defaultUpgradeHandler(
@@ -50,7 +52,43 @@ func v0_22_0_UpgradeHandler(
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		lk.DowntimeKeeper.SetParams(ctx, v1.DefaultParams())
-		lk.ProtocolKeeper.SetParams(ctx, types.DefaultParams())
+		lk.ProtocolKeeper.SetParams(ctx, protocoltypes.DefaultParams())
 		return m.RunMigrations(ctx, c, vm)
 	}
+}
+
+var Upgrade_0_23_0 = Upgrade{
+	UpgradeName:          "v0.23.0",
+	CreateUpgradeHandler: v0_23_0_UpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{Added: []string{dualstakingtypes.StoreKey}},
+}
+
+func v0_23_0_UpgradeHandler(
+	m *module.Manager,
+	c module.Configurator,
+	bapm BaseAppParamManager,
+	lk *keepers.LavaKeepers,
+) upgradetypes.UpgradeHandler {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		lk.PairingKeeper.InitProviderQoS(ctx, *common.DefaultGenesis())
+		return m.RunMigrations(ctx, c, vm)
+	}
+}
+
+var Upgrade_0_23_2 = Upgrade{
+	UpgradeName:          "v0.23.2",             // upgrade name
+	CreateUpgradeHandler: defaultUpgradeHandler, // upgrade handler (default)
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_0_23_4 = Upgrade{
+	UpgradeName:          "v0.23.4",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_0_23_5 = Upgrade{
+	UpgradeName:          "v0.23.5",
+	CreateUpgradeHandler: v0_23_0_UpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{Added: []string{dualstakingtypes.StoreKey}},
 }

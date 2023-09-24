@@ -9,6 +9,9 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 )
 
 // var mockFolder string = "testutil/e2e/proxy/mockMaps/"
@@ -210,6 +213,34 @@ func fakeResult(val, fake string) string {
 	return strings.Join(parts, ",")
 }
 
+func idInstertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcMessage) string {
+	// Extract ID from raw message
+	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMessage.ID)
+	if idErr != nil {
+		println("Failed extract ID from raw message")
+	}
+	// Parse the JSON string into a map
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal([]byte(val), &responseMap); err != nil {
+		println("Failed to unmarshal JSON:", err.Error())
+		return ""
+	}
+	// Extract the "result" field
+	result, resultExists := responseMap["result"]
+	if !resultExists {
+		println("Result field is missing")
+		return ""
+	}
+	// Convert the "result" field back to a JSON string
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		println("Failed to marshal result JSON:", err.Error())
+		return ""
+	}
+	// Manually construct the JSON string with "id" field updated and in desired order
+	return fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", respId, string(resultJSON))
+}
+
 func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	host := p.host
 	mock := p.mock
@@ -227,12 +258,23 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	println()
 	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", rawBodyS)
 
-	// TODO: make generic
-	// Check if asking for blockNumber
+	var respmsg rpcclient.JsonrpcMessage
+	if err := json.NewDecoder(req.Body).Decode(&respmsg); err != nil {
+		println(err.Error())
+	}
+	replyMessage, err := rpcInterfaceMessages.ConvertJsonRPCMsg(&respmsg)
+	if err != nil {
+		println(err.Error())
+	}
+	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMessage.ID)
+	if idErr != nil {
+		println(idErr.Error())
+	}
+
 	if fakeResponse && strings.Contains(rawBodyS, "blockNumber") {
 		println("!!!!!!!!!!!!!! block number")
 		rw.WriteHeader(200)
-		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"%s\"}", getMockBlockNumber())))
+		rw.Write([]byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":\"%s\"}", respId, getMockBlockNumber())))
 	} else {
 		// Return Cached data if found in history and fromCache is set on
 		jStruct := &jsonStruct{}
@@ -240,7 +282,8 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		jStruct.ID = 0
 		rawBodySNoID, _ := json.Marshal(jStruct)
 		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
-			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", val)
+			orderedJSON := idInstertedResponse(val, replyMessage)
+			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", orderedJSON)
 			cacheCount += 1
 
 			// Change Response
@@ -252,7 +295,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 			}
 			time.Sleep(500 * time.Millisecond)
 			rw.WriteHeader(200)
-			rw.Write([]byte(val))
+			rw.Write([]byte(orderedJSON))
 		} else {
 			// Recreating Request
 			proxyRequest, err := createProxyRequest(req, host, rawBodyS)

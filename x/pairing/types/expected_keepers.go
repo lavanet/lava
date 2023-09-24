@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -85,4 +86,8 @@ type PlanKeeper interface {
 
 type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
+}
+
+type DualStakingKeeper interface {
+	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error)
 }

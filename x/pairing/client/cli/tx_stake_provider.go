@@ -47,8 +47,7 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			argEndpoints, argGeolocation32, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
-			argGeolocation := uint64(argGeolocation32)
+			argEndpoints, argGeolocation, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
 			if err != nil {
 				return err
 			}
@@ -63,6 +62,20 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
+			if err != nil {
+				return err
+			}
+
+			delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
+			if err != nil {
+				return err
+			}
+			delegationLimit, err := sdk.ParseCoinNormalized(delegationLimitStr)
+			if err != nil {
+				return err
+			}
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
@@ -70,6 +83,8 @@ func CmdStakeProvider() *cobra.Command {
 				argEndpoints,
 				argGeolocation,
 				moniker,
+				delegationLimit,
+				commission,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -78,6 +93,8 @@ func CmdStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
+	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)
 
@@ -95,8 +112,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation code to be staked for
 		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block`,
 		Example: `lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and OSMO,COSHUB in another
-		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMO,COSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and COS3,COS5 in another
+		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 COS3,COS5 500000ulava "my-other-grpc-addr.com:1111,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args)%BULK_ARG_COUNT != 0 {
 				return fmt.Errorf("invalid number of arguments, needs to be a multiple of %d, arg count: %d", BULK_ARG_COUNT, len(args))
@@ -113,6 +130,20 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
+			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
+			if err != nil {
+				return err
+			}
+
+			delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
+			if err != nil {
+				return err
+			}
+			delegationLimit, err := sdk.ParseCoinNormalized(delegationLimitStr)
+			if err != nil {
+				return err
+			}
+
 			handleBulk := func(cmd *cobra.Command, args []string) (msgs []sdk.Msg, err error) {
 				if len(args) != BULK_ARG_COUNT {
 					return nil, fmt.Errorf("invalid argument length %d should be %d", len(args), BULK_ARG_COUNT)
@@ -124,20 +155,21 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 				tmpArg := strings.Fields(args[2])
-				argEndpoints := map[uint64]epochstoragetypes.Endpoint{}
+				argEndpoints := map[int32]epochstoragetypes.Endpoint{}
 				for _, endpointStr := range tmpArg {
 					splitted := strings.Split(endpointStr, ",")
 					if len(splitted) != 2 {
 						return nil, fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,geolocation HOST:PORT,geolocation, received: %s", endpointStr)
 					}
-					geoloc, err := strconv.ParseUint(splitted[1], 10, 64)
+					geoloc, err := strconv.ParseInt(splitted[1], 10, 64)
 					if err != nil {
 						return nil, fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
 					}
-					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], Geolocation: geoloc}
-					argEndpoints[geoloc] = endpoint
+					geolocInt32 := int32(geoloc)
+					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], Geolocation: geolocInt32}
+					argEndpoints[geolocInt32] = endpoint
 				}
-				argGeolocation, err := cast.ToUint64E(args[3])
+				argGeolocation, err := cast.ToInt32E(args[3])
 				if err != nil {
 					return nil, err
 				}
@@ -161,6 +193,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 						allEndpoints,
 						argGeolocation,
 						moniker,
+						delegationLimit,
+						commission,
 					)
 					if err := msg.ValidateBasic(); err != nil {
 						return nil, err
@@ -184,6 +218,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
+	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
+	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	flags.AddTxFlagsToCmd(cmd)
 
@@ -207,10 +243,11 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 
 		if geoloc == int32(planstypes.Geolocation_GL) {
 			// if global ("GL"), append the endpoint in all possible geolocations
-			for _, geoloc := range planstypes.GetAllGeolocations() {
+			for _, geo := range planstypes.GetAllGeolocations() {
+				geoInt := int32(geo)
 				endpoint := epochstoragetypes.Endpoint{
 					IPPORT:      split[0],
-					Geolocation: uint64(geoloc),
+					Geolocation: geoInt,
 				}
 				if len(split) > 2 {
 					endpoint.Addons = split[2:]
@@ -225,7 +262,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			}
 			endpoint := epochstoragetypes.Endpoint{
 				IPPORT:      split[0],
-				Geolocation: uint64(geoloc),
+				Geolocation: geoloc,
 			}
 			if len(split) > 2 {
 				endpoint.Addons = split[2:]

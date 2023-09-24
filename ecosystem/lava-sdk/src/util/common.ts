@@ -4,6 +4,8 @@ export function base64ToUint8Array(str: string): Uint8Array {
   return new Uint8Array(buffer);
 }
 
+let globalId = 0;
+
 export function generateRPCData(method: string, params: Array<any>): string {
   const stringifyMethod = JSON.stringify(method);
   const stringifyParam = JSON.stringify(params, (key, value) => {
@@ -12,14 +14,8 @@ export function generateRPCData(method: string, params: Array<any>): string {
     }
     return value;
   });
-  // TODO make id changable
-  return (
-    '{"jsonrpc": "2.0", "id": 1, "method": ' +
-    stringifyMethod +
-    ', "params": ' +
-    stringifyParam +
-    "}"
-  );
+  globalId += 1;
+  return `{"jsonrpc": "2.0", "id": ${globalId}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
 }
 
 export function parseLong(long: Long): number {
@@ -35,4 +31,48 @@ export function parseLong(long: Long): number {
     console.log("MAYBE AN ISSUE", high);
   }
   return parsedNumber;
+}
+
+export function debugPrint(
+  debugMode: boolean,
+  message?: any,
+  ...optionalParams: any[]
+) {
+  if (debugMode) {
+    console.log(message, ...optionalParams);
+  }
+}
+
+export function generateRandomInt(): number {
+  return Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER + 1));
+}
+
+export function sleep(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      resolve();
+      clearTimeout(timeout);
+    }, ms);
+  });
+}
+
+export function median(values: number[]): number {
+  // First, we need to sort the array in ascending order
+  const sortedValues = values.slice().sort((a, b) => a - b);
+
+  // Calculate the middle index
+  const middleIndex = Math.floor(sortedValues.length / 2);
+
+  // Check if the array length is even or odd
+  if (sortedValues.length % 2 === 0) {
+    // If it's even, return the average of the two middle values
+    return (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2;
+  } else {
+    // If it's odd, return the middle value
+    return sortedValues[middleIndex];
+  }
 }

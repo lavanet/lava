@@ -23,7 +23,7 @@ type VersionMonitor struct {
 
 func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*ServiceProcess, autoDownload bool) *VersionMonitor {
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
-	binaryPath := filepath.Join(versionDir, "lava-protocol")
+	binaryPath := filepath.Join(versionDir, "lavap")
 
 	return &VersionMonitor{
 		BinaryPath:      binaryPath,
@@ -54,7 +54,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 					utils.LavaFormatFatal("Unknown mismatch type detected in Version Monitor!", nil)
 				}
 				versionDir := filepath.Join(vm.LavavisorPath, "upgrades", "v"+versionToUpgrade)
-				binaryPath := filepath.Join(versionDir, "lava-protocol")
+				binaryPath := filepath.Join(versionDir, "lavap")
 				vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 				// fetcher
@@ -82,7 +82,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 }
 
 func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
-	binaryVersion, err := getBinaryVersion(vm.BinaryPath)
+	binaryVersion, err := GetBinaryVersion(vm.BinaryPath)
 	if err != nil || binaryVersion == "" {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
@@ -90,13 +90,16 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 	minVersionMismatch := (protocolversion.HasVersionMismatch(incoming.ConsumerMin, binaryVersion) || protocolversion.HasVersionMismatch(incoming.ProviderMin, binaryVersion))
 	targetVersionMismatch := (protocolversion.HasVersionMismatch(incoming.ConsumerTarget, binaryVersion) || protocolversion.HasVersionMismatch(incoming.ProviderTarget, binaryVersion))
 
-	// Take action only if both mismatches are detected
-	if minVersionMismatch && targetVersionMismatch {
+	if minVersionMismatch || targetVersionMismatch {
 		select {
 		case vm.updateTriggered <- true:
 		default:
 		}
-		vm.mismatchType = lvutil.MinVersionMismatch
+		if minVersionMismatch {
+			vm.mismatchType = lvutil.MinVersionMismatch
+		} else {
+			vm.mismatchType = lvutil.TargetVersionMismatch
+		}
 		vm.lastknownversion = incoming
 		return utils.LavaFormatError("Version mismatch detected!", nil)
 	}

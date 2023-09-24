@@ -195,9 +195,9 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 
 	// make the plan policy's geolocation 7(=111)
 	// (done before setupForPayments() below so subscription will use ths plan)
-	// will overwrite the default "mock" plan
+	// will overwrite the default "free" plan
 	ts.plan.PlanPolicy.GeolocationProfile = 7
-	ts.AddPlan("mock", ts.plan)
+	ts.AddPlan("free", ts.plan)
 
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
@@ -211,16 +211,16 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 
 	geolocationTestTemplates := []struct {
 		name                   string
-		geolocationAdminPolicy uint64
-		geolocationSubPolicy   uint64
+		geolocationAdminPolicy int32
+		geolocationSubPolicy   int32
 		expectedProviderPaired int
 		validPairing           bool
 	}{
-		{"effective geo = 1", uint64(1), uint64(1), len(ts.Accounts(common.PROVIDER)), true},
-		{"effective geo = 3 (includes geo=1)", uint64(3), uint64(3), len(ts.Accounts(common.PROVIDER)), true},
-		{"effective geo = 2", uint64(3), uint64(2), len(ts.Accounts(common.PROVIDER)), true},
-		{"effective geo = 0 (planPolicy & subPolicy = 1)", uint64(2), uint64(1), 0, false},
-		{"effective geo = 0 (planPolicy & adminPolicy = 1)", uint64(1), uint64(2), 0, false},
+		{"effective geo = 1", int32(1), int32(1), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 3 (includes geo=1)", int32(3), int32(3), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 2", int32(3), int32(2), len(ts.Accounts(common.PROVIDER)), true},
+		{"effective geo = 0 (planPolicy & subPolicy = 1)", int32(2), int32(1), 0, false},
+		{"effective geo = 0 (planPolicy & adminPolicy = 1)", int32(1), int32(2), 0, false},
 	}
 
 	for _, tt := range geolocationTestTemplates {

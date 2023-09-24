@@ -78,7 +78,7 @@ func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byt
 	return relayData
 }
 
-func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) *pairingtypes.RelaySession {
+func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.RelayPrivateData, chainID, providerPublicAddress string, singleConsumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider) *pairingtypes.RelaySession {
 	copyQoSServiceReport := func(reportToCopy *pairingtypes.QualityOfServiceReport) *pairingtypes.QualityOfServiceReport {
 		if reportToCopy != nil {
 			QOS := *reportToCopy
@@ -107,7 +107,7 @@ func ConstructRelaySession(lavaChainID string, relayRequestData *pairingtypes.Re
 	}
 }
 
-func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []byte) (*pairingtypes.RelayRequest, error) {
+func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaChainID, chainID string, relayRequestData *pairingtypes.RelayPrivateData, providerPublicAddress string, consumerSession *lavasession.SingleConsumerSession, epoch int64, reportedProviders []*pairingtypes.ReportedProvider) (*pairingtypes.RelayRequest, error) {
 	relayRequest := &pairingtypes.RelayRequest{
 		RelayData:    relayRequestData,
 		RelaySession: ConstructRelaySession(lavaChainID, relayRequestData, chainID, providerPublicAddress, consumerSession, epoch, reportedProviders),
