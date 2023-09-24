@@ -226,14 +226,16 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
 	}
-	if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
+	reqBlock, _ := chainMessage.RequestedBlock()
+	if reqBlock != request.RelayData.RequestBlock {
 		// the consumer either configured an invalid value or is modifying the requested block as part of a data reliability message
 		// see if this modification is supported
-		providerRequestedBlockPreUpdate := chainMessage.RequestedBlock()
+		providerRequestedBlockPreUpdate := reqBlock
 		chainMessage.UpdateLatestBlockInMessage(request.RelayData.RequestBlock, true)
 		// if after UpdateLatestBlockInMessage it's not aligned we have a problem
-		if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
-			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
+		reqBlock, _ = chainMessage.RequestedBlock()
+		if reqBlock != request.RelayData.RequestBlock {
+			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: reqBlock}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
 		}
 	}
 	return nil

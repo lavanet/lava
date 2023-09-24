@@ -120,10 +120,10 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		msg:            restMessage,
-		requestedBlock: requestBlock,
+		api:                  serviceApi,
+		apiCollection:        apiCollection,
+		msg:                  restMessage,
+		latestRequestedBlock: requestBlock,
 	}
 	return nodeMsg
 }
