@@ -36,7 +36,7 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 	return &cache, nil
 }
 
-func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID string, finalized bool) (reply *pairingtypes.RelayReply, err error) {
+func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, finalized bool, provider string) (reply *pairingtypes.CacheRelayReply, err error) {
 	if cache == nil {
 		// TODO: try to connect again once in a while
 		return nil, NotInitialisedError
@@ -45,10 +45,10 @@ func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayReq
 		return nil, NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
 	}
 	// TODO: handle disconnections and error types here
-	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Finalized: finalized})
+	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, BlockHash: blockHash, ChainID: chainID, Finalized: finalized, Provider: provider})
 }
 
-func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayRequest, apiInterface string, blockHash []byte, chainID, bucketID string, reply *pairingtypes.RelayReply, finalized bool) error {
+func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, reply *pairingtypes.RelayReply, finalized bool, provider string, optionalMetadata []pairingtypes.Metadata) error {
 	if cache == nil {
 		// TODO: try to connect again once in a while
 		return NotInitialisedError
@@ -57,6 +57,14 @@ func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayReq
 		return NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
 	}
 	// TODO: handle disconnections and SetRelay error types here
-	_, err := cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{Request: request, ApiInterface: apiInterface, BlockHash: blockHash, ChainID: chainID, Response: reply, Finalized: finalized, BucketID: bucketID})
+	_, err := cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{
+		Request:          request,
+		BlockHash:        blockHash,
+		ChainID:          chainID,
+		Response:         reply,
+		Finalized:        finalized,
+		Provider:         provider,
+		OptionalMetadata: optionalMetadata,
+	})
 	return err
 }

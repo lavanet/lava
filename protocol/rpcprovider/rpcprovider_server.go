@@ -599,7 +599,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 		requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
-		if requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
+		finalized = spectypes.IsFinalizedBlock(request.RelayData.RequestBlock, latestBlock, blockDistanceToFinalization)
+		if !finalized && requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
 			reqHashesAttr := utils.Attribute{Key: "hashes", Value: requestedHashes}
 			elementsToTake := 10
@@ -614,8 +615,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
 		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		// }
-
-		finalized = spectypes.IsFinalizedBlock(request.RelayData.RequestBlock, latestBlock, blockDistanceToFinalization)
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false
@@ -623,21 +622,25 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	var err error = nil
 	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
-		reply, err = cache.GetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized)
-	}
-	if err != nil || reply == nil {
+		var cacheReply *pairingtypes.CacheRelayReply
+		cacheReply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
+		reply = cacheReply.GetReply()
+		ignoredMetadata = cacheReply.GetOptionalMetadata()
 		if err != nil && performance.NotConnectedError.Is(err) {
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+	}
+	if err != nil || reply == nil {
 		// cache miss or invalid
 		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
-		// TODO: use overwriteReqBlock to set the correct latest block
+		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if requestedBlockHash != nil || finalized {
-			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
+			// TODO: we do not add ignoredMetadata to the cache response
+			err := cache.SetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
 			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
 			}

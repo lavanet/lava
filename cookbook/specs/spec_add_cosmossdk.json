@@ -4063,9 +4063,9 @@
                                 "name": "health",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -4081,9 +4081,9 @@
                                 "name": "net_info",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -4099,9 +4099,9 @@
                                 "name": "num_unconfirmed_txs",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -4117,9 +4117,9 @@
                                 "name": "status",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -4153,9 +4153,9 @@
                                 "name": "tx",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -4171,9 +4171,9 @@
                                 "name": "tx_search",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -4189,9 +4189,9 @@
                                 "name": "unconfirmed_txs",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
