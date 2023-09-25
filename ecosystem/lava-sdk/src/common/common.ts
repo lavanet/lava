@@ -6,3 +6,13 @@ export const SAFE_BLOCK = -5;
 export const FINALIZED_BLOCK = -6;
 
 export const BACKOFF_TIME_ON_FAILURE = 3000; // 3 seconds
+
+export const DEFAULT_PARSED_RESULT_INDEX = 0;
+
+export function IsString(value: any): boolean {
+  return typeof value === "string" || value instanceof String;
+}
+
+export function IsNumber(value: any): boolean {
+  return typeof value === "number" || value instanceof Number;
+}
