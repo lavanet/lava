@@ -22,6 +22,7 @@ import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
+import { encodeUtf8 } from "../util/common";
 
 export interface RelayerOptions {
   privKey: string;
@@ -303,19 +304,17 @@ export class Relayer {
     const requestBlockBytes =
       this.convertRequestedBlockToUint8Array(requestBlock);
 
-    const apiInterfaceBytes = this.encodeUtf8(
-      relayRequestData.getApiInterface()
-    );
-    const connectionTypeBytes = this.encodeUtf8(
+    const apiInterfaceBytes = encodeUtf8(relayRequestData.getApiInterface());
+    const connectionTypeBytes = encodeUtf8(
       relayRequestData.getConnectionType()
     );
-    const apiUrlBytes = this.encodeUtf8(relayRequestData.getApiUrl());
+    const apiUrlBytes = encodeUtf8(relayRequestData.getApiUrl());
     const dataBytes = relayRequestData.getData();
     const dataUint8Array =
-      dataBytes instanceof Uint8Array ? dataBytes : this.encodeUtf8(dataBytes);
+      dataBytes instanceof Uint8Array ? dataBytes : encodeUtf8(dataBytes);
     const saltBytes = relayRequestData.getSalt();
     const saltUint8Array =
-      saltBytes instanceof Uint8Array ? saltBytes : this.encodeUtf8(saltBytes);
+      saltBytes instanceof Uint8Array ? saltBytes : encodeUtf8(saltBytes);
 
     const msgData = this.concatUint8Arrays([
       apiInterfaceBytes,
@@ -346,10 +345,6 @@ export class Relayer {
     }
 
     return requestBlockBytes;
-  }
-
-  encodeUtf8(str: string): Uint8Array {
-    return new TextEncoder().encode(str);
   }
 
   concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {

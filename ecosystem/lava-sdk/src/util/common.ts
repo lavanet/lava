@@ -76,3 +76,28 @@ export function median(values: number[]): number {
     return sortedValues[middleIndex];
   }
 }
+
+export function encodeUtf8(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+export function byteArrayToString(byteArray: Uint8Array): string {
+  let output = "";
+  for (let i = 0; i < byteArray.length; i++) {
+    const byte = byteArray[i];
+    if (byte === 0x09) {
+      output += "\\t";
+    } else if (byte === 0x0a) {
+      output += "\\n";
+    } else if (byte === 0x0d) {
+      output += "\\r";
+    } else if (byte === 0x5c) {
+      output += "\\\\";
+    } else if (byte >= 0x20 && byte <= 0x7e) {
+      output += String.fromCharCode(byte);
+    } else {
+      output += "\\" + byte.toString(8).padStart(3, "0");
+    }
+  }
+  return output;
+}
