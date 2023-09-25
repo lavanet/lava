@@ -130,7 +130,7 @@ env: []
 image:
   repository: us-central1-docker.pkg.dev/lavanet-public/images/lavad
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: v0.23.5
 
 # port to expose the node on
 port:
