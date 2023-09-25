@@ -172,9 +172,7 @@ spec:
                 - --from
                 - {{ include "provider.keyname" . | quote }}
                 - --endpoints
-                {{- range .Values.supportedChainIds }}
-                - "{{ $endpoint }}:443,{{ . }}"
-                {{- end }}
+                - "{{- range .Values.supportedChainIds -}}{{ $.Values.endpoint }}:443,{{ . }} {{ end }}"
             {{- toYaml (unset .Values.defaultLivenessProbe "enabled") | nindent 12 }}
           {{ else if .Values.customLivenessProbe.enabled }}
           livenessProbe:
@@ -198,9 +196,7 @@ spec:
                 - --from
                 - {{ include "provider.keyname" . | quote }}
                 - --endpoints
-                {{- range .Values.supportedChainIds }}
-                - "{{ $endpoint }}:443,{{ . }}"
-                {{- end }}
+                - "{{- range .Values.supportedChainIds -}}{{ $.Values.endpoint }}:443,{{ . }} {{ end }}"
             {{- toYaml (unset .Values.defaultReadinessProbe "enabled") | nindent 12 }}
           {{ else if .Values.customReadinessProbe.enabled }}
           readinessProbe:
