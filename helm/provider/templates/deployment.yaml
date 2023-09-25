@@ -29,8 +29,9 @@ spec:
       {{- include "provider.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
@@ -171,9 +172,7 @@ spec:
                 - --from
                 - {{ include "provider.keyname" . | quote }}
                 - --endpoints
-                {{- range .Values.supportedChainIds }}
-                - "{{ $endpoint }}:443,{{ . }}"
-                {{- end }}
+                - "{{- range .Values.supportedChainIds -}}{{ $.Values.endpoint }}:443,{{ . }} {{ end }}"
             {{- toYaml (unset .Values.defaultLivenessProbe "enabled") | nindent 12 }}
           {{ else if .Values.customLivenessProbe.enabled }}
           livenessProbe:
@@ -197,9 +196,7 @@ spec:
                 - --from
                 - {{ include "provider.keyname" . | quote }}
                 - --endpoints
-                {{- range .Values.supportedChainIds }}
-                - "{{ $endpoint }}:443,{{ . }}"
-                {{- end }}
+                - "{{- range .Values.supportedChainIds -}}{{ $.Values.endpoint }}:443,{{ . }} {{ end }}"
             {{- toYaml (unset .Values.defaultReadinessProbe "enabled") | nindent 12 }}
           {{ else if .Values.customReadinessProbe.enabled }}
           readinessProbe:
