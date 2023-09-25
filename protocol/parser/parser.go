@@ -328,7 +328,7 @@ func parseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 
 	// Extract arguments
 	propName := input[0]
-	innerSeparator := input[1]
+	innerSeparator := input[1] // TODO: Why do we need it if only []interface{} uses it?
 
 	switch unmarshalledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
