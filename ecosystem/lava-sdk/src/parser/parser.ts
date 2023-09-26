@@ -74,7 +74,6 @@ export class Parser {
       return "";
     }
 
-    // TODO: Check if this is correct
     let response = (result as any[])[DEFAULT_PARSED_RESULT_INDEX] as string;
     if (response.includes('"')) {
       response = JSON.parse(response);
@@ -226,7 +225,7 @@ export class Parser {
         return new ValueNotSetError();
       }
       const block = unmarshalledData[param_index];
-      return [this.blockInterfaceToString(block)];
+      return [this.blockAnyToString(block)];
     } else {
       return new Error(
         "Parse type unsupported in parse by arg, only list parameters are currently supported"
@@ -244,7 +243,7 @@ export class Parser {
   //	   }
   //	}
   //
-  // should output an interface array with "wanted result" in first index 0
+  // should output an `any` array with "wanted result" in first index 0
   public static parseCanonical(
     rpcInput: RPCInput,
     input: string[],
@@ -287,7 +286,7 @@ export class Parser {
         }
       }
 
-      return [this.blockInterfaceToString(blockContainer)];
+      return [this.blockAnyToString(blockContainer)];
     } else if (
       unmarshalledData !== null &&
       typeof unmarshalledData === "object"
@@ -297,7 +296,7 @@ export class Parser {
         if (unmarshalledData.hasOwnProperty(key)) {
           const val = unmarshalledData[key];
           if (i === input.length - 1) {
-            return [this.blockInterfaceToString(val)];
+            return [this.blockAnyToString(val)];
           } else if (typeof val === "object" && val !== null) {
             unmarshalledData = val;
           } else {
@@ -354,7 +353,7 @@ export class Parser {
     ) {
       if (unmarshalledData.hasOwnProperty(propName)) {
         return this.appendInterfaceToInterfaceArrayWithError(
-          this.blockInterfaceToString(unmarshalledData[propName])
+          this.blockAnyToString(unmarshalledData[propName])
         );
       }
       return new ValueNotSetError();
@@ -413,7 +412,7 @@ export class Parser {
         return [null, ValueNotSetError];
       }
       return this.appendInterfaceToInterfaceArrayWithError(
-        this.blockInterfaceToString(unmarshalledData[propIndex])
+        this.blockAnyToString(unmarshalledData[propIndex])
       );
     } else if (
       unmarshalledData !== null &&
@@ -421,12 +420,12 @@ export class Parser {
     ) {
       if (unmarshalledData.hasOwnProperty(propName)) {
         return this.appendInterfaceToInterfaceArrayWithError(
-          this.blockInterfaceToString(unmarshalledData[propName])
+          this.blockAnyToString(unmarshalledData[propName])
         );
       }
       if (unmarshalledData.hasOwnProperty(inp)) {
         return this.appendInterfaceToInterfaceArrayWithError(
-          this.blockInterfaceToString(unmarshalledData[inp])
+          this.blockAnyToString(unmarshalledData[inp])
         );
       }
       return new ValueNotSetError();
@@ -486,19 +485,18 @@ export class Parser {
     return null;
   }
 
-  // AppendInterfaceToInterfaceArrayWithError appends an interface to an array of interfaces
+  // AppendInterfaceToInterfaceArrayWithError appends an `any` to an array of `any`s
   // Returns an error if the value is an empty string
   protected static appendInterfaceToInterfaceArrayWithError(
     value: string
   ): any[] | Error {
-    // TODO: Check on that last one
-    if (value === "" || value === "0" || value === "%!s(<nil>)") {
+    if (value === "" || value === "0") {
       return new ValueNotSetError();
     }
     return [value];
   }
 
-  protected static blockInterfaceToString(block: any): string {
+  protected static blockAnyToString(block: any): string {
     if (IsString(block)) {
       return block;
     } else if (IsNumber(block)) {
