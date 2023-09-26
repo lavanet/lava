@@ -285,14 +285,15 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		retArr = append(retArr, blockInterfaceToString(blockContainer))
 		return retArr, nil
 	case map[string]interface{}:
-		for idx, key := range input[1:] {
+		inputForDictionaryParsing := input[1:]
+		for idx, key := range inputForDictionaryParsing {
 			if val, ok := unmarshaledDataTyped[key]; ok {
-				if idx == (len(input) - 1) {
+				if idx == (len(inputForDictionaryParsing) - 1) {
 					retArr := make([]interface{}, 0)
 					retArr = append(retArr, blockInterfaceToString(val))
 					return retArr, nil
 				}
-				// if we didn't get to the last elemnt continue deeper by chaning unmarshaledDataTyped
+				// if we didn't get to the last element continue deeper by changing unmarshaledDataTyped
 				switch v := val.(type) {
 				case map[string]interface{}:
 					unmarshaledDataTyped = v
