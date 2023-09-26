@@ -1078,10 +1078,10 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 		fs.setEntryIndex(ctx, safeIndex, entries.IsLive)
 
 		for _, entry := range entries.Entries {
-			_, err := types.SanitizeIndex(entry.Index)
-			if err != nil {
-				utils.LavaFormatPanic("unsafe fixation entry in genesis file", err, utils.Attribute{Key: "Index", Value: entry.Index})
-			}
+			// _, err := types.SanitizeIndex(entry.Index)
+			// if err != nil {
+			// 	utils.LavaFormatPanic("unsafe fixation entry in genesis file", err, utils.Attribute{Key: "Index", Value: entry.Index})
+			// }
 			fs.setEntry(ctx, entry)
 		}
 	}
