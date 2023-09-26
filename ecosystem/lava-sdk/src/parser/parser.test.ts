@@ -287,3 +287,39 @@ describe("TestParseBlockFromParamsHappyFlow", () => {
     });
   }
 });
+
+describe("TestParseBlockFromReplyHappyFlow", () => {
+  const testCases = [
+    {
+      name: "DefaultParsing",
+      message: new RPCInputTest(),
+      blockParser: createBlockParser(["latest"], PARSER_FUNC.DEFAULT),
+      expectedBlock: LATEST_BLOCK,
+    },
+    {
+      name: "ParseByArg",
+      message: new RPCInputTest(null, ["1"]),
+      blockParser: createBlockParser(["0"], PARSER_FUNC.PARSE_BY_ARG),
+      expectedBlock: 1,
+    },
+    {
+      name: "ParseCanonical",
+      message: new RPCInputTest(null, { block: 25 }),
+      blockParser: createBlockParser(
+        ["0", "block"],
+        PARSER_FUNC.PARSE_CANONICAL
+      ),
+      expectedBlock: 25,
+    },
+  ];
+
+  for (const testCase of testCases) {
+    it(testCase.name, () => {
+      const block = Parser.ParseBlockFromReply(
+        testCase.message,
+        testCase.blockParser
+      );
+      expect(block).toBe(testCase.expectedBlock);
+    });
+  }
+});
