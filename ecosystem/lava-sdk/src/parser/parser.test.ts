@@ -179,72 +179,111 @@ describe("parser", () => {
   });
 });
 
+function createBlockParser(
+  parserArgs: string[],
+  parserFunc: PARSER_FUNCMap[keyof PARSER_FUNCMap]
+): BlockParser {
+  const blockParser: BlockParser = new BlockParser();
+  blockParser.setParserArgList(parserArgs);
+  blockParser.setParserFunc(parserFunc);
+  return blockParser;
+}
+
 describe("TestParseBlockFromParamsHappyFlow", () => {
-  class TestCase {
-    constructor(
-      public Name: string,
-      public Message: RPCInput,
-      public BlockParser: BlockParser,
-      public ExpectedBlock: number
-    ) {}
-  }
-
-  const createBlockParser = (
-    parserArgs: string[],
-    parserFunc: PARSER_FUNCMap[keyof PARSER_FUNCMap]
-  ): BlockParser => {
-    const blockParser: BlockParser = new BlockParser();
-    blockParser.setParserArgList(parserArgs);
-    blockParser.setParserFunc(parserFunc);
-    return blockParser;
-  };
-
-  const testCases: TestCase[] = [
-    new TestCase(
-      "DefaultParsing",
-      new RPCInputTest(),
-      createBlockParser(["latest"], PARSER_FUNC.DEFAULT),
-      LATEST_BLOCK
-    ),
-    new TestCase(
-      "ParseByArg",
-      new RPCInputTest(["1"]),
-      createBlockParser(["0"], PARSER_FUNC.PARSE_BY_ARG),
-      1
-    ),
-    new TestCase(
-      "ParseCanonical__any[]__Case",
-      new RPCInputTest([{ block: 6 }, { block: 25 }]),
-      createBlockParser(["1", "block"], PARSER_FUNC.PARSE_CANONICAL),
-      25
-    ),
-    new TestCase(
-      "ParseCanonical__object__Case",
-      new RPCInputTest({ data: { block: 1234234 } }),
-      createBlockParser(["0", "data", "block"], PARSER_FUNC.PARSE_CANONICAL),
-      1234234
-    ),
-    new TestCase(
-      "ParseDictionary__any[]__Case",
-      new RPCInputTest(["block=1000"]),
-      createBlockParser(["block", "="], PARSER_FUNC.PARSE_DICTIONARY),
-      1000
-    ),
-    new TestCase(
-      "ParseDictionary__object__Case",
-      new RPCInputTest({ block: 6 }),
-      createBlockParser(["block", "unnecessary"], PARSER_FUNC.PARSE_DICTIONARY),
-      6
-    ),
+  const testCases = [
+    {
+      name: "DefaultParsing",
+      message: new RPCInputTest(),
+      blockParser: createBlockParser(["latest"], PARSER_FUNC.DEFAULT),
+      expectedBlock: LATEST_BLOCK,
+    },
+    {
+      name: "ParseByArg",
+      message: new RPCInputTest(["1"]),
+      blockParser: createBlockParser(["0"], PARSER_FUNC.PARSE_BY_ARG),
+      expectedBlock: 1,
+    },
+    {
+      name: "ParseCanonical__any[]__Case",
+      message: new RPCInputTest([{ block: 6 }, { block: 25 }]),
+      blockParser: createBlockParser(
+        ["1", "block"],
+        PARSER_FUNC.PARSE_CANONICAL
+      ),
+      expectedBlock: 25,
+    },
+    {
+      name: "ParseCanonical__object__Case",
+      message: new RPCInputTest({ data: { block: 1234234 } }),
+      blockParser: createBlockParser(
+        ["0", "data", "block"],
+        PARSER_FUNC.PARSE_CANONICAL
+      ),
+      expectedBlock: 1234234,
+    },
+    {
+      name: "ParseDictionary__any[]__Case",
+      message: new RPCInputTest(["block=1000"]),
+      blockParser: createBlockParser(
+        ["block", "="],
+        PARSER_FUNC.PARSE_DICTIONARY
+      ),
+      expectedBlock: 1000,
+    },
+    {
+      name: "ParseDictionary__object__Case",
+      message: new RPCInputTest({ block: 6 }),
+      blockParser: createBlockParser(
+        ["block", "unnecessary"],
+        PARSER_FUNC.PARSE_DICTIONARY
+      ),
+      expectedBlock: 6,
+    },
+    {
+      name: "ParseDictionaryOrOrdered__any[]__PropName__Case",
+      message: new RPCInputTest(["block=99"]),
+      blockParser: createBlockParser(
+        ["block", "=", "0"],
+        PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED
+      ),
+      expectedBlock: 99,
+    },
+    {
+      name: "ParseDictionaryOrOrdered__any[]__PropIndex__Case",
+      message: new RPCInputTest(["765"]),
+      blockParser: createBlockParser(
+        ["unused", "unused", "0"],
+        PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED
+      ),
+      expectedBlock: 765,
+    },
+    {
+      name: "ParseDictionaryOrOrdered__object__PropName__Case",
+      message: new RPCInputTest({ block: "101" }),
+      blockParser: createBlockParser(
+        ["block", "unused", "0"],
+        PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED
+      ),
+      expectedBlock: 101,
+    },
+    {
+      name: "ParseDictionaryOrOrdered__object__KeyIndex__Case",
+      message: new RPCInputTest({ 0: 103 }),
+      blockParser: createBlockParser(
+        ["unused", "unused", "0"],
+        PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED
+      ),
+      expectedBlock: 103,
+    },
   ];
 
   for (const testCase of testCases) {
-    it(testCase.Name, () => {
+    it(testCase.name, () => {
       const block = Parser.ParseBlockFromParams(
-        testCase.Message,
-        testCase.BlockParser
+        testCase.message,
+        testCase.blockParser
       );
-      expect(block).toBe(testCase.ExpectedBlock);
+      expect(block).toBe(testCase.expectedBlock);
     });
   }
 });
