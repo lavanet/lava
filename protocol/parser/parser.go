@@ -257,7 +257,6 @@ func ParseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 //
 // should output an interface array with "wanted result" in first index 0
 func ParseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-
 	unmarshalledData, err := GetDataToParse(rpcInput, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
