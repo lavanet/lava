@@ -363,6 +363,10 @@ export class LavaSDK {
           apiInterface = APIInterfaceRest;
           continue;
         }
+        if (options.apiInterface == supported.apiInterface) {
+          apiInterface = supported.apiInterface;
+          break;
+        }
         if (
           apiInterface != "" &&
           apiInterface != supported.apiInterface &&
