@@ -2,10 +2,7 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -155,44 +152,18 @@ func newRelaySession(
 }
 
 func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err error) {
-	fmt.Println("epochValue: ", epochValue)
 	// If epochValue is not the default value (0 in this case), use it as epoch
 	if epochValue != 0 {
 		return int64(epochValue), nil
 	}
 	status, err := clientCtx.Client.Status(context.Background())
-	fmt.Println("status: ", status.SyncInfo.LatestBlockHeight)
-
-	resp, err := http.Get("http://0.0.0.0:1317/lavanet/lava/epochstorage/epoch_details")
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	latestBlockHeight := status.SyncInfo.LatestBlockHeight
+	fmt.Println("latestBlockHeight: ", latestBlockHeight)
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, err
-	}
-
-	var epochResponse struct {
-		EpochDetails struct {
-			StartBlock string `json:"startBlock"`
-		} `json:"EpochDetails"`
-	}
-	if err := json.Unmarshal(body, &epochResponse); err != nil {
-		return 0, err
-	}
-
-	// Convert the startBlock from string to int64
-	blockHeight, err := strconv.ParseInt(epochResponse.EpochDetails.StartBlock, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	fmt.Println("blockHeight: ", blockHeight)
-	epoch = calculateEpochFromBlockHeight(blockHeight) // Assuming this is still the right calculation
-	fmt.Println("Epoch:", epoch)
-
+	epoch = calculateEpochFromBlockHeight(latestBlockHeight)
 	return epoch, nil
 }
 
