@@ -831,7 +831,7 @@ export class ConsumerSessionManager {
             if (epoch == 0) {
               this.currentEpoch = this.getEpochFromEpochTracker(); // setting the epoch for initialization.
             }
-            consumerSessionWithProvider.setPairingEpoch(lavaEpoch); // set the pairing epoch on the specific provider.
+            consumerSessionWithProvider.setPairingEpoch(this.currentEpoch); // set the pairing epoch on the specific provider.
           })
           .catch((e) => {
             Logger.warn(
