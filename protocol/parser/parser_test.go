@@ -344,3 +344,63 @@ func TestParseBlockFromParamsHappyFlow(t *testing.T) {
 		})
 	}
 }
+
+func TestParseBlockFromReplyHappyFlow(t *testing.T) {
+	testCases := []struct {
+		name          string
+		message       RPCInputTest
+		blockParser   spectypes.BlockParser
+		expectedBlock int64
+	}{
+		// { // TODO: Always fails, but here for future reference
+		// 	name:    "EmptyParser",
+		// 	message: RPCInputTest{},
+		// 	blockParser: spectypes.BlockParser{
+		// 		ParserArg:  []string{},
+		// 		ParserFunc: spectypes.PARSER_FUNC_EMPTY,
+		// 	},
+		// 	expectedBlock: spectypes.NOT_APPLICABLE,
+		// },
+		{
+			name:    "DefaultParsing",
+			message: RPCInputTest{},
+			blockParser: spectypes.BlockParser{
+				ParserArg:  []string{"latest"},
+				ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+			},
+			expectedBlock: spectypes.LATEST_BLOCK,
+		},
+		{
+			name: "ParseByArg",
+			message: RPCInputTest{
+				Result: []byte("1"),
+			},
+			blockParser: spectypes.BlockParser{
+				ParserArg:  []string{"0"},
+				ParserFunc: spectypes.PARSER_FUNC_PARSE_BY_ARG,
+			},
+			expectedBlock: 1,
+		},
+		{
+			name: "ParseCanonical",
+			message: RPCInputTest{
+				Result: []byte(
+					"{\"block\" : 25}",
+				),
+			},
+			blockParser: spectypes.BlockParser{
+				ParserArg:  []string{"0", "block"},
+				ParserFunc: spectypes.PARSER_FUNC_PARSE_CANONICAL,
+			},
+			expectedBlock: 25,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			block, err := ParseBlockFromReply(&testCase.message, testCase.blockParser)
+			require.NoError(t, err, fmt.Sprintf("Test case name: %s", testCase.name))
+			require.Equal(t, testCase.expectedBlock, block)
+		})
+	}
+}
