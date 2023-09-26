@@ -18,6 +18,7 @@ var _ = strconv.Itoa(0)
 const (
 	QoSValuesFlag = "qos-values"
 	CuAmountFlag  = "cu-amount"
+	EpochFlag     = "epoch"
 )
 
 func CmdSimulateRelayPayment() *cobra.Command {
@@ -62,28 +63,17 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 
 			// Epoch
-			queryRoute := "epochstorage/EpochDetails" // Adjust this to your actual route and method name
-			res, _, err := clientCtx.QueryWithData(queryRoute, nil)
+			epochValue, err := cmd.Flags().GetUint64(EpochFlag)
 			if err != nil {
 				return err
 			}
-			var epochDetailsResponse epochstoragetypes.QueryGetEpochDetailsResponse
-			if err := clientCtx.Codec.UnmarshalJSON(res, &epochDetailsResponse); err != nil {
+			epoch, err := extractEpoch(clientCtx, epochValue)
+			if err != nil {
 				return err
 			}
-			epochDetails := epochDetailsResponse.EpochDetails
-			epoch := epochDetails.GetStartBlock()
 
 			// Create RelaySession
-			relaySession := &types.RelaySession{
-				SpecId:    specId,
-				SessionId: sessionId,
-				CuSum:     cuAmount,
-				Provider:  providerAddr,
-				RelayNum:  relayNum,
-				QosReport: qosReport,
-				Epoch:     int64(epoch),
-			}
+			relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayNum, qosReport, epoch, clientCtx.ChainID)
 
 			msg := types.NewMsgRelayPayment(
 				clientCtx.GetFromAddress().String(),
@@ -101,8 +91,52 @@ func CmdSimulateRelayPayment() *cobra.Command {
 	cmd.MarkFlagRequired(flags.FlagFrom)
 	cmd.Flags().StringSlice(QoSValuesFlag, []string{"1", "1", "1"}, "QoS values: latency, availability, sync scores")
 	cmd.Flags().Uint64(CuAmountFlag, 0, "CU serviced by the provider")
+	cmd.Flags().Uint64(EpochFlag, 0, "Epoch value to be used. If not set, it will be queried from the chain.")
 
 	return cmd
+}
+
+func newRelaySession(
+	specId string,
+	sessionId uint64,
+	cuAmount uint64,
+	providerAddr string,
+	relayNum uint64,
+	qosReport *types.QualityOfServiceReport,
+	epoch int64,
+	chainID string,
+) *types.RelaySession {
+	relaySession := &types.RelaySession{
+		SpecId:      specId,
+		SessionId:   sessionId,
+		CuSum:       cuAmount,
+		Provider:    providerAddr,
+		RelayNum:    relayNum,
+		QosReport:   qosReport,
+		Epoch:       epoch,
+		LavaChainId: chainID,
+	}
+	return relaySession
+}
+
+func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err error) {
+	// If epochValue is not the default value (0 in this case), use it as epoch
+	if epochValue != 0 {
+		epoch = int64(epochValue)
+	} else {
+		queryRoute := "epochstorage/EpochDetails" // Adjust this to your actual route and method name
+		res, _, err := clientCtx.QueryWithData(queryRoute, nil)
+		if err != nil {
+			return int64(0), err
+		}
+		var epochDetailsResponse epochstoragetypes.QueryGetEpochDetailsResponse
+		if err := clientCtx.Codec.UnmarshalJSON(res, &epochDetailsResponse); err != nil {
+			return int64(0), err
+		}
+		epochDetails := epochDetailsResponse.EpochDetails
+		epoch = int64(epochDetails.GetStartBlock())
+	}
+	return epoch, nil
 }
 
 func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport, err error) {
