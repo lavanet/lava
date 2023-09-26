@@ -340,7 +340,7 @@
                         "parse_directives": [
                             {
                                 "function_tag": "GET_BLOCK_BY_NUM",
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":[{\"block_id\":%d}],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":%d},\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",
@@ -353,7 +353,7 @@
                                 "api_name": "block"
                             },
                             {
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":[{\"finality\":\"final\"}],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"finality\":\"final\"},\"id\":1}",
                                 "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                     "parser_arg": [

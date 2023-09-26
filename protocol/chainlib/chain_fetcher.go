@@ -167,11 +167,11 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	var craftData *CraftData
-	// if parsing.FunctionTemplate != "" {
-	// 	path := parsing.ApiName
-	// 	data := []byte(parsing.FunctionTemplate)
-	// 	craftData = &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}
-	// }
+	if parsing.FunctionTemplate != "" {
+		path := parsing.ApiName
+		data := []byte(parsing.FunctionTemplate)
+		craftData = &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}
+	}
 	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, craftData, cf.ChainFetcherMetadata())
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
