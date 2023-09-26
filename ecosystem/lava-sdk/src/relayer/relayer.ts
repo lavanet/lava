@@ -64,6 +64,7 @@ export class Relayer {
   async probeProvider(
     providerAddress: string,
     apiInterface: string,
+    guid: number,
     specId: string
   ): Promise<ProbeReply> {
     const client = new RelayerClient(
@@ -71,7 +72,7 @@ export class Relayer {
       this.getTransportWrapped()
     );
     const request = new ProbeRequest();
-    request.setGuid(123);
+    request.setGuid(guid);
     request.setApiInterface(apiInterface);
     request.setSpecId(specId);
     const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
