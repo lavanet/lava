@@ -1,6 +1,11 @@
 package cli
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -8,7 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 )
@@ -34,20 +39,36 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 
 			// Extract arguments
-			// consumerKey := args[0]
+			consumerInput := args[0]
+
+			keyName, err := sigs.GetKeyName(clientCtx.WithFrom(consumerInput))
+			if err != nil {
+				return err
+			}
+			fmt.Println("SIM keyName: ", keyName)
+			privKey, err := sigs.GetPrivKey(clientCtx, keyName)
+			if err != nil {
+				return err
+			}
+			fmt.Println("SIM privKey: ", privKey)
+
+			// SpecID
 			specId := args[1]
+			fmt.Println("SIM specId: ", specId)
 
 			// CU
 			cuAmount, err := cmd.Flags().GetUint64("cu-amount")
 			if err != nil {
 				return err
 			}
+			fmt.Println("SIM cuAmount: ", cuAmount)
 
 			// Session ID
 			sessionId := uint64(0)
 
 			// Provider
 			providerAddr, _ := cmd.Flags().GetString(flags.FlagFrom)
+			fmt.Println("SIM providerAddr: ", providerAddr)
 
 			// Relay Num
 			relayNum := uint64(0)
@@ -61,25 +82,39 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			fmt.Println("SIM qosReport Latency: ", qosReport.Latency.String())
 
 			// Epoch
 			epochValue, err := cmd.Flags().GetUint64(EpochFlag)
 			if err != nil {
 				return err
 			}
+			fmt.Println("clientCtx.Height: ", clientCtx.Height)
 			epoch, err := extractEpoch(clientCtx, epochValue)
 			if err != nil {
 				return err
 			}
+			fmt.Println("SIM epoch: ", epoch)
 
 			// Create RelaySession
-			relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayNum, qosReport, epoch, clientCtx.ChainID)
+			relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayNum, qosReport, 20, clientCtx.ChainID)
+			fmt.Println("SIM relaySession before sig: ", relaySession)
+
+			sig, err := sigs.Sign(privKey, *relaySession)
+			if err != nil {
+				return err
+			}
+			// Set Sig
+			relaySession.Sig = sig
+			fmt.Println("SIM relaySession after sig: ", relaySession)
 
 			msg := types.NewMsgRelayPayment(
 				clientCtx.GetFromAddress().String(),
 				[]*types.RelaySession{relaySession},
 				"",
 			)
+			fmt.Println("SIM msg: ", msg)
+
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -120,22 +155,44 @@ func newRelaySession(
 }
 
 func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err error) {
+	fmt.Println("epochValue: ", epochValue)
 	// If epochValue is not the default value (0 in this case), use it as epoch
 	if epochValue != 0 {
-		epoch = int64(epochValue)
-	} else {
-		queryRoute := "epochstorage/EpochDetails" // Adjust this to your actual route and method name
-		res, _, err := clientCtx.QueryWithData(queryRoute, nil)
-		if err != nil {
-			return int64(0), err
-		}
-		var epochDetailsResponse epochstoragetypes.QueryGetEpochDetailsResponse
-		if err := clientCtx.Codec.UnmarshalJSON(res, &epochDetailsResponse); err != nil {
-			return int64(0), err
-		}
-		epochDetails := epochDetailsResponse.EpochDetails
-		epoch = int64(epochDetails.GetStartBlock())
+		return int64(epochValue), nil
 	}
+	status, err := clientCtx.Client.Status(context.Background())
+	fmt.Println("status: ", status.SyncInfo.LatestBlockHeight)
+
+	resp, err := http.Get("http://0.0.0.0:1317/lavanet/lava/epochstorage/epoch_details")
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	var epochResponse struct {
+		EpochDetails struct {
+			StartBlock string `json:"startBlock"`
+		} `json:"EpochDetails"`
+	}
+	if err := json.Unmarshal(body, &epochResponse); err != nil {
+		return 0, err
+	}
+
+	// Convert the startBlock from string to int64
+	blockHeight, err := strconv.ParseInt(epochResponse.EpochDetails.StartBlock, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	fmt.Println("blockHeight: ", blockHeight)
+	epoch = calculateEpochFromBlockHeight(blockHeight) // Assuming this is still the right calculation
+	fmt.Println("Epoch:", epoch)
+
 	return epoch, nil
 }
 
@@ -170,4 +227,10 @@ func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport
 	}
 
 	return qosReport, nil
+}
+
+func calculateEpochFromBlockHeight(blockHeight int64) int64 {
+	epochSize := int64(20)
+	remainder := blockHeight % epochSize
+	return blockHeight - remainder
 }
