@@ -799,11 +799,13 @@ export class ConsumerSessionManager {
     const retryProbing: ConsumerSessionsWithProvider[] = [];
     for (const consumerSessionWithProvider of pairingList) {
       const startTime = performance.now();
+      const guid = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
       promiseProbeArray.push(
         this.relayer
           .probeProvider(
             consumerSessionWithProvider.endpoints[0].networkAddress,
             this.getRpcEndpoint().apiInterface,
+            guid,
             this.getRpcEndpoint().chainId
           )
           .then((probeReply) => {
@@ -818,9 +820,20 @@ export class ConsumerSessionManager {
               latency + " ms"
             );
 
+            if (guid != probeReply.getGuid()) {
+              Logger.error(
+                "Guid mismatch for probe request and response. requested: ",
+                guid,
+                "response:",
+                probeReply.getGuid()
+              );
+            }
+
             const lavaEpoch = probeReply.getLavaEpoch();
             Logger.debug(
-              `Lava Epoch for provider ${consumerSessionWithProvider.publicLavaAddress}: ${lavaEpoch}`
+              `Probing Result for provider ${
+                consumerSessionWithProvider.publicLavaAddress
+              }, Epoch: ${lavaEpoch}, Lava Block: ${probeReply.getLavaLatestBlock()}`
             );
             this.epochTracker.setEpoch(
               consumerSessionWithProvider.publicLavaAddress,
@@ -831,7 +844,7 @@ export class ConsumerSessionManager {
             if (epoch == 0) {
               this.currentEpoch = this.getEpochFromEpochTracker(); // setting the epoch for initialization.
             }
-            consumerSessionWithProvider.setPairingEpoch(lavaEpoch); // set the pairing epoch on the specific provider.
+            consumerSessionWithProvider.setPairingEpoch(this.currentEpoch); // set the pairing epoch on the specific provider.
           })
           .catch((e) => {
             Logger.warn(

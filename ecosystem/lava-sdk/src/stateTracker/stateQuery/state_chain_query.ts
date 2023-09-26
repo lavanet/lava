@@ -171,7 +171,6 @@ export class StateChainQuery {
         );
 
         const providers = this.constructLavaPairing(pairingList);
-
         // Construct lava providers from pairing list and return it
         return providers;
       }
@@ -332,7 +331,7 @@ export class StateChainQuery {
         );
 
         const stakeEntry = new StakeEntry();
-        stakeEntry.setEndpointsList(pairingEndpoints);
+        stakeEntry.setEndpointsList([pairingEndpoint]);
         stakeEntry.setAddress(provider.publicAddress);
 
         pairing.push(stakeEntry);

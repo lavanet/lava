@@ -375,8 +375,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					return
 				}
 			}
-
-			if chainMessage.RequestedBlock() != spectypes.NOT_APPLICABLE {
+			requestedBlock, _ := chainMessage.RequestedBlock()
+			if requestedBlock != spectypes.NOT_APPLICABLE {
 				// try using cache before sending relay
 				var cacheReply *pairingtypes.CacheRelayReply
 				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
@@ -425,7 +425,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 			// set cache in a nonblocking call
 			go func() {
-				if chainMessage.RequestedBlock() == spectypes.NOT_APPLICABLE {
+				requestedBlock, _ := chainMessage.RequestedBlock()
+				if requestedBlock == spectypes.NOT_APPLICABLE {
 					return
 				}
 				new_ctx := context.Background()
