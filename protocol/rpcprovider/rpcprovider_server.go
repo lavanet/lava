@@ -458,13 +458,14 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, pairedProviders, projectId, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
 			if verifyPairingError != nil {
-				return nil, utils.LavaFormatInfo("Failed to VerifyPairing after ConsumerNotRegisteredYet",
+				return nil, utils.LavaFormatInfo("Failed to VerifyPairing for new consumer",
 					utils.Attribute{Key: "Error", Value: verifyPairingError},
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
 					utils.Attribute{Key: "provider", Value: rpcps.providerAddress},
 					utils.Attribute{Key: "relayNum", Value: request.RelayNum},
+					utils.Attribute{Key: "Providers block", Value: rpcps.stateTracker.LatestBlock()},
 				)
 			}
 			if !valid {
