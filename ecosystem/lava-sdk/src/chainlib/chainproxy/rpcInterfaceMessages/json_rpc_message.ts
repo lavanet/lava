@@ -49,7 +49,7 @@ export class JsonrpcMessage extends BaseMessage implements RPCInput {
   }
 
   parseBlock(block: string): number | Error {
-    return Parser.ParseDefaultBlockParameter(block);
+    return Parser.parseDefaultBlockParameter(block);
   }
 
   updateLatestBlockInMessage(

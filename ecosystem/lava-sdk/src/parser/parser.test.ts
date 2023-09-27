@@ -16,7 +16,7 @@ class RPCInputTest implements RPCInput {
     public Headers: Metadata[] = [],
     public ParseBlockFunc: (block: string) => number | Error = (
       block: string
-    ) => Parser.ParseDefaultBlockParameter(block),
+    ) => Parser.parseDefaultBlockParameter(block),
     public GetHeadersFunc: () => Metadata[] = () => []
   ) {}
 
@@ -32,7 +32,7 @@ class RPCInputTest implements RPCInput {
     if (this.ParseBlockFunc !== null) {
       return this.ParseBlockFunc(block);
     }
-    return Parser.ParseDefaultBlockParameter(block);
+    return Parser.parseDefaultBlockParameter(block);
   }
 
   getHeaders(): Metadata[] {
@@ -279,7 +279,7 @@ describe("TestParseBlockFromParamsHappyFlow", () => {
 
   for (const testCase of testCases) {
     it(testCase.name, () => {
-      const block = Parser.ParseBlockFromParams(
+      const block = Parser.parseBlockFromParams(
         testCase.message,
         testCase.blockParser
       );
@@ -315,7 +315,7 @@ describe("TestParseBlockFromReplyHappyFlow", () => {
 
   for (const testCase of testCases) {
     it(testCase.name, () => {
-      const block = Parser.ParseBlockFromReply(
+      const block = Parser.parseBlockFromReply(
         testCase.message,
         testCase.blockParser
       );

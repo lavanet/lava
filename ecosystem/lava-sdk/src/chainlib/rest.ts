@@ -95,7 +95,7 @@ export class RestChainParser extends BaseChainParser {
       if (!blockParser) {
         throw Logger.fatal("BlockParsing is missing");
       }
-      requestedBlock = Parser.ParseBlockFromParams(restMessage, blockParser);
+      requestedBlock = Parser.parseBlockFromParams(restMessage, blockParser);
 
       if (!requestedBlock) {
         throw Logger.fatal(

@@ -69,7 +69,7 @@ export class JsonRpcChainParser extends BaseChainParser {
 
     const overwriteRequestedBlock = headerHandler.overwriteRequestedBlock;
     if (overwriteRequestedBlock === "") {
-      requestedBlock = Parser.ParseBlockFromParams(jsonrpcMessage, blockParser);
+      requestedBlock = Parser.parseBlockFromParams(jsonrpcMessage, blockParser);
       if (!requestedBlock) {
         throw Logger.fatal(
           `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}, blockParsing: ${blockParser}`
