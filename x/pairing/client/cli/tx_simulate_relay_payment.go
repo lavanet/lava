@@ -192,10 +192,9 @@ func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err
 	if epochValue != 0 {
 		return int64(epochValue), nil
 	}
-	ctx := context.Background()
 	epochStorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
 	params := &epochstoragetypes.QueryGetEpochDetailsRequest{}
-	epochDetails, err := epochStorageQuerier.EpochDetails(ctx, params)
+	epochDetails, err := epochStorageQuerier.EpochDetails(context.Background(), params)
 	if err != nil {
 		return int64(0), err
 	}
