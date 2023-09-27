@@ -86,7 +86,6 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("clientCtx.Height: ", clientCtx.Height)
 			epoch, err := extractEpoch(clientCtx, epochValue)
 			if err != nil {
 				return err
@@ -94,7 +93,7 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			fmt.Println("SIM epoch: ", epoch)
 
 			// Create RelaySession
-			relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayNum, qosReport, 20, clientCtx.ChainID)
+			relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayNum, qosReport, epoch, clientCtx.ChainID)
 			fmt.Println("SIM relaySession before sig: ", relaySession)
 
 			sig, err := sigs.Sign(privKey, *relaySession)
