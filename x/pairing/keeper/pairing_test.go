@@ -77,7 +77,9 @@ func TestPairingUniqueness(t *testing.T) {
 			providerAddr := pairing11.Providers[i].Address
 			require.Equal(t, providerAddr, pairing111.Providers[i].Address)
 			require.Nil(t, err)
-			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, ts.BlockHeight())
+			epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, ts.BlockHeight())
+			require.Nil(t, err)
+			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, epoch)
 			require.Nil(t, err)
 			require.True(t, verify.Valid)
 		}
