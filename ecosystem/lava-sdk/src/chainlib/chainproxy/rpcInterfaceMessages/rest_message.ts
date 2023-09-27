@@ -57,4 +57,11 @@ export class RestMessage extends BaseMessage implements RPCInput {
   parseBlock(block: string): number | Error {
     return Parser.ParseDefaultBlockParameter(block);
   }
+
+  updateLatestBlockInMessage(
+    latestBlock: number,
+    modifyContent: boolean
+  ): boolean {
+    return this.setLatestBlockWithHeader(latestBlock, modifyContent);
+  }
 }
