@@ -22,6 +22,7 @@ const (
 	QoSValuesFlag = "qos-values"
 	CuAmountFlag  = "cu-amount"
 	EpochFlag     = "epoch"
+	RelayNumFlag  = "relay-num"
 )
 
 func CmdSimulateRelayPayment() *cobra.Command {
@@ -61,15 +62,15 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 			fmt.Println("SIM cuAmount: ", cuAmount)
 
-			// Session ID
-			sessionId := uint64(time.Now().UnixNano())
-
 			// Provider
 			providerAddr := clientCtx.GetFromAddress().String()
 			fmt.Println("SIM providerAddr: ", providerAddr)
 
 			// Relay Num
-			relayNum := uint64(0)
+			relayNum, err := cmd.Flags().GetUint64(RelayNumFlag)
+			if err != nil {
+				return err
+			}
 
 			// QoS
 			qosValues, err := cmd.Flags().GetStringSlice(QoSValuesFlag)
@@ -93,21 +94,32 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 			fmt.Println("SIM epoch: ", epoch)
 
-			// Create RelaySession
-			relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayNum, qosReport, epoch, clientCtx.ChainID)
-			fmt.Println("SIM relaySession before sig: ", relaySession)
+			relaySessions := []*types.RelaySession{}
+			for relayIdx := uint64(1); relayIdx <= relayNum; relayIdx++ {
+				fmt.Println("relayIdx: ", relayIdx)
+				fmt.Println("relayNum: ", relayNum)
 
-			sig, err := sigs.Sign(privKey, *relaySession)
-			if err != nil {
-				return err
+				// Session ID
+				// We need to randomize it, otherwise it will give unique ID error
+				sessionId := uint64(time.Now().UnixNano())
+
+				// Create RelaySession
+				relaySession := newRelaySession(specId, sessionId, cuAmount, providerAddr, relayIdx, qosReport, epoch, clientCtx.ChainID)
+
+				sig, err := sigs.Sign(privKey, *relaySession)
+				if err != nil {
+					return err // consider whether you want to return or continue to the next iteration
+				}
+				// Set Sig
+				relaySession.Sig = sig
+
+				relaySessions = append(relaySessions, relaySession)
+				fmt.Println("relaySessions: ", relaySessions)
 			}
-			// Set Sig
-			relaySession.Sig = sig
-			fmt.Println("SIM relaySession after sig: ", relaySession)
 
 			msg := types.NewMsgRelayPayment(
 				clientCtx.GetFromAddress().String(),
-				[]*types.RelaySession{relaySession},
+				relaySessions,
 				"",
 			)
 			fmt.Println("SIM msg: ", msg)
@@ -121,8 +133,10 @@ func CmdSimulateRelayPayment() *cobra.Command {
 
 	flags.AddTxFlagsToCmd(cmd)
 	cmd.MarkFlagRequired(flags.FlagFrom)
-	cmd.Flags().StringSlice(QoSValuesFlag, []string{"1", "1", "1"}, "QoS values: latency, availability, sync scores")
 	cmd.Flags().Uint64(CuAmountFlag, 0, "CU serviced by the provider")
+	cmd.MarkFlagRequired(CuAmountFlag)
+	cmd.Flags().Uint64(RelayNumFlag, 1, "Number of relays")
+	cmd.Flags().StringSlice(QoSValuesFlag, []string{"1", "1", "1"}, "QoS values: latency, availability, sync scores")
 	cmd.Flags().Uint64(EpochFlag, 0, "Epoch value to be used. If not set, it will be queried from the chain.")
 
 	return cmd
