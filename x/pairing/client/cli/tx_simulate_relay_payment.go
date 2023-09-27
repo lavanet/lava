@@ -123,8 +123,7 @@ func CmdSimulateRelayPayment() *cobra.Command {
 
 	flags.AddTxFlagsToCmd(cmd)
 	cmd.MarkFlagRequired(flags.FlagFrom)
-	cmd.Flags().Uint64(CuAmountFlag, 0, "CU serviced by the provider")
-	cmd.MarkFlagRequired(CuAmountFlag)
+	cmd.Flags().Uint64(CuAmountFlag, 1, "CU serviced by the provider")
 	cmd.Flags().Uint64(RelayNumFlag, 1, "Number of relays")
 	cmd.Flags().StringSlice(QoSValuesFlag, []string{"1", "1", "1"}, "QoS values: latency, availability, sync scores")
 	cmd.Flags().Uint64(EpochFlag, 0, "Epoch value to be used. If not set, it will be queried from the chain.")
