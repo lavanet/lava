@@ -28,8 +28,8 @@ func (m Migrator) UpgradeProtocolVersionParams(ctx sdk.Context) {
 	utils.LogLavaEvent(ctx, m.keeper.Logger(ctx), types.ParamChangeEventName, detailsMap, "Gov Proposal Accepted Param Changed")
 }
 
-// Migrate2to3 implements store migration from v2 to v3:
-func (m Migrator) Migrate2to3(ctx sdk.Context) error {
+// MigrateVersion implements store migration: update protocol version
+func (m Migrator) MigrateVersion(ctx sdk.Context) error {
 	m.UpgradeProtocolVersionParams(ctx)
 	return nil
 }
