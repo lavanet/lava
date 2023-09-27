@@ -109,9 +109,15 @@ func versionToInteger(v string) (int, error) {
 }
 
 // Validate validates the set of params
-func (p Params) Validate() error {
-	if err := validateVersion(p.Version); err != nil {
-		return err
+func (p Params) Validate(genesis bool) error {
+	if genesis {
+		if err := validateVersionGenesis(p.Version); err != nil {
+			return err
+		}
+	} else {
+		if err := validateVersion(p.Version); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -188,6 +194,33 @@ func validateVersion(v interface{}) error {
 	if newProviderMin != newConsumerMin {
 		return fmt.Errorf("provider and consumer min versions mismatch: %d != %d",
 			newProviderMin, newConsumerMin)
+	}
+
+	return nil
+}
+
+// validateVersion validates the Version param from genesis
+func validateVersionGenesis(v interface{}) error {
+	version, ok := v.(Version)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	_, err := versionToInteger(version.ProviderTarget)
+	if err != nil {
+		return fmt.Errorf("provider target version: %w", err)
+	}
+	_, err = versionToInteger(version.ProviderMin)
+	if err != nil {
+		return fmt.Errorf("provider min version: %w", err)
+	}
+	_, err = versionToInteger(version.ConsumerTarget)
+	if err != nil {
+		return fmt.Errorf("consumer target version: %w", err)
+	}
+	_, err = versionToInteger(version.ConsumerMin)
+	if err != nil {
+		return fmt.Errorf("consumer min version: %w", err)
 	}
 
 	return nil
