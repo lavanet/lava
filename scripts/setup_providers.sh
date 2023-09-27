@@ -61,7 +61,7 @@ $PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $PROVIDER1_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
-$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --cache-be "127.0.0.1:7777" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 # $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \

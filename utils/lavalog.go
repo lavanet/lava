@@ -226,7 +226,7 @@ func LavaFormatDebug(description string, attributes ...Attribute) error {
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {
 	st := ""
 	for _, printable := range listToPrint {
-		st = separator + st + printable.String() + "\n"
+		st = st + separator + printable.String() + "\n"
 	}
 	st = fmt.Sprintf(description+"\n\t%s", st)
 	return st

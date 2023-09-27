@@ -345,6 +345,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 	listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
+	// prevents these objects form being overrun later
+	chainParser.Activate()
 	return nil
 }
 

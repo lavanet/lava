@@ -140,7 +140,7 @@ func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, ht
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(endpoint.Url)
 		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.Url})
+			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.UrlStr()})
 		}
 		switch u.Scheme {
 		case "http", "https":
