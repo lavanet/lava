@@ -4,6 +4,7 @@ import {
   ApiCollection,
   Api,
   Header,
+  CollectionData,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { Metadata } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
@@ -467,6 +468,16 @@ export abstract class BaseChainParser {
       blockDistanceForFinalizedData: blockDistanceForFinalizedData,
       blocksInFinalizationProof: blocksInFinalizationProof,
     };
+  }
+
+  public getParsingByTag(
+    tag: number
+  ): [ParseDirective | undefined, CollectionData | undefined, boolean] {
+    const val = this.taggedApis.get(tag);
+    if (val === undefined) {
+      return [undefined, undefined, false];
+    }
+    return [val.parsing, val.apiCollection.getCollectionData(), true];
   }
 }
 
