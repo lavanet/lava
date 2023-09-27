@@ -251,12 +251,6 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 //
 // should output an interface array with "wanted result" in first index 0
 func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
-	inp := input[0]
-	param_index, err := strconv.ParseUint(inp, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
-	}
-
 	unmarshalledData, err := getDataToParse(rpcInput, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
@@ -264,6 +258,11 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
+		inp := input[0]
+		param_index, err := strconv.ParseUint(inp, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
+		}
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
 			return nil, ValueNotSetError
 		}
@@ -285,10 +284,17 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		retArr = append(retArr, blockInterfaceToString(blockContainer))
 		return retArr, nil
 	case map[string]interface{}:
-		inputForDictionaryParsing := input[1:]
-		for idx, key := range inputForDictionaryParsing {
+		inp := input[0]
+		_, err := strconv.ParseUint(inp, 10, 32)
+		var relevantInput []string
+		if err == nil {
+			relevantInput = input[1:]
+		} else {
+			relevantInput = input
+		}
+		for idx, key := range relevantInput {
 			if val, ok := unmarshaledDataTyped[key]; ok {
-				if idx == (len(inputForDictionaryParsing) - 1) {
+				if idx == (len(relevantInput) - 1) {
 					retArr := make([]interface{}, 0)
 					retArr = append(retArr, blockInterfaceToString(val))
 					return retArr, nil
