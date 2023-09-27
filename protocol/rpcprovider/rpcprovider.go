@@ -155,12 +155,16 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, true)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
-		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsList), nil)
+		utils.LavaFormatError(utils.FormatStringerList("[-] RPCProvider running with disabled endpoints:", disabledEndpointsList, "[-]"), nil)
 		if len(disabledEndpointsList) == len(rpcProviderEndpoints) {
 			utils.LavaFormatFatal("all endpoints are disabled", nil)
 		}
+		activeEndpointsList := getActiveEndpoints(rpcProviderEndpoints, disabledEndpointsList)
+		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 		// try to save disabled endpoints
 		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, 1)
+	} else {
+		utils.LavaFormatInfo("[+] all endpoints up an running")
 	}
 	// tearing down
 	select {
@@ -179,14 +183,33 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	return nil
 }
 
+func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, disabledEndpointsList []*lavasession.RPCProviderEndpoint) []*lavasession.RPCProviderEndpoint {
+	activeEndpoints := map[*lavasession.RPCProviderEndpoint]struct{}{}
+	for _, endpoint := range rpcProviderEndpoints {
+		activeEndpoints[endpoint] = struct{}{}
+	}
+	for _, disabled := range disabledEndpointsList {
+		delete(activeEndpoints, disabled)
+	}
+	activeEndpointsList := []*lavasession.RPCProviderEndpoint{}
+	for endpoint := range activeEndpoints {
+		activeEndpointsList = append(activeEndpointsList, endpoint)
+	}
+	return activeEndpointsList
+}
+
 func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, retryCount int) {
 	time.Sleep(time.Duration(retryCount) * time.Second)
 	parallel := retryCount > 2
 	utils.LavaFormatInfo("Retrying disabled endpoints", utils.Attribute{Key: "disabled endpoints list", Value: disabledEndpoints}, utils.Attribute{Key: "parallel", Value: parallel})
 	disabledEndpointsAfterRetry := rpcp.SetupProviderEndpoints(disabledEndpoints, parallel)
 	if len(disabledEndpointsAfterRetry) > 0 {
-		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsAfterRetry), nil)
+		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsAfterRetry, "[-]"), nil)
 		rpcp.RetryDisabledEndpoints(disabledEndpointsAfterRetry, retryCount+1)
+		activeEndpointsList := getActiveEndpoints(disabledEndpoints, disabledEndpointsAfterRetry)
+		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
+	} else {
+		utils.LavaFormatInfo("[+] all endpoints up an running")
 	}
 }
 

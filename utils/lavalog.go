@@ -223,10 +223,10 @@ func LavaFormatDebug(description string, attributes ...Attribute) error {
 	return LavaFormatLog(description, nil, attributes, LAVA_LOG_DEBUG)
 }
 
-func FormatStringerList[T fmt.Stringer](description string, listToPrint []T) string {
+func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {
 	st := ""
 	for _, printable := range listToPrint {
-		st = st + printable.String() + "\n"
+		st = separator + st + printable.String() + "\n"
 	}
 	st = fmt.Sprintf(description+"\n\t%s", st)
 	return st
