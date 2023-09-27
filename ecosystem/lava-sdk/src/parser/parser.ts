@@ -13,7 +13,7 @@ import {
   BlockParser,
   PARSER_FUNC,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
-import { encodeUtf8 } from "../util/common";
+import { byteArrayToString, encodeUtf8 } from "../util/common";
 import {
   EncodingBase64,
   EncodingHex,
@@ -182,16 +182,16 @@ export class Parser {
         return rpcInput.getParams();
       case PARSE_RESULT:
         let data: Record<string, any>;
-        const unmarshalled = rpcInput.getResult();
-        if (unmarshalled.length === 0) {
+        const rawJsonString = rpcInput.getResult();
+        if (rawJsonString.length === 0) {
           return new Error("GetDataToParse failure GetResult is empty");
         }
         // Try to unmarshal, and if the data is unmarshalable, then return the data itself
         try {
-          data = JSON.parse(new TextDecoder().decode(unmarshalled));
+          data = JSON.parse(byteArrayToString(rawJsonString));
           return [data];
         } catch (err) {
-          return [unmarshalled];
+          return [rawJsonString];
         }
       default:
         return new Error("unsupported block parser parserFunc");
