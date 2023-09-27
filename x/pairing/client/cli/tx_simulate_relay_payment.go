@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -61,10 +62,10 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			fmt.Println("SIM cuAmount: ", cuAmount)
 
 			// Session ID
-			sessionId := uint64(0)
+			sessionId := uint64(time.Now().UnixNano())
 
 			// Provider
-			providerAddr, _ := cmd.Flags().GetString(flags.FlagFrom)
+			providerAddr := clientCtx.GetFromAddress().String()
 			fmt.Println("SIM providerAddr: ", providerAddr)
 
 			// Relay Num
