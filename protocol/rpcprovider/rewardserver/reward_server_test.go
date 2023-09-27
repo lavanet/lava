@@ -292,6 +292,9 @@ func TestUpdateEpoch(t *testing.T) {
 			_, _ = rws.SendNewProof(context.Background(), proof, epoch, acc.String(), "apiInterface")
 		}
 
+		// Make sure that the rewards are flushed to DB
+		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+
 		stubRewardsTxSender.earliestBlockInMemory = 2
 
 		rws.UpdateEpoch(3)
