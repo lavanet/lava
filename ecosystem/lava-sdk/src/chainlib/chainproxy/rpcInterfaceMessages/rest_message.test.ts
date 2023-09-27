@@ -2,30 +2,16 @@ import { RestMessage } from "./rest_message";
 
 describe("RestMessage", () => {
   it("should return null params", () => {
-    const restMessage = new RestMessage(
-      undefined,
-      "blocks/latest",
-      "blocks/latest",
-      {
-        headers: [],
-        latestBlockHeaderSetter: undefined,
-      }
-    );
+    const restMessage = new RestMessage();
+    restMessage.initRestMessage(undefined, "blocks/latest", "blocks/latest");
 
     const params = restMessage.getParams();
     expect(params).toBeNull();
   });
 
   it("should return empty result", () => {
-    const restMessage = new RestMessage(
-      undefined,
-      "blocks/latest",
-      "blocks/latest",
-      {
-        headers: [],
-        latestBlockHeaderSetter: undefined,
-      }
-    );
+    const restMessage = new RestMessage();
+    restMessage.initRestMessage(undefined, "blocks/latest", "blocks/latest");
 
     const result = restMessage.getResult();
     expect(result.length).toBe(0);
@@ -53,10 +39,7 @@ describe("RestParseBlock", () => {
 
   for (const testCase of testTable) {
     it(`should parse ${testCase.name}`, () => {
-      const restMessage = new RestMessage(undefined, "", "", {
-        headers: [],
-        latestBlockHeaderSetter: undefined,
-      });
+      const restMessage = new RestMessage();
 
       const block = restMessage.parseBlock(testCase.input);
       expect(block).toEqual(testCase.expected);

@@ -8,10 +8,13 @@ export interface BaseMessageOptions {
 }
 
 export abstract class BaseMessage implements UpdatableRPCInput {
-  private headers: Metadata[];
+  private headers: Metadata[] = [];
   private latestBlockHeaderSetter: ParseDirective | undefined;
 
-  constructor({ headers = [], latestBlockHeaderSetter }: BaseMessageOptions) {
+  initBaseMessage({
+    headers = [],
+    latestBlockHeaderSetter,
+  }: BaseMessageOptions) {
     this.headers = headers ?? [];
     this.latestBlockHeaderSetter = latestBlockHeaderSetter;
   }

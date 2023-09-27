@@ -1,19 +1,17 @@
 import { Parser } from "../../../parser/parser";
 import { RPCInput } from "../../../parser/rpcInput";
-import { BaseMessage, BaseMessageOptions } from "../common";
+import { BaseMessage } from "../common";
 
 export class RestMessage extends BaseMessage implements RPCInput {
   public msg: Record<string, any> | undefined;
-  private path: string;
-  private specPath: string;
+  private path = "";
+  private specPath = "";
 
-  constructor(
+  initRestMessage(
     msg: Record<string, any> | undefined,
     path: string,
-    specPath: string,
-    baseMessageOptions: BaseMessageOptions
+    specPath: string
   ) {
-    super(baseMessageOptions);
     this.msg = msg;
     this.path = path;
     this.specPath = specPath;

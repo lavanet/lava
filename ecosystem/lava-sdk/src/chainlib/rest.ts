@@ -53,25 +53,28 @@ export class RestChainParser extends BaseChainParser {
       FUNCTION_TAG.SET_LATEST_IN_METADATA
     );
 
-    let restMessage = new RestMessage(
+    let restMessage = new RestMessage();
+    restMessage.initBaseMessage({
+      headers: headerHandler.filteredHeaders,
+      latestBlockHeaderSetter: undefined,
+    });
+
+    restMessage.initRestMessage(
       options.data,
       options.url,
-      apiCont.api.getName(),
-      {
-        headers: headerHandler.filteredHeaders,
-        latestBlockHeaderSetter: undefined,
-      }
+      apiCont.api.getName()
     );
 
     if (options.connectionType === HttpMethod.GET) {
-      restMessage = new RestMessage(
+      restMessage = new RestMessage();
+      restMessage.initBaseMessage({
+        headers: headerHandler.filteredHeaders,
+        latestBlockHeaderSetter: settingHeaderDirective,
+      });
+      restMessage.initRestMessage(
         undefined,
         options.url + String(options.data),
-        apiCont.api.getName(),
-        {
-          headers: headerHandler.filteredHeaders,
-          latestBlockHeaderSetter: settingHeaderDirective,
-        }
+        apiCont.api.getName()
       );
     }
 
