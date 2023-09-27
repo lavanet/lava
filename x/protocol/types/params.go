@@ -206,21 +206,31 @@ func validateVersionGenesis(v interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
-	_, err := versionToInteger(version.ProviderTarget)
+	newProviderTarget, err := versionToInteger(version.ProviderTarget)
 	if err != nil {
 		return fmt.Errorf("provider target version: %w", err)
 	}
-	_, err = versionToInteger(version.ProviderMin)
+	newProviderMin, err := versionToInteger(version.ProviderMin)
 	if err != nil {
 		return fmt.Errorf("provider min version: %w", err)
 	}
-	_, err = versionToInteger(version.ConsumerTarget)
+	newConsumerTarget, err := versionToInteger(version.ConsumerTarget)
 	if err != nil {
 		return fmt.Errorf("consumer target version: %w", err)
 	}
-	_, err = versionToInteger(version.ConsumerMin)
+	newConsumerMin, err := versionToInteger(version.ConsumerMin)
 	if err != nil {
 		return fmt.Errorf("consumer min version: %w", err)
+	}
+
+	// min version may not exceed target version
+	if newProviderMin > newProviderTarget {
+		return fmt.Errorf("provider min version exceeds target version: %d > %d",
+			newProviderMin, newProviderTarget)
+	}
+	if newConsumerMin > newConsumerTarget {
+		return fmt.Errorf("consumer min version exceeds target version: %d > %d",
+			newConsumerMin, newConsumerTarget)
 	}
 
 	return nil
