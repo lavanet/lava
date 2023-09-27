@@ -110,7 +110,7 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			msg := types.NewMsgRelayPayment(
 				clientCtx.GetFromAddress().String(),
 				relaySessions,
-				"",
+				"Simulation for RelayPayment",
 			)
 			utils.LavaFormatInfo("Message Data ", utils.Attribute{Key: "msg", Value: msg})
 
