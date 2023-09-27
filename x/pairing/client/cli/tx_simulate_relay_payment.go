@@ -99,7 +99,7 @@ func CmdSimulateRelayPayment() *cobra.Command {
 
 				sig, err := sigs.Sign(privKey, *relaySession)
 				if err != nil {
-					return err // consider whether you want to return or continue to the next iteration
+					return err
 				}
 				// Set Sig
 				relaySession.Sig = sig
