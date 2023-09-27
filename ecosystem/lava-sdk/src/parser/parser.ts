@@ -406,10 +406,10 @@ export class Parser {
         innerSeparator
       );
       if (value !== null) {
-        return [value, null];
+        return value;
       }
       if (propIndex >= unmarshalledData.length) {
-        return [null, ValueNotSetError];
+        return new ValueNotSetError();
       }
       return this.appendInterfaceToInterfaceArrayWithError(
         this.blockAnyToString(unmarshalledData[propIndex])
