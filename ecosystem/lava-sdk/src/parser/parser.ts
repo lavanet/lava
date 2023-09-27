@@ -43,7 +43,7 @@ export class Parser {
         return FINALIZED_BLOCK;
       default:
         // try to parse a number
-        const blockNum = parseInt(block, 10);
+        const blockNum = parseInt(block, 0);
         if (isNaN(blockNum) || blockNum < 0) {
           throw new InvalidBlockValue(block);
         }
