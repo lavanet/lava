@@ -54,7 +54,9 @@ func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string) (*A
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
 		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, 0)
-		chainMessage.AppendHeader(metadata)
+		if err == nil {
+			chainMessage.AppendHeader(metadata)
+		}
 		return chainMessage, err
 	}
 

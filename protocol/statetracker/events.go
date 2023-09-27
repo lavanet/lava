@@ -245,6 +245,7 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
+	flags.AddKeyringFlags(cmdEvents.Flags())
 	cmdEvents.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
 	cmdEvents.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
 	cmdEvents.Flags().String(FlagValue, "", "the value to look for inside all event attributes")

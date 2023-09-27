@@ -86,8 +86,6 @@ export class LavaSDK {
     // Validate attributes
     if (!badge && !privateKey) {
       throw SDKErrors.errPrivKeyAndBadgeNotInitialized;
-    } else if (badge && privateKey) {
-      throw SDKErrors.errPrivKeyAndBadgeBothInitialized;
     }
 
     // Set log level
@@ -125,7 +123,9 @@ export class LavaSDK {
 
   public async init() {
     // Init wallet
-    if (!this.badgeManager.isActive()) {
+
+    // Check if badge is not specified or user specified a wallet to use with badge
+    if (!this.badgeManager.isActive() || this.privKey != "") {
       const wallet = await createWallet(this.privKey);
       this.account = await wallet.getConsumerAccount();
     } else {
@@ -363,6 +363,10 @@ export class LavaSDK {
           apiInterface = APIInterfaceRest;
           continue;
         }
+        if (options.apiInterface == supported.apiInterface) {
+          apiInterface = supported.apiInterface;
+          break;
+        }
         if (
           apiInterface != "" &&
           apiInterface != supported.apiInterface &&
@@ -473,3 +477,6 @@ export class LavaSDK {
     return rpcConsumerServer;
   }
 }
+
+// exporting relay options to be used if needed.
+export { SendRelayOptions, SendRestRelayOptions };

@@ -60,6 +60,7 @@ $PROVIDER1_LISTENER AXELAR rest '$AXELAR_REST' \
 $PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
+$PROVIDER1_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
 $EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --cache-be "127.0.0.1:7777" --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 # $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
@@ -103,6 +104,7 @@ $PROVIDER2_LISTENER AXELAR rest '$AXELAR_REST' \
 $PROVIDER2_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER2_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER2_LISTENER FVM jsonrpc '$FVM_JRPC' \
+$PROVIDER2_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 # $PROVIDER2_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
@@ -146,6 +148,7 @@ $PROVIDER3_LISTENER AXELAR rest '$AXELAR_REST' \
 $PROVIDER3_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER3_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER3_LISTENER FVM jsonrpc '$FVM_JRPC' \
+$PROVIDER3_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 # $PROVIDER3_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
@@ -175,6 +178,7 @@ screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3382 SUIT jsonrpc \
 127.0.0.1:3383 AVAX jsonrpc \
 127.0.0.1:3384 FVM jsonrpc \
+127.0.0.1:3385 NEAR jsonrpc \
 $EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --cache-be "127.0.0.1:7778" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
 # 127.0.0.1:3385 MANTLE jsonrpc \
 
