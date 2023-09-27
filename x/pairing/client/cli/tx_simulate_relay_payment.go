@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 )
@@ -191,18 +192,12 @@ func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err
 	if epochValue != 0 {
 		return int64(epochValue), nil
 	}
-	status, err := clientCtx.Client.Status(context.Background())
+	ctx := context.Background()
+	epochStorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
+	params := &epochstoragetypes.QueryGetEpochDetailsRequest{}
+	epochDetails, err := epochStorageQuerier.EpochDetails(ctx, params)
 	if err != nil {
-		return 0, err
+		return int64(0), err
 	}
-	latestBlockHeight := status.SyncInfo.LatestBlockHeight
-
-	epoch = calculateEpochFromBlockHeight(latestBlockHeight)
-	return epoch, nil
-}
-
-func calculateEpochFromBlockHeight(blockHeight int64) int64 {
-	epochSize := int64(20)
-	remainder := blockHeight % epochSize
-	return blockHeight - remainder
+	return int64(epochDetails.EpochDetails.StartBlock), nil
 }
