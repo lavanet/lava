@@ -29,6 +29,10 @@ func (psm *ProviderSessionManager) GetBlockedEpochHeight() uint64 {
 }
 
 func (psm *ProviderSessionManager) GetCurrentEpoch() uint64 {
+	utils.LavaFormatDebug("GetCurrentEpoch called",
+		utils.Attribute{Key: "blocked Epoch", Value: psm.atomicReadBlockedEpoch()},
+		utils.Attribute{Key: "block distance", Value: atomic.LoadUint64(&psm.blockDistanceForEpochValidity)},
+	)
 	return psm.atomicReadBlockedEpoch() + atomic.LoadUint64(&psm.blockDistanceForEpochValidity)
 }
 

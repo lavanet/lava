@@ -293,9 +293,10 @@ func TestParsedMessage_GetApiCollection(t *testing.T) {
 
 func TestParsedMessage_RequestedBlock(t *testing.T) {
 	pm := parsedMessage{
-		requestedBlock: 123,
+		latestRequestedBlock: 123,
 	}
-	assert.Equal(t, int64(123), pm.RequestedBlock())
+	requestedBlock, _ := pm.RequestedBlock()
+	assert.Equal(t, int64(123), requestedBlock)
 }
 
 func TestParsedMessage_GetRPCMessage(t *testing.T) {

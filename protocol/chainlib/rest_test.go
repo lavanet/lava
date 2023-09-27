@@ -200,8 +200,8 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
 			require.NoError(t, err)
-
-			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
+			latestReqBlock, _ := chainMessage.RequestedBlock()
+			require.Equal(t, test.requestedBlock, latestReqBlock)
 			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
@@ -270,9 +270,11 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
 			require.NoError(t, err)
-			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
-			chainMessage.UpdateLatestBlockInMessage(test.block, true)   // will update the block only if it's a latest request
-			require.Equal(t, test.block, chainMessage.RequestedBlock()) // expected behavior is that it doesn't change the original requested block
+			latestReqBlock, _ := chainMessage.RequestedBlock()
+			require.Equal(t, test.requestedBlock, latestReqBlock)
+			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the block only if it's a latest request
+			latestReqBlock, _ = chainMessage.RequestedBlock()
+			require.Equal(t, test.block, latestReqBlock) // expected behavior is that it doesn't change the original requested block
 			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
