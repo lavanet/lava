@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -197,7 +196,6 @@ func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err
 		return 0, err
 	}
 	latestBlockHeight := status.SyncInfo.LatestBlockHeight
-	fmt.Println("latestBlockHeight: ", latestBlockHeight)
 
 	epoch = calculateEpochFromBlockHeight(latestBlockHeight)
 	return epoch, nil
