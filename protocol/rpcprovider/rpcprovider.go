@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -69,6 +70,17 @@ type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
+	// all of the following members need to be concurrency proof
+	providerMetricsManager *metrics.ProviderMetricsManager
+	rewardServer           *rewardserver.RewardServer
+	privKey                *btcec.PrivateKey
+	lavaChainID            string
+	addr                   sdk.AccAddress
+	blockMemorySize        uint64
+	chainMutexes           map[string]*sync.Mutex
+	stateTrackersPerChain  sync.Map
+	parallelConnections    uint
+	cache                  *performance.Cache
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string) (err error) {
@@ -79,7 +91,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	providerMetricsManager := metrics.NewProviderMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcp.parallelConnections = parallelConnections
+	rpcp.cache = cache
+	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(metricsListenAddress) // start up prometheus metrics
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
@@ -88,7 +102,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 	rpcp.providerStateTracker = providerStateTracker
-	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
+	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(rpcp.providerMetricsManager))
 	// check version
 	version, err := rpcp.providerStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
@@ -97,9 +111,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version, &upgrade.ProtocolVersion{})
 
 	// single reward server
-	rewardServer := rewardserver.NewRewardServer(providerStateTracker, providerMetricsManager)
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rewardServer)
-	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rewardServer)
+	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager)
+	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
+	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
 
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {
@@ -109,167 +123,42 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
 	}
+	rpcp.privKey = privKey
 	clientKey, _ := clientCtx.Keyring.Key(keyName)
-	lavaChainID := clientCtx.ChainID
+	rpcp.lavaChainID = clientCtx.ChainID
 
 	pubKey, err := clientKey.GetPubKey()
 	if err != nil {
 		return err
 	}
 
-	var addr sdk.AccAddress
-	err = addr.Unmarshal(pubKey.Address())
+	err = rpcp.addr.Unmarshal(pubKey.Address())
 	if err != nil {
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
 	}
-	utils.LavaFormatInfo("RPCProvider pubkey: " + addr.String())
+	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
 	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(rpcProviderEndpoints))})
 	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
 	}
-
+	rpcp.blockMemorySize = blockMemorySize
 	// pre loop to handle synchronous actions
-	chainMutexes := map[string]*sync.Mutex{}
+	rpcp.chainMutexes = map[string]*sync.Mutex{}
 	for idx, endpoint := range rpcProviderEndpoints {
-		chainMutexes[endpoint.ChainID] = &sync.Mutex{}        // create a mutex per chain for shared resources
+		rpcp.chainMutexes[endpoint.ChainID] = &sync.Mutex{}   // create a mutex per chain for shared resources
 		if idx > 0 && endpoint.NetworkAddress.Address == "" { // handle undefined addresses as the previous endpoint for shared listeners
 			endpoint.NetworkAddress = rpcProviderEndpoints[idx-1].NetworkAddress
 		}
 	}
-	var stateTrackersPerChain sync.Map
-	var wg sync.WaitGroup
-	parallelJobs := len(rpcProviderEndpoints)
-	wg.Add(parallelJobs)
-	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 
-	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
-			defer wg.Done()
-			err := rpcProviderEndpoint.Validate()
-			if err != nil {
-				disabledEndpoints <- rpcProviderEndpoint
-				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
-			}
-			chainID := rpcProviderEndpoint.ChainID
-			providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
-			rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
-			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
-			if err != nil {
-				disabledEndpoints <- rpcProviderEndpoint
-				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
-			}
-
-			err = providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface})
-			if err != nil {
-				disabledEndpoints <- rpcProviderEndpoint
-				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
-			}
-
-			chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
-			if err != nil {
-				disabledEndpoints <- rpcProviderEndpoint
-				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
-			}
-
-			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
-			var chainTracker *chaintracker.ChainTracker
-			// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
-			recordMetricsOnNewBlock := func(block int64, hash string) {
-				providerMetricsManager.SetLatestBlock(chainID, uint64(block))
-			}
-
-			// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
-			chainCommonSetup := func() error {
-				chainMutexes[chainID].Lock()
-				defer chainMutexes[chainID].Unlock()
-
-				var chainFetcher chainlib.ChainFetcherIf
-				if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint, cache)
-				} else {
-					chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
-				}
-
-				// Fetch and validate all verifications
-				err = chainFetcher.Validate(ctx)
-				if err != nil {
-					return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-				}
-
-				chainTrackerInf, found := stateTrackersPerChain.Load(chainID)
-				if !found {
-					blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
-					chainTrackerConfig := chaintracker.ChainTrackerConfig{
-						BlocksToSave:      blocksToSaveChainTracker,
-						AverageBlockTime:  averageBlockTime,
-						ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-						NewLatestCallback: recordMetricsOnNewBlock,
-					}
-
-					chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
-					if err != nil {
-						return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
-					}
-					// Any validation needs to be before we store chain tracker for given chain id
-					stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
-				} else {
-					var ok bool
-					chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
-					if !ok {
-						utils.LavaFormatFatal("invalid usage of syncmap, could not cast result into a chaintracker", nil)
-					}
-					utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
-				}
-
-				return nil
-			}
-			err = chainCommonSetup()
-			if err != nil {
-				disabledEndpoints <- rpcProviderEndpoint
-				return err
-			}
-
-			providerMetrics := providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
-
-			reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, providerStateTracker, addr.String(), chainRouter, chainParser)
-			providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
-
-			rpcProviderServer := &RPCProviderServer{}
-			rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rewardServer, providerSessionManager, reliabilityManager, privKey, cache, chainRouter, providerStateTracker, addr, lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
-			// set up grpc listener
-			var listener *ProviderListener
-			func() {
-				rpcp.lock.Lock()
-				defer rpcp.lock.Unlock()
-				var ok bool
-				listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address]
-				if !ok {
-					utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
-					listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
-					rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
-				}
-			}()
-			if listener == nil {
-				utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{Key: "RPCProviderEndpoint", Value: rpcProviderEndpoint.String()})
-			}
-			listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
-			utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
-			return nil
-		}(rpcProviderEndpoint) // continue on error
-	}
-	wg.Wait()
-	close(disabledEndpoints)
-	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
-	disabledEndpointsList := []*lavasession.RPCProviderEndpoint{}
-	for disabledEndpoint := range disabledEndpoints {
-		disabledEndpointsList = append(disabledEndpointsList, disabledEndpoint)
-	}
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsList), nil)
 		if len(disabledEndpointsList) == parallelJobs {
 			utils.LavaFormatFatal("all endpoints are disabled", nil)
 		}
+		// try to save disabled endpoints
+		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, 1)
 	}
 	// tearing down
 	select {
@@ -285,6 +174,145 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		defer shutdownRelease()
 	}
 
+	return nil
+}
+
+func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, retryCount int) {
+	time.Sleep(time.Duration(retryCount) * time.Second)
+	parallel := retryCount > 1
+	utils.LavaFormatInfo("Retrying disabled endpoints", utils.Attribute{Key: "disabled endpoints list", Value: disabledEndpoints}, utils.Attribute{Key: "parallel", Value: parallel})
+
+}
+
+func (rpcp *RPCProvider) SetupProviderEndpoints() {
+	var wg sync.WaitGroup
+	parallelJobs := len(rpcProviderEndpoints)
+	wg.Add(parallelJobs)
+	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
+	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
+			defer wg.Done()
+			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint)
+			if err != nil {
+				disabledEndpoints <- rpcProviderEndpoint
+				return err
+			}
+			return nil
+		}(rpcProviderEndpoint) // continue on error
+	}
+	wg.Wait()
+	close(disabledEndpoints)
+	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
+	disabledEndpointsList := []*lavasession.RPCProviderEndpoint{}
+	for disabledEndpoint := range disabledEndpoints {
+		disabledEndpointsList = append(disabledEndpointsList, disabledEndpoint)
+	}
+}
+
+func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
+	err := rpcProviderEndpoint.Validate()
+	if err != nil {
+		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+	}
+	chainID := rpcProviderEndpoint.ChainID
+	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
+	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
+	chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
+	if err != nil {
+		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+	}
+
+	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface})
+	if err != nil {
+		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+	}
+
+	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
+	if err != nil {
+		return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+	}
+
+	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+	var chainTracker *chaintracker.ChainTracker
+	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
+	recordMetricsOnNewBlock := func(block int64, hash string) {
+		rpcp.providerMetricsManager.SetLatestBlock(chainID, uint64(block))
+	}
+
+	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
+	chainCommonSetup := func() error {
+		rpcp.chainMutexes[chainID].Lock()
+		defer rpcp.chainMutexes[chainID].Unlock()
+
+		var chainFetcher chainlib.ChainFetcherIf
+		if enabled, _ := chainParser.DataReliabilityParams(); enabled {
+			chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint, rpcp.cache)
+		} else {
+			chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+		}
+
+		// Fetch and validate all verifications
+		err = chainFetcher.Validate(ctx)
+		if err != nil {
+			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+		}
+
+		chainTrackerInf, found := rpcp.stateTrackersPerChain.Load(chainID)
+		if !found {
+			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{
+				BlocksToSave:      blocksToSaveChainTracker,
+				AverageBlockTime:  averageBlockTime,
+				ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback: recordMetricsOnNewBlock,
+			}
+
+			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+			if err != nil {
+				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+			}
+			// Any validation needs to be before we store chain tracker for given chain id
+			rpcp.stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
+		} else {
+			var ok bool
+			chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
+			if !ok {
+				utils.LavaFormatFatal("invalid usage of syncmap, could not cast result into a chaintracker", nil)
+			}
+			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
+		}
+		return nil
+	}
+	err = chainCommonSetup()
+	if err != nil {
+		return err
+	}
+
+	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
+
+	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
+	rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
+
+	rpcProviderServer := &RPCProviderServer{}
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
+	// set up grpc listener
+	var listener *ProviderListener
+	func() {
+		rpcp.lock.Lock()
+		defer rpcp.lock.Unlock()
+		var ok bool
+		listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address]
+		if !ok {
+			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
+			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
+		}
+	}()
+	if listener == nil {
+		utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{Key: "RPCProviderEndpoint", Value: rpcProviderEndpoint.String()})
+	}
+	listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
+	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
 	return nil
 }
 
