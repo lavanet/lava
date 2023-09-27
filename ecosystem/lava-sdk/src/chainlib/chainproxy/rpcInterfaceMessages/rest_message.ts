@@ -3,12 +3,12 @@ import { RPCInput } from "../../../parser/rpcInput";
 import { BaseMessage, BaseMessageOptions } from "../common";
 
 export class RestMessage extends BaseMessage implements RPCInput {
-  public msg: Uint8Array | undefined;
+  public msg: Record<string, any> | undefined;
   private path: string;
   private specPath: string;
 
   constructor(
-    msg: Uint8Array | undefined,
+    msg: Record<string, any> | undefined,
     path: string,
     specPath: string,
     baseMessageOptions: BaseMessageOptions
