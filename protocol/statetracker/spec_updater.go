@@ -28,6 +28,7 @@ type SpecUpdater struct {
 	specGetter       SpecGetter
 	blockLastUpdated uint64
 	specUpdatables   map[string]*SpecUpdatable
+	spec             *spectypes.Spec
 }
 
 func NewSpecUpdater(chainId string, specGetter SpecGetter, eventTracker *EventTracker) *SpecUpdater {
@@ -41,9 +42,25 @@ func (su *SpecUpdater) UpdaterKey() string {
 func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable *SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	su.lock.Lock()
 	defer su.lock.Unlock()
-	spec, err := su.specGetter.GetSpec(ctx, su.chainId)
-	if err != nil {
-		utils.LavaFormatFatal("could not get chain spec failed registering", err, utils.Attribute{Key: "chainID", Value: su.chainId})
+
+	// validating
+	if su.chainId != endpoint.ChainID {
+		return utils.LavaFormatError("panic level error Trying to register spec for wrong chain id stored in spec_updater", nil, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "stored_spec", Value: su.chainId})
+	}
+	_, found := su.specUpdatables[endpoint.Key()]
+	if found {
+		return utils.LavaFormatError("panic level error Trying to register to spec updates on already registered chain + API interfcae", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
+	}
+
+	var spec *spectypes.Spec
+	if su.spec != nil {
+		spec = su.spec
+	} else { // we don't have spec stored so we need to fetch it
+		var err error
+		spec, err = su.specGetter.GetSpec(ctx, su.chainId)
+		if err != nil {
+			return utils.LavaFormatError("panic level error could not get chain spec failed registering", err, utils.Attribute{Key: "chainID", Value: su.chainId})
+		}
 	}
 	(*specUpdatable).SetSpec(*spec)
 	su.specUpdatables[endpoint.Key()] = specUpdatable

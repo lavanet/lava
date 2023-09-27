@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -51,7 +52,9 @@ func (apip *TendermintChainParser) getSupportedApi(name, connectionType string) 
 func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
 		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, 0)
-		chainMessage.AppendHeader(metadata)
+		if err == nil {
+			chainMessage.AppendHeader(metadata)
+		}
 		return chainMessage, err
 	}
 
@@ -84,17 +87,15 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 
 	// connectionType is currently only used in rest api
 	// Unmarshal request
-	var msg rpcInterfaceMessages.JsonrpcMessage
+	var msgs []rpcInterfaceMessages.JsonrpcMessage
 	isJsonrpc := string(data) != ""
 	if isJsonrpc {
 		// Fetch pointer to message and error
-		msgPtr, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
+		var err error
+		msgs, err = rpcInterfaceMessages.ParseJsonRPCMsg(data)
 		if err != nil {
 			return nil, err
 		}
-
-		// Assign value of pointer to msg
-		msg = *msgPtr
 	} else {
 		// assuming URI
 		var parsedMethod string
@@ -105,7 +106,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 			parsedMethod = url[0:idx]
 		}
 
-		msg = rpcInterfaceMessages.JsonrpcMessage{
+		msg := rpcInterfaceMessages.JsonrpcMessage{
 			ID:      []byte("1"),
 			Version: "2.0",
 			Method:  parsedMethod,
@@ -124,50 +125,127 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		} else {
 			msg.Params = make(map[string]interface{}, 0)
 		}
+		msgs = []rpcInterfaceMessages.JsonrpcMessage{msg}
+	}
+	if len(msgs) == 0 {
+		return nil, errors.New("empty unmarshaled json")
 	}
 
-	// Check api is supported and save it in nodeMsg
-	apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
-	if err != nil {
-		return nil, utils.LavaFormatError("getSupportedApi tendermintrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
-	}
-
-	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
-	if err != nil {
-		return nil, err
-	}
-	metadata, overwriteReqBlock, _ := apip.HandleHeaders(metadata, apiCollection, spectypes.Header_pass_send)
-	var requestedBlock int64
-	if overwriteReqBlock == "" {
-		// Fetch requested block, it is used for data reliability
-		requestedBlock, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+	var api *spectypes.Api
+	var apiCollection *spectypes.ApiCollection
+	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
+	for idx, msg := range msgs {
+		var requestedBlockForMessage int64
+		// Check api is supported and save it in nodeMsg
+		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
 		}
+
+		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
+		if err != nil {
+			return nil, fmt.Errorf("could not find the interface %s in the service %s, %w", connectionType, apiCont.api.Name, err)
+		}
+
+		metadata, overwriteReqBlock, _ := apip.HandleHeaders(metadata, apiCollectionForMessage, spectypes.Header_pass_send)
+		settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
+		msg.BaseMessage = chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective}
+
+		if overwriteReqBlock == "" {
+			// Fetch requested block, it is used for data reliability
+			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+			if err != nil {
+				return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			}
+		} else {
+			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
+			if err != nil {
+				return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+			}
+		}
+		if idx == 0 {
+			// on the first entry store them
+			api = apiCont.api
+			apiCollection = apiCollectionForMessage
+			latestRequestedBlock = requestedBlockForMessage
+		} else {
+			// on next entries we need to compare to existing data
+			if api == nil {
+				utils.LavaFormatFatal("invalid parsing, api is nil", nil)
+			}
+			// on a batch request we need to do the following:
+			// 1. create a new api object, since it's not a single one
+			// 2. we need to add the compute units
+			// 3. we need to set the requested block to be the latest of them all or not_applicable
+			// 4. we need to take the most comprehensive apiCollection (addon)
+			// 5. take the strictest category
+			category := api.GetCategory()
+			category = category.Combine(apiCont.api.GetCategory())
+			if apiCollectionForMessage.CollectionData.AddOn != "" && apiCollectionForMessage.CollectionData.AddOn != apiCollection.CollectionData.AddOn {
+				if apiCollection.CollectionData.AddOn != "" {
+					return nil, utils.LavaFormatError("unable to parse batch request with api from multiple addons", nil,
+						utils.Attribute{Key: "first addon", Value: apiCollection.CollectionData.AddOn},
+						utils.Attribute{Key: "second addon", Value: apiCollectionForMessage.CollectionData.AddOn})
+				}
+				apiCollection = apiCollectionForMessage // overwrite apiColleciton to take the addon
+			}
+			api = &spectypes.Api{
+				Enabled:           api.Enabled && apiCont.api.Enabled,
+				Name:              api.Name + SEP + apiCont.api.Name,
+				ComputeUnits:      api.ComputeUnits + apiCont.api.ComputeUnits,
+				ExtraComputeUnits: api.ExtraComputeUnits + apiCont.api.ExtraComputeUnits,
+				Category:          category,
+				BlockParsing: spectypes.BlockParser{
+					ParserArg:    []string{},
+					ParserFunc:   spectypes.PARSER_FUNC_EMPTY,
+					DefaultValue: "",
+					Encoding:     "",
+				},
+			}
+			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
+		}
+	}
+
+	var nodeMsg *parsedMessage
+	if len(msgs) == 1 {
+		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
+		if !isJsonrpc {
+			tenderMsg.Path = url // add path
+		}
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &tenderMsg, apiCollection)
 	} else {
-		requestedBlock, err = msg.ParseBlock(overwriteReqBlock)
+		var err error
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, msgs, apiCollection)
 		if err != nil {
-			return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+			return nil, err
 		}
 	}
-	settingHeaderDirective, _, _ := apip.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
-	msg.BaseMessage = chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective}
 
-	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: ""}
-	if !isJsonrpc {
-		tenderMsg.Path = url // add path
-	}
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &tenderMsg, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
 	return nodeMsg, nil
 }
 
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
+	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
+	if err != nil {
+		return nil, err
+	}
+	nodeMsg := &parsedMessage{
+		api:                    serviceApi,
+		apiCollection:          apiCollection,
+		latestRequestedBlock:   requestedBlock,
+		msg:                    &batchMessage,
+		earliestRequestedBlock: earliestRequestedBlock,
+	}
+	return nodeMsg, err
+}
+
 func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		requestedBlock: requestedBlock,
-		msg:            msg,
+		api:                  serviceApi,
+		apiCollection:        apiCollection,
+		latestRequestedBlock: requestedBlock,
+		msg:                  msg,
 	}
 	return nodeMsg
 }
@@ -462,7 +540,15 @@ func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan inte
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
-		return nil, "", nil, utils.LavaFormatError("invalid message type in tendermintrpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage}, utils.Attribute{Key: "ptrCast", Value: ok})
+		batchMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcBatchMessage)
+		if !ok {
+			return nil, "", nil, utils.LavaFormatError("invalid message type in tendermintrpc failed to cast RPCInput from chainMessage", nil, utils.Attribute{Key: "rpcMessage", Value: rpcInputMessage}, utils.Attribute{Key: "ptrCast", Value: ok})
+		}
+		if ch != nil {
+			return nil, "", nil, utils.LavaFormatError("does not support subscribe in a batch", nil)
+		}
+		reply, err := cp.sendBatchMessage(ctx, batchMessage, chainMessage)
+		return reply, "", nil, err
 	}
 	if nodeMessage.Path != "" {
 		return cp.SendURI(ctx, nodeMessage, ch, chainMessage)
@@ -545,10 +631,9 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 
 	// checking if rest reply data is in json format
-	var jsonData map[string]interface{}
-	err = json.Unmarshal(reply.Data, &jsonData)
+	err = cp.HandleJSONFormatError(reply.Data)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Tendermint URI reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
+		return nil, "", nil, utils.LavaFormatError("Tendermint reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.Data)})
 	}
 
 	return reply, "", nil, nil
@@ -624,6 +709,11 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 
 		replyMsg = replyMessage
+
+		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
+		if err != nil {
+			return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err, utils.Attribute{Key: "GUID", Value: ctx})
+		}
 	}
 
 	// marshal the jsonrpc message to json

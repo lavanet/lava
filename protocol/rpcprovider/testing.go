@@ -29,11 +29,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-const (
-	networkAddressFlag = "network-address"
-	certFlag           = "cert-pem"
-)
-
 func validatePortNumber(ipPort string) string {
 	utils.LavaFormatDebug("validating iport " + ipPort)
 	if lavasession.AllowInsecureConnectionToProviders {

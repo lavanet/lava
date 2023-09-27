@@ -33,6 +33,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
 	delegationRes := res.Delegations[0]
 	require.True(t, delegation.Equal(&delegationRes))
 
@@ -47,6 +48,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
 	delegationRes = res.Delegations[0]
 	require.True(t, delegation.Equal(&delegationRes))
 
@@ -84,6 +86,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	// query pending delegators
 	res, err := ts.QueryDualstakingProviderDelegators(provider, true)
 	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Delegations))
 	delegationRes := res.Delegations[0]
 	require.True(t, delegationRes.Equal(&delegation1))
 
@@ -174,8 +177,12 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Equal(t, 3, len(res.Delegations))
 	require.Nil(t, err)
-	for i := 0; i < len(delegations); i++ {
-		require.True(t, res.Delegations[i].Equal(&delegations[i]))
+	for _, d := range delegations {
+		for _, resD := range res.Delegations {
+			if d.Delegator == resD.Delegator {
+				require.True(t, resD.Equal(&d))
+			}
+		}
 	}
 }
 

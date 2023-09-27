@@ -1,4 +1,4 @@
-import { ConsumerSessionWithProvider } from "../types/types";
+import { BOOT_RETRY_ATTEMPTS } from "../config/default";
 import { Secp256k1, sha256 } from "@cosmjs/crypto";
 import { fromHex } from "@cosmjs/encoding";
 import { grpc } from "@improbable-eng/grpc-web";
@@ -7,34 +7,47 @@ import {
   RelayReply,
   RelaySession,
   RelayPrivateData,
+  Badge,
+  ProbeRequest,
+  ProbeReply,
+  ReportedProvider,
+  QualityOfServiceReport,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
-import { Relayer as RelayerService } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
-import { Badge } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import {
+  Relayer as RelayerService,
+  RelayerClient,
+  ServiceError,
+} from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
+import { SingleConsumerSession } from "../lavasession/consumerTypes";
+import SDKErrors from "../sdk/errors";
 
-class Relayer {
-  private chainID: string;
+export interface RelayerOptions {
+  privKey: string;
+  secure: boolean;
+  allowInsecureTransport: boolean;
+  lavaChainId: string;
+  transport?: grpc.TransportFactory;
+}
+
+export class Relayer {
   private privKey: string;
   private lavaChainId: string;
   private prefix: string;
   private allowInsecureTransport: boolean;
   private badge?: Badge;
+  private transport: grpc.TransportFactory | undefined;
 
-  constructor(
-    chainID: string,
-    privKey: string,
-    lavaChainId: string,
-    secure: boolean,
-    allowInsecureTransport?: boolean,
-    badge?: Badge
-  ) {
-    this.chainID = chainID;
-    this.privKey = privKey;
-    this.lavaChainId = lavaChainId;
-    this.prefix = secure ? "https" : "http";
-    this.allowInsecureTransport = allowInsecureTransport ?? false;
-    this.badge = badge;
+  constructor(relayerOptions: RelayerOptions) {
+    this.privKey = relayerOptions.privKey;
+    this.lavaChainId = relayerOptions.lavaChainId;
+    this.prefix = relayerOptions.secure ? "https" : "http";
+    this.allowInsecureTransport =
+      relayerOptions.allowInsecureTransport ?? false;
+    if (relayerOptions.transport) {
+      this.transport = relayerOptions.transport;
+    }
   }
 
   // when an epoch changes we need to update the badge
@@ -48,21 +61,85 @@ class Relayer {
     this.badge = badge;
   }
 
-  async sendRelay(
+  async probeProvider(
+    providerAddress: string,
+    apiInterface: string,
+    guid: number,
+    specId: string
+  ): Promise<ProbeReply> {
+    const client = new RelayerClient(
+      this.prefix + "://" + providerAddress,
+      this.getTransportWrapped()
+    );
+    const request = new ProbeRequest();
+    request.setGuid(guid);
+    request.setApiInterface(apiInterface);
+    request.setSpecId(specId);
+    const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
+      client.probe(
+        request,
+        (err: ServiceError | null, result: ProbeReply | null) => {
+          if (err != null) {
+            console.log("failed sending probe", err);
+            reject(err);
+          }
+
+          if (result != null) {
+            resolve(result);
+          }
+          reject(new Error("Didn't get an error nor result"));
+        }
+      );
+    });
+    return this.relayWithTimeout(5000, requestPromise);
+  }
+
+  public async sendRelay(
+    client: RelayerClient,
+    relayRequest: RelayRequest,
+    timeout: number
+  ): Promise<RelayReply | Error> {
+    const requestSession = relayRequest.getRelaySession();
+    if (requestSession == undefined) {
+      return new Error("empty request session");
+    }
+    requestSession.setSig(new Uint8Array());
+    // Sign data
+    const signedMessage = await this.signRelay(requestSession, this.privKey);
+    requestSession.setSig(signedMessage);
+    if (this.badge) {
+      // Badge is separated from the signature!
+      requestSession.setBadge(this.badge);
+    }
+    relayRequest.setRelaySession(requestSession);
+    const requestPromise = new Promise<RelayReply>((resolve, reject) => {
+      client.relay(
+        relayRequest,
+        (err: ServiceError | null, result: RelayReply | null) => {
+          if (err != null) {
+            console.log("failed sending relay", err);
+            reject(err);
+          }
+
+          if (result != null) {
+            resolve(result);
+          }
+          reject(new Error("Didn't get an error nor result"));
+        }
+      );
+    });
+
+    return this.relayWithTimeout(timeout, requestPromise);
+  }
+
+  public async constructAndSendRelay(
     options: SendRelayOptions,
-    consumerProviderSession: ConsumerSessionWithProvider,
-    cuSum: number,
-    apiInterface: string
+    singleConsumerSession: SingleConsumerSession
   ): Promise<RelayReply> {
     // Extract attributes from options
     const { data, url, connectionType } = options;
 
     const enc = new TextEncoder();
-
-    const consumerSession = consumerProviderSession.Session;
-    // Increase used compute units
-    consumerProviderSession.UsedComputeUnits =
-      consumerProviderSession.UsedComputeUnits + cuSum;
 
     // create request private data
     const requestPrivateData = new RelayPrivateData();
@@ -70,21 +147,21 @@ class Relayer {
     requestPrivateData.setApiUrl(url);
     requestPrivateData.setData(enc.encode(data));
     requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
-    requestPrivateData.setApiInterface(apiInterface);
-    requestPrivateData.setSalt(consumerSession.getNewSalt());
+    requestPrivateData.setApiInterface(options.apiInterface);
+    requestPrivateData.setSalt(this.getNewSalt());
 
     const contentHash =
       this.calculateContentHashForRelayData(requestPrivateData);
 
     // create request session
     const requestSession = new RelaySession();
-    requestSession.setSpecId(this.chainID);
-    requestSession.setSessionId(consumerSession.getNewSessionId());
-    requestSession.setCuSum(cuSum);
-    requestSession.setProvider(consumerSession.ProviderAddress);
-    requestSession.setRelayNum(consumerSession.RelayNum);
-    requestSession.setEpoch(consumerSession.PairingEpoch);
-    requestSession.setUnresponsiveProviders(new Uint8Array());
+    requestSession.setSpecId(options.chainId);
+    requestSession.setSessionId(singleConsumerSession.sessionId);
+    requestSession.setCuSum(singleConsumerSession.cuSum);
+    requestSession.setProvider(options.publicProviderLavaAddress);
+    requestSession.setRelayNum(singleConsumerSession.relayNum);
+    requestSession.setEpoch(options.epoch);
+    requestSession.setUnresponsiveProvidersList(new Array<ReportedProvider>());
     requestSession.setContentHash(contentHash);
     requestSession.setSig(new Uint8Array());
     requestSession.setLavaChainId(this.lavaChainId);
@@ -103,14 +180,13 @@ class Relayer {
     const request = new RelayRequest();
     request.setRelaySession(requestSession);
     request.setRelayData(requestPrivateData);
-
+    const transportation = this.getTransport();
     const requestPromise = new Promise<RelayReply>((resolve, reject) => {
       grpc.invoke(RelayerService.Relay, {
         request: request,
-        host: this.prefix + "://" + consumerSession.Endpoint.Addr,
-        transport: this.allowInsecureTransport
-          ? transportAllowInsecure // if allow insecure we use a transport with rejectUnauthorized disabled
-          : transport, // otherwise normal transport (default to rejectUnauthorized = true)
+        host:
+          this.prefix + "://" + singleConsumerSession.endpoint.networkAddress,
+        transport: transportation, // otherwise normal transport (default to rejectUnauthorized = true)
         onMessage: (message: RelayReply) => {
           resolve(message);
         },
@@ -118,24 +194,15 @@ class Relayer {
           if (code == grpc.Code.OK || msg == undefined) {
             return;
           }
-          // underflow guard
-          if (consumerProviderSession.UsedComputeUnits > cuSum) {
-            consumerProviderSession.UsedComputeUnits =
-              consumerProviderSession.UsedComputeUnits - cuSum;
-          } else {
-            consumerProviderSession.UsedComputeUnits = 0;
-          }
-
           let additionalInfo = "";
           if (msg.includes("Response closed without headers")) {
             additionalInfo =
               additionalInfo +
               ", provider iPPORT: " +
-              consumerProviderSession.Session.Endpoint.Addr +
+              singleConsumerSession.endpoint.networkAddress +
               ", provider address: " +
-              consumerProviderSession.Session.ProviderAddress;
+              options.publicProviderLavaAddress;
           }
-
           const errMessage = this.extractErrorMessage(msg) + additionalInfo;
           reject(new Error(errMessage));
         },
@@ -143,6 +210,21 @@ class Relayer {
     });
 
     return this.relayWithTimeout(5000, requestPromise);
+  }
+
+  getTransport() {
+    if (this.transport) {
+      return this.transport;
+    }
+    return this.allowInsecureTransport ? transportAllowInsecure : transport;
+  }
+
+  getTransportWrapped() {
+    return {
+      // if allow insecure we use a transport with rejectUnauthorized disabled
+      // otherwise normal transport (default to rejectUnauthorized = true));}
+      transport: this.getTransport(),
+    };
   }
 
   extractErrorMessage(error: string) {
@@ -164,7 +246,7 @@ class Relayer {
     let timeout;
     const timeoutPromise = new Promise((resolve, reject) => {
       timeout = setTimeout(() => {
-        reject(new Error("Timeout exceeded"));
+        reject(SDKErrors.relayTimeout);
       }, timeLimit);
     });
     const response = await Promise.race([task, timeoutPromise]);
@@ -187,6 +269,8 @@ class Relayer {
         output += "\\r";
       } else if (byte === 0x5c) {
         output += "\\\\";
+      } else if (byte === 0x22) {
+        output += '\\"';
       } else if (byte >= 0x20 && byte <= 0x7e) {
         output += String.fromCharCode(byte);
       } else {
@@ -281,47 +365,172 @@ class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-
-    const jsonMessage = JSON.stringify(request.toObject(), (key, value) => {
-      if (key == "content_hash") {
-        const dataBytes = request.getContentHash();
-        const dataUint8Array =
-          dataBytes instanceof Uint8Array
-            ? dataBytes
-            : this.encodeUtf8(dataBytes);
-
-        let stringByte = this.byteArrayToString(dataUint8Array);
-
-        if (stringByte.endsWith(",")) {
-          stringByte += ",";
+    // TODO: we serialize the message here the same way gogo proto serializes there's no straightforward implementation available, but we should compile this code into wasm and import it here because it's ugly
+    let serializedRequest = "";
+    for (const [key, valueInner] of Object.entries(request.toObject())) {
+      serializedRequest += ((
+        key: string,
+        value:
+          | string
+          | number
+          | Uint8Array
+          | QualityOfServiceReport.AsObject
+          | ReportedProvider.AsObject[]
+          | Badge.AsObject
+      ) => {
+        function handleNumStr(key: string, value: number | string): string {
+          switch (typeof value) {
+            case "string":
+              if (value == "") {
+                return "";
+              }
+              return key + ':"' + value + '" ';
+            case "number":
+              if (value == 0) {
+                return "";
+              }
+              return key + ":" + value + " ";
+          }
         }
-        return stringByte;
-      }
-      if (value !== null && value !== 0 && value !== "") return value;
-    });
-
-    const messageReplaced = jsonMessage
-      .replace(/\\\\/g, "\\")
-      .replace(/,"/g, ' "')
-      .replace(/, "/g, ',"')
-      .replace(/"(\w+)"\s*:/g, "$1:")
-      .slice(1, -1);
-
-    const encodedMessage = enc.encode(messageReplaced + " ");
-
+        if (value == undefined) {
+          return "";
+        }
+        switch (typeof value) {
+          case "string":
+          case "number":
+            return handleNumStr(key, value);
+          case "object":
+            let valueInnerStr = "";
+            if (value instanceof Uint8Array) {
+              valueInnerStr = this.byteArrayToString(value);
+              return key + ':"' + valueInnerStr + '" ';
+            }
+            if (value instanceof Array) {
+              let retst = "";
+              for (const arrayVal of Object.values(value)) {
+                let arrayValstr = "";
+                const entries = Object.entries(arrayVal);
+                for (const [objkey, objVal] of entries) {
+                  const objValStr = handleNumStr(objkey, objVal);
+                  if (objValStr != "") {
+                    arrayValstr += objValStr;
+                  }
+                }
+                if (arrayValstr != "") {
+                  retst += key + ":<" + arrayValstr + "> ";
+                }
+              }
+              return retst;
+            }
+            const entries = Object.entries(value);
+            if (entries.length == 0) {
+              return "";
+            }
+            let retst = "";
+            for (const [objkey, objVal] of entries) {
+              let objValStr = "";
+              switch (typeof objVal) {
+                case "string":
+                case "number":
+                  objValStr = handleNumStr(objkey, objVal);
+                  break;
+                case "object":
+                  objValStr = objkey + ":" + this.byteArrayToString(objVal);
+                  break;
+              }
+              if (objValStr != "") {
+                retst += objValStr;
+              }
+            }
+            if (retst != "") {
+              return key + ":<" + retst + "> ";
+            }
+            return "";
+        }
+      })(key, valueInner);
+    }
+    // console.log("message: " + serializedRequest);
+    const encodedMessage = enc.encode(serializedRequest);
+    // console.log("encodedMessage: " + encodedMessage);
     const hash = sha256(encodedMessage);
 
     return hash;
   }
+
+  // SendRelayToAllProvidersAndRace sends relay to all lava providers and returns first response
+  public async SendRelayToAllProvidersAndRace(
+    batch: BatchRelays[]
+  ): Promise<any> {
+    console.log("Started sending to all providers and race");
+    let lastError;
+    for (
+      let retryAttempt = 0;
+      retryAttempt < BOOT_RETRY_ATTEMPTS;
+      retryAttempt++
+    ) {
+      const allRelays: Map<string, Promise<any>> = new Map();
+      for (const provider of batch) {
+        const uniqueKey =
+          provider.options.publicProviderLavaAddress +
+          String(Math.floor(Math.random() * 10000000));
+        const providerRelayPromise = this.constructAndSendRelay(
+          provider.options,
+          provider.singleConsumerSession
+        );
+        allRelays.set(uniqueKey, providerRelayPromise);
+      }
+
+      while (allRelays.size > 0) {
+        const returnedResponse = await Promise.race([...allRelays.values()]);
+        if (returnedResponse) {
+          console.log("Ended sending to all providers and race");
+          return returnedResponse;
+        }
+        // Handle removal of completed promises separately (Optional and based on your needs)
+        allRelays.forEach((promise, key) => {
+          promise
+            .then(() => allRelays.delete(key))
+            .catch(() => allRelays.delete(key));
+        });
+      }
+    }
+    throw new Error(
+      "Failed all promises SendRelayToAllProvidersAndRace: " + String(lastError)
+    );
+  }
+
+  getNewSalt(): Uint8Array {
+    const salt = this.generateRandomUint();
+    const nonceBytes = new Uint8Array(8);
+    const dataView = new DataView(nonceBytes.buffer);
+
+    // use LittleEndian
+    dataView.setBigUint64(0, BigInt(salt), true);
+
+    return nonceBytes;
+  }
+
+  private generateRandomUint(): number {
+    const min = 1;
+    const max = Number.MAX_SAFE_INTEGER;
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+}
+
+export interface BatchRelays {
+  options: SendRelayOptions;
+  singleConsumerSession: SingleConsumerSession;
 }
 
 /**
  * Options for send relay method.
  */
-interface SendRelayOptions {
+export interface SendRelayOptions {
   data: string;
   url: string;
   connectionType: string;
+  apiInterface: string;
+  chainId: string;
+  publicProviderLavaAddress: string;
+  epoch: number;
 }
-
-export default Relayer;

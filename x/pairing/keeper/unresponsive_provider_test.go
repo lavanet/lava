@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -60,10 +59,9 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 
 	// create list of providers to claim unresponsiveness about
 	unresponsiveCount := 1
-	var unresponsiveDataList [][]byte
+	var unresponsiveDataList [][]*types.ReportedProvider
 	for i := 0; i < unresponsiveCount; i++ {
-		unresponsiveData, err := json.Marshal([]string{providers[i].Addr.String()})
-		require.Nil(t, err)
+		unresponsiveData := []*types.ReportedProvider{{Address: providers[i].Addr.String()}}
 		unresponsiveDataList = append(unresponsiveDataList, unresponsiveData)
 	}
 
@@ -91,7 +89,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		}
 
 		// send relay payment and check the funds did transfer normally
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, providerSdkAddress, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, providerSdkAddress, true, true, 100)
 	}
 
 	// advance enough epochs so the unresponsive providers will be punished
@@ -143,8 +141,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	provider1_balance := ts.GetBalance(provider1_addr)
 	staked_amount, _, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider1_addr)
 	balanceProvideratBeforeStake := staked_amount.Stake.Amount.Int64() + provider1_balance
-	unresponsiveProvidersData, err := json.Marshal([]string{provider1_addr.String()})
-	require.Nil(t, err)
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
 
 	// create relay requests for provider0 that contain complaints about provider1
 	relayEpoch := ts.BlockHeight()
@@ -161,7 +158,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -220,13 +217,13 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
 
 	// create relay requests for provider0 that contain complaints about provider1
-	unresponsiveProvidersData, err := json.Marshal([]string{provider1_addr.String()})
-	require.Nil(t, err)
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
 
 	relayEpoch := ts.BlockHeight()
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
 	relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
+
 	relaySession.UnresponsiveProviders = unresponsiveProvidersData
 	sig, err := sigs.Sign(clients[0].SK, *relaySession)
 	relaySession.Sig = sig
@@ -236,7 +233,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		Relays:  slices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(relayPaymentMessage, clients[0].Addr, provider0_addr, true, true)
+	ts.payAndVerifyBalance(relayPaymentMessage, clients[0].Addr, provider0_addr, true, true, 100)
 
 	// advance enough epochs so the unresponsive provider will be punished
 	if largerConst < recommendedEpochNumToCollectPayment {
@@ -263,7 +260,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
 	}
 
 	// test the provider is still unstaked
@@ -316,9 +313,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
 
 	// create unresponsive data that includes provider1 being unresponsive
-	unresponsiveProvidersData, err := json.Marshal([]string{provider1_addr.String()})
-	require.Nil(t, err)
-
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
 	// create relay requests for provider0 that contain complaints about provider1
 	relayEpoch := ts.BlockHeight()
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
@@ -335,7 +330,7 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true)
+		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished

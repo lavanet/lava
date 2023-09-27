@@ -93,9 +93,8 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API2", connectionType_test)
 	assert.Error(t, err)
-	errorData, _, found := strings.Cut(err.Error(), " --")
+	found := strings.Contains(err.Error(), "api not supported")
 	require.True(t, found)
-	assert.Equal(t, "api not supported", errorData)
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &GrpcChainParser{
@@ -105,9 +104,8 @@ func TestGRPCGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API1", connectionType_test)
 	assert.Error(t, err)
-	errorData, _, found = strings.Cut(err.Error(), " --")
+	found = strings.Contains(err.Error(), "api is disabled")
 	require.True(t, found)
-	assert.Equal(t, "api is disabled", errorData)
 }
 
 func TestGRPCParseMessage(t *testing.T) {
@@ -211,7 +209,8 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, err)
 
-			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
+			requestedBlock, _ := chainMessage.RequestedBlock()
+			require.Equal(t, test.requestedBlock, requestedBlock)
 			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
@@ -276,9 +275,11 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			chainMessage, err := chainParser.ParseMsg(parsingForCrafting.ApiName, []byte{}, collectionData.Type, test.metadata, 0)
 			require.NoError(t, err)
-			require.Equal(t, test.requestedBlock, chainMessage.RequestedBlock())
+			requestedBlock, _ := chainMessage.RequestedBlock()
+			require.Equal(t, test.requestedBlock, requestedBlock)
 			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the request only if it's latest
-			require.Equal(t, test.block, chainMessage.RequestedBlock())
+			requestedBlock, _ = chainMessage.RequestedBlock()
+			require.Equal(t, test.block, requestedBlock)
 			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)

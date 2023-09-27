@@ -154,7 +154,7 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().String(EndpointsFlagName, "", "The endpoints provider is offering in the format \"endpoint-url,geolocation endpoint-url,geolocation\"")
 	cmd.Flags().String(AmountFlagName, "", "modify the provider's staked amount")
-	cmd.Flags().Uint64(GeolocationFlag, 0, "modify the provider's geolocation")
+	cmd.Flags().Int32(GeolocationFlag, 0, "modify the provider's geolocation")
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	flags.AddTxFlagsToCmd(cmd)

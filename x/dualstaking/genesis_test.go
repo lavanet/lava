@@ -24,6 +24,7 @@ func TestGenesis(t *testing.T) {
 
 	nullify.Fill(&genesisState)
 	nullify.Fill(got)
+	require.ElementsMatch(t, genesisState.DelegatorRewardList, got.DelegatorRewardList)
 
 	// this line is used by starport scaffolding # genesis/test/assert
 }

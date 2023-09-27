@@ -23,7 +23,8 @@ type Account struct {
 }
 
 func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc Account) {
-	acc.SK, acc.Addr = sigs.GenerateFloatingKey()
+	acc.SK, acc.Addr = sigs.GenerateDeterministicFloatingKey(testkeeper.Randomizer)
+	testkeeper.Randomizer.Inc()
 	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
 	return

@@ -189,11 +189,10 @@ func (s *FinalizationConsensus) LatestBlock() uint64 {
 func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
 	s.providerDataContainersMu.RLock()
 	defer s.providerDataContainersMu.RUnlock()
-	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
-	averageBlockTime_ms := averageBlockTime
+	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
 
 	var highestBlockNumber int64 = 0
-	FindHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) int64 {
+	FindAndUpdateHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) {
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
 			for _, providerDataContainer := range providerHashesConsensus.agreeingProviders {
 				if highestBlockNumber < providerDataContainer.LatestFinalizedBlock {
@@ -201,10 +200,10 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 				}
 			}
 		}
-		return highestBlockNumber
 	}
-	highestBlockNumber = FindHighestBlockNumber(s.prevEpochProviderHashesConsensus) // update the highest in place
-	highestBlockNumber = FindHighestBlockNumber(s.currentProviderHashesConsensus)
+
+	FindAndUpdateHighestBlockNumber(s.prevEpochProviderHashesConsensus) // update the highest in place
+	FindAndUpdateHighestBlockNumber(s.currentProviderHashesConsensus)
 
 	now := time.Now()
 	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, listProviderHashesConsensus []ProviderHashesConsensus) map[string]int64 {

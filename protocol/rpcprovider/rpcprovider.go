@@ -15,7 +15,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -193,7 +192,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 				var chainFetcher chainlib.ChainFetcherIf
 				if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint, cache)
 				} else {
 					chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 				}
@@ -330,7 +329,7 @@ optional: --save-conf
 rpcprovider <flags>
 rpcprovider rpcprovider_conf.yml <flags>
 rpcprovider 127.0.0.1:3333 ETH1 jsonrpc wss://www.eth-node.com:80 <flags>
-rpcprovider 127.0.0.1:3333 OSMO tendermintrpc "wss://www.node-path.com:80,https://www.node-path.com:80" 127.0.0.1:3333 OSMO rest https://www.node-path.com:1317 <flags>`,
+rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https://www.node-path.com:80" 127.0.0.1:3333 COS3 rest https://www.node-path.com:1317 <flags>`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
@@ -450,7 +449,7 @@ rpcprovider 127.0.0.1:3333 OSMO tendermintrpc "wss://www.node-path.com:80,https:
 				}
 			}
 
-			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
+			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ProviderVersion)
 			rand.InitRandomSeed()
 			var cache *performance.Cache = nil
 			cacheAddr := viper.GetString(performance.CacheFlagName)

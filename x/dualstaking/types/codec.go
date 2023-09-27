@@ -13,6 +13,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgDelegate{}, "dualstaking/Delegate", nil)
 	cdc.RegisterConcrete(&MsgRedelegate{}, "dualstaking/Redelegate", nil)
 	cdc.RegisterConcrete(&MsgUnbond{}, "dualstaking/Unbond", nil)
+	cdc.RegisterConcrete(&MsgClaimRewards{}, "dualstaking/MsgClaimRewards", nil)
 	// this line is used by starport scaffolding # 2
 }
 
@@ -25,6 +26,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgUnbond{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgClaimRewards{},
 	)
 	// this line is used by starport scaffolding # 3
 

@@ -12,9 +12,11 @@ var goog = jspb;
 var global = Function('return this')();
 
 var lavanet_lava_pairing_relay_pb = require('../../../lavanet/lava/pairing/relay_pb.js');
+var lavanet_lava_pairing_query_pb = require('../../../lavanet/lava/pairing/query_pb.js');
 var gogoproto_gogo_pb = require('../../../gogoproto/gogo_pb.js');
 var google_protobuf_wrappers_pb = require('google-protobuf/google/protobuf/wrappers_pb.js');
 var lavanet_lava_epochstorage_stake_entry_pb = require('../../../lavanet/lava/epochstorage/stake_entry_pb.js');
+var lavanet_lava_spec_spec_pb = require('../../../lavanet/lava/spec/spec_pb.js');
 goog.exportSymbol('proto.lavanet.lava.pairing.GenerateBadgeRequest', null, global);
 goog.exportSymbol('proto.lavanet.lava.pairing.GenerateBadgeResponse', null, global);
 
@@ -225,19 +227,12 @@ proto.lavanet.lava.pairing.GenerateBadgeRequest.prototype.setSpecId = function(v
  * @constructor
  */
 proto.lavanet.lava.pairing.GenerateBadgeResponse = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, proto.lavanet.lava.pairing.GenerateBadgeResponse.repeatedFields_, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
 };
 goog.inherits(proto.lavanet.lava.pairing.GenerateBadgeResponse, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
   proto.lavanet.lava.pairing.GenerateBadgeResponse.displayName = 'proto.lavanet.lava.pairing.GenerateBadgeResponse';
 }
-/**
- * List of repeated fields within this message type.
- * @private {!Array<number>}
- * @const
- */
-proto.lavanet.lava.pairing.GenerateBadgeResponse.repeatedFields_ = [2];
-
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -268,9 +263,9 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.toObject = function(o
 proto.lavanet.lava.pairing.GenerateBadgeResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
     badge: (f = msg.getBadge()) && lavanet_lava_pairing_relay_pb.Badge.toObject(includeInstance, f),
-    pairing_list_list: jspb.Message.toObjectList(msg.getPairingListList(),
-    lavanet_lava_epochstorage_stake_entry_pb.StakeEntry.toObject, includeInstance),
-    badge_signer_address: jspb.Message.getFieldWithDefault(msg, 3, "")
+    get_pairing_response: (f = msg.getGetPairingResponse()) && lavanet_lava_pairing_query_pb.QueryGetPairingResponse.toObject(includeInstance, f),
+    badge_signer_address: jspb.Message.getFieldWithDefault(msg, 3, ""),
+    spec: (f = msg.getSpec()) && lavanet_lava_spec_spec_pb.Spec.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -313,13 +308,18 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.deserializeBinaryFromReader = f
       msg.setBadge(value);
       break;
     case 2:
-      var value = new lavanet_lava_epochstorage_stake_entry_pb.StakeEntry;
-      reader.readMessage(value,lavanet_lava_epochstorage_stake_entry_pb.StakeEntry.deserializeBinaryFromReader);
-      msg.addPairingList(value);
+      var value = new lavanet_lava_pairing_query_pb.QueryGetPairingResponse;
+      reader.readMessage(value,lavanet_lava_pairing_query_pb.QueryGetPairingResponse.deserializeBinaryFromReader);
+      msg.setGetPairingResponse(value);
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
       msg.setBadgeSignerAddress(value);
+      break;
+    case 4:
+      var value = new lavanet_lava_spec_spec_pb.Spec;
+      reader.readMessage(value,lavanet_lava_spec_spec_pb.Spec.deserializeBinaryFromReader);
+      msg.setSpec(value);
       break;
     default:
       reader.skipField();
@@ -358,12 +358,12 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.serializeBinaryToWriter = funct
       lavanet_lava_pairing_relay_pb.Badge.serializeBinaryToWriter
     );
   }
-  f = message.getPairingListList();
-  if (f.length > 0) {
-    writer.writeRepeatedMessage(
+  f = message.getGetPairingResponse();
+  if (f != null) {
+    writer.writeMessage(
       2,
       f,
-      lavanet_lava_epochstorage_stake_entry_pb.StakeEntry.serializeBinaryToWriter
+      lavanet_lava_pairing_query_pb.QueryGetPairingResponse.serializeBinaryToWriter
     );
   }
   f = message.getBadgeSignerAddress();
@@ -371,6 +371,14 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.serializeBinaryToWriter = funct
     writer.writeString(
       3,
       f
+    );
+  }
+  f = message.getSpec();
+  if (f != null) {
+    writer.writeMessage(
+      4,
+      f,
+      lavanet_lava_spec_spec_pb.Spec.serializeBinaryToWriter
     );
   }
 };
@@ -407,33 +415,32 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.hasBadge = function()
 
 
 /**
- * repeated lavanet.lava.epochstorage.StakeEntry pairing_list = 2;
- * @return {!Array<!proto.lavanet.lava.epochstorage.StakeEntry>}
+ * optional QueryGetPairingResponse get_pairing_response = 2;
+ * @return {?proto.lavanet.lava.pairing.QueryGetPairingResponse}
  */
-proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.getPairingListList = function() {
-  return /** @type{!Array<!proto.lavanet.lava.epochstorage.StakeEntry>} */ (
-    jspb.Message.getRepeatedWrapperField(this, lavanet_lava_epochstorage_stake_entry_pb.StakeEntry, 2));
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.getGetPairingResponse = function() {
+  return /** @type{?proto.lavanet.lava.pairing.QueryGetPairingResponse} */ (
+    jspb.Message.getWrapperField(this, lavanet_lava_pairing_query_pb.QueryGetPairingResponse, 2));
 };
 
 
-/** @param {!Array<!proto.lavanet.lava.epochstorage.StakeEntry>} value */
-proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.setPairingListList = function(value) {
-  jspb.Message.setRepeatedWrapperField(this, 2, value);
+/** @param {?proto.lavanet.lava.pairing.QueryGetPairingResponse|undefined} value */
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.setGetPairingResponse = function(value) {
+  jspb.Message.setWrapperField(this, 2, value);
+};
+
+
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.clearGetPairingResponse = function() {
+  this.setGetPairingResponse(undefined);
 };
 
 
 /**
- * @param {!proto.lavanet.lava.epochstorage.StakeEntry=} opt_value
- * @param {number=} opt_index
- * @return {!proto.lavanet.lava.epochstorage.StakeEntry}
+ * Returns whether this field is set.
+ * @return {!boolean}
  */
-proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.addPairingList = function(opt_value, opt_index) {
-  return jspb.Message.addToRepeatedWrapperField(this, 2, opt_value, proto.lavanet.lava.epochstorage.StakeEntry, opt_index);
-};
-
-
-proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.clearPairingListList = function() {
-  this.setPairingListList([]);
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.hasGetPairingResponse = function() {
+  return jspb.Message.getField(this, 2) != null;
 };
 
 
@@ -449,6 +456,36 @@ proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.getBadgeSignerAddress
 /** @param {string} value */
 proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.setBadgeSignerAddress = function(value) {
   jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional lavanet.lava.spec.Spec spec = 4;
+ * @return {?proto.lavanet.lava.spec.Spec}
+ */
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.getSpec = function() {
+  return /** @type{?proto.lavanet.lava.spec.Spec} */ (
+    jspb.Message.getWrapperField(this, lavanet_lava_spec_spec_pb.Spec, 4));
+};
+
+
+/** @param {?proto.lavanet.lava.spec.Spec|undefined} value */
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.setSpec = function(value) {
+  jspb.Message.setWrapperField(this, 4, value);
+};
+
+
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.clearSpec = function() {
+  this.setSpec(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {!boolean}
+ */
+proto.lavanet.lava.pairing.GenerateBadgeResponse.prototype.hasSpec = function() {
+  return jspb.Message.getField(this, 4) != null;
 };
 
 

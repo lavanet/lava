@@ -76,6 +76,7 @@ func exportUserPrivateKey(lavaPath, user string) string {
 }
 
 func runSDKE2E(timeout time.Duration) {
+	sdk.CheckTsNode()
 	os.RemoveAll(sdkLogsFolder)
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
@@ -134,7 +135,9 @@ func runSDKE2E(timeout time.Duration) {
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
-
+	// Check proxy is up
+	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
+	// Start Eth providers
 	lt.startJSONRPCProvider(ctx)
 
 	// Lava Flow

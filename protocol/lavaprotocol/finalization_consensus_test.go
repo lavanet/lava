@@ -55,7 +55,7 @@ func finalizationInsertionForProviders(chainID string, epoch, latestBlock uint64
 				RelayNum:              1,
 				QosReport:             &pairingtypes.QualityOfServiceReport{},
 				Epoch:                 int64(epoch),
-				UnresponsiveProviders: []byte{},
+				UnresponsiveProviders: nil,
 				LavaChainId:           "lava",
 				Sig:                   []byte{},
 			},

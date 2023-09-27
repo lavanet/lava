@@ -77,7 +77,9 @@ func TestPairingUniqueness(t *testing.T) {
 			providerAddr := pairing11.Providers[i].Address
 			require.Equal(t, providerAddr, pairing111.Providers[i].Address)
 			require.Nil(t, err)
-			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, ts.BlockHeight())
+			epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, ts.BlockHeight())
+			require.Nil(t, err)
+			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, epoch)
 			require.Nil(t, err)
 			require.True(t, verify.Valid)
 		}
@@ -681,7 +683,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 		{"EXCLUSIVE mode non-staked provider stakes after first pairing", exclusive, exclusive, exclusive, 1, 0},
 
 		{"MIXED mode normal pairing", mixed, mixed, mixed, 0, 0},
-		{"MIXED mode pairing", mixed, mixed, mixed, 1, 1},
+		{"MIXED mode pairing", mixed, mixed, mixed, 1, 0},
 		{"MIXED mode intersection between plan/sub policies", mixed, mixed, mixed, 4, 3},
 		{"MIXED mode intersection between plan/proj policies", mixed, mixed, mixed, 5, 4},
 		{"MIXED mode intersection between sub/proj policies", mixed, mixed, mixed, 6, 5},

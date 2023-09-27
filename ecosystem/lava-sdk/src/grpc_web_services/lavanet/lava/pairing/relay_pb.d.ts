@@ -4,6 +4,7 @@
 import * as jspb from "google-protobuf";
 import * as gogoproto_gogo_pb from "../../../gogoproto/gogo_pb";
 import * as google_protobuf_wrappers_pb from "google-protobuf/google/protobuf/wrappers_pb";
+import * as google_protobuf_timestamp_pb from "google-protobuf/google/protobuf/timestamp_pb";
 
 export class ProbeRequest extends jspb.Message {
   getGuid(): number;
@@ -48,6 +49,9 @@ export class ProbeReply extends jspb.Message {
   getLavaEpoch(): number;
   setLavaEpoch(value: number): void;
 
+  getLavaLatestBlock(): number;
+  setLavaLatestBlock(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ProbeReply.AsObject;
   static toObject(includeInstance: boolean, msg: ProbeReply): ProbeReply.AsObject;
@@ -64,6 +68,7 @@ export namespace ProbeReply {
     latestBlock: number,
     finalizedBlocksHashes: Uint8Array | string,
     lavaEpoch: number,
+    lavaLatestBlock: number,
   }
 }
 
@@ -96,10 +101,10 @@ export class RelaySession extends jspb.Message {
   getEpoch(): number;
   setEpoch(value: number): void;
 
-  getUnresponsiveProviders(): Uint8Array | string;
-  getUnresponsiveProviders_asU8(): Uint8Array;
-  getUnresponsiveProviders_asB64(): string;
-  setUnresponsiveProviders(value: Uint8Array | string): void;
+  clearUnresponsiveProvidersList(): void;
+  getUnresponsiveProvidersList(): Array<ReportedProvider>;
+  setUnresponsiveProvidersList(value: Array<ReportedProvider>): void;
+  addUnresponsiveProviders(value?: ReportedProvider, index?: number): ReportedProvider;
 
   getLavaChainId(): string;
   setLavaChainId(value: string): void;
@@ -139,7 +144,7 @@ export namespace RelaySession {
     relayNum: number,
     qosReport?: QualityOfServiceReport.AsObject,
     epoch: number,
-    unresponsiveProviders: Uint8Array | string,
+    unresponsiveProvidersList: Array<ReportedProvider.AsObject>,
     lavaChainId: string,
     sig: Uint8Array | string,
     badge?: Badge.AsObject,
@@ -242,6 +247,38 @@ export namespace RelayPrivateData {
     metadataList: Array<Metadata.AsObject>,
     addon: string,
     extensionsList: Array<string>,
+  }
+}
+
+export class ReportedProvider extends jspb.Message {
+  getAddress(): string;
+  setAddress(value: string): void;
+
+  getDisconnections(): number;
+  setDisconnections(value: number): void;
+
+  getErrors(): number;
+  setErrors(value: number): void;
+
+  getTimestampS(): number;
+  setTimestampS(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ReportedProvider.AsObject;
+  static toObject(includeInstance: boolean, msg: ReportedProvider): ReportedProvider.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ReportedProvider, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ReportedProvider;
+  static deserializeBinaryFromReader(message: ReportedProvider, reader: jspb.BinaryReader): ReportedProvider;
+}
+
+export namespace ReportedProvider {
+  export type AsObject = {
+    address: string,
+    disconnections: number,
+    errors: number,
+    timestampS: number,
   }
 }
 
