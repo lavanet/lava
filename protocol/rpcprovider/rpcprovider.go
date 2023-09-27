@@ -404,7 +404,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
 
-			utils.LavaFormatInfo("RPCProvider started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			utils.LavaFormatInfo("RPCProvider started")
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

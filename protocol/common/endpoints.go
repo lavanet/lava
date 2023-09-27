@@ -26,10 +26,7 @@ type NodeUrl struct {
 	Addons       []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 }
 
-func (nurl *NodeUrl) String() string {
-	if nurl == nil {
-		return ""
-	}
+func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
 	if len(nurl.Addons) > 0 {
