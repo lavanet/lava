@@ -82,7 +82,6 @@ export class RestChainParser extends BaseChainParser {
       const blockParser = apiCont.api.getBlockParsing();
       if (!blockParser) {
         throw Logger.fatal("BlockParsing is missing");
-        overwriteRequestedBlock;
       }
       requestedBlock = Parser.ParseBlockFromParams(restMessage, blockParser);
 
