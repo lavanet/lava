@@ -38,33 +38,29 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 
 			// Extract arguments
-			consumerInput := args[0]
+			consumerAddress := args[0]
 
-			keyName, err := sigs.GetKeyName(clientCtx.WithFrom(consumerInput))
+			keyName, err := sigs.GetKeyName(clientCtx.WithFrom(consumerAddress))
 			if err != nil {
 				return err
 			}
-			fmt.Println("SIM keyName: ", keyName)
+
 			privKey, err := sigs.GetPrivKey(clientCtx, keyName)
 			if err != nil {
 				return err
 			}
-			fmt.Println("SIM privKey: ", privKey)
 
 			// SpecID
 			specId := args[1]
-			fmt.Println("SIM specId: ", specId)
 
 			// CU
 			cuAmount, err := cmd.Flags().GetUint64("cu-amount")
 			if err != nil {
 				return err
 			}
-			fmt.Println("SIM cuAmount: ", cuAmount)
 
 			// Provider
 			providerAddr := clientCtx.GetFromAddress().String()
-			fmt.Println("SIM providerAddr: ", providerAddr)
 
 			// Relay Num
 			relayNum, err := cmd.Flags().GetUint64(RelayNumFlag)
@@ -81,7 +77,6 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("SIM qosReport Latency: ", qosReport.Latency.String())
 
 			// Epoch
 			epochValue, err := cmd.Flags().GetUint64(EpochFlag)
@@ -92,13 +87,9 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("SIM epoch: ", epoch)
 
 			relaySessions := []*types.RelaySession{}
 			for relayIdx := uint64(1); relayIdx <= relayNum; relayIdx++ {
-				fmt.Println("relayIdx: ", relayIdx)
-				fmt.Println("relayNum: ", relayNum)
-
 				// Session ID
 				// We need to randomize it, otherwise it will give unique ID error
 				sessionId := uint64(time.Now().UnixNano())
@@ -114,7 +105,6 @@ func CmdSimulateRelayPayment() *cobra.Command {
 				relaySession.Sig = sig
 
 				relaySessions = append(relaySessions, relaySession)
-				fmt.Println("relaySessions: ", relaySessions)
 			}
 
 			msg := types.NewMsgRelayPayment(
@@ -122,7 +112,7 @@ func CmdSimulateRelayPayment() *cobra.Command {
 				relaySessions,
 				"",
 			)
-			fmt.Println("SIM msg: ", msg)
+			utils.LavaFormatInfo("Message Data ", utils.Attribute{Key: "msg", Value: msg})
 
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -165,22 +155,6 @@ func newRelaySession(
 	return relaySession
 }
 
-func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err error) {
-	// If epochValue is not the default value (0 in this case), use it as epoch
-	if epochValue != 0 {
-		return int64(epochValue), nil
-	}
-	status, err := clientCtx.Client.Status(context.Background())
-	if err != nil {
-		return 0, err
-	}
-	latestBlockHeight := status.SyncInfo.LatestBlockHeight
-	fmt.Println("latestBlockHeight: ", latestBlockHeight)
-
-	epoch = calculateEpochFromBlockHeight(latestBlockHeight)
-	return epoch, nil
-}
-
 func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport, err error) {
 	if err != nil {
 		return nil, err
@@ -212,6 +186,22 @@ func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport
 	}
 
 	return qosReport, nil
+}
+
+func extractEpoch(clientCtx client.Context, epochValue uint64) (epoch int64, err error) {
+	// If epochValue is not the default value (0 in this case), use it as epoch
+	if epochValue != 0 {
+		return int64(epochValue), nil
+	}
+	status, err := clientCtx.Client.Status(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	latestBlockHeight := status.SyncInfo.LatestBlockHeight
+	fmt.Println("latestBlockHeight: ", latestBlockHeight)
+
+	epoch = calculateEpochFromBlockHeight(latestBlockHeight)
+	return epoch, nil
 }
 
 func calculateEpochFromBlockHeight(blockHeight int64) int64 {
