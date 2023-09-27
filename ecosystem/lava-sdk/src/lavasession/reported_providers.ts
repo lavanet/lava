@@ -11,8 +11,9 @@ export class ReportedProviders {
   }
   public GetReportedProviders(): Array<ReportedProvider> {
     const reportedProviders = new Array<ReportedProvider>(
-      this.addedToPurgeAndReport.size
+      this.addedToPurgeAndReport.size // allocating space before inserting values has better performance.
     );
+    let index = 0;
     for (const [
       provider,
       reportedProviderEntry,
@@ -22,7 +23,8 @@ export class ReportedProviders {
       reportedProvider.setDisconnections(reportedProviderEntry.disconnections);
       reportedProvider.setErrors(reportedProviderEntry.errors);
       reportedProvider.setTimestampS(reportedProviderEntry.addedTime);
-      reportedProviders.push(reportedProvider);
+      reportedProviders[index] = reportedProvider;
+      index++;
     }
     return reportedProviders;
   }

@@ -13,7 +13,9 @@ import { RPCConsumerServer } from "../rpcconsumer/rpcconsumer_server";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
-
+// we are adding 10% to the epoch passing time so we dont race providers updates.
+// we have overlap protecting us.
+const DEFAULT_TIME_BACKOFF = 1000 * 1.1; // MS * 10%
 // Config interface
 export interface Config {
   geolocation: string;
@@ -31,7 +33,7 @@ export class StateTracker {
     relayer: Relayer,
     chainIDs: string[],
     config: Config,
-    rpcConsumer: RPCConsumerServer,
+    rpcConsumer: RPCConsumerServer | undefined,
     spec: Spec,
     account: AccountData,
     walletAddress: string,
@@ -50,6 +52,11 @@ export class StateTracker {
       );
     } else {
       // Initialize State Query
+      if (!rpcConsumer) {
+        throw Logger.fatal(
+          "No rpc consumer server provided in private key flow."
+        );
+      }
       this.stateQuery = new StateChainQuery(
         pairingListConfig,
         chainIDs,
@@ -96,7 +103,7 @@ export class StateTracker {
     // Set up a timer to call this method again when the next epoch begins
     setTimeout(
       () => this.executeUpdateOnNewEpoch(),
-      this.timeTillNextEpoch * 1000
+      this.timeTillNextEpoch * DEFAULT_TIME_BACKOFF
     );
   }
 
@@ -117,7 +124,7 @@ export class StateTracker {
       // Set up a timer to call this method again when the next epoch begins
       setTimeout(
         () => this.executeUpdateOnNewEpoch(),
-        timeTillNextEpoch * 1000
+        timeTillNextEpoch * DEFAULT_TIME_BACKOFF // we are adding 10% to the timeout to make sure we don't race providers
       );
     } catch (error) {
       Logger.error("An error occurred during pairing processing:", error);

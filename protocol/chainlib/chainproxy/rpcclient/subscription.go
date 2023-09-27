@@ -179,7 +179,7 @@ func (n *Notifier) send(sub *Subscription, data json.RawMessage) error {
 	params, _ := json.Marshal(&ethereumSubscriptionResult{ID: string(sub.ID), Result: data})
 	ctx := context.Background()
 	return n.h.conn.writeJSON(ctx, &JsonrpcMessage{
-		Version: vsn,
+		Version: Vsn,
 		Method:  n.namespace + notificationMethodSuffix,
 		Params:  params,
 	})

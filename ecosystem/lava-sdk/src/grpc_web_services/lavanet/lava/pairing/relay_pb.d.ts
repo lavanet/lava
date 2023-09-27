@@ -49,6 +49,9 @@ export class ProbeReply extends jspb.Message {
   getLavaEpoch(): number;
   setLavaEpoch(value: number): void;
 
+  getLavaLatestBlock(): number;
+  setLavaLatestBlock(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ProbeReply.AsObject;
   static toObject(includeInstance: boolean, msg: ProbeReply): ProbeReply.AsObject;
@@ -65,6 +68,7 @@ export namespace ProbeReply {
     latestBlock: number,
     finalizedBlocksHashes: Uint8Array | string,
     lavaEpoch: number,
+    lavaLatestBlock: number,
   }
 }
 

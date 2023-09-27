@@ -106,7 +106,9 @@ func (apip *GrpcChainParser) setupForProvider(reflectionConnection *grpc.ClientC
 func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
 		chainMessage, err := apip.ParseMsg(craftData.Path, craftData.Data, craftData.ConnectionType, metadata, 0)
-		chainMessage.AppendHeader(metadata)
+		if err == nil {
+			chainMessage.AppendHeader(metadata)
+		}
 		return chainMessage, err
 	}
 
@@ -181,10 +183,10 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            api,
-		msg:            grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
-		requestedBlock: requestedBlock,
-		apiCollection:  apiCollection,
+		api:                  api,
+		msg:                  grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
+		latestRequestedBlock: requestedBlock,
+		apiCollection:        apiCollection,
 	}
 	return nodeMsg
 }

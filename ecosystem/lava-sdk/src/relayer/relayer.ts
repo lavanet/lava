@@ -16,13 +16,12 @@ import {
 import {
   Relayer as RelayerService,
   RelayerClient,
+  ServiceError,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
-import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
-import { jsontag } from "../grpc_web_services/gogoproto/gogo_pb";
 
 export interface RelayerOptions {
   privKey: string;
@@ -65,6 +64,7 @@ export class Relayer {
   async probeProvider(
     providerAddress: string,
     apiInterface: string,
+    guid: number,
     specId: string
   ): Promise<ProbeReply> {
     const client = new RelayerClient(
@@ -72,7 +72,7 @@ export class Relayer {
       this.getTransportWrapped()
     );
     const request = new ProbeRequest();
-    request.setGuid(123);
+    request.setGuid(guid);
     request.setApiInterface(apiInterface);
     request.setSpecId(specId);
     const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
@@ -365,7 +365,7 @@ export class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-    // TODO: we serialize the message here the same way gogoproto serializes there's no straighforward implementation available, but we should cםmpile this code into wasm and import it here because it's ugly
+    // TODO: we serialize the message here the same way gogo proto serializes there's no straightforward implementation available, but we should compile this code into wasm and import it here because it's ugly
     let serializedRequest = "";
     for (const [key, valueInner] of Object.entries(request.toObject())) {
       serializedRequest += ((

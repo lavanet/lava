@@ -60,21 +60,15 @@ export class RPCConsumerServer {
     this.finalizationConsensus = finalizationConsensus;
   }
 
+  public setChainParser(chainParser: BaseChainParser) {
+    this.chainParser = chainParser;
+  }
+
   public supportedChainAndApiInterface(): SupportedChainAndApiInterface {
     return {
       specId: this.rpcEndpoint.chainId,
       apiInterface: this.rpcEndpoint.apiInterface,
     };
-  }
-
-  async probeProviders(
-    pairingList: ConsumerSessionsWithProvider[]
-  ): Promise<number> {
-    try {
-      return await this.consumerSessionManager.probeProviders(pairingList);
-    } catch (err) {
-      return -1;
-    }
   }
 
   async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
@@ -115,7 +109,7 @@ export class RPCConsumerServer {
         errors.push(relayResult);
       } else {
         if (errors.length > 0) {
-          Logger.debug("relay succeeded but had some errors", ...errors);
+          Logger.warn("relay succeeded but had some errors", ...errors);
         }
         return relayResult;
       }

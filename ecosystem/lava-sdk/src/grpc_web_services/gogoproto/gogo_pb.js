@@ -1,4 +1,3 @@
-// source: gogoproto/gogo.proto
 /**
  * @fileoverview
  * @enhanceable
@@ -13,7 +12,6 @@ var goog = jspb;
 var global = Function('return this')();
 
 var google_protobuf_descriptor_pb = require('google-protobuf/google/protobuf/descriptor_pb.js');
-goog.object.extend(proto, google_protobuf_descriptor_pb);
 goog.exportSymbol('proto.gogoproto.benchgen', null, global);
 goog.exportSymbol('proto.gogoproto.benchgenAll', null, global);
 goog.exportSymbol('proto.gogoproto.castkey', null, global);

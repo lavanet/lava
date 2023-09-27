@@ -186,7 +186,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 				var chainFetcher chainlib.ChainFetcherIf
 				if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+					chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint, cache)
 				} else {
 					chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 				}

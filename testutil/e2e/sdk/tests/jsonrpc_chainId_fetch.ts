@@ -1,18 +1,16 @@
-const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
+import { LavaSDK } from "../../../../ecosystem/lava-sdk/bin/src/sdk/sdk";
 
 async function main() {
     // Initialize Lava SDK
     const eth = await LavaSDK.create({
-        badge: {
-            badgeServerAddress: process.env.BADGE_SERVER_ADDR,
-            projectId: process.env.BADGE_PROJECT_ID,
-        },
-        chainIds: ["ETH1"],
+        privateKey: process.env.PRIVATE_KEY,
+        chainIds: "ETH1",
         lavaChainId:"lava",
-        pairingListConfig:process.env.PAIRING_LIST, 
+        pairingListConfig:process.env.PAIRING_LIST,
         allowInsecureTransport: true,
+        logLevel: "debug",
     }).catch(e => {
-        throw new Error(" ERR failed initializing lava-sdk jsonrpc badge test");
+        throw new Error(" ERR failed initializing lava-sdk jsonrpc test");
     });
 
     let relayArray = [];
@@ -23,7 +21,7 @@ async function main() {
                 method: "eth_chainId",
                 params: [],
             }).catch(e => {
-                throw new Error(` ERR ${i} [jsonrpc_badge] failed sending relay jsonrpc badge test`);
+                throw new Error(` ERR ${i} [jsonrpc_chainId_fetch] failed sending relay jsonrpc test`);
             });
 
             // Parse response
@@ -33,15 +31,14 @@ async function main() {
 
             // Validate chainID
             if (chainID != "0x1") {
-                throw new Error(" ERR [jsonrpc_badge] Chain ID is not equal to 0x1");
+                throw new Error(" ERR [jsonrpc_chainId_fetch] Chain ID is not equal to 0x1");
             } else{
-                console.log(i, "[jsonrpc_badge] Success: Fetching ETH chain ID using jsonrpc passed. Chain ID correctly matches '0x1'");
+                console.log(i, "[jsonrpc_chainId_fetch] Success: Fetching ETH chain ID using jsonrpc passed. Chain ID correctly matches '0x1'");
             }
         })().catch(err => {throw err;}));
     }
     // wait for all relays to finish;
     await Promise.allSettled(relayArray);
-
 }
 
 (async () => {

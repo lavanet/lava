@@ -58,13 +58,21 @@ export class PairingUpdater {
       }
 
       Logger.debug("Updating pairing list for: ", chainID);
+      Logger.debug(
+        "Number of CSM registered to this chainId: ",
+        consumerSessionManagerList.length
+      );
 
       // Fetch pairing list
       const pairing = this.stateQuery.getPairing(chainID);
       if (pairing == undefined) {
         Logger.debug("Failed fetching pairing list for: ", chainID);
       } else {
-        Logger.debug("Pairing list fetched: ", pairing);
+        Logger.debug(
+          "Pairing list fetched: ",
+          pairing.currentEpoch,
+          pairing.providers
+        );
       }
 
       const promiseArray = [];
@@ -185,9 +193,9 @@ export class PairingUpdater {
     Logger.debug(
       "providers initialized",
       "our geo",
-      pairingForSameGeolocation,
+      JSON.stringify(pairingForSameGeolocation),
       "other geo",
-      pairingFromDifferentGeolocation
+      JSON.stringify(pairingFromDifferentGeolocation)
     );
     // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]
     return pairingForSameGeolocation.concat(pairingFromDifferentGeolocation);

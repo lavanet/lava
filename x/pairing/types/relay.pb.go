@@ -96,6 +96,7 @@ type ProbeReply struct {
 	LatestBlock           int64  `protobuf:"varint,2,opt,name=latest_block,json=latestBlock,proto3" json:"latest_block,omitempty"`
 	FinalizedBlocksHashes []byte `protobuf:"bytes,3,opt,name=finalized_blocks_hashes,json=finalizedBlocksHashes,proto3" json:"finalized_blocks_hashes,omitempty"`
 	LavaEpoch             uint64 `protobuf:"varint,4,opt,name=lava_epoch,json=lavaEpoch,proto3" json:"lava_epoch,omitempty"`
+	LavaLatestBlock       uint64 `protobuf:"varint,5,opt,name=lava_latest_block,json=lavaLatestBlock,proto3" json:"lava_latest_block,omitempty"`
 }
 
 func (m *ProbeReply) Reset()         { *m = ProbeReply{} }
@@ -155,6 +156,13 @@ func (m *ProbeReply) GetFinalizedBlocksHashes() []byte {
 func (m *ProbeReply) GetLavaEpoch() uint64 {
 	if m != nil {
 		return m.LavaEpoch
+	}
+	return 0
+}
+
+func (m *ProbeReply) GetLavaLatestBlock() uint64 {
+	if m != nil {
+		return m.LavaLatestBlock
 	}
 	return 0
 }
@@ -1112,6 +1120,11 @@ func (m *ProbeReply) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.LavaLatestBlock != 0 {
+		i = encodeVarintRelay(dAtA, i, uint64(m.LavaLatestBlock))
+		i--
+		dAtA[i] = 0x28
+	}
 	if m.LavaEpoch != 0 {
 		i = encodeVarintRelay(dAtA, i, uint64(m.LavaEpoch))
 		i--
@@ -1714,6 +1727,9 @@ func (m *ProbeReply) Size() (n int) {
 	if m.LavaEpoch != 0 {
 		n += 1 + sovRelay(uint64(m.LavaEpoch))
 	}
+	if m.LavaLatestBlock != 0 {
+		n += 1 + sovRelay(uint64(m.LavaLatestBlock))
+	}
 	return n
 }
 
@@ -2211,6 +2227,25 @@ func (m *ProbeReply) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.LavaEpoch |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LavaLatestBlock", wireType)
+			}
+			m.LavaLatestBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LavaLatestBlock |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
