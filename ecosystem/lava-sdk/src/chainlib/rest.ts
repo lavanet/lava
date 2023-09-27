@@ -12,6 +12,7 @@ import { Parser } from "../parser/parser";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { RestMessage } from "./chainproxy/rpcInterfaceMessages/rest_message";
 import { ParsedMessage } from "./chain_message";
+import { encodeUtf8 } from "../util/common";
 export class RestChainParser extends BaseChainParser {
   constructor() {
     super();
@@ -59,8 +60,16 @@ export class RestChainParser extends BaseChainParser {
       latestBlockHeaderSetter: undefined,
     });
 
+    let data = "";
+    if (options.data) {
+      data = "?";
+      for (const key in options.data) {
+        data = data + key + "=" + options.data[key] + "&";
+      }
+    }
+
     restMessage.initRestMessage(
-      options.data,
+      encodeUtf8(data),
       options.url,
       apiCont.api.getName()
     );
@@ -73,7 +82,7 @@ export class RestChainParser extends BaseChainParser {
       });
       restMessage.initRestMessage(
         undefined,
-        options.url + String(options.data),
+        options.url + String(data),
         apiCont.api.getName()
       );
     }
@@ -99,14 +108,6 @@ export class RestChainParser extends BaseChainParser {
         throw Logger.fatal(
           `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`
         );
-      }
-    }
-
-    let data = "";
-    if (options.data) {
-      data = "?";
-      for (const key in options.data) {
-        data = data + key + "=" + options.data[key] + "&";
       }
     }
 
