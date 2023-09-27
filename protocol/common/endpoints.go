@@ -37,6 +37,7 @@ func (nurl *NodeUrl) String() string {
 	}
 	return urlStr
 }
+
 func (nurl *NodeUrl) UrlStr() string {
 	parsedURL, err := url.Parse(nurl.Url)
 	if err != nil {
@@ -45,6 +46,7 @@ func (nurl *NodeUrl) UrlStr() string {
 	parsedURL.User = nil
 	return parsedURL.String()
 }
+
 func (url *NodeUrl) SetAuthHeaders(ctx context.Context, headerSetter func(string, string)) {
 	for header, headerValue := range url.AuthConfig.AuthHeaders {
 		headerSetter(header, headerValue)
