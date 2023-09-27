@@ -61,7 +61,7 @@ export class Parser {
     }
 
     const resString = (result as any[])[0] as string;
-    const blockNum = rpcInput.ParseBlock(resString);
+    const blockNum = rpcInput.parseBlock(resString);
     return this.throwIfError(blockNum);
   }
 
@@ -91,7 +91,7 @@ export class Parser {
       return NOT_APPLICABLE;
     }
 
-    const blockNum = rpcInput.ParseBlock(result);
+    const blockNum = rpcInput.parseBlock(result);
     return this.throwIfError(blockNum);
   }
 
@@ -179,10 +179,10 @@ export class Parser {
   ): any | Error {
     switch (dataSource) {
       case PARSE_PARAMS:
-        return rpcInput.GetParams();
+        return rpcInput.getParams();
       case PARSE_RESULT:
         let data: Record<string, any>;
-        const unmarshalled = rpcInput.GetResult();
+        const unmarshalled = rpcInput.getResult();
         if (unmarshalled.length === 0) {
           return new Error("GetDataToParse failure GetResult is empty");
         }

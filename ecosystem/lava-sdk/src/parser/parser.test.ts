@@ -20,22 +20,22 @@ class RPCInputTest implements RPCInput {
     public GetHeadersFunc: () => Metadata[] = () => []
   ) {}
 
-  GetParams(): any {
+  getParams(): any {
     return this.Params;
   }
 
-  GetResult(): Uint8Array {
+  getResult(): Uint8Array {
     return this.Result;
   }
 
-  ParseBlock(block: string): number | Error {
+  parseBlock(block: string): number | Error {
     if (this.ParseBlockFunc !== null) {
       return this.ParseBlockFunc(block);
     }
     return Parser.ParseDefaultBlockParameter(block);
   }
 
-  GetHeaders(): Metadata[] {
+  getHeaders(): Metadata[] {
     return this.Headers;
   }
 }
