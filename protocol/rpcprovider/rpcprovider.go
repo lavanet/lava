@@ -152,9 +152,11 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 	}
 
+	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, true)
+	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsList), nil)
-		if len(disabledEndpointsList) == parallelJobs {
+		if len(disabledEndpointsList) == len(rpcProviderEndpoints) {
 			utils.LavaFormatFatal("all endpoints are disabled", nil)
 		}
 		// try to save disabled endpoints
@@ -179,34 +181,41 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, retryCount int) {
 	time.Sleep(time.Duration(retryCount) * time.Second)
-	parallel := retryCount > 1
+	parallel := retryCount > 2
 	utils.LavaFormatInfo("Retrying disabled endpoints", utils.Attribute{Key: "disabled endpoints list", Value: disabledEndpoints}, utils.Attribute{Key: "parallel", Value: parallel})
-
+	disabledEndpointsAfterRetry := rpcp.SetupProviderEndpoints(disabledEndpoints, parallel)
+	if len(disabledEndpointsAfterRetry) > 0 {
+		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsAfterRetry), nil)
+		rpcp.RetryDisabledEndpoints(disabledEndpointsAfterRetry, retryCount+1)
+	}
 }
 
-func (rpcp *RPCProvider) SetupProviderEndpoints() {
+func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, parallel bool) (disabledEndpointsRet []*lavasession.RPCProviderEndpoint) {
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcProviderEndpoints)
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
+		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) {
 			defer wg.Done()
 			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint)
 			if err != nil {
 				disabledEndpoints <- rpcProviderEndpoint
-				return err
 			}
-			return nil
-		}(rpcProviderEndpoint) // continue on error
+		}
+		if parallel {
+			go setupEndpoint(rpcProviderEndpoint)
+		} else {
+			setupEndpoint(rpcProviderEndpoint)
+		}
 	}
 	wg.Wait()
 	close(disabledEndpoints)
-	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	disabledEndpointsList := []*lavasession.RPCProviderEndpoint{}
 	for disabledEndpoint := range disabledEndpoints {
 		disabledEndpointsList = append(disabledEndpointsList, disabledEndpoint)
 	}
+	return disabledEndpointsList
 }
 
 func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
