@@ -1,6 +1,8 @@
 package chainlib
 
 import (
+	"math"
+
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -71,9 +73,16 @@ func (pm *parsedMessage) SetExtension(extension *spectypes.Extension) {
 			}
 		}
 		pm.extensions = append(pm.extensions, extension)
+		pm.updateCUForApi(extension)
 	} else {
 		pm.extensions = []*spectypes.Extension{extension}
 	}
+}
+
+func (pm *parsedMessage) updateCUForApi(extension *spectypes.Extension) {
+	copyApi := *pm.api // we can't modify this because it points to an object inside the chainParser
+	copyApi.ComputeUnits = uint64(math.Floor(float64(extension.GetCuMultiplier()) * float64(copyApi.ComputeUnits)))
+	pm.api = &copyApi
 }
 
 type CraftData struct {
