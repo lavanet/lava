@@ -73,10 +73,10 @@ func (pm *parsedMessage) SetExtension(extension *spectypes.Extension) {
 			}
 		}
 		pm.extensions = append(pm.extensions, extension)
-		pm.updateCUForApi(extension)
 	} else {
 		pm.extensions = []*spectypes.Extension{extension}
 	}
+	pm.updateCUForApi(extension)
 }
 
 func (pm *parsedMessage) updateCUForApi(extension *spectypes.Extension) {
