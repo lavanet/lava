@@ -15,7 +15,7 @@ txoptions="-y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.000000
 # run the chain
 echo "setting up lava chain"
 killall lavad
-./scripts/init_chain.sh > /dev/null 2>&1 &
+./scripts/init_chain.sh > /dev/null &
 
 
 current="0"
