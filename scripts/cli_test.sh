@@ -14,9 +14,8 @@ txoptions="-y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.000000
 
 # run the chain
 echo "setting up lava chain"
-killall lavad
 
-./scripts/init_chain.sh > chainlogs.txt &
+./scripts/start_env_dev.sh > chainlogs.txt 2>&1 &
 
 
 current="0"
@@ -24,7 +23,7 @@ count=1
 while [[ $current != "5" ]]
 do
     ((count++))
-    if ((count > 60)); then
+    if ((count > 300)); then
         echo "timeout: Failed to start the chain"
         cat chainlogs.txt
         killall lavad
