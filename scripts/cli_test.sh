@@ -167,4 +167,5 @@ trace lavad q dualstaking delegator-providers $(lavad keys show alice -a)>/dev/n
 trace lavad q dualstaking delegator-rewards $(lavad keys show alice -a) >/dev/null
 trace lavad q dualstaking provider-delegators $(lavad keys show alice -a)>/dev/null
 
+killall lavad
 echo "Testing done :)"
