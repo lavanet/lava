@@ -46,7 +46,7 @@ async function main() {
         await main();
         process.exit(0);
     } catch (error) {
-        console.error(" ERR [rest_optional_params] "+error.message);
+        console.error(" ERR [rest_optional_params] " + error.message);
         process.exit(1);
     }
 })();
