@@ -30,6 +30,8 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
     "$THIRD_PARTY_PROTO_DIR/lavanet/lava/conflict/conflict_data.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/downtime/v1/downtime.proto" \
+    "$THIRD_PARTY_PROTO_DIR/lavanet/lava/downtime/v1/query.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
@@ -39,6 +41,7 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
      "$COSMOS_PROTO_DIR/cosmos/base/v1beta1/coin.proto" \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
     "$COSMOS_PROTO_DIR/amino/amino.proto" \
+    "$COSMOS_PROTO_DIR/tendermint/types/block.proto"
 
 # mv ./src/proto/test ./src/pairing/.
 # rm -rf ./src/proto

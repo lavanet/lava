@@ -713,6 +713,9 @@ export class QuerySdkPairingResponse extends jspb.Message {
   getSpec(): lavanet_lava_spec_spec_pb.Spec | undefined;
   setSpec(value?: lavanet_lava_spec_spec_pb.Spec): void;
 
+  getLatestBlockTime(): number;
+  setLatestBlockTime(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QuerySdkPairingResponse.AsObject;
   static toObject(includeInstance: boolean, msg: QuerySdkPairingResponse): QuerySdkPairingResponse.AsObject;
@@ -728,6 +731,7 @@ export namespace QuerySdkPairingResponse {
     pairing?: QueryGetPairingResponse.AsObject,
     maxCu: number,
     spec?: lavanet_lava_spec_spec_pb.Spec.AsObject,
+    latestBlockTime: number,
   }
 }
 

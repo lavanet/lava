@@ -17,10 +17,12 @@ import {
 } from "../../lavasession/consumerTypes";
 import { Logger } from "../../logger/logger";
 import { RPCConsumerServer } from "../../rpcconsumer/rpcconsumer_server";
-import { SendRelayOptions } from "../../chainlib/base_chain_parser";
+import {SendRelayOptions, SendRestRelayOptions} from "../../chainlib/base_chain_parser";
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
+import {QueryParamsRequest, QueryParamsResponse} from "../../grpc_web_services/lavanet/lava/downtime/v1/query_pb";
+import {Params} from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
   stakeEntry: StakeEntry[];
@@ -37,6 +39,7 @@ export class StateChainQuery {
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
+  private downtimeParams: Params | undefined;
 
   constructor(
     pairingListConfig: string,
@@ -44,7 +47,7 @@ export class StateChainQuery {
     rpcConsumer: RPCConsumerServer,
     config: Config,
     account: AccountData,
-    lavaSpec: Spec
+    lavaSpec: Spec,
   ) {
     Logger.debug("Initialization of State Chain Query started");
 
@@ -76,7 +79,7 @@ export class StateChainQuery {
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
-  public async fetchPairing(): Promise<number> {
+  public async fetchPairing(): Promise<[number, number]> {
     try {
       Logger.debug("Fetching pairing started");
       // Save time till next epoch
@@ -84,8 +87,14 @@ export class StateChainQuery {
 
       this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
 
+      if (this.downtimeParams == undefined) {
+       await this.updateDowntimeParams();
+      }
+
       // Reset pairing
       this.pairing = new Map<string, PairingResponse>(); // TODO: this is supposed to be stored in pairing updater. the state query is supposed to only query info not save it internally this is why we have updaters
+
+      let virtualEpoch = undefined;
 
       // Iterate over chain and construct pairing
       for (const chainID of this.chainIDs) {
@@ -109,6 +118,25 @@ export class StateChainQuery {
           continue;
         }
 
+        if (virtualEpoch == undefined) {
+          const lastBlockTime = pairingResponse.getLatestBlockTime();
+          const downtimeDuration = this.downtimeParams?.getDowntimeDuration();
+          const epochDuration = this.downtimeParams?.getEpochDuration();
+
+          if (lastBlockTime != undefined && downtimeDuration != undefined && epochDuration != undefined) {
+            const delay = Date.now() - lastBlockTime;
+
+            if (delay > (downtimeDuration.getSeconds() * 1000)) {
+              virtualEpoch = Math.trunc((delay -  pairing.getTimeLeftToNextPairing()) / (epochDuration.getSeconds() * 1000));
+
+              if (virtualEpoch < 0) {
+                virtualEpoch = 0;
+              }
+            }
+          }
+        }
+
+        Logger.debug("Virtual epoch: " + virtualEpoch);
         const spec = pairingResponse.getSpec();
 
         if (!spec) {
@@ -119,10 +147,15 @@ export class StateChainQuery {
         const providers = pairing.getProvidersList();
         timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
 
+        let maxCu = pairingResponse.getMaxCu();
+        if (virtualEpoch != undefined) {
+          maxCu += maxCu * virtualEpoch;
+        }
+
         // Save pairing response for chainID
         this.pairing.set(chainID, {
           providers: providers,
-          maxCu: pairingResponse.getMaxCu(),
+          maxCu: maxCu,
           currentEpoch: this.latestBlockNumber,
           spec: spec,
         });
@@ -133,10 +166,14 @@ export class StateChainQuery {
         throw StateTrackerErrors.errTimeTillNextEpochMissing;
       }
 
+      if (virtualEpoch == undefined) {
+        virtualEpoch = 0;
+      }
+
       Logger.debug("Fetching pairing ended");
 
       // Return timeLeftToNextPairing
-      return timeLeftToNextPairing;
+      return [timeLeftToNextPairing, virtualEpoch];
     } catch (err) {
       throw err;
     }
@@ -176,6 +213,63 @@ export class StateChainQuery {
       return providers;
     } catch (err) {
       throw err;
+    }
+  }
+
+  public async updateDowntimeParams(): Promise<QueryParamsResponse | undefined> {
+    try {
+      Logger.debug("Get downtime params")
+
+      const request = new QueryParamsRequest();
+
+      const hexData = Buffer.from(request.serializeBinary()).toString("hex");
+
+      const sendRelayOptions: SendRelayOptions = {
+        method: "abci_query",
+        params: ["/lavanet.lava.downtime.v1.Query/QueryParams", hexData, "0", false],
+      };
+
+      const response = await this.rpcConsumer.sendRelay(sendRelayOptions);
+
+      const reply = response.reply;
+
+      if (reply == undefined) {
+        throw new Error("Reply undefined");
+      }
+
+      // Decode response
+      const dec = new TextDecoder();
+      const decodedResponse = dec.decode(reply.getData_asU8());
+
+      // Parse response
+      const jsonResponse = JSON.parse(decodedResponse);
+
+      const byteArrayResponse = base64ToUint8Array(
+          jsonResponse.result.response.value
+      );
+
+      // Deserialize the Uint8Array to obtain the protobuf message
+      const decodedResponse2 =
+          QueryParamsResponse.deserializeBinary(byteArrayResponse);
+
+      const params = decodedResponse2.getParams();
+
+      // If response undefined throw an error
+      if (params == undefined) {
+        throw  new Error("Downtime params not found");
+      }
+
+      this.downtimeParams = params;
+
+      // Return decoded response
+      return decodedResponse2;
+    } catch (err) {
+      // Console log the error
+      console.error(err);
+
+      // Return empty object
+      // We do not want to return error because it will stop the state tracker for other chains
+      return undefined;
     }
   }
 

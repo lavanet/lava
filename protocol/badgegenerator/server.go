@@ -138,6 +138,7 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		Epoch:        s.GetEpoch(),
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,
+		VirtualEpoch: s.GetVirtualEpoch(),
 	}
 
 	result := pairingtypes.GenerateBadgeResponse{

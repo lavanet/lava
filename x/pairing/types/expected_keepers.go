@@ -8,6 +8,7 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"time"
 )
 
 type SpecKeeper interface {
@@ -85,4 +86,5 @@ type PlanKeeper interface {
 
 type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
+	GetLastBlockTime(ctx sdk.Context) (time.Time, bool)
 }

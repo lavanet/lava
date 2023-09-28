@@ -1105,7 +1105,8 @@ proto.lavanet.lava.pairing.Badge.toObject = function(includeInstance, msg) {
     epoch: jspb.Message.getFieldWithDefault(msg, 2, 0),
     address: jspb.Message.getFieldWithDefault(msg, 3, ""),
     lava_chain_id: jspb.Message.getFieldWithDefault(msg, 4, ""),
-    project_sig: msg.getProjectSig_asB64()
+    project_sig: msg.getProjectSig_asB64(),
+    virtual_epoch: jspb.Message.getFieldWithDefault(msg, 6, 0)
   };
 
   if (includeInstance) {
@@ -1161,6 +1162,10 @@ proto.lavanet.lava.pairing.Badge.deserializeBinaryFromReader = function(msg, rea
     case 5:
       var value = /** @type {!Uint8Array} */ (reader.readBytes());
       msg.setProjectSig(value);
+      break;
+    case 6:
+      var value = /** @type {number} */ (reader.readUint64());
+      msg.setVirtualEpoch(value);
       break;
     default:
       reader.skipField();
@@ -1223,6 +1228,13 @@ proto.lavanet.lava.pairing.Badge.serializeBinaryToWriter = function(message, wri
   if (f.length > 0) {
     writer.writeBytes(
       5,
+      f
+    );
+  }
+  f = message.getVirtualEpoch();
+  if (f !== 0) {
+    writer.writeUint64(
+      6,
       f
     );
   }
@@ -1325,6 +1337,21 @@ proto.lavanet.lava.pairing.Badge.prototype.getProjectSig_asU8 = function() {
 /** @param {!(string|Uint8Array)} value */
 proto.lavanet.lava.pairing.Badge.prototype.setProjectSig = function(value) {
   jspb.Message.setProto3BytesField(this, 5, value);
+};
+
+
+/**
+ * optional uint64 virtual_epoch = 6;
+ * @return {number}
+ */
+proto.lavanet.lava.pairing.Badge.prototype.getVirtualEpoch = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 6, 0));
+};
+
+
+/** @param {number} value */
+proto.lavanet.lava.pairing.Badge.prototype.setVirtualEpoch = function(value) {
+  jspb.Message.setProto3IntField(this, 6, value);
 };
 
 

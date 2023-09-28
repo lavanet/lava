@@ -235,6 +235,7 @@ message QueryEffectivePolicyResponse {
 message QuerySdkPairingResponse {
   QueryGetPairingResponse pairing = 1;
   uint64 max_cu = 2;
-  lavanet.lava.spec.Spec spec = 3; 
+  lavanet.lava.spec.Spec spec = 3;
+  int64 latest_block_time = 4;
 }
 

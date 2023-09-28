@@ -5064,7 +5064,8 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.toObject = function(includeIn
   var f, obj = {
     pairing: (f = msg.getPairing()) && proto.lavanet.lava.pairing.QueryGetPairingResponse.toObject(includeInstance, f),
     maxCu: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    spec: (f = msg.getSpec()) && lavanet_lava_spec_spec_pb.Spec.toObject(includeInstance, f)
+    spec: (f = msg.getSpec()) && lavanet_lava_spec_spec_pb.Spec.toObject(includeInstance, f),
+    latestBlockTime: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -5114,6 +5115,10 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.deserializeBinaryFromReader =
       var value = new lavanet_lava_spec_spec_pb.Spec;
       reader.readMessage(value,lavanet_lava_spec_spec_pb.Spec.deserializeBinaryFromReader);
       msg.setSpec(value);
+      break;
+    case 4:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setLatestBlockTime(value);
       break;
     default:
       reader.skipField();
@@ -5165,6 +5170,13 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.serializeBinaryToWriter = fun
       3,
       f,
       lavanet_lava_spec_spec_pb.Spec.serializeBinaryToWriter
+    );
+  }
+  f = message.getLatestBlockTime();
+  if (f !== 0) {
+    writer.writeInt64(
+      4,
+      f
     );
   }
 };
@@ -5242,6 +5254,21 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.clearSpec = functio
  */
 proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.hasSpec = function() {
   return jspb.Message.getField(this, 3) != null;
+};
+
+
+/**
+ * optional int64 latest_block_time = 4;
+ * @return {number}
+ */
+proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.getLatestBlockTime = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
+};
+
+
+/** @param {number} value */
+proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.setLatestBlockTime = function(value) {
+  jspb.Message.setProto3IntField(this, 4, value);
 };
 
 

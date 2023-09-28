@@ -123,7 +123,8 @@ export class ConsumerSessionManager {
 
   public async updateAllProviders(
     epoch: number,
-    pairingList: ConsumerSessionsWithProvider[]
+    pairingList: ConsumerSessionsWithProvider[],
+    virtualEpoch: number,
   ): Promise<Error | undefined> {
     Logger.debug(
       "updateAllProviders called. epoch:",
@@ -139,10 +140,11 @@ export class ConsumerSessionManager {
       // This condition permits the pairing to be overwritten just once for the same epoch
       // After this one-time allowance, any attempt to overwrite will result in an error
       if (
-        this.allowedUpdateForCurrentEpoch &&
+        (this.allowedUpdateForCurrentEpoch &&
         epoch === this.currentEpoch &&
         rpcEndpoint.chainId === "LAV1" &&
-        rpcEndpoint.apiInterface === "tendermintrpc"
+        rpcEndpoint.apiInterface === "tendermintrpc") ||
+        virtualEpoch > 0
       ) {
         this.allowedUpdateForCurrentEpoch = false;
       } else {
@@ -826,6 +828,7 @@ export class ConsumerSessionManager {
           "Error while probing provider:",
           consumerSessionWithProvider.publicLavaAddress
         );
+        console.log(err);
         //Logger.error(err);
       }
     }
