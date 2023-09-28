@@ -31,7 +31,7 @@ async function main() {
             // Validate chainID
             if (chainID != "lava") {
                 throw new Error(" ERR [rest_optional_params] Chain ID is not equal to lava");
-            }else{
+            } else {
                 console.log(i, "[rest_optional_params] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
             } 
         })().catch(err => {throw err;}));
