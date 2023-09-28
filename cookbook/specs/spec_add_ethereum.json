@@ -1066,7 +1066,7 @@
                         "extensions": [
                             {
                                 "name": "archive",
-                                "cu_multiplier": 1.5,
+                                "cu_multiplier": 5,
                                 "rule": {
                                     "block":254
                                 }
@@ -1306,7 +1306,7 @@
                         "extensions": [
                             {
                                 "name": "archive",
-                                "cu_multiplier": 1.5,
+                                "cu_multiplier": 5,
                                 "rule": {
                                     "block":254
                                 }
