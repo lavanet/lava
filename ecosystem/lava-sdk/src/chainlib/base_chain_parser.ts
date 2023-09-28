@@ -244,10 +244,16 @@ export abstract class BaseChainParser {
           }
           let apiName = api.getName();
           if (this.apiInterface == APIInterfaceRest) {
-            const re = /{[^}]+}/;
-            apiName = api.getName().replace(re, "replace-me-with-regex");
-            apiName = apiName.replace(/replace-me-with-regex/g, "[^\\/\\s]+");
-            apiName = this.escapeRegExp(apiName); // Assuming you have a RegExp.escape function
+            const re = /{[^}]+}/g;
+            const processedName = apiName.replace(re, "replace-me-with-regex");
+            const quotedProcessedName = processedName.replace(
+              /[.*+?^${}()|[\]\\]/g,
+              "\\$&"
+            );
+            apiName = quotedProcessedName.replace(
+              /replace-me-with-regex/g,
+              "[^\\/\\s]+"
+            );
           }
           const apiKey: ApiKey = {
             name: apiName,
@@ -417,6 +423,9 @@ export abstract class BaseChainParser {
   ): [ApiContainer | undefined, boolean] {
     let foundNameOnDifferentConnectionType: string | undefined = undefined;
     for (const [, api] of this.serverApis.entries()) {
+      if (api.apiKey.name.includes("/lavanet/lava/pairing/get_pairing")) {
+        console.log("hey");
+      }
       const re = new RegExp(`^${api.apiKey.name}$`);
       if (re.test(name)) {
         if (api.apiKey.connectionType === connectionType) {
