@@ -94,7 +94,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
       undefined,
       tendermintrpcMessage,
       apiCollection,
-      generateRPCData(options.method, options.params)
+      generateRPCData(tendermintrpcMessage)
     );
 
     // TODO: add extension parsing.
@@ -105,7 +105,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
       NOT_APPLICABLE,
       apiCont.api,
       apiCollection,
-      generateRPCData(options.method, options.params),
+      generateRPCData(tendermintrpcMessage),
       ""
     );
     return chainMessage;

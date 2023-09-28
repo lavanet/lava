@@ -1,21 +1,22 @@
+import { JsonrpcMessage } from "../chainlib/chainproxy/rpcInterfaceMessages/json_rpc_message";
+
 export function base64ToUint8Array(str: string): Uint8Array {
   const buffer = Buffer.from(str, "base64");
 
   return new Uint8Array(buffer);
 }
 
-let globalId = 0;
-
-export function generateRPCData(method: string, params: Array<any>): string {
-  const stringifyMethod = JSON.stringify(method);
-  const stringifyParam = JSON.stringify(params, (key, value) => {
+export function generateRPCData(rpcMessage: JsonrpcMessage): string {
+  const stringifyId = JSON.stringify(rpcMessage.id);
+  const stringifyVersion = JSON.stringify(rpcMessage.version);
+  const stringifyMethod = JSON.stringify(rpcMessage.method);
+  const stringifyParam = JSON.stringify(rpcMessage.params, (key, value) => {
     if (typeof value === "bigint") {
       return value.toString();
     }
     return value;
   });
-  globalId += 1;
-  return `{"jsonrpc": "2.0", "id": ${globalId}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
+  return `{"jsonrpc": ${stringifyVersion}, "id": ${stringifyId}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
 }
 
 export function parseLong(long: Long): number {
