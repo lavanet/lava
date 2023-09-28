@@ -224,7 +224,7 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 
 func ValidateStatusCodes(statusCode int) error {
 	if statusCode == 504 || statusCode == 429 {
-		return HTTPError{
+		return InvalidStatusCodeError{
 			StatusCode: statusCode,
 		}
 	}

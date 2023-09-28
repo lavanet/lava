@@ -689,7 +689,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false)
 		if err != nil {
-			if se, ok := err.(rpcclient.HTTPError); ok {
+			if se, ok := err.(rpcclient.InvalidStatusCodeError); ok {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: se.StatusCode}, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error

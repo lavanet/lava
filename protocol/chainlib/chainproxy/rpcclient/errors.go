@@ -16,7 +16,10 @@
 
 package rpcclient
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // HTTPError is returned by client operations when the HTTP status code of the
 // response is not a 2xx status.
@@ -31,6 +34,14 @@ func (err HTTPError) Error() string {
 		return err.Status
 	}
 	return fmt.Sprintf("%v: %s", err.Status, err.Body)
+}
+
+type InvalidStatusCodeError struct {
+	StatusCode int
+}
+
+func (err InvalidStatusCodeError) Error() string {
+	return strconv.Itoa(err.StatusCode)
 }
 
 // Error wraps RPC errors, which contain an error code in addition to the message.
