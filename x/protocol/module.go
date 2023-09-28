@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -78,6 +79,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 	// this line is used by starport scaffolding # 2
 }
 
@@ -126,7 +128,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	migrator := keeper.NewMigrator(am.keeper)
 
 	// register v2 -> v3 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.Migrate2to3); err != nil {
+	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
+	}
+
+	// register v3 -> v4 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.MigrateVersion); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
@@ -154,7 +162,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 3 }
+func (AppModule) ConsensusVersion() uint64 { return 4 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {

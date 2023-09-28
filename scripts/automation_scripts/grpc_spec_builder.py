@@ -45,12 +45,12 @@ chainId = "AXELAR"
 # chainId = "CANTO"
 
 # 
-# grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # OSMO
+# grpcurl -plaintext prod-pnet-osmosisnode-1.lavapro.xyz:9090 list # COS3
 # grpcurl -plaintext public-rpc.lavanet.xyz:9090 list # LAV1
-# grpcurl -plaintext gaia-node-1.lavapro.xyz:9090 list # COSHUB
+# grpcurl -plaintext gaia-node-1.lavapro.xyz:9090 list # COS5
 # grpcurl -plaintext juno-node-1.lavapro.xyz:9090 list # JUNO
 # # --- #
-# grpcurl -plaintext gaia-node-1.lavapro.xyz:9092 list # COSHUBT
+# grpcurl -plaintext gaia-node-1.lavapro.xyz:9092 list # COS5T
 # grpcurl -plaintext juno-node-1.lavapro.xyz:9092 list # JUNO-TEST
 # grpcurl -plaintext grpc-axelar.stakerun.com:9090 list # AXELAR
 # grpcurl -plaintext canto-grpc.polkachu.com:15590 list # CANTO

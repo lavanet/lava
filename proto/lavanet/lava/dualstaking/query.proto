@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/dualstaking/params.proto";
 import "lavanet/lava/dualstaking/delegate.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
@@ -18,12 +19,17 @@ service Query {
 
   // Queries a delegator for all its providers.
   rpc DelegatorProviders(QueryDelegatorProvidersRequest) returns (QueryDelegatorProvidersResponse) {
-    option (google.api.http).get = "/lavanet/lava/subscription/delegator_providers/{delegator}";
+    option (google.api.http).get = "/lavanet/lava/dualstaking/delegator_providers/{delegator}";
   }
 
   // Queries a provider for all its delegators.
   rpc ProviderDelegators(QueryProviderDelegatorsRequest) returns (QueryProviderDelegatorsResponse) {
-    option (google.api.http).get = "/lavanet/lava/subscription/provider_delegators/{provider}";
+    option (google.api.http).get = "/lavanet/lava/dualstaking/provider_delegators/{provider}";
+  }
+
+  // Queries a the unclaimed rewards of a delegator.
+  rpc DelegatorRewards(QueryDelegatorRewardsRequest) returns (QueryDelegatorRewardsResponse) {
+    option (google.api.http).get = "/lavanet/lava/dualstaking/delegator_rewards/{delegator}/{provider}/{chain_id}";
   }
 }
 
@@ -52,4 +58,20 @@ message QueryProviderDelegatorsRequest {
 
 message QueryProviderDelegatorsResponse {
   repeated Delegation delegations = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryDelegatorRewardsRequest {
+  string delegator = 1;
+  string provider = 2;
+  string chain_id = 3;
+}
+
+message QueryDelegatorRewardsResponse {
+  repeated DelegatorRewardInfo rewards = 1 [(gogoproto.nullable) = false];
+}
+
+message DelegatorRewardInfo {
+  string provider = 1;
+  string chain_id = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
 }

@@ -31,6 +31,12 @@ func NewEpochUpdater(stateQuery *EpochStateQuery) *EpochUpdater {
 func (eu *EpochUpdater) RegisterEpochUpdatable(ctx context.Context, epochUpdatable EpochUpdatable) {
 	eu.lock.Lock()
 	defer eu.lock.Unlock()
+	// initialize with the current epoch
+	currentEpoch, err := eu.stateQuery.CurrentEpochStart(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("epoch updatable failed registering for epoch updates", err)
+	}
+	epochUpdatable.UpdateEpoch(currentEpoch)
 	eu.epochUpdatables = append(eu.epochUpdatables, &epochUpdatable)
 }
 

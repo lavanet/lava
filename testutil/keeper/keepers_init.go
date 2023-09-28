@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"context"
-	"crypto/rand"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -22,6 +22,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
@@ -50,10 +51,11 @@ import (
 )
 
 const (
-	BLOCK_TIME = 30 * time.Second
+	BLOCK_TIME       = 30 * time.Second
+	BLOCK_HEADER_LEN = 32
 )
 
-const BLOCK_HEADER_LEN = 32
+var Randomizer *sigs.ZeroReader
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
@@ -90,57 +92,12 @@ type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
 
-func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
-	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
-	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
-	return
-}
-
-func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
-	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
-func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
-	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
-func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
-	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
-func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
-	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
-}
-
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
+	seed := time.Now().Unix()
+	// seed = 1695297312 // uncomment this to debug a specific scenario
+	Randomizer = sigs.NewZeroReader(seed)
+	fmt.Println("Reproduce With testing seed: ", seed)
+
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
 
@@ -247,7 +204,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
@@ -301,6 +258,56 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
+func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
+	proposal := &paramproposal.ParameterChangeProposal{Changes: []paramproposal.ParamChange{{Subspace: subspace, Key: key, Value: value}}}
+	err = spec.HandleParameterChangeProposal(ctx, paramKeeper, proposal)
+	return
+}
+
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToDelete []string) error {
+	proposal := planstypes.NewPlansDelProposal("mockProposal", "mockProposal plans delete for testing", plansToDelete)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := plans.NewPlansProposalsHandler(plansKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
+	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
+func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
+	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
+	err := proposal.ValidateBasic()
+	if err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
+	err = proposalHandler(ctx, proposal)
+	return err
+}
+
 func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -308,7 +315,7 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
 
 	headerHash := make([]byte, BLOCK_HEADER_LEN)
-	rand.Read(headerHash)
+	Randomizer.Read(headerHash)
 	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
 
 	NewBlock(unwrapedCtx, ks)

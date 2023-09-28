@@ -3,7 +3,6 @@ package chainlib
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -39,7 +38,9 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
 		chainMessage, err := apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, metadata, 0)
-		chainMessage.AppendHeader(metadata)
+		if err == nil {
+			chainMessage.AppendHeader(metadata)
+		}
 		return chainMessage, err
 	}
 
@@ -121,10 +122,10 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		msg:            restMessage,
-		requestedBlock: requestBlock,
+		api:                  serviceApi,
+		apiCollection:        apiCollection,
+		msg:                  restMessage,
+		latestRequestedBlock: requestBlock,
 	}
 	return nodeMsg
 }
@@ -457,10 +458,9 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	// checking if rest reply data is in json format
-	var jsonData map[string]interface{}
-	err = json.Unmarshal(reply.Data, &jsonData)
+	err = rcp.HandleJSONFormatError(reply.Data)
 	if err != nil {
-		return nil, "", nil, utils.LavaFormatError("Rest reply is not in json format", err, utils.Attribute{Key: "reply.Data", Value: reply.Data})
+		return nil, "", nil, utils.LavaFormatError("Rest reply is neither a JSON object nor a JSON array of objects", nil, utils.Attribute{Key: "reply.Data", Value: string(reply.Data)})
 	}
 
 	return reply, "", nil, nil

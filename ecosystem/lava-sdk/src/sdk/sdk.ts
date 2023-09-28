@@ -86,8 +86,6 @@ export class LavaSDK {
     // Validate attributes
     if (!badge && !privateKey) {
       throw SDKErrors.errPrivKeyAndBadgeNotInitialized;
-    } else if (badge && privateKey) {
-      throw SDKErrors.errPrivKeyAndBadgeBothInitialized;
     }
 
     // Set log level
@@ -125,7 +123,9 @@ export class LavaSDK {
 
   public async init() {
     // Init wallet
-    if (!this.badgeManager.isActive()) {
+
+    // Check if badge is not specified or user specified a wallet to use with badge
+    if (!this.badgeManager.isActive() || this.privKey != "") {
       const wallet = await createWallet(this.privKey);
       this.account = await wallet.getConsumerAccount();
     } else {
@@ -149,47 +149,53 @@ export class LavaSDK {
       transport: this.transport,
     });
 
+    // Get default lava spec
+    const spec = getDefaultLavaSpec();
     // create provider optimizer
     const optimizer = new RandomProviderOptimizer();
 
-    const rpcEndpoint = new RPCEndpoint(
-      "", // We do no need this in sdk as we are not opening any ports
-      "LAV1",
-      "tendermintrpc",
-      this.geolocation // This is also deprecated
-    );
+    let rpcConsumerServerLoL: RPCConsumerServer | undefined;
+    let lavaTendermintRpcConsumerSessionManager:
+      | ConsumerSessionManager
+      | undefined;
+    // if badge is not active set rpc consumer server for lava queries
+    if (!this.badgeManager.isActive()) {
+      const rpcEndpoint = new RPCEndpoint(
+        "", // We do no need this in sdk as we are not opening any ports
+        "LAV1",
+        "tendermintrpc",
+        this.geolocation // This is also deprecated
+      );
 
-    // create consumer session manager for lava tendermint
-    const csm = new ConsumerSessionManager(
-      this.relayer,
-      rpcEndpoint,
-      optimizer,
-      {
-        transport: this.transport,
-        allowInsecureTransport: this.allowInsecureTransport,
-      }
-    );
+      // create consumer session manager for lava tendermint
+      lavaTendermintRpcConsumerSessionManager = new ConsumerSessionManager(
+        this.relayer,
+        rpcEndpoint,
+        optimizer,
+        {
+          transport: this.transport,
+          allowInsecureTransport: this.allowInsecureTransport,
+        }
+      );
 
-    // Get default lava spec
-    const spec = getDefaultLavaSpec();
+      // Get chain parser for tendermintrpc
+      const chainParse = getChainParser("tendermintrpc");
 
-    // Get chain parser for tendermintrpc
-    const chainParse = getChainParser("tendermintrpc");
+      // Init lava Spec
+      chainParse.init(spec);
 
-    // Init lava Spec
-    chainParse.init(spec);
+      const finalizationConsensus = new FinalizationConsensus();
 
-    const finalizationConsensus = new FinalizationConsensus();
-
-    const rpcConsuemer = new RPCConsumerServer(
-      this.relayer,
-      csm,
-      chainParse,
-      this.geolocation,
-      rpcEndpoint,
-      this.lavaChainId,
-      finalizationConsensus
-    );
+      rpcConsumerServerLoL = new RPCConsumerServer(
+        this.relayer,
+        lavaTendermintRpcConsumerSessionManager,
+        chainParse,
+        this.geolocation,
+        rpcEndpoint,
+        this.lavaChainId,
+        finalizationConsensus
+      );
+    }
 
     // Init state tracker
     const tracker = new StateTracker(
@@ -200,7 +206,7 @@ export class LavaSDK {
         geolocation: this.geolocation,
         network: this.network,
       },
-      rpcConsuemer,
+      rpcConsumerServerLoL,
       spec,
       this.account,
       this.walletAddress,
@@ -208,7 +214,18 @@ export class LavaSDK {
     );
 
     // Register LAVATendermint csm for update
-    tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
+    // If badge does not exists
+    if (!this.badgeManager.isActive()) {
+      if (!lavaTendermintRpcConsumerSessionManager) {
+        throw Logger.fatal(
+          "lavaTendermintRpcConsumerSessionManager is undefined in private key flow"
+        );
+      }
+
+      tracker.RegisterConsumerSessionManagerForPairingUpdates(
+        lavaTendermintRpcConsumerSessionManager
+      );
+    }
 
     // Fetch init state query
     await tracker.initialize();
@@ -222,7 +239,8 @@ export class LavaSDK {
         continue;
       }
       const spec = pairingResponse.spec;
-      for (const apiCollection of spec.getApiCollectionsList()) {
+      const apiCollectionList = spec.getApiCollectionsList();
+      for (const apiCollection of apiCollectionList) {
         // Get api interface
         if (!apiCollection.getEnabled()) {
           continue;
@@ -240,6 +258,33 @@ export class LavaSDK {
 
         if (apiInterface == "grpc") {
           Logger.debug("Skipping grpc for: ", chainId);
+          continue;
+        }
+
+        // in case we have rest - POST + rest - GET collections this will prevent us from adding the same chainId and apiInterface twice
+        if (
+          !(
+            this.getRpcConsumerServerRaw(chainId, apiInterface) instanceof Error
+          )
+        ) {
+          continue;
+        }
+
+        // create chain parser
+        const chainParser = getChainParser(apiInterface);
+        chainParser.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())
+
+        // set the existing rpc consumer server from the initialization instead of creating a new one and continue
+        if (
+          chainId == "LAV1" &&
+          apiInterface == "tendermintrpc" &&
+          rpcConsumerServerLoL
+        ) {
+          rpcConsumerServerLoL.setChainParser(chainParser);
+          this.rpcConsumerServerRouter.set(
+            this.getRouterKey(chainId, apiInterface),
+            rpcConsumerServerLoL
+          );
           continue;
         }
 
@@ -264,17 +309,13 @@ export class LavaSDK {
 
         tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
 
-        // create chain parser
-        const chainParser = getChainParser(apiInterface);
-        chainParser.init(spec); // TODO: instead of init implement spec updater (update only when there was a spec change spec.getBlockLastUpdated())
-
         // create finalization consensus
         const finalizationConsensus = new FinalizationConsensus();
         // TODO: when this is supported
         // tracker.RegisterFinalizationConsensusForUpdates(finalizationConsensus);
 
         // create rpc consumer server
-        const rpcConsuemer = new RPCConsumerServer(
+        const rpcConsumerServer = new RPCConsumerServer(
           this.relayer,
           csm,
           chainParser,
@@ -287,52 +328,25 @@ export class LavaSDK {
         // save rpc consumer server in map
         this.rpcConsumerServerRouter.set(
           this.getRouterKey(chainId, apiInterface),
-          rpcConsuemer
+          rpcConsumerServer
         );
       }
     }
     await tracker.startTracking();
   }
 
-  protected getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
-    return chainId + "," + apiInterface;
-  }
-
-  protected isRest(
-    options: SendRelayOptions | SendRestRelayOptions
-  ): options is SendRestRelayOptions {
-    return "connectionType" in options; // how to check which options were given
-  }
-
-  private getRpcConsumerServerRaw(
-    chainID: string,
-    apiInterface: string
-  ): RPCConsumerServer | Error {
-    const routerMap = this.rpcConsumerServerRouter;
-    const rpcConsumerServer = routerMap.get(
-      this.getRouterKey(chainID, apiInterface)
-    );
-    if (rpcConsumerServer == undefined) {
-      return new Error(
-        "did not find rpcConsumerServer for " +
-          this.getRouterKey(chainID, apiInterface)
-      );
-    }
-    return rpcConsumerServer;
-  }
-
   getRpcConsumerServer(
     options: SendRelayOptions | SendRestRelayOptions
   ): RPCConsumerServer | Error {
     const routerMap = this.rpcConsumerServerRouter;
-    if (routerMap.size == 1) {
+    const chainID = options.chainId;
+    if (routerMap.size == 1 && chainID == undefined) {
       const firstEntry = routerMap.values().next();
       if (firstEntry.done) {
         return new Error("returned empty routerMap");
       }
       return firstEntry.value;
     }
-    const chainID = options.chainId;
     const isRest = this.isRest(options);
     if (chainID == undefined) {
       let specId = "";
@@ -348,6 +362,10 @@ export class LavaSDK {
         if (isRest) {
           apiInterface = APIInterfaceRest;
           continue;
+        }
+        if (options.apiInterface == supported.apiInterface) {
+          apiInterface = supported.apiInterface;
+          break;
         }
         if (
           apiInterface != "" &&
@@ -431,4 +449,34 @@ export class LavaSDK {
       return jsonResponse;
     });
   }
+
+  protected getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
+    return chainId + "," + apiInterface;
+  }
+
+  protected isRest(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): options is SendRestRelayOptions {
+    return "connectionType" in options; // how to check which options were given
+  }
+
+  private getRpcConsumerServerRaw(
+    chainID: string,
+    apiInterface: string
+  ): RPCConsumerServer | Error {
+    const routerMap = this.rpcConsumerServerRouter;
+    const rpcConsumerServer = routerMap.get(
+      this.getRouterKey(chainID, apiInterface)
+    );
+    if (rpcConsumerServer == undefined) {
+      return new Error(
+        "did not find rpcConsumerServer for " +
+          this.getRouterKey(chainID, apiInterface)
+      );
+    }
+    return rpcConsumerServer;
+  }
 }
+
+// exporting relay options to be used if needed.
+export { SendRelayOptions, SendRestRelayOptions };

@@ -46,3 +46,33 @@ export function debugPrint(
 export function generateRandomInt(): number {
   return Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER + 1));
 }
+
+export function sleep(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      resolve();
+      clearTimeout(timeout);
+    }, ms);
+  });
+}
+
+export function median(values: number[]): number {
+  // First, we need to sort the array in ascending order
+  const sortedValues = values.slice().sort((a, b) => a - b);
+
+  // Calculate the middle index
+  const middleIndex = Math.floor(sortedValues.length / 2);
+
+  // Check if the array length is even or odd
+  if (sortedValues.length % 2 === 0) {
+    // If it's even, return the average of the two middle values
+    return (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2;
+  } else {
+    // If it's odd, return the middle value
+    return sortedValues[middleIndex];
+  }
+}

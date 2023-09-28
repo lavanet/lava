@@ -47,7 +47,7 @@ export class StateChainQuery {
     rpcConsumer: RPCConsumerServer,
     config: Config,
     account: AccountData,
-    lavaSpec: Spec,
+    lavaSpec: Spec
   ) {
     Logger.debug("Initialization of State Chain Query started");
 
@@ -68,12 +68,11 @@ export class StateChainQuery {
   public async init(): Promise<void> {
     const pairing = await this.fetchLavaProviders(this.pairingListConfig);
     this.csp = pairing.consumerSessionsWithProvider;
-    this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
     // Save pairing response for chainID
     this.pairing.set("LAV1", {
       providers: pairing.stakeEntry,
       maxCu: 10000,
-      currentEpoch: this.latestBlockNumber,
+      currentEpoch: 0,
       spec: this.lavaSpec,
     });
   }
@@ -85,14 +84,19 @@ export class StateChainQuery {
       // Save time till next epoch
       let timeLeftToNextPairing;
 
-      this.latestBlockNumber = await this.rpcConsumer.probeProviders(this.csp);
+      const lavaPairing = this.getPairing("LAV1");
 
       if (this.downtimeParams == undefined) {
        await this.updateDowntimeParams();
       }
 
       // Reset pairing
-      this.pairing = new Map<string, PairingResponse>(); // TODO: this is supposed to be stored in pairing updater. the state query is supposed to only query info not save it internally this is why we have updaters
+
+      this.pairing = new Map<string, PairingResponse>();
+
+      // Save lava pairing
+      // as if we do not have lava in chainID it can fail updating list
+      this.pairing.set("LAV1", lavaPairing);
 
       let virtualEpoch = undefined;
 
@@ -146,6 +150,12 @@ export class StateChainQuery {
 
         const providers = pairing.getProvidersList();
         timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
+        const currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
+        if (!currentEpoch) {
+          throw Logger.fatal(
+            "Failed fetching current epoch from pairing request."
+          );
+        }
 
         let maxCu = pairingResponse.getMaxCu();
         if (virtualEpoch != undefined) {
@@ -156,7 +166,7 @@ export class StateChainQuery {
         this.pairing.set(chainID, {
           providers: providers,
           maxCu: maxCu,
-          currentEpoch: this.latestBlockNumber,
+          currentEpoch: currentEpoch,
           spec: spec,
         });
       }
@@ -199,7 +209,6 @@ export class StateChainQuery {
         );
 
         const providers = this.constructLavaPairing(pairingList);
-
         // Construct lava providers from pairing list and return it
         return providers;
       }
@@ -307,6 +316,16 @@ export class StateChainQuery {
       // Parse response
       const jsonResponse = JSON.parse(decodedResponse);
 
+      // If log is not empty
+      // return an error
+      if (jsonResponse.result.response.log != "") {
+        Logger.error(
+          "Failed fetching pairing list for: ",
+          request.getChainid()
+        );
+        throw new Error(jsonResponse.result.response.log);
+      }
+
       const byteArrayResponse = base64ToUint8Array(
         jsonResponse.result.response.value
       );
@@ -325,7 +344,7 @@ export class StateChainQuery {
       return decodedResponse2;
     } catch (err) {
       // Console log the error
-      console.error(err);
+      Logger.error(err);
 
       // Return empty object
       // We do not want to return error because it will stop the state tracker for other chains
@@ -407,7 +426,7 @@ export class StateChainQuery {
         );
 
         const stakeEntry = new StakeEntry();
-        stakeEntry.setEndpointsList(pairingEndpoints);
+        stakeEntry.setEndpointsList([pairingEndpoint]);
         stakeEntry.setAddress(provider.publicAddress);
 
         pairing.push(stakeEntry);

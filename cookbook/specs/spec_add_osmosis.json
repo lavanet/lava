@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Osmosis data on Lava",
         "specs": [
             {
-                "index": "OSMO",
+                "index": "COS3",
                 "name": "osmosis mainnet",
                 "enabled": true,
                 "imports": [
@@ -2637,11 +2637,11 @@
                 ]
             },
             {
-                "index": "OSMOT",
+                "index": "COS4",
                 "name": "osmosis testnet",
                 "enabled": true,
                 "imports": [
-                    "OSMO"
+                    "COS3"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,

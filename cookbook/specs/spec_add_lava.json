@@ -1055,8 +1055,7 @@
                                 "block_parsing": {
                                     "parser_arg": [
                                         "block",
-                                        "=",
-                                        "0"
+                                        ":"
                                     ],
                                     "parser_func": "PARSE_DICTIONARY"
                                 },

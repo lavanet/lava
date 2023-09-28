@@ -140,7 +140,8 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 		utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
 		return
 	}
-	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
+	reqBlock, _ := chainMessage.RequestedBlock()
+	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
 	unwantedProviders := map[string]struct{}{}
 	for iter := 0; iter < count; iter++ {
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", &unwantedProviders)
@@ -193,7 +194,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// Unmarshal request
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), chainMessage.RequestedBlock(), rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
+	reqBlock, _ := chainMessage.RequestedBlock()
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*lavaprotocol.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
@@ -222,7 +224,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		relayResults = append(relayResults, relayResult)
 		// future relay requests and data reliability requests need to ask for the same specific block height to get consensus on the reply
 		// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
-		if chainMessage.RequestedBlock() == spectypes.LATEST_BLOCK {
+		reqBlock, _ := chainMessage.RequestedBlock()
+		if reqBlock == spectypes.LATEST_BLOCK {
 			modifiedOnLatestReq = chainMessage.UpdateLatestBlockInMessage(relayResult.Request.RelayData.RequestBlock, false)
 			if !modifiedOnLatestReq {
 				relayResult.Finalized = false // shut down data reliability
@@ -305,7 +308,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, chainMessage.RequestedBlock(), chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions())
+	reqBlock, _ := chainMessage.RequestedBlock()
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, reqBlock, chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions())
 	if err != nil {
 		return &lavaprotocol.RelayResult{ProviderAddress: ""}, err
 	}
@@ -371,19 +375,23 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					return
 				}
 			}
+			requestedBlock, _ := chainMessage.RequestedBlock()
+			if requestedBlock != spectypes.NOT_APPLICABLE {
+				// try using cache before sending relay
+				var cacheReply *pairingtypes.CacheRelayReply
+				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				reply := cacheReply.GetReply()
+				if errResponse == nil && reply != nil {
+					// Info was fetched from cache, so we don't need to change the state
+					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+					localRelayResult.Reply = reply
+					lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
+					errResponse = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
 
-			// try using cache before sending relay
-			var reply *pairingtypes.RelayReply
-
-			reply, errResponse = rpccs.cache.GetEntry(goroutineCtx, relayRequest, chainMessage.GetApiCollection().CollectionData.ApiInterface, nil, chainID, false) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
-			if errResponse == nil && reply != nil {
-				// Info was fetched from cache, so we don't need to change the state
-				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-				localRelayResult.Reply = reply
-				lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-				errResponse = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
-
-				return
+					return
+				}
+			} else {
+				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
 			}
 
 			// cache failed, move on to regular relay
@@ -415,13 +423,16 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
-
 			// set cache in a nonblocking call
 			go func() {
+				requestedBlock, _ := chainMessage.RequestedBlock()
+				if requestedBlock == spectypes.NOT_APPLICABLE {
+					return
+				}
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err2 := rpccs.cache.SetEntry(new_ctx, relayRequest, chainMessage.GetApiCollection().CollectionData.GetApiInterface(), nil, chainID, dappID, localRelayResult.Reply, localRelayResult.Finalized) // caching in the portal doesn't care about hashes
+				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request.RelayData, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
 				if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 					utils.LavaFormatWarning("error updating cache with new entry", err2)
 				}
@@ -553,9 +564,10 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
 
-	if chainMessage.RequestedBlock() <= spectypes.NOT_APPLICABLE {
-		if chainMessage.RequestedBlock() <= spectypes.LATEST_BLOCK {
-			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: chainMessage.RequestedBlock()})
+	reqBlock, _ := chainMessage.RequestedBlock()
+	if reqBlock <= spectypes.NOT_APPLICABLE {
+		if reqBlock <= spectypes.LATEST_BLOCK {
+			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
 		}
 		// does not support sending data reliability requests on a block that is not specific
 		return nil
@@ -566,7 +578,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, chainMessage.RequestedBlock(), relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
 	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}

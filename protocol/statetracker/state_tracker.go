@@ -14,6 +14,7 @@ import (
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
+	BlockResultRetry               = 10
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -34,7 +35,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting status", err)
 	}
 	if txFactory.ChainID() != status.NodeInfo.Network {
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
@@ -42,8 +43,11 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 
 	eventTracker := &EventTracker{clientCtx: clientCtx}
 	err = eventTracker.updateBlockResults(0)
+	for i := 0; i < BlockResultRetry && err != nil; i++ {
+		err = eventTracker.updateBlockResults(0)
+	}
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 
 	// TODO: fix average block time.

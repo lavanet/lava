@@ -303,6 +303,7 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "amount", Value: amount.String()},
+			utils.Attribute{Key: "chainID", Value: chainID},
 		)
 	}
 
@@ -576,4 +577,32 @@ func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch u
 	k.delegatorFS.FindEntry(ctx, prefix, epoch, &delegatorEntry)
 
 	return delegatorEntry.Providers, nil
+}
+
+func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]types.Delegation, error) {
+	_, err := sdk.AccAddressFromBech32(provider)
+	if err != nil {
+		return nil, utils.LavaFormatWarning("cannot get provider's delegators", err,
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
+	var delegations []types.Delegation
+	indices := k.delegationFS.GetAllEntryIndicesWithPrefix(ctx, provider)
+	for _, ind := range indices {
+		var delegation types.Delegation
+		found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
+		if !found {
+			provider, delegator, chainID := types.DelegationKeyDecode(ind)
+			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
+			continue
+		}
+		delegations = append(delegations, delegation)
+	}
+
+	return delegations, nil
 }

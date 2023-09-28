@@ -29,7 +29,7 @@ func stubPaymentEvents(num int) (tos []map[string]string) {
 				Sync:         sdk.OneDec(),
 			},
 			Epoch:                 20,
-			UnresponsiveProviders: []byte{},
+			UnresponsiveProviders: nil,
 			LavaChainId:           "stub",
 			Sig:                   []byte{},
 			Badge:                 nil,

@@ -14,6 +14,7 @@ type ProviderSessionManager struct {
 	sessionsWithAllConsumers      map[uint64]sessionData // first key is epochs, second key is a consumer address
 	lock                          sync.RWMutex
 	blockedEpochHeight            uint64 // requests from this epoch are blocked
+	currentEpoch                  uint64
 	rpcProviderEndpoint           *RPCProviderEndpoint
 	blockDistanceForEpochValidity uint64                             // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
 	consumerPairedWithProjectMap  map[uint64]*projectConsumerMapping // consumer address as key, project as value
@@ -27,6 +28,10 @@ func (psm *ProviderSessionManager) atomicReadBlockedEpoch() (epoch uint64) {
 
 func (psm *ProviderSessionManager) GetBlockedEpochHeight() uint64 {
 	return psm.atomicReadBlockedEpoch()
+}
+
+func (psm *ProviderSessionManager) GetCurrentEpochAtomic() uint64 {
+	return atomic.LoadUint64(&psm.currentEpoch)
 }
 
 func (psm *ProviderSessionManager) IsValidEpoch(epoch uint64) (valid bool) {
@@ -246,9 +251,9 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	if epoch <= psm.blockedEpochHeight {
+	if epoch <= psm.blockedEpochHeight || epoch <= psm.currentEpoch {
 		// this shouldn't happen, but nothing to do
-		utils.LavaFormatWarning("called updateEpoch with invalid epoch", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "blockedEpoch", Value: psm.blockedEpochHeight})
+		utils.LavaFormatWarning("called updateEpoch with invalid epoch", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "blockedEpoch", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "currentEpoch", Value: psm.currentEpoch})
 		return
 	}
 	if epoch > psm.blockDistanceForEpochValidity {
@@ -256,6 +261,7 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	} else {
 		psm.blockedEpochHeight = 0
 	}
+	psm.currentEpoch = epoch
 	psm.consumerPairedWithProjectMap = filterOldEpochEntries(psm.blockedEpochHeight, psm.consumerPairedWithProjectMap)
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
 	psm.latestVirtualEpoch = 0

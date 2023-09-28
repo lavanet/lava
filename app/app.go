@@ -141,6 +141,10 @@ const (
 var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_22_0,
 	upgrades.Upgrade_0_23_0,
+	upgrades.Upgrade_0_23_2,
+	upgrades.Upgrade_0_23_4,
+	upgrades.Upgrade_0_23_5,
+	upgrades.Upgrade_0_24_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -479,6 +483,7 @@ func New(
 		app.SubscriptionKeeper,
 		app.PlansKeeper,
 		app.DowntimeKeeper,
+		app.DualstakingKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

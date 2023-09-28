@@ -48,6 +48,11 @@ export class StateBadgeQuery {
 
     for (const chainID of this.chainIDs) {
       const badgeResponse = await this.fetchNewBadge(chainID);
+      if (badgeResponse == undefined) {
+        this.pairing.set(chainID, undefined);
+
+        continue;
+      }
 
       const badge = badgeResponse.getBadge();
       if (badge == undefined) {
@@ -110,20 +115,26 @@ export class StateBadgeQuery {
     return this.pairing.get(chainID);
   }
 
-  private async fetchNewBadge(chainID: string): Promise<GenerateBadgeResponse> {
-    if (this.badgeManager == undefined) {
-      throw Error("Badge undefined");
+  private async fetchNewBadge(
+    chainID: string
+  ): Promise<GenerateBadgeResponse | undefined> {
+    try {
+      if (this.badgeManager == undefined) {
+        throw Error("Badge undefined");
+      }
+
+      const badgeResponse = await this.badgeManager.fetchBadge(
+        this.walletAddress,
+        chainID
+      );
+
+      if (badgeResponse instanceof Error) {
+        throw TimoutFailureFetchingBadgeError;
+      }
+
+      return badgeResponse;
+    } catch (err) {
+      throw Logger.fatal("Failed fetching badge", err);
     }
-
-    const badgeResponse = await this.badgeManager.fetchBadge(
-      this.walletAddress,
-      chainID
-    );
-
-    if (badgeResponse instanceof Error) {
-      throw TimoutFailureFetchingBadgeError;
-    }
-
-    return badgeResponse;
   }
 }
