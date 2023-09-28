@@ -42,7 +42,8 @@ jobs:
     - name: lavad cli test
       run: |
         chmod +x ./scripts/cli_test.sh    
-        ./scripts/cli_test.sh         
+        ./scripts/cli_test.sh     
+        killall lavad    
 
     - name: lava utils unit Tests
       run: go test ./utils/...
