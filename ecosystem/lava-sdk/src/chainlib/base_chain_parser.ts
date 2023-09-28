@@ -10,6 +10,7 @@ import { Metadata } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { Logger } from "../logger/logger";
 import Long from "long";
+import { ParsedMessage } from "./chain_message";
 
 export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
@@ -438,7 +439,7 @@ export abstract class BaseChainParser {
 
   abstract parseMsg(
     options: SendRelayOptions | SendRestRelayOptions
-  ): ChainMessage;
+  ): ParsedMessage;
 
   public chainBlockStats(): ChainBlockStats {
     const averageBlockTime = this.spec?.getAverageBlockTime();
@@ -485,57 +486,4 @@ export abstract class BaseChainParser {
 export interface RawRequestData {
   url: string;
   data: string;
-}
-
-export class ChainMessage {
-  private requestedBlock: number;
-  private api: Api;
-  private apiCollection: ApiCollection;
-  private messageData: string;
-  private messageUrl: string;
-  public headers: Metadata[] = [];
-  constructor(
-    requestedBlock: number,
-    api: Api,
-    apiCollection: ApiCollection,
-    data: string,
-    messageUrl: string
-  ) {
-    this.requestedBlock = requestedBlock;
-    this.apiCollection = apiCollection;
-    this.api = api;
-    this.messageData = data;
-    this.messageUrl = messageUrl;
-  }
-
-  public getRawRequestData(): RawRequestData {
-    return { url: this.messageUrl, data: this.messageData };
-  }
-
-  public getMessageUrl(): string {
-    return this.messageUrl;
-  }
-
-  public getRequestedBlock(): number {
-    return this.requestedBlock;
-  }
-
-  public updateLatestBlockInMessage(
-    latestBlock: number,
-    modififyContent: boolean
-  ): boolean {
-    return false; // TODO: implement
-  }
-
-  public appendHeader(metaData: Metadata[]) {
-    this.headers = [...this.headers, ...metaData];
-  }
-
-  public getApi(): Api {
-    return this.api;
-  }
-
-  public getApiCollection(): ApiCollection {
-    return this.apiCollection;
-  }
 }

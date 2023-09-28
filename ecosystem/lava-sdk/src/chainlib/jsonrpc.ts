@@ -3,12 +3,11 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
   APIInterfaceJsonRPC,
-  ChainMessage,
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
 import { encodeUtf8, generateRPCData } from "../util/common";
-import { HttpMethod, NOT_APPLICABLE } from "../common/common";
+import { HttpMethod } from "../common/common";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { JsonrpcMessage } from "./chainproxy/rpcInterfaceMessages/json_rpc_message";
 import { Parser } from "../parser/parser";
@@ -20,7 +19,7 @@ export class JsonRpcChainParser extends BaseChainParser {
     super();
     this.apiInterface = APIInterfaceJsonRPC;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ChainMessage {
+  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ParsedMessage {
     if (this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -84,25 +83,14 @@ export class JsonRpcChainParser extends BaseChainParser {
       }
     }
 
-    const parsedMessage = new ParsedMessage(
+    // TODO: add extension parsing.
+
+    return new ParsedMessage(
       apiCont.api,
       requestedBlock,
       jsonrpcMessage,
       apiCollection,
       generateRPCData(jsonrpcMessage)
     );
-
-    // TODO: add extension parsing.
-
-    // TODO: Change to parsedMessage when ready
-    // return parsedMessage;
-    const chainMessage = new ChainMessage(
-      NOT_APPLICABLE,
-      apiCont.api,
-      apiCollection,
-      generateRPCData(jsonrpcMessage),
-      ""
-    );
-    return chainMessage;
   }
 }

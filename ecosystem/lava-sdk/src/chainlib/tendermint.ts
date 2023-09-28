@@ -3,12 +3,10 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
   APIInterfaceTendermintRPC,
-  ChainMessage,
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
 import { encodeUtf8, generateRPCData } from "../util/common";
-import { NOT_APPLICABLE } from "../common/common";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { TendermintrpcMessage } from "./chainproxy/rpcInterfaceMessages/tendermint_rpc_message";
 import { Parser } from "../parser/parser";
@@ -21,7 +19,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
     super();
     this.apiInterface = APIInterfaceTendermintRPC;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ChainMessage {
+  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ParsedMessage {
     if (this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -88,25 +86,14 @@ export class TendermintRpcChainParser extends BaseChainParser {
       }
     }
 
-    const parsedMessage = new ParsedMessage(
+    // TODO: add extension parsing.
+
+    return new ParsedMessage(
       apiCont.api,
       requestedBlock,
       tendermintrpcMessage,
       apiCollection,
       generateRPCData(tendermintrpcMessage)
     );
-
-    // TODO: add extension parsing.
-
-    // TODO: Change to parsedMessage when ready
-    // return parsedMessage;
-    const chainMessage = new ChainMessage(
-      NOT_APPLICABLE,
-      apiCont.api,
-      apiCollection,
-      generateRPCData(tendermintrpcMessage),
-      ""
-    );
-    return chainMessage;
   }
 }

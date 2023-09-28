@@ -3,11 +3,10 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
   APIInterfaceRest,
-  ChainMessage,
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { HttpMethod, NOT_APPLICABLE } from "../common/common";
+import { HttpMethod } from "../common/common";
 import { Parser } from "../parser/parser";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { RestMessage } from "./chainproxy/rpcInterfaceMessages/rest_message";
@@ -18,7 +17,7 @@ export class RestChainParser extends BaseChainParser {
     super();
     this.apiInterface = APIInterfaceRest;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ChainMessage {
+  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ParsedMessage {
     if (!this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -111,22 +110,12 @@ export class RestChainParser extends BaseChainParser {
       }
     }
 
-    const parsedMessage = new ParsedMessage(
+    // TODO: add extension parsing.
+
+    return new ParsedMessage(
       apiCont.api,
       requestedBlock,
       restMessage,
-      apiCollection,
-      data,
-      options.url
-    );
-
-    // TODO: add extension parsing.
-
-    // TODO: Change to parsedMessage when ready
-    // return parsedMessage;
-    return new ChainMessage(
-      NOT_APPLICABLE,
-      apiCont.api,
       apiCollection,
       data,
       options.url

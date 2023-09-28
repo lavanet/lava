@@ -9,7 +9,6 @@ import {
   BaseChainParser,
   SendRelayOptions,
   SendRestRelayOptions,
-  ChainMessage,
 } from "../chainlib/base_chain_parser";
 import {
   constructRelayRequest,
@@ -29,6 +28,7 @@ import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 import { BACKOFF_TIME_ON_FAILURE } from "../common/common";
+import { ParsedMessage } from "../chainlib/chain_message";
 
 const MaxRelayRetries = 4;
 
@@ -119,7 +119,7 @@ export class RPCConsumerServer {
   }
 
   private async sendRelayToProvider(
-    chainMessage: ChainMessage,
+    chainMessage: ParsedMessage,
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
   ): Promise<RelayResult | Array<RelayError> | Error> {
