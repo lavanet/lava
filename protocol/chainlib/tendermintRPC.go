@@ -516,7 +516,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
 	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}}, conn: map[string]*chainproxy.Connector{}},
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID}, conn: map[string]*chainproxy.Connector{}},
 		httpNodeUrl:    httpUrl,
 		httpConnector:  nil,
 	}
@@ -614,7 +614,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		defer res.Body.Close()
 	}
 
-	err = cp.HandleStatusError(res.StatusCode)
+	err = cp.HandleStatusError(res.StatusCode, chainMessage.GetApi().Name, cp.BaseChainProxy.ChainID)
 	if err != nil {
 		return nil, "", nil, err
 	}
@@ -687,7 +687,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false)
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, chainMessage.GetApi().Name, cp.BaseChainProxy.ChainID)
 		if err != nil {
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply

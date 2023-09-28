@@ -64,8 +64,8 @@ func (geh *genericErrorHandler) handleCodeErrors(ctx context.Context, code codes
 	return nil
 }
 
-func (geh *genericErrorHandler) HandleStatusError(statusCode int) error {
-	return rpcclient.ValidateStatusCodes(statusCode)
+func (geh *genericErrorHandler) HandleStatusError(statusCode int, apiName string, chainID string) error {
+	return rpcclient.ValidateStatusCodes(statusCode, apiName, chainID)
 }
 
 func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
@@ -130,7 +130,7 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 
 type ErrorHandler interface {
 	HandleNodeError(context.Context, error) error
-	HandleStatusError(int) error
+	HandleStatusError(int, string, string) error
 	HandleJSONFormatError([]byte) error
 	ValidateRequestAndResponseIds(json.RawMessage, json.RawMessage) error
 }

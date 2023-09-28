@@ -442,7 +442,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		defer res.Body.Close()
 	}
 
-	err = rcp.HandleStatusError(res.StatusCode)
+	err = rcp.HandleStatusError(res.StatusCode, chainMessage.GetApi().Name, rcp.BaseChainProxy.ChainID)
 	if err != nil {
 		return nil, "", nil, err
 	}

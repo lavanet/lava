@@ -139,12 +139,12 @@ func DialHTTP(endpoint string) (*Client, error) {
 	return DialHTTPWithClient(endpoint, new(http.Client))
 }
 
-func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool) error {
+func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool, apiName string, chainID string) error {
 	hc, ok := c.writeConn.(*httpConn)
 	if !ok {
 		return fmt.Errorf("sendHTTP - c.writeConn.(*httpConn) - type assertion failed" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msg, isJsonRPC)
+	respBody, err := hc.doRequest(ctx, msg, isJsonRPC, apiName, chainID)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	if !ok {
 		return fmt.Errorf("sendBatchHTTP - c.writeConn.(*httpConn) - type assertion failed, type:" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msgs, true)
+	respBody, err := hc.doRequest(ctx, msgs, true, "", "")
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	return nil
 }
 
-func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bool) (io.ReadCloser, error) {
+func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bool, apiName string, chainID string) (io.ReadCloser, error) {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 		return nil, err
 	}
 
-	err = ValidateStatusCodes(resp.StatusCode)
+	err = ValidateStatusCodes(resp.StatusCode, apiName, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,9 +222,9 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 	return resp.Body, nil
 }
 
-func ValidateStatusCodes(statusCode int) error {
+func ValidateStatusCodes(statusCode int, apiName string, chainID string) error {
 	if statusCode == 504 || statusCode == 429 {
-		return utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode})
+		return utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode}, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "apiName", Value: apiName})
 	}
 	return nil
 }

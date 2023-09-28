@@ -444,7 +444,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 		conn:           map[string]*chainproxy.Connector{},
 	}
 	verifyRPCEndpoint(nodeUrl.Url)
@@ -597,7 +597,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true)
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, chainMessage.GetApi().Name, cp.BaseChainProxy.ChainID)
 		if err != nil {
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
