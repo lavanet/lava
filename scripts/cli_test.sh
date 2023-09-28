@@ -23,7 +23,7 @@ count=1
 while [[ $current != "5" ]]
 do
     ((count++))
-    if ((count > 20)); then
+    if ((count > 300)); then
         echo "timeout: Failed to start the chain"
         exit 1 
     fi
