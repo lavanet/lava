@@ -287,7 +287,7 @@ func (c *Client) SetHeader(key, value string) {
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method string, params interface{}, isJsonRPC bool, apiName string, chainID string) (*JsonrpcMessage, error) {
+func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method string, params interface{}, isJsonRPC bool) (*JsonrpcMessage, error) {
 	var msg *JsonrpcMessage
 	var err error
 	switch p := params.(type) {
@@ -308,7 +308,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 	op := &requestOp{ids: []json.RawMessage{msg.ID}, resp: make(chan *JsonrpcMessage, 1)}
 
 	if c.isHTTP {
-		err = c.sendHTTP(ctx, op, msg, isJsonRPC, apiName, chainID)
+		err = c.sendHTTP(ctx, op, msg, isJsonRPC)
 	} else {
 		err = c.send(ctx, op, msg)
 	}
@@ -442,7 +442,7 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 	msg.ID = nil
 
 	if c.isHTTP {
-		return c.sendHTTP(ctx, op, msg, true, "", "")
+		return c.sendHTTP(ctx, op, msg, true)
 	}
 	return c.send(ctx, op, msg)
 }
