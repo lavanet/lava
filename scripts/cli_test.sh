@@ -15,7 +15,8 @@ txoptions="-y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.000000
 # run the chain
 echo "setting up lava chain"
 killall lavad
-./scripts/init_chain.sh > /dev/null &
+
+./scripts/init_chain.sh > chainlogs.txt &
 
 
 current="0"
@@ -23,15 +24,16 @@ count=1
 while [[ $current != "5" ]]
 do
     ((count++))
-    if ((count > 300)); then
+    if ((count > 60)); then
         echo "timeout: Failed to start the chain"
+        cat chainlogs.txt
+        killall lavad
         exit 1 
     fi
     sleep 1
     current=$(current_block 2>/dev/null) || true
 done
 echo "lava chain is running"
-
 set -e
 
 echo "Testing epochstorage q commands"
