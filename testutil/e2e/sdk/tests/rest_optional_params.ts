@@ -38,7 +38,6 @@ async function main() {
     }
     // wait for all relays to finish;
     await Promise.allSettled(relayArray);
-
 }
 
 (async () => {
