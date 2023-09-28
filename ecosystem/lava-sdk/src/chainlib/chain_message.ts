@@ -18,8 +18,7 @@ export interface UpdatableRPCInput extends GenericMessage {
 
 export class ParsedMessage {
   private api: Api;
-  private latestRequestedBlock: number;
-  private earliestRequestedBlock: number;
+  private requestedBlock: number;
   private msg: UpdatableRPCInput;
   private apiCollection: ApiCollection;
   private extensions: Extension[];
@@ -28,8 +27,7 @@ export class ParsedMessage {
 
   constructor(
     api: Api,
-    latestRequestedBlock: number,
-    earliestRequestedBlock: number | undefined,
+    requestedBlock: number,
     msg: UpdatableRPCInput,
     apiCollection: ApiCollection,
     messageData: string,
@@ -37,8 +35,7 @@ export class ParsedMessage {
     extensions?: Extension[]
   ) {
     this.api = api;
-    this.latestRequestedBlock = latestRequestedBlock;
-    this.earliestRequestedBlock = earliestRequestedBlock ?? 0;
+    this.requestedBlock = requestedBlock;
     this.msg = msg;
     this.apiCollection = apiCollection;
     this.messageData = messageData;
@@ -62,11 +59,8 @@ export class ParsedMessage {
     return this.apiCollection;
   }
 
-  public getRequestedBlock(): [number, number] {
-    if (this.earliestRequestedBlock === 0) {
-      return [this.latestRequestedBlock, this.latestRequestedBlock];
-    }
-    return [this.latestRequestedBlock, this.earliestRequestedBlock];
+  public getRequestedBlock(): number {
+    return this.requestedBlock;
   }
 
   public getRPCMessage(): GenericMessage {
@@ -77,7 +71,7 @@ export class ParsedMessage {
     latestBlock: number,
     modifyContent: boolean
   ): boolean {
-    const [requestedBlock] = this.getRequestedBlock();
+    const requestedBlock = this.getRequestedBlock();
     if (latestBlock <= NOT_APPLICABLE || requestedBlock !== LATEST_BLOCK) {
       return false;
     }
@@ -88,7 +82,7 @@ export class ParsedMessage {
     );
 
     if (success) {
-      this.latestRequestedBlock = latestBlock;
+      this.requestedBlock = latestBlock;
       return true;
     }
     return false;

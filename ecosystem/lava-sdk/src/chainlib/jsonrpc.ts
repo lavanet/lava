@@ -87,7 +87,6 @@ export class JsonRpcChainParser extends BaseChainParser {
     const parsedMessage = new ParsedMessage(
       apiCont.api,
       requestedBlock,
-      undefined,
       jsonrpcMessage,
       apiCollection,
       generateRPCData(jsonrpcMessage)

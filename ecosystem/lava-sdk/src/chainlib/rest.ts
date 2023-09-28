@@ -114,7 +114,6 @@ export class RestChainParser extends BaseChainParser {
     const parsedMessage = new ParsedMessage(
       apiCont.api,
       requestedBlock,
-      undefined,
       restMessage,
       apiCollection,
       data,

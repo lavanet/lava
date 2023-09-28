@@ -91,7 +91,6 @@ export class TendermintRpcChainParser extends BaseChainParser {
     const parsedMessage = new ParsedMessage(
       apiCont.api,
       requestedBlock,
-      undefined,
       tendermintrpcMessage,
       apiCollection,
       generateRPCData(tendermintrpcMessage)
