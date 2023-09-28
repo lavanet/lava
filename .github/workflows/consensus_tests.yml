@@ -39,6 +39,11 @@ jobs:
     ######################################################
     ### Run Consensus unitests
     ######################################################
+    - name: lavad cli test
+      run: |
+        chmod +x cli_test.sh
+        ./scripts/cli_test.sh         
+
     - name: lava utils unit Tests
       run: go test ./utils/...
 
