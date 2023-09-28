@@ -94,7 +94,8 @@ export class StateTracker {
     }
 
     // Fetch Pairing
-    [this.timeTillNextEpoch, this.virtualEpoch] = await this.stateQuery.fetchPairing();
+    [this.timeTillNextEpoch, this.virtualEpoch] =
+      await this.stateQuery.fetchPairing();
   }
 
   async startTracking() {
@@ -114,7 +115,8 @@ export class StateTracker {
       Logger.debug("New epoch started, fetching pairing list");
 
       // Fetching all the info including the time_till_next_epoch
-      const [timeTillNextEpoch, virtualEpoch] = await this.stateQuery.fetchPairing();
+      const [timeTillNextEpoch, virtualEpoch] =
+        await this.stateQuery.fetchPairing();
 
       Logger.debug(
         "Pairing list fetched, started new epoch in: " + timeTillNextEpoch

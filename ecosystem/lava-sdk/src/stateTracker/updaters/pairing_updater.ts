@@ -79,7 +79,11 @@ export class PairingUpdater {
       // Update each consumer session manager with matching pairing list
       for (const consumerSessionManager of consumerSessionManagerList) {
         promiseArray.push(
-          this.updateConsumerSessionManager(pairing, consumerSessionManager, virtualEpoch)
+          this.updateConsumerSessionManager(
+            pairing,
+            consumerSessionManager,
+            virtualEpoch
+          )
         );
       }
       await Promise.allSettled(promiseArray);

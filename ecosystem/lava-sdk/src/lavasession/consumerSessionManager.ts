@@ -105,7 +105,7 @@ export class ConsumerSessionManager {
   public async updateAllProviders(
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[],
-    virtualEpoch: number,
+    virtualEpoch: number
   ): Promise<Error | undefined> {
     Logger.info(
       "updateAllProviders called. epoch:",

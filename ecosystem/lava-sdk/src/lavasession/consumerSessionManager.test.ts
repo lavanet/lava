@@ -717,7 +717,11 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
 
-      const err = await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      const err = await cm.updateAllProviders(
+        FIRST_EPOCH_HEIGHT,
+        pairingList,
+        0
+      );
       expect(err?.message).toEqual(
         "Trying to update provider list for older epoch"
       );

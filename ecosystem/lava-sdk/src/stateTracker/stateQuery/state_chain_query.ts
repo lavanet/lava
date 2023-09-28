@@ -17,12 +17,15 @@ import {
 } from "../../lavasession/consumerTypes";
 import { Logger } from "../../logger/logger";
 import { RPCConsumerServer } from "../../rpcconsumer/rpcconsumer_server";
-import {SendRelayOptions, SendRestRelayOptions} from "../../chainlib/base_chain_parser";
+import { SendRelayOptions } from "../../chainlib/base_chain_parser";
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
-import {QueryParamsRequest, QueryParamsResponse} from "../../grpc_web_services/lavanet/lava/downtime/v1/query_pb";
-import {Params} from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
+import {
+  QueryParamsRequest,
+  QueryParamsResponse,
+} from "../../grpc_web_services/lavanet/lava/downtime/v1/query_pb";
+import { Params } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
   stakeEntry: StakeEntry[];
@@ -87,7 +90,7 @@ export class StateChainQuery {
       const lavaPairing = this.getPairing("LAV1");
 
       if (this.downtimeParams == undefined) {
-       await this.updateDowntimeParams();
+        await this.updateDowntimeParams();
       }
 
       // Reset pairing
@@ -127,11 +130,18 @@ export class StateChainQuery {
           const downtimeDuration = this.downtimeParams?.getDowntimeDuration();
           const epochDuration = this.downtimeParams?.getEpochDuration();
 
-          if (lastBlockTime != undefined && downtimeDuration != undefined && epochDuration != undefined) {
+          if (
+            lastBlockTime != undefined &&
+            downtimeDuration != undefined &&
+            epochDuration != undefined
+          ) {
             const delay = Date.now() - lastBlockTime;
 
-            if (delay > (downtimeDuration.getSeconds() * 1000)) {
-              virtualEpoch = Math.trunc((delay -  pairing.getTimeLeftToNextPairing()) / (epochDuration.getSeconds() * 1000));
+            if (delay > downtimeDuration.getSeconds() * 1000) {
+              virtualEpoch = Math.trunc(
+                (delay - pairing.getTimeLeftToNextPairing()) /
+                  (epochDuration.getSeconds() * 1000)
+              );
 
               if (virtualEpoch < 0) {
                 virtualEpoch = 0;
@@ -225,9 +235,11 @@ export class StateChainQuery {
     }
   }
 
-  public async updateDowntimeParams(): Promise<QueryParamsResponse | undefined> {
+  public async updateDowntimeParams(): Promise<
+    QueryParamsResponse | undefined
+  > {
     try {
-      Logger.debug("Get downtime params")
+      Logger.debug("Get downtime params");
 
       const request = new QueryParamsRequest();
 
@@ -235,7 +247,12 @@ export class StateChainQuery {
 
       const sendRelayOptions: SendRelayOptions = {
         method: "abci_query",
-        params: ["/lavanet.lava.downtime.v1.Query/QueryParams", hexData, "0", false],
+        params: [
+          "/lavanet.lava.downtime.v1.Query/QueryParams",
+          hexData,
+          "0",
+          false,
+        ],
       };
 
       const response = await this.rpcConsumer.sendRelay(sendRelayOptions);
@@ -254,18 +271,18 @@ export class StateChainQuery {
       const jsonResponse = JSON.parse(decodedResponse);
 
       const byteArrayResponse = base64ToUint8Array(
-          jsonResponse.result.response.value
+        jsonResponse.result.response.value
       );
 
       // Deserialize the Uint8Array to obtain the protobuf message
       const decodedResponse2 =
-          QueryParamsResponse.deserializeBinary(byteArrayResponse);
+        QueryParamsResponse.deserializeBinary(byteArrayResponse);
 
       const params = decodedResponse2.getParams();
 
       // If response undefined throw an error
       if (params == undefined) {
-        throw  new Error("Downtime params not found");
+        throw new Error("Downtime params not found");
       }
 
       this.downtimeParams = params;
