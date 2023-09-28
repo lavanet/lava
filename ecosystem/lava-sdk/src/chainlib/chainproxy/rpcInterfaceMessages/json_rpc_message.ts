@@ -70,18 +70,7 @@ interface RawJsonrpcMessage {
   result?: any;
 }
 
-// interface RawJsonrpcMessage {
-//   jsonrpc: string;
-//   id: any;
-//   method: string;
-//   params: any;
-//   result: any;
-// }
-
 export function parseJsonRPCMsg(data: Uint8Array): JsonrpcMessage[] | Error {
-  // connectionType is currently only used in rest API.
-  // Unmarshal request
-
   const msgs: JsonrpcMessage[] = [];
   let rawJsonObjs: RawJsonrpcMessage[];
   const dataAsString = byteArrayToString(data);
