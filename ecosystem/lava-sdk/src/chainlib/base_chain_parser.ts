@@ -423,9 +423,6 @@ export abstract class BaseChainParser {
   ): [ApiContainer | undefined, boolean] {
     let foundNameOnDifferentConnectionType: string | undefined = undefined;
     for (const [, api] of this.serverApis.entries()) {
-      if (api.apiKey.name.includes("/lavanet/lava/pairing/get_pairing")) {
-        console.log("hey");
-      }
       const re = new RegExp(`^${api.apiKey.name}$`);
       if (re.test(name)) {
         if (api.apiKey.connectionType === connectionType) {
