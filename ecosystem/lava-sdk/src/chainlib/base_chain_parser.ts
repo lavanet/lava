@@ -482,8 +482,3 @@ export abstract class BaseChainParser {
     return [val.parsing, val.apiCollection.getCollectionData(), true];
   }
 }
-
-export interface RawRequestData {
-  url: string;
-  data: string;
-}

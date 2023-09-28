@@ -5,8 +5,12 @@ import {
   ApiCollection,
   Extension,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
-import { RawRequestData } from "./base_chain_parser";
 import { GenericMessage } from "./chainproxy/rpcInterfaceMessages/common";
+
+interface RawRequestData {
+  url: string;
+  data: string;
+}
 
 export interface UpdatableRPCInput extends GenericMessage {
   updateLatestBlockInMessage(
