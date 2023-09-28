@@ -117,7 +117,8 @@ export class RestChainParser extends BaseChainParser {
       undefined,
       restMessage,
       apiCollection,
-      undefined
+      data,
+      options.url
     );
 
     // TODO: add extension parsing.

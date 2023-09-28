@@ -5,6 +5,7 @@ import {
   ApiCollection,
   Extension,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
+import { RawRequestData } from "./base_chain_parser";
 import { GenericMessage } from "./chainproxy/rpcInterfaceMessages/common";
 
 export interface UpdatableRPCInput extends GenericMessage {
@@ -22,6 +23,8 @@ export class ParsedMessage {
   private msg: UpdatableRPCInput;
   private apiCollection: ApiCollection;
   private extensions: Extension[];
+  private messageUrl: string;
+  private messageData: string;
 
   constructor(
     api: Api,
@@ -29,6 +32,8 @@ export class ParsedMessage {
     earliestRequestedBlock: number | undefined,
     msg: UpdatableRPCInput,
     apiCollection: ApiCollection,
+    messageData: string,
+    messageUrl?: string,
     extensions?: Extension[]
   ) {
     this.api = api;
@@ -36,7 +41,13 @@ export class ParsedMessage {
     this.earliestRequestedBlock = earliestRequestedBlock ?? 0;
     this.msg = msg;
     this.apiCollection = apiCollection;
+    this.messageData = messageData;
+    this.messageUrl = messageUrl ?? "";
     this.extensions = extensions ?? [];
+  }
+
+  public getRawRequestData(): RawRequestData {
+    return { url: this.messageUrl, data: this.messageData };
   }
 
   public appendHeader(metadata: Metadata[]): void {

@@ -90,7 +90,7 @@ export class JsonRpcChainParser extends BaseChainParser {
       undefined,
       jsonrpcMessage,
       apiCollection,
-      undefined
+      generateRPCData(options.method, options.params)
     );
 
     // TODO: add extension parsing.
