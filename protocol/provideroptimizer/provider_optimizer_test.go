@@ -388,52 +388,59 @@ func TestPerturbation(t *testing.T) {
 }
 
 // TODO: fix this test "22" is not less than "10"
-// func TestProviderOptimizerPerturbation(t *testing.T) {
-// 	providerOptimizer := setupProviderOptimizer(1)
-// 	providersCount := 100
-// 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-// 	requestCU := uint64(10)
-// 	requestBlock := spectypes.LATEST_BLOCK
-// 	syncBlock := uint64(1000)
-// 	pertrubationPercentage := 0.03 // this is statistical and we don;t want this failing
-// 	// set a basic state for all of them
-// 	sampleTime := time.Now()
-// 	for i := 0; i < 10; i++ {
-// 		for idx, address := range providersGen.providersAddresses {
-// 			if idx < len(providersGen.providersAddresses)/2 {
-// 				// first half are good
-// 				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY, false, true, requestCU, syncBlock, sampleTime)
-// 			} else {
-// 				// second half are bad
-// 				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*10, false, true, requestCU, syncBlock, sampleTime)
-// 			}
-// 		}
-// 		sampleTime = sampleTime.Add(time.Millisecond * 5)
-// 	}
-// 	seed := time.Now().UnixNano() // constant seed.
-// 	rand.Seed(seed)
-// 	utils.LavaFormatDebug("rand seed", utils.Attribute{Key: "seed", Value: seed})
-// 	same := 0
-// 	pickFaults := 0
-// 	chosenProvider := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, 0)[0]
-// 	runs := 1000
-// 	for i := 0; i < runs; i++ {
-// 		returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
-// 		require.Equal(t, 1, len(returnedProviders))
-// 		if chosenProvider == returnedProviders[0] {
-// 			same++
-// 		}
-// 		for idx, address := range providersGen.providersAddresses {
-// 			if address == returnedProviders[0] {
-// 				if idx > len(providersGen.providersAddresses)/2 {
-// 					pickFaults++
-// 				}
-// 			}
-// 		}
-// 	}
-// 	require.Less(t, float64(pickFaults), float64(runs)*0.01)
-// 	require.Less(t, same, runs/2)
-// }
+func TestProviderOptimizerPerturbation(t *testing.T) {
+	providerOptimizer := setupProviderOptimizer(1)
+	providersCount := 100
+	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
+	requestCU := uint64(10)
+	requestBlock := spectypes.LATEST_BLOCK
+	syncBlock := uint64(1000)
+	pertrubationPercentage := 0.03 // this is statistical and we don't want this failing
+	// set a basic state for all of them
+	sampleTime := time.Now()
+	for i := 0; i < 10; i++ {
+		for idx, address := range providersGen.providersAddresses {
+			if idx < len(providersGen.providersAddresses)/2 {
+				// first half are good
+				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY, false, true, requestCU, syncBlock, sampleTime)
+			} else {
+				// second half are bad
+				providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*10, false, true, requestCU, syncBlock, sampleTime)
+			}
+		}
+		sampleTime = sampleTime.Add(time.Millisecond * 5)
+		time.Sleep(4 * time.Millisecond) // let the cache add the entries
+	}
+	seed := time.Now().UnixNano() // constant seed.
+	// seed := int64(XXX) // constant seed.
+	for _, providerAddress := range providersGen.providersAddresses {
+		_, found := providerOptimizer.getProviderData(providerAddress)
+		require.True(t, found, providerAddress)
+	}
+	randSource = rand.New(rand.NewSource(seed))
+	t.Logf("rand seed %d", seed)
+	same := 0
+	pickFaults := 0
+	chosenProvider := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, 0)[0]
+	runs := 1000
+	// runs := 0
+	for i := 0; i < runs; i++ {
+		returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, pertrubationPercentage)
+		require.Equal(t, 1, len(returnedProviders))
+		if chosenProvider == returnedProviders[0] {
+			same++
+		}
+		for idx, address := range providersGen.providersAddresses {
+			if address == returnedProviders[0] && idx >= len(providersGen.providersAddresses)/2 {
+				t.Logf("picked provider %s at index %d i: %d", returnedProviders[0], idx, i)
+				pickFaults++
+				break
+			}
+		}
+	}
+	require.Less(t, float64(pickFaults), float64(runs)*0.01)
+	require.Less(t, same, runs/10)
+}
 
 func TestExcellence(t *testing.T) {
 	floatVal := 0.25

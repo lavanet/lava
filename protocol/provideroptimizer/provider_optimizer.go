@@ -31,6 +31,8 @@ const (
 	WANTED_PRECISION           = int64(8)
 )
 
+var randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 type ConcurrentBlockStore struct {
 	Lock  sync.Mutex
 	Time  time.Time
@@ -96,7 +98,7 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	po.updateRelayTime(providerAddress, sampleTime)
 	if debug {
-		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
+		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "providerData", Value: providerData}, utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
 	}
 }
 
@@ -126,7 +128,10 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			// ignored provider, skip it
 			continue
 		}
-		providerData, _ := po.getProviderData(providerAddress)
+		providerData, found := po.getProviderData(providerAddress)
+		if debug && !found {
+			utils.LavaFormatDebug("provider data was not found for address", utils.Attribute{Key: "providerAddress", Value: providerAddress})
+		}
 		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
 		// latency perturbation
@@ -210,7 +215,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 		return false // only one at a time
 	}
 	// Dividing the random threshold by the loop count ensures that the overall probability of success is the requirement for the entire loop not per iteration
-	return rand.Float64() < explorationChance/float64(numProviders)
+	return randSource.Float64() < explorationChance/float64(numProviders)
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
@@ -222,7 +227,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCur
 		latencyWeight = 0.2
 	case STRATEGY_PRIVACY:
 		// pick at random regardless of score
-		if rand.Intn(2) == 0 {
+		if randSource.Intn(2) == 0 {
 			return true
 		}
 		return false
@@ -374,7 +379,7 @@ func (po *ProviderOptimizer) updateRelayTime(providerAddress string, sampleTime 
 
 func (po *ProviderOptimizer) calculateHalfTime(providerAddress string, sampleTime time.Time) time.Duration {
 	halfTime := HALF_LIFE_TIME
-	relaysHalfTime := po.getRelayStatsTimeDiff(providerAddress)
+	relaysHalfTime := po.getRelayStatsTimeDiff(providerAddress, sampleTime)
 	if relaysHalfTime > halfTime {
 		halfTime = relaysHalfTime
 	}
@@ -384,12 +389,17 @@ func (po *ProviderOptimizer) calculateHalfTime(providerAddress string, sampleTim
 	return halfTime
 }
 
-func (po *ProviderOptimizer) getRelayStatsTimeDiff(providerAddress string) time.Duration {
+func (po *ProviderOptimizer) getRelayStatsTimeDiff(providerAddress string, sampleTime time.Time) time.Duration {
 	times := po.getRelayStatsTimes(providerAddress)
 	if len(times) == 0 {
 		return 0
 	}
-	return time.Since(times[(len(times)-1)/2])
+	medianTime := times[(len(times)-1)/2]
+	if medianTime.Before(sampleTime) {
+		return sampleTime.Sub(medianTime)
+	}
+	utils.LavaFormatWarning("did not use sample time in optimizer calculation", nil)
+	return time.Since(medianTime)
 }
 
 func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.Time {
@@ -433,7 +443,7 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 }
 
 func pertrubWithNormalGaussian(orig, percentage float64) float64 {
-	perturb := rand.NormFloat64() * percentage * orig
+	perturb := randSource.NormFloat64() * percentage * orig
 	return orig + perturb
 }
 
