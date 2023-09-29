@@ -57,7 +57,6 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     block: 0,
     time: 0,
   };
-  private readonly tempIgnoredProviders = new Set<string>();
 
   public constructor(
     strategy: ProviderOptimizerStrategy,
@@ -65,6 +64,10 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     baseWorldLatency: number,
     wantedNumProvidersInConcurrency: number
   ) {
+    if (averageBlockTime <= 0) {
+      throw new Error("averageBlockTime must higher than 0");
+    }
+
     this.strategy = strategy;
     this.averageBlockTime = averageBlockTime;
     this.baseWorldLatency = baseWorldLatency;
@@ -83,7 +86,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   ): void {
     let providerData = this.getProviderData(providerAddress);
     const sampleTime = now();
-    const halfTime = this.calculateHalfTime(providerAddress);
+    const halfTime = this.calculateHalfTime(providerAddress, sampleTime);
 
     providerData = this.updateProbeEntryAvailability(
       providerData,
@@ -93,13 +96,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       sampleTime
     );
 
-    if (!success && !this.providersStorage.has(providerAddress)) {
-      this.tempIgnoredProviders.add(providerAddress);
-    }
-
     if (success && latency > 0) {
-      this.tempIgnoredProviders.delete(providerAddress);
-
       providerData = this.updateProbeEntryLatency(
         providerData,
         latency,
@@ -147,7 +144,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   ) {
     const { block, time } = this.updateLatestSyncData(syncBlock, sampleTime);
     let providerData = this.getProviderData(providerAddress);
-    const halfTime = this.calculateHalfTime(providerAddress);
+    const halfTime = this.calculateHalfTime(providerAddress, sampleTime);
 
     providerData = this.updateProbeEntryAvailability(
       providerData,
@@ -204,22 +201,19 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   }
 
   public chooseProvider(
-    allAddresses: string[],
-    ignoredProviders: string[],
+    allAddresses: Set<string>,
+    ignoredProviders: Set<string>,
     cu: number,
     requestedBlock: number,
     perturbationPercentage: number
   ): string[] {
-    const returnedProviders: string[] = [];
+    const returnedProviders: string[] = [""];
     let latencyScore = Number.MAX_VALUE;
     let syncScore = Number.MAX_VALUE;
-    const numProviders = allAddresses.length;
+    const numProviders = allAddresses.size;
 
     for (const providerAddress of allAddresses) {
-      if (
-        ignoredProviders.includes(providerAddress) ||
-        this.tempIgnoredProviders.has(providerAddress)
-      ) {
+      if (ignoredProviders.has(providerAddress)) {
         continue;
       }
 
@@ -599,8 +593,14 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     this.providerRelayStats.set(providerAddress, relayStatsTime);
   }
 
-  private calculateHalfTime(providerAddress: string): number {
-    const relaysHalfTime = this.getRelayStatsTimeDiff(providerAddress);
+  private calculateHalfTime(
+    providerAddress: string,
+    sampleTime: number
+  ): number {
+    const relaysHalfTime = this.getRelayStatsTimeDiff(
+      providerAddress,
+      sampleTime
+    );
     let halfTime = HALF_LIFE_TIME;
 
     if (relaysHalfTime > halfTime) {
@@ -614,13 +614,22 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     return halfTime;
   }
 
-  private getRelayStatsTimeDiff(providerAddress: string): number {
+  private getRelayStatsTimeDiff(
+    providerAddress: string,
+    sampleTime: number
+  ): number {
     const relayStatsTime = this.getRelayStatsTime(providerAddress);
     if (relayStatsTime.length === 0) {
       return 0;
     }
     const idx = Math.floor((relayStatsTime.length - 1) / 2);
-    return now() - relayStatsTime[idx];
+    const diffTime = sampleTime - relayStatsTime[idx];
+
+    if (diffTime < 0) {
+      return 0;
+    }
+
+    return diffTime;
   }
 
   private getRelayStatsTime(providerAddress: string): number[] {
