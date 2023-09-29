@@ -971,7 +971,7 @@ func (lt *lavaTest) getLatestBlockTime() time.Time {
 		panic(err)
 	}
 
-	latestBlockRawTime, ok := data["SyncInfo"].(map[string]string)["latest_block_time"]
+	latestBlockRawTime, ok := data["SyncInfo"].(map[string]interface{})["latest_block_time"].(string)
 	if !ok {
 		panic("failed to get latest block time")
 	}
