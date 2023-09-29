@@ -166,10 +166,11 @@ export class LavaSDK {
     // Get default lava spec
     const spec = getDefaultLavaSpec();
     // create provider optimizer
+    const baseOptimizerLatency = AverageWorldLatency / 2;
     const optimizer = new ProviderOptimizer(
       this.providerOptimizerStrategy,
-      0,
-      AverageWorldLatency / 2,
+      spec.getAverageBlockTime(),
+      baseOptimizerLatency,
       this.maxConcurrentProviders
     );
 
@@ -249,6 +250,8 @@ export class LavaSDK {
     // Fetch init state query
     await tracker.initialize();
 
+    const chainProviderOptimizers: Map<string, ProviderOptimizer> = new Map();
+
     // init rpcconsumer servers
     for (const chainId of this.chainIDRpcInterface) {
       const pairingResponse = tracker.getPairingResponse(chainId);
@@ -315,11 +318,22 @@ export class LavaSDK {
           this.geolocation // This is also deprecated
         );
 
+        // create provider optimizer
+        let chainProviderOptimizer = chainProviderOptimizers.get(chainId);
+        if (chainProviderOptimizer == undefined) {
+          chainProviderOptimizer = new ProviderOptimizer(
+            this.providerOptimizerStrategy,
+            chainParser.chainBlockStats().averageBlockTime,
+            baseOptimizerLatency,
+            this.maxConcurrentProviders
+          );
+        }
+
         // create consumer session manager
         const csm = new ConsumerSessionManager(
           this.relayer,
           rpcEndpoint,
-          optimizer,
+          chainProviderOptimizer,
           {
             transport: this.transport,
             allowInsecureTransport: this.allowInsecureTransport,
