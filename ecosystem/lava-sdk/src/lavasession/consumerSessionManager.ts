@@ -36,28 +36,25 @@ import { APIInterfaceTendermintRPC } from "../chainlib/base_chain_parser";
 export const ALLOWED_PROBE_RETRIES = 3;
 export const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
 import { ReportedProviders } from "./reported_providers";
-import { ReportedProvider } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import {
+  ProbeReply,
+  ReportedProvider,
+} from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
-  private pairing: Map<string, ConsumerSessionsWithProvider> = new Map<
-    string,
-    ConsumerSessionsWithProvider
-  >();
+  private pairing: Map<string, ConsumerSessionsWithProvider> = new Map();
   private currentEpoch = 0;
   private numberOfResets = 0;
   private allowedUpdateForCurrentEpoch = true;
 
-  private pairingAddresses: Map<number, string> = new Map<number, string>();
+  private pairingAddresses: Map<number, string> = new Map();
 
-  public validAddresses: string[] = [];
-  private addonAddresses: Map<string, string[]> = new Map<string, string[]>();
+  public validAddresses: Set<string> = new Set();
+  private addonAddresses: Map<string, Set<string>> = new Map();
   private reportedProviders: ReportedProviders = new ReportedProviders();
 
-  private pairingPurge: Map<string, ConsumerSessionsWithProvider> = new Map<
-    string,
-    ConsumerSessionsWithProvider
-  >();
+  private pairingPurge: Map<string, ConsumerSessionsWithProvider> = new Map();
   private providerOptimizer: ProviderOptimizer;
 
   private relayer: Relayer;
@@ -185,21 +182,21 @@ export class ConsumerSessionManager {
     }
 
     const routerKey = newRouterKey([...extensions, addon]);
-    this.addonAddresses.set(routerKey, []);
+    this.addonAddresses.set(routerKey, new Set());
   }
 
   public calculateAddonValidAddresses(
     addon: string,
     extensions: string[]
-  ): string[] {
-    const supportingProviderAddresses: string[] = [];
+  ): Set<string> {
+    const supportingProviderAddresses: Set<string> = new Set();
     for (const address of this.validAddresses) {
       const provider = this.pairing.get(address);
       if (
         provider?.isSupportingAddon(addon) &&
         provider?.isSupportingExtensions(extensions)
       ) {
-        supportingProviderAddresses.push(address);
+        supportingProviderAddresses.add(address);
       }
     }
 
@@ -537,12 +534,11 @@ export class ConsumerSessionManager {
   }
 
   private removeAddressFromValidAddresses(address: string): Error | undefined {
-    const idx = this.validAddresses.indexOf(address);
-    if (idx === -1) {
+    if (!this.validAddresses.has(address)) {
       return new AddressIndexWasNotFoundError();
     }
 
-    this.validAddresses.splice(idx, 1);
+    this.validAddresses.delete(address);
     this.removeAddonAddress();
   }
 
@@ -574,7 +570,7 @@ export class ConsumerSessionManager {
     }
 
     let providerAddresses = this.getValidProviderAddress(
-      Array.from(ignoredProviders.providers),
+      ignoredProviders.providers,
       cuNeededForSession,
       requestedBlock,
       addon,
@@ -633,7 +629,7 @@ export class ConsumerSessionManager {
       }
 
       providerAddresses = this.getValidProviderAddress(
-        Array.from(ignoredProviders.providers),
+        ignoredProviders.providers,
         cuNeededForSession,
         requestedBlock,
         addon,
@@ -661,18 +657,15 @@ export class ConsumerSessionManager {
     extensions: string[] = []
   ): void {
     if (addon === "" && extensions.length === 0) {
-      this.validAddresses = [];
+      this.validAddresses = new Set();
       this.pairingAddresses.forEach((address: string) => {
-        this.validAddresses.push(address);
+        this.validAddresses.add(address);
       });
       return;
     }
 
     this.pairingAddresses.forEach((address: string) => {
-      if (this.validAddresses.includes(address)) {
-        return;
-      }
-      this.validAddresses.push(address);
+      this.validAddresses.add(address);
     });
 
     this.removeAddonAddress(addon, extensions);
@@ -681,11 +674,11 @@ export class ConsumerSessionManager {
     this.addonAddresses.set(routerKey, addonAddresses);
   }
 
-  public getValidAddresses(addon: string, extensions: string[]): string[] {
+  public getValidAddresses(addon: string, extensions: string[]): Set<string> {
     const routerKey = newRouterKey([...extensions, addon]);
 
     const validAddresses = this.addonAddresses.get(routerKey);
-    if (validAddresses === undefined || validAddresses.length === 0) {
+    if (validAddresses === undefined || validAddresses.size === 0) {
       return this.calculateAddonValidAddresses(addon, extensions);
     }
 
@@ -693,15 +686,15 @@ export class ConsumerSessionManager {
   }
 
   private getValidProviderAddress(
-    ignoredProviderList: string[],
+    ignoredProviderList: Set<string>,
     cu: number,
     requestedBlock: number,
     addon: string,
     extensions: string[]
   ): string[] | Error {
-    const ignoredProvidersLength = Object.keys(ignoredProviderList).length;
+    const ignoredProvidersLength = ignoredProviderList.size;
     const validAddresses = this.getValidAddresses(addon, extensions);
-    const validAddressesLength = validAddresses.length;
+    const validAddressesLength = validAddresses.size;
     const totalValidLength = validAddressesLength - ignoredProvidersLength;
 
     if (totalValidLength <= 0) {
@@ -745,7 +738,7 @@ export class ConsumerSessionManager {
 
   private resetValidAddress(addon = "", extensions: string[] = []): number {
     const validAddresses = this.getValidAddresses(addon, extensions);
-    if (validAddresses.length === 0) {
+    if (validAddresses.size === 0) {
       Logger.warn("provider pairing list is empty, resetting state");
       this.setValidAddressesToDefaultValue(addon, extensions);
       this.numberOfResets++;
@@ -754,7 +747,10 @@ export class ConsumerSessionManager {
     return this.numberOfResets;
   }
 
-  private cacheAddonAddresses(addon: string, extensions: string[]): string[] {
+  private cacheAddonAddresses(
+    addon: string,
+    extensions: string[]
+  ): Set<string> {
     const routerKey = newRouterKey([...extensions, addon]);
 
     let addonAddresses = this.addonAddresses.get(routerKey);
@@ -772,7 +768,7 @@ export class ConsumerSessionManager {
     extensions: string[]
   ): number {
     const validAddresses = this.cacheAddonAddresses(addon, extensions);
-    if (validAddresses.length === 0) {
+    if (validAddresses.size === 0) {
       return this.resetValidAddress(addon, extensions);
     }
 
@@ -836,7 +832,7 @@ export class ConsumerSessionManager {
     consumerSessionWithProvider: ConsumerSessionsWithProvider,
     epoch: number,
     retryProbing: Set<ConsumerSessionsWithProvider>
-  ) {
+  ): Promise<ProbeReply | void>[] | Promise<AllProviderEndpointsDisabledError> {
     const startTime = performance.now();
     const guid = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     const promises = [];
@@ -870,6 +866,8 @@ export class ConsumerSessionManager {
                 consumerSessionWithProvider.publicLavaAddress +
                 " chainID: " +
                 this.getRpcEndpoint().chainId +
+                +" endpoint: " +
+                endpoint.networkAddress +
                 " latency: ",
               latency + " ms"
             );
@@ -879,7 +877,9 @@ export class ConsumerSessionManager {
                 "Guid mismatch for probe request and response. requested: ",
                 guid,
                 "response:",
-                probeReply.getGuid()
+                probeReply.getGuid(),
+                "endpoint:",
+                endpoint.networkAddress
               );
             }
 
@@ -887,7 +887,9 @@ export class ConsumerSessionManager {
             Logger.debug(
               `Probing Result for provider ${
                 consumerSessionWithProvider.publicLavaAddress
-              }, Epoch: ${lavaEpoch}, Lava Block: ${probeReply.getLavaLatestBlock()}`
+              }, Epoch: ${lavaEpoch}, Lava Block: ${probeReply.getLavaLatestBlock()}, Endpoint ${
+                endpoint.networkAddress
+              }`
             );
             this.epochTracker.setEpoch(
               consumerSessionWithProvider.publicLavaAddress,
@@ -907,11 +909,15 @@ export class ConsumerSessionManager {
 
             endpoint.connectionRefusals = 0;
             retryProbing.delete(consumerSessionWithProvider);
+
+            return probeReply;
           })
           .catch((e) => {
             Logger.warn(
               "Failed fetching probe from provider",
               consumerSessionWithProvider.getPublicLavaAddressAndPairingEpoch(),
+              "Endpoint: ",
+              endpoint.networkAddress,
               "Error:",
               e
             );

@@ -46,7 +46,7 @@ function setupConsumerSessionManager(relayer?: Relayer) {
     new RPCEndpoint("stub", "stub", "stub", "0"),
     new ProviderOptimizer(
       ProviderOptimizerStrategy.Balanced,
-      0,
+      1,
       AverageWorldLatency / 2,
       1
     )
@@ -120,7 +120,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-      cm.validAddresses = [];
+      cm.validAddresses = new Set();
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -170,7 +170,7 @@ describe("ConsumerSessionManager", () => {
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       while (true) {
-        if (cm.validAddresses.length === 0) {
+        if (cm.validAddresses.size === 0) {
           break;
         }
 
@@ -201,7 +201,7 @@ describe("ConsumerSessionManager", () => {
         throw consumerSessions;
       }
 
-      expect(cm.validAddresses.length).toEqual(cm.getPairingAddressesLength());
+      expect(cm.validAddresses.size).toEqual(cm.getPairingAddressesLength());
 
       for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
@@ -224,7 +224,7 @@ describe("ConsumerSessionManager", () => {
         numberOfResets++
       ) {
         while (true) {
-          if (cm.validAddresses.length === 0) {
+          if (cm.validAddresses.size === 0) {
             break;
           }
 
@@ -246,14 +246,14 @@ describe("ConsumerSessionManager", () => {
           }
 
           if (
-            cm.validAddresses.length === 0 &&
+            cm.validAddresses.size === 0 &&
             consumerSessions instanceof PairingListEmptyError
           ) {
             break;
           }
         }
 
-        expect(cm.validAddresses.length).toEqual(0);
+        expect(cm.validAddresses.size).toEqual(0);
 
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
@@ -266,9 +266,7 @@ describe("ConsumerSessionManager", () => {
           throw consumerSessions;
         }
 
-        expect(cm.validAddresses.length).toEqual(
-          cm.getPairingAddressesLength()
-        );
+        expect(cm.validAddresses.size).toEqual(cm.getPairingAddressesLength());
 
         for (const consumerSession of consumerSessions.values()) {
           expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
@@ -537,7 +535,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", false);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-      expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
 
       const sessions = cm.getSessions(
@@ -558,7 +556,7 @@ describe("ConsumerSessionManager", () => {
         await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, [])).not.toEqual(0);
 
-        const initialProvidersLength = cm.getValidAddresses(addon, []).length;
+        const initialProvidersLength = cm.getValidAddresses(addon, []).size;
         for (let i = 0; i < initialProvidersLength; i++) {
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
@@ -579,10 +577,10 @@ describe("ConsumerSessionManager", () => {
           }
         }
 
-        expect(cm.getValidAddresses(addon, []).length).toEqual(0);
+        expect(cm.getValidAddresses(addon, []).size).toEqual(0);
 
         if (addon !== "") {
-          expect(cm.getValidAddresses("addon", []).length).toEqual(0);
+          expect(cm.getValidAddresses("addon", []).size).toEqual(0);
         }
 
         const consumerSessions = cm.getSessions(
@@ -650,7 +648,7 @@ describe("ConsumerSessionManager", () => {
         const initialProvidersLength = cm.getValidAddresses(
           addon,
           extensions
-        ).length;
+        ).size;
         for (let i = 0; i < initialProvidersLength; i++) {
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
@@ -671,10 +669,10 @@ describe("ConsumerSessionManager", () => {
           }
         }
 
-        expect(cm.getValidAddresses(addon, extensions).length).toEqual(0);
+        expect(cm.getValidAddresses(addon, extensions).size).toEqual(0);
 
         if (extensions.length !== 0 || addon !== "") {
-          expect(cm.getValidAddresses("addon", extensions).length).toEqual(0);
+          expect(cm.getValidAddresses("addon", extensions).size).toEqual(0);
         }
 
         const consumerSessions = cm.getSessions(
@@ -711,11 +709,12 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getCurrentEpoch()).toEqual(FIRST_EPOCH_HEIGHT);
+      const validAddressesArray = Array.from(cm.validAddresses);
       for (let i = 0; i < NUMBER_OF_PROVIDERS; i++) {
-        expect(cm.validAddresses[i]).toEqual(`provider${i}`);
+        expect(validAddressesArray[i]).toEqual(`provider${i}`);
       }
     });
 
@@ -729,11 +728,12 @@ describe("ConsumerSessionManager", () => {
         "Trying to update provider list for older epoch"
       );
 
-      expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getCurrentEpoch()).toEqual(FIRST_EPOCH_HEIGHT);
+      const validAddressesArray = Array.from(cm.validAddresses);
       for (let i = 0; i < NUMBER_OF_PROVIDERS; i++) {
-        expect(cm.validAddresses[i]).toEqual(`provider${i}`);
+        expect(validAddressesArray[i]).toEqual(`provider${i}`);
       }
     });
 

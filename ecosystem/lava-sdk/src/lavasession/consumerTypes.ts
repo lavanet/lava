@@ -52,8 +52,8 @@ export interface ProviderOptimizer {
   ): void;
 
   chooseProvider(
-    allAddresses: string[],
-    ignoredProviders: string[],
+    allAddresses: Set<string>,
+    ignoredProviders: Set<string>,
     cu: number,
     requestedBlock: number,
     perturbationPercentage: number
