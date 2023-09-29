@@ -18,7 +18,7 @@
           "chain_policies": [
           ],
           "geolocation_profile": "GL",
-          "total_cu_limit": 50,
+          "total_cu_limit": 1000,
           "epoch_cu_limit": 50,
           "max_providers_to_pair": 3,
           "selected_providers_mode": "ALLOWED",

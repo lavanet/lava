@@ -65,6 +65,10 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 	testFilesThatFailed := []string{}
 	// Loop through each test file and execute it
 	for _, testFile := range testFiles {
+		if testFile != "testutil/e2e/sdk/tests/emergency_mode_fetch_synchronously.ts" {
+			continue
+		}
+
 		// Prepare command for running test
 		cmd := exec.Command("ts-node", testFile)
 

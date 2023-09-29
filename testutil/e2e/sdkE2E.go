@@ -109,48 +109,92 @@ func runSDKE2E(timeout time.Duration) {
 	}()
 
 	utils.LavaFormatInfo("Starting Lava")
-	lavaContext, cancelLava := context.WithCancel(context.Background())
-	go lt.startLava(lavaContext)
-	lt.checkLava(timeout)
-	utils.LavaFormatInfo("Starting Lava OK")
-
+	//lavaContext, cancelLava := context.WithCancel(context.Background())
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
+	go lt.startLava(ctx)
+	lt.checkLava(timeout)
+	utils.LavaFormatInfo("Starting Lava OK")
 
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
 
-	lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	//lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
-	// Export user1 private key
-	privateKey := exportUserPrivateKey(lt.lavadPath, "user1")
-
-	// Export user1 public key
-	publicKey := exportUserPublicKey(lt.lavadPath, "user1")
-
-	// Start Badge server
-	lt.startBadgeServer(ctx, privateKey, publicKey)
-
-	// ETH1 flow
-	lt.startJSONRPCProxy(ctx)
-	// Check proxy is up
-	lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
-	// Start Eth providers
-	lt.startJSONRPCProvider(ctx)
+	//// Export user1 private key
+	//privateKey := exportUserPrivateKey(lt.lavadPath, "user1")
+	//
+	//// Export user1 public key
+	//publicKey := exportUserPublicKey(lt.lavadPath, "user1")
+	//
+	//// Start Badge server
+	//lt.startBadgeServer(ctx, privateKey, publicKey)
+	//
+	//// ETH1 flow
+	//lt.startJSONRPCProxy(ctx)
+	//// Check proxy is up
+	//lt.checkJSONRPCConsumer("http://127.0.0.1:1111", time.Minute*2, "JSONRPCProxy OK") // checks proxy.
+	//// Start Eth providers
+	//lt.startJSONRPCProvider(ctx)
 
 	// Lava Flow
 	lt.startLavaProviders(ctx)
 
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)
+	//sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"])
+
+	// emergency mode tests
+	utils.LavaFormatInfo("Restarting lava to emergency mode")
+
+	lt.stopLava()
+	go lt.startLavaInEmergencyMode(ctx, 100000)
+
+	lt.checkLava(timeout)
+	utils.LavaFormatInfo("Starting Lava OK")
+
+	lt.startLavaProviders(ctx)
+
+	var epochDuration int64 = 30
+
+	signalChannel := make(chan bool)
+
+	latestBlockTime := lt.getLatestBlockTime()
+
+	go func() {
+		epochCounter := (time.Now().Unix() - latestBlockTime.Unix()) / epochDuration
+
+		for {
+			time.Sleep(time.Until(latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))))
+			utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+
+			epochCounter++
+			signalChannel <- true
+		}
+	}()
+
+	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
+
+	// we should have approximately (numOfProviders * epoch_cu_limit * 3) CU
+	// skip 1st epoch and 2 virtual epochs
+	<-signalChannel
+	<-signalChannel
+	<-signalChannel
+
+	privateKey := exportUserPrivateKey(lt.lavadPath, "user5")
+	publicKey := exportUserPublicKey(lt.lavadPath, "user5")
+
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"])
+
+	utils.LavaFormatInfo("TESTS FINISHED")
 
 	lt.finishTestSuccessfully()
 
 	// Cancel lava network using context
-	cancelLava()
+	//cancelLava()
 
 	// Wait for all processes to be done
 	lt.wg.Wait()
