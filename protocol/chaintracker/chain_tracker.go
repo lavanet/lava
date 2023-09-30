@@ -51,6 +51,7 @@ type ChainTracker struct {
 	blockCheckpoint         uint64 // last time checkpoint was met
 	timer                   *time.Timer
 	latestChangeTime        time.Time
+	blockEventsGap          []time.Duration
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -272,6 +273,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 				}
 			}
 			// update our timer resolution
+			cs.AddBlockGap(time.Since(cs.latestChangeTime))
 			cs.latestChangeTime = time.Now()
 		}
 		if forked {
@@ -306,7 +308,9 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 				if debug {
 					utils.LavaFormatDebug("chain tracker fetch triggered", utils.Attribute{Key: "currTime", Value: time.Now()})
 				}
-				err := cs.fetchAllPreviousBlocksIfNecessary(ctx)
+				fetchCtx, cancel := context.WithTimeout(ctx, 2*time.Second) // protect this flow from hanging code
+				err := cs.fetchAllPreviousBlocksIfNecessary(fetchCtx)
+				cancel()
 				if err != nil {
 					fetchFails += 1
 					cs.updateTimer(pollingTime, fetchFails)
@@ -327,9 +331,10 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 }
 
 func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uint64) {
+	blockGap := cs.latestBlockGap()
 	timeSinceLastUpdate := time.Since(cs.latestChangeTime)
 	var newPollingTime time.Duration
-	if timeSinceLastUpdate <= tickerBaseTime/2 {
+	if timeSinceLastUpdate <= tickerBaseTime/2 && blockGap > tickerBaseTime/4 {
 		newPollingTime = tickerBaseTime / 4
 	} else if timeSinceLastUpdate <= (tickerBaseTime*3)/4 {
 		newPollingTime = tickerBaseTime / 8
@@ -369,6 +374,19 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	return nil
+}
+
+func (ct *ChainTracker) AddBlockGap(newData time.Duration) {
+	if uint64(len(ct.blockEventsGap)) < ct.blocksToSave {
+		ct.blockEventsGap = append(ct.blockEventsGap, newData)
+	} else {
+		ct.blockEventsGap = append(ct.blockEventsGap[1:], newData)
+	}
+}
+
+func (ct *ChainTracker) latestBlockGap() time.Duration {
+
+	return ct.blockEventsGap[len(ct.blockEventsGap)-1]
 }
 
 // this function serves a grpc server if configuration for it was provided, the goal is to enable stateTracker to serve several processes and minimize node queries
@@ -434,7 +452,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance}
+	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
