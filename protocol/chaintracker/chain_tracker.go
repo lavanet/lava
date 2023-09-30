@@ -28,6 +28,7 @@ const (
 	initRetriesCount = 4
 	BACKOFF_MAX_TIME = 10 * time.Minute
 	maxFails         = 10
+	debug            = false
 )
 
 type ChainFetcher interface {
@@ -48,7 +49,8 @@ type ChainTracker struct {
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
 	blockCheckpoint         uint64 // last time checkpoint was met
-	ticker                  *time.Ticker
+	timer                   *time.Timer
+	latestChangeTime        time.Time
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -269,6 +271,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 					cs.newLatestCallback(i, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
 				}
 			}
+			// update our timer resolution
+			cs.latestChangeTime = time.Now()
 		}
 		if forked {
 			if cs.forkCallback != nil {
@@ -280,11 +284,15 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 }
 
 // this function starts the fetching timer periodically checking by polling if updates are necessary
-func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duration) error {
+func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) error {
 	// how often to query latest block.
-	// TODO: improve the polling time, we don't need to poll the first half of every block change
-	tickerTime := pollingBlockTime / 10
-	cs.ticker = time.NewTicker(tickerTime) // divide here so we don't miss new blocks by all that much
+	// chainTracker polls blocks in the following strategy:
+	// start polling every averageBlockTime/4, then averageBlockTime/8 after passing middle, then averageBlockTime/16 after passing averageBlockTime*3/4
+	// so polling at averageBlockTime/4,averageBlockTime/2,averageBlockTime*5/8,averageBlockTime*3/4,averageBlockTime*13/16,,averageBlockTime*14/16,,averageBlockTime*15/16,averageBlockTime*16/16,averageBlockTime*17/16
+	// initial polling = averageBlockTime/4
+	initialPollingTime := pollingTime / 4
+	cs.latestChangeTime = time.Now()
+	cs.timer = time.NewTimer(initialPollingTime) // divide here so we don't miss new blocks by all that much
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
 		return err
@@ -294,23 +302,23 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 		fetchFails := uint64(0)
 		for {
 			select {
-			case <-cs.ticker.C:
+			case <-cs.timer.C:
+				if debug {
+					utils.LavaFormatDebug("chain tracker fetch triggered", utils.Attribute{Key: "currTime", Value: time.Now()})
+				}
 				err := cs.fetchAllPreviousBlocksIfNecessary(ctx)
 				if err != nil {
 					fetchFails += 1
-					cs.updateTicker(tickerTime, fetchFails)
+					cs.updateTimer(pollingTime, fetchFails)
 					if fetchFails > maxFails {
 						utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
 					}
 				} else {
-					if fetchFails != 0 {
-						// means we had failures and they are gone, need to reset the ticker
-						cs.updateTicker(tickerTime, 0)
-					}
+					cs.updateTimer(pollingTime, 0)
 					fetchFails = 0
 				}
 			case <-ctx.Done():
-				cs.ticker.Stop()
+				cs.timer.Stop()
 				return
 			}
 		}
@@ -318,9 +326,21 @@ func (cs *ChainTracker) start(ctx context.Context, pollingBlockTime time.Duratio
 	return nil
 }
 
-func (cs *ChainTracker) updateTicker(tickerBaseTime time.Duration, fetchFails uint64) {
-	cs.ticker.Stop()
-	cs.ticker = time.NewTicker(exponentialBackoff(tickerBaseTime, fetchFails))
+func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uint64) {
+	timeSinceLastUpdate := time.Since(cs.latestChangeTime)
+	var newPollingTime time.Duration
+	if timeSinceLastUpdate <= tickerBaseTime/2 {
+		newPollingTime = tickerBaseTime / 4
+	} else if timeSinceLastUpdate <= (tickerBaseTime*3)/4 {
+		newPollingTime = tickerBaseTime / 8
+	} else {
+		newPollingTime = tickerBaseTime / 16
+	}
+	newTickerDuration := exponentialBackoff(newPollingTime, fetchFails)
+	if debug {
+		utils.LavaFormatDebug("state tracker ticker set", utils.Attribute{Key: "timeSinceLastUpdate", Value: timeSinceLastUpdate}, utils.Attribute{Key: "time", Value: time.Now()}, utils.Attribute{Key: "newTickerDuration", Value: newTickerDuration})
+	}
+	cs.timer = time.NewTimer(newTickerDuration)
 }
 
 func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) {
