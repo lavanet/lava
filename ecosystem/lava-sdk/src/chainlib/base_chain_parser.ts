@@ -24,7 +24,7 @@ export const HeadersPassSend = Header.HeaderType.PASS_SEND;
 export interface SendRelayOptions {
   method: string; // Required: The RPC method to be called
   params: Array<any>; // Required: An array of parameters to be passed to the RPC method
-  id?: number; // Optional: The ID of the relay. If not specified, it is set to a random number.
+  id?: number | string; // Optional: The ID of the relay. If not specified, it is set to a random number.
   chainId?: string; // Optional: The chain id to send the request to, if only one chain is initialized it will be chosen by default
   metadata?: Metadata[]; // Optional: Headers to be sent with the request.
   apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
