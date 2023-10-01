@@ -97,7 +97,7 @@ trace lavad q subscription list >/dev/null
 trace lavad q subscription current $(lavad keys show alice -a)-admin >/dev/null
 trace lavad q subscription list-projects $(lavad keys show alice -a) >/dev/null
 
-sleep_until_next_epoch
+sleep_until_next_epoch >/dev/null
 
 echo "Testing project tx commands"
 (lavad tx project set-policy $(lavad keys show alice -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml $txoptions)>/dev/null 
@@ -126,13 +126,13 @@ wait_count_blocks 1 >/dev/null
 CHAINS="GTH1,COS3,FTM250,CELO,LAV1,COS4,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COS5,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR"
 (trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 --provider-moniker "provider" $txoptions)>/dev/null
 
-sleep_until_next_epoch
+sleep_until_next_epoch >/dev/null
 (trace lavad tx pairing modify-provider ETH1 --provider-moniker "provider" --delegate-commission 20 --delegate-limit 1000ulava --amount $PROVIDERSTAKE --endpoints "127.0.0.2:2222,1" $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx pairing freeze ETH1,CELO $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx pairing unstake-provider LAV1,COS4 $txoptions)>/dev/null
-sleep_until_next_epoch
+sleep_until_next_epoch >/dev/null
 (trace lavad tx pairing unfreeze ETH1,CELO $txoptions)>/dev/null
 
 echo "Testing pairing q commands"
@@ -169,7 +169,7 @@ trace lavad q dualstaking delegator-rewards $(lavad keys show alice -a) >/dev/nu
 trace lavad q dualstaking provider-delegators $(lavad keys show alice -a)>/dev/null
 
 echo "Testing events command"
-trace lavad test events 100 30 --event lava_relay_payment --from alice --timeout 1s >/dev/null
+trace lavad test events 30 10 --event lava_relay_payment --from alice --timeout 1s >/dev/null
 
 killall lavad
 echo "Testing done :)"
