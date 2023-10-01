@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	protocolversion "github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -48,22 +49,25 @@ func (vu *VersionUpdater) RegisterVersionUpdatable() {
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.lock.Lock()
 	defer vu.lock.Unlock()
-	versionUpdated := vu.eventTracker.getLatestVersionEvents()
-	if versionUpdated {
-		// fetch updated version from consensus
-		version, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
-		if err != nil {
-			utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
-			return
-		}
-		utils.LavaFormatInfo("Protocol version has been fetched successfully!",
-			utils.Attribute{Key: "old_version", Value: vu.lastKnownVersion},
+
+	// fetch updated version from consensus on every block
+	version, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
+	if err != nil {
+		utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
+		return
+	}
+
+	if protocolversion.HasVersionMismatch(version.ProviderTarget, vu.lastKnownVersion.ProviderTarget) ||
+		protocolversion.HasVersionMismatch(version.ProviderMin, vu.lastKnownVersion.ProviderMin) {
+
+		utils.LavaFormatInfo("Version mismatch occured!",
+			utils.Attribute{Key: "current_version", Value: vu.lastKnownVersion},
 			utils.Attribute{Key: "new_version", Value: version})
-		// if no error, set the last known version.
+
 		vu.lastKnownVersion = version
 	}
-	// monitor protocol version on each new block
-	err := vu.ValidateProtocolVersion(vu.lastKnownVersion)
+
+	err = vu.ValidateProtocolVersion(vu.lastKnownVersion)
 	if err != nil {
 		utils.LavaFormatError("Validate Protocol Version Error", err)
 	}
