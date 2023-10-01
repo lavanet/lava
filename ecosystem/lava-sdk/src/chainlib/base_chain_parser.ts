@@ -413,10 +413,6 @@ export abstract class BaseChainParser {
     return this.allowedAddons.has(addon);
   }
 
-  protected escapeRegExp(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  }
-
   protected matchSpecApiByName(
     name: string,
     connectionType: string
