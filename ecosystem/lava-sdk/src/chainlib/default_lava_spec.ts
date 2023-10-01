@@ -28,7 +28,7 @@ export function getDefaultLavaSpec(): Spec {
   const spec = new Spec();
   spec.setEnabled(true);
   spec.setIndex("LAV1");
-  spec.setAverageBlockTime(60000);
+  spec.setAverageBlockTime(30000);
   spec.setAllowedBlockLagForQosSync(2);
   spec.setBlockDistanceForFinalizedData(0);
   spec.setBlocksInFinalizationProof(1);

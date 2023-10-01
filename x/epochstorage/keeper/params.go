@@ -142,7 +142,7 @@ func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, e
 func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error) {
 	epochStart, _, err := k.GetEpochStartForBlock(ctx, block)
 	if epochStart <= 0 {
-		return 0, utils.LavaFormatError("GetPreviousEpochStartForBlock", fmt.Errorf("GetPreviousEpochStartForBlock tried to fetch epoch beyond zero"))
+		return 0, fmt.Errorf("GetPreviousEpochStartForBlock tried to fetch epoch beyond zero")
 	}
 	previousEpochStart, _, err2 := k.GetEpochStartForBlock(ctx, epochStart-1) // we take one block before the target epoch so it belongs to the previous epoch
 	if err != nil {

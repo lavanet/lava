@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -496,17 +495,14 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstFail)
 
 		// verify provider is blocked and reported
-		require.Contains(t, csm.addedToPurgeAndReport, cs.Session.Client.PublicLavaAddress) // address is reported
-		require.NotContains(t, csm.validAddresses, cs.Session.Client.PublicLavaAddress)     // address isn't in valid addresses list
+		require.True(t, csm.reportedProviders.IsReported(cs.Session.Client.PublicLavaAddress))
+		require.NotContains(t, csm.validAddresses, cs.Session.Client.PublicLavaAddress) // address isn't in valid addresses list
 
-		reported, err := csm.GetReportedProviders(firstEpochHeight)
-		require.Nil(t, err)
+		reported := csm.GetReportedProviders(firstEpochHeight)
 		require.NotEmpty(t, reported)
-		reportedSlice := make([]string, 0, len(reported))
-		err = json.Unmarshal(reported, &reportedSlice)
-		require.Nil(t, err)
-		for _, providerReported := range reportedSlice {
-			require.Contains(t, csm.addedToPurgeAndReport, providerReported)
+		for _, providerReported := range reported {
+			require.True(t, csm.reportedProviders.IsReported(providerReported.Address))
+			require.True(t, csm.reportedProviders.IsReported(cs.Session.Client.PublicLavaAddress))
 		}
 	}
 }

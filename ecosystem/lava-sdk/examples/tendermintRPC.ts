@@ -11,7 +11,7 @@ import { LavaSDK } from "../src/sdk/sdk";
   But not rpc calls with named parameters
   {"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}
 */
-async function getLatestBlock(): Promise<string> {
+async function getLatestBlock(): Promise<Array<any>> {
   // Create dAccess for Cosmos Hub
   // Default rpcInterface for Cosmos Hub is tendermintRPC
   const cosmosHub = await LavaSDK.create({
@@ -27,30 +27,35 @@ async function getLatestBlock(): Promise<string> {
   });
 
   // Get abci_info
-  const info = await cosmosHub.sendRelay({
-    method: "abci_info",
-    params: [],
-  });
 
-  // Parse and extract response
-  const parsedInfo = info.result.response;
+  const results = [];
 
-  // Extract latest block number
-  const latestBlockNumber = parsedInfo.last_block_height;
+  for (let i = 0; i < 10; i++) {
+    const info = await cosmosHub.sendRelay({
+      method: "abci_info",
+      params: [],
+    });
 
-  // Fetch latest block
-  const latestBlock = await cosmosHub.sendRelay({
-    method: "block",
-    params: [latestBlockNumber],
-  });
+    // Parse and extract response
+    const parsedInfo = info.result.response;
 
-  return latestBlock;
+    // Extract latest block number
+    const latestBlockNumber = parsedInfo.last_block_height;
+    // Fetch latest block
+    const latestBlock = await cosmosHub.sendRelay({
+      method: "block",
+      params: [latestBlockNumber],
+    });
+    results.push(latestBlock);
+    console.log("Latest block:", latestBlock);
+  }
+  return results;
 }
 
 (async function () {
   try {
-    const latestBlock = await getLatestBlock();
-    console.log("Latest block:", latestBlock);
+    const results = await getLatestBlock();
+    console.log("results:", results);
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);

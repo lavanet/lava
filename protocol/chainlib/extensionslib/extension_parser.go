@@ -6,7 +6,7 @@ import (
 
 type ExtensionsChainMessage interface {
 	SetExtension(*spectypes.Extension)
-	RequestedBlock() int64
+	RequestedBlock() (latest int64, earliest int64)
 }
 
 type ExtensionKey struct {

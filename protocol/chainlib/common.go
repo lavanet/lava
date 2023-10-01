@@ -215,3 +215,43 @@ func convertRelayMetaDataToMDMetaData(md []pairingtypes.Metadata) metadata.MD {
 	}
 	return responseMetaData
 }
+
+// split two requested blocks to the most advanced and most behind
+// the hierarchy is as follows:
+// NOT_APPLICABLE
+// LATEST_BLOCK
+// PENDING_BLOCK
+// SAFE
+// FINALIZED
+// numeric value (descending)
+// EARLIEST
+func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (latestCombinedBlock int64, earliestCombinedBlock int64) {
+	if firstRequestedBlock == spectypes.EARLIEST_BLOCK {
+		return second, firstRequestedBlock
+	}
+	if second == spectypes.EARLIEST_BLOCK {
+		return firstRequestedBlock, second
+	}
+
+	returnBigger := func(in_first int64, in_second int64) (int64, int64) {
+		if in_first > in_second {
+			return in_first, in_second
+		}
+		return in_second, in_first
+	}
+
+	if firstRequestedBlock < 0 {
+		if second < 0 {
+			// both are negative
+			return returnBigger(firstRequestedBlock, second)
+		}
+		// first is negative non earliest second is positive
+		return firstRequestedBlock, second
+	}
+	if second < 0 {
+		// second is negative non earliest first is positive
+		return second, firstRequestedBlock
+	}
+	// both are positive
+	return returnBigger(firstRequestedBlock, second)
+}

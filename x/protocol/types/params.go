@@ -14,9 +14,9 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyVersion     = []byte("Version")
 	DefaultVersion = Version{
-		ProviderTarget: "0.23.5",
+		ProviderTarget: "0.24.0",
 		ProviderMin:    "0.21.0",
-		ConsumerTarget: "0.23.5",
+		ConsumerTarget: "0.24.0",
 		ConsumerMin:    "0.21.0",
 	}
 )
@@ -109,9 +109,15 @@ func versionToInteger(v string) (int, error) {
 }
 
 // Validate validates the set of params
-func (p Params) Validate() error {
-	if err := validateVersion(p.Version); err != nil {
-		return err
+func (p Params) Validate(genesis bool) error {
+	if genesis {
+		if err := validateVersionGenesis(p.Version); err != nil {
+			return err
+		}
+	} else {
+		if err := validateVersion(p.Version); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -188,6 +194,43 @@ func validateVersion(v interface{}) error {
 	if newProviderMin != newConsumerMin {
 		return fmt.Errorf("provider and consumer min versions mismatch: %d != %d",
 			newProviderMin, newConsumerMin)
+	}
+
+	return nil
+}
+
+// validateVersion validates the Version param from genesis
+func validateVersionGenesis(v interface{}) error {
+	version, ok := v.(Version)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	newProviderTarget, err := versionToInteger(version.ProviderTarget)
+	if err != nil {
+		return fmt.Errorf("provider target version: %w", err)
+	}
+	newProviderMin, err := versionToInteger(version.ProviderMin)
+	if err != nil {
+		return fmt.Errorf("provider min version: %w", err)
+	}
+	newConsumerTarget, err := versionToInteger(version.ConsumerTarget)
+	if err != nil {
+		return fmt.Errorf("consumer target version: %w", err)
+	}
+	newConsumerMin, err := versionToInteger(version.ConsumerMin)
+	if err != nil {
+		return fmt.Errorf("consumer min version: %w", err)
+	}
+
+	// min version may not exceed target version
+	if newProviderMin > newProviderTarget {
+		return fmt.Errorf("provider min version exceeds target version: %d > %d",
+			newProviderMin, newProviderTarget)
+	}
+	if newConsumerMin > newConsumerTarget {
+		return fmt.Errorf("consumer min version exceeds target version: %d > %d",
+			newConsumerMin, newConsumerTarget)
 	}
 
 	return nil

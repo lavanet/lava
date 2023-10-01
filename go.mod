@@ -37,6 +37,8 @@ require (
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/praserx/ipconv v1.2.1
 	github.com/spf13/pflag v1.0.5
+	github.com/tidwall/gjson v1.16.0
+	github.com/tidwall/sjson v1.2.5
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
@@ -90,6 +92,8 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/tidwall/btree v1.6.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	golang.org/x/mod v0.9.0 // indirect

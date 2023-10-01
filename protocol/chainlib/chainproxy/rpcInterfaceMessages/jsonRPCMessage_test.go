@@ -6,6 +6,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConvertJsonRPCMsg_Success(t *testing.T) {
@@ -97,10 +98,12 @@ func TestJsonrpcMessage_ParseBlock(t *testing.T) {
 func TestParseJsonRPCMsg(t *testing.T) {
 	// Test Case 1: Valid JSON input
 	data := []byte(`{"jsonrpc": "2.0", "id": 1, "method": "getblock", "params": [], "result": {"block": "block data"}}`)
-	msg, err := ParseJsonRPCMsg(data)
+	msgs, err := ParseJsonRPCMsg(data)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+	require.Len(t, msgs, 1)
+	msg := msgs[0]
 	if msg.Version != "2.0" {
 		t.Errorf("Expected msg.Version to be 2.0, but got %s", msg.Version)
 	}
@@ -113,5 +116,28 @@ func TestParseJsonRPCMsg(t *testing.T) {
 	_, err = ParseJsonRPCMsg(data)
 	if err == nil {
 		t.Errorf("Expected error, but got nil")
+	}
+}
+
+func TestParseJsonRPCBatch(t *testing.T) {
+	// Test Case 1: Valid JSON input
+	data := []byte(`[{"method":"eth_chainId","params":[],"id":1,"jsonrpc":"2.0"},{"method":"eth_accounts","params":[],"id":2,"jsonrpc":"2.0"},{"method":"eth_blockNumber","params":[],"id":3,"jsonrpc":"2.0"}]`)
+	msgs, err := ParseJsonRPCMsg(data)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	values := []string{"eth_chainId", "eth_accounts", "eth_blockNumber"}
+	for idx, msg := range msgs {
+		if msg.Version != "2.0" {
+			t.Errorf("Expected msg.Version to be 2.0, but got %s", msg.Version)
+		}
+		require.Equal(t, values[idx], msg.Method, "Expected msg.Method to be %s, but got %s", values[idx], msg.Method)
+
+		// Test Case 2: Invalid JSON input
+		data = []byte(`{"jsonrpc": "2.0", "id": 1, "method": "getblock", "params": []`)
+		_, err = ParseJsonRPCMsg(data)
+		if err == nil {
+			t.Errorf("Expected error, but got nil")
+		}
 	}
 }

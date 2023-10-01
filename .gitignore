@@ -68,6 +68,7 @@ ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/cosmos
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/gogoproto
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/google
 ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/tendermint
+ecosystem/lava-sdk/src/codec
 
 
 # Ignore the bin and dist folders and their content
@@ -91,8 +92,12 @@ ecosystem/lavajs/proto/gogoproto
 ecosystem/lavajs/proto/google
 ecosystem/lavajs/proto/tendermint
 
+testutil/e2e/sdk/tests/package-lock.json
+testutil/e2e/sdk/tests/package.json
 
-
+testutil/e2e/sdk/tests/package.json
+testutil/e2e/sdk/tests/package-lock.json
+testutil/e2e/sdk/tests/node_modules.json
 
 
 

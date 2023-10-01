@@ -92,3 +92,9 @@ var Upgrade_0_23_5 = Upgrade{
 	CreateUpgradeHandler: v0_23_0_UpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{Added: []string{dualstakingtypes.StoreKey}},
 }
+
+var Upgrade_0_24_0 = Upgrade{
+	UpgradeName:          "v0.24.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
