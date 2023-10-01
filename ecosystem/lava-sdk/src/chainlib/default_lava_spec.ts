@@ -1,7 +1,9 @@
 import {
   Api,
   ApiCollection,
+  BlockParser,
   CollectionData,
+  PARSER_FUNC,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 
@@ -10,6 +12,12 @@ export function getDefaultLavaSpec(): Spec {
   api.setEnabled(true);
   api.setName("abci_query");
   api.setComputeUnits(10);
+
+  const blockParser = new BlockParser();
+  blockParser.setParserFunc(PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED);
+  blockParser.setParserArgList(["height", "=", "2"]);
+  blockParser.setDefaultValue("latest");
+  api.setBlockParsing(blockParser);
 
   const apis: Array<Api> = [];
   apis.push(api);
