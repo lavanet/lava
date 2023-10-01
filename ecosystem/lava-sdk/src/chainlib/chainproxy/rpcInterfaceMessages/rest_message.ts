@@ -44,8 +44,8 @@ export class RestMessage extends BaseMessage implements RPCInput {
 
   // GetResult will be deprecated after we remove old client
   // Currently needed because of parser.RPCInput interface
-  getResult(): Uint8Array {
-    return new Uint8Array();
+  getResult(): string {
+    return "";
   }
 
   parseBlock(block: string): number | Error {

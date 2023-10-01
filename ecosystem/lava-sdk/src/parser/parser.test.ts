@@ -24,7 +24,7 @@ class RPCInputTest implements RPCInput {
     return this.Params;
   }
 
-  getResult(): Uint8Array {
+  getResult(): string {
     return this.Result;
   }
 

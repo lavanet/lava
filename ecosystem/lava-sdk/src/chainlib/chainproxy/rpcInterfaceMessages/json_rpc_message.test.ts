@@ -10,7 +10,7 @@ describe("JsonrpcMessage", () => {
       "",
       "test_params",
       undefined,
-      new Uint8Array()
+      ""
     );
     expect(cp.getParams()).toEqual("test_params");
   });
@@ -23,9 +23,9 @@ describe("JsonrpcMessage", () => {
       "",
       "",
       undefined,
-      encodeUtf8(`"test_result"`)
+      "test_result"
     );
-    expect(cp.getResult()).toEqual(encodeUtf8(`"test_result"`));
+    expect(cp.getResult()).toEqual("test_result");
   });
 });
 

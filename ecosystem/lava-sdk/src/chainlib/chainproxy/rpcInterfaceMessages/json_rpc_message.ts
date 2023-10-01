@@ -16,7 +16,7 @@ export class JsonrpcMessage extends BaseMessage implements RPCInput {
   public method = "";
   public params: any;
   public error: JsonError | undefined;
-  public result: Uint8Array | undefined;
+  public result: string | undefined;
 
   initJsonrpcMessage(
     version: string,
@@ -24,7 +24,7 @@ export class JsonrpcMessage extends BaseMessage implements RPCInput {
     method: string,
     params: any,
     error?: JsonError,
-    result?: Uint8Array
+    result?: string
   ) {
     this.version = version;
     this.id = id;
@@ -38,14 +38,14 @@ export class JsonrpcMessage extends BaseMessage implements RPCInput {
     return this.params;
   }
 
-  getResult(): Uint8Array {
+  getResult(): string {
     if (this.error) {
       Logger.warn(
         `GetResult() Request got an error from the node. error: ${this.error}`
       );
     }
 
-    return this.result ?? new Uint8Array();
+    return this.result ?? "Failed getting result";
   }
 
   parseBlock(block: string): number | Error {
@@ -71,6 +71,7 @@ interface RawJsonrpcMessage {
 }
 
 export function parseJsonRPCMsg(data: Uint8Array): JsonrpcMessage[] | Error {
+  // Currently unused
   const msgs: JsonrpcMessage[] = [];
   let rawJsonObjs: RawJsonrpcMessage[];
   const dataAsString = byteArrayToString(data);
@@ -99,7 +100,7 @@ export function parseJsonRPCMsg(data: Uint8Array): JsonrpcMessage[] | Error {
       rawJsonObj.method ?? "",
       rawJsonObj.params,
       undefined,
-      encodeUtf8(JSON.stringify(rawJsonObj.result))
+      JSON.stringify(rawJsonObj.result)
     );
     msgs.push(msg);
   }

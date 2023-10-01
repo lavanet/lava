@@ -131,7 +131,7 @@ export class Parser {
         }
         // Try to unmarshal, and if the data is unmarshalable, then return the data itself
         try {
-          data = JSON.parse(byteArrayToString(rawJsonString));
+          data = JSON.parse(rawJsonString);
           return [data];
         } catch (err) {
           return [rawJsonString];
