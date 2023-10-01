@@ -6,7 +6,7 @@ import {
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { encodeUtf8, generateRPCData } from "../util/common";
+import { generateRPCData } from "../util/common";
 import { HttpMethod } from "../common/common";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { JsonrpcMessage } from "./chainproxy/rpcInterfaceMessages/json_rpc_message";
@@ -46,11 +46,7 @@ export class JsonRpcChainParser extends BaseChainParser {
     const jsonrpcMessage = new JsonrpcMessage();
     jsonrpcMessage.initJsonrpcMessage(
       jsonrpcVersion,
-      encodeUtf8(
-        String(
-          options.id ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-        )
-      ),
+      String(options.id ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)),
       options.method,
       options.params
     );

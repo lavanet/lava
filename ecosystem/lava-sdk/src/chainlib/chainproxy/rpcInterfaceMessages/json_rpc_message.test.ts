@@ -4,27 +4,13 @@ import { JsonrpcMessage, parseJsonRPCMsg } from "./json_rpc_message";
 describe("JsonrpcMessage", () => {
   it("should get Params", () => {
     const cp = new JsonrpcMessage();
-    cp.initJsonrpcMessage(
-      "",
-      new Uint8Array(),
-      "",
-      "test_params",
-      undefined,
-      ""
-    );
+    cp.initJsonrpcMessage("", "", "", "test_params", undefined, "");
     expect(cp.getParams()).toEqual("test_params");
   });
 
   it("should get Result", () => {
     const cp = new JsonrpcMessage();
-    cp.initJsonrpcMessage(
-      "",
-      new Uint8Array(),
-      "",
-      "",
-      undefined,
-      "test_result"
-    );
+    cp.initJsonrpcMessage("", "", "", "", undefined, "test_result");
     expect(cp.getResult()).toEqual("test_result");
   });
 });

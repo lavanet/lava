@@ -13,7 +13,7 @@ import {
   BlockParser,
   PARSER_FUNC,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
-import { byteArrayToString, encodeUtf8 } from "../util/common";
+import { encodeUtf8 } from "../util/common";
 import {
   EncodingBase64,
   EncodingHex,

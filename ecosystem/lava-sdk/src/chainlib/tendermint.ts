@@ -6,7 +6,7 @@ import {
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { encodeUtf8, generateRPCData } from "../util/common";
+import { generateRPCData } from "../util/common";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { TendermintrpcMessage } from "./chainproxy/rpcInterfaceMessages/tendermint_rpc_message";
 import { Parser } from "../parser/parser";
@@ -46,11 +46,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
     const tendermintrpcMessage = new TendermintrpcMessage();
     tendermintrpcMessage.initJsonrpcMessage(
       jsonrpcVersion,
-      encodeUtf8(
-        String(
-          options.id ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-        )
-      ),
+      String(options.id ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)),
       options.method,
       options.params
     );

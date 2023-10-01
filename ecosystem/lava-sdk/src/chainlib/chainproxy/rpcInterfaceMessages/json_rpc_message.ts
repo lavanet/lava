@@ -12,7 +12,7 @@ export interface JsonError {
 
 export class JsonrpcMessage extends BaseMessage implements RPCInput {
   public version = "";
-  public id: Uint8Array | undefined;
+  public id: string | undefined;
   public method = "";
   public params: any;
   public error: JsonError | undefined;
@@ -20,7 +20,7 @@ export class JsonrpcMessage extends BaseMessage implements RPCInput {
 
   initJsonrpcMessage(
     version: string,
-    id: Uint8Array,
+    id: string,
     method: string,
     params: any,
     error?: JsonError,
@@ -96,7 +96,7 @@ export function parseJsonRPCMsg(data: Uint8Array): JsonrpcMessage[] | Error {
     const msg = new JsonrpcMessage();
     msg.initJsonrpcMessage(
       rawJsonObj.jsonrpc ?? "",
-      encodeUtf8(rawJsonObj.id),
+      rawJsonObj.id,
       rawJsonObj.method ?? "",
       rawJsonObj.params,
       undefined,
