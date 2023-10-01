@@ -53,4 +53,6 @@ lavad tx dualstaking delegate $(lavad keys show servicer2 -a) ETH1 $PROVIDERSTAK
 wait_count_blocks 1
 lavad tx dualstaking delegate $(lavad keys show servicer3 -a) ETH1 $PROVIDERSTAKE -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+if [[ "$1" != "--skip-providers" ]]; then
 . ${__dir}/setup_providers.sh
+fi

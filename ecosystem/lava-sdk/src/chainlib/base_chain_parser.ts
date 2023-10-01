@@ -247,10 +247,16 @@ export abstract class BaseChainParser {
           }
           let apiName = api.getName();
           if (this.apiInterface == APIInterfaceRest) {
-            const re = /{[^}]+}/;
-            apiName = api.getName().replace(re, "replace-me-with-regex");
-            apiName = apiName.replace(/replace-me-with-regex/g, "[^\\/\\s]+");
-            apiName = this.escapeRegExp(apiName); // Assuming you have a RegExp.escape function
+            const re = /{[^}]+}/g;
+            const processedName = apiName.replace(re, "replace-me-with-regex");
+            const quotedProcessedName = processedName.replace(
+              /[.*+?^${}()|[\]\\]/g,
+              "\\$&"
+            );
+            apiName = quotedProcessedName.replace(
+              /replace-me-with-regex/g,
+              "[^\\/\\s]+"
+            );
           }
           const apiKey: ApiKey = {
             name: apiName,
@@ -408,10 +414,6 @@ export abstract class BaseChainParser {
 
   protected isAddon(addon: string): boolean {
     return this.allowedAddons.has(addon);
-  }
-
-  protected escapeRegExp(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   protected matchSpecApiByName(
