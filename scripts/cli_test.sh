@@ -127,7 +127,7 @@ CHAINS="GTH1,COS3,FTM250,CELO,LAV1,COS4,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COS5,
 (trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 --provider-moniker "provider" $txoptions)>/dev/null
 
 sleep_until_next_epoch
-(trace lavad tx pairing modify-provider ETH1 --provider-moniker "provider" --delegate-commission 20 --delegate-limit 1000ulava --amount $PROVIDERSTAKE $txoptions)>/dev/null
+(trace lavad tx pairing modify-provider ETH1 --provider-moniker "provider" --delegate-commission 20 --delegate-limit 1000ulava --amount $PROVIDERSTAKE --endpoints "127.0.0.2:2222,1" $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx pairing freeze ETH1,CELO $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
@@ -154,19 +154,22 @@ trace lavad q pairing verify-pairing STRK $(lavad keys show alice -a) $(lavad ke
 
 echo "Testing dualstaking tx commands"
 wait_count_blocks 1 >/dev/null
-(lavad tx dualstaking delegate $(lavad keys show alice -a) ETH1 $PROVIDERSTAKE $txoptions) >/dev/null
+(trace lavad tx dualstaking delegate $(lavad keys show alice -a) ETH1 $PROVIDERSTAKE $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
-(lavad tx dualstaking redelegate $(lavad keys show alice -a) ETH1 $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
+(trace lavad tx dualstaking redelegate $(lavad keys show alice -a) ETH1 $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
-(lavad tx dualstaking claim-rewards $txoptions) >/dev/null
+(trace lavad tx dualstaking claim-rewards $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
-(lavad tx dualstaking unbond $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
+(trace lavad tx dualstaking unbond $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
 
 echo "Testing dualstaking q commands"
 trace lavad q dualstaking params >/dev/null
 trace lavad q dualstaking delegator-providers $(lavad keys show alice -a)>/dev/null
 trace lavad q dualstaking delegator-rewards $(lavad keys show alice -a) >/dev/null
 trace lavad q dualstaking provider-delegators $(lavad keys show alice -a)>/dev/null
+
+echo "Testing events command"
+trace lavad test events 100 30 --event lava_relay_payment --from alice --timeout 1s >/dev/null
 
 killall lavad
 echo "Testing done :)"
