@@ -155,6 +155,10 @@ func runSDKE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
 
+	// wait 3 seconds to allow rpcproviders claim rewards before node will be restarted(after restarting node
+	// we have ctx.BlockHeight == 0, until new block will be created)
+	time.Sleep(time.Second * 3)
+
 	lt.stopLava()
 	go lt.startLavaInEmergencyMode(lavaContext, 100000)
 

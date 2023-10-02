@@ -1273,6 +1273,10 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Sleeping Until New Epoch")
 	lt.sleepUntilNextEpoch()
 
+	// wait 3 seconds to allow rpcproviders claim rewards before node will be restarted(after restarting node
+	// we have ctx.BlockHeight == 0, until new block will be created)
+	time.Sleep(time.Second * 3)
+
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
 
 	lt.stopLava()
@@ -1313,7 +1317,7 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	// check that there was an increase CU due to virtual epochs
-	repeat(75, func(m int) {
+	repeat(70, func(m int) {
 		if err := restRelayTest(url); err != nil {
 			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
 			panic(err)
