@@ -22,10 +22,10 @@ import (
 const (
 	ExpirationFlagName               = "expiration"
 	ExpirationNonFinalizedFlagName   = "expiration-non-finalized"
+	FlagCacheSizeName                = "max-items"
 	DefaultExpirationForNonFinalized = 500 * time.Millisecond
 	DefaultExpirationTimeFinalized   = time.Hour
-	CacheMaxCost                     = 2 * 1024 * 1024 * 1024 // 2GB cost
-	CacheNumCounters                 = 100000000              // expect 10M items
+	CacheNumCounters                 = 100000000 // expect 10M items
 )
 
 type CacheServer struct {
@@ -34,18 +34,19 @@ type CacheServer struct {
 	ExpirationFinalized    time.Duration
 	ExpirationNonFinalized time.Duration
 	CacheMetrics           *CacheMetrics
+	CacheMaxCost           int64
 }
 
 func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string) {
 	cs.ExpirationFinalized = expiration
 	cs.ExpirationNonFinalized = expirationNonFinalized
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
 	}
 	cs.tempCache = cache
 
-	cache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
+	cache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create finalized cache", err)
 	}
@@ -131,7 +132,11 @@ func Server(
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationFlagName})
 	}
 
-	cs := CacheServer{}
+	cacheMaxCost, err := flags.GetInt64(FlagCacheSizeName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: FlagCacheSizeName})
+	}
+	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
 	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr)
 	// TODO: have a state tracker

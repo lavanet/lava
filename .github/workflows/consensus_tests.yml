@@ -39,23 +39,35 @@ jobs:
     ######################################################
     ### Run Consensus unitests
     ######################################################
+    - name: lava utils unit Tests
+      run: go test ./utils/...
+
+    - name: lava common unit Tests
+      run: go test ./common/...
+
     - name: lava pairing unit Tests
-      run: go test ./x/pairing/ ./x/pairing/keeper/... ./x/pairing/types 
+      run: go test ./x/pairing/...
       
     - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/ ./x/epochstorage/keeper ./x/epochstorage/types 
+      run: go test ./x/epochstorage/...
 
     - name: lava spec unit Tests
-      run: go test ./x/spec/ ./x/spec/keeper ./x/spec/types 
+      run: go test ./x/spec/...
 
     - name: lava conflict unit Tests
-      run: go test ./x/conflict/ ./x/conflict/keeper ./x/conflict/types 
+      run: go test ./x/conflict/...
 
     - name: lava plans unit Tests
-      run: go test ./x/plans/ ./x/plans/keeper ./x/plans/types 
+      run: go test ./x/plans/...
 
     - name: lava projects unit Tests
       run: go test ./x/projects/... 
 
     - name: lava subscription unit Tests
       run: go test ./x/subscription/... 
+    
+    - name: lavad cli test
+      run: |
+        chmod +x ./scripts/cli_test.sh    
+        ./scripts/cli_test.sh     
+        killall lavad    
