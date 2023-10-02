@@ -383,7 +383,7 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 
 func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) time.Duration {
 	if uint64(len(ct.blockEventsGap)) > ct.blocksToSave/2 { // check we have enough samples
-		averageTime := slices.Average(ct.blockEventsGap)
+		averageTime := slices.Median(ct.blockEventsGap)
 		if averageTime < pollingTime/2 {
 			utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "averageTime polling time", Value: averageTime}, utils.Attribute{Key: "original polling time", Value: pollingTime})
 			return averageTime
