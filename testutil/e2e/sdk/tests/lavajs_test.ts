@@ -1,11 +1,11 @@
-const { lavanet } = require("../../../../ecosystem/lavajs/dist/codegen/lavanet/bundle");
+import { lavanet } from "../../../../ecosystem/lavajs/dist/codegen/lavanet/bundle";
 
 async function main() {
     const client = await lavanet.ClientFactory.createRPCQueryClient({ rpcEndpoint: "http://127.0.0.1:26657" })
     const lavaClient = client.lavanet.lava;
     let specResult = await lavaClient.spec.spec({ ChainID: "LAV1" })
     const cosmosClient = client.cosmos;
-    if (specResult.index == "LAV1") {
+    if (specResult.Spec.index != "LAV1") {
         console.log(specResult)
         throw new Error("Failed validating Lava spec.")
     }
@@ -23,7 +23,7 @@ async function main() {
     console.log("[lavajs_test] Success: Fetching consumer's subscription")
     
     // get a balance (cosmos sdk query)
-    let balanceResult = await cosmosClient.bank.v1beta1.allBalances({ address: process.env.PUBLIC_KEY })
+    let balanceResult = await cosmosClient.bank.v1beta1.allBalances({ address: process.env.PUBLIC_KEY, pagination: undefined })
     if (balanceResult.balances[0].denom != "ulava") {
         console.log(balanceResult, "VS", "required denom 'ulava'")
         throw new Error("Failed validating allBalances")

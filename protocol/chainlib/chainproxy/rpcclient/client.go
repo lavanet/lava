@@ -58,9 +58,9 @@ const (
 )
 
 // BatchElem is an element in a batch request.
-type BatchElem struct {
+type BatchElemWithId struct {
 	Method string
-	Args   []interface{}
+	args   interface{}
 	// The result is unmarshaled into this field. Result must be set to a
 	// non-nil pointer value of the desired type, otherwise the response will be
 	// discarded.
@@ -68,6 +68,21 @@ type BatchElem struct {
 	// Error is set if the server returns an error for this request, or if
 	// unmarshaling into Result fails. It is not set for I/O errors.
 	Error error
+	ID    json.RawMessage // added an ID field because we build our messages with built in ID, this is optional and can be set to nil
+}
+
+func NewBatchElementWithId(method string, args interface{}, result interface{}, iD json.RawMessage) (BatchElemWithId, error) {
+	_, ok := args.([]interface{})
+	_, ok2 := args.(map[string]interface{})
+	if !ok && !ok2 {
+		return BatchElemWithId{}, fmt.Errorf("invalid args supported types are []interface{} or map[string]interface{}")
+	}
+	return BatchElemWithId{
+		Method: method,
+		args:   args,
+		Result: result,
+		ID:     iD,
+	}, nil
 }
 
 // Client represents a connection to an RPC server.
@@ -318,7 +333,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 // a request is reported through the Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCall(b []BatchElem) error {
+func (c *Client) BatchCall(b []BatchElemWithId) error {
 	ctx := context.Background()
 	return c.BatchCallContext(ctx, b)
 }
@@ -332,23 +347,49 @@ func (c *Client) BatchCall(b []BatchElem) error {
 // Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
+func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) error {
+	type byorder struct {
+		index     int
+		keepOrder bool
+	}
 	var (
 		msgs = make([]*JsonrpcMessage, len(b))
-		byID = make(map[string]int, len(b))
+		byID = make(map[string]byorder, len(b))
 	)
 	op := &requestOp{
 		ids:  make([]json.RawMessage, len(b)),
 		resp: make(chan *JsonrpcMessage, len(b)),
 	}
 	for i, elem := range b {
-		msg, err := c.newMessageArray(elem.Method, elem.Args...)
+		var msg *JsonrpcMessage
+		var err error
+		switch args := elem.args.(type) {
+		case []interface{}:
+			msg, err = c.newMessageArray(elem.Method, args...)
+		case map[string]interface{}:
+			msg, err = c.newMessageMapWithID(elem.Method, elem.ID, args)
+		default:
+			return fmt.Errorf("invalid args type in message %t", args)
+		}
+
 		if err != nil {
 			return err
 		}
+		if elem.ID != nil {
+			msg.ID = elem.ID
+		}
 		msgs[i] = msg
 		op.ids[i] = msg.ID
-		byID[string(msg.ID)] = i
+		readValue, exists := byID[string(msg.ID)]
+		if exists {
+			readValue.keepOrder = true
+			byID[string(msg.ID)] = readValue
+		} else {
+			byID[string(msg.ID)] = byorder{
+				index:     i,
+				keepOrder: false,
+			}
+		}
 	}
 
 	var err error
@@ -368,13 +409,25 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 		// Find the element corresponding to this response.
 		// The element is guaranteed to be present because dispatch
 		// only sends valid IDs to our channel.
-		elem := &b[byID[string(resp.ID)]]
-		if resp.Error != nil {
-			elem.Error = resp.Error
-			continue
-		}
+		byOrder := byID[string(resp.ID)]
+		if !byOrder.keepOrder {
+			elem := &b[byOrder.index]
+			if resp.Error != nil {
+				elem.Error = resp.Error
+				continue
+			}
 
-		elem.Error = json.Unmarshal(resp.Result, elem.Result)
+			elem.Error = json.Unmarshal(resp.Result, elem.Result)
+		} else {
+			// user overwrote id's to be identical so the order matters and we can't change it
+			elem := &b[n]
+			if resp.Error != nil {
+				elem.Error = resp.Error
+				continue
+			}
+
+			elem.Error = json.Unmarshal(resp.Result, elem.Result)
+		}
 	}
 	return err
 }
@@ -461,9 +514,9 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, paramsIn interface{}) (*JsonrpcMessage, error) {
 	var msg *JsonrpcMessage
 	if id == nil {
-		msg = &JsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	} else {
-		msg = &JsonrpcMessage{Version: vsn, ID: id, Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: id, Method: method}
 	}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
@@ -475,7 +528,7 @@ func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, params
 }
 
 func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*JsonrpcMessage, error) {
-	msg := &JsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+	msg := &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error
 		if msg.Params, err = json.Marshal(paramsIn); err != nil {
@@ -488,9 +541,9 @@ func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*Jsonr
 func (c *Client) newMessageMapWithID(method string, id json.RawMessage, paramsIn map[string]interface{}) (*JsonrpcMessage, error) {
 	var msg *JsonrpcMessage
 	if id == nil {
-		msg = &JsonrpcMessage{Version: vsn, ID: c.nextID(), Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	} else {
-		msg = &JsonrpcMessage{Version: vsn, ID: id, Method: method}
+		msg = &JsonrpcMessage{Version: Vsn, ID: id, Method: method}
 	}
 	if paramsIn != nil { // prevent sending "params":null
 		var err error

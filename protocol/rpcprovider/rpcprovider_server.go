@@ -105,6 +105,17 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "relay extensions", Value: request.RelayData.GetExtensions()},
 	)
 
+	if request.RelaySession.QosExcellenceReport != nil {
+		utils.LavaFormatDebug("DEBUG",
+			utils.Attribute{Key: "qosExc latency", Value: request.RelaySession.GetQosExcellenceReport().Latency.String()},
+		)
+	}
+	if request.RelaySession.QosReport != nil {
+		utils.LavaFormatDebug("DEBUG",
+			utils.Attribute{Key: "qos latency", Value: request.RelaySession.GetQosReport().Latency.String()},
+		)
+	}
+
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
@@ -215,14 +226,16 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
 	}
-	if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
+	reqBlock, _ := chainMessage.RequestedBlock()
+	if reqBlock != request.RelayData.RequestBlock {
 		// the consumer either configured an invalid value or is modifying the requested block as part of a data reliability message
 		// see if this modification is supported
-		providerRequestedBlockPreUpdate := chainMessage.RequestedBlock()
+		providerRequestedBlockPreUpdate := reqBlock
 		chainMessage.UpdateLatestBlockInMessage(request.RelayData.RequestBlock, true)
 		// if after UpdateLatestBlockInMessage it's not aligned we have a problem
-		if chainMessage.RequestedBlock() != request.RelayData.RequestBlock {
-			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: chainMessage.RequestedBlock()}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
+		reqBlock, _ = chainMessage.RequestedBlock()
+		if reqBlock != request.RelayData.RequestBlock {
+			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: reqBlock}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
 		}
 	}
 	return nil
@@ -371,12 +384,14 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 		} else if request.RelaySession.Epoch == 0 {
 			errorMessage = "user reported lava block 0, either it's test rpcprovider or a consumer that has no node access"
 		}
-		return nil, nil, utils.LavaFormatWarning(errorMessage, lavasession.EpochMismatchError,
+		utils.LavaFormatInfo(errorMessage,
+			utils.Attribute{Key: "Info Type", Value: lavasession.EpochMismatchError},
 			utils.Attribute{Key: "current lava block", Value: latestBlock},
 			utils.Attribute{Key: "requested lava block", Value: request.RelaySession.Epoch},
 			utils.Attribute{Key: "threshold", Value: rpcps.providerSessionManager.GetBlockedEpochHeight()},
 			utils.Attribute{Key: "GUID", Value: ctx},
 		)
+		return nil, nil, lavasession.EpochMismatchError
 	}
 
 	// Check data
@@ -443,13 +458,14 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 		if lavasession.ConsumerNotRegisteredYet.Is(err) {
 			valid, pairedProviders, projectId, verifyPairingError := rpcps.stateTracker.VerifyPairing(ctx, consumerAddressString, rpcps.providerAddress.String(), uint64(request.Epoch), request.SpecId)
 			if verifyPairingError != nil {
-				return nil, utils.LavaFormatInfo("Failed to VerifyPairing after ConsumerNotRegisteredYet",
+				return nil, utils.LavaFormatInfo("Failed to VerifyPairing for new consumer",
 					utils.Attribute{Key: "Error", Value: verifyPairingError},
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
 					utils.Attribute{Key: "consumer", Value: consumerAddressString},
 					utils.Attribute{Key: "provider", Value: rpcps.providerAddress},
 					utils.Attribute{Key: "relayNum", Value: request.RelayNum},
+					utils.Attribute{Key: "Providers block", Value: rpcps.stateTracker.LatestBlock()},
 				)
 			}
 			if !valid {
@@ -586,7 +602,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 		requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
-		if requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
+		finalized = spectypes.IsFinalizedBlock(request.RelayData.RequestBlock, latestBlock, blockDistanceToFinalization)
+		if !finalized && requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
 			reqHashesAttr := utils.Attribute{Key: "hashes", Value: requestedHashes}
 			elementsToTake := 10
@@ -601,8 +618,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
 		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		// }
-
-		finalized = spectypes.IsFinalizedBlock(request.RelayData.RequestBlock, latestBlock, blockDistanceToFinalization)
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false
@@ -610,21 +625,25 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	var err error = nil
 	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
-		reply, err = cache.GetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized)
-	}
-	if err != nil || reply == nil {
+		var cacheReply *pairingtypes.CacheRelayReply
+		cacheReply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
+		reply = cacheReply.GetReply()
+		ignoredMetadata = cacheReply.GetOptionalMetadata()
 		if err != nil && performance.NotConnectedError.Is(err) {
 			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+	}
+	if err != nil || reply == nil {
 		// cache miss or invalid
 		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
-		// TODO: use overwriteReqBlock to set the correct latest block
+		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if requestedBlockHash != nil || finalized {
-			err := cache.SetEntry(ctx, request, rpcps.rpcProviderEndpoint.ApiInterface, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, consumerAddr.String(), reply, finalized)
+			// TODO: we do not add ignoredMetadata to the cache response
+			err := cache.SetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
 			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
 			}
@@ -681,7 +700,8 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		Guid:                  probeReq.GetGuid(),
 		LatestBlock:           rpcps.reliabilityManager.GetLatestBlockNum(),
 		FinalizedBlocksHashes: []byte{},
-		LavaEpoch:             uint64(rpcps.stateTracker.LatestBlock()),
+		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
+		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
 	return probeReply, nil
 }

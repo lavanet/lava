@@ -21,12 +21,15 @@ import { RelayerClient } from "../grpc_web_services/lavanet/lava/pairing/relay_p
 import { Logger } from "../logger/logger";
 import { Result } from "./helpers";
 import { grpc } from "@improbable-eng/grpc-web";
-import { QualityOfServiceReport } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import {
+  QualityOfServiceReport,
+  ReportedProvider,
+} from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
   epoch: number;
-  reportedProviders: string;
+  reportedProviders: Array<ReportedProvider>;
 }
 
 export type ConsumerSessionsMap = Map<string, SessionInfo>;
@@ -224,6 +227,11 @@ export class SingleConsumerSession {
           })}`
         );
       }
+    } else {
+      const sync = BigNumber(1);
+      this.qoSInfo.lastQoSReport.setSync(
+        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
+      );
     }
     return;
   }

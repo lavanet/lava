@@ -5,7 +5,7 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
-
+import "google/protobuf/timestamp.proto";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
@@ -24,6 +24,7 @@ message ProbeReply {
     int64 latest_block = 2;
     bytes finalized_blocks_hashes = 3;
     uint64 lava_epoch = 4;
+    uint64 lava_latest_block = 5;
 }
 
 message RelaySession {
@@ -35,7 +36,7 @@ message RelaySession {
     uint64 relay_num = 6;
     QualityOfServiceReport qos_report = 7;
     int64 epoch = 8;
-    bytes unresponsive_providers = 9;
+    repeated ReportedProvider unresponsive_providers = 9; // sdk needs the suffix _list for repeated fields
     string lava_chain_id = 10;
     bytes sig = 11;
     Badge badge = 12;
@@ -60,6 +61,13 @@ message RelayPrivateData {
     repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
     string addon = 8;
     repeated string extensions = 9;
+}
+
+message ReportedProvider {
+    string address =1;
+    uint64 disconnections =2;
+    uint64 errors =3;
+    int64 timestamp_s = 4;
 }
 
 message Metadata {

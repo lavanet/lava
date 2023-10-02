@@ -10,12 +10,14 @@ import {
   Badge,
   ProbeRequest,
   ProbeReply,
+  ReportedProvider,
+  QualityOfServiceReport,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import {
   Relayer as RelayerService,
   RelayerClient,
+  ServiceError,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb_service";
-import { ServiceError } from "../grpc_web_services/lavanet/lava/pairing/badges_pb_service";
 import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
@@ -62,6 +64,7 @@ export class Relayer {
   async probeProvider(
     providerAddress: string,
     apiInterface: string,
+    guid: number,
     specId: string
   ): Promise<ProbeReply> {
     const client = new RelayerClient(
@@ -69,7 +72,7 @@ export class Relayer {
       this.getTransportWrapped()
     );
     const request = new ProbeRequest();
-    request.setGuid(123);
+    request.setGuid(guid);
     request.setApiInterface(apiInterface);
     request.setSpecId(specId);
     const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
@@ -158,7 +161,7 @@ export class Relayer {
     requestSession.setProvider(options.publicProviderLavaAddress);
     requestSession.setRelayNum(singleConsumerSession.relayNum);
     requestSession.setEpoch(options.epoch);
-    requestSession.setUnresponsiveProviders(new Uint8Array());
+    requestSession.setUnresponsiveProvidersList(new Array<ReportedProvider>());
     requestSession.setContentHash(contentHash);
     requestSession.setSig(new Uint8Array());
     requestSession.setLavaChainId(this.lavaChainId);
@@ -266,6 +269,8 @@ export class Relayer {
         output += "\\r";
       } else if (byte === 0x5c) {
         output += "\\\\";
+      } else if (byte === 0x22) {
+        output += '\\"';
       } else if (byte >= 0x20 && byte <= 0x7e) {
         output += String.fromCharCode(byte);
       } else {
@@ -360,34 +365,93 @@ export class Relayer {
 
   prepareRequest(request: RelaySession): Uint8Array {
     const enc = new TextEncoder();
-
-    const jsonMessage = JSON.stringify(request.toObject(), (key, value) => {
-      if (key == "content_hash") {
-        const dataBytes = request.getContentHash();
-        const dataUint8Array =
-          dataBytes instanceof Uint8Array
-            ? dataBytes
-            : this.encodeUtf8(dataBytes);
-
-        let stringByte = this.byteArrayToString(dataUint8Array);
-
-        if (stringByte.endsWith(",")) {
-          stringByte += ",";
+    // TODO: we serialize the message here the same way gogo proto serializes there's no straightforward implementation available, but we should compile this code into wasm and import it here because it's ugly
+    let serializedRequest = "";
+    for (const [key, valueInner] of Object.entries(request.toObject())) {
+      serializedRequest += ((
+        key: string,
+        value:
+          | string
+          | number
+          | Uint8Array
+          | QualityOfServiceReport.AsObject
+          | ReportedProvider.AsObject[]
+          | Badge.AsObject
+      ) => {
+        function handleNumStr(key: string, value: number | string): string {
+          switch (typeof value) {
+            case "string":
+              if (value == "") {
+                return "";
+              }
+              return key + ':"' + value + '" ';
+            case "number":
+              if (value == 0) {
+                return "";
+              }
+              return key + ":" + value + " ";
+          }
         }
-        return stringByte;
-      }
-      if (value !== null && value !== 0 && value !== "") return value;
-    });
-
-    const messageReplaced = jsonMessage
-      .replace(/\\\\/g, "\\")
-      .replace(/,"/g, ' "')
-      .replace(/, "/g, ',"')
-      .replace(/"(\w+)"\s*:/g, "$1:")
-      .slice(1, -1);
-
-    const encodedMessage = enc.encode(messageReplaced + " ");
-
+        if (value == undefined) {
+          return "";
+        }
+        switch (typeof value) {
+          case "string":
+          case "number":
+            return handleNumStr(key, value);
+          case "object":
+            let valueInnerStr = "";
+            if (value instanceof Uint8Array) {
+              valueInnerStr = this.byteArrayToString(value);
+              return key + ':"' + valueInnerStr + '" ';
+            }
+            if (value instanceof Array) {
+              let retst = "";
+              for (const arrayVal of Object.values(value)) {
+                let arrayValstr = "";
+                const entries = Object.entries(arrayVal);
+                for (const [objkey, objVal] of entries) {
+                  const objValStr = handleNumStr(objkey, objVal);
+                  if (objValStr != "") {
+                    arrayValstr += objValStr;
+                  }
+                }
+                if (arrayValstr != "") {
+                  retst += key + ":<" + arrayValstr + "> ";
+                }
+              }
+              return retst;
+            }
+            const entries = Object.entries(value);
+            if (entries.length == 0) {
+              return "";
+            }
+            let retst = "";
+            for (const [objkey, objVal] of entries) {
+              let objValStr = "";
+              switch (typeof objVal) {
+                case "string":
+                case "number":
+                  objValStr = handleNumStr(objkey, objVal);
+                  break;
+                case "object":
+                  objValStr = objkey + ":" + this.byteArrayToString(objVal);
+                  break;
+              }
+              if (objValStr != "") {
+                retst += objValStr;
+              }
+            }
+            if (retst != "") {
+              return key + ":<" + retst + "> ";
+            }
+            return "";
+        }
+      })(key, valueInner);
+    }
+    // console.log("message: " + serializedRequest);
+    const encodedMessage = enc.encode(serializedRequest);
+    // console.log("encodedMessage: " + encodedMessage);
     const hash = sha256(encodedMessage);
 
     return hash;

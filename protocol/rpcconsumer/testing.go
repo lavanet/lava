@@ -65,7 +65,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				ServerBlockMemory: rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 				NewLatestCallback: printOnNewLatestCallback,
 			}
-			chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint)
+			chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint, nil)
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
@@ -88,7 +88,7 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 		Use:     `rpcconsumer {listen-ip:listen-port spec-chain-id api-interface} ... `,
 		Short:   `test an rpc consumer by making calls in the chain api interface requested`,
 		Long:    `sets up a client that requests for blocks in the requested api on the listen port to perform tests on an rpcconsumer that is active`,
-		Example: `rpcconsumer "127.0.0.1:3333 ETH1 jsonrpc 127.0.0.1:3334 LAV1 rest"`,
+		Example: `rpcconsumer "http://127.0.0.1:3333 ETH1 jsonrpc http://127.0.0.1:3334 LAV1 rest 127.0.0.1:3334 LAV1 grpc"`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			argLen := len(args)
 			if argLen == 0 || argLen%len(Yaml_config_properties) != 0 {

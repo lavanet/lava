@@ -38,7 +38,9 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if craftData != nil {
 		// chain fetcher sends the replaced request inside data
 		chainMessage, err := apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, metadata, 0)
-		chainMessage.AppendHeader(metadata)
+		if err == nil {
+			chainMessage.AppendHeader(metadata)
+		}
 		return chainMessage, err
 	}
 
@@ -120,10 +122,10 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
 	nodeMsg := &parsedMessage{
-		api:            serviceApi,
-		apiCollection:  apiCollection,
-		msg:            restMessage,
-		requestedBlock: requestBlock,
+		api:                  serviceApi,
+		apiCollection:        apiCollection,
+		msg:                  restMessage,
+		latestRequestedBlock: requestBlock,
 	}
 	return nodeMsg
 }

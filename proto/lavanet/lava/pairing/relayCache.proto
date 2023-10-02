@@ -7,9 +7,14 @@ import "google/protobuf/empty.proto";
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 service RelayerCache {
-    rpc GetRelay (RelayCacheGet) returns (RelayReply) {}
+    rpc GetRelay (RelayCacheGet) returns (CacheRelayReply) {}
     rpc SetRelay (RelayCacheSet) returns (google.protobuf.Empty) {}
     rpc Health (google.protobuf.Empty) returns (CacheUsage) {}
+}
+
+message CacheRelayReply {
+    RelayReply reply =1;
+    repeated Metadata optional_metadata = 2 [(gogoproto.nullable)   = false];
 }
 
 message CacheUsage {
@@ -18,20 +23,19 @@ message CacheUsage {
 }
 
 message RelayCacheGet {
-    RelayRequest request =1;
-    string apiInterface =2;
-    bytes blockHash =3;
-    string chainID = 4; //Used to differentiate between different chains so each has its own bucket
-    bool finalized =5;
+    RelayPrivateData request =1;
+    bytes blockHash =2;
+    string chainID = 3; //Used to differentiate between different chains so each has its own bucket
+    bool finalized =4;
+    string provider =5;
 }
 
 message RelayCacheSet {
-    RelayRequest request =1;
-    string apiInterface =2;
-    bytes blockHash =3;
-    string chainID = 4; //Used to differentiate between different chains so each has its own bucket
-    string bucketID = 5; //bucketID is used to make sure a big user doesnt flood the cache, on providers this will be consumer address, on portal it will be dappID
-    RelayReply response =6;
-    bool finalized =7;
-    
+    RelayPrivateData request =1;
+    bytes blockHash =2;
+    string chainID = 3; //Used to differentiate between different chains so each has its own bucket
+    RelayReply response =4;
+    bool finalized =5;
+    string provider =6;
+    repeated Metadata optional_metadata = 7 [(gogoproto.nullable)   = false];
 }

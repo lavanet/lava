@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
+	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -31,6 +33,8 @@ type ChainFetcher struct {
 	endpoint    *lavasession.RPCProviderEndpoint
 	chainRouter ChainRouter
 	chainParser ChainParser
+	cache       *performance.Cache
+	latestBlock int64
 }
 
 func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
@@ -66,6 +70,18 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, reply *pairingtypes.RelayReply, requestedBlockHash []byte, finalized bool) {
+	if requestedBlockHash != nil || finalized {
+		new_ctx := context.Background()
+		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+		defer cancel()
+		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
+		if err != nil && !performance.NotInitialisedError.Is(err) {
+			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
+		}
+	}
 }
 
 func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
@@ -150,7 +166,13 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil, cf.ChainFetcherMetadata())
+	var craftData *CraftData
+	if parsing.FunctionTemplate != "" {
+		path := parsing.ApiName
+		data := []byte(parsing.FunctionTemplate)
+		craftData = &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}
+	}
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, craftData, cf.ChainFetcherMetadata())
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -174,7 +196,22 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
+	atomic.StoreInt64(&cf.latestBlock, blockNum)
 	return blockNum, nil
+}
+
+func (cf *ChainFetcher) constructRelayData(conectionType string, path string, data []byte, requestBlock int64, addon string, extensions []string) *pairingtypes.RelayPrivateData {
+	relayData := &pairingtypes.RelayPrivateData{
+		ConnectionType: conectionType,
+		ApiUrl:         path,
+		Data:           data,
+		RequestBlock:   requestBlock,
+		ApiInterface:   cf.endpoint.ApiInterface,
+		Metadata:       nil,
+		Addon:          addon,
+		Extensions:     extensions,
+	}
+	return relayData
 }
 
 func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
@@ -205,7 +242,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		}...)
 	}
 
-	res, err := parser.ParseMessageResponse(parserInput, parsing.ResultParsing)
+	res, err := parser.ParseFromReplyAndDecode(parserInput, parsing.ResultParsing)
 	if err != nil {
 		return "", utils.LavaFormatWarning(tagName+" Failed ParseMessageResponse", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
@@ -213,11 +250,17 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
+	_, _, blockDistanceToFinalization, _ := cf.chainParser.ChainBlockStats()
+	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
+	if latestBlock > 0 {
+		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
+		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil), reply, []byte(res), finalized)
+	}
 	return res, nil
 }
 
-func NewChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *ChainFetcher {
-	cf := &ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
+func NewChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint, cache *performance.Cache) *ChainFetcher {
+	cf := &ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint, cache: cache}
 	return cf
 }
 

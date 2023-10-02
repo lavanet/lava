@@ -68,7 +68,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	require.Nil(t, err)
 	pairing := res2.Providers
 
-	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.BlockHeight())
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.EpochStart())
 	require.Nil(t, err)
 }
 

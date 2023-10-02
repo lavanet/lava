@@ -11,11 +11,13 @@ import {
   RelayPrivateData,
   QualityOfServiceReport,
   RelayReply,
+  ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
-import { Decimal } from "@cosmjs/math";
 import { Logger } from "../logger/logger";
+
+const DecPrecision = 18;
 
 export interface SendRelayData {
   connectionType: string;
@@ -64,7 +66,7 @@ export function constructRelayRequest(
   providerAddress: string,
   singleConsumerSession: SingleConsumerSession,
   epoch: number,
-  reportedProviders: string
+  reportedProviders: Array<ReportedProvider>
 ): RelayRequest {
   const relayRequest = new RelayRequest();
   relayRequest.setRelayData(relayData);
@@ -88,45 +90,66 @@ function constructRelaySession(
   providerAddress: string,
   singleConsumerSession: SingleConsumerSession,
   epoch: number,
-  reportedProviders: string
+  reportedProviders: Array<ReportedProvider>
 ): RelaySession {
-  const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
   let newQualityOfServiceReport: QualityOfServiceReport | undefined = undefined;
+  let newQualityOfServiceReportExcellence: QualityOfServiceReport | undefined =
+    undefined;
+  const lastQos = singleConsumerSession.qoSInfo.lastQoSReport;
 
-  if (lastQos != undefined) {
-    newQualityOfServiceReport = new QualityOfServiceReport();
-    // TODO: needs to serialize the QoS report value like a serialized Dec
-    newQualityOfServiceReport.setLatency(
-      Decimal.fromUserInput(lastQos.getLatency(), 0).toString()
-    );
-    newQualityOfServiceReport.setAvailability(
-      Decimal.fromUserInput(lastQos.getAvailability(), 0).toString()
-    );
-    newQualityOfServiceReport.setSync(
-      Decimal.fromUserInput(lastQos.getSync(), 0).toString()
-    );
+  function padWithZeros(whole: string, fractions: string): string {
+    if (fractions.length > DecPrecision) {
+      fractions = fractions.slice(0, 18);
+    }
+    const toPad = DecPrecision - fractions.length;
+    return (whole + fractions + "0".repeat(toPad)).replace(/^0+/, "");
+  }
+
+  function serializeToDec(input: string): string {
+    const splitted = input.split(".");
+    if (splitted.length > 2 || splitted.length < 1) {
+      throw new Error("invalid decimal input " + input);
+    }
+    const wholenumber = splitted[0];
+    let fraction = "";
+    if (splitted.length > 1) {
+      fraction = splitted[1];
+    }
+    return padWithZeros(wholenumber, fraction);
+  }
+  try {
+    if (lastQos != undefined) {
+      newQualityOfServiceReport = new QualityOfServiceReport();
+      // TODO: needs to serialize the QoS report value like a serialized Dec
+      newQualityOfServiceReport.setLatency(
+        serializeToDec(lastQos.getLatency())
+      );
+      newQualityOfServiceReport.setAvailability(
+        serializeToDec(lastQos.getAvailability())
+      );
+      newQualityOfServiceReport.setSync(serializeToDec(lastQos.getSync()));
+    }
+  } catch (err) {
+    Logger.warn("failed serializing QoS ", err);
+    newQualityOfServiceReport = undefined;
   }
   const lastQosExcellence =
     singleConsumerSession.qoSInfo.lastExcellenceQoSReport;
-
-  let newQualityOfServiceReportExcellence: QualityOfServiceReport | undefined =
-    undefined;
 
   if (lastQosExcellence != undefined) {
     newQualityOfServiceReportExcellence = new QualityOfServiceReport();
 
     // TODO: needs to serialize the QoS report value like a serialized Dec
     newQualityOfServiceReportExcellence.setLatency(
-      Decimal.fromUserInput(lastQosExcellence.getLatency(), 0).toString()
+      serializeToDec(lastQosExcellence.getLatency())
     );
     newQualityOfServiceReportExcellence.setAvailability(
-      Decimal.fromUserInput(lastQosExcellence.getAvailability(), 0).toString()
+      serializeToDec(lastQosExcellence.getAvailability())
     );
     newQualityOfServiceReportExcellence.setSync(
-      Decimal.fromUserInput(lastQosExcellence.getSync(), 0).toString()
+      serializeToDec(lastQosExcellence.getSync())
     );
   }
-
   const relaySession = new RelaySession();
   relaySession.setSpecId(chainID);
   relaySession.setLavaChainId(lavaChainID);
@@ -136,13 +159,13 @@ function constructRelaySession(
   relaySession.setContentHash(calculateContentHash(relayData));
   relaySession.setEpoch(epoch);
   relaySession.setRelayNum(singleConsumerSession.relayNum);
-  relaySession.setQosReport(newQualityOfServiceReport);
+  relaySession.setQosReport(newQualityOfServiceReport); // TODO: this is failing due to unmarshaling
   relaySession.setCuSum(
     singleConsumerSession.cuSum + singleConsumerSession.latestRelayCu
   );
-  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence);
+  relaySession.setQosExcellenceReport(newQualityOfServiceReportExcellence); // TODO: this is failing due to unmarshaling
 
-  relaySession.setUnresponsiveProviders(reportedProviders);
+  relaySession.setUnresponsiveProvidersList(reportedProviders);
   return relaySession;
 }
 
