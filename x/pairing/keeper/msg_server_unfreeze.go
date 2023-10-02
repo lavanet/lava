@@ -21,7 +21,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 	for _, chainId := range msg.GetChainIds() {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainId, providerAddr)
 		if !found {
-			return nil, utils.LavaFormatError("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
+			return nil, utils.LavaFormatWarning("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
 		}
 
 		if stakeEntry.StakeAppliedBlock > current_block {
