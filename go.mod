@@ -3,7 +3,7 @@ module github.com/lavanet/lava
 go 1.20
 
 require (
-	github.com/99designs/keyring v1.2.1 // indirect; indirect // indirect
+	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.22.2
 	github.com/cometbft/cometbft v0.37.2
 	github.com/cometbft/cometbft-db v0.8.0
