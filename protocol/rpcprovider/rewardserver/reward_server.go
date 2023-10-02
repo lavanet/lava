@@ -395,7 +395,7 @@ func (rws *RewardServer) saveRewardsSnapshotToDBJob() {
 
 func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer() {
 	// We lock without defer because the DB is already locking itself
-	rws.lock.RLock()
+	rws.lock.Lock()
 	rws.rewardsSnapshotTimer.Reset(rws.rewardsSnapshotTimeoutDuration)
 
 	rewardEntities := []*RewardEntity{}
@@ -413,7 +413,7 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTim
 			}
 		}
 	}
-	rws.lock.RUnlock()
+	rws.lock.Unlock()
 	if len(rewardEntities) == 0 {
 		return
 	}
