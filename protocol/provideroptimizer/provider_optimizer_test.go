@@ -418,7 +418,6 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 		_, found := providerOptimizer.getProviderData(providerAddress)
 		require.True(t, found, providerAddress)
 	}
-	randSource = rand.New(rand.NewSource(seed))
 	t.Logf("rand seed %d", seed)
 	same := 0
 	pickFaults := 0
