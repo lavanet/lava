@@ -81,6 +81,7 @@ export class RPCConsumerServer {
       apiInterface: this.rpcEndpoint.apiInterface,
       chainId: this.rpcEndpoint.chainId,
       requestedBlock: chainMessage.getRequestedBlock(),
+      headers: chainMessage.getRPCMessage().getHeaders(),
     };
     const relayPrivateData = newRelayData(relayData);
     let blockOnSyncLoss = true;
