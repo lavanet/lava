@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
@@ -2210,4 +2211,32 @@ func TestNoZeroLatency(t *testing.T) {
 			require.NotEqual(t, uint64(0), latency)
 		}
 	}
+}
+
+func TestPairingPerformance(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 2 sub, 0 adm, 0 dev
+
+	var balance int64 = 10000
+	stake := balance / 10
+
+	_, sub1Addr := ts.Account("sub1")
+
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1)
+	require.Nil(t, err)
+
+	for i := 1; i <= 1000; i++ {
+		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(addr, ts.spec, stake)
+		require.Nil(t, err)
+	}
+
+	ts.AdvanceEpoch()
+
+	before := time.Now()
+	_, err = ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
+	require.Nil(t, err)
+
+	duration := time.Since(before)
+	require.Less(t, duration.Nanoseconds(), time.Second.Nanoseconds())
 }
