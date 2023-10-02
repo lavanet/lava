@@ -183,7 +183,37 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	} else if serviceParams.ServiceType == "provider" {
 		content += "  ExecStart=" + workingDir + "lavap rpcprovider "
 	}
-	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
+	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile)
+	if serviceParams.FromUser != "" {
+		content += " --from " + serviceParams.FromUser
+	} else {
+		return "", utils.LavaFormatError("from flag hasn't been set", err)
+	}
+	// keyring-backend
+	if serviceParams.KeyringBackend != "" {
+		content += " --keyring-backend " + serviceParams.KeyringBackend
+	}
+	// parallel connections
+	if serviceParams.ParallelConnection != 0 && serviceParams.ServiceType == "provider" {
+		content += " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection)
+	}
+	// chainId
+	if serviceParams.ChainID != "" {
+		content += " --chain-id " + serviceParams.ChainID
+	}
+	// geolocation
+	content += " --geolocation " + fmt.Sprint(serviceParams.GeoLocation)
+	// log-level
+	if serviceParams.LogLevel != "" {
+		content += " --log_level " + serviceParams.LogLevel
+	}
+	// node
+	if serviceParams.Node != "" {
+		content += " --node " + serviceParams.Node
+	}
+
+	content += "\n"
+	// + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
 	content += "  User=ubuntu\n"
 	content += "  Restart=always\n"
