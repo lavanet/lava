@@ -385,7 +385,6 @@ func (ct *ChainTracker) AddBlockGap(newData time.Duration) {
 }
 
 func (ct *ChainTracker) latestBlockGap() time.Duration {
-
 	return ct.blockEventsGap[len(ct.blockEventsGap)-1]
 }
 
