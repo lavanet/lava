@@ -42,6 +42,30 @@ func TestConcat(t *testing.T) {
 	}
 }
 
+func TestMedian(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		slice  []int
+		median int
+	}{
+		{"empty", []int{}, 0},
+		{"one element", []int{1}, 1},
+		{"min is first", []int{1, 2, 3}, 2},
+		{"min is middle", []int{2, 1, 3}, 2},
+		{"min is last", []int{3, 2, 1}, 2},
+		{"min is zero", []int{3, 0, 1}, 1},
+		{"min < zero", []int{3, -2, 1}, 1},
+		{"min twice", []int{3, 1, 1}, 1},
+		{"even length", []int{4, 4, 2, 2}, 3},
+		{"even length identical", []int{4, 4, 4, 4}, 4},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.median, median)
+		})
+	}
+}
+
 func TestMin(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

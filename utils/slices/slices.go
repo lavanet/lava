@@ -2,6 +2,7 @@ package slices
 
 import (
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 )
 
 type Number interface {
@@ -54,6 +55,18 @@ func Average[T Number](slice []T) T {
 		sum += val
 	}
 	return sum / T(len(slice))
+}
+
+func Median[T Number](slice []T) T {
+	slices.Sort(slice)
+	data_len := len(slice)
+	if data_len == 0 {
+		return 0
+	} else if data_len%2 == 0 {
+		return ((slice[data_len/2-1] + slice[data_len/2]) / T(2))
+	} else {
+		return slice[data_len/2]
+	}
 }
 
 func Contains[T comparable](slice []T, elem T) bool {
