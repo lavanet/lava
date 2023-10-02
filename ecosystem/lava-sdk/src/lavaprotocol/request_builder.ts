@@ -36,7 +36,7 @@ export function newRelayData(relayData: SendRelayData): RelayPrivateData {
   requestPrivateData.setConnectionType(connectionType);
   requestPrivateData.setApiUrl(url);
   requestPrivateData.setData(enc.encode(data));
-  requestPrivateData.setRequestBlock(NOT_APPLICABLE); // TODO: when block parsing is implemented, replace this with the request parsed block.
+  requestPrivateData.setRequestBlock(relayData.requestedBlock);
   requestPrivateData.setApiInterface(relayData.apiInterface);
   requestPrivateData.setSalt(getNewSalt());
   return requestPrivateData;

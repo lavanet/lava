@@ -36,7 +36,6 @@ export class RestChainParser extends BaseChainParser {
       throw Logger.fatal("API is disabled in spec", options.url);
     }
 
-    // TODO: implement block parser
     const apiCollection = this.getApiCollection({
       addon: apiCont.collectionKey.addon,
       connectionType: options.connectionType,
