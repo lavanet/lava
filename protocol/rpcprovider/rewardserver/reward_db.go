@@ -32,7 +32,7 @@ type DBEntry struct {
 }
 
 type RewardDB struct {
-	lock sync.RWMutex // this lock is used only for adding new db (dbs) fields in parallel 
+	lock sync.RWMutex  // this lock is used only for adding new db (dbs) fields in parallel
 	dbs  map[string]DB // key is spec id
 	ttl  time.Duration
 }
