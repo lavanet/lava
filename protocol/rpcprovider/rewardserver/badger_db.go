@@ -16,7 +16,7 @@ type BadgerDB struct {
 	shardString  string
 	rewards      map[string]*entryWithTtl
 	db           *badger.DB
-	lock         sync.RWMutex
+	lock         sync.Mutex
 }
 
 var _ DB = (*BadgerDB)(nil)
@@ -64,9 +64,10 @@ func (mdb *BadgerDB) saveAll() error {
 }
 
 func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
-	mdb.lock.RLock()
+	mdb.lock.Lock()
+	defer mdb.lock.Unlock()
+
 	entry, found := mdb.rewards[key]
-	mdb.lock.RUnlock()
 	if found && !entry.isExpired() {
 		return entry.data, nil
 	}
@@ -93,6 +94,9 @@ func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 }
 
 func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
+	mdb.lock.Lock()
+	defer mdb.lock.Unlock()
+
 	result := make(map[string][]byte)
 
 	// firstly select from persistent db,
@@ -122,7 +126,6 @@ func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
 		return nil, err
 	}
 
-	mdb.lock.RLock()
 	for key, value := range mdb.rewards {
 		if value.isExpired() {
 			continue
@@ -130,30 +133,32 @@ func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
 
 		result[key] = value.data
 	}
-	mdb.lock.RUnlock()
 
 	return result, nil
 }
 
 func (mdb *BadgerDB) Delete(key string) error {
+	mdb.lock.Lock()
+	defer mdb.lock.Unlock()
+
 	err := mdb.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete([]byte(key))
 	})
 
-	mdb.lock.Lock()
 	delete(mdb.rewards, key)
-	mdb.lock.Unlock()
 
 	return err
 }
 
 func (mdb *BadgerDB) DeletePrefix(prefix string) error {
+	mdb.lock.Lock()
+	defer mdb.lock.Unlock()
+
 	err := mdb.db.DropPrefix([]byte(prefix))
 	if err != nil {
 		return err
 	}
 
-	mdb.lock.Lock()
 	for key := range mdb.rewards {
 		if !strings.HasPrefix(key, prefix) {
 			continue
@@ -161,12 +166,14 @@ func (mdb *BadgerDB) DeletePrefix(prefix string) error {
 
 		delete(mdb.rewards, key)
 	}
-	mdb.lock.Unlock()
 
 	return err
 }
 
 func (mdb *BadgerDB) Close() error {
+	mdb.lock.Lock()
+	defer mdb.lock.Unlock()
+
 	if len(mdb.rewards) > 0 {
 		err := mdb.saveAll()
 		if err != nil {
@@ -183,15 +190,10 @@ func NewMemoryDB(specId string) DB {
 		panic(err)
 	}
 
-	badgerDB := &BadgerDB{
+	return &BadgerDB{
 		specId:  specId,
 		rewards: make(map[string]*entryWithTtl),
 		db:      db,
-	}
-
-	return &ThreadSafeDB{
-		lock:    sync.RWMutex{},
-		innerDB: badgerDB,
 	}
 }
 
@@ -206,17 +208,12 @@ func NewLocalDB(storagePath, providerAddr string, specId string, shard uint) DB 
 		panic(err)
 	}
 
-	badgerDB := &BadgerDB{
+	return &BadgerDB{
 		providerAddr: providerAddr,
 		specId:       specId,
 		shardString:  shardString,
 		rewards:      make(map[string]*entryWithTtl),
 		db:           db,
-	}
-
-	return &ThreadSafeDB{
-		lock:    sync.RWMutex{},
-		innerDB: badgerDB,
 	}
 }
 
