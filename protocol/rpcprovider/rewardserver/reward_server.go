@@ -428,7 +428,8 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTim
 			return
 		}
 
-		utils.LavaFormatWarning("failed saving proofs snapshot to rewardDB. Retrying...", err,
+		utils.LavaFormatDebug("failed saving proofs snapshot to rewardDB. Retrying...",
+			utils.Attribute{Key: "errorReceived", Value: err},
 			utils.Attribute{Key: "attempt", Value: i + 1},
 			utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries},
 		)
