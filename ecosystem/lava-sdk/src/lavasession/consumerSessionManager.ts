@@ -796,7 +796,12 @@ export class ConsumerSessionManager {
     const retryProbing: Set<ConsumerSessionsWithProvider> = new Set();
     for (const consumerSessionWithProvider of pairingList) {
       promiseProbeArray = promiseProbeArray.concat(
-        this.probeProvider(consumerSessionWithProvider, epoch, retryProbing)
+        this.probeProvider(
+          consumerSessionWithProvider,
+          epoch,
+          retryProbing,
+          retry
+        )
       );
     }
     if (!retry) {
@@ -831,10 +836,12 @@ export class ConsumerSessionManager {
   private probeProvider(
     consumerSessionWithProvider: ConsumerSessionsWithProvider,
     epoch: number,
-    retryProbing: Set<ConsumerSessionsWithProvider>
+    retryProbing: Set<ConsumerSessionsWithProvider>,
+    retries: number
   ): Promise<ProbeReply | void>[] | Promise<AllProviderEndpointsDisabledError> {
     const startTime = performance.now();
     const guid = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+    let anyEndpointSuccess = false;
     const promises = [];
     for (const endpoint of consumerSessionWithProvider.endpoints) {
       if (!endpoint.enabled) {
@@ -859,6 +866,8 @@ export class ConsumerSessionManager {
             this.getRpcEndpoint().chainId
           )
           .then((probeReply) => {
+            anyEndpointSuccess = true;
+
             const endTime = performance.now();
             const latency = endTime - startTime;
             Logger.debug(
@@ -910,6 +919,12 @@ export class ConsumerSessionManager {
             endpoint.connectionRefusals = 0;
             retryProbing.delete(consumerSessionWithProvider);
 
+            // re-add the address in case of a successful probe
+            // this is a set so there are no duplicates
+            this.validAddresses.add(
+              consumerSessionWithProvider.publicLavaAddress
+            );
+
             return probeReply;
           })
           .catch((e) => {
@@ -930,6 +945,17 @@ export class ConsumerSessionManager {
 
             endpoint.connectionRefusals++;
             retryProbing.add(consumerSessionWithProvider);
+
+            const address = consumerSessionWithProvider.publicLavaAddress;
+            const shouldRemoveAddress =
+              retries === 0 &&
+              this.validAddresses.has(address) &&
+              !anyEndpointSuccess;
+            // if we are on the first retry remove the address from valid addresses
+            // so the user does not call it until we probe it again
+            if (shouldRemoveAddress) {
+              this.removeAddressFromValidAddresses(address);
+            }
           })
       );
     }

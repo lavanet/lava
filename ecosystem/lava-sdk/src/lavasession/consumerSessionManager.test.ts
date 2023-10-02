@@ -31,7 +31,10 @@ const LATEST_RELAY_CU_AFTER_DONE = 0;
 const NUMBER_OF_ALLOWED_SESSIONS_PER_CONSUMER = 10;
 const CU_SUM_ON_FAILURE = 0;
 
-function setupConsumerSessionManager(relayer?: Relayer) {
+function setupConsumerSessionManager(
+  relayer?: Relayer,
+  optimizer?: ProviderOptimizer
+) {
   if (!relayer) {
     relayer = setupRelayer();
     jest.spyOn(relayer, "probeProvider").mockImplementation(() => {
@@ -41,15 +44,15 @@ function setupConsumerSessionManager(relayer?: Relayer) {
       return Promise.resolve(response);
     });
   }
+
+  if (!optimizer) {
+    optimizer = setupProviderOptimizer(ProviderOptimizerStrategy.Balanced);
+  }
+
   const cm = new ConsumerSessionManager(
     relayer,
     new RPCEndpoint("stub", "stub", "stub", "0"),
-    new ProviderOptimizer(
-      ProviderOptimizerStrategy.Balanced,
-      1,
-      AverageWorldLatency / 2,
-      1
-    )
+    optimizer
   );
 
   return cm;
@@ -62,6 +65,18 @@ function setupRelayer(): Relayer {
     privKey: "",
     secure: true,
   });
+}
+
+function setupProviderOptimizer(
+  strategy: ProviderOptimizerStrategy,
+  wantedNumProviders = 1
+): ProviderOptimizer {
+  return new ProviderOptimizer(
+    strategy,
+    1,
+    AverageWorldLatency / 2,
+    wantedNumProviders
+  );
 }
 
 describe("ConsumerSessionManager", () => {
@@ -765,6 +780,44 @@ describe("ConsumerSessionManager", () => {
 
       // 1 for the initial call and 3 retries
       expect(providerRetries).toEqual(ALLOWED_PROBE_RETRIES + 1);
+    });
+
+    it("disables provider until first successful probe", async () => {
+      const pairingList = createPairingList("", true);
+      const relayer = setupRelayer();
+      let providerRetries = 0;
+
+      jest
+        .spyOn(relayer, "probeProvider")
+        .mockImplementation(async (providerAddress: string) => {
+          if (
+            providerAddress === pairingList[1].publicLavaAddress &&
+            providerRetries < 1
+          ) {
+            providerRetries++;
+            throw new Error("test");
+          }
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          return Promise.resolve(response);
+        });
+
+      const optimizer = setupProviderOptimizer(
+        ProviderOptimizerStrategy.Latency,
+        pairingList.length
+      );
+      const cm = setupConsumerSessionManager(relayer, optimizer);
+      // @ts-expect-error - we are spying on a private method
+      jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      expect(cm.validAddresses).not.toContain(pairingList[1].publicLavaAddress);
+
+      await sleep((TIMEOUT_BETWEEN_PROBES / 2) * ALLOWED_PROBE_RETRIES);
+
+      expect(cm.validAddresses).toContain(pairingList[1].publicLavaAddress);
     });
 
     it("returns the median latest block", async () => {
