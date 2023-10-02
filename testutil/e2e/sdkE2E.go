@@ -21,23 +21,25 @@ import (
 const sdkLogsFolder = "./testutil/e2e/sdkLogs/"
 
 // startBadgeServer starts badge server
-func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey, publicKey string) {
+func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey, publicKey, port string) {
 	badgeUserData := fmt.Sprintf(`{"1":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}},"2":{"default":{"project_public_key":"%s","private_key":"%s","epochs_max_cu":3333333333}}}`, publicKey, privateKey, publicKey, privateKey)
 	err := os.Setenv("BADGE_USER_DATA", badgeUserData)
 	if err != nil {
 		panic(err)
 	}
 
-	command := fmt.Sprintf("%s badgegenerator --port=7070 --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath)
+	command := fmt.Sprintf("%s badgegenerator --port=%s --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath, port)
 	err = os.Setenv("BADGE_DEFAULT_GEOLOCATION", "1")
 	if err != nil {
 		panic(err)
 	}
-	logName := "01_BadgeServer"
-	funcName := "startBadgeServer"
+	logName := "01_BadgeServer_" + port
+	funcName := "startBadgeServer_" + port
 	lt.execCommandWithRetry(ctx, funcName, logName, command)
 
-	lt.checkBadgeServerResponsive(ctx, "127.0.0.1:7070", time.Minute)
+	lt.checkBadgeServerResponsive(ctx, fmt.Sprintf("127.0.0.1:%s", port), time.Minute)
+
+	utils.LavaFormatInfo(funcName + " OK")
 }
 
 // exportUserPublicKey exports public key from specific user
@@ -131,7 +133,7 @@ func runSDKE2E(timeout time.Duration) {
 	publicKey := exportUserPublicKey(lt.lavadPath, "user1")
 
 	// Start Badge server
-	lt.startBadgeServer(ctx, privateKey, publicKey)
+	lt.startBadgeServer(ctx, privateKey, publicKey, "7070")
 
 	// ETH1 flow
 	lt.startJSONRPCProxy(ctx)
@@ -146,6 +148,72 @@ func runSDKE2E(timeout time.Duration) {
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"])
+
+	// Emergency mode tests
+	utils.LavaFormatInfo("Sleeping Until New Epoch")
+	lt.sleepUntilNextEpoch()
+
+	utils.LavaFormatInfo("Restarting lava to emergency mode")
+
+	lt.stopLava()
+	go lt.startLavaInEmergencyMode(lavaContext, 100000)
+
+	lt.checkLava(timeout)
+	utils.LavaFormatInfo("Starting Lava OK")
+
+	var epochDuration int64 = 30
+	signalChannel := make(chan bool)
+	latestBlockTime := lt.getLatestBlockTime()
+
+	go func() {
+		epochCounter := (time.Now().Unix() - latestBlockTime.Unix()) / epochDuration
+
+		for {
+			time.Sleep(time.Until(latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))))
+			utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+
+			epochCounter++
+			signalChannel <- true
+		}
+	}()
+
+	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
+
+	// we should have approximately (numOfProviders * epoch_cu_limit * 3) CU
+	// skip 1st epoch and 2 virtual epochs
+	<-signalChannel
+	<-signalChannel
+	<-signalChannel
+
+	privateKey = exportUserPrivateKey(lt.lavadPath, "user5")
+	publicKey = exportUserPublicKey(lt.lavadPath, "user5")
+
+	defer func() {
+		// Delete the file directly without checking if it exists
+		os.Remove("testutil/e2e/sdk/pairingList.json")
+	}()
+	sdk.GeneratePairingList(grpcConn, ctx)
+
+	// Test without badge server
+	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_fetch_asynchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"])
+	if err != nil {
+		panic(fmt.Sprintf("Test File failed: %s\n", "testutil/e2e/sdk/tests/emergency_mode_fetch_asynchronously.ts"))
+	}
+	utils.LavaFormatInfo("KEYS EMERGENCY MODE TEST OK")
+
+	// Test with badge server
+	lt.startBadgeServer(ctx, privateKey, publicKey, "5050")
+	// we should have approximately (numOfProviders * epoch_cu_limit * 6) CU
+	// skip 1st epoch and 2 virtual epochs
+	<-signalChannel
+	<-signalChannel
+	<-signalChannel
+
+	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_badge_asynchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"])
+	if err != nil {
+		panic(fmt.Sprintf("Test File failed: %s\n", "testutil/e2e/sdk/tests/emergency_mode_badge_asynchronously.ts"))
+	}
+	utils.LavaFormatInfo("BADGE EMERGENCY MODE TEST OK")
 
 	lt.finishTestSuccessfully()
 
