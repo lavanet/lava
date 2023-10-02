@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/utils/slices"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -25,10 +26,11 @@ import (
 )
 
 const (
-	initRetriesCount = 4
-	BACKOFF_MAX_TIME = 10 * time.Minute
-	maxFails         = 10
-	debug            = false
+	initRetriesCount                       = 4
+	BACKOFF_MAX_TIME                       = 10 * time.Minute
+	maxFails                               = 10
+	debug                                  = false
+	updatePollingTimeBasedOnBlockGapTicker = 3 * time.Minute
 )
 
 type ChainFetcher interface {
@@ -299,6 +301,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	if err != nil {
 		return err
 	}
+	blockGapTicker := time.NewTicker(updatePollingTimeBasedOnBlockGapTicker)
 	// Polls blocks and keeps a queue of them
 	go func() {
 		fetchFails := uint64(0)
@@ -321,6 +324,8 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 					cs.updateTimer(pollingTime, 0)
 					fetchFails = 0
 				}
+			case <-blockGapTicker.C:
+				pollingTime = cs.updatePollingTimeBasedOnBlockGap(pollingTime)
 			case <-ctx.Done():
 				cs.timer.Stop()
 				return
@@ -374,6 +379,17 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	return nil
+}
+
+func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) time.Duration {
+	if uint64(len(ct.blockEventsGap)) > ct.blocksToSave/2 { // check we have enough samples
+		averageTime := slices.Average(ct.blockEventsGap)
+		if averageTime < pollingTime/2 {
+			utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "averageTime polling time", Value: averageTime}, utils.Attribute{Key: "original polling time", Value: pollingTime})
+			return averageTime
+		}
+	}
+	return pollingTime
 }
 
 func (ct *ChainTracker) AddBlockGap(newData time.Duration) {
