@@ -8,6 +8,5 @@ var allowedErrors = map[string]string{
 	`error connecting to provider error="context deadline exceeded"`: "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"purging provider after all endpoints are disabled provider":     "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Provider Side Failed Sending Message, Reason: Unavailable":      "This error is allowed because it is caused by the lavad restart to turn on emergency mode",
-	// TODO FIX Maximum cu exceeded PrepareSessionForUsage ERROR?
-	"Maximum cu exceeded PrepareSessionForUsage": "This error is allowed because it is caused by switching between providers",
+	"Maximum cu exceeded PrepareSessionForUsage":                     "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
 }

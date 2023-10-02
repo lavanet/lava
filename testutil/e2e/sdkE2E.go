@@ -147,7 +147,7 @@ func runSDKE2E(timeout time.Duration) {
 
 	// Test SDK
 	lt.logs["01_sdkTest"] = new(bytes.Buffer)
-	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"])
+	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"], "7070")
 
 	// Emergency mode tests
 	utils.LavaFormatInfo("Sleeping Until New Epoch")
@@ -179,14 +179,13 @@ func runSDKE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
 
-	// we should have approximately (numOfProviders * epoch_cu_limit * 3) CU
-	// skip 1st epoch and 2 virtual epochs
-	<-signalChannel
-	<-signalChannel
+	// we should have approximately (numOfProviders * epoch_cu_limit * 2) CU
+	// skip current epoch
 	<-signalChannel
 
 	privateKey = exportUserPrivateKey(lt.lavadPath, "user5")
 	publicKey = exportUserPublicKey(lt.lavadPath, "user5")
+	lt.startBadgeServer(ctx, privateKey, publicKey, "5050")
 
 	defer func() {
 		// Delete the file directly without checking if it exists
@@ -195,24 +194,35 @@ func runSDKE2E(timeout time.Duration) {
 	sdk.GeneratePairingList(grpcConn, ctx)
 
 	// Test without badge server
-	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_fetch_asynchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"])
+	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_fetch_synchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"], "5050")
 	if err != nil {
-		panic(fmt.Sprintf("Test File failed: %s\n", "testutil/e2e/sdk/tests/emergency_mode_fetch_asynchronously.ts"))
+		panic(fmt.Sprintf("Test File failed: %s\n", "testutil/e2e/sdk/tests/emergency_mode_fetch_synchronously.ts"))
 	}
+
+	// Trying to exceed CU limit
+	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_fetch_synchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"], "5050")
+	if err == nil {
+		panic(fmt.Sprintf("Test File failed while trying to exceed CU limit: %s\n", "testutil/e2e/sdk/tests/emergency_mode_fetch_synchronously.ts"))
+	}
+
 	utils.LavaFormatInfo("KEYS EMERGENCY MODE TEST OK")
 
-	// Test with badge server
-	lt.startBadgeServer(ctx, privateKey, publicKey, "5050")
-	// we should have approximately (numOfProviders * epoch_cu_limit * 6) CU
-	// skip 1st epoch and 2 virtual epochs
-	<-signalChannel
-	<-signalChannel
+	// we should have approximately (numOfProviders * epoch_cu_limit * 3) CU
+	// skip current epoch
 	<-signalChannel
 
-	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_badge_asynchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"])
+	// Test with badge server
+	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_badge_synchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"], "5050")
 	if err != nil {
-		panic(fmt.Sprintf("Test File failed: %s\n", "testutil/e2e/sdk/tests/emergency_mode_badge_asynchronously.ts"))
+		panic(fmt.Sprintf("Test File failed: %s\n", "testutil/e2e/sdk/tests/emergency_mode_badge_synchronously.ts"))
 	}
+
+	// Trying to exceed CU limit
+	err = sdk.RunSDKTest("testutil/e2e/sdk/tests/emergency_mode_badge_synchronously.ts", privateKey, publicKey, lt.logs["01_sdkTest"], "5050")
+	if err == nil {
+		panic(fmt.Sprintf("Test File failed while trying to exceed CU limit: %s\n", "testutil/e2e/sdk/tests/emergency_mode_badge_synchronously.ts"))
+	}
+
 	utils.LavaFormatInfo("BADGE EMERGENCY MODE TEST OK")
 
 	lt.finishTestSuccessfully()
