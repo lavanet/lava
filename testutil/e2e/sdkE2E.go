@@ -177,7 +177,7 @@ func runSDKE2E(timeout time.Duration) {
 		}
 	}()
 
-	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
+	utils.LavaFormatInfo("Waiting for finishing current epoch")
 
 	// we should have approximately (numOfProviders * epoch_cu_limit * 2) CU
 	// skip current epoch
@@ -206,6 +206,8 @@ func runSDKE2E(timeout time.Duration) {
 	}
 
 	utils.LavaFormatInfo("KEYS EMERGENCY MODE TEST OK")
+
+	utils.LavaFormatInfo("Waiting for finishing current epoch")
 
 	// we should have approximately (numOfProviders * epoch_cu_limit * 3) CU
 	// skip current epoch
