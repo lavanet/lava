@@ -424,6 +424,7 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTim
 	for i := 0; i < MaxDBSaveRetries; i++ {
 		err = rws.rewardDB.BatchSave(rewardEntities)
 		if err == nil {
+			utils.LavaFormatInfo("Saved rewards snapshot to the DB successfully", utils.Attribute{Key: "proofs", Value: len(rewardEntities)})
 			return
 		}
 
