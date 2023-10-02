@@ -12,7 +12,7 @@
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2500,
-                "allowed_block_lag_for_qos_sync": 8,
+                "allowed_block_lag_for_qos_sync": 4,
                 "imports": [
                     "ETH1"
                 ],
