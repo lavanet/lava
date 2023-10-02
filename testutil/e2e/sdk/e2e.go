@@ -33,7 +33,7 @@ type Pair struct {
 	PublicAddress string `json:"publicAddress"`
 }
 
-func RunSDKTest(testFile string, privateKey string, publicKey string, logs *bytes.Buffer) error {
+func RunSDKTest(testFile string, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) error {
 	// Prepare command for running test
 	cmd := exec.Command("ts-node", testFile)
 
@@ -48,7 +48,7 @@ func RunSDKTest(testFile string, privateKey string, publicKey string, logs *byte
 	cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")
 
 	// Set the environment variable for badge server address
-	cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:7070")
+	cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:"+badgePort)
 
 	// Set the environment variable for badge server address
 	cmd.Env = append(cmd.Env, "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
@@ -69,7 +69,7 @@ func RunSDKTest(testFile string, privateKey string, publicKey string, logs *byte
 	return nil
 }
 
-func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *bytes.Buffer) {
+func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) {
 	defer func() {
 		// Delete the file directly without checking if it exists
 		os.Remove("testutil/e2e/sdk/pairingList.json")
@@ -101,7 +101,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 	testFilesThatFailed := []string{}
 	// Loop through each test file and execute it
 	for _, testFile := range testFiles {
-		err := RunSDKTest(testFile, privateKey, publicKey, logs)
+		err := RunSDKTest(testFile, privateKey, publicKey, logs, badgePort)
 		if err != nil {
 			testFilesThatFailed = append(testFilesThatFailed, testFile)
 		}
