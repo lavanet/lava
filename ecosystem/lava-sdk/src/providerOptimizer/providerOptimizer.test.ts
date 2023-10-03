@@ -698,10 +698,9 @@ describe("ProviderOptimizer", () => {
       sampleTime = sampleTime + 5;
     }
 
-    const rand = random.clone(now());
     let same = 0;
     let pickFaults = 0;
-    let chosenProvider = providerOptimizer.chooseProvider(
+    const chosenProvider = providerOptimizer.chooseProvider(
       new Set(providers),
       new Set(),
       requestCU,
