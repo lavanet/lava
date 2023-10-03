@@ -445,7 +445,7 @@ export class ConsumerSessionsWithProvider {
     endpoint: Endpoint;
     providerAddress: string;
   }> {
-    for (const endpoint of this.endpoints) {
+    for (const [idx, endpoint] of this.endpoints.entries()) {
       if (endpoint.enabled) {
         endpoint.client = new RelayerClient(
           "https://" + endpoint.networkAddress,
@@ -454,7 +454,7 @@ export class ConsumerSessionsWithProvider {
           }
         );
 
-        this.endpoints.push(endpoint);
+        this.endpoints[idx] = endpoint;
 
         return {
           connected: true,
