@@ -431,6 +431,7 @@ func New(
 		app.GetSubspace(plansmoduletypes.ModuleName),
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.FixationStoreKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
