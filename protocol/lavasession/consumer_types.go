@@ -56,7 +56,7 @@ type SingleConsumerSession struct {
 	LatestRelayCu               uint64 // set by GetSessions cuNeededForSession
 	QoSInfo                     QoSReport
 	SessionId                   int64
-	Client                      *ConsumerSessionsWithProvider
+	Parent                      *ConsumerSessionsWithProvider
 	lock                        utils.LavaMutex
 	RelayNum                    uint64
 	LatestBlock                 int64
@@ -210,7 +210,7 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 
 	singleDataReliabilitySession := &SingleConsumerSession{
 		SessionId: DataReliabilitySessionId,
-		Client:    cswp,
+		Parent:    cswp,
 		Endpoint:  endpoint,
 		RelayNum:  0,
 	}
@@ -319,7 +319,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	consumerSession := &SingleConsumerSession{
 		SessionId: randomSessionId,
-		Client:    cswp,
+		Parent:    cswp,
 		Endpoint:  endpoint,
 	}
 	consumerSession.lock.Lock() // we must lock the session so other requests wont get it.

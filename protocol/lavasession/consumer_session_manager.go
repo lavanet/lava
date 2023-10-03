@@ -10,6 +10,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
+	metrics "github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -36,10 +37,12 @@ type ConsumerSessionManager struct {
 	reportedProviders ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
-	pairingPurge      map[string]*ConsumerSessionsWithProvider
-	providerOptimizer ProviderOptimizer
+	pairingPurge           map[string]*ConsumerSessionsWithProvider
+	providerOptimizer      ProviderOptimizer
+	consumerMetricsManager *metrics.ConsumerMetricsManager
 }
 
+// this is being read in multiple locations and but never changes so no need to lock.
 func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
 }
@@ -618,7 +621,7 @@ func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsum
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	consumerSession.LatestRelayCu = 0                            // making sure no one uses it in a wrong way
-	parentConsumerSessionsWithProvider := consumerSession.Client // must read this pointer before unlocking
+	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
 	// finished with consumerSession here can unlock.
 	consumerSession.lock.Unlock()                                                    // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
@@ -655,10 +658,10 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
 	// latency, isHangingApi, syncScore arent updated when there is a failure
-	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Client.PublicLavaAddress)
+	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 
-	parentConsumerSessionsWithProvider := consumerSession.Client // must read this pointer before unlocking
+	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
 	reportErrors := consumerSession.ConsecutiveNumberOfFailures
 	// finished with consumerSession here can unlock.
 	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
@@ -744,8 +747,26 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-	go csm.providerOptimizer.AppendRelayData(consumerSession.Client.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
+	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
 	return nil
+}
+
+// consumerSession should still be locked when accessing this method as it fetches information from the session it self
+func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession) {
+	if csm.consumerMetricsManager == nil {
+		return
+	}
+	info := csm.RPCEndpoint()
+	apiInterface := info.ApiInterface
+	chainId := info.ChainID
+	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, *consumerSession.QoSInfo.LastQoSReport, *consumerSession.QoSInfo.LastExcellenceQoSReport)
+}
+
+// consumerSession should still be locked when accessing this method as it fetches information from the session it self
+func (csm *ConsumerSessionManager) resetMetricsManager(consumerSession *SingleConsumerSession) {
+	if csm.consumerMetricsManager == nil {
+		return
+	}
 }
 
 // Get the reported providers currently stored in the session manager.
@@ -896,7 +917,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSessi
 		blockProvider = true
 	}
 
-	parentConsumerSessionsWithProvider := consumerSession.Client
+	parentConsumerSessionsWithProvider := consumerSession.Parent
 	consumerSession.lock.Unlock()
 
 	if blockProvider {
@@ -920,11 +941,12 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer) *ConsumerSessionManager {
-	csm := ConsumerSessionManager{
-		reportedProviders: *NewReportedProviders(),
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager) *ConsumerSessionManager {
+	csm := &ConsumerSessionManager{
+		reportedProviders:      *NewReportedProviders(),
+		consumerMetricsManager: consumerMetricsManager,
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
-	return &csm
+	return csm
 }

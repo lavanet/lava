@@ -43,7 +43,7 @@ func CreateConsumerSessionManager() *ConsumerSessionManager {
 	AllowInsecureConnectionToProviders = true // set to allow insecure for tests purposes
 	rand.Seed(time.Now().UnixNano())
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1))
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil)
 }
 
 var grpcServer *grpc.Server

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -14,6 +15,8 @@ type ConsumerMetricsManager struct {
 	totalErroredMetric         *prometheus.CounterVec
 	blockMetric                *prometheus.GaugeVec
 	latencyMetric              *prometheus.GaugeVec
+	qosMetric                  *prometheus.GaugeVec
+	qosExcellenceMetric        *prometheus.GaugeVec
 }
 
 func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
@@ -48,12 +51,24 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Help: "The latency of requests requested by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
 
+	qosMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_qos_metrics",
+		Help: "The QOS metrics per provider for current epoch for the session with the most relays.",
+	}, []string{"spec", "apiInterface", "provider_address", "qos_metric"})
+
+	qosExcellenceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_qos_excellence_metrics",
+		Help: "The QOS metrics per provider excellence",
+	}, []string{"spec", "provider_address", "qos_metric"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
 	prometheus.MustRegister(totalErroredMetric)
 	prometheus.MustRegister(blockMetric)
 	prometheus.MustRegister(latencyMetric)
+	prometheus.MustRegister(qosMetric)
+	prometheus.MustRegister(qosExcellenceMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -65,6 +80,8 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		totalErroredMetric:         totalErroredMetric,
 		blockMetric:                blockMetric,
 		latencyMetric:              latencyMetric,
+		qosMetric:                  qosMetric,
+		qosExcellenceMetric:        qosExcellenceMetric,
 	}
 }
 
@@ -84,5 +101,17 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics) {
 	pme.totalRelaysRequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
 	if !relayMetric.Success {
 		pme.totalErroredMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
+	}
+}
+
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos pairingtypes.QualityOfServiceReport, qosExcellence pairingtypes.QualityOfServiceReport) {
+	if pme == nil {
+		return
+	}
+}
+
+func (pme *ConsumerMetricsManager) ResetQOSMetrics() {
+	if pme == nil {
+		return
 	}
 }
