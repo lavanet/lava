@@ -32,6 +32,7 @@ import (
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/fixationstore"
 	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -59,21 +60,22 @@ var Randomizer *sigs.ZeroReader
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
-	AccountKeeper mockAccountKeeper
-	BankKeeper    mockBankKeeper
-	StakingKeeper mockStakingKeeper
-	Spec          speckeeper.Keeper
-	Epochstorage  epochstoragekeeper.Keeper
-	Dualstaking   dualstakingkeeper.Keeper
-	Subscription  subscriptionkeeper.Keeper
-	Conflict      conflictkeeper.Keeper
-	Pairing       pairingkeeper.Keeper
-	Projects      projectskeeper.Keeper
-	Plans         planskeeper.Keeper
-	Protocol      protocolkeeper.Keeper
-	ParamsKeeper  paramskeeper.Keeper
-	BlockStore    MockBlockStore
-	Downtime      downtimekeeper.Keeper
+	FixationStoreKeeper *fixationstore.Keeper
+	AccountKeeper       mockAccountKeeper
+	BankKeeper          mockBankKeeper
+	StakingKeeper       mockStakingKeeper
+	Spec                speckeeper.Keeper
+	Epochstorage        epochstoragekeeper.Keeper
+	Dualstaking         dualstakingkeeper.Keeper
+	Subscription        subscriptionkeeper.Keeper
+	Conflict            conflictkeeper.Keeper
+	Pairing             pairingkeeper.Keeper
+	Projects            projectskeeper.Keeper
+	Plans               planskeeper.Keeper
+	Protocol            protocolkeeper.Keeper
+	ParamsKeeper        paramskeeper.Keeper
+	BlockStore          MockBlockStore
+	Downtime            downtimekeeper.Keeper
 }
 
 type Servers struct {
@@ -193,6 +195,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	downtimeParamsSubspace, _ := paramsKeeper.GetSubspace(downtimemoduletypes.ModuleName)
 
 	ks := Keepers{}
+	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.StakingKeeper = mockStakingKeeper{}
@@ -200,7 +203,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec)
-	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage)
+	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans)
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
