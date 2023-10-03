@@ -16,7 +16,7 @@ type BadgerDB struct {
 	shardString  string
 	rewards      map[string]*entryWithTtl
 	db           *badger.DB
-	lock         sync.Mutex
+	lock         sync.RWMutex
 }
 
 var _ DB = (*BadgerDB)(nil)
@@ -64,8 +64,8 @@ func (mdb *BadgerDB) saveAll() error {
 }
 
 func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
-	mdb.lock.Lock()
-	defer mdb.lock.Unlock()
+	mdb.lock.RLock()
+	defer mdb.lock.RUnlock()
 
 	entry, found := mdb.rewards[key]
 	if found && !entry.isExpired() {
@@ -94,8 +94,8 @@ func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 }
 
 func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
-	mdb.lock.Lock()
-	defer mdb.lock.Unlock()
+	mdb.lock.RLock()
+	defer mdb.lock.RUnlock()
 
 	result := make(map[string][]byte)
 
