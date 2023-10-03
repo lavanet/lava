@@ -84,6 +84,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
+	csm.resetMetricsManager()
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
@@ -748,8 +749,11 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
+	csm.updateMetricsManager(consumerSession)
 	return nil
 }
+
+// func ()
 
 // consumerSession should still be locked when accessing this method as it fetches information from the session it self
 func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession) {
@@ -759,14 +763,15 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	info := csm.RPCEndpoint()
 	apiInterface := info.ApiInterface
 	chainId := info.ChainID
-	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, *consumerSession.QoSInfo.LastQoSReport, *consumerSession.QoSInfo.LastExcellenceQoSReport)
+	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, *consumerSession.QoSInfo.LastQoSReport, *consumerSession.QoSInfo.LastExcellenceQoSReport, consumerSession.LatestBlock, consumerSession.RelayNum)
 }
 
 // consumerSession should still be locked when accessing this method as it fetches information from the session it self
-func (csm *ConsumerSessionManager) resetMetricsManager(consumerSession *SingleConsumerSession) {
+func (csm *ConsumerSessionManager) resetMetricsManager() {
 	if csm.consumerMetricsManager == nil {
 		return
 	}
+	csm.consumerMetricsManager.ResetQOSMetrics()
 }
 
 // Get the reported providers currently stored in the session manager.

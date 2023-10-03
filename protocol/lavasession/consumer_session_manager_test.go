@@ -489,20 +489,20 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
 		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
 		require.Nil(t, err)
-		require.Equal(t, cs.Session.Client.UsedComputeUnits, cuSumOnFailure)
+		require.Equal(t, cs.Session.Parent.UsedComputeUnits, cuSumOnFailure)
 		require.Equal(t, cs.Session.CuSum, cuSumOnFailure)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstFail)
 
 		// verify provider is blocked and reported
-		require.True(t, csm.reportedProviders.IsReported(cs.Session.Client.PublicLavaAddress))
-		require.NotContains(t, csm.validAddresses, cs.Session.Client.PublicLavaAddress) // address isn't in valid addresses list
+		require.True(t, csm.reportedProviders.IsReported(cs.Session.Parent.PublicLavaAddress))
+		require.NotContains(t, csm.validAddresses, cs.Session.Parent.PublicLavaAddress) // address isn't in valid addresses list
 
 		reported := csm.GetReportedProviders(firstEpochHeight)
 		require.NotEmpty(t, reported)
 		for _, providerReported := range reported {
 			require.True(t, csm.reportedProviders.IsReported(providerReported.Address))
-			require.True(t, csm.reportedProviders.IsReported(cs.Session.Client.PublicLavaAddress))
+			require.True(t, csm.reportedProviders.IsReported(cs.Session.Parent.PublicLavaAddress))
 		}
 	}
 }

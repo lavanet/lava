@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"net/http"
+	"sync"
 
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -17,6 +18,9 @@ type ConsumerMetricsManager struct {
 	latencyMetric              *prometheus.GaugeVec
 	qosMetric                  *prometheus.GaugeVec
 	qosExcellenceMetric        *prometheus.GaugeVec
+	LatestBlockMetric          *prometheus.GaugeVec
+	lock                       sync.Mutex
+	providerRelays             map[string]uint64
 }
 
 func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
@@ -61,6 +65,10 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Help: "The QOS metrics per provider excellence",
 	}, []string{"spec", "provider_address", "qos_metric"})
 
+	latestBlockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_latest_provider_block",
+		Help: "The latest block reported by provider",
+	}, []string{"spec", "provider_address", "apiInterface"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -69,6 +77,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(latencyMetric)
 	prometheus.MustRegister(qosMetric)
 	prometheus.MustRegister(qosExcellenceMetric)
+	prometheus.MustRegister(latestBlockMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -82,6 +91,8 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		latencyMetric:              latencyMetric,
 		qosMetric:                  qosMetric,
 		qosExcellenceMetric:        qosExcellenceMetric,
+		LatestBlockMetric:          latestBlockMetric,
+		providerRelays:             map[string]uint64{},
 	}
 }
 
@@ -104,14 +115,59 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics) {
 	}
 }
 
-func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos pairingtypes.QualityOfServiceReport, qosExcellence pairingtypes.QualityOfServiceReport) {
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos pairingtypes.QualityOfServiceReport, qosExcellence pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64) {
 	if pme == nil {
 		return
 	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+	providerRelaysKey := providerAddress + apiInterface
+	existingRelays, found := pme.providerRelays[providerRelaysKey]
+	if found && existingRelays >= relays {
+		// do not add Qos metrics there's another session with more statistics
+		return
+	}
+	// update existing relays
+	pme.providerRelays[providerRelaysKey] = relays
+	setMetricsForQos := func(qosArg pairingtypes.QualityOfServiceReport, metric *prometheus.GaugeVec, apiInterfaceArg string) {
+		availability, err := qosArg.Availability.Float64()
+		if err == nil {
+			if apiInterfaceArg == "" {
+				metric.WithLabelValues(chainId, providerAddress, AvailabilityLabel).Set(availability)
+			} else {
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, AvailabilityLabel).Set(availability)
+			}
+		}
+		sync, err := qosArg.Sync.Float64()
+		if err == nil {
+			if apiInterfaceArg == "" {
+				metric.WithLabelValues(chainId, providerAddress, SyncLabel).Set(sync)
+			} else {
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, SyncLabel).Set(sync)
+			}
+		}
+		latency, err := qosArg.Latency.Float64()
+		if err == nil {
+			if apiInterfaceArg == "" {
+				metric.WithLabelValues(chainId, providerAddress, LatencyLabel).Set(latency)
+			} else {
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, LatencyLabel).Set(latency)
+			}
+		}
+	}
+	setMetricsForQos(qos, pme.qosMetric, apiInterface)
+	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "") // it's one for all of them
+
+	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface)
 }
 
 func (pme *ConsumerMetricsManager) ResetQOSMetrics() {
 	if pme == nil {
 		return
 	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+	pme.qosMetric.Reset()
+	pme.qosExcellenceMetric.Reset()
+	pme.providerRelays = map[string]uint64{}
 }
