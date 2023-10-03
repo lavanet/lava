@@ -53,7 +53,7 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	// fetch updated version from consensus on every block
 	version, blockHeight, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
 	if err != nil {
-		utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
+		utils.LavaFormatError("Updater could not get protocol version from blockchain", err)
 		return
 	}
 
