@@ -48,6 +48,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,6 +61,7 @@ var Randomizer *sigs.ZeroReader
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
+	TimerStoreKeeper    *timerstore.Keeper
 	FixationStoreKeeper *fixationstore.Keeper
 	AccountKeeper       mockAccountKeeper
 	BankKeeper          mockBankKeeper
@@ -195,7 +197,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	downtimeParamsSubspace, _ := paramsKeeper.GetSubspace(downtimemoduletypes.ModuleName)
 
 	ks := Keepers{}
-	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc)
+	ks.TimerStoreKeeper = timerstore.NewKeeper(cdc)
+	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc, ks.TimerStoreKeeper)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.StakingKeeper = mockStakingKeeper{}

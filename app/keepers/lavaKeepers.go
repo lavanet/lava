@@ -28,6 +28,7 @@ import (
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
+	"github.com/lavanet/lava/x/timerstore"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -54,6 +55,7 @@ type LavaKeepers struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
 	// Special Keepers
+	TimerStoreKeeper    *timerstore.Keeper
 	FixationStoreKeeper *fixationstore.Keeper
 	SpecKeeper          specmodulekeeper.Keeper
 	SubscriptionKeeper  subscriptionmodulekeeper.Keeper

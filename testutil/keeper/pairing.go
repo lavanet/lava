@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/x/fixationstore"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,7 +61,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		nil,
-		fixationstore.NewKeeper(cdc),
+		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc)),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

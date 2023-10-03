@@ -18,6 +18,7 @@ import (
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,7 +63,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"PlansParams",
 	)
 
-	fsKeeper := fixationstore.NewKeeper(cdc)
+	fsKeeper := fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc))
 
 	k := keeper.NewKeeper(
 		cdc,

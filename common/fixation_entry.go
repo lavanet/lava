@@ -1088,14 +1088,14 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 }
 
 // NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
+func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *TimerStore) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
 	callback := func(ctx sdk.Context, key, data []byte) {
 		fs.entryCallbackBeginBlock(ctx, key, data)
 	}
+	tstore.WithCallbackByBlockHeight(callback)
 
-	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
 	fs.tstore = *tstore
 
 	return &fs

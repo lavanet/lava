@@ -29,7 +29,8 @@ func TestMigrate1to2(t *testing.T) {
 
 	ctx, cdc := initCtx(t)
 
-	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix)
+	ts := NewTimerStore(mockStoreKey, cdc, mockPrefix)
+	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts)
 	fs.Init(ctx, types.GenesisState{Version: 1})
 
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
@@ -139,7 +140,8 @@ func TestMigrate2to3(t *testing.T) {
 
 	ctx, cdc := initCtx(t)
 
-	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix)
+	ts := NewTimerStore(mockStoreKey, cdc, mockPrefix)
+	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts)
 	fs.Init(ctx, types.GenesisState{Version: 2})
 
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}

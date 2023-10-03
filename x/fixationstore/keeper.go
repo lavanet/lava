@@ -5,11 +5,13 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common"
+	"github.com/lavanet/lava/x/timerstore"
 )
 
-func NewKeeper(cdc codec.BinaryCodec) *Keeper {
+func NewKeeper(cdc codec.BinaryCodec, tsKeeper *timerstore.Keeper) *Keeper {
 	return &Keeper{
 		cdc: cdc,
+		ts:  tsKeeper,
 	}
 }
 
@@ -17,17 +19,15 @@ func NewKeeper(cdc codec.BinaryCodec) *Keeper {
 // it also manages their lifecycle.
 type Keeper struct {
 	fixationsStores []*common.FixationStore
+	ts              *timerstore.Keeper
 	cdc             codec.BinaryCodec
 }
 
 func (k *Keeper) NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore {
-	fs := common.NewFixationStore(storeKey, k.cdc, prefix)
+	ts := k.ts.NewTimerStore(storeKey, prefix)
+	fs := common.NewFixationStore(storeKey, k.cdc, prefix, ts)
 	k.fixationsStores = append(k.fixationsStores, fs)
 	return fs
 }
 
-func (k *Keeper) BeginBlock(ctx sdk.Context) {
-	for _, fs := range k.fixationsStores {
-		fs.AdvanceBlock(ctx)
-	}
-}
+func (k *Keeper) BeginBlock(ctx sdk.Context) {}
