@@ -104,18 +104,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "relay addon", Value: request.RelayData.Addon},
 		utils.Attribute{Key: "relay extensions", Value: request.RelayData.GetExtensions()},
 	)
-
-	if request.RelaySession.QosExcellenceReport != nil {
-		utils.LavaFormatDebug("DEBUG",
-			utils.Attribute{Key: "qosExc latency", Value: request.RelaySession.GetQosExcellenceReport().Latency.String()},
-		)
-	}
-	if request.RelaySession.QosReport != nil {
-		utils.LavaFormatDebug("DEBUG",
-			utils.Attribute{Key: "qos latency", Value: request.RelaySession.GetQosReport().Latency.String()},
-		)
-	}
-
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
