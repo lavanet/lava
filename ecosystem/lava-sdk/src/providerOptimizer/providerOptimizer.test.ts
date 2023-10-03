@@ -9,6 +9,7 @@ import {
 } from "./providerOptimizer";
 import random from "random";
 import { now } from "../util/time";
+import seedrandom from "seedrandom";
 
 const TEST_AVERAGE_BLOCK_TIME = 10 * 1000; // 10 seconds in milliseconds
 const TEST_BASE_WORLD_LATENCY = 150; // in milliseconds
@@ -290,7 +291,8 @@ describe("ProviderOptimizer", () => {
 
     let providerAddress = providers[0];
     for (let i = 0; i < 10; i++) {
-      let providerData = getProviderData(providerAddress);
+      let { providerData } = getProviderData(providerAddress);
+
       const currentLatencyScore = calculateLatencyScore(
         providerData,
         requestCU,
@@ -304,7 +306,10 @@ describe("ProviderOptimizer", () => {
 
       await sleep(4);
 
-      providerData = getProviderData(providerAddress);
+      const data = getProviderData(providerAddress);
+      providerData = data.providerData;
+      expect(data.found).toBe(true);
+
       const newLatencyScore = calculateLatencyScore(
         providerData,
         requestCU,
@@ -315,7 +320,7 @@ describe("ProviderOptimizer", () => {
 
     providerAddress = providers[1];
     for (let i = 0; i < 10; i++) {
-      let providerData = getProviderData(providerAddress);
+      let { providerData } = getProviderData(providerAddress);
       const currentLatencyScore = calculateLatencyScore(
         providerData,
         requestCU,
@@ -331,7 +336,10 @@ describe("ProviderOptimizer", () => {
 
       await sleep(4);
 
-      providerData = getProviderData(providerAddress);
+      const data = getProviderData(providerAddress);
+      providerData = data.providerData;
+      expect(data.found).toBe(true);
+
       const newLatencyScore = calculateLatencyScore(
         providerData,
         requestCU,
@@ -698,6 +706,20 @@ describe("ProviderOptimizer", () => {
       sampleTime = sampleTime + 5;
     }
 
+    const getProviderData = (providerAddress: string) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      return providerOptimizer.getProviderData(providerAddress);
+    };
+
+    for (const address of providers) {
+      const { found } = getProviderData(address);
+      expect(found).toBe(true);
+    }
+
+    const seed = String(now());
+    console.log("random seed", seed);
+    // @ts-expect-error random has wring typings, but docs use examples with seedrandom
+    random.use(seedrandom(seed));
     let same = 0;
     let pickFaults = 0;
     const chosenProvider = providerOptimizer.chooseProvider(
@@ -723,13 +745,12 @@ describe("ProviderOptimizer", () => {
         same++;
       }
 
-      providers.forEach((address, idx) => {
-        if (address === returnedProviders[0]) {
-          if (idx >= providers.length / 2) {
-            pickFaults++;
-          }
+      for (const [idx, address] of providers.entries()) {
+        if (address === returnedProviders[0] && idx >= providers.length / 2) {
+          pickFaults++;
+          break;
         }
-      });
+      }
     }
 
     expect(pickFaults).toBeLessThan(runs * 0.01);

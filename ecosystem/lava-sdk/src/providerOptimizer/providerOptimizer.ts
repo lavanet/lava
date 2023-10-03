@@ -84,7 +84,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     latency: number,
     success: boolean
   ): void {
-    let providerData = this.getProviderData(providerAddress);
+    let { providerData } = this.getProviderData(providerAddress);
     const sampleTime = now();
     const halfTime = this.calculateHalfTime(providerAddress, sampleTime);
 
@@ -143,7 +143,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     sampleTime: number
   ) {
     const { block, time } = this.updateLatestSyncData(syncBlock, sampleTime);
-    let providerData = this.getProviderData(providerAddress);
+    let { providerData } = this.getProviderData(providerAddress);
     const halfTime = this.calculateHalfTime(providerAddress, sampleTime);
 
     providerData = this.updateProbeEntryAvailability(
@@ -217,7 +217,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
         continue;
       }
 
-      const providerData = this.getProviderData(providerAddress);
+      const { providerData } = this.getProviderData(providerAddress);
       let latencyScoreCurrent = this.calculateLatencyScore(
         providerData,
         cu,
@@ -282,8 +282,8 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
   public getExcellenceQoSReportForProvider(
     providerAddress: string
   ): QualityOfServiceReport | undefined {
-    const providerData = this.providersStorage.get(providerAddress);
-    if (providerData === undefined) {
+    const { providerData, found } = this.getProviderData(providerAddress);
+    if (!found) {
       return;
     }
 
@@ -506,9 +506,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     return this.latestSyncData;
   }
 
-  private getProviderData(providerAddress: string): ProviderData {
+  private getProviderData(providerAddress: string): {
+    providerData: ProviderData;
+    found: boolean;
+  } {
     let data = this.providersStorage.get(providerAddress);
-    if (data === undefined) {
+    const found = data !== undefined;
+    if (!found) {
       const time = -1 * INITIAL_DATA_STALENESS * hourInMillis;
       data = {
         availability: new ScoreStore(0.99, 1, now() + time),
@@ -517,7 +521,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
         syncBlock: 0,
       };
     }
-    return data;
+    return { providerData: data as ProviderData, found };
   }
 
   private updateProbeEntrySync(
