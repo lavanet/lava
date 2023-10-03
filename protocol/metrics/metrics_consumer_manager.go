@@ -19,6 +19,7 @@ type ConsumerMetricsManager struct {
 	qosMetric                  *prometheus.GaugeVec
 	qosExcellenceMetric        *prometheus.GaugeVec
 	LatestBlockMetric          *prometheus.GaugeVec
+	LatestProviderRelay        *prometheus.GaugeVec
 	lock                       sync.Mutex
 	providerRelays             map[string]uint64
 }
@@ -69,6 +70,10 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Name: "lava_latest_provider_block",
 		Help: "The latest block reported by provider",
 	}, []string{"spec", "provider_address", "apiInterface"})
+	latestProviderRelay := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_latest_provider_relay_time",
+		Help: "The latest time we sent a relay to provider",
+	}, []string{"spec", "provider_address", "apiInterface"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -78,6 +83,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(qosMetric)
 	prometheus.MustRegister(qosExcellenceMetric)
 	prometheus.MustRegister(latestBlockMetric)
+	prometheus.MustRegister(latestProviderRelay)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -92,6 +98,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		qosMetric:                  qosMetric,
 		qosExcellenceMetric:        qosExcellenceMetric,
 		LatestBlockMetric:          latestBlockMetric,
+		LatestProviderRelay:        latestProviderRelay,
 		providerRelays:             map[string]uint64{},
 	}
 }
@@ -127,6 +134,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 		// do not add Qos metrics there's another session with more statistics
 		return
 	}
+	pme.LatestProviderRelay.WithLabelValues(chainId, providerAddress, apiInterface).SetToCurrentTime()
 	// update existing relays
 	pme.providerRelays[providerRelaysKey] = relays
 	setMetricsForQos := func(qosArg *pairingtypes.QualityOfServiceReport, metric *prometheus.GaugeVec, apiInterfaceArg string) {

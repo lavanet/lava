@@ -453,7 +453,8 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 				utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
 				utils.Attribute{Key: "block diff", Value: blockHeightDiff},
 				utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
-				utils.Attribute{Key: "session_id", Value: blockHeightDiff},
+				utils.Attribute{Key: "session_id", Value: cs.SessionId},
+				utils.Attribute{Key: "provider", Value: cs.Parent.PublicLavaAddress},
 			)
 		}
 	} // else, we don't increase the score at all so everyone will have the same score
