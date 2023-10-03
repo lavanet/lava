@@ -763,7 +763,19 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	info := csm.RPCEndpoint()
 	apiInterface := info.ApiInterface
 	chainId := info.ChainID
-	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, *consumerSession.QoSInfo.LastQoSReport, *consumerSession.QoSInfo.LastExcellenceQoSReport, consumerSession.LatestBlock, consumerSession.RelayNum)
+	var lastQos *pairingtypes.QualityOfServiceReport
+	var lastQosExcellence *pairingtypes.QualityOfServiceReport
+	if consumerSession.QoSInfo.LastQoSReport != nil {
+		qos := *consumerSession.QoSInfo.LastQoSReport
+		lastQos = &qos
+
+	}
+	if consumerSession.QoSInfo.LastExcellenceQoSReport != nil {
+		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
+		lastQosExcellence = &qosEx
+	}
+
+	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
 }
 
 // consumerSession should still be locked when accessing this method as it fetches information from the session it self

@@ -115,7 +115,7 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics) {
 	}
 }
 
-func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos pairingtypes.QualityOfServiceReport, qosExcellence pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64) {
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64) {
 	if pme == nil {
 		return
 	}
@@ -129,7 +129,10 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	}
 	// update existing relays
 	pme.providerRelays[providerRelaysKey] = relays
-	setMetricsForQos := func(qosArg pairingtypes.QualityOfServiceReport, metric *prometheus.GaugeVec, apiInterfaceArg string) {
+	setMetricsForQos := func(qosArg *pairingtypes.QualityOfServiceReport, metric *prometheus.GaugeVec, apiInterfaceArg string) {
+		if qosArg == nil {
+			return
+		}
 		availability, err := qosArg.Availability.Float64()
 		if err == nil {
 			if apiInterfaceArg == "" {
