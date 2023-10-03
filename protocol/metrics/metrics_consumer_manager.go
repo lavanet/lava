@@ -161,7 +161,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	setMetricsForQos(qos, pme.qosMetric, apiInterface)
 	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "") // it's one for all of them
 
-	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface)
+	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface).Set(float64(latestBlock))
 }
 
 func (pme *ConsumerMetricsManager) ResetQOSMetrics() {
