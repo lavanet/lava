@@ -43,6 +43,8 @@ export class StateChainQuery {
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
   private downtimeParams: Params | undefined;
+  private latestEpoch: number | undefined;
+  private virtualEpoch = 0;
 
   constructor(
     pairingListConfig: string,
@@ -86,12 +88,11 @@ export class StateChainQuery {
       Logger.debug("Fetching pairing started");
       // Save time till next epoch
       let timeLeftToNextPairing;
+      let currentEpoch;
+      let downtimeParams;
+      let virtualEpoch = 0;
 
       const lavaPairing = this.getPairing("LAV1");
-
-      if (this.downtimeParams == undefined) {
-        await this.updateDowntimeParams();
-      }
 
       // Reset pairing
 
@@ -100,8 +101,6 @@ export class StateChainQuery {
       // Save lava pairing
       // as if we do not have lava in chainID it can fail updating list
       this.pairing.set("LAV1", lavaPairing);
-
-      let virtualEpoch = undefined;
 
       // Iterate over chain and construct pairing
       for (const chainID of this.chainIDs) {
@@ -125,32 +124,6 @@ export class StateChainQuery {
           continue;
         }
 
-        if (virtualEpoch == undefined) {
-          const lastBlockTime = pairingResponse.getLatestBlockTime();
-          const downtimeDuration = this.downtimeParams?.getDowntimeDuration();
-          const epochDuration = this.downtimeParams?.getEpochDuration();
-
-          if (
-            lastBlockTime != undefined &&
-            downtimeDuration != undefined &&
-            epochDuration != undefined
-          ) {
-            const delay = Date.now() - lastBlockTime;
-
-            if (delay > downtimeDuration.getSeconds() * 1000) {
-              virtualEpoch = Math.trunc(
-                (delay - pairing.getTimeLeftToNextPairing()) /
-                  (epochDuration.getSeconds() * 1000)
-              );
-
-              if (virtualEpoch < 0) {
-                virtualEpoch = 0;
-              }
-            }
-          }
-        }
-
-        Logger.debug("Virtual epoch: " + virtualEpoch);
         const spec = pairingResponse.getSpec();
 
         if (!spec) {
@@ -158,19 +131,27 @@ export class StateChainQuery {
           continue;
         }
 
+        downtimeParams = pairingResponse.getDowntimeParams();
+
         const providers = pairing.getProvidersList();
         timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
-        const currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
+        currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
         if (!currentEpoch) {
           throw Logger.fatal(
             "Failed fetching current epoch from pairing request."
           );
         }
 
-        let maxCu = pairingResponse.getMaxCu();
-        if (virtualEpoch != undefined) {
-          maxCu += maxCu * virtualEpoch;
+        // increase virtual epoch, if current epoch hasn't change
+        if (this.latestEpoch == currentEpoch && virtualEpoch == 0) {
+          virtualEpoch = this.virtualEpoch + 1;
+          Logger.debug("Virtual epoch: " + virtualEpoch);
         }
+
+        let maxCu = pairingResponse.getMaxCu();
+
+        // add additional CU for virtual epochs(if emergency mode is disabled, virtualEpoch == 0)
+        maxCu += maxCu * virtualEpoch;
 
         // Save pairing response for chainID
         this.pairing.set(chainID, {
@@ -186,8 +167,14 @@ export class StateChainQuery {
         throw StateTrackerErrors.errTimeTillNextEpochMissing;
       }
 
-      if (virtualEpoch == undefined) {
-        virtualEpoch = 0;
+      this.latestEpoch = currentEpoch;
+      this.virtualEpoch = virtualEpoch;
+
+      if (this.virtualEpoch != 0 && downtimeParams != undefined) {
+        const epochDuration = downtimeParams.getEpochDuration();
+        if (epochDuration != undefined) {
+          timeLeftToNextPairing = epochDuration.getSeconds();
+        }
       }
 
       Logger.debug("Fetching pairing ended");
@@ -232,70 +219,6 @@ export class StateChainQuery {
       return providers;
     } catch (err) {
       throw err;
-    }
-  }
-
-  public async updateDowntimeParams(): Promise<
-    QueryParamsResponse | undefined
-  > {
-    try {
-      Logger.debug("Get downtime params");
-
-      const request = new QueryParamsRequest();
-
-      const hexData = Buffer.from(request.serializeBinary()).toString("hex");
-
-      const sendRelayOptions: SendRelayOptions = {
-        method: "abci_query",
-        params: [
-          "/lavanet.lava.downtime.v1.Query/QueryParams",
-          hexData,
-          "0",
-          false,
-        ],
-      };
-
-      const response = await this.rpcConsumer.sendRelay(sendRelayOptions);
-
-      const reply = response.reply;
-
-      if (reply == undefined) {
-        throw new Error("Reply undefined");
-      }
-
-      // Decode response
-      const dec = new TextDecoder();
-      const decodedResponse = dec.decode(reply.getData_asU8());
-
-      // Parse response
-      const jsonResponse = JSON.parse(decodedResponse);
-
-      const byteArrayResponse = base64ToUint8Array(
-        jsonResponse.result.response.value
-      );
-
-      // Deserialize the Uint8Array to obtain the protobuf message
-      const decodedResponse2 =
-        QueryParamsResponse.deserializeBinary(byteArrayResponse);
-
-      const params = decodedResponse2.getParams();
-
-      // If response undefined throw an error
-      if (params == undefined) {
-        throw new Error("Downtime params not found");
-      }
-
-      this.downtimeParams = params;
-
-      // Return decoded response
-      return decodedResponse2;
-    } catch (err) {
-      // Console log the error
-      console.error(err);
-
-      // Return empty object
-      // We do not want to return error because it will stop the state tracker for other chains
-      return undefined;
     }
   }
 

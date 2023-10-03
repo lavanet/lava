@@ -79,13 +79,15 @@ export class StateBadgeQuery {
 
       virtualEpoch = badge.getVirtualEpoch();
 
+      const maxCU = badge.getCuAllocation() * (virtualEpoch + 1);
+
       // Generate StakeEntry
       const stakeEntry = pairingResponse.getProvidersList();
 
       // Save pairing response for chainID
       this.pairing.set(chainID, {
         providers: stakeEntry,
-        maxCu: badge.getCuAllocation(),
+        maxCu: maxCU,
         currentEpoch: pairingResponse.getCurrentEpoch(),
         spec: specResponse,
       });
