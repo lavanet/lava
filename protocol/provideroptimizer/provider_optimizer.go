@@ -220,7 +220,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCur
 	var latencyWeight float64
 	switch po.strategy {
 	case STRATEGY_LATENCY:
-		latencyWeight = 0.9
+		latencyWeight = 0.7
 	case STRATEGY_SYNC_FRESHNESS:
 		latencyWeight = 0.2
 	case STRATEGY_PRIVACY:
@@ -230,7 +230,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCur
 		}
 		return false
 	default:
-		latencyWeight = 0.8
+		latencyWeight = 0.6
 	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
@@ -271,6 +271,9 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 
 	// in case of block error we are paying the time cost of this provider and the time cost of the next provider on retry
 	costBlockError := historicalLatency.Seconds() + baseLatency.Seconds()
+	if probabilityBlockError > 0.5 {
+		costBlockError = costBlockError * 3 // consistency improvement
+	}
 	// in case of a time out we are paying the time cost of a timeout and the time cost of the next provider on retry
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()
 	// on success we are paying the time cost of this provider
