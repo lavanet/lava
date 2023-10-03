@@ -80,7 +80,7 @@ type ConsumerStateTrackerInf interface {
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, string, error)
 }
 
 type RPCConsumer struct {
@@ -141,7 +141,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
 
 	// check version
-	version, err := consumerStateTracker.GetProtocolVersion(ctx)
+	version, _, err := consumerStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}

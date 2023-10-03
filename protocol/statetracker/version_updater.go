@@ -14,11 +14,11 @@ const (
 )
 
 type VersionStateQuery interface {
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, string, error)
 }
 
 type VersionValidationInf interface {
-	ValidateProtocolVersion(lastKnownVersion *protocoltypes.Version) error
+	ValidateProtocolVersion(lastKnownVersion *protocoltypes.Version, blockHeight string) error
 }
 
 type VersionUpdater struct {
@@ -40,7 +40,7 @@ func (vu *VersionUpdater) UpdaterKey() string {
 func (vu *VersionUpdater) RegisterVersionUpdatable() {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-	err := vu.ValidateProtocolVersion(vu.lastKnownVersion)
+	err := vu.ValidateProtocolVersion(vu.lastKnownVersion, "")
 	if err != nil {
 		utils.LavaFormatError("Protocol Version Error", err)
 	}
@@ -51,7 +51,7 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 	defer vu.lock.Unlock()
 
 	// fetch updated version from consensus on every block
-	version, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
+	version, blockHeight, err := vu.versionStateQuery.GetProtocolVersion(context.Background())
 	if err != nil {
 		utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
 		return
@@ -67,7 +67,7 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 		vu.lastKnownVersion = version
 	}
 
-	err = vu.ValidateProtocolVersion(vu.lastKnownVersion)
+	err = vu.ValidateProtocolVersion(vu.lastKnownVersion, blockHeight)
 	if err != nil {
 		utils.LavaFormatError("Validate Protocol Version Error", err)
 	}

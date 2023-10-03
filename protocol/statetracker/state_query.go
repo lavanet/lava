@@ -16,6 +16,8 @@ import (
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -50,12 +52,18 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	return sq
 }
 
-func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
-	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{})
+func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, string, error) {
+	header := metadata.MD{}
+	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{}, grpc.Header(&header))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return &param.Params.Version, nil
+	var blockHeight string
+	blockHeights := header.Get("x-cosmos-block-height")
+	if len(blockHeights) > 0 {
+		blockHeight = blockHeights[0]
+	}
+	return &param.Params.Version, blockHeight, nil
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {

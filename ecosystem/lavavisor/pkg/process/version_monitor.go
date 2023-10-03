@@ -81,7 +81,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 	}()
 }
 
-func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version, blockHeight string) error {
 	binaryVersion, err := GetBinaryVersion(vm.BinaryPath)
 	if err != nil || binaryVersion == "" {
 		return utils.LavaFormatError("failed to get binary version", err)
@@ -105,7 +105,7 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 	}
 
 	// version is ok.
-	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: binaryVersion})
+	utils.LavaFormatInfo("Validated protocol version.", utils.Attribute{Key: "Current Binary", Value: binaryVersion}, utils.Attribute{Key: "Block Height", Value: blockHeight})
 
 	return nil
 }

@@ -27,7 +27,7 @@ import (
 
 type LavavisorStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, string, error)
 }
 
 type LavaVisor struct {
@@ -56,7 +56,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	lv.lavavisorStateTracker = lavavisorStateTracker
 
 	// check version
-	version, err := lavavisorStateTracker.GetProtocolVersion(ctx)
+	version, _, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}

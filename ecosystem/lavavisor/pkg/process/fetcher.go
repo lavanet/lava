@@ -108,7 +108,7 @@ func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolCons
 	vm := VersionMonitor{
 		BinaryPath: binaryPath,
 	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion); err != nil {
+	if err := vm.ValidateProtocolVersion(protocolConsensusVersion, ""); err != nil {
 		return "", err
 	}
 
@@ -146,7 +146,7 @@ func handleExistingDir(versionDir string, autoDownload bool, protocolConsensusVe
 	vm := VersionMonitor{
 		BinaryPath: binaryPath,
 	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion); err != nil {
+	if err := vm.ValidateProtocolVersion(protocolConsensusVersion, ""); err != nil {
 		if !autoDownload {
 			return "", utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
 		}

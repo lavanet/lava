@@ -74,21 +74,6 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 	return payments, nil
 }
 
-func (et *EventTracker) getLatestVersionEvents() (updated bool) {
-	et.lock.RLock()
-	defer et.lock.RUnlock()
-	for _, event := range et.blockResults.EndBlockEvents {
-		if event.Type == utils.EventPrefix+"param_change" {
-			for _, attribute := range event.Attributes {
-				if attribute.Key == "param" && attribute.Value == "Version" {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
 func (et *EventTracker) getLatestSpecModifyEvents() (updated bool) {
 	// SpecModifyEventName
 	et.lock.RLock()

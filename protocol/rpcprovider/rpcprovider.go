@@ -62,7 +62,7 @@ type ProviderStateTrackerInf interface {
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, string, error)
 }
 
 type RPCProvider struct {
@@ -90,7 +90,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.providerStateTracker = providerStateTracker
 	providerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(providerMetricsManager))
 	// check version
-	version, err := rpcp.providerStateTracker.GetProtocolVersion(ctx)
+	version, _, err := rpcp.providerStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}

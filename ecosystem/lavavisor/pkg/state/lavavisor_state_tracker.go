@@ -36,6 +36,6 @@ func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context,
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-func (lst *LavaVisorStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+func (lst *LavaVisorStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, string, error) {
 	return lst.stateQuery.GetProtocolVersion(ctx)
 }
