@@ -126,6 +126,14 @@ type ConsumerSessionsWithProvider struct {
 	conflictFoundAndReported uint32 // 0 == not reported, 1 == reported
 }
 
+func (cswp *ConsumerSessionsWithProvider) GetMaxCULimit() uint64 {
+	return atomic.LoadUint64(&cswp.MaxComputeUnits)
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicWriteMaxCULimit(maxCU uint64) {
+	atomic.StoreUint64(&cswp.MaxComputeUnits, maxCU)
+}
+
 func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
 	return atomic.LoadUint32(&cswp.conflictFoundAndReported) == 1
 }

@@ -86,22 +86,16 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 }
 
 func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpoch uint64) {
-	for key, consumerSessionWithProvider := range csm.pairing {
+	csm.lock.Lock()
+	defer csm.lock.Unlock()
+	for _, consumerSessionWithProvider := range csm.pairing {
 		if consumerSessionWithProvider == nil {
 			continue
 		}
 
-		consumerSessionWithProvider.MaxComputeUnits = consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
-		csm.pairing[key] = consumerSessionWithProvider
-	}
-
-	for key, consumerSessionWithProvider := range csm.pairingPurge {
-		if consumerSessionWithProvider == nil {
-			continue
-		}
-
-		consumerSessionWithProvider.MaxComputeUnits = consumerSessionWithProvider.MaxComputeUnits / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
-		csm.pairingPurge[key] = consumerSessionWithProvider
+		maxCU := consumerSessionWithProvider.GetMaxCULimit()
+		maxCU = maxCU / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
+		consumerSessionWithProvider.atomicWriteMaxCULimit(maxCU)
 	}
 }
 
