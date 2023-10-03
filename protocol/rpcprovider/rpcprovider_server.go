@@ -272,7 +272,7 @@ func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, req
 	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String(), apiInterface)
 	if !updatedWithProof && storedCU > request.RelaySession.CuSum {
 		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.RelaySession.SessionId, storedCU)
-		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU})
+		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "session_cu_sum", Value: request.RelaySession.CuSum}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU}, utils.Attribute{Key: "sessionId", Value: request.RelaySession.SessionId}, utils.Attribute{Key: "chainID", Value: request.RelaySession.SpecId})
 		return rpcps.handleRelayErrorStatus(err)
 	}
 	return nil
