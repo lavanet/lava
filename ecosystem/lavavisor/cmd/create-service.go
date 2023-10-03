@@ -33,6 +33,11 @@ type ServiceParams struct {
 	ParallelConnection        uint64
 }
 
+const (
+	ServiceTypeProvider = "provider"
+	ServiceTypeConsumer = "consumer"
+)
+
 func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 	cmdLavavisorCreateService := &cobra.Command{
 		Use:   `create-service [service-type: "provider" or "consumer"] [service-config-folder]`,
@@ -78,7 +83,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 
 			// GET SERVICE PARAMS
 			serviceType := args[0]
-			if serviceType != "provider" && serviceType != "consumer" {
+			if serviceType != ServiceTypeProvider && serviceType != ServiceTypeConsumer {
 				return utils.LavaFormatError("invalid service type, must be provider or consumer", nil)
 			}
 			serviceConfigFile := args[1] // the path that contains provider or consumer's configuration yml file
@@ -178,9 +183,9 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	content += "  After=network-online.target\n"
 	content += "[Service]\n"
 	content += "  WorkingDirectory=" + workingDir + "\n"
-	if serviceParams.ServiceType == "consumer" {
+	if serviceParams.ServiceType == ServiceTypeConsumer {
 		content += "  ExecStart=" + workingDir + "lavap rpcconsumer "
-	} else if serviceParams.ServiceType == "provider" {
+	} else if serviceParams.ServiceType == ServiceTypeProvider {
 		content += "  ExecStart=" + workingDir + "lavap rpcprovider "
 	}
 	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile)
@@ -194,7 +199,7 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 		content += " --keyring-backend " + serviceParams.KeyringBackend
 	}
 	// parallel connections
-	if serviceParams.ParallelConnection != 0 && serviceParams.ServiceType == "provider" {
+	if serviceParams.ParallelConnection != 0 && serviceParams.ServiceType == ServiceTypeProvider {
 		content += " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection)
 	}
 	// chainId
