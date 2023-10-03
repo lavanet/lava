@@ -42,7 +42,7 @@ func NewKeeper(
 	}
 
 	projectsfs := fixationStoreKeeper.NewFixationStore(storeKey, types.ProjectsFixationPrefix)
-	developerKeysfs := common.NewFixationStore(storeKey, cdc, types.DeveloperKeysFixationPrefix)
+	developerKeysfs := fixationStoreKeeper.NewFixationStore(storeKey, types.DeveloperKeysFixationPrefix)
 
 	return &Keeper{
 		cdc:                cdc,
