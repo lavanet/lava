@@ -143,12 +143,12 @@ func TestChainTracker(t *testing.T) {
 				}
 				for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 					time.Sleep(SleepTime) // stateTracker polls asynchronously
-					latestBlock := chainTracker.GetLatestBlockNum()
+					latestBlock := chainTracker.GetAtomicLatestBlockNum()
 					if latestBlock >= currentLatestBlockInMock {
 						break
 					}
 				}
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
 				latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
@@ -200,12 +200,12 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 				}
 				for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 					time.Sleep(SleepTime) // stateTracker polls asynchronously
-					latestBlock := chainTracker.GetLatestBlockNum()
+					latestBlock := chainTracker.GetAtomicLatestBlockNum()
 					if latestBlock >= currentLatestBlockInMock {
 						break
 					}
 				}
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
 				latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
@@ -285,12 +285,12 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			mockChainFetcher.Fork(tt.fork)
 			for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 				time.Sleep(SleepTime) // stateTracker polls asynchronously
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				if latestBlock >= currentLatestBlockInMock && tt.shouldFork == false {
 					break
 				}
 			}
-			latestBlock := chainTracker.GetLatestBlockNum()
+			latestBlock := chainTracker.GetAtomicLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
 			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
@@ -404,12 +404,12 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 			}
 			for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 				time.Sleep(SleepTime) // stateTracker polls asynchronously
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				if latestBlock >= currentLatestBlockInMock && tt.shrink == false {
 					break
 				}
 			}
-			latestBlock := chainTracker.GetLatestBlockNum()
+			latestBlock := chainTracker.GetAtomicLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
 			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)

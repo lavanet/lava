@@ -315,7 +315,7 @@ func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int
 			eventRate := timeSinceSyncReceived / averageBlockTime // a new block every average block time, numerator is time passed, gamma=rt
 			// probValueAfterRepetitions(k,lambda) calculates the probability for k events or less meaning p(x<=k),
 			// an error occurs if we didn't have enough blocks, so the chance of error is p(x<k) where k is the required number of blocks so we do p(x<=k-1)
-			probabilityBlockError = cumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
+			probabilityBlockError = CumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
 		} else {
 			probabilityBlockError = 0
 		}
@@ -436,7 +436,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 // calculate the probability a random variable with a poisson distribution
 // poisson distribution calculates the probability of K events, in this case the probability enough blocks pass and the request will be accessible in the block
 
-func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64) float64 {
+func CumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64) float64 {
 	// calculate cumulative probability of observing k events (having k or more events):
 	// GammaIncReg is the lower incomplete gamma function GammaIncReg(a,x) = (1/ Γ(a)) \int_0^x e^{-t} t^{a-1} dt
 	// the CPF for k events (less than equal k) is the regularized upper incomplete gamma function

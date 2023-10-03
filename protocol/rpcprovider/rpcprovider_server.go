@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
@@ -19,6 +20,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -44,7 +46,7 @@ type RPCProviderServer struct {
 
 type ReliabilityManagerInf interface {
 	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error)
-	GetLatestBlockNum() int64
+	GetLatestBlockNum() (int64, time.Time)
 }
 
 type RewardServerInf interface {
@@ -564,7 +566,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	if dataReliabilityEnabled {
 		// Add latest block and finalization data
 		var err error
-		_, _, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
+		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 		toBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization)
 		fromBlock := toBlock - int64(blocksInFinalizationData) + 1
 		var requestedHashes []*chaintracker.BlockStore
@@ -586,6 +588,22 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			}
 		}
 
+		if request.RelayData.RequestBlock > latestBlock {
+			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, aclculate wether we should wait and try to update
+			blockGap := request.RelayData.RequestBlock - latestBlock
+			deadline, ok := ctx.Deadline()
+			probabilityBlockError := 0.0
+			if ok {
+				timeProviderHas := time.Until(deadline) - common.AverageWorldLatency
+				eventRate := timeProviderHas.Seconds() / averageBlockTime.Seconds()                                                  // a new block every average block time, numerator is time we have, gamma=rt
+				probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few
+			}
+
+			if blockGap > blockLagForQosSync || (blockGap > 1 && probabilityBlockError > 0.3) {
+				return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+			}
+		}
+
 		chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
 		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
@@ -601,11 +619,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, reqHashesAttr)
 		}
 
-		// TODO: add a mechanism to handle this
-		// if request.RelayData.RequestBlock > latestBlock {
-		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
-		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-		// }
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false
@@ -630,7 +643,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if requestedBlockHash != nil || finalized {
-			// TODO: we do not add ignoredMetadata to the cache response
 			err := cache.SetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
 			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})

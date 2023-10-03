@@ -4,7 +4,6 @@ import (
 	"context"
 
 	empty "github.com/golang/protobuf/ptypes/empty"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 )
 
 type ChainTrackerService struct {
@@ -12,12 +11,12 @@ type ChainTrackerService struct {
 	ChainTracker *ChainTracker
 }
 
-func (cts *ChainTrackerService) GetLatestBlockNum(context.Context, *empty.Empty) (*wrappers.UInt64Value, error) {
-	latestBlockNum := cts.ChainTracker.GetLatestBlockNum()
+func (cts *ChainTrackerService) GetLatestBlockNum(context.Context, *empty.Empty) (*GetLatestBlockNumResponse, error) {
+	latestBlockNum, changeTime := cts.ChainTracker.GetLatestBlockNum()
 	if latestBlockNum <= 0 {
 		return nil, InvalidLatestBlockNumValue
 	}
-	return &wrappers.UInt64Value{Value: uint64(latestBlockNum)}, nil
+	return &GetLatestBlockNumResponse{Block: uint64(latestBlockNum), Timestamp: changeTime.Unix()}, nil
 }
 
 func (cts *ChainTrackerService) GetLatestBlockData(ctx context.Context, latestBlockData *LatestBlockData) (*LatestBlockDataResponse, error) {
