@@ -57,21 +57,21 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	}, []string{"spec", "apiInterface"})
 
 	qosMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_qos_metrics",
+		Name: "lava_consumer_qos_metrics",
 		Help: "The QOS metrics per provider for current epoch for the session with the most relays.",
 	}, []string{"spec", "apiInterface", "provider_address", "qos_metric"})
 
 	qosExcellenceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_qos_excellence_metrics",
+		Name: "lava_consumer_qos_excellence_metrics",
 		Help: "The QOS metrics per provider excellence",
 	}, []string{"spec", "provider_address", "qos_metric"})
 
 	latestBlockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_latest_provider_block",
+		Name: "lava_consumer_latest_provider_block",
 		Help: "The latest block reported by provider",
 	}, []string{"spec", "provider_address", "apiInterface"})
 	latestProviderRelay := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_latest_provider_relay_time",
+		Name: "lava_consumer_latest_provider_relay_time",
 		Help: "The latest time we sent a relay to provider",
 	}, []string{"spec", "provider_address", "apiInterface"})
 	// Register the metrics with the Prometheus registry.
