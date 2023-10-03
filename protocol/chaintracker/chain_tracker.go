@@ -64,7 +64,7 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 	cs.blockQueueMu.RLock()
 	defer cs.blockQueueMu.RUnlock()
 
-	latestBlock = cs.GetLatestBlockNum()
+	latestBlock = cs.GetAtomicLatestBlockNum()
 	if len(cs.blocksQueue) == 0 {
 		return latestBlock, nil, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 	}
@@ -102,7 +102,12 @@ func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
 	return cs.blocksQueue[len(cs.blocksQueue)-1]
 }
 
-func (cs *ChainTracker) GetLatestBlockNum() int64 {
+func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
+	cs.blockQueueMu.RLock()
+	defer cs.blockQueueMu.RUnlock()
+	return atomic.LoadInt64(&cs.latestBlockNum), cs.latestChangeTime
+}
+func (cs *ChainTracker) GetAtomicLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
 
@@ -115,8 +120,8 @@ func (cs *ChainTracker) fetchLatestBlockNum(ctx context.Context) (int64, error) 
 }
 
 func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	if blockNum < cs.GetLatestBlockNum()-int64(cs.serverBlockMemory) {
-		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.GetLatestBlockNum(), cs.serverBlockMemory)
+	if blockNum < cs.GetAtomicLatestBlockNum()-int64(cs.serverBlockMemory) {
+		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.GetAtomicLatestBlockNum(), cs.serverBlockMemory)
 	}
 	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
@@ -125,7 +130,7 @@ func (cs *ChainTracker) fetchBlockHashByNum(ctx context.Context, blockNum int64)
 // if it reaches a hash that it already has it stops reading
 func (cs *ChainTracker) fetchAllPreviousBlocks(ctx context.Context, latestBlock int64) (hashLatest string, err error) {
 	newBlocksQueue := make([]BlockStore, int64(cs.blocksToSave))
-	currentLatestBlock := cs.GetLatestBlockNum()
+	currentLatestBlock := cs.GetAtomicLatestBlockNum()
 	if latestBlock < currentLatestBlock {
 		return "", utils.LavaFormatError("invalid latestBlock provided to fetch, it is older than the current state latest block", err, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "currentLatestBlock", Value: currentLatestBlock})
 	}
@@ -224,7 +229,7 @@ func (cs *ChainTracker) hashesOverlapIndexes(readIndexDiff, newQueueIdx, fetched
 
 // this function reads the hash of the latest block and finds wether there was a fork, if it identifies a newer block arrived it goes backwards to the block in memory and reads again
 func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (forked bool, err error) {
-	if newLatestBlock == cs.GetLatestBlockNum() {
+	if newLatestBlock == cs.GetAtomicLatestBlockNum() {
 		// no new block arrived, compare the last hash
 		hash, err := cs.fetchBlockHashByNum(ctx, newLatestBlock)
 		if err != nil {
@@ -247,7 +252,7 @@ func (cs *ChainTracker) forkChanged(ctx context.Context, newLatestBlock int64) (
 }
 
 func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (gotNewBlock bool) {
-	return newLatestBlock > cs.GetLatestBlockNum()
+	return newLatestBlock > cs.GetAtomicLatestBlockNum()
 }
 
 // this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any
@@ -262,7 +267,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		return utils.LavaFormatWarning("could not fetchLatestBlock Hash in ChainTracker", err, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	if gotNewBlock || forked {
-		prev_latest := cs.GetLatestBlockNum()
+		prev_latest := cs.GetAtomicLatestBlockNum()
 		latestHash, err := cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if err != nil {
 			return err

@@ -35,9 +35,60 @@ func (pg *providersGenerator) setupProvidersForTest(count int) *providersGenerat
 }
 
 func TestProbabilitiesCalculations(t *testing.T) {
-	value := cumulativeProbabilityFunctionForPoissonDist(1, 10)
-	value2 := cumulativeProbabilityFunctionForPoissonDist(10, 10)
+	value := CumulativeProbabilityFunctionForPoissonDist(1, 10)
+	value2 := CumulativeProbabilityFunctionForPoissonDist(10, 10)
 	require.Greater(t, value2, value)
+
+	playbook := []struct {
+		name                           string
+		blockGap                       uint64
+		averageBlockTime               time.Duration
+		timeHas                        time.Duration
+		expectedProbabilityHigherLimit float64
+		expectedProbabilityLowerLimit  float64
+	}{
+		{
+			name:                           "one",
+			blockGap:                       1,
+			averageBlockTime:               6 * time.Second,
+			timeHas:                        25 * time.Second,
+			expectedProbabilityHigherLimit: 0.3,
+			expectedProbabilityLowerLimit:  0,
+		},
+		{
+			name:                           "five",
+			blockGap:                       5,
+			averageBlockTime:               6 * time.Second,
+			timeHas:                        6 * time.Second,
+			expectedProbabilityHigherLimit: 1,
+			expectedProbabilityLowerLimit:  0.7,
+		},
+		{
+			name:                           "tight",
+			blockGap:                       5,
+			averageBlockTime:               6 * time.Second,
+			timeHas:                        30 * time.Second,
+			expectedProbabilityHigherLimit: 0.5,
+			expectedProbabilityLowerLimit:  0.4,
+		},
+		{
+			name:                           "almost there",
+			blockGap:                       1,
+			averageBlockTime:               6 * time.Second,
+			timeHas:                        6 * time.Second,
+			expectedProbabilityHigherLimit: 0.4,
+			expectedProbabilityLowerLimit:  0.3,
+		},
+	}
+	for _, tt := range playbook {
+		t.Run(tt.name, func(t *testing.T) {
+			eventRate := tt.timeHas.Seconds() / tt.averageBlockTime.Seconds()
+			probabilityBlockError := CumulativeProbabilityFunctionForPoissonDist(uint64(tt.blockGap-1), eventRate)
+			require.LessOrEqual(t, probabilityBlockError, tt.expectedProbabilityHigherLimit)
+			require.GreaterOrEqual(t, probabilityBlockError, tt.expectedProbabilityLowerLimit)
+
+		})
+	}
 }
 
 func TestProviderOptimizerSetGet(t *testing.T) {
