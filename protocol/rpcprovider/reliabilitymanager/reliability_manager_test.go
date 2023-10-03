@@ -45,7 +45,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		LatestRelayCu:               10, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   123,
-		Client:                      nil,
+		Parent:                      nil,
 		RelayNum:                    1,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,
@@ -57,7 +57,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		LatestRelayCu:               100, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   456,
-		Client:                      nil,
+		Parent:                      nil,
 		RelayNum:                    5,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,
@@ -197,7 +197,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		LatestRelayCu:               10, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   123,
-		Client:                      nil,
+		Parent:                      nil,
 		RelayNum:                    1,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,
@@ -209,7 +209,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		LatestRelayCu:               100, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   456,
-		Client:                      consumerSesssionWithProvider,
+		Parent:                      consumerSesssionWithProvider,
 		RelayNum:                    5,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,
@@ -306,9 +306,9 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	}
 	txm := &txSenderMock{cb: cb}
 	consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
-	err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Client) // report first time
+	err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // report first time
 	require.NoError(t, err)
-	err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Client) // make sure we dont report 2nd time
+	err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // make sure we dont report 2nd time
 	require.NoError(t, err)
 
 	_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg) // validate reporting 2nd time returns an error.

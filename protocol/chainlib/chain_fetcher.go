@@ -51,7 +51,13 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		if len(verifications) == 0 {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
-		latestBlock, err := cf.FetchLatestBlockNum(ctx)
+		var latestBlock int64
+		for attempts := 0; attempts < 3; attempts++ {
+			latestBlock, err = cf.FetchLatestBlockNum(ctx)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			return err
 		}
