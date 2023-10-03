@@ -665,6 +665,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
 	reportErrors := consumerSession.ConsecutiveNumberOfFailures
 	// finished with consumerSession here can unlock.
+	csm.updateMetricsManager(consumerSession)
 	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
 	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
