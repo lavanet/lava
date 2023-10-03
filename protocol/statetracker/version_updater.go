@@ -59,8 +59,7 @@ func (vu *VersionUpdater) Update(latestBlock int64) {
 
 	if protocolversion.HasVersionMismatch(version.ProviderTarget, vu.lastKnownVersion.ProviderTarget) ||
 		protocolversion.HasVersionMismatch(version.ProviderMin, vu.lastKnownVersion.ProviderMin) {
-
-		utils.LavaFormatInfo("Version mismatch occured!",
+		utils.LavaFormatInfo("Version mismatch occurred!",
 			utils.Attribute{Key: "current_version", Value: vu.lastKnownVersion},
 			utils.Attribute{Key: "new_version", Value: version})
 
