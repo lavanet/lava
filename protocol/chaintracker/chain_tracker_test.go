@@ -337,14 +337,19 @@ func TestChainTrackerFetchSpreadAcrossPollingTime(t *testing.T) {
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 		_, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 		require.NoError(t, err)
+		// initially we start with 1/16 block probing
+		time.Sleep(localTimeForPollingMock)                           // we expect 15+init calls
+		require.GreaterOrEqual(t, called, 15*8/10)                    // 15 to give a gap, give a 20% margin
+		require.Greater(t, timeDiff, localTimeForPollingMock/16*8/10) // give a 20% margin
+		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10)    // give a 20% margin
+		mockChainFetcher.AdvanceBlock()                               // we advanced a block
 		time.Sleep(localTimeForPollingMock / 2)
-		// we have slept for TimeForPollingMock/2, in the first half we expect up to two calls, plus the init one
-		require.LessOrEqual(t, called, 3)
+		require.LessOrEqual(t, called, (3+16)*12/10)                 // init + 2 new + 16 from first block advancement, give 20% margin
+		require.GreaterOrEqual(t, called, 17*8/10)                   // give a 20% margin
 		require.Less(t, timeDiff, localTimeForPollingMock/2*12/10)   // give a 20% margin
 		require.Greater(t, timeDiff, localTimeForPollingMock/8*8/10) // give a 20% margin
 		time.Sleep(localTimeForPollingMock / 2)
-		// we have slept for TimeForPollingMock, we expect at least 5 calls + 1 for init (with buffer of 3): 1/4,1/2,5/8,3/4,13/16,14/16,15/16,16/16
-		require.GreaterOrEqual(t, called, 6)
+		require.GreaterOrEqual(t, called, (6+16)*8/10)
 		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10)    // give a 20% margin
 		require.Greater(t, timeDiff, localTimeForPollingMock/16*8/10) // give a 20% margin
 	})

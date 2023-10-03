@@ -293,10 +293,10 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	// chainTracker polls blocks in the following strategy:
 	// start polling every averageBlockTime/4, then averageBlockTime/8 after passing middle, then averageBlockTime/16 after passing averageBlockTime*3/4
 	// so polling at averageBlockTime/4,averageBlockTime/2,averageBlockTime*5/8,averageBlockTime*3/4,averageBlockTime*13/16,,averageBlockTime*14/16,,averageBlockTime*15/16,averageBlockTime*16/16,averageBlockTime*17/16
-	// initial polling = averageBlockTime/4
-	initialPollingTime := pollingTime / 4
-	cs.latestChangeTime = time.Now()
-	cs.timer = time.NewTimer(initialPollingTime) // divide here so we don't miss new blocks by all that much
+	// initial polling = averageBlockTime/16
+	initialPollingTime := pollingTime / 16               // on boot we need to query often to catch changes
+	cs.latestChangeTime = time.Now().Add(-1 * time.Hour) // set it in the past so we have a fine grained resolution on when we are finding a change
+	cs.timer = time.NewTimer(initialPollingTime)
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
 		return err
@@ -341,7 +341,7 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 	var newPollingTime time.Duration
 	if timeSinceLastUpdate <= tickerBaseTime/2 && blockGap > tickerBaseTime/4 {
 		newPollingTime = tickerBaseTime / 4
-	} else if timeSinceLastUpdate <= (tickerBaseTime*3)/4 {
+	} else if timeSinceLastUpdate <= (tickerBaseTime*3)/4 && blockGap > tickerBaseTime/4 {
 		newPollingTime = tickerBaseTime / 8
 	} else {
 		newPollingTime = tickerBaseTime / 16
@@ -403,7 +403,7 @@ func (ct *ChainTracker) AddBlockGap(newData time.Duration) {
 func (ct *ChainTracker) latestBlockGap() time.Duration {
 	length := len(ct.blockEventsGap)
 	if length == 0 {
-		return time.Hour // return something big so the check passes
+		return 0
 	}
 	return ct.blockEventsGap[length-1]
 }
