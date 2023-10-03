@@ -44,13 +44,14 @@ func NewKeeper(
 	epochstorageKeeper types.EpochstorageKeeper,
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	fs := *common.NewFixationStore(storeKey, cdc, types.SubsFixationPrefix)
+	fs := *fixationStoreKeeper.NewFixationStore(storeKey, types.SubsFixationPrefix)
 
 	keeper := &Keeper{
 		cdc:        cdc,
@@ -82,7 +83,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.subsFS.AdvanceBlock(ctx)
 	k.subsTS.Tick(ctx)
 }
 

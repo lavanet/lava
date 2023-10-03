@@ -456,6 +456,7 @@ func New(
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
 		app.PlansKeeper,
+		app.FixationStoreKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
