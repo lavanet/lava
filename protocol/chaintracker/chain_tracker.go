@@ -401,7 +401,11 @@ func (ct *ChainTracker) AddBlockGap(newData time.Duration) {
 }
 
 func (ct *ChainTracker) latestBlockGap() time.Duration {
-	return ct.blockEventsGap[len(ct.blockEventsGap)-1]
+	length := len(ct.blockEventsGap)
+	if length == 0 {
+		return time.Hour // return something big so the check passes
+	}
+	return ct.blockEventsGap[length-1]
 }
 
 // this function serves a grpc server if configuration for it was provided, the goal is to enable stateTracker to serve several processes and minimize node queries
