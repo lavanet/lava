@@ -468,6 +468,7 @@ func New(
 		app.AccountKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.FixationStoreKeeper,
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
