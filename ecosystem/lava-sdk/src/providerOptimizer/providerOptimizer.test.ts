@@ -646,49 +646,96 @@ describe("ProviderOptimizer", () => {
     expect(returnedProviders[0]).toBe(providers[1]);
   });
 
-  // it("tests provider optimizer ignores probe failing provider", async () => {
-  //   const providerOptimizer = setupProviderOptimizer(
-  //     2,
-  //     ProviderOptimizerStrategy.Latency
-  //   );
-  //   const providers = setupProvidersForTest(2);
-  //
-  //   const requestCU = 10;
-  //   const requestBlock = 1000;
-  //   const perturbationPercentage = 0.0;
-  //
-  //   providerOptimizer.appendProbeRelayData(providers[0], 0, false);
-  //
-  //   await sleep(4);
-  //
-  //   let returnedProviders = providerOptimizer.chooseProvider(
-  //     new Set(providers),
-  //     new Set(),
-  //     requestCU,
-  //     requestBlock,
-  //     perturbationPercentage
-  //   );
-  //   expect(returnedProviders).toHaveLength(1);
-  //   expect(returnedProviders[0]).not.toBe(providers[0]);
-  //
-  //   providerOptimizer.appendProbeRelayData(
-  //     providers[0],
-  //     TEST_BASE_WORLD_LATENCY / 2,
-  //     true
-  //   );
-  //
-  //   await sleep(4);
-  //
-  //   returnedProviders = providerOptimizer.chooseProvider(
-  //     new Set(providers),
-  //     new Set(),
-  //     requestCU,
-  //     requestBlock,
-  //     perturbationPercentage
-  //   );
-  //   expect(returnedProviders).toHaveLength(2);
-  //   expect(returnedProviders[1]).toBe(providers[0]);
-  // });
+  it("tests provider optimizer perturbation", async () => {
+    const providerOptimizer = setupProviderOptimizer();
+    const providersCount = 100;
+    const providers = setupProvidersForTest(providersCount);
+
+    const requestCU = 10;
+    const requestBlock = -2; // from golang spectypes.LATEST_BLOCK (-2)
+    const syncBlock = 1000;
+    const perturbationPercentage = 0.03; // this is statistical and we do not want this failing
+
+    let sampleTime = now();
+
+    const appendRelayData = (
+      providerAddress: string,
+      latency: number,
+      syncBlock: number,
+      sampleTime: number
+    ) => {
+      // @ts-expect-error private method but we need it for testing without exposing it
+      providerOptimizer.appendRelay(
+        providerAddress,
+        latency,
+        false,
+        true,
+        requestCU,
+        syncBlock,
+        sampleTime
+      );
+    };
+
+    for (let i = 0; i < 10; i++) {
+      providers.forEach((address, idx) => {
+        if (idx < providers.length / 2) {
+          appendRelayData(
+            address,
+            TEST_BASE_WORLD_LATENCY,
+            syncBlock,
+            sampleTime
+          );
+        } else {
+          appendRelayData(
+            address,
+            TEST_BASE_WORLD_LATENCY * 10,
+            syncBlock,
+            sampleTime
+          );
+        }
+      });
+
+      sampleTime = sampleTime + 5;
+    }
+
+    const rand = random.clone(now());
+    let same = 0;
+    let pickFaults = 0;
+    let chosenProvider = providerOptimizer.chooseProvider(
+      new Set(providers),
+      new Set(),
+      requestCU,
+      requestBlock,
+      0
+    )[0];
+    const runs = 1000;
+
+    for (let i = 0; i < runs; i++) {
+      const returnedProviders = providerOptimizer.chooseProvider(
+        new Set(providers),
+        new Set(),
+        requestCU,
+        requestBlock,
+        perturbationPercentage
+      );
+
+      expect(returnedProviders).toHaveLength(1);
+      if (returnedProviders[0] === chosenProvider) {
+        same++;
+      }
+
+      providers.forEach((address, idx) => {
+        if (address === returnedProviders[0]) {
+          if (idx >= providers.length / 2) {
+            pickFaults++;
+          }
+        }
+      });
+    }
+
+    expect(pickFaults).toBeLessThan(runs * 0.01);
+    expect(same).toBeLessThan(runs / 2);
+  });
 
   it("tests excellence report", async () => {
     const floatVal = 0.25;
