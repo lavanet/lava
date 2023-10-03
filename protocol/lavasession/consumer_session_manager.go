@@ -768,7 +768,6 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	if consumerSession.QoSInfo.LastQoSReport != nil {
 		qos := *consumerSession.QoSInfo.LastQoSReport
 		lastQos = &qos
-
 	}
 	if consumerSession.QoSInfo.LastExcellenceQoSReport != nil {
 		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
