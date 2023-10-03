@@ -431,6 +431,7 @@ func New(
 		app.GetSubspace(plansmoduletypes.ModuleName),
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.FixationStoreKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -455,6 +456,7 @@ func New(
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
 		app.PlansKeeper,
+		app.FixationStoreKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -468,6 +470,7 @@ func New(
 		app.AccountKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.FixationStoreKeeper,
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -490,6 +493,7 @@ func New(
 		app.PlansKeeper,
 		app.DowntimeKeeper,
 		app.DualstakingKeeper,
+		app.FixationStoreKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

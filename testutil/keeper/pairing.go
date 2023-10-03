@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	"github.com/lavanet/lava/x/fixationstore"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -59,6 +60,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		nil,
+		fixationstore.NewKeeper(cdc),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
