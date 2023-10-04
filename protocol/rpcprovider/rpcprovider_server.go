@@ -577,7 +577,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			// GetLatestBlockData only supports latest relative queries or specific block numbers
 			specificBlock = spectypes.NOT_APPLICABLE
 		}
-		latestBlock, changeTime := rpcps.reliabilityManager.GetLatestBlockNum()
+		var changeTime time.Time
+		latestBlock, changeTime = rpcps.reliabilityManager.GetLatestBlockNum()
 		if request.RelayData.RequestBlock > latestBlock {
 			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, aclculate wether we should wait and try to update
 			blockGap := request.RelayData.RequestBlock - latestBlock
