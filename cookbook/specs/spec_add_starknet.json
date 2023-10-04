@@ -173,8 +173,9 @@
                                 "name": "starknet_getBlockWithTxs",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "block_number"
+                                        "block_number",
+                                        ":",
+                                        "0"
                                     ],
                                     "parser_func": "PARSE_CANONICAL",
                                     "default_value": "latest"

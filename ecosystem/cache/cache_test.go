@@ -28,7 +28,7 @@ const (
 
 func initTest() (context.Context, *cache.RelayerCacheServer) {
 	ctx := context.Background()
-	cs := cache.CacheServer{}
+	cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
 	cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption)
 	cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 	return ctx, cacheServer

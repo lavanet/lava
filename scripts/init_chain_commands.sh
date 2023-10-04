@@ -54,4 +54,6 @@ lavad tx dualstaking delegate $(lavad keys show servicer3 -a) ETH1 $PROVIDERSTAK
 sleep_until_next_epoch
 
 
+if [[ "$1" != "--skip-providers" ]]; then
 . ${__dir}/setup_providers.sh
+fi
