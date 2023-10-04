@@ -22,6 +22,15 @@ type BaseChainParser struct {
 	verifications   map[VerificationKey][]VerificationContainer
 	allowedAddons   map[string]struct{}
 	extensionParser extensionslib.ExtensionParser
+	active          bool
+}
+
+func (bcp *BaseChainParser) Activate() {
+	bcp.active = true
+}
+
+func (bcp *BaseChainParser) Active() bool {
+	return bcp.active
 }
 
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
