@@ -272,7 +272,7 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	// in case of block error we are paying the time cost of this provider and the time cost of the next provider on retry
 	costBlockError := historicalLatency.Seconds() + baseLatency.Seconds()
 	if probabilityBlockError > 0.5 {
-		costBlockError = costBlockError * 3 // consistency improvement
+		costBlockError *= 3 // consistency improvement
 	}
 	// in case of a time out we are paying the time cost of a timeout and the time cost of the next provider on retry
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()

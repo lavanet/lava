@@ -86,7 +86,6 @@ func TestProbabilitiesCalculations(t *testing.T) {
 			probabilityBlockError := CumulativeProbabilityFunctionForPoissonDist(uint64(tt.blockGap-1), eventRate)
 			require.LessOrEqual(t, probabilityBlockError, tt.expectedProbabilityHigherLimit)
 			require.GreaterOrEqual(t, probabilityBlockError, tt.expectedProbabilityLowerLimit)
-
 		})
 	}
 }

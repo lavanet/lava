@@ -586,8 +586,11 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			probabilityBlockError := 0.0
 			probabilityBlockErrorIfWeDontWait := 0.0
 			if ok {
-				timeProviderHasIfWeDontWait := time.Since(changeTime) - common.AverageWorldLatency // reduce world latency to have enoiugh time to send it back
-				timeProviderHas := timeProviderHasIfWeDontWait + time.Until(deadline)/2            // add waiting half the timeout time
+				if time.Until(deadline)/2 < common.AverageWorldLatency/2 {
+					return nil, utils.LavaFormatError("not enough time to process relay", nil)
+				}
+				timeProviderHasIfWeDontWait := time.Since(changeTime) + common.AverageWorldLatency/2                   // reduce world latency to have enoiugh time to send it back
+				timeProviderHas := timeProviderHasIfWeDontWait + time.Until(deadline)/2 - common.AverageWorldLatency/2 // add waiting half the timeout time
 
 				eventRate := timeProviderHas.Seconds() / averageBlockTime.Seconds()                         // a new block every average block time, numerator is time we have, gamma=rt
 				eventRateIfWeDontWait := timeProviderHasIfWeDontWait.Seconds() / averageBlockTime.Seconds() // a new block every average block time, numerator is time we have, gamma=rt
@@ -603,7 +606,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			// need to decide if we wait
 			if probabilityBlockErrorIfWeDontWait > 0.3 {
 				// likely we will error out if we don't wait
-				time.Sleep(time.Until(deadline) / 2)
+				time.Sleep(time.Until(deadline)/2 - common.AverageWorldLatency/2)
 			}
 			lavaErrorOnNodeError = true
 		}
@@ -635,7 +638,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			}
 			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, reqHashesAttr)
 		}
-
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false

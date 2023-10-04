@@ -107,6 +107,7 @@ func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
 	defer cs.blockQueueMu.RUnlock()
 	return atomic.LoadInt64(&cs.latestBlockNum), cs.latestChangeTime
 }
+
 func (cs *ChainTracker) GetAtomicLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
