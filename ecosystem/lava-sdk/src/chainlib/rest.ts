@@ -6,7 +6,7 @@ import {
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { HttpMethod } from "../common/common";
+import { HttpMethod, NOT_APPLICABLE } from "../common/common";
 import { Parser } from "../parser/parser";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { RestMessage } from "./chainproxy/rpcInterfaceMessages/rest_message";
@@ -85,7 +85,7 @@ export class RestChainParser extends BaseChainParser {
       );
     }
 
-    let requestedBlock: number | Error | null;
+    let requestedBlock: number | Error;
 
     const overwriteRequestedBlock = headerHandler.overwriteRequestedBlock;
     if (overwriteRequestedBlock == "") {
@@ -95,17 +95,22 @@ export class RestChainParser extends BaseChainParser {
       }
       requestedBlock = Parser.parseBlockFromParams(restMessage, blockParser);
 
-      if (!requestedBlock) {
-        throw Logger.fatal(
-          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}, blockParsing: ${blockParser}`
+      if (requestedBlock instanceof Error) {
+        Logger.error(
+          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}`,
+          blockParser,
+          requestedBlock
         );
+        requestedBlock = NOT_APPLICABLE;
       }
     } else {
       requestedBlock = restMessage.parseBlock(overwriteRequestedBlock);
       if (requestedBlock instanceof Error) {
-        throw Logger.fatal(
-          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`
+        Logger.error(
+          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`,
+          requestedBlock
         );
+        requestedBlock = NOT_APPLICABLE;
       }
     }
 

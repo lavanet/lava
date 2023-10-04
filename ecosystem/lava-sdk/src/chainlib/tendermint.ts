@@ -11,6 +11,7 @@ import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collect
 import { TendermintrpcMessage } from "./chainproxy/rpcInterfaceMessages/tendermint_rpc_message";
 import { Parser } from "../parser/parser";
 import { ParsedMessage } from "./chain_message";
+import { NOT_APPLICABLE } from "../common/common";
 
 const Method = ""; // in tendermint all types are empty (in spec)
 const jsonrpcVersion = "2.0";
@@ -60,7 +61,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
       throw Logger.fatal("BlockParsing is missing");
     }
 
-    let requestedBlock: number | Error | null;
+    let requestedBlock: number | Error;
 
     const overwriteRequestedBlock = headerHandler.overwriteRequestedBlock;
     if (overwriteRequestedBlock === "") {
@@ -68,17 +69,22 @@ export class TendermintRpcChainParser extends BaseChainParser {
         tendermintrpcMessage,
         blockParser
       );
-      if (!requestedBlock) {
-        throw Logger.fatal(
-          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}, blockParsing: ${blockParser}`
+      if (requestedBlock instanceof Error) {
+        Logger.error(
+          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}`,
+          blockParser,
+          requestedBlock
         );
+        requestedBlock = NOT_APPLICABLE;
       }
     } else {
       requestedBlock = tendermintrpcMessage.parseBlock(overwriteRequestedBlock);
       if (requestedBlock instanceof Error) {
-        throw Logger.fatal(
-          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`
+        Logger.error(
+          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`,
+          requestedBlock
         );
+        requestedBlock = NOT_APPLICABLE;
       }
     }
 

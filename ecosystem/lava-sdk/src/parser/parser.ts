@@ -29,7 +29,7 @@ import {
 import { RPCInput } from "./rpcInput";
 
 export class Parser {
-  public static parseDefaultBlockParameter(block: string): number {
+  public static parseDefaultBlockParameter(block: string): number | Error {
     switch (block) {
       case "latest":
         return LATEST_BLOCK;
@@ -45,7 +45,7 @@ export class Parser {
         // try to parse a number
         const blockNum = parseInt(block, 0);
         if (isNaN(blockNum) || blockNum < 0) {
-          throw new InvalidBlockValue(block);
+          return new InvalidBlockValue(block);
         }
         return blockNum;
     }
@@ -54,24 +54,23 @@ export class Parser {
   public static parseBlockFromParams(
     rpcInput: RPCInput,
     blockParser: BlockParser
-  ): number | null {
+  ): number | Error {
     const result = this.parse(rpcInput, blockParser, PARSE_PARAMS);
-    if (this.throwIfError(result) === null) {
-      return NOT_APPLICABLE;
+    if (result instanceof Error) {
+      return result;
     }
 
     const resString = (result as any[])[0] as string;
-    const blockNum = rpcInput.parseBlock(resString);
-    return this.throwIfError(blockNum);
+    return rpcInput.parseBlock(resString);
   }
 
   public static parseFromReply(
     rpcInput: RPCInput,
     blockParser: BlockParser
-  ): string | null {
+  ): string | Error {
     const result = this.parse(rpcInput, blockParser, PARSE_RESULT);
-    if (this.throwIfError(result) === null) {
-      return "";
+    if (result instanceof Error) {
+      return result;
     }
 
     let response = (result as any[])[DEFAULT_PARSED_RESULT_INDEX] as string;
@@ -85,31 +84,28 @@ export class Parser {
   public static parseBlockFromReply(
     rpcInput: RPCInput,
     blockParser: BlockParser
-  ): number | null {
+  ): number | Error {
     const result = this.parseFromReply(rpcInput, blockParser);
-    if (result === null) {
-      return NOT_APPLICABLE;
+    if (result instanceof Error) {
+      return result;
     }
 
-    const blockNum = rpcInput.parseBlock(result);
-    return this.throwIfError(blockNum);
+    return rpcInput.parseBlock(result);
   }
 
   public static parseFromReplyAndDecode(
     rpcInput: RPCInput,
     resultParser: BlockParser
-  ): string | null {
+  ): string | Error {
     const result = this.parseFromReply(rpcInput, resultParser);
-    if (result === null) {
-      return "";
+    if (result instanceof Error) {
+      return result;
     }
 
-    const encoded = this.parseResponseByEncoding(
+    return this.parseResponseByEncoding(
       encodeUtf8(result),
       resultParser.getEncoding()
     );
-
-    return this.throwIfError(encoded);
   }
 
   public static parseDefault(input: string[]): any[] {
@@ -510,13 +506,5 @@ export class Parser {
     }
 
     return retval;
-  }
-
-  private static throwIfError(obj: any): any {
-    if (obj instanceof Error) {
-      throw obj;
-    }
-
-    return obj;
   }
 }
