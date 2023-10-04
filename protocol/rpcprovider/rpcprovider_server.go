@@ -558,6 +558,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	default:
 		reqMsg = nil
 	}
+	lavaErrorOnNodeError := false
+	_ = lavaErrorOnNodeError
 	latestBlock := int64(0)
 	finalizedBlockHashes := map[int64]interface{}{}
 	var requestedBlockHash []byte = nil
@@ -575,6 +577,36 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			// GetLatestBlockData only supports latest relative queries or specific block numbers
 			specificBlock = spectypes.NOT_APPLICABLE
 		}
+		latestBlock, changeTime := rpcps.reliabilityManager.GetLatestBlockNum()
+		if request.RelayData.RequestBlock > latestBlock {
+			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, aclculate wether we should wait and try to update
+			blockGap := request.RelayData.RequestBlock - latestBlock
+			deadline, ok := ctx.Deadline()
+			probabilityBlockError := 0.0
+			probabilityBlockErrorIfWeDontWait := 0.0
+			if ok {
+				timeProviderHasIfWeDontWait := time.Since(changeTime) - common.AverageWorldLatency // reduce world latency to have enoiugh time to send it back
+				timeProviderHas := timeProviderHasIfWeDontWait + time.Until(deadline)/2            // add waiting half the timeout time
+
+				eventRate := timeProviderHas.Seconds() / averageBlockTime.Seconds()                         // a new block every average block time, numerator is time we have, gamma=rt
+				eventRateIfWeDontWait := timeProviderHasIfWeDontWait.Seconds() / averageBlockTime.Seconds() // a new block every average block time, numerator is time we have, gamma=rt
+
+				probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
+				probabilityBlockErrorIfWeDontWait = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(
+					uint64(blockGap-1), eventRateIfWeDontWait) // this calculates the probability we received insufficient blocks. too few
+			}
+
+			if blockGap > blockLagForQosSync || (blockGap > 1 && probabilityBlockError > 0.3) {
+				return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+			}
+			// need to decide if we wait
+			if probabilityBlockErrorIfWeDontWait > 0.3 {
+				// likely we will error out if we don't wait
+				time.Sleep(time.Until(deadline) / 2)
+			}
+			lavaErrorOnNodeError = true
+		}
+
 		latestBlock, requestedHashes, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 		if err != nil {
 			if chaintracker.InvalidRequestedSpecificBlock.Is(err) {
@@ -585,22 +617,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				}
 			} else {
 				return nil, utils.LavaFormatError("Could not guarantee data reliability", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
-			}
-		}
-
-		if request.RelayData.RequestBlock > latestBlock {
-			// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, aclculate wether we should wait and try to update
-			blockGap := request.RelayData.RequestBlock - latestBlock
-			deadline, ok := ctx.Deadline()
-			probabilityBlockError := 0.0
-			if ok {
-				timeProviderHas := time.Until(deadline) - common.AverageWorldLatency
-				eventRate := timeProviderHas.Seconds() / averageBlockTime.Seconds()                                                  // a new block every average block time, numerator is time we have, gamma=rt
-				probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few
-			}
-
-			if blockGap > blockLagForQosSync || (blockGap > 1 && probabilityBlockError > 0.3) {
-				return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 			}
 		}
 
@@ -696,9 +712,10 @@ func (rpcps *RPCProviderServer) processUnsubscribe(ctx context.Context, apiName 
 }
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
+	latestB, _ := rpcps.reliabilityManager.GetLatestBlockNum()
 	probeReply := &pairingtypes.ProbeReply{
 		Guid:                  probeReq.GetGuid(),
-		LatestBlock:           rpcps.reliabilityManager.GetLatestBlockNum(),
+		LatestBlock:           latestB,
 		FinalizedBlocksHashes: []byte{},
 		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
