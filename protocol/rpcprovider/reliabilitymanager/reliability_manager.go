@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -128,7 +129,7 @@ func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlo
 	return rm.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
-func (rm *ReliabilityManager) GetLatestBlockNum() int64 {
+func (rm *ReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
 	return rm.chainTracker.GetLatestBlockNum()
 }
 
