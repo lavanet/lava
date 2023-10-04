@@ -118,12 +118,14 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			// Fetch requested block, it is used for data reliability
 			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
 			if err != nil {
-				return nil, utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+				requestedBlockForMessage = spectypes.NOT_APPLICABLE
 			}
 		} else {
 			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
 			if err != nil {
-				return nil, utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+				utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
+				requestedBlockForMessage = spectypes.NOT_APPLICABLE
 			}
 		}
 		if idx == 0 {
