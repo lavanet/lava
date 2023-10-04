@@ -469,7 +469,7 @@ func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nC
 		if !ok {
 			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
 		}
-		utils.LavaFormatDebug("connecting:", utils.Attribute{Key: "url", Value: url})
+		utils.LavaFormatDebug("connecting", utils.Attribute{Key: "url", Value: url.String()})
 		conn, err := chainproxy.NewConnector(ctx, nConns, url)
 		if err != nil {
 			return err
