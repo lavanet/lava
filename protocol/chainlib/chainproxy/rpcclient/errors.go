@@ -16,7 +16,9 @@
 
 package rpcclient
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // HTTPError is returned by client operations when the HTTP status code of the
 // response is not a 2xx status.

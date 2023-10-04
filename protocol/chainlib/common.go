@@ -61,6 +61,7 @@ type BaseChainProxy struct {
 	ErrorHandler
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
+	ChainID          string
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {

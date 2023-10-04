@@ -446,7 +446,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 		conn:           map[string]*chainproxy.Connector{},
 	}
 	verifyRPCEndpoint(nodeUrl.Url)
@@ -601,6 +601,9 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true)
 		if err != nil {
+			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) {
+				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
+			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
 			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {

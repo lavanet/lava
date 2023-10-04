@@ -262,7 +262,7 @@ func TestUpdateEpoch(t *testing.T) {
 		}
 
 		// Make sure that the rewards are flushed to DB
-		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDB()
 
 		rws.UpdateEpoch(1)
 
@@ -280,8 +280,8 @@ func TestUpdateEpoch(t *testing.T) {
 		privKey, acc := sigs.GenerateFloatingKey()
 
 		ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+		epoch := uint64(1)
 		for _, sessionId := range []uint64{1, 2, 3, 4, 5} {
-			epoch := uint64(1)
 			proof := common.BuildRelayRequestWithSession(ctx, "provider", []byte{}, sessionId, uint64(0), "spec", nil)
 			proof.Epoch = int64(epoch)
 
@@ -293,7 +293,7 @@ func TestUpdateEpoch(t *testing.T) {
 		}
 
 		// Make sure that the rewards are flushed to DB
-		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDB()
 
 		stubRewardsTxSender.earliestBlockInMemory = 2
 
@@ -301,7 +301,6 @@ func TestUpdateEpoch(t *testing.T) {
 
 		// ensure no payments have been sent
 		require.Len(t, stubRewardsTxSender.sentPayments, 0)
-
 		rewards, err := db.FindAll()
 		require.NoError(t, err)
 		// ensure rewards have been deleted

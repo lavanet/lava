@@ -369,7 +369,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
 	rcp := &RestChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0], ErrorHandler: &RestErrorHandler{}},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0], ErrorHandler: &RestErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 	}
 	return rcp, nil
 }
@@ -446,7 +446,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	err = rcp.HandleStatusError(res.StatusCode)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode}, utils.Attribute{Key: "chainID", Value: rcp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 	}
 
 	body, err := io.ReadAll(res.Body)
