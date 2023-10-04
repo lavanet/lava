@@ -22,7 +22,7 @@ import transport from "../util/browser";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
-import { encodeUtf8 } from "../util/common";
+import { byteArrayToString, encodeUtf8 } from "../util/common";
 
 export interface RelayerOptions {
   privKey: string;
@@ -258,29 +258,6 @@ export class Relayer {
     return response;
   }
 
-  byteArrayToString = (byteArray: Uint8Array): string => {
-    let output = "";
-    for (let i = 0; i < byteArray.length; i++) {
-      const byte = byteArray[i];
-      if (byte === 0x09) {
-        output += "\\t";
-      } else if (byte === 0x0a) {
-        output += "\\n";
-      } else if (byte === 0x0d) {
-        output += "\\r";
-      } else if (byte === 0x5c) {
-        output += "\\\\";
-      } else if (byte === 0x22) {
-        output += '\\"';
-      } else if (byte >= 0x20 && byte <= 0x7e) {
-        output += String.fromCharCode(byte);
-      } else {
-        output += "\\" + byte.toString(8).padStart(3, "0");
-      }
-    }
-    return output;
-  };
-
   // Sign relay request using priv key
   async signRelay(request: RelaySession, privKey: string): Promise<Uint8Array> {
     const message = this.prepareRequest(request);
@@ -397,7 +374,7 @@ export class Relayer {
           case "object":
             let valueInnerStr = "";
             if (value instanceof Uint8Array) {
-              valueInnerStr = this.byteArrayToString(value);
+              valueInnerStr = byteArrayToString(value);
               return key + ':"' + valueInnerStr + '" ';
             }
             if (value instanceof Array) {
@@ -430,7 +407,7 @@ export class Relayer {
                   objValStr = handleNumStr(objkey, objVal);
                   break;
                 case "object":
-                  objValStr = objkey + ":" + this.byteArrayToString(objVal);
+                  objValStr = objkey + ":" + byteArrayToString(objVal);
                   break;
               }
               if (objValStr != "") {

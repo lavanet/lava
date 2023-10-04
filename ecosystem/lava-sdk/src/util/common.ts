@@ -93,6 +93,8 @@ export function byteArrayToString(byteArray: Uint8Array): string {
       output += "\\r";
     } else if (byte === 0x5c) {
       output += "\\\\";
+    } else if (byte === 0x22) {
+      output += '\\"';
     } else if (byte >= 0x20 && byte <= 0x7e) {
       output += String.fromCharCode(byte);
     } else {
