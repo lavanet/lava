@@ -3,8 +3,10 @@ package types
 import (
 	"time"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/lavanet/lava/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -43,4 +45,12 @@ type SpecKeeper interface {
 
 type StakingKeeper interface {
 	UnbondingTime(ctx sdk.Context) time.Duration
+}
+
+type FixationStoreKeeper interface {
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore
+}
+
+type TimerStoreKeeper interface {
+	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *common.TimerStore
 }

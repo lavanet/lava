@@ -13,6 +13,13 @@ lavap cache $ListenAddress --metrics_address $ListenMetricsAddress --log_level d
 
 now the cache service is running in the background. all you need to do is plug in the caching service with the consumer / provider process like so:
 
+Provider:
 ```bash
 lavap rpcprovider <your-regular-cli-options> --cache-be $ListenAddress
 ```
+
+Consumer
+```bash
+lavap rpcconsumer <your-regular-cli-options> --cache-be $ListenAddress
+```
+

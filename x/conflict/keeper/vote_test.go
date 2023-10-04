@@ -1,10 +1,10 @@
 package keeper_test
 
 import (
-	"math/rand"
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -46,6 +46,7 @@ func (ts *tester) setupForCommit() (string, conflicttypes.MsgDetection, *pairing
 }
 
 func TestCommit(t *testing.T) {
+	rand.InitRandomSeed()
 	ts := newTester(t)
 	voteID, detection, relay0, _ := ts.setupForCommit()
 

@@ -51,7 +51,13 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		if len(verifications) == 0 {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
-		latestBlock, err := cf.FetchLatestBlockNum(ctx)
+		var latestBlock int64
+		for attempts := 0; attempts < 3; attempts++ {
+			latestBlock, err = cf.FetchLatestBlockNum(ctx)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -166,7 +172,13 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, nil, cf.ChainFetcherMetadata())
+	var craftData *CraftData
+	if parsing.FunctionTemplate != "" {
+		path := parsing.ApiName
+		data := []byte(parsing.FunctionTemplate)
+		craftData = &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}
+	}
+	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, craftData, cf.ChainFetcherMetadata())
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -236,7 +248,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		}...)
 	}
 
-	res, err := parser.ParseMessageResponse(parserInput, parsing.ResultParsing)
+	res, err := parser.ParseFromReplyAndDecode(parserInput, parsing.ResultParsing)
 	if err != nil {
 		return "", utils.LavaFormatWarning(tagName+" Failed ParseMessageResponse", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},

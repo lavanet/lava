@@ -30,7 +30,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 		LatestRelayCu:               10, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   123,
-		Client:                      nil,
+		Parent:                      nil,
 		RelayNum:                    1,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,
@@ -79,7 +79,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 		LatestRelayCu:               10, // set by GetSessions cuNeededForSession
 		QoSInfo:                     lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 		SessionId:                   123,
-		Client:                      nil,
+		Parent:                      nil,
 		RelayNum:                    1,
 		LatestBlock:                 epoch,
 		Endpoint:                    nil,

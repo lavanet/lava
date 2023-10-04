@@ -21,13 +21,13 @@ func (k msgServer) FreezeProvider(goCtx context.Context, msg *types.MsgFreezePro
 func (k Keeper) FreezeProvider(ctx sdk.Context, provider string, chainIDs []string, reason string) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
-		return utils.LavaFormatError("Freeze_get_provider_address", err, utils.Attribute{Key: "providerAddress", Value: provider})
+		return utils.LavaFormatWarning("Freeze_get_provider_address", err, utils.Attribute{Key: "providerAddress", Value: provider})
 	}
 
 	for _, chainId := range chainIDs {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainId, providerAddr)
 		if !found {
-			return utils.LavaFormatError("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: provider}}...)
+			return utils.LavaFormatWarning("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: provider}}...)
 		}
 
 		// freeze the provider by making the StakeAppliedBlock be max. This will remove the provider from the pairing list in the next epoch
