@@ -462,6 +462,7 @@ func New(
 		app.ProjectsKeeper,
 		app.PlansKeeper,
 		app.FixationStoreKeeper,
+		app.TimerStoreKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
