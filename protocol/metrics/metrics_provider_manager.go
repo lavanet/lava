@@ -180,6 +180,5 @@ func (pme *ProviderMetricsManager) SetEnabledChain(specID string, apInterface st
 		return
 	}
 	pme.lock.Lock()
-	defer pme.lock.Unlock()
 	pme.disabledChainsMetric.WithLabelValues(specID, apInterface).Set(0)
 }
