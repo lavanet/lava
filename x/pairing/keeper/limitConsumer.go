@@ -9,7 +9,7 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
-func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) (uint64, error) {
+func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relayCU, allowedCU, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) (uint64, error) {
 	project, err := k.GetProjectData(ctx, clientAddr, chainID, epoch)
 	if err != nil {
 		return 0, err
@@ -33,14 +33,14 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU, totalCU
 	}
 
 	_, effectiveTotalCu := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.UsedCu, sub.MonthCuLeft)
-	if !planstypes.VerifyTotalCuUsage(effectiveTotalCu, project.GetUsedCu()) {
-		return 0, utils.LavaFormatError("total cu in epoch for consumer exceeded the allowed amount for the project", fmt.Errorf("consumer CU limit exceeded for project"), []utils.Attribute{{Key: "projectUsedCu", Value: project.GetUsedCu()}}...)
+	if !planstypes.VerifyTotalCuUsage(effectiveTotalCu, totalCUInEpochForUserProvider) {
+		return effectiveTotalCu - project.UsedCu, nil
 	}
 
 	culimit := allowedCU * k.downtimeKeeper.GetDowntimeFactor(ctx, epoch)
 	if totalCUInEpochForUserProvider > culimit {
-		return culimit, nil
+		return culimit - project.UsedCu, nil
 	}
 
-	return totalCUInEpochForUserProvider, nil
+	return relayCU, nil
 }
