@@ -61,6 +61,7 @@ func NewKeeper(
 	planKeeper types.PlanKeeper,
 	downtimeKeeper types.DowntimeKeeper,
 	dualStakingKeeper types.DualStakingKeeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -91,7 +92,7 @@ func NewKeeper(
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
-	keeper.providerQosFS = *common.NewFixationStore(storeKey, cdc, types.ProviderQosStorePrefix)
+	keeper.providerQosFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.ProviderQosStorePrefix)
 
 	return keeper
 }

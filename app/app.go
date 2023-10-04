@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	"github.com/lavanet/lava/x/fixationstore"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -177,6 +178,7 @@ var (
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
+		fixationstore.AppModuleBasic{},
 		auth.AppModuleBasic{},
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
@@ -397,6 +399,9 @@ func New(
 		appCodec, keys[ibcexported.StoreKey], app.GetSubspace(ibcexported.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
 	)
 
+	// fixation store keeper
+	app.FixationStoreKeeper = fixationstore.NewKeeper(appCodec)
+
 	// Initialize SpecKeeper prior to govRouter (order is critical)
 	app.SpecKeeper = *specmodulekeeper.NewKeeper(
 		appCodec,
@@ -426,6 +431,7 @@ func New(
 		app.GetSubspace(plansmoduletypes.ModuleName),
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.FixationStoreKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -435,6 +441,7 @@ func New(
 		keys[projectsmoduletypes.MemStoreKey],
 		app.GetSubspace(projectsmoduletypes.ModuleName),
 		app.EpochstorageKeeper,
+		app.FixationStoreKeeper,
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
@@ -449,6 +456,7 @@ func New(
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
 		app.PlansKeeper,
+		app.FixationStoreKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -462,6 +470,7 @@ func New(
 		app.AccountKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.FixationStoreKeeper,
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -484,6 +493,7 @@ func New(
 		app.PlansKeeper,
 		app.DowntimeKeeper,
 		app.DualstakingKeeper,
+		app.FixationStoreKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -593,6 +603,7 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
+		fixationstore.NewAppModule(app.FixationStoreKeeper),
 		specModule,
 		epochstorageModule,
 		dualstakingModule,
@@ -614,6 +625,7 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
+		fixationstore.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -668,7 +680,9 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
-		downtimemoduletypes.ModuleName) // downtime has no end block but module manager requires it.
+		downtimemoduletypes.ModuleName, // downtime has no end block but module manager requires it.
+		fixationstore.ModuleName,       // fixation store has no end block but module manager requires it.
+	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -702,6 +716,7 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
+		fixationstore.ModuleName,       // fixation store has no init genesis but module manager requires it.
 		conflictmoduletypes.ModuleName, // NOTICE: the last module to initgenesis needs to push fixation in epoch storage
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
@@ -948,7 +963,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(minttypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
-	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint
+	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint:staticcheck
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibcexported.ModuleName)

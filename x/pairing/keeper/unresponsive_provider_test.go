@@ -1,11 +1,11 @@
 package keeper_test
 
 import (
-	"math/rand"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -36,6 +36,7 @@ func (ts *tester) checkProviderStaked(provider sdk.AccAddress) {
 }
 
 func TestUnresponsivenessStressTest(t *testing.T) {
+	rand.InitRandomSeed()
 	clientsCount := 100
 	providersCount := 6
 

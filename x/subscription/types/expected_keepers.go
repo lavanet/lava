@@ -1,8 +1,10 @@
 package types
 
 import (
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/lavanet/lava/common"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 )
@@ -43,4 +45,8 @@ type PlansKeeper interface {
 	PutPlan(ctx sdk.Context, index string, block uint64)
 	GetAllPlanIndices(ctx sdk.Context) []string
 	// Methods imported from planskeeper should be defined here
+}
+
+type FixationStoreKeeper interface {
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore
 }

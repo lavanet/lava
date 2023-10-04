@@ -3,11 +3,9 @@ package rpcconsumer
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -21,6 +19,7 @@ import (
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -141,7 +140,7 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 				utils.LavaFormatFatal("failed to create txFactory", err)
 			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
-			rand.Seed(time.Now().UnixNano())
+			rand.InitRandomSeed()
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err)

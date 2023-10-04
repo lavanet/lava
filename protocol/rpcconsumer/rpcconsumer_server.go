@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
@@ -353,7 +353,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				//  to be able to validate if we need to report this provider or not.
 				// holding the pointer is ok because the session is locked atm,
 				// and later after its unlocked we only atomic read / write to it.
-				ConflictHandler: sessionInfo.Session.Client,
+				ConflictHandler: sessionInfo.Session.Parent,
 			}
 			localRelayRequestData := *relayRequestData
 
@@ -519,14 +519,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		finalizedBlocks, finalizationConflict, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.consumerAddress, existingSessionLatestBlock, blockDistanceForFinalizedData)
 		if err != nil {
 			if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
-				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
+				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Parent)
 			}
 			return relayResult, 0, err, false
 		}
 
 		finalizationConflict, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
 		if err != nil {
-			go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Client)
+			go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Parent)
 			return relayResult, 0, err, false
 		}
 	}

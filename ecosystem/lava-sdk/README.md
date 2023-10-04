@@ -4,7 +4,7 @@
 <br />
 <div align="center">
   <img src="https://user-images.githubusercontent.com/2770565/223762290-44afc792-8ad4-4dbb-b2c2-532780d6c5de.png" alt="Logo" width="80" height="80">
-  <h3 align="center">Lava SDK - <i>ALPHA</i></h3>
+  <h3 align="center">Lava SDK - <i>BETA</i></h3>
   </p>
 </div>
 
@@ -17,17 +17,15 @@ https://docs.lavanet.xyz/access-sdk
 
 <!-- Roadmap -->
 # Roadmap
-The SDK is currently in the Alpha stage and is not production-ready for all usecases. 
-
 Roadmap highlights:
 
 1. ~Send Relays per Lava Pairing~ ✅
 2. ~Find seed providers for the initial connection~ ✅
 3. ~EtherJS Integration~ ✅
-4. Ability to run in the browser without compromising keys
-5. High throughput via session management
+4. ~Ability to run in the browser without compromising keys✅
+5. ~High throughput via session management✅
 6. More libraries integrations (Cosmjs, web3.js...)
-6. Other Lava consensus implementations (e.g. QoS, data reliability, ...)
+7. Other Lava consensus implementations (e.g. QoS, data reliability, ...)
 
 <!-- Prerequisites -->
 
@@ -49,7 +47,7 @@ If lava latest release version is `v0.8.0` or any minor version such as v0.8.1 �
 
 ---
 
-### Prerequisites (Alpha version)
+### Prerequisites (Beta version)
 _SDK setup requires additional steps at the moment, but we're working on minimizing prerequisites as we progress through the roadmap._
 
 1. Create a wallet on the Lava Testnet, have LAVA tokens
@@ -75,16 +73,17 @@ To use the SDK, you will first need to initialize it.
 
 ```typescript
 const lavaSDK = await new LavaSDK({
-  privateKey: privKey, // string (Only if Badge is not provided)
-  badge: badgeOptions, // BadgeOptions (Only if privateKey is not provided)
-  chainID: chainID, // string (Required)
-  rpcInterface: rpcInterface, // string (Optional)
-  pairingListConfig: localConfigPath, // string (Optional)
-  network: network, // string (Optional)
-  geolocation: geolocation, // string (Optional)
-  secure: secureFlag, // boolean (Optional)
-  allowInsecureTransport: insecureTransportFlag, // boolean (Optional)
-  debug: debugFlag, // boolean (Optional)
+  privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
+  badge?: BadgeOptions; // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
+  chainIds: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
+  pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
+  network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
+  geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
+  lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
+  secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
+  allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
+  logLevel?: string | LogLevel; // Optional for log level settings, "debug" | "info" | "warn" | "error" | "success" | "NoPrints"
+  transport?: any; // Optional for transport settings if you would like to change the default transport settings. see utils/browser.ts for the current settings
 });
 
 const badgeOptions: BadgeOptions = {
@@ -99,7 +98,7 @@ Lava SDK options:
 
 - `privateKey` parameter is required and should be the private key of the staked Lava client for the specified `chainID`
 
-- `chainID` parameter is required and should be the ID of the chain you want to query. You can find all supported chains with their IDs [supportedChains](https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
+- `chainIds` parameter is required and should be an ID or a list of chain IDs depending how many chains you would like to initialize (https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
 
 - `rpcInterface` is an optional parameter representing the interface that will be used for sending relays. For cosmos chains it can be `tendermintRPC` or `rest`. For evm compatible chains `jsonRPC` or `rest`. You can find the list of all default rpc interfaces [supportedChains](https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
 
@@ -147,6 +146,74 @@ However, there are some challenges to consider. Users need to bootstrap and main
 For detailed instructions on how to start the Badge server, refer to our [documentation](https://github.com/lavanet/lava/blob/main/protocol/badgegenerator/Readme.md)
 
 ---
+
+### Examples:
+
+# Badge full flow example:
+```typescript 
+async function getLatestBlock(): Promise<string> {
+  // Create dAccess for Ethereum Mainnet
+  // Default rpcInterface for Ethereum Mainnet is jsonRPC
+  const ethereum = await LavaSDK.create({
+    // badge data of an active badge server
+    badge: {
+      badgeServerAddress: "<badge server address>",
+      projectId: "<badge project id>",
+    },
+
+    // chainID for Ethereum mainnet
+    chainIds: "ETH1",
+
+    // geolocation 1 for North america - geolocation 2 for Europe providers
+    // default value is 1
+    geolocation: "2",
+  });
+
+  // Get latest block number
+  const blockNumberResponse = await ethereum.sendRelay({
+    method: "eth_blockNumber",
+    params: [],
+  });
+```
+
+# Private Key flow example:
+```typescript 
+const cosmosHub = await LavaSDK.create({
+    // private key with an active subscription
+    privateKey: "<lava consumer private key>",
+
+    // chainID for Cosmos Hub
+    chainIds: "COS5",
+
+    // geolocation 1 for North america - geolocation 2 for Europe providers
+    // default value is 1
+    geolocation: "2",
+  });
+
+  // Get abci_info
+
+  const results = [];
+
+  for (let i = 0; i < 10; i++) {
+    const info = await cosmosHub.sendRelay({
+      method: "abci_info",
+      params: [],
+    });
+
+    // Parse and extract response
+    const parsedInfo = info.result.response;
+
+    // Extract latest block number
+    const latestBlockNumber = parsedInfo.last_block_height;
+    // Fetch latest block
+    const latestBlock = await cosmosHub.sendRelay({
+      method: "block",
+      params: [latestBlockNumber],
+    });
+    results.push(latestBlock);
+    console.log("Latest block:", latestBlock);
+  }
+```
 
 ### TendermintRPC / JSON-RPC interface:
 ```typescript
