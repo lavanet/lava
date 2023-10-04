@@ -42,6 +42,7 @@ func NewKeeper(
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
+	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -75,7 +76,7 @@ func NewKeeper(
 		keeper.finalizeUnbonding(ctx, key, data)
 	}
 
-	unbondingTS := *common.NewTimerStore(storeKey, cdc, types.UnbondingPrefix).
+	unbondingTS := *timerStoreKeeper.NewTimerStore(storeKey, types.UnbondingPrefix).
 		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS
