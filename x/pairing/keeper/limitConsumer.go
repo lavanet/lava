@@ -39,7 +39,8 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relayCU, allowedCU
 
 	culimit := allowedCU * k.downtimeKeeper.GetDowntimeFactor(ctx, epoch)
 	if totalCUInEpochForUserProvider > culimit {
-		return culimit - project.UsedCu, nil
+		originalTotalCUInEpochForUserProvider := totalCUInEpochForUserProvider - relayCU
+		return culimit - originalTotalCUInEpochForUserProvider, nil
 	}
 
 	return relayCU, nil
