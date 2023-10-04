@@ -174,8 +174,8 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	provider_sk, provider_address := ts.Providers[0].SK, ts.Providers[0].Addr
 	// second provider (DR)
 	providerDR_sk, providerDR_address := ts.Providers[1].SK, ts.Providers[1].Addr
-	unwrapedCtx := sdk.UnwrapSDKContext(ts.Ctx)
-	epoch := int64(ts.Keepers.Epochstorage.GetEpochStart(unwrapedCtx))
+	unwrappedCtx := sdk.UnwrapSDKContext(ts.Ctx)
+	epoch := int64(ts.Keepers.Epochstorage.GetEpochStart(unwrappedCtx))
 	replyDataBuf := []byte(`{"reply": "REPLY-STUB"}`)
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response

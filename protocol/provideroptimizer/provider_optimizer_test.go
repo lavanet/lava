@@ -1,12 +1,12 @@
 package provideroptimizer
 
 import (
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -64,6 +64,7 @@ func TestProviderOptimizerSetGet(t *testing.T) {
 func TestProviderOptimizerBasic(t *testing.T) {
 	providerOptimizer := setupProviderOptimizer(1)
 	providersGen := (&providersGenerator{}).setupProvidersForTest(10)
+	rand.InitRandomSeed()
 
 	requestCU := uint64(10)
 	requestBlock := int64(1000)
@@ -417,7 +418,6 @@ func TestProviderOptimizerPerturbation(t *testing.T) {
 		_, found := providerOptimizer.getProviderData(providerAddress)
 		require.True(t, found, providerAddress)
 	}
-	randSource = rand.New(rand.NewSource(seed))
 	t.Logf("rand seed %d", seed)
 	same := 0
 	pickFaults := 0

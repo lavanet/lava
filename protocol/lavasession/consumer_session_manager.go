@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	metrics "github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"

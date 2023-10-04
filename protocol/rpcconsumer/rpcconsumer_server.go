@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"

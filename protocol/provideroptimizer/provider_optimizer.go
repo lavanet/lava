@@ -2,7 +2,6 @@ package provideroptimizer
 
 import (
 	"math"
-	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/score"
 	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -30,8 +30,6 @@ const (
 	COST_EXPLORATION_CHANCE    = 0.01
 	WANTED_PRECISION           = int64(8)
 )
-
-var randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type ConcurrentBlockStore struct {
 	Lock  sync.Mutex
@@ -215,7 +213,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 		return false // only one at a time
 	}
 	// Dividing the random threshold by the loop count ensures that the overall probability of success is the requirement for the entire loop not per iteration
-	return randSource.Float64() < explorationChance/float64(numProviders)
+	return rand.Float64() < explorationChance/float64(numProviders)
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
@@ -227,7 +225,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCur
 		latencyWeight = 0.2
 	case STRATEGY_PRIVACY:
 		// pick at random regardless of score
-		if randSource.Intn(2) == 0 {
+		if rand.Intn(2) == 0 {
 			return true
 		}
 		return false
@@ -443,7 +441,7 @@ func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 }
 
 func pertrubWithNormalGaussian(orig, percentage float64) float64 {
-	perturb := randSource.NormFloat64() * percentage * orig
+	perturb := rand.NormFloat64() * percentage * orig
 	return orig + perturb
 }
 

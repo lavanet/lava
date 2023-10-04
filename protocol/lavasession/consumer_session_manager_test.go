@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -41,7 +41,7 @@ var grpcListener = "localhost:0"
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	AllowInsecureConnectionToProviders = true // set to allow insecure for tests purposes
-	rand.Seed(time.Now().UnixNano())
+	rand.InitRandomSeed()
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil)
 }

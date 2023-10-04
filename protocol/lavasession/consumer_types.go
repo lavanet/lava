@@ -3,7 +3,6 @@ package lavasession
 import (
 	"context"
 	"math"
-	"math/rand"
 	"sort"
 	"strconv"
 	"sync/atomic"
@@ -11,6 +10,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
