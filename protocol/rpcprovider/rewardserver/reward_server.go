@@ -267,16 +267,15 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 	}
 
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
-
+	rws.lock.Lock()
+	defer rws.lock.Unlock()
 	for epoch, epochRewards := range rws.rewards {
 		if epoch < earliestSavedEpoch {
+			delete(rws.rewards, epoch)
 			err := rws.rewardDB.DeleteEpochRewards(epoch)
 			if err != nil {
 				utils.LavaFormatWarning("gatherRewardsForClaim failed deleting epoch from rewardDB", err, utils.Attribute{Key: "epoch", Value: epoch})
 			}
-
-			delete(rws.rewards, epoch)
-
 			// Epoch is too old, we can't claim the rewards anymore.
 			continue
 		}
@@ -374,7 +373,7 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewardDB = rewardDB
 	rws.rewardStoragePath = rewardStoragePath
 	rws.rewardsSnapshotThreshold = uint64(rewardsSnapshotThreshold)
-	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec * uint(time.Second))
+	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec) * time.Second
 	rws.rewardsSnapshotTimer = timer.NewTimer(rws.rewardsSnapshotTimeoutDuration)
 	rws.rewardsSnapshotThresholdCh = make(chan struct{})
 
@@ -386,16 +385,16 @@ func (rws *RewardServer) saveRewardsSnapshotToDBJob() {
 	for {
 		select {
 		case <-rws.rewardsSnapshotTimer.C:
-			rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+			rws.resetSnapshotTimerAndSaveRewardsSnapshotToDB()
 		case <-rws.rewardsSnapshotThresholdCh:
-			rws.resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer()
+			rws.resetSnapshotTimerAndSaveRewardsSnapshotToDB()
 		}
 	}
 }
 
-func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTimer() {
+func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDB() {
 	// We lock without defer because the DB is already locking itself
-	rws.lock.Lock()
+	rws.lock.RLock()
 	rws.rewardsSnapshotTimer.Reset(rws.rewardsSnapshotTimeoutDuration)
 
 	rewardEntities := []*RewardEntity{}
@@ -413,7 +412,7 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDBAndResetTim
 			}
 		}
 	}
-	rws.lock.Unlock()
+	rws.lock.RUnlock()
 	if len(rewardEntities) == 0 {
 		return
 	}

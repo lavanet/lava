@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -223,8 +224,10 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 }
 
 func ValidateStatusCodes(statusCode int) error {
-	if statusCode == 504 || statusCode == 429 {
-		return utils.LavaFormatError("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: statusCode})
+	if statusCode == 504 {
+		return common.StatusCodeError504
+	} else if statusCode == 429 {
+		return common.StatusCodeError429
 	}
 	return nil
 }
