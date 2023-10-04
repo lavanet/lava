@@ -1,4 +1,4 @@
-package fixationstore
+package timerstore
 
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -54,4 +54,6 @@ type AppModule struct {
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
-func (a AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+func (a AppModule) BeginBlock(context sdk.Context, _ abci.RequestBeginBlock) {
+	a.k.BeginBlock(context)
+}
