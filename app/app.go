@@ -500,6 +500,7 @@ func New(
 		app.DowntimeKeeper,
 		app.DualstakingKeeper,
 		app.FixationStoreKeeper,
+		app.TimerStoreKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

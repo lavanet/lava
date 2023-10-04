@@ -86,10 +86,6 @@ func NewKeeper(
 	return keeper
 }
 
-func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.unbondingTS.Tick(ctx)
-}
-
 // ExportDelegations exports dualstaking delegations data (for genesis)
 func (k Keeper) ExportDelegations(ctx sdk.Context) commontypes.GenesisState {
 	return k.delegationFS.Export(ctx)

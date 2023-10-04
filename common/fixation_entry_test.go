@@ -118,7 +118,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 		case "block":
 			for i := 0; i < int(play.count); i++ {
 				ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
-				fs[play.store].AdvanceBlock(ctx)
+				fs[play.store].tstore.Tick(ctx)
 			}
 		case "getall":
 			indexList := fs[play.store].GetAllEntryIndices(ctx)

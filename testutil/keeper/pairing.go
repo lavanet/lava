@@ -47,6 +47,8 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"EpochStorageParams",
 	)
 
+	tsKeeper := timerstore.NewKeeper(cdc)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
@@ -61,7 +63,8 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		nil,
-		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc)),
+		fixationstore.NewKeeper(cdc, tsKeeper),
+		tsKeeper,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
