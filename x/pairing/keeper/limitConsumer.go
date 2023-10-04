@@ -42,5 +42,5 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, allowedCU, totalCU
 		return culimit, nil
 	}
 
-	return allowedCU, nil
+	return totalCUInEpochForUserProvider, nil
 }
