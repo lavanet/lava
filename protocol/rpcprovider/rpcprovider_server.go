@@ -635,7 +635,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			}
 			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, reqHashesAttr)
 		}
-
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false
