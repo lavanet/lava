@@ -29,12 +29,11 @@ import { Relayer } from "../relayer/relayer";
 import { grpc } from "@improbable-eng/grpc-web";
 import transportAllowInsecure from "../util/browserAllowInsecure";
 import transport from "../util/browser";
-import { secondsToMillis } from "../util/time";
 import { sleep } from "../util/common";
 import { ProviderEpochTracker } from "./providerEpochTracker";
 import { APIInterfaceTendermintRPC } from "../chainlib/base_chain_parser";
-export const ALLOWED_PROBE_RETRIES = 3;
-export const TIMEOUT_BETWEEN_PROBES = secondsToMillis(1);
+export const ALLOWED_PROBE_RETRIES = 5;
+export const TIMEOUT_BETWEEN_PROBES = 200; // 200*MS
 import { ReportedProviders } from "./reported_providers";
 import {
   ProbeReply,
@@ -796,19 +795,14 @@ export class ConsumerSessionManager {
     const retryProbing: Set<ConsumerSessionsWithProvider> = new Set();
     for (const consumerSessionWithProvider of pairingList) {
       promiseProbeArray = promiseProbeArray.concat(
-        this.probeProvider(
-          consumerSessionWithProvider,
-          epoch,
-          retryProbing,
-          retry
-        )
+        this.probeProvider(consumerSessionWithProvider, epoch, retryProbing)
       );
     }
     if (!retry) {
       for (const s of pairingList) {
         await Promise.race(promiseProbeArray);
         const epochFromProviders = this.epochTracker.getEpoch();
-        if (epochFromProviders != -1) {
+        if (epochFromProviders > 0) {
           Logger.debug(
             `providers probe done ${JSON.stringify({
               endpoint: this.rpcEndpoint,
@@ -836,13 +830,11 @@ export class ConsumerSessionManager {
   private probeProvider(
     consumerSessionWithProvider: ConsumerSessionsWithProvider,
     epoch: number,
-    retryProbing: Set<ConsumerSessionsWithProvider>,
-    retries: number
+    retryProbing: Set<ConsumerSessionsWithProvider>
   ): Promise<ProbeReply | void>[] | Promise<AllProviderEndpointsDisabledError> {
     const startTime = performance.now();
     const guid = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-    let anyEndpointSuccess = false;
-    const promises = [];
+    const promises = new Array<Promise<any>>();
     for (const endpoint of consumerSessionWithProvider.endpoints) {
       if (!endpoint.enabled) {
         continue;
@@ -866,8 +858,6 @@ export class ConsumerSessionManager {
             this.getRpcEndpoint().chainId
           )
           .then((probeReply) => {
-            anyEndpointSuccess = true;
-
             const endTime = performance.now();
             const latency = endTime - startTime;
             Logger.debug(
@@ -919,12 +909,6 @@ export class ConsumerSessionManager {
             endpoint.connectionRefusals = 0;
             retryProbing.delete(consumerSessionWithProvider);
 
-            // re-add the address in case of a successful probe
-            // this is a set so there are no duplicates
-            this.validAddresses.add(
-              consumerSessionWithProvider.publicLavaAddress
-            );
-
             return probeReply;
           })
           .catch((e) => {
@@ -945,17 +929,6 @@ export class ConsumerSessionManager {
 
             endpoint.connectionRefusals++;
             retryProbing.add(consumerSessionWithProvider);
-
-            const address = consumerSessionWithProvider.publicLavaAddress;
-            const shouldRemoveAddress =
-              retries === 0 &&
-              this.validAddresses.has(address) &&
-              !anyEndpointSuccess;
-            // if we are on the first retry remove the address from valid addresses
-            // so the user does not call it until we probe it again
-            if (shouldRemoveAddress) {
-              this.removeAddressFromValidAddresses(address);
-            }
           })
       );
     }

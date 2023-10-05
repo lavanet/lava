@@ -92,7 +92,7 @@ export class Relayer {
         }
       );
     });
-    return this.relayWithTimeout(5000, requestPromise);
+    return this.relayWithTimeout(1250, requestPromise);
   }
 
   public async sendRelay(
