@@ -719,6 +719,9 @@ export class QuerySdkPairingResponse extends jspb.Message {
   getDowntimeParams(): lavanet_lava_downtime_v1_downtime_pb.Params | undefined;
   setDowntimeParams(value?: lavanet_lava_downtime_v1_downtime_pb.Params): void;
 
+  getLatestBlockTime(): number;
+  setLatestBlockTime(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QuerySdkPairingResponse.AsObject;
   static toObject(includeInstance: boolean, msg: QuerySdkPairingResponse): QuerySdkPairingResponse.AsObject;
@@ -735,6 +738,7 @@ export namespace QuerySdkPairingResponse {
     maxCu: number,
     spec?: lavanet_lava_spec_spec_pb.Spec.AsObject,
     downtimeParams?: lavanet_lava_downtime_v1_downtime_pb.Params.AsObject,
+    latestBlockTime: number,
   }
 }
 

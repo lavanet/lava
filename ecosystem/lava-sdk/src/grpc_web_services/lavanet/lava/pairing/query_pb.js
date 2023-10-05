@@ -5066,7 +5066,8 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.toObject = function(includeIn
     pairing: (f = msg.getPairing()) && proto.lavanet.lava.pairing.QueryGetPairingResponse.toObject(includeInstance, f),
     maxCu: jspb.Message.getFieldWithDefault(msg, 2, 0),
     spec: (f = msg.getSpec()) && lavanet_lava_spec_spec_pb.Spec.toObject(includeInstance, f),
-    downtimeParams: (f = msg.getDowntimeParams()) && lavanet_lava_downtime_v1_downtime_pb.Params.toObject(includeInstance, f)
+    downtimeParams: (f = msg.getDowntimeParams()) && lavanet_lava_downtime_v1_downtime_pb.Params.toObject(includeInstance, f),
+    latestBlockTime: jspb.Message.getFieldWithDefault(msg, 5, 0)
   };
 
   if (includeInstance) {
@@ -5121,6 +5122,10 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.deserializeBinaryFromReader =
       var value = new lavanet_lava_downtime_v1_downtime_pb.Params;
       reader.readMessage(value,lavanet_lava_downtime_v1_downtime_pb.Params.deserializeBinaryFromReader);
       msg.setDowntimeParams(value);
+      break;
+    case 5:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setLatestBlockTime(value);
       break;
     default:
       reader.skipField();
@@ -5180,6 +5185,13 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.serializeBinaryToWriter = fun
       4,
       f,
       lavanet_lava_downtime_v1_downtime_pb.Params.serializeBinaryToWriter
+    );
+  }
+  f = message.getLatestBlockTime();
+  if (f !== 0) {
+    writer.writeInt64(
+      5,
+      f
     );
   }
 };
@@ -5287,6 +5299,21 @@ proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.clearDowntimeParams
  */
 proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.hasDowntimeParams = function() {
   return jspb.Message.getField(this, 4) != null;
+};
+
+
+/**
+ * optional int64 latest_block_time = 5;
+ * @return {number}
+ */
+proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.getLatestBlockTime = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 5, 0));
+};
+
+
+/** @param {number} value */
+proto.lavanet.lava.pairing.QuerySdkPairingResponse.prototype.setLatestBlockTime = function(value) {
+  jspb.Message.setProto3IntField(this, 5, value);
 };
 
 

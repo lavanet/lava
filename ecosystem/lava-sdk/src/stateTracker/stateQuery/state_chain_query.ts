@@ -44,7 +44,6 @@ export class StateChainQuery {
   private csp: ConsumerSessionsWithProvider[] = [];
   private downtimeParams: Params | undefined;
   private latestEpoch: number | undefined;
-  private virtualEpoch = 0;
 
   constructor(
     pairingListConfig: string,
@@ -143,9 +142,30 @@ export class StateChainQuery {
         }
 
         // increase virtual epoch, if current epoch hasn't change
-        if (this.latestEpoch == currentEpoch && virtualEpoch == 0) {
-          virtualEpoch = this.virtualEpoch + 1;
-          Logger.debug("Virtual epoch: " + virtualEpoch);
+        if (this.latestEpoch == currentEpoch && virtualEpoch == 0 && downtimeParams != undefined) {
+          const lastBlockTime = pairingResponse.getLatestBlockTime();
+          const downtimeDuration = downtimeParams.getDowntimeDuration();
+          const epochDuration = downtimeParams.getEpochDuration();
+
+          if (
+              lastBlockTime != undefined &&
+              downtimeDuration != undefined &&
+              epochDuration != undefined
+          ) {
+            const delay = Date.now() - lastBlockTime;
+
+            if (delay > downtimeDuration.getSeconds() * 1000) {
+              virtualEpoch = Math.trunc(
+                  (delay - pairing.getTimeLeftToNextPairing()) /
+                  (epochDuration.getSeconds() * 1000)
+              );
+
+              // should check in case delay < TimeLeftToNextPairing
+              if (virtualEpoch < 0) {
+                virtualEpoch = 0;
+              }
+            }
+          }
         }
 
         let maxCu = pairingResponse.getMaxCu();
@@ -168,13 +188,14 @@ export class StateChainQuery {
       }
 
       this.latestEpoch = currentEpoch;
-      this.virtualEpoch = virtualEpoch;
 
-      if (this.virtualEpoch != 0 && downtimeParams != undefined) {
+      if (virtualEpoch != 0 && downtimeParams != undefined) {
         const epochDuration = downtimeParams.getEpochDuration();
         if (epochDuration != undefined) {
           timeLeftToNextPairing = epochDuration.getSeconds();
         }
+
+        Logger.debug("Virtual epoch: " + virtualEpoch);
       }
 
       Logger.debug("Fetching pairing ended");
