@@ -415,7 +415,6 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 			continue
 		}
 		elem.Error = json.Unmarshal(resp.Result, elem.Result)
-
 	}
 	return err
 }
