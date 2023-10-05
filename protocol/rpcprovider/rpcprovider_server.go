@@ -107,7 +107,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	if timeoutFound {
 		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeout))
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 
