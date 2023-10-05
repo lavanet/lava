@@ -208,8 +208,8 @@ func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"100"}}]`
 	const response = `[{"jsonrpc":"2.0","id":1,"result":{"block_id1111111111":{},"block":{}}},{"jsonrpc":"2.0","id":1,"result":{"block_id222222":{},"block":{}}}]`
 
-	const nodeResponse = `[{"jsonrpc":"2.0","id":1,"result":{"block_id1111111111":{},"block":{}}},{"jsonrpc":"2.0","id":3,"result":{"block_id222222":{},"block":{}}}]`
-	nodeBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":3,"method":"block","params":{"height":"100"}}]`
+	const nodeResponse = `[{"jsonrpc":"2.0","id":1,"result":{"block_id1111111111":{},"block":{}}},{"jsonrpc":"2.0","id":2,"result":{"block_id222222":{},"block":{}}}]`
+	nodeBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}}]`
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCalled = true
 		data := make([]byte, len([]byte(nodeBatchCallData)))
