@@ -2078,6 +2078,28 @@
                                     },
                                     "api_name": "/cosmos/base/tendermint/v1beta1/node_info"
                                 }
+                            },
+                            {
+                                "name": "tx-indexing",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/base/tendermint/v1beta1/node_info",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "default_node_info",
+                                            "other",
+                                            "tx_index"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/cosmos/base/tendermint/v1beta1/node_info"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "on"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -3703,6 +3725,28 @@
                                     },
                                     "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
                                 }
+                            },
+                            {
+                                "name": "tx-indexing",
+                                "parse_directive": {
+                                    "function_template": "",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "defaultNodeInfo",
+                                            "other",
+                                            "txIndex"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "on"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -4308,6 +4352,28 @@
                                     },
                                     "api_name": "status"
                                 }
+                            },
+                            {
+                                "name": "tx-indexing",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "node_info",
+                                            "other",
+                                            "tx_index"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "status"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "on"
+                                    }
+                                ]
                             }
                         ]
                     }
