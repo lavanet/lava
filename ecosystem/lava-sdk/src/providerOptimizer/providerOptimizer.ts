@@ -65,7 +65,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     wantedNumProvidersInConcurrency: number
   ) {
     if (averageBlockTime <= 0) {
-      throw new Error("averageBlockTime must higher than 0");
+      throw new Error("averageBlockTime must be higher than 0");
     }
 
     this.strategy = strategy;
@@ -630,7 +630,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     const diffTime = sampleTime - relayStatsTime[idx];
 
     if (diffTime < 0) {
-      return 0;
+      return now() - relayStatsTime[idx];
     }
 
     return diffTime;
