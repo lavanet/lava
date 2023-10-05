@@ -13,10 +13,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	"github.com/lavanet/lava/x/fixationstore"
 	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,6 +63,9 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"PlansParams",
 	)
 
+	tsKeeper := timerstore.NewKeeper(cdc)
+	fsKeeper := fixationstore.NewKeeper(cdc, tsKeeper)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
@@ -69,8 +74,10 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
-		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil),
-		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil),
+		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, fsKeeper),
+		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper),
+		fsKeeper,
+		tsKeeper,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

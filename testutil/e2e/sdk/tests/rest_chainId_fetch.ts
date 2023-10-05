@@ -6,7 +6,7 @@ async function main() {
         privateKey: process.env.PRIVATE_KEY,
         chainIds: ["LAV1"],
         lavaChainId:"lava",
-        pairingListConfig:process.env.PAIRING_LIST,
+        pairingListConfig: process.env.PAIRING_LIST,
         allowInsecureTransport: true,
         logLevel: "debug",
     }).catch(e => {

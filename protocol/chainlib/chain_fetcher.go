@@ -51,7 +51,13 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 		if len(verifications) == 0 {
 			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
 		}
-		latestBlock, err := cf.FetchLatestBlockNum(ctx)
+		var latestBlock int64
+		for attempts := 0; attempts < 3; attempts++ {
+			latestBlock, err = cf.FetchLatestBlockNum(ctx)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -143,9 +149,10 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	if verification.Value != "*" && verification.Value != "" {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
+				{Key: "parsedResult", Value: parsedResult},
+				{Key: "verification.Value", Value: verification.Value},
 				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "Response", Value: string(reply.Data)},
 			}...)
 		}
 	}
@@ -242,7 +249,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		}...)
 	}
 
-	res, err := parser.ParseMessageResponse(parserInput, parsing.ResultParsing)
+	res, err := parser.ParseFromReplyAndDecode(parserInput, parsing.ResultParsing)
 	if err != nil {
 		return "", utils.LavaFormatWarning(tagName+" Failed ParseMessageResponse", err, []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},

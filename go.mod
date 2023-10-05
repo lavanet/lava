@@ -1,6 +1,6 @@
 module github.com/lavanet/lava
 
-go 1.19
+go 1.20
 
 require (
 	github.com/99designs/keyring v1.2.1 // indirect
@@ -29,6 +29,7 @@ require (
 	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.1
 	github.com/cosmos/gogoproto v1.4.10
+	github.com/dgraph-io/badger/v4 v4.1.0
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
@@ -74,6 +75,7 @@ require (
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect

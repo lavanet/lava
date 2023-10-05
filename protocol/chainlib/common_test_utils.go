@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/utils/rand"
+
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
@@ -162,6 +164,7 @@ type TestStruct struct {
 }
 
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
+	rand.InitRandomSeed()
 	ts := TestStruct{}
 	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
 	// init keepers state

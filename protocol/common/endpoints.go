@@ -26,14 +26,22 @@ type NodeUrl struct {
 	Addons       []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 }
 
-func (url *NodeUrl) String() string {
-	if url == nil {
-		return ""
+func (nurl NodeUrl) String() string {
+	urlStr := nurl.UrlStr()
+
+	if len(nurl.Addons) > 0 {
+		return urlStr + "(" + strings.Join(nurl.Addons, ",") + ")"
 	}
-	if len(url.Addons) > 0 {
-		return url.Url + "(" + strings.Join(url.Addons, ",") + ")"
+	return urlStr
+}
+
+func (nurl *NodeUrl) UrlStr() string {
+	parsedURL, err := url.Parse(nurl.Url)
+	if err != nil {
+		return nurl.Url
 	}
-	return url.Url
+	parsedURL.User = nil
+	return parsedURL.String()
 }
 
 func (url *NodeUrl) SetAuthHeaders(ctx context.Context, headerSetter func(string, string)) {
@@ -127,6 +135,9 @@ func ValidateEndpoint(endpoint, apiInterface string) error {
 			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
 		}
 	case spectypes.APIInterfaceGrpc:
+		if endpoint == "" {
+			return utils.LavaFormatError("invalid grpc URL, empty", nil)
+		}
 		parsedUrl, err := url.Parse(endpoint)
 		if err == nil {
 			// user provided a valid url with a scheme
