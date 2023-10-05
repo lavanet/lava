@@ -142,21 +142,25 @@ export class StateChainQuery {
         }
 
         // increase virtual epoch, if current epoch hasn't change
-        if (this.latestEpoch == currentEpoch && virtualEpoch == 0 && downtimeParams != undefined) {
+        if (
+          this.latestEpoch == currentEpoch &&
+          virtualEpoch == 0 &&
+          downtimeParams != undefined
+        ) {
           const lastBlockTime = pairingResponse.getLatestBlockTime();
           const downtimeDuration = downtimeParams.getDowntimeDuration();
           const epochDuration = downtimeParams.getEpochDuration();
 
           if (
-              lastBlockTime != undefined &&
-              downtimeDuration != undefined &&
-              epochDuration != undefined
+            lastBlockTime != undefined &&
+            downtimeDuration != undefined &&
+            epochDuration != undefined
           ) {
             const delay = Date.now() - lastBlockTime;
 
             if (delay > downtimeDuration.getSeconds() * 1000) {
               virtualEpoch = Math.trunc(
-                  (delay - pairing.getTimeLeftToNextPairing()) /
+                (delay - pairing.getTimeLeftToNextPairing()) /
                   (epochDuration.getSeconds() * 1000)
               );
 
