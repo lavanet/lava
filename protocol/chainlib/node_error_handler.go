@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -85,14 +86,14 @@ func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
 func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
 	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
 	if idErr != nil {
-		return utils.LavaFormatError("Failed parsing ID", idErr)
+		return fmt.Errorf("Failed parsing ID " + idErr.Error())
 	}
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
 	if idErr != nil {
-		return utils.LavaFormatError("Failed parsing ID", idErr)
+		return fmt.Errorf("Failed parsing ID " + idErr.Error())
 	}
 	if reqId != respId {
-		return utils.LavaFormatError("ID mismatch error", nil)
+		return fmt.Errorf("ID mismatch error")
 	}
 	return nil
 }

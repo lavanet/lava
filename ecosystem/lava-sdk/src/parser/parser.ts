@@ -29,7 +29,7 @@ import {
 import { RPCInput } from "./rpcInput";
 
 export class Parser {
-  public static ParseDefaultBlockParameter(block: string): number {
+  public static parseDefaultBlockParameter(block: string): number {
     switch (block) {
       case "latest":
         return LATEST_BLOCK;
@@ -43,7 +43,7 @@ export class Parser {
         return FINALIZED_BLOCK;
       default:
         // try to parse a number
-        const blockNum = parseInt(block, 10);
+        const blockNum = parseInt(block, 0);
         if (isNaN(blockNum) || blockNum < 0) {
           throw new InvalidBlockValue(block);
         }
@@ -51,7 +51,7 @@ export class Parser {
     }
   }
 
-  public static ParseBlockFromParams(
+  public static parseBlockFromParams(
     rpcInput: RPCInput,
     blockParser: BlockParser
   ): number | null {
@@ -61,11 +61,11 @@ export class Parser {
     }
 
     const resString = (result as any[])[0] as string;
-    const blockNum = rpcInput.ParseBlock(resString);
+    const blockNum = rpcInput.parseBlock(resString);
     return this.throwIfError(blockNum);
   }
 
-  public static ParseFromReply(
+  public static parseFromReply(
     rpcInput: RPCInput,
     blockParser: BlockParser
   ): string | null {
@@ -82,24 +82,24 @@ export class Parser {
     return response;
   }
 
-  public static ParseBlockFromReply(
+  public static parseBlockFromReply(
     rpcInput: RPCInput,
     blockParser: BlockParser
   ): number | null {
-    const result = this.ParseFromReply(rpcInput, blockParser);
+    const result = this.parseFromReply(rpcInput, blockParser);
     if (result === null) {
       return NOT_APPLICABLE;
     }
 
-    const blockNum = rpcInput.ParseBlock(result);
+    const blockNum = rpcInput.parseBlock(result);
     return this.throwIfError(blockNum);
   }
 
-  public static ParseFromReplyAndDecode(
+  public static parseFromReplyAndDecode(
     rpcInput: RPCInput,
     resultParser: BlockParser
   ): string | null {
-    const result = this.ParseFromReply(rpcInput, resultParser);
+    const result = this.parseFromReply(rpcInput, resultParser);
     if (result === null) {
       return "";
     }
@@ -112,64 +112,7 @@ export class Parser {
     return this.throwIfError(encoded);
   }
 
-  public static parse(
-    rpcInput: RPCInput,
-    blockParser: BlockParser,
-    dataSource: number
-  ): any[] | null | Error {
-    let retval: any[] | Error = [];
-
-    const parserFunc = blockParser.getParserFunc();
-    switch (parserFunc) {
-      case PARSER_FUNC.EMPTY:
-        return null;
-      case PARSER_FUNC.PARSE_BY_ARG:
-        retval = this.parseByArg(
-          rpcInput,
-          blockParser.getParserArgList(),
-          dataSource
-        );
-        break;
-      case PARSER_FUNC.PARSE_CANONICAL:
-        retval = this.parseCanonical(
-          rpcInput,
-          blockParser.getParserArgList(),
-          dataSource
-        );
-        break;
-      case PARSER_FUNC.PARSE_DICTIONARY:
-        retval = this.parseDictionary(
-          rpcInput,
-          blockParser.getParserArgList(),
-          dataSource
-        );
-        break;
-      case PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED:
-        retval = this.parseDictionaryOrOrdered(
-          rpcInput,
-          blockParser.getParserArgList(),
-          dataSource
-        );
-        break;
-      case PARSER_FUNC.DEFAULT:
-        retval = this.ParseDefault(blockParser.getParserArgList());
-        break;
-      default:
-        return new UnsupportedBlockParser(parserFunc);
-    }
-
-    if (
-      retval instanceof ValueNotSetError &&
-      blockParser.getDefaultValue() !== ""
-    ) {
-      // means this parsing failed because the value did not exist on an optional param
-      return [blockParser.getDefaultValue()];
-    }
-
-    return retval;
-  }
-
-  public static ParseDefault(input: string[]): any[] {
+  public static parseDefault(input: string[]): any[] {
     return [input[0]];
   }
 
@@ -179,19 +122,19 @@ export class Parser {
   ): any | Error {
     switch (dataSource) {
       case PARSE_PARAMS:
-        return rpcInput.GetParams();
+        return rpcInput.getParams();
       case PARSE_RESULT:
         let data: Record<string, any>;
-        const unmarshalled = rpcInput.GetResult();
-        if (unmarshalled.length === 0) {
+        const rawJsonString = rpcInput.getResult();
+        if (rawJsonString.length === 0) {
           return new Error("GetDataToParse failure GetResult is empty");
         }
         // Try to unmarshal, and if the data is unmarshalable, then return the data itself
         try {
-          data = JSON.parse(new TextDecoder().decode(unmarshalled));
+          data = JSON.parse(rawJsonString);
           return [data];
         } catch (err) {
-          return [unmarshalled];
+          return [rawJsonString];
         }
       default:
         return new Error("unsupported block parser parserFunc");
@@ -510,6 +453,63 @@ export class Parser {
     } else {
       return String(block);
     }
+  }
+
+  protected static parse(
+    rpcInput: RPCInput,
+    blockParser: BlockParser,
+    dataSource: number
+  ): any[] | null | Error {
+    let retval: any[] | Error = [];
+
+    const parserFunc = blockParser.getParserFunc();
+    switch (parserFunc) {
+      case PARSER_FUNC.EMPTY:
+        return null;
+      case PARSER_FUNC.PARSE_BY_ARG:
+        retval = this.parseByArg(
+          rpcInput,
+          blockParser.getParserArgList(),
+          dataSource
+        );
+        break;
+      case PARSER_FUNC.PARSE_CANONICAL:
+        retval = this.parseCanonical(
+          rpcInput,
+          blockParser.getParserArgList(),
+          dataSource
+        );
+        break;
+      case PARSER_FUNC.PARSE_DICTIONARY:
+        retval = this.parseDictionary(
+          rpcInput,
+          blockParser.getParserArgList(),
+          dataSource
+        );
+        break;
+      case PARSER_FUNC.PARSE_DICTIONARY_OR_ORDERED:
+        retval = this.parseDictionaryOrOrdered(
+          rpcInput,
+          blockParser.getParserArgList(),
+          dataSource
+        );
+        break;
+      case PARSER_FUNC.DEFAULT:
+        retval = this.parseDefault(blockParser.getParserArgList());
+        break;
+      default:
+        return new UnsupportedBlockParser(parserFunc);
+    }
+
+    if (
+      retval instanceof ValueNotSetError &&
+      blockParser.getDefaultValue() !== ""
+    ) {
+      // means this parsing failed because the value did not exist on an optional param
+      return [blockParser.getDefaultValue()];
+    }
+
+    return retval;
   }
 
   private static throwIfError(obj: any): any {

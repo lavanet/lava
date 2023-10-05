@@ -1,21 +1,21 @@
+import { JsonrpcMessage } from "../chainlib/chainproxy/rpcInterfaceMessages/json_rpc_message";
+
 export function base64ToUint8Array(str: string): Uint8Array {
   const buffer = Buffer.from(str, "base64");
 
   return new Uint8Array(buffer);
 }
 
-let globalId = 0;
-
-export function generateRPCData(method: string, params: Array<any>): string {
-  const stringifyMethod = JSON.stringify(method);
-  const stringifyParam = JSON.stringify(params, (key, value) => {
+export function generateRPCData(rpcMessage: JsonrpcMessage): string {
+  const stringifyVersion = JSON.stringify(rpcMessage.version);
+  const stringifyMethod = JSON.stringify(rpcMessage.method);
+  const stringifyParam = JSON.stringify(rpcMessage.params, (key, value) => {
     if (typeof value === "bigint") {
       return value.toString();
     }
     return value;
   });
-  globalId += 1;
-  return `{"jsonrpc": "2.0", "id": ${globalId}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
+  return `{"jsonrpc": ${stringifyVersion}, "id": ${rpcMessage.id}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
 }
 
 export function parseLong(long: Long): number {
@@ -81,7 +81,10 @@ export function encodeUtf8(str: string): Uint8Array {
   return new TextEncoder().encode(str);
 }
 
-export function byteArrayToString(byteArray: Uint8Array): string {
+export function byteArrayToString(
+  byteArray: Uint8Array,
+  replaceDoubleQuotes = false
+): string {
   let output = "";
   for (let i = 0; i < byteArray.length; i++) {
     const byte = byteArray[i];
@@ -93,7 +96,7 @@ export function byteArrayToString(byteArray: Uint8Array): string {
       output += "\\r";
     } else if (byte === 0x5c) {
       output += "\\\\";
-    } else if (byte === 0x22) {
+    } else if (replaceDoubleQuotes && byte === 0x22) {
       output += '\\"';
     } else if (byte >= 0x20 && byte <= 0x7e) {
       output += String.fromCharCode(byte);

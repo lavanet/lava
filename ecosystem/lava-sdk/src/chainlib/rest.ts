@@ -3,17 +3,21 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
   APIInterfaceRest,
-  ChainMessage,
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { NOT_APPLICABLE } from "../common/common";
+import { HttpMethod } from "../common/common";
+import { Parser } from "../parser/parser";
+import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
+import { RestMessage } from "./chainproxy/rpcInterfaceMessages/rest_message";
+import { ParsedMessage } from "./chain_message";
+import { encodeUtf8 } from "../util/common";
 export class RestChainParser extends BaseChainParser {
   constructor() {
     super();
     this.apiInterface = APIInterfaceRest;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ChainMessage {
+  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ParsedMessage {
     if (!this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -44,7 +48,17 @@ export class RestChainParser extends BaseChainParser {
       apiCollection,
       HeadersPassSend
     );
-    // TODO: implement apip.GetParsingByTag to support headers
+
+    const [settingHeaderDirective] = this.getParsingByTag(
+      FUNCTION_TAG.SET_LATEST_IN_METADATA
+    );
+
+    let restMessage = new RestMessage();
+    restMessage.initBaseMessage({
+      headers: headerHandler.filteredHeaders,
+      latestBlockHeaderSetter: undefined,
+    });
+
     let data = "";
     if (options.data) {
       data = "?";
@@ -52,15 +66,59 @@ export class RestChainParser extends BaseChainParser {
         data = data + key + "=" + options.data[key] + "&";
       }
     }
-    // TODO: add block parsing and use header overwrite.
-    const chainMessage = new ChainMessage(
-      NOT_APPLICABLE,
+
+    restMessage.initRestMessage(
+      encodeUtf8(data),
+      options.url,
+      apiCont.api.getName()
+    );
+
+    if (options.connectionType === HttpMethod.GET) {
+      restMessage = new RestMessage();
+      restMessage.initBaseMessage({
+        headers: headerHandler.filteredHeaders,
+        latestBlockHeaderSetter: settingHeaderDirective,
+      });
+      restMessage.initRestMessage(
+        undefined,
+        options.url + String(data),
+        apiCont.api.getName()
+      );
+    }
+
+    let requestedBlock: number | Error | null;
+
+    const overwriteRequestedBlock = headerHandler.overwriteRequestedBlock;
+    if (overwriteRequestedBlock == "") {
+      const blockParser = apiCont.api.getBlockParsing();
+      if (!blockParser) {
+        throw Logger.fatal("BlockParsing is missing");
+      }
+      requestedBlock = Parser.parseBlockFromParams(restMessage, blockParser);
+
+      if (!requestedBlock) {
+        throw Logger.fatal(
+          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}, blockParsing: ${blockParser}`
+        );
+      }
+    } else {
+      requestedBlock = restMessage.parseBlock(overwriteRequestedBlock);
+      if (requestedBlock instanceof Error) {
+        throw Logger.fatal(
+          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`
+        );
+      }
+    }
+
+    // TODO: add extension parsing.
+
+    return new ParsedMessage(
       apiCont.api,
+      requestedBlock,
+      restMessage,
       apiCollection,
       data,
       options.url
     );
-    // TODO: add extension parsing.
-    return chainMessage;
   }
 }

@@ -16,3 +16,15 @@ export function IsString(value: any): boolean {
 export function IsNumber(value: any): boolean {
   return typeof value === "number" || value instanceof Number;
 }
+
+export enum HttpMethod {
+  GET = "GET",
+  HEAD = "HEAD",
+  POST = "POST",
+  PUT = "PUT",
+  PATCH = "PATCH", // RFC 5789
+  DELETE = "DELETE",
+  CONNECT = "CONNECT",
+  OPTIONS = "OPTIONS",
+  TRACE = "TRACE",
+}
