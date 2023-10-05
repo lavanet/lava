@@ -374,7 +374,7 @@ export class Relayer {
           case "object":
             let valueInnerStr = "";
             if (value instanceof Uint8Array) {
-              valueInnerStr = byteArrayToString(value);
+              valueInnerStr = byteArrayToString(value, true);
               return key + ':"' + valueInnerStr + '" ';
             }
             if (value instanceof Array) {
@@ -407,7 +407,7 @@ export class Relayer {
                   objValStr = handleNumStr(objkey, objVal);
                   break;
                 case "object":
-                  objValStr = objkey + ":" + byteArrayToString(objVal);
+                  objValStr = objkey + ":" + byteArrayToString(objVal, true);
                   break;
               }
               if (objValStr != "") {

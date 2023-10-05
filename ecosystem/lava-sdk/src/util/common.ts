@@ -81,7 +81,10 @@ export function encodeUtf8(str: string): Uint8Array {
   return new TextEncoder().encode(str);
 }
 
-export function byteArrayToString(byteArray: Uint8Array): string {
+export function byteArrayToString(
+  byteArray: Uint8Array,
+  replaceDoubleQuotes = false
+): string {
   let output = "";
   for (let i = 0; i < byteArray.length; i++) {
     const byte = byteArray[i];
@@ -93,7 +96,7 @@ export function byteArrayToString(byteArray: Uint8Array): string {
       output += "\\r";
     } else if (byte === 0x5c) {
       output += "\\\\";
-    } else if (byte === 0x22) {
+    } else if (byte === 0x22 && replaceDoubleQuotes) {
       output += '\\"';
     } else if (byte >= 0x20 && byte <= 0x7e) {
       output += String.fromCharCode(byte);
