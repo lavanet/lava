@@ -149,9 +149,10 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	if verification.Value != "*" && verification.Value != "" {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
+				{Key: "parsedResult", Value: parsedResult},
+				{Key: "verification.Value", Value: verification.Value},
 				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "Response", Value: string(reply.Data)},
 			}...)
 		}
 	}
