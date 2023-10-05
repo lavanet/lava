@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/spf13/cobra"
 )
 
@@ -24,15 +25,47 @@ const (
 
 var _ = strconv.Itoa(0)
 
+type flexibleFlag struct {
+	Value interface{}
+}
+
+func (f *flexibleFlag) Type() string {
+	return "flexible"
+}
+
+func (f *flexibleFlag) String() string {
+	if s, ok := f.Value.(string); ok {
+		return s
+	} else if i, ok := f.Value.(int32); ok {
+		return strconv.Itoa(int(i))
+	}
+	return ""
+}
+
+func (f *flexibleFlag) Set(value string) error {
+	// Try to parse the value as an int32, and if it fails, store it as a string
+	i, err := strconv.ParseInt(value, 10, 32)
+	if err == nil {
+		f.Value = int32(i)
+	} else {
+		f.Value = value
+	}
+	return nil
+}
+
 func CmdModifyProvider() *cobra.Command {
+
+	var geolocationVar flexibleFlag
+
 	cmd := &cobra.Command{
 		Use:   "modify-provider [chain-id] --from <address>",
 		Short: `modify a staked provider on the lava blockchain on a specific specification, provider must be already staked`,
 		Long: `args:
 		[chain-id] is the spec the provider wishes to modify the entry for
 		`,
-		Example: `lavad tx pairing modify-provider "ETH1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
-		Args:    cobra.ExactArgs(1),
+		Example: `lavad tx pairing modify-provider "ETH1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --from <wallet>
+		lavad tx pairing modify-provider "ETH1" --endpoints "my-provider-africa.com:443,AF my-provider-europe.com:443,EU" --geolocation "AF,EU" --from <wallet>`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -88,11 +121,12 @@ func CmdModifyProvider() *cobra.Command {
 				}
 				providerEntry.Stake = newStake
 			}
-			geolocation, err := cmd.Flags().GetInt32(GeolocationFlag)
-			if err != nil {
-				return err
-			}
-			if geolocation != 0 {
+			var geolocation int32
+			if cmd.Flags().Changed(GeolocationFlag) {
+				geolocation, err = planstypes.ParseGeoEnum(geolocationVar.String())
+				if err != nil {
+					return err
+				}
 				providerEntry.Geolocation = geolocation
 			}
 			newEndpointsStr, err := cmd.Flags().GetString(EndpointsFlagName)
@@ -154,7 +188,7 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().String(EndpointsFlagName, "", "The endpoints provider is offering in the format \"endpoint-url,geolocation endpoint-url,geolocation\"")
 	cmd.Flags().String(AmountFlagName, "", "modify the provider's staked amount")
-	cmd.Flags().Int32(GeolocationFlag, 0, "modify the provider's geolocation")
+	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	flags.AddTxFlagsToCmd(cmd)
