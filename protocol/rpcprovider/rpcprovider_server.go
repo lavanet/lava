@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
+	"time"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
@@ -21,6 +23,7 @@ import (
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
@@ -95,6 +98,19 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
+
+	// This is for the SDK, since the timeout is not automatically added to the request like in Go
+	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if timeoutFound {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeout))
+		defer cancel()
+	}
+
 	utils.LavaFormatDebug("Provider got relay request",
 		utils.Attribute{Key: "GUID", Value: ctx},
 		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
@@ -704,4 +720,27 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
 	return probeReply, nil
+}
+
+func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(request *pairingtypes.RelayRequest) (time.Duration, bool, error) {
+	for _, v := range request.RelayData.Metadata {
+		if v.Name == "lava-sdk-relay-timeout" {
+			timeout, err := strconv.ParseInt(v.Value, 10, 64)
+			if err != nil {
+				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is not a number", utils.Attribute{Key: "error", Value: err})
+			}
+			if timeout < 0 {
+				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is negative", utils.Attribute{Key: "error", Value: err})
+			}
+
+			var ok bool
+			request.RelayData.Metadata, ok = slices.Remove(request.RelayData.Metadata, v)
+			if !ok {
+				return 0, false, utils.LavaFormatInfo("unable to remove header from request")
+			}
+			return time.Duration(timeout) * time.Millisecond, true, nil
+		}
+	}
+
+	return 0, false, nil
 }
