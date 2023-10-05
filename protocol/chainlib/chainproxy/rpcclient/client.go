@@ -380,15 +380,17 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 		if elem.ID != nil {
 			msg.ID = elem.ID
 		}
-		readValue, exists := byID[string(msg.ID)]
+		_, exists := byID[string(msg.ID)]
 		if exists {
 			nextID := c.nextID()
 			for _, exists := byID[string(nextID)]; exists; {
 				nextID = c.nextID() // in case the user specified something nextID also tries to send
 			}
 			msg.ID = nextID
-			readValue.keepOrder = true
-			byID[string(msg.ID)] = readValue
+			byID[string(msg.ID)] = byorder{
+				index:     i,
+				keepOrder: false,
+			}
 		} else {
 			byID[string(msg.ID)] = byorder{
 				index:     i,
