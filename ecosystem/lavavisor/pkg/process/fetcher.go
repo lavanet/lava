@@ -108,7 +108,7 @@ func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolCons
 	vm := VersionMonitor{
 		BinaryPath: binaryPath,
 	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion, ""); err != nil {
+	if err := vm.ValidateProtocolVersion(protocolConsensusVersion, "initializing"); err != nil {
 		return "", err
 	}
 
