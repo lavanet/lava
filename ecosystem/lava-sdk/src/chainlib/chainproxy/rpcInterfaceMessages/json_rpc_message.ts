@@ -1,7 +1,7 @@
 import { Logger } from "../../../logger/logger";
 import { Parser } from "../../../parser/parser";
 import { RPCInput } from "../../../parser/rpcInput";
-import { byteArrayToString, encodeUtf8 } from "../../../util/common";
+import { byteArrayToString } from "../../../util/common";
 import { BaseMessage } from "../common";
 
 export interface JsonError {

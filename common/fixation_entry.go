@@ -39,7 +39,6 @@ import (
 //    - GetAllEntryIndices(): get all the entries indices (without versions)
 //    - GetAllEntryVersions(index): get all the versions of an entry (for testing)
 //    - GetEntryVersionsRange(index, block, delta): get range of entry versions (**)
-//    - AdvanceBlock(): notify of block progress (e.g. BeginBlock) for garbage collection
 // Note:
 //    - methods marked with (*) expect an exact existing method, or otherwise will panic
 //    - methods marked with (**) will match an entry with the nearest-no-later block version
@@ -93,7 +92,6 @@ import (
 // GetAllEntryVersions() and GetEntryVersionsRange() give the all -or some- versions (blocks)
 // of an entry. GetAllEntryIndices() return all the entry indices (names).
 //
-// On every new block, AdvanceBlock() should be called.
 //
 // Entry names (index) must contain only visible ascii characters (ascii values 32-126).
 // The ascii 'DEL' invisible character is used internally to terminate the index values
@@ -1011,10 +1009,6 @@ func (fs *FixationStore) createEntryStoreKey(index string) string {
 	return fs.prefix + types.EntryPrefix + index
 }
 
-func (fs *FixationStore) AdvanceBlock(ctx sdk.Context) {
-	fs.tstore.Tick(ctx)
-}
-
 func (fs *FixationStore) getVersion(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(fs.prefix))
 	b := store.Get(types.KeyPrefix(types.FixationVersionKey))
@@ -1088,14 +1082,14 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 }
 
 // NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string) *FixationStore {
+func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *TimerStore) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
 	callback := func(ctx sdk.Context, key, data []byte) {
 		fs.entryCallbackBeginBlock(ctx, key, data)
 	}
+	tstore.WithCallbackByBlockHeight(callback)
 
-	tstore := NewTimerStore(storeKey, cdc, prefix).WithCallbackByBlockHeight(callback)
 	fs.tstore = *tstore
 
 	return &fs

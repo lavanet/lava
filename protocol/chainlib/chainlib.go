@@ -58,6 +58,8 @@ type ChainParser interface {
 	GetVerifications(supported []string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error)
 	SetConfiguredExtensions(extensions map[string]struct{}) error
+	Active() bool
+	Activate()
 }
 
 type ChainMessage interface {

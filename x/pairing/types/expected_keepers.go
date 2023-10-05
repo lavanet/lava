@@ -2,8 +2,10 @@ package types
 
 import (
 	"cosmossdk.io/math"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/lavanet/lava/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -90,4 +92,12 @@ type DowntimeKeeper interface {
 
 type DualStakingKeeper interface {
 	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error)
+}
+
+type FixationStoreKeeper interface {
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore
+}
+
+type TimerStoreKeeper interface {
+	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *common.TimerStore
 }

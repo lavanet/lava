@@ -1325,7 +1325,7 @@
             },
             {
                 "index": "AXELART",
-                "name": "axelar mainnet",
+                "name": "axelar testnet",
                 "enabled": true,
                 "imports": [
                     "AXELAR"
