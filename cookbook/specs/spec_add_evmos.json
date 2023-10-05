@@ -1524,7 +1524,19 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": []
+                                "values": [
+                                    {
+                                        "latest_distance": 100
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "net-api-version",
+                                "values": [
+                                    {
+                                        "expected_value": "9001"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -1597,7 +1609,16 @@
                                       "expected_value": "evmos_9000-4"
                                   }
                               ]
+                          },
+                          {
+                              "name": "net-api-version",
+                              "values": [
+                                  {
+                                      "expected_value": "9000"
+                                  }
+                              ]
                           }
+                          
                       ]
                     },
                     {
