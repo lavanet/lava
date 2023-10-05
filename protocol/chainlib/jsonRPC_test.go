@@ -277,14 +277,17 @@ func TestJsonRpcBatchCall(t *testing.T) {
 func TestJsonRpcBatchCallSameID(t *testing.T) {
 	ctx := context.Background()
 	gotCalled := false
-	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":1,"result":"0x1"}]`
-	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}]`
+	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}]` // call same id
+	const responseExpected = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":1,"result":"0x1"}]`         // response is expected to be like the user asked
+	// we are sending and receiving something else
+	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":3,"result":"0x1"}]`                     // response of the server is to the different ids
+	sentBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":3,"method":"eth_chainId"}]` // what is being sent is different ids
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCalled = true
 		data := make([]byte, len([]byte(batchCallData)))
 		r.Body.Read(data)
 		// require.NoError(t, err)
-		require.Equal(t, batchCallData, string(data))
+		require.Equal(t, sentBatchCallData, string(data))
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, response)
@@ -304,7 +307,7 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, response, string(relayReply.Data))
+	require.Equal(t, responseExpected, string(relayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()
