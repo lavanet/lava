@@ -1,4 +1,8 @@
-import { ConsumerSessionManager } from "./consumerSessionManager";
+import {
+  ALLOWED_PROBE_RETRIES,
+  ConsumerSessionManager,
+  TIMEOUT_BETWEEN_PROBES,
+} from "./consumerSessionManager";
 import {
   ConsumerSessionsWithProvider,
   Endpoint,
@@ -7,14 +11,14 @@ import {
 } from "./consumerTypes";
 import { PairingListEmptyError, ReportAndBlockProviderError } from "./errors";
 import { Relayer } from "../relayer/relayer";
-import { AverageWorldLatency } from "../common/timeout";
 import { ProbeReply } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { sleep } from "../util/common";
-import { RandomProviderOptimizer } from "./providerOptimizer";
 import {
-  ALLOWED_PROBE_RETRIES,
-  TIMEOUT_BETWEEN_PROBES,
-} from "./consumerSessionManager";
+  ProviderOptimizer,
+  ProviderOptimizerStrategy,
+} from "../providerOptimizer/providerOptimizer";
+import { AverageWorldLatency } from "../common/timeout";
+
 const NUMBER_OF_PROVIDERS = 10;
 const NUMBER_OF_RESETS_TO_TEST = 10;
 const FIRST_EPOCH_HEIGHT = 20;
@@ -27,7 +31,10 @@ const LATEST_RELAY_CU_AFTER_DONE = 0;
 const NUMBER_OF_ALLOWED_SESSIONS_PER_CONSUMER = 10;
 const CU_SUM_ON_FAILURE = 0;
 
-function setupConsumerSessionManager(relayer?: Relayer) {
+function setupConsumerSessionManager(
+  relayer?: Relayer,
+  optimizer?: ProviderOptimizer
+) {
   if (!relayer) {
     relayer = setupRelayer();
     jest.spyOn(relayer, "probeProvider").mockImplementation(() => {
@@ -37,10 +44,15 @@ function setupConsumerSessionManager(relayer?: Relayer) {
       return Promise.resolve(response);
     });
   }
+
+  if (!optimizer) {
+    optimizer = setupProviderOptimizer(ProviderOptimizerStrategy.Balanced);
+  }
+
   const cm = new ConsumerSessionManager(
     relayer,
     new RPCEndpoint("stub", "stub", "stub", "0"),
-    new RandomProviderOptimizer()
+    optimizer
   );
 
   return cm;
@@ -53,6 +65,18 @@ function setupRelayer(): Relayer {
     privKey: "",
     secure: true,
   });
+}
+
+function setupProviderOptimizer(
+  strategy: ProviderOptimizerStrategy,
+  wantedNumProviders = 1
+): ProviderOptimizer {
+  return new ProviderOptimizer(
+    strategy,
+    1,
+    AverageWorldLatency / 2,
+    wantedNumProviders
+  );
 }
 
 describe("ConsumerSessionManager", () => {
@@ -111,7 +135,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-      cm.validAddresses = [];
+      cm.validAddresses = new Set();
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -161,7 +185,7 @@ describe("ConsumerSessionManager", () => {
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       while (true) {
-        if (cm.validAddresses.length === 0) {
+        if (cm.validAddresses.size === 0) {
           break;
         }
 
@@ -192,7 +216,7 @@ describe("ConsumerSessionManager", () => {
         throw consumerSessions;
       }
 
-      expect(cm.validAddresses.length).toEqual(cm.getPairingAddressesLength());
+      expect(cm.validAddresses.size).toEqual(cm.getPairingAddressesLength());
 
       for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
@@ -215,7 +239,7 @@ describe("ConsumerSessionManager", () => {
         numberOfResets++
       ) {
         while (true) {
-          if (cm.validAddresses.length === 0) {
+          if (cm.validAddresses.size === 0) {
             break;
           }
 
@@ -237,14 +261,14 @@ describe("ConsumerSessionManager", () => {
           }
 
           if (
-            cm.validAddresses.length === 0 &&
+            cm.validAddresses.size === 0 &&
             consumerSessions instanceof PairingListEmptyError
           ) {
             break;
           }
         }
 
-        expect(cm.validAddresses.length).toEqual(0);
+        expect(cm.validAddresses.size).toEqual(0);
 
         const consumerSessions = cm.getSessions(
           CU_FOR_FIRST_REQUEST,
@@ -257,9 +281,7 @@ describe("ConsumerSessionManager", () => {
           throw consumerSessions;
         }
 
-        expect(cm.validAddresses.length).toEqual(
-          cm.getPairingAddressesLength()
-        );
+        expect(cm.validAddresses.size).toEqual(cm.getPairingAddressesLength());
 
         for (const consumerSession of consumerSessions.values()) {
           expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
@@ -528,7 +550,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", false);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-      expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
 
       const sessions = cm.getSessions(
@@ -549,7 +571,7 @@ describe("ConsumerSessionManager", () => {
         await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, [])).not.toEqual(0);
 
-        const initialProvidersLength = cm.getValidAddresses(addon, []).length;
+        const initialProvidersLength = cm.getValidAddresses(addon, []).size;
         for (let i = 0; i < initialProvidersLength; i++) {
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
@@ -570,10 +592,10 @@ describe("ConsumerSessionManager", () => {
           }
         }
 
-        expect(cm.getValidAddresses(addon, []).length).toEqual(0);
+        expect(cm.getValidAddresses(addon, []).size).toEqual(0);
 
         if (addon !== "") {
-          expect(cm.getValidAddresses("addon", []).length).toEqual(0);
+          expect(cm.getValidAddresses("addon", []).size).toEqual(0);
         }
 
         const consumerSessions = cm.getSessions(
@@ -641,7 +663,7 @@ describe("ConsumerSessionManager", () => {
         const initialProvidersLength = cm.getValidAddresses(
           addon,
           extensions
-        ).length;
+        ).size;
         for (let i = 0; i < initialProvidersLength; i++) {
           const consumerSessions = cm.getSessions(
             CU_FOR_FIRST_REQUEST,
@@ -662,10 +684,10 @@ describe("ConsumerSessionManager", () => {
           }
         }
 
-        expect(cm.getValidAddresses(addon, extensions).length).toEqual(0);
+        expect(cm.getValidAddresses(addon, extensions).size).toEqual(0);
 
         if (extensions.length !== 0 || addon !== "") {
-          expect(cm.getValidAddresses("addon", extensions).length).toEqual(0);
+          expect(cm.getValidAddresses("addon", extensions).size).toEqual(0);
         }
 
         const consumerSessions = cm.getSessions(
@@ -702,11 +724,12 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getCurrentEpoch()).toEqual(FIRST_EPOCH_HEIGHT);
+      const validAddressesArray = Array.from(cm.validAddresses);
       for (let i = 0; i < NUMBER_OF_PROVIDERS; i++) {
-        expect(cm.validAddresses[i]).toEqual(`provider${i}`);
+        expect(validAddressesArray[i]).toEqual(`provider${i}`);
       }
     });
 
@@ -720,11 +743,12 @@ describe("ConsumerSessionManager", () => {
         "Trying to update provider list for older epoch"
       );
 
-      expect(cm.validAddresses.length).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getCurrentEpoch()).toEqual(FIRST_EPOCH_HEIGHT);
+      const validAddressesArray = Array.from(cm.validAddresses);
       for (let i = 0; i < NUMBER_OF_PROVIDERS; i++) {
-        expect(cm.validAddresses[i]).toEqual(`provider${i}`);
+        expect(validAddressesArray[i]).toEqual(`provider${i}`);
       }
     });
 
@@ -743,6 +767,7 @@ describe("ConsumerSessionManager", () => {
 
           const response: ProbeReply = new ProbeReply();
           response.setLatestBlock(42);
+          response.setLavaEpoch(20);
           return Promise.resolve(response);
         });
 
@@ -757,12 +782,50 @@ describe("ConsumerSessionManager", () => {
       expect(providerRetries).toEqual(ALLOWED_PROBE_RETRIES + 1);
     });
 
+    it("disables provider until first successful probe", async () => {
+      const pairingList = createPairingList("", true);
+      const relayer = setupRelayer();
+      let providerRetries = 0;
+
+      jest
+        .spyOn(relayer, "probeProvider")
+        .mockImplementation(async (providerAddress: string) => {
+          if (
+            providerAddress === pairingList[1].publicLavaAddress &&
+            providerRetries < 1
+          ) {
+            providerRetries++;
+            throw new Error("test");
+          }
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          return Promise.resolve(response);
+        });
+
+      const optimizer = setupProviderOptimizer(
+        ProviderOptimizerStrategy.Latency,
+        pairingList.length
+      );
+      const cm = setupConsumerSessionManager(relayer, optimizer);
+      // @ts-expect-error - we are spying on a private method
+      jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      expect(cm.validAddresses).not.toContain(pairingList[1].publicLavaAddress);
+
+      await sleep((TIMEOUT_BETWEEN_PROBES / 2) * ALLOWED_PROBE_RETRIES);
+
+      expect(cm.validAddresses).toContain(pairingList[1].publicLavaAddress);
+    });
+
     it("returns the median latest block", async () => {
       const relayer = setupRelayer();
-      let startBlock = 1;
+      let startEpoch = 1;
       jest.spyOn(relayer, "probeProvider").mockImplementation(() => {
         const response: ProbeReply = new ProbeReply();
-        response.setLatestBlock(startBlock++);
+        response.setLavaEpoch(startEpoch++);
         return Promise.resolve(response);
       });
 
@@ -770,7 +833,7 @@ describe("ConsumerSessionManager", () => {
       const pairingList = createPairingList("", true);
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      // expect(cm.getLatestBlock()).toEqual(NUMBER_OF_PROVIDERS / 2);
+      expect(cm.getEpochFromEpochTracker()).toEqual(NUMBER_OF_PROVIDERS / 2);
     });
   });
 });
