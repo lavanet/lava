@@ -65,3 +65,9 @@ jobs:
 
     - name: lava subscription unit Tests
       run: go test ./x/subscription/... 
+    
+    - name: lavad cli test
+      run: |
+        chmod +x ./scripts/cli_test.sh    
+        ./scripts/cli_test.sh     
+        killall lavad    

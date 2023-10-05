@@ -11,8 +11,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 5,
-                "average_block_time": 100,
-                "allowed_block_lag_for_qos_sync": 100,
+                "average_block_time": 200,
+                "allowed_block_lag_for_qos_sync": 50,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

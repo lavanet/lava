@@ -21,12 +21,14 @@ import (
 	downtimemodulekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	dualstakingmodulekeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	"github.com/lavanet/lava/x/fixationstore"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
 	subscriptionmodulekeeper "github.com/lavanet/lava/x/subscription/keeper"
+	"github.com/lavanet/lava/x/timerstore"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -53,16 +55,18 @@ type LavaKeepers struct {
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 
 	// Special Keepers
-	SpecKeeper         specmodulekeeper.Keeper
-	SubscriptionKeeper subscriptionmodulekeeper.Keeper
-	EpochstorageKeeper epochstoragemodulekeeper.Keeper
-	DualstakingKeeper  dualstakingmodulekeeper.Keeper
-	PairingKeeper      pairingmodulekeeper.Keeper
-	ConflictKeeper     conflictmodulekeeper.Keeper
-	ProjectsKeeper     projectsmodulekeeper.Keeper
-	PlansKeeper        plansmodulekeeper.Keeper
-	ProtocolKeeper     protocolmodulekeeper.Keeper
-	DowntimeKeeper     downtimemodulekeeper.Keeper
+	TimerStoreKeeper    *timerstore.Keeper
+	FixationStoreKeeper *fixationstore.Keeper
+	SpecKeeper          specmodulekeeper.Keeper
+	SubscriptionKeeper  subscriptionmodulekeeper.Keeper
+	EpochstorageKeeper  epochstoragemodulekeeper.Keeper
+	DualstakingKeeper   dualstakingmodulekeeper.Keeper
+	PairingKeeper       pairingmodulekeeper.Keeper
+	ConflictKeeper      conflictmodulekeeper.Keeper
+	ProjectsKeeper      projectsmodulekeeper.Keeper
+	PlansKeeper         plansmodulekeeper.Keeper
+	ProtocolKeeper      protocolmodulekeeper.Keeper
+	DowntimeKeeper      downtimemodulekeeper.Keeper
 
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 }

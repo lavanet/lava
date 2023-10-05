@@ -3,7 +3,6 @@ package lavasession
 import (
 	"context"
 	"math"
-	"math/rand"
 	"sort"
 	"strconv"
 	"sync/atomic"
@@ -11,6 +10,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -56,7 +56,7 @@ type SingleConsumerSession struct {
 	LatestRelayCu               uint64 // set by GetSessions cuNeededForSession
 	QoSInfo                     QoSReport
 	SessionId                   int64
-	Client                      *ConsumerSessionsWithProvider
+	Parent                      *ConsumerSessionsWithProvider
 	lock                        utils.LavaMutex
 	RelayNum                    uint64
 	LatestBlock                 int64
@@ -210,7 +210,7 @@ func (cswp *ConsumerSessionsWithProvider) getDataReliabilitySingleConsumerSessio
 
 	singleDataReliabilitySession := &SingleConsumerSession{
 		SessionId: DataReliabilitySessionId,
-		Client:    cswp,
+		Parent:    cswp,
 		Endpoint:  endpoint,
 		RelayNum:  0,
 	}
@@ -319,7 +319,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	consumerSession := &SingleConsumerSession{
 		SessionId: randomSessionId,
-		Client:    cswp,
+		Parent:    cswp,
 		Endpoint:  endpoint,
 	}
 	consumerSession.lock.Lock() // we must lock the session so other requests wont get it.
@@ -453,7 +453,8 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 				utils.Attribute{Key: "Sync", Value: cs.QoSInfo.LastQoSReport.Sync},
 				utils.Attribute{Key: "block diff", Value: blockHeightDiff},
 				utils.Attribute{Key: "sync score", Value: strconv.FormatInt(cs.QoSInfo.SyncScoreSum, 10) + "/" + strconv.FormatInt(cs.QoSInfo.TotalSyncScore, 10)},
-				utils.Attribute{Key: "session_id", Value: blockHeightDiff},
+				utils.Attribute{Key: "session_id", Value: cs.SessionId},
+				utils.Attribute{Key: "provider", Value: cs.Parent.PublicLavaAddress},
 			)
 		}
 	} // else, we don't increase the score at all so everyone will have the same score

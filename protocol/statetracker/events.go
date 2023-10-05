@@ -3,7 +3,6 @@ package statetracker
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"sort"
@@ -20,6 +19,7 @@ import (
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/spf13/cobra"
 )
@@ -238,7 +238,7 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 				utils.LavaFormatFatal("failed to parse blocks as a number", err)
 			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
-			rand.Seed(time.Now().UnixNano())
+			rand.InitRandomSeed()
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak)
