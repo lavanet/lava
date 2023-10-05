@@ -74,7 +74,7 @@ type BatchElemWithId struct {
 func NewBatchElementWithId(method string, args interface{}, result interface{}, iD json.RawMessage) (BatchElemWithId, error) {
 	_, ok := args.([]interface{})
 	_, ok2 := args.(map[string]interface{})
-	if !ok && !ok2 {
+	if !ok && !ok2 && args != nil {
 		return BatchElemWithId{}, fmt.Errorf("invalid args supported types are []interface{} or map[string]interface{}")
 	}
 	return BatchElemWithId{
@@ -368,6 +368,8 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 			msg, err = c.newMessageArray(elem.Method, args...)
 		case map[string]interface{}:
 			msg, err = c.newMessageMapWithID(elem.Method, elem.ID, args)
+		case nil:
+			msg, err = c.newMessageArray(elem.Method) // in case of nil, we will send it as an empty array.
 		default:
 			return fmt.Errorf("invalid args type in message %t", args)
 		}

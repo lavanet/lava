@@ -41,6 +41,8 @@ func NewKeeper(
 	accountKeeper types.AccountKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
+	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -67,14 +69,14 @@ func NewKeeper(
 		panic(fmt.Sprintf("%s module account has not been set", types.NotBondedPoolName))
 	}
 
-	delegationFS := *common.NewFixationStore(storeKey, cdc, types.DelegationPrefix)
-	delegatorFS := *common.NewFixationStore(storeKey, cdc, types.DelegatorPrefix)
+	delegationFS := *fixationStoreKeeper.NewFixationStore(storeKey, types.DelegationPrefix)
+	delegatorFS := *fixationStoreKeeper.NewFixationStore(storeKey, types.DelegatorPrefix)
 
 	timerCallback := func(ctx sdk.Context, key, data []byte) {
 		keeper.finalizeUnbonding(ctx, key, data)
 	}
 
-	unbondingTS := *common.NewTimerStore(storeKey, cdc, types.UnbondingPrefix).
+	unbondingTS := *timerStoreKeeper.NewTimerStore(storeKey, types.UnbondingPrefix).
 		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS
@@ -82,12 +84,6 @@ func NewKeeper(
 	keeper.unbondingTS = unbondingTS
 
 	return keeper
-}
-
-func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.delegationFS.AdvanceBlock(ctx)
-	k.delegatorFS.AdvanceBlock(ctx)
-	k.unbondingTS.Tick(ctx)
 }
 
 // ExportDelegations exports dualstaking delegations data (for genesis)

@@ -36,7 +36,7 @@ type RPCProviderEndpoint struct {
 func (endpoint *RPCProviderEndpoint) UrlsString() string {
 	st_urls := make([]string, len(endpoint.NodeUrls))
 	for idx, url := range endpoint.NodeUrls {
-		st_urls[idx] = url.Url
+		st_urls[idx] = url.UrlStr()
 	}
 	return strings.Join(st_urls, ", ")
 }

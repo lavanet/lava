@@ -26,6 +26,7 @@ type ProviderMetricsManager struct {
 	consumerQoSMetric           *prometheus.GaugeVec
 	blockMetric                 *prometheus.GaugeVec
 	lastServicedBlockTimeMetric *prometheus.GaugeVec
+	disabledChainsMetric        *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -72,6 +73,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "Timestamp of the last block update received from the serviced node.",
 	}, []string{"spec"})
 
+	disabledChainsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_disabled_chains",
+		Help: "value of 1 for each disabled chain at measurement time",
+	}, []string{"chainID", "apiInterface"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -80,6 +86,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(consumerQoSMetric)
 	prometheus.MustRegister(blockMetric)
 	prometheus.MustRegister(lastServicedBlockTimeMetric)
+	prometheus.MustRegister(disabledChainsMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -94,6 +101,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		consumerQoSMetric:           consumerQoSMetric,
 		blockMetric:                 blockMetric,
 		lastServicedBlockTimeMetric: lastServicedBlockTimeMetric,
+		disabledChainsMetric:        disabledChainsMetric,
 	}
 }
 
@@ -156,4 +164,18 @@ func (pme *ProviderMetricsManager) SetBlock(latestLavaBlock int64) {
 		return
 	}
 	pme.blockMetric.WithLabelValues("lava").Set(float64(latestLavaBlock))
+}
+
+func (pme *ProviderMetricsManager) SetDisabledChain(specID string, apInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.disabledChainsMetric.WithLabelValues(specID, apInterface).Set(1)
+}
+
+func (pme *ProviderMetricsManager) SetEnabledChain(specID string, apInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.disabledChainsMetric.WithLabelValues(specID, apInterface).Set(0)
 }

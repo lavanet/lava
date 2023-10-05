@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/utils/rand"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -156,6 +158,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 func TestQoS(t *testing.T) {
 	decToSet, _ := sdk.NewDecFromStr("0.05") // test values fit 0.05 Availability requirements
 	lavasession.AvailabilityPercentage = decToSet
+	rand.InitRandomSeed()
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		t.Run(chainID, func(t *testing.T) {

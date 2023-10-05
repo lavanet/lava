@@ -3,9 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-
 	"github.com/cometbft/cometbft/libs/log"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,14 +34,15 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	epochstorageKeeper types.EpochStorageKeeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	projectsfs := common.NewFixationStore(storeKey, cdc, types.ProjectsFixationPrefix)
-	developerKeysfs := common.NewFixationStore(storeKey, cdc, types.DeveloperKeysFixationPrefix)
+	projectsfs := fixationStoreKeeper.NewFixationStore(storeKey, types.ProjectsFixationPrefix)
+	developerKeysfs := fixationStoreKeeper.NewFixationStore(storeKey, types.DeveloperKeysFixationPrefix)
 
 	return &Keeper{
 		cdc:                cdc,
@@ -53,11 +53,6 @@ func NewKeeper(
 		developerKeysFS:    *developerKeysfs,
 		epochstorageKeeper: epochstorageKeeper,
 	}
-}
-
-func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.projectsFS.AdvanceBlock(ctx)
-	k.developerKeysFS.AdvanceBlock(ctx)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

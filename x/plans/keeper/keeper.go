@@ -34,13 +34,14 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 	epochstorageKeeper types.EpochStorageKeeper,
 	specKeeper types.SpecKeeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	fs := *common.NewFixationStore(storeKey, cdc, types.PlanFixationStorePrefix)
+	fs := *fixationStoreKeeper.NewFixationStore(storeKey, types.PlanFixationStorePrefix)
 
 	return &Keeper{
 		memKey:             memKey,
@@ -49,10 +50,6 @@ func NewKeeper(
 		plansFS:            fs,
 		specKeeper:         specKeeper,
 	}
-}
-
-func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.plansFS.AdvanceBlock(ctx)
 }
 
 // Export all plans from the KVStore

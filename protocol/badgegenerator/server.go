@@ -105,6 +105,10 @@ func (s *Server) getSpec(ctx context.Context, specId string) (spectypes.Spec, er
 	return spec, nil
 }
 
+func (s *Server) Active() bool {
+	return true
+}
+
 func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBadgeRequest) (*pairingtypes.GenerateBadgeResponse, error) {
 	spec, err := s.getSpec(ctx, req.SpecId)
 	if err != nil {
