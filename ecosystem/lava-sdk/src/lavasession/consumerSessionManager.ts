@@ -549,9 +549,9 @@ export class ConsumerSessionManager {
     extensions: string[]
   ): SessionsWithProviderMap | Error {
     Logger.debug(
-      `called getValidConsumerSessionsWithProvider ${JSON.stringify({
-        ignoredProviders,
-      })}`
+      `called getValidConsumerSessionsWithProvider ${Array.from(
+        ignoredProviders.providers
+      )}`
     );
 
     if (ignoredProviders.currentEpoch < this.currentEpoch) {
@@ -578,7 +578,7 @@ export class ConsumerSessionManager {
 
     if (providerAddresses instanceof Error) {
       Logger.error(
-        `could not get a provider addresses error: ${providerAddresses.message}`
+        `could not get a provider addresses error: ${providerAddresses.message} ignored count: ${ignoredProviders.providers.size}`
       );
       return providerAddresses;
     }
@@ -698,10 +698,7 @@ export class ConsumerSessionManager {
 
     if (totalValidLength <= 0) {
       Logger.debug(
-        `pairing list empty ${JSON.stringify({
-          providerList: validAddresses,
-          ignoredProviderList,
-        })}`
+        `pairing list empty ignored size: ${ignoredProviderList.size} validAddressesLength ${validAddressesLength}`
       );
       return new PairingListEmptyError();
     }
