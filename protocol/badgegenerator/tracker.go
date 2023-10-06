@@ -48,6 +48,24 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
 }
 
+func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context) error {
+	downtimeParamsUpdater := statetracker.NewDowntimeParamsUpdater(st.stateQuery, st.EventTracker)
+	downtimeParamsUpdaterRaw := st.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*statetracker.DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	downtimeParamsUpdatable := statetracker.DowntimeParamsUpdatable(st.StateTracker.GetChainTracker())
+
+	err := downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
+	if err != nil {
+		utils.LavaFormatFatal("failed to register downtime params updatable", err)
+	}
+
+	return err
+}
+
 func (st *BadgeStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
 	specUpdater := statetracker.NewSpecUpdater(endpoint.ChainID, st.stateQuery, st.EventTracker)

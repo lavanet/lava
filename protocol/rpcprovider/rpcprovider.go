@@ -55,7 +55,7 @@ type ProviderStateTrackerInf interface {
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
-	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error
+	RegisterForDowntimeParamsUpdates(ctx context.Context) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
@@ -116,6 +116,11 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version, &upgrade.ProtocolVersion{})
+
+	err = rpcp.providerStateTracker.RegisterForDowntimeParamsUpdates(ctx)
+	if err != nil {
+		return utils.LavaFormatError("failed to RegisterForDowntimeParamsUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err)
+	}
 
 	// single reward server
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
@@ -271,11 +276,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface})
 	if err != nil {
 		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
-	}
-
-	err = rpcp.providerStateTracker.RegisterForDowntimeParamsUpdates(ctx, chainParser)
-	if err != nil {
-		return utils.LavaFormatError("failed to RegisterForDowntimeParamsUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)

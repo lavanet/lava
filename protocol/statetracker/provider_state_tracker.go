@@ -93,13 +93,15 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	paymentUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
 }
 
-func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context) error {
 	downtimeParamsUpdater := NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
 	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
 	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
 	}
+
+	downtimeParamsUpdatable := DowntimeParamsUpdatable(pst.StateTracker.chainTracker)
 
 	err := downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 	if err != nil {

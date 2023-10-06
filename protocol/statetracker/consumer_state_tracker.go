@@ -105,6 +105,24 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
+func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context) error {
+	downtimeParamsUpdater := NewDowntimeParamsUpdater(cst.stateQuery, cst.EventTracker)
+	downtimeParamsUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	downtimeParamsUpdatable := DowntimeParamsUpdatable(cst.StateTracker.chainTracker)
+
+	err := downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
+	if err != nil {
+		utils.LavaFormatFatal("failed to register downtime params updatable", err)
+	}
+
+	return err
+}
+
 func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
 	return cst.stateQuery.GetProtocolVersion(ctx)
 }

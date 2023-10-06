@@ -110,6 +110,14 @@ func (csq *StateQuery) CheckEmergencyMode(ctx context.Context) (isEmergency bool
 	return false, 0, nil
 }
 
+func (csq *StateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Params, error) {
+	res, err := csq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return res.Params, nil
+}
+
 type ConsumerStateQuery struct {
 	StateQuery
 	clientCtx   client.Context
@@ -365,12 +373,4 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 		return 0, err
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
-}
-
-func (psq *ProviderStateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Params, error) {
-	res, err := psq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
-	if err != nil {
-		return nil, err
-	}
-	return res.Params, nil
 }

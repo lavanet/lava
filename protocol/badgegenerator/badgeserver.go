@@ -134,6 +134,10 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 		utils.LavaFormatFatal("Error initiating state tracker", err)
 	}
 	stateTracker.RegisterForEpochUpdates(ctx, server)
+	err = stateTracker.RegisterForDowntimeParamsUpdates(ctx)
+	if err != nil {
+		utils.LavaFormatFatal("failed to RegisterForDowntimeParamsUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err)
+	}
 	// setting stateTracker in server so we can register for spec updates.
 	server.InitializeStateTracker(stateTracker)
 

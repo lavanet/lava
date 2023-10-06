@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	fmt "fmt"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"net"
 	"net/http"
 	"os"
@@ -12,8 +13,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	"github.com/lavanet/lava/protocol/common"
 
@@ -36,7 +35,7 @@ type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
-	GetDowntimeParams() downtimev1.Params
+	//GetDowntimeParams() downtimev1.Params
 }
 
 type ChainTracker struct {
@@ -54,6 +53,7 @@ type ChainTracker struct {
 	blockCheckpoint         uint64 // last time checkpoint was met
 	ticker                  *time.Ticker
 	isEmergencyMode         bool
+	downtimeParams          downtimev1.Params
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -102,12 +102,20 @@ func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
 	return cs.blocksQueue[len(cs.blocksQueue)-1]
 }
 
+func (cs *ChainTracker) SetDowntimeParams(params downtimev1.Params) {
+	cs.blockQueueMu.Lock()
+	defer cs.blockQueueMu.Unlock()
+	cs.downtimeParams = params
+}
+
 func (cs *ChainTracker) GetLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
 }
 
 func (cs *ChainTracker) GetDowntimeParams() downtimev1.Params {
-	return cs.chainFetcher.GetDowntimeParams()
+	cs.blockQueueMu.RLock()
+	defer cs.blockQueueMu.RUnlock()
+	return cs.downtimeParams
 }
 
 func (cs *ChainTracker) setLatestBlockNum(value int64) {

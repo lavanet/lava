@@ -62,7 +62,11 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		averageBlockTime = 30
 	}
 
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
+	cst := &StateTracker{
+		newLavaBlockUpdaters:  map[string]Updater{},
+		emergencyModeUpdaters: map[string]EmergencyModeUpdater{},
+		EventTracker:          eventTracker,
+	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		OldBlockCallback:  cst.oldLavaBlock,
@@ -96,7 +100,7 @@ func (st *StateTracker) oldLavaBlock(latestBlock int64) {
 	delay := time.Now().UTC().Sub(latestBlockTime)
 
 	// check if emergency mode is enabled
-	if delay > downtimeParams.DowntimeDuration {
+	if delay < downtimeParams.DowntimeDuration {
 		return
 	}
 
@@ -135,4 +139,9 @@ func (st *StateTracker) RegisterForEmergencyModeUpdates(ctx context.Context, upd
 // For lavavisor access
 func (s *StateTracker) GetEventTracker() *EventTracker {
 	return s.EventTracker
+}
+
+// For badgeserver access
+func (s *StateTracker) GetChainTracker() *chaintracker.ChainTracker {
+	return s.chainTracker
 }
