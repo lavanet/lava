@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	fmt "fmt"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -35,7 +35,6 @@ type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
-	//GetDowntimeParams() downtimev1.Params
 }
 
 type ChainTracker struct {

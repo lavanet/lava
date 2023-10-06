@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
-
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -47,7 +45,6 @@ type RPCProviderServer struct {
 type ReliabilityManagerInf interface {
 	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error)
 	GetLatestBlockNum() int64
-	GetDowntimeParams() downtimev1.Params
 }
 
 type RewardServerInf interface {

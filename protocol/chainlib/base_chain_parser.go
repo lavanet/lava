@@ -6,8 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
-
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -25,7 +23,6 @@ type BaseChainParser struct {
 	allowedAddons   map[string]struct{}
 	extensionParser extensionslib.ExtensionParser
 	active          bool
-	downtimeParams  downtimev1.Params
 }
 
 func (bcp *BaseChainParser) Activate() {
@@ -71,18 +68,6 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
 	return bcp.extensionParser.AllowedExtension(extension)
-}
-
-func (bcp *BaseChainParser) SetDowntimeParams(params downtimev1.Params) {
-	bcp.rwLock.Lock()
-	defer bcp.rwLock.Unlock()
-	bcp.downtimeParams = params
-}
-
-func (bcp *BaseChainParser) GetDowntimeParams() downtimev1.Params {
-	bcp.rwLock.RLock()
-	defer bcp.rwLock.RUnlock()
-	return bcp.downtimeParams
 }
 
 func (bcp *BaseChainParser) SetConfiguredExtensions(extensions map[string]struct{}) error {

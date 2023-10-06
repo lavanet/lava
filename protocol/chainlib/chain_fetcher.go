@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
@@ -28,7 +26,6 @@ type ChainFetcherIf interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
-	GetDowntimeParams() downtimev1.Params
 	Validate(ctx context.Context) error
 }
 
@@ -42,10 +39,6 @@ type ChainFetcher struct {
 
 func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
-}
-
-func (cf *ChainFetcher) GetDowntimeParams() downtimev1.Params {
-	return cf.chainParser.GetDowntimeParams()
 }
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
@@ -304,17 +297,6 @@ func (lcf *LavaChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 
 func (lcf *LavaChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
 	return "", "", utils.LavaFormatError("FetchChainID not supported for lava chain fetcher", nil)
-}
-
-func (lcf *LavaChainFetcher) GetDowntimeParams() downtimev1.Params {
-	ctx := context.Background()
-	result, err := downtimev1.NewQueryClient(lcf.clientCtx).QueryParams(ctx, &downtimev1.QueryParamsRequest{})
-	if err != nil {
-		utils.LavaFormatError("Failed to fetch downtime params", err)
-		return downtimev1.Params{}
-	}
-
-	return *result.Params
 }
 
 func NewLavaChainFetcher(ctx context.Context, clientCtx client.Context) *LavaChainFetcher {

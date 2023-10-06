@@ -11,7 +11,6 @@ import (
 	chaintracker "github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -28,10 +27,6 @@ type MockChainFetcher struct {
 	blockHashes []*chaintracker.BlockStore
 	mutex       sync.Mutex
 	fork        string
-}
-
-func (mcf *MockChainFetcher) GetDowntimeParams() downtimev1.Params {
-	return downtimev1.Params{}
 }
 
 func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
