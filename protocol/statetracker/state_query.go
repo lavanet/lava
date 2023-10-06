@@ -366,3 +366,11 @@ func (psq *ProviderStateQuery) GetEpochSizeMultipliedByRecommendedEpochNumToColl
 	}
 	return epochSize * recommendedEpochNumToCollectPayment, nil
 }
+
+func (psq *ProviderStateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Params, error) {
+	res, err := psq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return res.Params, nil
+}

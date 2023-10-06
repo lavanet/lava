@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"fmt"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
@@ -58,6 +59,8 @@ type ChainParser interface {
 	GetVerifications(supported []string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error)
 	SetConfiguredExtensions(extensions map[string]struct{}) error
+	SetDowntimeParams(params downtimev1.Params)
+	GetDowntimeParams() downtimev1.Params
 	Active() bool
 	Activate()
 }

@@ -56,16 +56,8 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	defer pu.lock.Unlock()
 	ctx := context.Background()
 
-	isEmergency, virtualEpoch, err := pu.stateQuery.CheckEmergencyMode(ctx)
-	if err != nil {
-		utils.LavaFormatError("failed to check emergency mode", err)
-		return
-	}
-
-	if isEmergency {
-		pu.updateConsumerSessionManagerCULimits(virtualEpoch)
-		pu.currentVirtualEpoch = virtualEpoch
-	}
+	// if !isEmergency will be set 0
+	pu.currentVirtualEpoch = 0
 
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return
@@ -183,4 +175,12 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 	}
 	// replace previous pairing with new providers
 	return pairing, nil
+}
+
+func (pu *PairingUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
+	pu.updateConsumerSessionManagerCULimits(virtualEpoch)
+
+	pu.currentVirtualEpoch = virtualEpoch
 }

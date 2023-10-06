@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -24,17 +25,20 @@ type EventTracker struct {
 	clientCtx          client.Context
 	blockResults       *ctypes.ResultBlockResults
 	latestUpdatedBlock int64
+	latestBlockTime    time.Time
 }
 
 func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	ctx := context.Background()
 	var blockResults *ctypes.ResultBlockResults
+	var latestBlockTime time.Time
 	if latestBlock == 0 {
 		res, err := et.clientCtx.Client.Status(ctx)
 		if err != nil {
 			return utils.LavaFormatWarning("could not get latest block height and requested latestBlock = 0", err)
 		}
 		latestBlock = res.SyncInfo.LatestBlockHeight
+		latestBlockTime = res.SyncInfo.LatestBlockTime
 	}
 	brp, err := tryIntoTendermintRPC(et.clientCtx.Client)
 	if err != nil {
@@ -47,9 +51,19 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	// lock for update after successful block result query
 	et.lock.Lock()
 	defer et.lock.Unlock()
+	if latestBlock > et.latestUpdatedBlock && et.latestUpdatedBlock != 0 {
+		latestBlockTime = time.Now().UTC()
+	}
+	et.latestBlockTime = latestBlockTime
 	et.latestUpdatedBlock = latestBlock
 	et.blockResults = blockResults
 	return nil
+}
+
+func (et *EventTracker) getLatestBlockTime() time.Time {
+	et.lock.RLock()
+	defer et.lock.RUnlock()
+	return et.latestBlockTime
 }
 
 func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.PaymentRequest, err error) {
@@ -81,6 +95,21 @@ func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
 				if attribute.Key == "param" && attribute.Value == "Version" {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (et *EventTracker) getLatestDowntimeParamsUpdateEvents() (updated bool) {
+	et.lock.RLock()
+	defer et.lock.RUnlock()
+	for _, event := range et.blockResults.EndBlockEvents {
+		if event.Type == utils.EventPrefix+"param_change" {
+			for _, attribute := range event.Attributes {
+				if attribute.Key == "param" && (attribute.Value == "DowntimeDuration" || attribute.Value == "EpochDuration") {
 					return true
 				}
 			}

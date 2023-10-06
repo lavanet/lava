@@ -41,6 +41,12 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
+
+	epochUpdaterWithEmergencyRaw := pst.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
+	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*EpochUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterWithEmergencyRaw})
+	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
 }
 
@@ -77,14 +83,30 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	payemntUpdater := NewPaymentUpdater(pst.EventTracker)
-	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
-	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
+	paymentUpdater := NewPaymentUpdater(pst.EventTracker)
+	paymentUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, paymentUpdater)
+	paymentUpdater, ok := paymentUpdaterRaw.(*PaymentUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: payemntUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: paymentUpdaterRaw})
 	}
 
-	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+	paymentUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+}
+
+func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+	downtimeParamsUpdater := NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
+	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	err := downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
+	if err != nil {
+		utils.LavaFormatFatal("failed to register downtime params updatable", err)
+	}
+
+	return err
 }
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error {

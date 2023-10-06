@@ -39,6 +39,12 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 		err := fmt.Errorf("invalid type")
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", err)
 	}
+
+	epochUpdaterWithEmergencyRaw := st.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
+	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*statetracker.EpochUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterWithEmergencyRaw})
+	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
 }
 

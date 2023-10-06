@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	fmt "fmt"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"net"
 	"net/http"
 	"os"
@@ -34,6 +35,7 @@ type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
+	GetDowntimeParams() downtimev1.Params
 }
 
 type ChainTracker struct {
@@ -101,6 +103,10 @@ func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
 
 func (cs *ChainTracker) GetLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
+}
+
+func (cs *ChainTracker) GetDowntimeParams() downtimev1.Params {
+	return cs.chainFetcher.GetDowntimeParams()
 }
 
 func (cs *ChainTracker) setLatestBlockNum(value int64) {

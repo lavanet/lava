@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"fmt"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"strconv"
 	"sync/atomic"
 
@@ -26,6 +27,7 @@ type ChainFetcherIf interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
 	FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error)
 	FetchEndpoint() lavasession.RPCProviderEndpoint
+	GetDowntimeParams() downtimev1.Params
 	Validate(ctx context.Context) error
 }
 
@@ -39,6 +41,10 @@ type ChainFetcher struct {
 
 func (cf *ChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return *cf.endpoint
+}
+
+func (cf *ChainFetcher) GetDowntimeParams() downtimev1.Params {
+	return cf.chainParser.GetDowntimeParams()
 }
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
