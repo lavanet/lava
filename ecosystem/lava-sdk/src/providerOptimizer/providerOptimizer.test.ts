@@ -430,7 +430,7 @@ describe("ProviderOptimizer", () => {
     const perturbationPercentage = 0.0;
     const syncBlock = 1000;
 
-    const chosenIndex = random.int(0, providers.length);
+    const chosenIndex = random.int(0, providers.length - 1);
     let sampleTime = now();
     const appendRelayData = (
       providerAddress: string,

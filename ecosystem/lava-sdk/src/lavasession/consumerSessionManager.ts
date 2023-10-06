@@ -824,7 +824,34 @@ export class ConsumerSessionManager {
 
     // launch retry probing on failed providers; this needs to run asynchronously without waiting!
     // Must NOT "await" this method.
-    this.probeProviders(retryProbing, epoch, retry + 1);
+    this.probeProviders(retryProbing, epoch, retry + 1).then(
+      this.blockDisabledProvidersByProbe(epoch)
+    );
+  }
+
+  private blockDisabledProvidersByProbe(epoch: number) {
+    return () => {
+      // check for providers with all disabled endpoints
+      for (const providerAddress of this.getValidAddresses("", [])) {
+        const consumerSessionsWithProvider = this.pairing.get(providerAddress);
+        if (consumerSessionsWithProvider == undefined) {
+          continue;
+        }
+        const endpointConnection =
+          consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(
+            this.transport
+          );
+        if (endpointConnection.error) {
+          // if all provider endpoints are disabled, block and report provider
+          if (
+            endpointConnection.error instanceof
+            AllProviderEndpointsDisabledError
+          ) {
+            this.blockProvider(providerAddress, true, epoch, 0, 1); // endpoints are disabled
+          }
+        }
+      }
+    };
   }
 
   private probeProvider(
