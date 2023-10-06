@@ -54,7 +54,6 @@ func (f *flexibleFlag) Set(value string) error {
 }
 
 func CmdModifyProvider() *cobra.Command {
-
 	var geolocationVar flexibleFlag
 
 	cmd := &cobra.Command{
