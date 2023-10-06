@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"strings"
+
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"

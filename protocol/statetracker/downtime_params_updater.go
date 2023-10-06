@@ -2,9 +2,10 @@ package statetracker
 
 import (
 	"context"
+	"sync"
+
 	"github.com/lavanet/lava/utils"
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
-	"sync"
 )
 
 const (

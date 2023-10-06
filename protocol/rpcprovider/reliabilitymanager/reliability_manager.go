@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
@@ -130,6 +132,10 @@ func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlo
 
 func (rm *ReliabilityManager) GetLatestBlockNum() int64 {
 	return rm.chainTracker.GetLatestBlockNum()
+}
+
+func (rm *ReliabilityManager) GetDowntimeParams() downtimev1.Params {
+	return rm.chainTracker.GetDowntimeParams()
 }
 
 func NewReliabilityManager(chainTracker *chaintracker.ChainTracker, txSender TxSender, publicAddress string, chainRouter chainlib.ChainRouter, chainParser chainlib.ChainParser) *ReliabilityManager {

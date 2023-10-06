@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	fmt "fmt"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"net"
 	"net/http"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	"github.com/lavanet/lava/protocol/common"
 

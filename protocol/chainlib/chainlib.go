@@ -3,8 +3,9 @@ package chainlib
 import (
 	"context"
 	"fmt"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"time"
+
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"

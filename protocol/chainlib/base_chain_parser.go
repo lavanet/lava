@@ -2,10 +2,11 @@ package chainlib
 
 import (
 	"errors"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"regexp"
 	"strings"
 	"sync"
+
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
