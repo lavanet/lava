@@ -91,16 +91,13 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 	targetVersionMismatch := (protocolVersion.HasVersionMismatch(incoming.ConsumerTarget, currentBinaryVersion) || protocolVersion.HasVersionMismatch(incoming.ProviderTarget, currentBinaryVersion))
 
 	if minVersionMismatch || targetVersionMismatch {
-		select {
-		case vm.updateTriggered <- true:
-		default:
-		}
 		if minVersionMismatch {
 			vm.mismatchType = lvutil.MinVersionMismatch
 		} else {
 			vm.mismatchType = lvutil.TargetVersionMismatch
 		}
 		vm.lastKnownVersion = incoming
+		vm.updateTriggered <- true // Trigger new version
 		return utils.LavaFormatInfo("New version detected", utils.Attribute{Key: "incoming", Value: incoming})
 	}
 
