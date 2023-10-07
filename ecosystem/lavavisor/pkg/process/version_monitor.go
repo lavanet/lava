@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	protocolversion "github.com/lavanet/lava/protocol/upgrade"
+	protocolVersion "github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -16,7 +16,7 @@ type VersionMonitor struct {
 	LavavisorPath    string
 	updateTriggered  chan bool
 	mismatchType     lvutil.MismatchType
-	lastknownversion *protocoltypes.Version
+	lastKnownVersion *protocoltypes.Version
 	processes        []*ServiceProcess
 	autoDownload     bool
 }
@@ -47,9 +47,9 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				// 1. check lavavisor directory first and attempt to fetch new binary from there
 				var versionToUpgrade string
 				if vm.mismatchType == 1 {
-					versionToUpgrade = vm.lastknownversion.ProviderMin
+					versionToUpgrade = vm.lastKnownVersion.ProviderMin
 				} else if vm.mismatchType == 2 {
-					versionToUpgrade = vm.lastknownversion.ProviderTarget
+					versionToUpgrade = vm.lastKnownVersion.ProviderTarget
 				} else {
 					utils.LavaFormatFatal("Unknown mismatch type detected in Version Monitor!", nil)
 				}
@@ -58,7 +58,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 				// fetcher
-				_, err := FetchProtocolBinary(vm.LavavisorPath, vm.autoDownload, vm.lastknownversion)
+				_, err := FetchProtocolBinary(vm.LavavisorPath, vm.autoDownload, vm.lastKnownVersion)
 				if err != nil {
 					utils.LavaFormatFatal("Lavavisor was not able to fetch updated version!", nil, utils.Attribute{Key: "Version", Value: versionToUpgrade})
 				}
@@ -82,13 +82,13 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 }
 
 func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
-	binaryVersion, err := GetBinaryVersion(vm.BinaryPath)
-	if err != nil || binaryVersion == "" {
+	currentBinaryVersion, err := GetBinaryVersion(vm.BinaryPath)
+	if err != nil || currentBinaryVersion == "" {
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
 
-	minVersionMismatch := (protocolversion.HasVersionMismatch(incoming.ConsumerMin, binaryVersion) || protocolversion.HasVersionMismatch(incoming.ProviderMin, binaryVersion))
-	targetVersionMismatch := (protocolversion.HasVersionMismatch(incoming.ConsumerTarget, binaryVersion) || protocolversion.HasVersionMismatch(incoming.ProviderTarget, binaryVersion))
+	minVersionMismatch := (protocolVersion.HasVersionMismatch(incoming.ConsumerMin, currentBinaryVersion) || protocolVersion.HasVersionMismatch(incoming.ProviderMin, currentBinaryVersion))
+	targetVersionMismatch := (protocolVersion.HasVersionMismatch(incoming.ConsumerTarget, currentBinaryVersion) || protocolVersion.HasVersionMismatch(incoming.ProviderTarget, currentBinaryVersion))
 
 	if minVersionMismatch || targetVersionMismatch {
 		select {
@@ -100,12 +100,12 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 		} else {
 			vm.mismatchType = lvutil.TargetVersionMismatch
 		}
-		vm.lastknownversion = incoming
+		vm.lastKnownVersion = incoming
 		return utils.LavaFormatError("Version mismatch detected!", nil)
 	}
 
 	// version is ok.
-	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: binaryVersion})
+	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: currentBinaryVersion})
 
 	return nil
 }

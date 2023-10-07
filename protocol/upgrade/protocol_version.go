@@ -48,7 +48,7 @@ func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *protocoltypes.Versi
 	return nil
 }
 
-// if versions are different or incoming > current return true, otherwise return false
+// if incoming >(Bigger then and not equal) current return true, otherwise return false
 func HasVersionMismatch(incoming string, current string) bool {
 	if incoming == current {
 		return false
