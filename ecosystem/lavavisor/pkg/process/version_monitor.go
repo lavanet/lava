@@ -101,7 +101,7 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 			vm.mismatchType = lvutil.TargetVersionMismatch
 		}
 		vm.lastKnownVersion = incoming
-		return utils.LavaFormatError("Version mismatch detected!", nil)
+		return utils.LavaFormatInfo("New version detected", utils.Attribute{Key: "incoming", Value: incoming})
 	}
 
 	// version is ok.
