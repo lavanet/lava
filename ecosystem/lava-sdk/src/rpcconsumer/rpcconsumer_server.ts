@@ -180,6 +180,7 @@ export class RPCConsumerServer {
         epoch,
         reportedProviders
       );
+
       relayResult.request = relayRequest;
       const relayResponse = await this.relayInner(
         singleConsumerSession,
