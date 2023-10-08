@@ -18,7 +18,6 @@ import {
 } from "../lavaprotocol/request_builder";
 import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
-  Metadata,
   RelayPrivateData,
   RelayReply,
   RelayRequest,
