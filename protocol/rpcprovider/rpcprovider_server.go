@@ -23,10 +23,10 @@ import (
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 type RPCProviderServer struct {
@@ -100,7 +100,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
 
 	// This is for the SDK, since the timeout is not automatically added to the request like in Go
-	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(request)
+	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -722,25 +722,26 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 	return probeReply, nil
 }
 
-func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(request *pairingtypes.RelayRequest) (time.Duration, bool, error) {
-	for _, v := range request.RelayData.Metadata {
-		if v.Name == "lava-sdk-relay-timeout" {
-			timeout, err := strconv.ParseInt(v.Value, 10, 64)
+func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (time.Duration, bool, error) {
+	metadata, found := metadata.FromIncomingContext(ctx)
+	if !found {
+		return 0, false, nil
+	}
+	for key, value := range metadata {
+		if key == "lava-sdk-relay-timeout" {
+			var timeout int64
+			var err error
+			for _, timeoutValues := range value {
+				timeout, err = strconv.ParseInt(timeoutValues, 10, 64)
+			}
 			if err != nil {
 				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is not a number", utils.Attribute{Key: "error", Value: err})
 			}
 			if timeout < 0 {
 				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is negative", utils.Attribute{Key: "error", Value: err})
 			}
-
-			var ok bool
-			request.RelayData.Metadata, ok = slices.Remove(request.RelayData.Metadata, v)
-			if !ok {
-				return 0, false, utils.LavaFormatInfo("unable to remove header from request")
-			}
 			return time.Duration(timeout) * time.Millisecond, true, nil
 		}
 	}
-
 	return 0, false, nil
 }
