@@ -180,13 +180,6 @@ export class RPCConsumerServer {
         reportedProviders
       );
 
-      // Add timeout to the relay for the provider
-      // We're doing this here because we don't want to calculate the hash with this header
-      const timeoutMetadata = new Metadata();
-      timeoutMetadata.setName("lava-sdk-relay-timeout");
-      timeoutMetadata.setValue(relayTimeout.toString());
-      relayData.addMetadata(timeoutMetadata);
-
       relayResult.request = relayRequest;
       const relayResponse = await this.relayInner(
         singleConsumerSession,
