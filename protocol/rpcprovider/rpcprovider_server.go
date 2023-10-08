@@ -723,16 +723,16 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 }
 
 func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (time.Duration, bool, error) {
-	metadata, found := metadata.FromIncomingContext(ctx)
+	incomingMetaData, found := metadata.FromIncomingContext(ctx)
 	if !found {
 		return 0, false, nil
 	}
-	for key, value := range metadata {
+	for key, listOfMetaDataValues := range incomingMetaData {
 		if key == "lava-sdk-relay-timeout" {
 			var timeout int64
 			var err error
-			for _, timeoutValues := range value {
-				timeout, err = strconv.ParseInt(timeoutValues, 10, 64)
+			for _, metaDataValue := range listOfMetaDataValues {
+				timeout, err = strconv.ParseInt(metaDataValue, 10, 64)
 			}
 			if err != nil {
 				return 0, false, utils.LavaFormatInfo("invalid relay request, timeout is not a number", utils.Attribute{Key: "error", Value: err})
