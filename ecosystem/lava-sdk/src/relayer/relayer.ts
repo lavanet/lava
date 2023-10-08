@@ -138,7 +138,7 @@ export class Relayer {
     singleConsumerSession: SingleConsumerSession
   ): Promise<RelayReply> {
     // Extract attributes from options
-    const { data, url, connectionType } = options;
+    const { data, url, connectionType, requestedBlock } = options;
 
     const enc = new TextEncoder();
 
@@ -147,7 +147,7 @@ export class Relayer {
     requestPrivateData.setConnectionType(connectionType);
     requestPrivateData.setApiUrl(url);
     requestPrivateData.setData(enc.encode(data));
-    requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
+    requestPrivateData.setRequestBlock(requestedBlock);
     requestPrivateData.setApiInterface(options.apiInterface);
     requestPrivateData.setSalt(this.getNewSalt());
 
@@ -505,4 +505,5 @@ export interface SendRelayOptions {
   chainId: string;
   publicProviderLavaAddress: string;
   epoch: number;
+  requestedBlock: number;
 }

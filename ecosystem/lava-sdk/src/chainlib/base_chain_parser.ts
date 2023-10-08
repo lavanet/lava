@@ -346,7 +346,7 @@ export abstract class BaseChainParser {
     return "connectionType" in options; // how to check which options were given
   }
 
-  protected handleHeaders(
+  public handleHeaders(
     metadata: Metadata[] | undefined,
     apiCollection: ApiCollection,
     headersDirection: number
