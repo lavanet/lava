@@ -7,7 +7,7 @@ import {
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
 import { generateRPCData } from "../util/common";
-import { HttpMethod } from "../common/common";
+import { HttpMethod, NOT_APPLICABLE } from "../common/common";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { JsonrpcMessage } from "./chainproxy/rpcInterfaceMessages/json_rpc_message";
 import { Parser } from "../parser/parser";
@@ -60,22 +60,27 @@ export class JsonRpcChainParser extends BaseChainParser {
       throw Logger.fatal("BlockParsing is missing");
     }
 
-    let requestedBlock: number | Error | null;
+    let requestedBlock: number | Error;
 
     const overwriteRequestedBlock = headerHandler.overwriteRequestedBlock;
     if (overwriteRequestedBlock === "") {
       requestedBlock = Parser.parseBlockFromParams(jsonrpcMessage, blockParser);
-      if (!requestedBlock) {
-        throw Logger.fatal(
-          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}, blockParsing: ${blockParser}`
+      if (requestedBlock instanceof Error) {
+        Logger.error(
+          `ParseBlockFromParams failed parsing block for chain: ${this.spec?.getName()}`,
+          blockParser,
+          requestedBlock
         );
+        requestedBlock = NOT_APPLICABLE;
       }
     } else {
       requestedBlock = jsonrpcMessage.parseBlock(overwriteRequestedBlock);
       if (requestedBlock instanceof Error) {
-        throw Logger.fatal(
-          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`
+        Logger.error(
+          `Failed parsing block from an overwrite header for chain: ${this.spec?.getName()}, overwriteRequestedBlock: ${overwriteRequestedBlock}`,
+          requestedBlock
         );
+        requestedBlock = NOT_APPLICABLE;
       }
     }
 

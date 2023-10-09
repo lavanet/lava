@@ -113,9 +113,15 @@ export class Relayer {
       requestSession.setBadge(this.badge);
     }
     relayRequest.setRelaySession(requestSession);
+
+    // adding metadata to the request itself (this will be applied to the grpc context in the provider side)
+    const metaData = new grpc.Metadata(
+      new Map<string, string>([["lava-sdk-relay-timeout", String(timeout)]]) // adding relay timeout.
+    );
     const requestPromise = new Promise<RelayReply>((resolve, reject) => {
       client.relay(
         relayRequest,
+        metaData,
         (err: ServiceError | null, result: RelayReply | null) => {
           if (err != null) {
             console.log("failed sending relay", err);
@@ -138,7 +144,7 @@ export class Relayer {
     singleConsumerSession: SingleConsumerSession
   ): Promise<RelayReply> {
     // Extract attributes from options
-    const { data, url, connectionType } = options;
+    const { data, url, connectionType, requestedBlock } = options;
 
     const enc = new TextEncoder();
 
@@ -147,7 +153,7 @@ export class Relayer {
     requestPrivateData.setConnectionType(connectionType);
     requestPrivateData.setApiUrl(url);
     requestPrivateData.setData(enc.encode(data));
-    requestPrivateData.setRequestBlock(-1); // TODO: when block parsing is implemented, replace this with the request parsed block. -1 == not applicable
+    requestPrivateData.setRequestBlock(requestedBlock);
     requestPrivateData.setApiInterface(options.apiInterface);
     requestPrivateData.setSalt(this.getNewSalt());
 
@@ -505,4 +511,5 @@ export interface SendRelayOptions {
   chainId: string;
   publicProviderLavaAddress: string;
   epoch: number;
+  requestedBlock: number;
 }

@@ -29,6 +29,7 @@ import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 import { ParsedMessage } from "../chainlib/chain_message";
 import { secondsToMillis } from "../util/time";
+import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 
 const MaxRelayRetries = 4;
 
@@ -81,6 +82,7 @@ export class RPCConsumerServer {
       apiInterface: this.rpcEndpoint.apiInterface,
       chainId: this.rpcEndpoint.chainId,
       requestedBlock: chainMessage.getRequestedBlock(),
+      headers: chainMessage.getRPCMessage().getHeaders(),
     };
     const relayPrivateData = newRelayData(relayData);
     let blockOnSyncLoss = true;
@@ -197,6 +199,7 @@ export class RPCConsumerServer {
       const promise = this.relayInner(
         singleConsumerSession,
         relayResult,
+        chainMessage,
         relayTimeout
       )
         .then((relayResponse: RelayResponse) => {
@@ -293,6 +296,7 @@ export class RPCConsumerServer {
   protected async relayInner(
     singleConsumerSession: SingleConsumerSession,
     relayResult: RelayResult,
+    chainMessage: ParsedMessage,
     relayTimeout: number
   ): Promise<RelayResponse> {
     const relayRequest = relayResult.request;
@@ -343,14 +347,25 @@ export class RPCConsumerServer {
       chainBlockStats.blockDistanceForFinalizedData
     );
     relayResult.finalized = finalized;
-    // TODO: when we add headers
-    // filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+    const headersHandler = this.chainParser.handleHeaders(
+      reply.getMetadataList(),
+      chainMessage.getApiCollection(),
+      Header.HeaderType.PASS_REPLY
+    );
+
+    reply.setMetadataList(headersHandler.filteredHeaders);
 
     const err = verifyRelayReply(reply, relayRequest, providerPublicAddress);
     if (err instanceof Error) {
       relayResponse.err = err;
       return relayResponse;
     }
+
+    reply.setMetadataList([
+      ...headersHandler.filteredHeaders,
+      ...headersHandler.ignoredMetadata,
+    ]);
+
     const existingSessionLatestBlock = singleConsumerSession.latestBlock;
     const dataReliabilityParams = this.chainParser.dataReliabilityParams();
     if (dataReliabilityParams.enabled) {
