@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/x/fixationstore"
 	"github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,7 +53,7 @@ func ProjectsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
-		fixationstore.NewKeeper(cdc),
+		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc)),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

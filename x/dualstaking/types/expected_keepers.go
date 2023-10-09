@@ -50,3 +50,7 @@ type StakingKeeper interface {
 type FixationStoreKeeper interface {
 	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore
 }
+
+type TimerStoreKeeper interface {
+	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *common.TimerStore
+}

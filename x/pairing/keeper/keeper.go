@@ -62,6 +62,7 @@ func NewKeeper(
 	downtimeKeeper types.DowntimeKeeper,
 	dualStakingKeeper types.DualStakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
+	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -88,7 +89,7 @@ func NewKeeper(
 	badgeTimerCallback := func(ctx sdk.Context, badgeKey, _ []byte) {
 		keeper.RemoveBadgeUsedCu(ctx, badgeKey)
 	}
-	badgeTimerStore := common.NewTimerStore(storeKey, cdc, types.BadgeTimerStorePrefix).
+	badgeTimerStore := timerStoreKeeper.NewTimerStore(storeKey, types.BadgeTimerStorePrefix).
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
@@ -102,8 +103,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.badgeTimerStore.Tick(ctx)
-
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// remove old session payments
 		k.RemoveOldEpochPayment(ctx)
