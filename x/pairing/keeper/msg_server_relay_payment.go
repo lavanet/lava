@@ -28,7 +28,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	if err != nil {
 		return nil, err
 	}
-
 	addressEpochBadgeMap := map[string]BadgeData{}
 	for _, relay := range msg.Relays {
 		if relay.Badge != nil {
@@ -276,6 +275,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
 	}
+	latestBlockReports := map[string]string{
+		"provider": msg.GetCreator(),
+	}
+	for _, report := range msg.LatestBlockReports {
+		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
+	}
+	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
 	return &types.MsgRelayPaymentResponse{}, nil
 }

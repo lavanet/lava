@@ -12,6 +12,7 @@ const (
 	UnresponsiveProviderUnstakeFailedEventName     = "unresponsive_provider"
 	ProviderJailedEventName                        = "provider_jailed"
 	ProviderReportedEventName                      = "provider_reported"
+	LatestBlocksReportEventName                    = "provider_latest_block_report"
 )
 
 // unstake description strings

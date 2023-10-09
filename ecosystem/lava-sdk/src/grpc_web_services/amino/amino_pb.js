@@ -1,3 +1,4 @@
+// source: amino/amino.proto
 /**
  * @fileoverview
  * @enhanceable
@@ -12,6 +13,7 @@ var goog = jspb;
 var global = Function('return this')();
 
 var google_protobuf_descriptor_pb = require('google-protobuf/google/protobuf/descriptor_pb.js');
+goog.object.extend(proto, google_protobuf_descriptor_pb);
 goog.exportSymbol('proto.amino.dontOmitempty', null, global);
 goog.exportSymbol('proto.amino.encoding', null, global);
 goog.exportSymbol('proto.amino.fieldName', null, global);
