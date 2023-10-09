@@ -106,3 +106,32 @@ export function byteArrayToString(
   }
   return output;
 }
+
+export function promiseAny<T>(promises: PromiseLike<T>[]): Promise<T> {
+  let errorCounter = 0;
+  let hasResolved = false;
+  const errorOutput: Error[] = new Array(promises.length);
+
+  return new Promise<T>((resolve, reject) => {
+    const resolveOnce = (value: T) => {
+      if (!hasResolved) {
+        hasResolved = true;
+        resolve(value);
+      }
+    };
+
+    const rejection = (idx: number, error: any) => {
+      errorCounter++;
+      errorOutput[idx] = error;
+      if (errorCounter === promises.length) {
+        reject(errorOutput);
+      }
+    };
+
+    for (const [idx, promise] of promises.entries()) {
+      Promise.resolve(promise)
+        .then(resolveOnce)
+        .catch((error: any) => rejection(idx, error));
+    }
+  });
+}
