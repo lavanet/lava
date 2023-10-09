@@ -89,6 +89,10 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 	return
 }
 
+func (cs *ChainTracker) updateAverageBlockTimeForRegistrations(averageBlockTime time.Duration) {
+
+}
+
 // blockQueueMu must be locked
 func (cs *ChainTracker) getEarliestBlockUnsafe() BlockStore {
 	return cs.blocksQueue[0]
@@ -280,8 +284,9 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 					cs.newLatestCallback(i, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
 				}
 			}
+			blocksUpdated := uint64(newLatestBlock - prev_latest)
 			// update our timer resolution
-			cs.AddBlockGap(time.Since(cs.latestChangeTime))
+			cs.AddBlockGap(time.Since(cs.latestChangeTime), blocksUpdated)
 			cs.latestChangeTime = time.Now()
 		}
 		if forked {
@@ -307,7 +312,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	if err != nil {
 		return err
 	}
-	blockGapTicker := time.NewTicker(updatePollingTimeBasedOnBlockGapTicker)
+	blockGapTicker := time.NewTicker(pollingTime) // initially every block we check for a polling time
 	// Polls blocks and keeps a queue of them
 	go func() {
 		fetchFails := uint64(0)
@@ -331,7 +336,11 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 					fetchFails = 0
 				}
 			case <-blockGapTicker.C:
-				pollingTime = cs.updatePollingTimeBasedOnBlockGap(pollingTime)
+				var enoughSamples bool
+				pollingTime, enoughSamples = cs.updatePollingTimeBasedOnBlockGap(pollingTime)
+				if enoughSamples {
+					blockGapTicker.Reset(pollingTime * 10)
+				}
 			case <-ctx.Done():
 				cs.timer.Stop()
 				return
@@ -387,22 +396,26 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 	return nil
 }
 
-func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) time.Duration {
-	if uint64(len(ct.blockEventsGap)) > ct.blocksToSave/2 { // check we have enough samples
+func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) (pollTime time.Duration, enoughSampled bool) {
+	if uint64(len(ct.blockEventsGap)) > ct.serverBlockMemory/2 { // check we have enough samples
 		averageTime := slices.Median(ct.blockEventsGap)
-		if averageTime < pollingTime/2 {
-			utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "averageTime polling time", Value: averageTime}, utils.Attribute{Key: "original polling time", Value: pollingTime})
-			return averageTime
+		// only update if there is a big difference, meaning the config is probably grossly wrong
+		if averageTime < (pollingTime*8/10) || averageTime > (pollingTime*12/10) {
+			utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "averageTime new polling time", Value: averageTime}, utils.Attribute{Key: "original polling time", Value: pollingTime})
+			go ct.updateAverageBlockTimeForRegistrations(averageTime)
+			return averageTime, true
 		}
+		return pollingTime, true
 	}
-	return pollingTime
+	return pollingTime, false
 }
 
-func (ct *ChainTracker) AddBlockGap(newData time.Duration) {
-	if uint64(len(ct.blockEventsGap)) < ct.blocksToSave {
-		ct.blockEventsGap = append(ct.blockEventsGap, newData)
+func (ct *ChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {
+	averageBlockTimeForOneBlock := newData / time.Duration(blocks)
+	if uint64(len(ct.blockEventsGap)) < ct.serverBlockMemory {
+		ct.blockEventsGap = append(ct.blockEventsGap, averageBlockTimeForOneBlock)
 	} else {
-		ct.blockEventsGap = append(ct.blockEventsGap[1:], newData)
+		ct.blockEventsGap = append(ct.blockEventsGap[1:], averageBlockTimeForOneBlock)
 	}
 }
 
