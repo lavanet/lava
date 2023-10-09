@@ -50,8 +50,10 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// 1. read config.yml -> this will tell us what service files this command will create
 			dir, _ := cmd.Flags().GetString("directory")
+
+			binariesFetcher := processmanager.ProtocolBinaryFetcher{}
 			// Build path to ./lavavisor
-			lavavisorPath, err := processmanager.ValidateLavavisorDir(dir)
+			lavavisorPath, err := binariesFetcher.ValidateLavavisorDir(dir)
 			if err != nil {
 				return err
 			}

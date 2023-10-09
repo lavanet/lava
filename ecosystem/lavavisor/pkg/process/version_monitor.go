@@ -12,13 +12,14 @@ import (
 )
 
 type VersionMonitor struct {
-	BinaryPath       string
-	LavavisorPath    string
-	updateTriggered  chan bool
-	mismatchType     lvutil.MismatchType
-	lastKnownVersion *protocoltypes.Version
-	processes        []*ServiceProcess
-	autoDownload     bool
+	BinaryPath            string
+	LavavisorPath         string
+	updateTriggered       chan bool
+	mismatchType          lvutil.MismatchType
+	lastKnownVersion      *protocoltypes.Version
+	processes             []*ServiceProcess
+	autoDownload          bool
+	protocolBinaryFetcher *ProtocolBinaryFetcher
 }
 
 func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*ServiceProcess, autoDownload bool) *VersionMonitor {
@@ -31,6 +32,9 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*Se
 		updateTriggered: make(chan bool),
 		processes:       processes,
 		autoDownload:    autoDownload,
+		protocolBinaryFetcher: &ProtocolBinaryFetcher{
+			lavavisorPath: lavavisorPath,
+		},
 	}
 }
 
@@ -58,7 +62,7 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 				// fetcher
-				_, err := FetchProtocolBinary(vm.LavavisorPath, vm.autoDownload, vm.lastKnownVersion)
+				_, err := vm.protocolBinaryFetcher.FetchProtocolBinary(vm.autoDownload, vm.lastKnownVersion)
 				if err != nil {
 					utils.LavaFormatFatal("Lavavisor was not able to fetch updated version!", nil, utils.Attribute{Key: "Version", Value: versionToUpgrade})
 				}

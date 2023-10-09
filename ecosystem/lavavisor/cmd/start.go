@@ -107,8 +107,9 @@ func CreateLavaVisorStartCobraCommand() *cobra.Command {
 
 func LavavisorStart(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
+	binaryFetcher := processmanager.ProtocolBinaryFetcher{}
 	// Build path to ./lavavisor
-	lavavisorPath, err := processmanager.ValidateLavavisorDir(dir)
+	lavavisorPath, err := binaryFetcher.ValidateLavavisorDir(dir)
 	if err != nil {
 		return err
 	}
