@@ -58,6 +58,11 @@ export class RPCConsumerServer {
     this.finalizationConsensus = finalizationConsensus;
   }
 
+  // returning getSessionManager for debugging / data reading.
+  public getSessionManager(): ConsumerSessionManager {
+    return this.consumerSessionManager;
+  }
+
   public setChainParser(chainParser: BaseChainParser) {
     this.chainParser = chainParser;
   }

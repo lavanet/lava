@@ -392,11 +392,11 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 	rand.InitRandomSeed()
 	const providerAddr = "providerAddr"
-	specs := []string{"spec1", "spec2"}
+	chainIds := []string{"LAV1", "ETH1"}
 
 	rewardDB := NewRewardDB()
-	for _, spec := range specs {
-		db := NewMemoryDB(spec)
+	for _, chainId := range chainIds {
+		db := NewMemoryDB(chainId)
 		err := rewardDB.AddDB(db)
 		require.NoError(t, err)
 	}
@@ -409,8 +409,8 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proofs := []*pairingtypes.RelaySession{}
-	for _, spec := range specs {
-		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), spec, nil))
+	for _, chainId := range chainIds {
+		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), chainId, nil))
 	}
 
 	for _, proof := range proofs {
@@ -427,8 +427,8 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 	newEpoch := epoch + 1
 	stubRewardsTxSender.earliestBlockInMemory = newEpoch
 	rws.UpdateEpoch(newEpoch)
-	for _, spec := range specs {
-		epochRewards, err := rewardDB.FindAllInDB(spec)
+	for _, chainId := range chainIds {
+		epochRewards, err := rewardDB.FindAllInDB(chainId)
 		require.NoError(t, err)
 
 		_, found := epochRewards[epoch]
