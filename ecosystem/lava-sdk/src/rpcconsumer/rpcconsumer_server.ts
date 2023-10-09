@@ -28,8 +28,8 @@ import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 import { ParsedMessage } from "../chainlib/chain_message";
-import { secondsToMillis } from "../util/time";
 import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
+import { promiseAny } from "../util/common";
 
 const MaxRelayRetries = 4;
 
@@ -163,6 +163,11 @@ export class RPCConsumerServer {
     const trySetFinalRelayResult = (
       res: RelayResult | RelayError[] | Error
     ) => {
+      const isError = res instanceof Error || Array.isArray(res);
+      if (!isError && finalRelayResult === undefined) {
+        finalRelayResult = res;
+      }
+
       if (
         finalRelayResult === undefined &&
         responsesReceived == consumerSessionsMap.size
@@ -273,14 +278,7 @@ export class RPCConsumerServer {
       promises.push(promise);
     }
 
-    const timeout = new Promise<Error | undefined>((resolve) => {
-      setTimeout(
-        () => resolve(SDKErrors.noResponseTimeout),
-        relayTimeout + secondsToMillis(2)
-      );
-    });
-
-    const response = await Promise.race([Promise.all(promises), timeout]);
+    const response = await promiseAny(promises);
     if (response instanceof Error) {
       return response;
     }
