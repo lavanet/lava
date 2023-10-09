@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
@@ -196,12 +199,9 @@ func (pbf *ProtocolBinaryFetcher) downloadAndBuildFromGithub(version, versionDir
 	// Prepare the path for downloaded zip
 	zipPath := filepath.Join(versionDir, version+".zip")
 	// Make sure the directory exists
-	dir := filepath.Dir(zipPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0o755)
-		if err != nil {
-			return err
-		}
+	err = pbf.createDirIfNotExist(filepath.Dir(zipPath))
+	if err != nil {
+		return err
 	}
 
 	// Write the body to file
@@ -222,19 +222,25 @@ func (pbf *ProtocolBinaryFetcher) downloadAndBuildFromGithub(version, versionDir
 	}
 	utils.LavaFormatInfo("Unzipping...")
 
+	// Verify Go installation
+	goCommand, err := pbf.verifyGoInstallation(pbf.lavavisorPath)
+	if err != nil {
+		return err
+	}
+
 	// Build the binary
 	srcPath := versionDir + "/lava-" + version
 	protocolPath := srcPath + "/cmd/lavap"
 	utils.LavaFormatInfo("building protocol", utils.Attribute{Key: "protocol-path", Value: protocolPath})
 
-	cmd := exec.Command("go", "build", "-o", "lavap")
+	cmd := exec.Command(goCommand, "build", "-o", "lavap")
 	cmd.Dir = protocolPath
 	err = cmd.Run()
 	if err != nil {
 		// try with "cmd/lavad" path again - this is for older versions than v0.22.0
 		protocolPath = srcPath + "/cmd/lavad"
 		utils.LavaFormatInfo("attempting to building protocol again", utils.Attribute{Key: "protocol-path", Value: protocolPath})
-		cmd := exec.Command("go", "build", "-o", "lavap")
+		cmd := exec.Command(goCommand, "build", "-o", "lavap")
 		cmd.Dir = protocolPath
 		err = cmd.Run()
 		if err != nil {
@@ -274,4 +280,194 @@ func (pbf *ProtocolBinaryFetcher) downloadAndBuildFromGithub(version, versionDir
 	utils.LavaFormatInfo("Auto-download successful.")
 
 	return nil
+}
+
+func (pbf *ProtocolBinaryFetcher) createDirIfNotExist(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0o755)
+		if err != nil {
+			return utils.LavaFormatError("Failed creating directory", err, utils.Attribute{Key: "dir", Value: dir})
+		}
+	}
+	return nil
+}
+
+func (pbf *ProtocolBinaryFetcher) getInstalledGoVersion(goPath string) (string, error) {
+	goVersionRun := exec.Command(goPath, "version")
+	goVersion, err := goVersionRun.Output()
+	if err != nil {
+		return "", utils.LavaFormatInfo("Error running go version", utils.Attribute{Key: "err", Value: err}, utils.Attribute{Key: "command", Value: goVersionRun})
+	}
+
+	stringGoVersion := string(goVersion)
+	splitGoVersion := strings.Split(stringGoVersion, " ") // go version go1.20.5 linux/amd64
+	if len(splitGoVersion) < 3 {
+		return "", utils.LavaFormatError("Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
+	}
+
+	versionBeforeCut := splitGoVersion[2]
+	if !strings.HasPrefix(versionBeforeCut, "go") {
+		utils.LavaFormatError("Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
+	}
+	version := versionBeforeCut[2:]
+	utils.LavaFormatInfo("Verified that go is on the right version", utils.Attribute{Key: "version", Value: version})
+	return version, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) getHomePath() (string, error) {
+	homeDir := os.Getenv("HOME")
+	if homeDir != "" {
+		return homeDir, nil
+	}
+
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", utils.LavaFormatError("Unable to get current user", err)
+	}
+	return currentUser.HomeDir, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) downloadGo(downloadPath string, version string) (string, error) {
+	if runtime.GOARCH == "" {
+		return "", utils.LavaFormatError("Could not determine the machine architecture (runtime.GOARCH is empty). Aborting", nil)
+	}
+
+	if runtime.GOOS == "" {
+		return "", utils.LavaFormatError("Could not determine the machine OS (runtime.GOOS is empty). Aborting", nil)
+	}
+
+	url := fmt.Sprintf("https://go.dev/dl/go%s.%s-%s.tar.gz", version, runtime.GOOS, runtime.GOARCH)
+	utils.LavaFormatInfo(fmt.Sprintf("Downloading Go from %s", url))
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", utils.LavaFormatError(fmt.Sprintf("Unable to download Go version %s", version), err)
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		return "", utils.LavaFormatError(fmt.Sprintf("Unable to download Go version %s. Got status code: %d", version, resp.StatusCode), err,
+			utils.Attribute{Key: "response", Value: resp})
+	}
+
+	// Write the body to file
+	goInstallationFilePath := fmt.Sprintf(filepath.Join(downloadPath, "go%s.tar.gz"), version)
+	goInstallationFileHandler, err := os.Create(goInstallationFilePath)
+	if err != nil {
+		return "", utils.LavaFormatError("Unable to create Go installation file", err, utils.Attribute{Key: "filePath", Value: goInstallationFilePath})
+	}
+	defer goInstallationFileHandler.Close()
+
+	_, err = io.Copy(goInstallationFileHandler, resp.Body)
+	if err != nil {
+		os.Remove(goInstallationFilePath)
+		return "", utils.LavaFormatError("Error copying downloaded file data. Deleting file.", err, utils.Attribute{Key: "filePath", Value: goInstallationFilePath})
+	}
+
+	utils.LavaFormatInfo("Finished downloading go", utils.Attribute{Key: "goInstallationPath", Value: goInstallationFilePath})
+	return goInstallationFilePath, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) installGo(installPath string, goFilePath string) (string, error) {
+	utils.LavaFormatInfo("Extracting go files...", utils.Attribute{Key: "installPath", Value: installPath}, utils.Attribute{Key: "goFilePath", Value: goFilePath})
+	goInstallCommand := exec.Command("tar", "-C", installPath, "-xzf", goFilePath)
+	output, err := goInstallCommand.Output()
+	if err != nil {
+		return "", utils.LavaFormatError("Unable to install Go", err, utils.Attribute{Key: "command", Value: goInstallCommand}, utils.Attribute{Key: "output", Value: output})
+	}
+	utils.LavaFormatInfo("Finished extracting go")
+	return filepath.Join(installPath, "/go/bin/go"), nil
+}
+
+func (pbf *ProtocolBinaryFetcher) downloadInstallAndVerifyGo(installPath string, goVersion string) (string, error) {
+	goFilePath, err := pbf.downloadGo(installPath, goVersion)
+	if err != nil {
+		return "", err
+	}
+
+	goBinary, err := pbf.installGo(installPath, goFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	installedGoVersion, err := pbf.getInstalledGoVersion(goBinary)
+	if err != nil {
+		return "", err
+	}
+
+	if installedGoVersion != goVersion {
+		return "", utils.LavaFormatError("Installed Go version does not match expected version", nil,
+			utils.Attribute{Key: "expectedVersion", Value: installedGoVersion},
+			utils.Attribute{Key: "installedVersion", Value: goVersion})
+	}
+
+	return goBinary, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) verifyGoInstallation(lavavisorPath string) (string, error) {
+	emptyGoCommand := ""
+	goCommand := "go"
+	expectedGeVersion := "1.20.5"
+
+	homePath, err := pbf.getHomePath()
+	if err != nil {
+		return emptyGoCommand, err
+	}
+	goPath := filepath.Join(lavavisorPath, "go_installation") // In case go is not installed
+
+	installedGoVersion, err := pbf.getInstalledGoVersion(goCommand)
+	if err != nil {
+		utils.LavaFormatInfo("Go was not found in PATH")
+
+		potentialGoCommands := []string{
+			goPath,
+			filepath.Join(homePath, "/go/bin/go"), // ~/go/bin/go
+			"/usr/local/go/bin/go",
+		}
+
+		found := false
+		for _, potentialGoCommand := range potentialGoCommands {
+			utils.LavaFormatInfo(fmt.Sprintf("Attempting %s", potentialGoCommand))
+
+			installedGoVersion, err = pbf.getInstalledGoVersion(potentialGoCommand)
+			if err == nil {
+				found = true
+				goCommand = potentialGoCommand
+				break
+			}
+		}
+
+		if !found {
+			utils.LavaFormatInfo("Could not find Go. Installing Go...")
+
+			err = pbf.createDirIfNotExist(goPath)
+			if err != nil {
+				return "", err
+			}
+
+			goCommand, err = pbf.downloadInstallAndVerifyGo(goPath, expectedGeVersion)
+			if err != nil {
+				return emptyGoCommand, utils.LavaFormatError("Unable to download and install Go", err)
+			}
+			return goCommand, nil
+		}
+	}
+
+	if installedGoVersion != expectedGeVersion {
+		utils.LavaFormatInfo(fmt.Sprintf("Found Go at %s with version %s. Installing %s", goCommand, installedGoVersion, expectedGeVersion))
+		if _, err := os.Stat(goPath); err != nil {
+			err := os.RemoveAll(goPath)
+			if err != nil {
+				return emptyGoCommand, utils.LavaFormatError("Unable to remove existing Go installation", err)
+			}
+		}
+
+		goCommand, err = pbf.downloadInstallAndVerifyGo(goPath, expectedGeVersion)
+		if err != nil {
+			return emptyGoCommand, utils.LavaFormatError("Unable to download and install Go", err)
+		}
+	}
+
+	return goCommand, nil
 }
