@@ -39,6 +39,7 @@ export function newRelayData(relayData: SendRelayData): RelayPrivateData {
   requestPrivateData.setApiUrl(url);
   requestPrivateData.setData(enc.encode(data));
   requestPrivateData.setRequestBlock(relayData.requestedBlock);
+  requestPrivateData.setSeenBlock(0);
   requestPrivateData.setApiInterface(relayData.apiInterface);
   requestPrivateData.setSalt(getNewSalt());
   requestPrivateData.setMetadataList(headers);
@@ -182,7 +183,8 @@ function calculateContentHash(relayRequestData: RelayPrivateData): Uint8Array {
   }
   const requestBlock = relayRequestData.getRequestBlock();
   const requestBlockBytes = convertRequestedBlockToUint8Array(requestBlock);
-
+  const seenBlock = relayRequestData.getSeenBlock();
+  const seenBlockBytes = convertRequestedBlockToUint8Array(seenBlock);
   const apiInterfaceBytes = encodeUtf8(relayRequestData.getApiInterface());
   const connectionTypeBytes = encodeUtf8(relayRequestData.getConnectionType());
   const apiUrlBytes = encodeUtf8(relayRequestData.getApiUrl());
@@ -200,6 +202,7 @@ function calculateContentHash(relayRequestData: RelayPrivateData): Uint8Array {
     apiUrlBytes,
     dataUint8Array,
     requestBlockBytes,
+    seenBlockBytes,
     saltUint8Array,
   ]);
 
