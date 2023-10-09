@@ -476,6 +476,11 @@ export class LavaSDK {
     }
     return rpcConsumerServer;
   }
+
+  // returning rpcConsumerServer for debugging / data reading. changing this object will cause errors.
+  public getConsumerMap(): Map<string, RPCConsumerServer> {
+    return this.rpcConsumerServerRouter;
+  }
 }
 
 // exporting relay options to be used if needed.
