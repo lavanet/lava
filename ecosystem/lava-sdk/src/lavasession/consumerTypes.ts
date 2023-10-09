@@ -52,8 +52,8 @@ export interface ProviderOptimizer {
   ): void;
 
   chooseProvider(
-    allAddresses: string[],
-    ignoredProviders: string[],
+    allAddresses: Set<string>,
+    ignoredProviders: Set<string>,
     cu: number,
     requestedBlock: number,
     perturbationPercentage: number
@@ -61,7 +61,7 @@ export interface ProviderOptimizer {
 
   getExcellenceQoSReportForProvider(
     providerAddress: string
-  ): QualityOfServiceReport;
+  ): QualityOfServiceReport | undefined;
 }
 
 export interface QoSReport {
@@ -445,7 +445,7 @@ export class ConsumerSessionsWithProvider {
     endpoint: Endpoint;
     providerAddress: string;
   }> {
-    for (const endpoint of this.endpoints) {
+    for (const [idx, endpoint] of this.endpoints.entries()) {
       if (endpoint.enabled) {
         endpoint.client = new RelayerClient(
           "https://" + endpoint.networkAddress,
@@ -454,7 +454,7 @@ export class ConsumerSessionsWithProvider {
           }
         );
 
-        this.endpoints.push(endpoint);
+        this.endpoints[idx] = endpoint;
 
         return {
           connected: true,
