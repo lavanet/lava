@@ -22,6 +22,7 @@ func (pbf *ProtocolBinaryFetcher) SetupLavavisorDir(dir string) error {
 	if err != nil {
 		return err
 	}
+	pbf.lavavisorPath = lavavisorPath
 	// Check if ./lavavisor directory exists
 	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
 		// If not, create the directory
@@ -32,7 +33,6 @@ func (pbf *ProtocolBinaryFetcher) SetupLavavisorDir(dir string) error {
 		utils.LavaFormatInfo(".lavavisor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
 	}
 
-	pbf.lavavisorPath = lavavisorPath
 	return nil
 }
 
@@ -41,11 +41,12 @@ func (pbf *ProtocolBinaryFetcher) ValidateLavavisorDir(dir string) (lavavisorPat
 	if err != nil {
 		return "", err
 	}
+	pbf.lavavisorPath = lavavisorPath
+
 	// Validate the existence of ./lavavisor directory
 	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
 		return "", utils.LavaFormatError("lavavisor directory is not found", err)
 	}
-	pbf.lavavisorPath = lavavisorPath
 	return lavavisorPath, nil
 }
 
@@ -82,7 +83,7 @@ func (pbf *ProtocolBinaryFetcher) buildLavavisorPath(dir string) (string, error)
 func (pbf *ProtocolBinaryFetcher) setUpLavavisorDirectory() error {
 	err := os.MkdirAll(pbf.lavavisorPath, 0o755)
 	if err != nil {
-		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
+		return utils.LavaFormatError("unable to create .lavavisor/ directory", err, utils.Attribute{Key: "lavavisorPath", Value: pbf.lavavisorPath})
 	}
 	// Create config.yml file inside .lavavisor and write placeholder text
 	configPath := filepath.Join(pbf.lavavisorPath, "config.yml")
