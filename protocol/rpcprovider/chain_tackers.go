@@ -27,11 +27,12 @@ func (ct *ChainTrackers) GetTrackerPerChain(specID string) (chainTracker *chaint
 func (ct *ChainTrackers) SetTrackerForChain(specId string, chainTracker *chaintracker.ChainTracker) {
 	ct.stateTrackersPerChain.Store(specId, chainTracker)
 }
+
 func (ct *ChainTrackers) GetLatestBlockNumForSpec(specID string) int64 {
 	chainTracker, found := ct.GetTrackerPerChain(specID)
 	if !found {
 		return 0
 	}
-	latestBlock, _ := chainTracker.GetLatestBlockNum()
+	latestBlock := chainTracker.GetLatestBlockNum()
 	return latestBlock
 }
