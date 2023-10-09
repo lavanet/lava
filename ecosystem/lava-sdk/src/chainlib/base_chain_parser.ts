@@ -4,11 +4,13 @@ import {
   ApiCollection,
   Api,
   Header,
+  CollectionData,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { Metadata } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { Logger } from "../logger/logger";
 import Long from "long";
+import { ParsedMessage } from "./chain_message";
 
 export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
@@ -22,9 +24,10 @@ export const HeadersPassSend = Header.HeaderType.PASS_SEND;
 export interface SendRelayOptions {
   method: string; // Required: The RPC method to be called
   params: Array<any>; // Required: An array of parameters to be passed to the RPC method
-  chainId?: string; // Optional: the chain id to send the request to, if only one chain is initialized it will be chosen by default
-  metadata?: Metadata[]; // Optional headers to be sent with the request.
-  apiInterface?: string; // Optional specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
+  id?: number | string; // Optional: The ID of the relay. If not specified, it is set to a random number.
+  chainId?: string; // Optional: The chain id to send the request to, if only one chain is initialized it will be chosen by default
+  metadata?: Metadata[]; // Optional: Headers to be sent with the request.
+  apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
 }
 
 /**
@@ -244,10 +247,16 @@ export abstract class BaseChainParser {
           }
           let apiName = api.getName();
           if (this.apiInterface == APIInterfaceRest) {
-            const re = /{[^}]+}/;
-            apiName = api.getName().replace(re, "replace-me-with-regex");
-            apiName = apiName.replace(/replace-me-with-regex/g, "[^\\/\\s]+");
-            apiName = this.escapeRegExp(apiName); // Assuming you have a RegExp.escape function
+            const re = /{[^}]+}/g;
+            const processedName = apiName.replace(re, "replace-me-with-regex");
+            const quotedProcessedName = processedName.replace(
+              /[.*+?^${}()|[\]\\]/g,
+              "\\$&"
+            );
+            apiName = quotedProcessedName.replace(
+              /replace-me-with-regex/g,
+              "[^\\/\\s]+"
+            );
           }
           const apiKey: ApiKey = {
             name: apiName,
@@ -337,7 +346,7 @@ export abstract class BaseChainParser {
     return "connectionType" in options; // how to check which options were given
   }
 
-  protected handleHeaders(
+  public handleHeaders(
     metadata: Metadata[] | undefined,
     apiCollection: ApiCollection,
     headersDirection: number
@@ -407,10 +416,6 @@ export abstract class BaseChainParser {
     return this.allowedAddons.has(addon);
   }
 
-  protected escapeRegExp(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  }
-
   protected matchSpecApiByName(
     name: string,
     connectionType: string
@@ -436,7 +441,7 @@ export abstract class BaseChainParser {
 
   abstract parseMsg(
     options: SendRelayOptions | SendRestRelayOptions
-  ): ChainMessage;
+  ): ParsedMessage;
 
   public chainBlockStats(): ChainBlockStats {
     const averageBlockTime = this.spec?.getAverageBlockTime();
@@ -468,62 +473,14 @@ export abstract class BaseChainParser {
       blocksInFinalizationProof: blocksInFinalizationProof,
     };
   }
-}
 
-export interface RawRequestData {
-  url: string;
-  data: string;
-}
-
-export class ChainMessage {
-  private requestedBlock: number;
-  private api: Api;
-  private apiCollection: ApiCollection;
-  private messageData: string;
-  private messageUrl: string;
-  public headers: Metadata[] = [];
-  constructor(
-    requestedBlock: number,
-    api: Api,
-    apiCollection: ApiCollection,
-    data: string,
-    messageUrl: string
-  ) {
-    this.requestedBlock = requestedBlock;
-    this.apiCollection = apiCollection;
-    this.api = api;
-    this.messageData = data;
-    this.messageUrl = messageUrl;
-  }
-
-  public getRawRequestData(): RawRequestData {
-    return { url: this.messageUrl, data: this.messageData };
-  }
-
-  public getMessageUrl(): string {
-    return this.messageUrl;
-  }
-
-  public getRequestedBlock(): number {
-    return this.requestedBlock;
-  }
-
-  public updateLatestBlockInMessage(
-    latestBlock: number,
-    modififyContent: boolean
-  ): boolean {
-    return false; // TODO: implement
-  }
-
-  public appendHeader(metaData: Metadata[]) {
-    this.headers = [...this.headers, ...metaData];
-  }
-
-  public getApi(): Api {
-    return this.api;
-  }
-
-  public getApiCollection(): ApiCollection {
-    return this.apiCollection;
+  public getParsingByTag(
+    tag: number
+  ): [ParseDirective | undefined, CollectionData | undefined, boolean] {
+    const val = this.taggedApis.get(tag);
+    if (val === undefined) {
+      return [undefined, undefined, false];
+    }
+    return [val.parsing, val.apiCollection.getCollectionData(), true];
   }
 }

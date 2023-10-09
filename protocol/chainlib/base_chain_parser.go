@@ -22,6 +22,15 @@ type BaseChainParser struct {
 	verifications   map[VerificationKey][]VerificationContainer
 	allowedAddons   map[string]struct{}
 	extensionParser extensionslib.ExtensionParser
+	active          bool
+}
+
+func (bcp *BaseChainParser) Activate() {
+	bcp.active = true
+}
+
+func (bcp *BaseChainParser) Active() bool {
+	return bcp.active
 }
 
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
@@ -30,7 +39,7 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 	if len(metadata) == 0 {
 		return []pairingtypes.Metadata{}, "", []pairingtypes.Metadata{}
 	}
-	retMeatadata := []pairingtypes.Metadata{}
+	retMetadata := []pairingtypes.Metadata{}
 	for _, header := range metadata {
 		headerName := strings.ToLower(header.Name)
 		apiKey := ApiKey{Name: headerName, ConnectionType: apiCollection.CollectionData.Type}
@@ -40,7 +49,7 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 			continue
 		}
 		if headerDirective.Kind == headersDirection || headerDirective.Kind == spectypes.Header_pass_both {
-			retMeatadata = append(retMeatadata, header)
+			retMetadata = append(retMetadata, header)
 			if headerDirective.FunctionTag == spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA {
 				// this header sets the latest requested block
 				overwriteRequestedBlock = header.Value
@@ -49,7 +58,7 @@ func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiC
 			ignoredMetadata = append(ignoredMetadata, header)
 		}
 	}
-	return retMeatadata, overwriteRequestedBlock, ignoredMetadata
+	return retMetadata, overwriteRequestedBlock, ignoredMetadata
 }
 
 func (bcp *BaseChainParser) isAddon(addon string) bool {

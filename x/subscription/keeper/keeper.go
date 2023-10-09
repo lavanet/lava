@@ -44,13 +44,15 @@ func NewKeeper(
 	epochstorageKeeper types.EpochstorageKeeper,
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
+	fixationStoreKeeper types.FixationStoreKeeper,
+	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	fs := *common.NewFixationStore(storeKey, cdc, types.SubsFixationPrefix)
+	fs := *fixationStoreKeeper.NewFixationStore(storeKey, types.SubsFixationPrefix)
 
 	keeper := &Keeper{
 		cdc:        cdc,
@@ -71,7 +73,7 @@ func NewKeeper(
 		keeper.advanceMonth(ctx, subkey)
 	}
 
-	keeper.subsTS = *common.NewTimerStore(storeKey, cdc, types.SubsTimerPrefix).
+	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
 
 	return keeper
@@ -79,11 +81,6 @@ func NewKeeper(
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
-}
-
-func (k Keeper) BeginBlock(ctx sdk.Context) {
-	k.subsFS.AdvanceBlock(ctx)
-	k.subsTS.Tick(ctx)
 }
 
 // ExportSubscriptions exports subscriptions data (for genesis)

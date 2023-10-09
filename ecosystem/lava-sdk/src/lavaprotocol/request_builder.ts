@@ -12,6 +12,7 @@ import {
   QualityOfServiceReport,
   RelayReply,
   ReportedProvider,
+  Metadata,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import { sha256 } from "@cosmjs/crypto";
@@ -26,19 +27,21 @@ export interface SendRelayData {
   apiInterface: string;
   chainId: string;
   requestedBlock: number;
+  headers: Metadata[];
 }
 
 export function newRelayData(relayData: SendRelayData): RelayPrivateData {
-  const { data, url, connectionType } = relayData;
+  const { data, url, connectionType, headers } = relayData;
   // create request private data
   const enc = new TextEncoder();
   const requestPrivateData = new RelayPrivateData();
   requestPrivateData.setConnectionType(connectionType);
   requestPrivateData.setApiUrl(url);
   requestPrivateData.setData(enc.encode(data));
-  requestPrivateData.setRequestBlock(NOT_APPLICABLE); // TODO: when block parsing is implemented, replace this with the request parsed block.
+  requestPrivateData.setRequestBlock(relayData.requestedBlock);
   requestPrivateData.setApiInterface(relayData.apiInterface);
   requestPrivateData.setSalt(getNewSalt());
+  requestPrivateData.setMetadataList(headers);
   return requestPrivateData;
 }
 
@@ -170,6 +173,13 @@ function constructRelaySession(
 }
 
 function calculateContentHash(relayRequestData: RelayPrivateData): Uint8Array {
+  let metadataBytes = new Uint8Array();
+  for (const header of relayRequestData.getMetadataList()) {
+    metadataBytes = Uint8Array.from([
+      ...metadataBytes,
+      ...encodeUtf8(header.getName() + header.getValue()),
+    ]);
+  }
   const requestBlock = relayRequestData.getRequestBlock();
   const requestBlockBytes = convertRequestedBlockToUint8Array(requestBlock);
 
@@ -184,6 +194,7 @@ function calculateContentHash(relayRequestData: RelayPrivateData): Uint8Array {
     saltBytes instanceof Uint8Array ? saltBytes : encodeUtf8(saltBytes);
 
   const msgData = concatUint8Arrays([
+    metadataBytes,
     apiInterfaceBytes,
     connectionTypeBytes,
     apiUrlBytes,
