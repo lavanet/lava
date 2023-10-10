@@ -20,7 +20,7 @@
           "geolocation_profile": "GL",
           "total_cu_limit": 50,
           "epoch_cu_limit": 50,
-          "max_providers_to_pair": 3,
+          "max_providers_to_pair": 5,
           "selected_providers_mode": "ALLOWED",
           "selected_providers": []
         }

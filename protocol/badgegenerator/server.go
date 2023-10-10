@@ -138,7 +138,7 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		return nil, err
 	}
 	badge := pairingtypes.Badge{
-		CuAllocation: uint64(projectData.EpochsMaxCu),
+		CuAllocation: uint64(projectData.EpochsMaxCu) * (s.GetVirtualEpoch() + 1), // add additional CU due to emergency mode
 		Epoch:        s.GetEpoch(),
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,

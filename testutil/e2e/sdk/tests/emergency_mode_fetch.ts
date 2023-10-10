@@ -1,5 +1,9 @@
 const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
 
+function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
 async function main() {
     // Initialize Lava SDK
     const lavaSDKTendermint = await LavaSDK.create({
@@ -13,8 +17,10 @@ async function main() {
         throw new Error(" ERR [tendermintrpc_chainid_fetch] failed setting lava-sdk tendermint test");
     });
 
+    await delay(40000);
+
     // Fetch chain id
-    for (let i = 0; i < 35; i++) { // send relays synchronously
+    for (let i = 0; i < 60; i++) { // send relays synchronously
         try {
             const result = await lavaSDKTendermint.sendRelay({
                 method: "status",

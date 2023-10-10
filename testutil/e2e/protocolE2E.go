@@ -1286,7 +1286,7 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Starting Lava OK")
 
 	// set in init_chain.sh
-	var epochDuration int64 = 30
+	var epochDuration int64 = 30 * 1.2
 
 	signalChannel := make(chan bool)
 	url := "http://127.0.0.1:3347"
@@ -1310,7 +1310,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
 
-	// we should have approximately (numOfProviders * epoch_cu_limit * 3) CU
+	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
 	// skip 1st epoch and 2 virtual epochs
 	repeat(3, func(m int) {
 		<-signalChannel

@@ -159,7 +159,7 @@ export class StateChainQuery {
             const delay = Date.now() - lastBlockTime;
 
             if (delay > downtimeDuration.getSeconds() * 1000) {
-              virtualEpoch = Math.trunc(
+              virtualEpoch = Math.ceil(
                 (delay - pairing.getTimeLeftToNextPairing()) /
                   (epochDuration.getSeconds() * 1000)
               );

@@ -223,7 +223,7 @@ func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *Provi
 	return csq
 }
 
-func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
+func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch, virtualEpoch uint64) (maxCu uint64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, "")
 	cachedInterface, found := psq.ResponsesCache.Get(MaxCuResponseKey + key)
 	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
@@ -242,16 +242,7 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 		psq.ResponsesCache.SetWithTTL(MaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
 	}
 
-	isEmergency, virtualEpoch, err := psq.CheckEmergencyMode(ctx)
-	if err != nil {
-		return 0, utils.LavaFormatError("Failed to check emergency mode", err)
-	}
-
-	if isEmergency {
-		return userEntryRes.GetMaxCU() * (virtualEpoch + 1), nil
-	}
-
-	return userEntryRes.GetMaxCU(), nil
+	return userEntryRes.GetMaxCU() * (virtualEpoch + 1), nil
 }
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch uint64, providerAddress string) string {
