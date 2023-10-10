@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/lavanet/lava/x/fixationstore"
+	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/common"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
@@ -28,8 +29,8 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
 
-		subsFS common.FixationStore
-		subsTS common.TimerStore
+		subsFS fixationstore.FixationStore
+		subsTS timerstore.TimerStore
 	}
 )
 
