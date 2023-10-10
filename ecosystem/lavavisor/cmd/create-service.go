@@ -44,7 +44,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 		each service using the 'systemctl' command.
 		After a service file is created, the name of the service is added to "config.yml" file inside Lavavisor directory.`,
 		Args: cobra.ExactArgs(2),
-		Example: `required flags: --geolocation | --from
+		Example: `required flags: --geolocation | --from | --chain-id | --keyring-backend
 			optional flags: --log-level  | --node  | --keyring-backend
 			lavavisor create-service provider ./config --geolocation 1 --from alice --log-level warn
 			lavavisor create-service consumer ./config --geolocation 1 --from bob --log-level info`,
