@@ -14,7 +14,7 @@ async function main() {
         allowInsecureTransport: true,
         logLevel: "debug",
     }).catch((e) => {
-        throw new Error(" ERR [tendermintrpc_chainid_fetch_err] failed setting lava-sdk tendermint test");
+        throw new Error(" ERR [tendermintrpc_chainid_fetch] failed setting lava-sdk tendermint test");
     });
 
     // Fetch chain id
@@ -32,12 +32,12 @@ async function main() {
 
             // Validate chainID
             if (chainID !== "lava") {
-                throw new Error(" ERR [tendermintrpc_chainid_fetch_err] Chain ID is not equal to lava");
+                throw new Error(" ERR [tendermintrpc_chainid_fetch] Chain ID is not equal to lava");
             } else {
-                console.log(i, "[tendermintrpc_chainid_fetch_err] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
+                console.log(i, "[tendermintrpc_chainid_fetch] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
             }
         } catch (error) {
-            throw new Error(` ERR ${i} [tendermintrpc_chainid_fetch_err] failed sending relay tendermint test: ${error.message}`);
+            throw new Error(` ERR ${i} [tendermintrpc_chainid_fetch] failed sending relay tendermint test: ${error.message}`);
         }
     }
 }
@@ -47,7 +47,7 @@ async function main() {
         await main();
         process.exit(0);
     } catch (error) {
-        console.error(" ERR [tendermintrpc_chainid_fetch_err] " + error.message);
+        //console.error(" ERR [tendermintrpc_chainid_fetch] " + error.message);
         process.exit(1);
     }
 })();

@@ -74,42 +74,6 @@ func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.
 	return &spec.Spec, nil
 }
 
-func (csq *StateQuery) CheckEmergencyMode(ctx context.Context) (isEmergency bool, virtualEpoch uint64, err error) {
-	downtimeParams, err := csq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
-	if err != nil {
-		return false, 0, err
-	}
-
-	status, err := csq.TendermintClient.Status(ctx)
-	if err != nil {
-		return false, 0, err
-	}
-
-	latestBlockTime := status.SyncInfo.LatestBlockTime.UTC()
-	downtimeDuration := downtimeParams.Params.DowntimeDuration
-	now := time.Now().UTC()
-
-	if latestBlockTime.Add(downtimeDuration).Before(now) {
-		details, err := csq.EpochStorageQueryClient.EpochDetails(ctx, &epochstoragetypes.QueryGetEpochDetailsRequest{})
-		if err != nil {
-			return false, 0, err
-		}
-
-		epochStart := int64(details.EpochDetails.StartBlock)
-
-		block, err := csq.TendermintClient.Block(ctx, &epochStart)
-		if err != nil {
-			return false, 0, err
-		}
-
-		virtualEpoch = uint64(now.Sub(block.Block.Time).Milliseconds() / downtimeParams.Params.EpochDuration.Milliseconds())
-
-		return true, virtualEpoch, nil
-	}
-
-	return false, 0, nil
-}
-
 func (csq *StateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Params, error) {
 	res, err := csq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
 	if err != nil {
