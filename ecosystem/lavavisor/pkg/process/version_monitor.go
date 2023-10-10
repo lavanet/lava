@@ -112,7 +112,8 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 		}
 		vm.lastKnownVersion = incoming
 		vm.updateTriggered <- true // Trigger new version
-		return utils.LavaFormatInfo("New version detected", utils.Attribute{Key: "incoming", Value: incoming})
+		utils.LavaFormatInfo("New version detected", utils.Attribute{Key: "incoming", Value: incoming})
+		return nil
 	}
 
 	// version is ok.
