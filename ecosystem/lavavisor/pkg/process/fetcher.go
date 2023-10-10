@@ -110,11 +110,13 @@ func (pbf *ProtocolBinaryFetcher) setUpLavavisorDirectory() error {
 func (pbf *ProtocolBinaryFetcher) checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (selectedBinaryPath string, err error) {
 	var binaryPath string
 	if pbf.dirExists(versionDir) {
+		utils.LavaFormatDebug("Handling existing version dir", utils.Attribute{Key: "versionDir", Value: versionDir})
 		binaryPath, err = pbf.handleExistingDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
 		if err != nil {
 			return "", err
 		}
 	} else {
+		utils.LavaFormatDebug("Handling missing version dir", utils.Attribute{Key: "versionDir", Value: versionDir})
 		binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
 		if err != nil {
 			return "", err
