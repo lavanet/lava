@@ -72,7 +72,7 @@ func LavavisorInit(cmd *cobra.Command) error {
 	}
 	txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 	if err != nil {
-		utils.LavaFormatFatal("failed to create tx factory", err)
+		utils.LavaFormatFatal("Failed to create tx factory", err)
 	}
 
 	lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
@@ -83,7 +83,7 @@ func LavavisorInit(cmd *cobra.Command) error {
 	// fetch lavap version from consensus
 	protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
-		return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
+		return utils.LavaFormatError("Protocol version cannot be fetched from consensus", err)
 	}
 	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
 
@@ -92,8 +92,13 @@ func LavavisorInit(cmd *cobra.Command) error {
 	if err != nil {
 		return utils.LavaFormatError("Protocol binary couldn't be fetched", nil)
 	}
+
 	// linker
-	processmanager.CreateLink(binaryPath)
+	binaryLinker := processmanager.ProtocolBinaryLinker{}
+	err = binaryLinker.CreateLink(binaryPath)
+	if err != nil {
+		return utils.LavaFormatError("Could'nt create link for the protocol binary", err)
+	}
 
 	return nil
 }

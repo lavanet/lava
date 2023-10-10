@@ -20,6 +20,7 @@ type VersionMonitor struct {
 	processes             []*ServiceProcess
 	autoDownload          bool
 	protocolBinaryFetcher *ProtocolBinaryFetcher
+	protocolBinaryLinker  *ProtocolBinaryLinker
 }
 
 func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*ServiceProcess, autoDownload bool) *VersionMonitor {
@@ -35,6 +36,7 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*Se
 		protocolBinaryFetcher: &ProtocolBinaryFetcher{
 			lavavisorPath: lavavisorPath,
 		},
+		protocolBinaryLinker: &ProtocolBinaryLinker{},
 	}
 }
 
@@ -68,8 +70,13 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 					utils.LavaFormatWarning("Lavavisor was not able to fetch updated version. Skipping.", err, utils.Attribute{Key: "Version", Value: versionToUpgrade})
 					continue
 				}
+
 				// linker
-				CreateLink(binaryPath)
+				err = vm.protocolBinaryLinker.CreateLink(binaryPath)
+				if err != nil {
+					utils.LavaFormatWarning("Lavavisor was not able to create link to the binaries. Skipping.", err, utils.Attribute{Key: "Version", Value: versionToUpgrade})
+					continue
+				}
 
 				lavavisorServicesDir := vm.LavavisorPath + "/services/"
 				if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
