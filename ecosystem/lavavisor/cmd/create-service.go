@@ -146,6 +146,8 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 	}
 	flags.AddTxFlagsToCmd(cmdLavavisorCreateService)
 	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagFrom)
+	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagChainID)
+	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagKeyringBackend)
 	cmdLavavisorCreateService.Flags().Bool("create-link", false, "Creates a symbolic link to the /etc/systemd/system/ directory")
 	cmdLavavisorCreateService.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdLavavisorCreateService.MarkFlagRequired(common.GeolocationFlag)
