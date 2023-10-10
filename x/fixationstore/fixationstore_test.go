@@ -100,7 +100,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			} else {
 				require.False(t, found, what)
 			}
-		case "has": //nolint:goconst
+		case "has":
 			has := fs[play.store].HasEntry(ctx, index, block)
 			require.Equal(t, !play.fail, has, what)
 		case "stale":
