@@ -214,7 +214,6 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				address = args[0]
 			}
 			utils.LavaFormatInfo("RPCProvider Test started", utils.Attribute{Key: "address", Value: address})
-
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
