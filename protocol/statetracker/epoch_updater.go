@@ -117,7 +117,7 @@ func (eu *EpochUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
 		if epochUpdatable == nil {
 			continue
 		}
-		(*epochUpdatable).UpdateVirtualEpoch(eu.currentEpoch, virtualEpoch)
+		epochUpdatable.UpdateVirtualEpoch(eu.currentEpoch, virtualEpoch)
 	}
 
 	atomic.StoreUint64(&eu.currentVirtualEpoch, virtualEpoch)
