@@ -12,6 +12,11 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
+// adding 3 blocks delay, to update the epoch.
+// the reason is for the sdk to wait until all providers
+// are synced to the new epoch before SDK gets a new pairing list.
+const AddBlockDelayForEpochUpdaterBadgeServer = 2
+
 type BadgeStateTracker struct {
 	stateQuery *statetracker.EpochStateQuery
 	*statetracker.StateTracker
@@ -39,7 +44,7 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 		err := fmt.Errorf("invalid type")
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", err)
 	}
-	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
+	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, AddBlockDelayForEpochUpdaterBadgeServer)
 }
 
 func (st *BadgeStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
