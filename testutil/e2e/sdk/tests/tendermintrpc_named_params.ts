@@ -13,7 +13,7 @@ async function main() {
         throw new Error(" ERR [tendermintrpc_named_params] failed setting lava-sdk tendermint test");
     });
 
-    const blockHeight = 1
+    const blockHeight = "1"
 
     const block = await lavaSDKTendermint.sendRelay({
         method: "block",
