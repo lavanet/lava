@@ -123,6 +123,7 @@ function constructRelaySession(
     }
     return padWithZeros(wholenumber, fraction);
   }
+
   try {
     if (lastQos != undefined) {
       newQualityOfServiceReport = new QualityOfServiceReport();

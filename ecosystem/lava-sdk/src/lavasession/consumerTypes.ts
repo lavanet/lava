@@ -88,13 +88,11 @@ export function calculateAvailabilityScore(qosReport: QoSReport): {
     .toPrecision();
 
   return {
-    downtimePercentage: downtimePercentage.toPrecision(
-      DEFAULT_DECIMAL_PRECISION
-    ),
+    downtimePercentage: downtimePercentage.toPrecision(),
     scaledAvailabilityScore: BigNumber.max(
       BigNumber(0),
       scaledAvailabilityScore
-    ).toPrecision(DEFAULT_DECIMAL_PRECISION),
+    ).toPrecision(),
   };
 }
 
@@ -213,9 +211,7 @@ export class SingleConsumerSession {
       const sync = BigNumber(this.qoSInfo.syncScoreSum).div(
         this.qoSInfo.totalSyncScore
       );
-      this.qoSInfo.lastQoSReport.setSync(
-        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
-      );
+      this.qoSInfo.lastQoSReport.setSync(sync.toPrecision());
 
       if (BigNumber(1).gt(sync)) {
         Logger.debug(
@@ -229,9 +225,7 @@ export class SingleConsumerSession {
       }
     } else {
       const sync = BigNumber(1);
-      this.qoSInfo.lastQoSReport.setSync(
-        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
-      );
+      this.qoSInfo.lastQoSReport.setSync(sync.toPrecision());
     }
     return;
   }
@@ -246,7 +240,7 @@ export class SingleConsumerSession {
 
     return BigNumber.min(oneDec, bigExpectedLatency)
       .div(bigLatency)
-      .toPrecision(DEFAULT_DECIMAL_PRECISION);
+      .toPrecision();
   }
 }
 

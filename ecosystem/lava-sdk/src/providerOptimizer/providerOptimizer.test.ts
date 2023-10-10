@@ -6,6 +6,7 @@ import {
   ProviderData,
   ProviderOptimizer,
   ProviderOptimizerStrategy,
+  FLOAT_PRECISION,
 } from "./providerOptimizer";
 import random from "random";
 import { now } from "../util/time";
@@ -759,7 +760,7 @@ describe("ProviderOptimizer", () => {
 
   it("tests excellence report", async () => {
     const floatVal = 0.25;
-    const floatNew = floatToBigNumber(floatVal, 8);
+    const floatNew = floatToBigNumber(floatVal, FLOAT_PRECISION);
     expect(floatNew.toNumber()).toEqual(floatVal);
 
     const providerOptimizer = setupProviderOptimizer();
@@ -787,7 +788,7 @@ describe("ProviderOptimizer", () => {
       );
     };
 
-    const sampleTime = now();
+    let sampleTime = now();
 
     for (let i = 0; i < 10; i++) {
       for (const address of providers) {
@@ -799,8 +800,8 @@ describe("ProviderOptimizer", () => {
         );
       }
       await sleep(4);
+      sampleTime += 4;
     }
-
     const report = providerOptimizer.getExcellenceQoSReportForProvider(
       providers[0]
     );

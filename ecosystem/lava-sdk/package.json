@@ -11,7 +11,7 @@
     "build": "rm -rf bin && rm -rf dist && yarn tsc && yarn copy-proto && webpack --config webpack.config.js",
     "protoc": "./scripts/protoc.sh",
     "server": "http-server dist/ -c-1",
-    "test": "jest ./src",
+    "test": "jest --clearCache && jest ./src",
     "jestClear": "jest --clearCache",
     "tendermintRPC": "node ./bin/examples/tendermintRPC.js",
     "run_tendermint_example": "yarn tsc && webpack --config webpack.config.js && node ./bin/examples/tendermintRPC.js",
