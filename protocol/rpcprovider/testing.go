@@ -3,6 +3,7 @@ package rpcprovider
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -39,6 +40,33 @@ func validatePortNumber(ipPort string) string {
 		return ""
 	}
 	return ipPort
+}
+
+func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
+	utils.LavaFormatDebug("Checking CORS", utils.Attribute{Key: "endpoint", Value: endpoint})
+	// Construct the URL for the RPC endpoint
+	endpointURL := "http://" + endpoint.IPPORT // Assuming HTTP,
+
+	// Send an HTTP OPTIONS request to the endpoint
+	req, err := http.NewRequest("OPTIONS", endpointURL, nil)
+	if err != nil {
+		return err
+	}
+
+	// Perform the HTTP request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Check for the presence of "Access-Control-Allow-Origin" header
+	corsHeader := resp.Header.Get("Access-Control-Allow-Origin")
+	if corsHeader != "*" {
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsHeader", Value: corsHeader})
+	}
+
+	return nil
 }
 
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
@@ -81,6 +109,11 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				relayLatency := time.Since(relaySentTime)
 				if guid != probeResp.GetGuid() {
 					return 0, 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+				}
+
+				// CORS check
+				if err := performCORSCheck(endpoint); err != nil {
+					return 0, 0, err
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
@@ -181,6 +214,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				address = args[0]
 			}
 			utils.LavaFormatInfo("RPCProvider Test started", utils.Attribute{Key: "address", Value: address})
+
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
