@@ -786,7 +786,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager(relayer);
       // @ts-expect-error - we are spying on a private method
       jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1); // this makes it not sleep
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
 
       await sleep(TIMEOUT_BETWEEN_PROBES * ALLOWED_PROBE_RETRIES);
 
@@ -863,7 +863,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager(relayer, optimizer);
       // @ts-expect-error - we are spying on a private method
       jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
 
       expect(cm.validAddresses).toContain(pairingList[1].publicLavaAddress);
 
