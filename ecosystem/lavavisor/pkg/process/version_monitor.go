@@ -39,6 +39,7 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*Se
 			lavavisorPath: lavavisorPath,
 		},
 		protocolBinaryLinker: &ProtocolBinaryLinker{},
+		lock:                 sync.Mutex{},
 	}
 }
 
@@ -55,6 +56,7 @@ func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) {
 	if vm.lastKnownVersion != nil {
 		minVersionMismatch, targetVersionMismatch := vm.getVersionMismatches(incoming, vm.lastKnownVersion)
 		if !minVersionMismatch && !targetVersionMismatch {
+			utils.LavaFormatDebug("Double call to handleUpdateTrigger")
 			return
 		}
 	}
