@@ -55,7 +55,8 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				} else if vm.mismatchType == 2 {
 					versionToUpgrade = vm.lastKnownVersion.ProviderTarget
 				} else {
-					utils.LavaFormatFatal("Unknown mismatch type detected in Version Monitor!", nil)
+					utils.LavaFormatWarning("Unknown mismatch type detected in Version Monitor. Skipping.", nil, utils.Attribute{Key: "mismatchType", Value: vm.mismatchType})
+					continue
 				}
 				versionDir := filepath.Join(vm.LavavisorPath, "upgrades", "v"+versionToUpgrade)
 				binaryPath := filepath.Join(versionDir, "lavap")
@@ -64,14 +65,16 @@ func (vm *VersionMonitor) MonitorVersionUpdates(ctx context.Context) {
 				// fetcher
 				_, err := vm.protocolBinaryFetcher.FetchProtocolBinary(vm.autoDownload, vm.lastKnownVersion)
 				if err != nil {
-					utils.LavaFormatFatal("Lavavisor was not able to fetch updated version!", nil, utils.Attribute{Key: "Version", Value: versionToUpgrade})
+					utils.LavaFormatWarning("Lavavisor was not able to fetch updated version. Skipping.", err, utils.Attribute{Key: "Version", Value: versionToUpgrade})
+					continue
 				}
 				// linker
 				CreateLink(binaryPath)
 
 				lavavisorServicesDir := vm.LavavisorPath + "/services/"
 				if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
-					utils.LavaFormatFatal("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
+					utils.LavaFormatError("Directory does not exist. Skipping.", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
+					continue
 				}
 				for _, process := range vm.processes {
 					utils.LavaFormatInfo("Restarting process", utils.Attribute{Key: "Process", Value: process.Name})
