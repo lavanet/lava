@@ -60,6 +60,7 @@ type ChainParser interface {
 	SetConfiguredExtensions(extensions map[string]struct{}) error
 	Active() bool
 	Activate()
+	UpdateBlockTime(newBlockTime time.Duration)
 }
 
 type ChainMessage interface {

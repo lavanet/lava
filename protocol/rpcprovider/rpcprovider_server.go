@@ -621,6 +621,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			// need to decide if we wait
 			if probabilityBlockErrorIfWeDontWait > 0.3 {
 				// likely we will error out if we don't wait
+				utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "GUID", Value: ctx})
 				time.Sleep(time.Until(deadline)/2 - common.AverageWorldLatency/2)
 			}
 			lavaErrorOnNodeError = true

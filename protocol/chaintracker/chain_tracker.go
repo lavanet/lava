@@ -39,6 +39,10 @@ type ChainFetcher interface {
 	FetchEndpoint() lavasession.RPCProviderEndpoint
 }
 
+type blockTimeUpdatable interface {
+	UpdateBlockTime(time.Duration)
+}
+
 type ChainTracker struct {
 	chainFetcher            ChainFetcher // used to communicate with the node
 	blocksToSave            uint64       // how many finalized blocks to keep
@@ -54,6 +58,7 @@ type ChainTracker struct {
 	timer                   *time.Timer
 	latestChangeTime        time.Time
 	blockEventsGap          []time.Duration
+	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -89,8 +94,18 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 	return
 }
 
-func (cs *ChainTracker) updateAverageBlockTimeForRegistrations(averageBlockTime time.Duration) {
+func (cs *ChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {
+	cs.blockQueueMu.Lock()
+	defer cs.blockQueueMu.Unlock()
+	cs.blockTimeUpdatables[updatable] = struct{}{}
+}
 
+func (cs *ChainTracker) updateAverageBlockTimeForRegistrations(averageBlockTime time.Duration) {
+	cs.blockQueueMu.RLock()
+	defer cs.blockQueueMu.RUnlock()
+	for updatable := range cs.blockTimeUpdatables {
+		updatable.UpdateBlockTime(averageBlockTime)
+	}
 }
 
 // blockQueueMu must be locked
@@ -490,7 +505,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}}
+	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
