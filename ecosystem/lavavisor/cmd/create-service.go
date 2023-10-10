@@ -195,7 +195,7 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	}
 	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
-	content += "  User=:" + currentUser.Username + "\n"
+	content += "  User=" + currentUser.Username + "\n"
 	content += "  Restart=always\n"
 	content += "  RestartSec=180\n"
 	content += "  LimitNOFILE=infinity\n"
