@@ -42,7 +42,7 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []*Se
 	}
 }
 
-func (vm *VersionMonitor) getMismatches(incoming, current *protocoltypes.Version) (minVersionMismatch, targetVersionMismatch bool) {
+func (vm *VersionMonitor) getVersionMismatches(incoming, current *protocoltypes.Version) (minVersionMismatch, targetVersionMismatch bool) {
 	minVersionMismatch = (protocolVersion.HasVersionMismatch(incoming.ConsumerMin, current.ConsumerMin) || protocolVersion.HasVersionMismatch(incoming.ProviderMin, current.ProviderMin))
 	targetVersionMismatch = (protocolVersion.HasVersionMismatch(incoming.ConsumerTarget, current.ConsumerTarget) || protocolVersion.HasVersionMismatch(incoming.ProviderTarget, current.ProviderTarget))
 	return
@@ -52,9 +52,11 @@ func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) {
 	vm.lock.Lock()
 	defer vm.lock.Unlock()
 
-	minVersionMismatch, targetVersionMismatch := vm.getMismatches(incoming, vm.lastKnownVersion)
-	if !minVersionMismatch && !targetVersionMismatch {
-		return
+	if vm.lastKnownVersion != nil {
+		minVersionMismatch, targetVersionMismatch := vm.getVersionMismatches(incoming, vm.lastKnownVersion)
+		if !minVersionMismatch && !targetVersionMismatch {
+			return
+		}
 	}
 	vm.lastKnownVersion = incoming
 
@@ -129,7 +131,7 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 		ProviderTarget: currentBinaryVersion,
 	}
 
-	minVersionMismatch, targetVersionMismatch := vm.getMismatches(incoming, currentBinaryVersionsObj)
+	minVersionMismatch, targetVersionMismatch := vm.getVersionMismatches(incoming, currentBinaryVersionsObj)
 
 	if minVersionMismatch || targetVersionMismatch {
 		if minVersionMismatch {
