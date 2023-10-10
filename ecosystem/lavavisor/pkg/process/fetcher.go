@@ -310,7 +310,7 @@ func (pbf *ProtocolBinaryFetcher) getInstalledGoVersion(goPath string) (string, 
 		utils.LavaFormatError("Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
 	}
 	version := versionBeforeCut[2:]
-	utils.LavaFormatInfo("Verified that go is on the right version", utils.Attribute{Key: "version", Value: version})
+	utils.LavaFormatDebug("Verified that go is on the right version", utils.Attribute{Key: "version", Value: version})
 	return version, nil
 }
 
@@ -370,13 +370,13 @@ func (pbf *ProtocolBinaryFetcher) downloadGo(downloadPath string, version string
 }
 
 func (pbf *ProtocolBinaryFetcher) installGo(installPath string, goFilePath string) (string, error) {
-	utils.LavaFormatInfo("Extracting go files...", utils.Attribute{Key: "installPath", Value: installPath}, utils.Attribute{Key: "goFilePath", Value: goFilePath})
+	utils.LavaFormatDebug("Extracting go files...", utils.Attribute{Key: "installPath", Value: installPath}, utils.Attribute{Key: "goFilePath", Value: goFilePath})
 	goInstallCommand := exec.Command("tar", "-C", installPath, "-xzf", goFilePath)
 	output, err := goInstallCommand.Output()
 	if err != nil {
 		return "", utils.LavaFormatError("Unable to install Go", err, utils.Attribute{Key: "command", Value: goInstallCommand}, utils.Attribute{Key: "output", Value: output})
 	}
-	utils.LavaFormatInfo("Finished extracting go")
+	utils.LavaFormatDebug("Finished extracting go")
 	return filepath.Join(installPath, "/go/bin/go"), nil
 }
 
