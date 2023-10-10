@@ -207,15 +207,18 @@ func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 	gotCalled := false
 	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"100"}}]`
 	const response = `[{"jsonrpc":"2.0","id":1,"result":{"block_id1111111111":{},"block":{}}},{"jsonrpc":"2.0","id":1,"result":{"block_id222222":{},"block":{}}}]`
+
+	const nodeResponse = `[{"jsonrpc":"2.0","id":1,"result":{"block_id1111111111":{},"block":{}}},{"jsonrpc":"2.0","id":2,"result":{"block_id222222":{},"block":{}}}]`
+	nodeBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}}]`
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCalled = true
-		data := make([]byte, len([]byte(batchCallData)))
+		data := make([]byte, len([]byte(nodeBatchCallData)))
 		r.Body.Read(data)
 		// require.NoError(t, err)
-		require.Equal(t, batchCallData, string(data))
+		require.Equal(t, nodeBatchCallData, string(data))
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, response)
+		fmt.Fprint(w, nodeResponse)
 	})
 
 	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, "../../", nil)

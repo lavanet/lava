@@ -103,3 +103,6 @@ testutil/e2e/sdk/tests/package.json
 testutil/e2e/sdk/tests/package.json
 testutil/e2e/sdk/tests/package-lock.json
 testutil/e2e/sdk/tests/node_modules.json
+
+# Yarn
+.yarn/

@@ -397,6 +397,7 @@ func (rws *RewardServer) saveRewardsSnapshotToDBJob() {
 func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDB() {
 	// We lock without defer because the DB is already locking itself
 	rws.lock.RLock()
+	defer rws.lock.RUnlock()
 	rws.rewardsSnapshotTimer.Reset(rws.rewardsSnapshotTimeoutDuration)
 
 	rewardEntities := []*RewardEntity{}
@@ -414,11 +415,10 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDB() {
 			}
 		}
 	}
-	rws.lock.RUnlock()
+
 	if len(rewardEntities) == 0 {
 		return
 	}
-
 	utils.LavaFormatDebug("saving rewards snapshot to the DB", utils.Attribute{Key: "proofs", Value: len(rewardEntities)})
 
 	var err error
@@ -428,14 +428,12 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDB() {
 			utils.LavaFormatInfo("Saved rewards snapshot to the DB successfully", utils.Attribute{Key: "proofs", Value: len(rewardEntities)})
 			return
 		}
-
 		utils.LavaFormatDebug("failed saving proofs snapshot to rewardDB. Retrying...",
 			utils.Attribute{Key: "errorReceived", Value: err},
 			utils.Attribute{Key: "attempt", Value: i + 1},
 			utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries},
 		)
 	}
-
 	utils.LavaFormatError("failed saving proofs snapshot to rewardDB. Reached maximum attempts", err,
 		utils.Attribute{Key: "maxAttempts", Value: MaxDBSaveRetries})
 }
