@@ -57,6 +57,20 @@ func Average[T Number](slice []T) T {
 	return sum / T(len(slice))
 }
 
+func Variance[T Number](slice []T, mean T) T {
+	if len(slice) < 2 {
+		return T(0)
+	}
+	sumSquaredDiffs := T(0)
+	for _, x := range slice {
+		diff := x - mean
+		diffSq := diff * diff
+		sumSquaredDiffs += diffSq
+	}
+	variance := sumSquaredDiffs / T(len(slice)-1)
+	return variance
+}
+
 func Median[T Number](slice []T) T {
 	slices.Sort(slice)
 	data_len := len(slice)
@@ -67,6 +81,19 @@ func Median[T Number](slice []T) T {
 	} else {
 		return slice[data_len/2]
 	}
+}
+
+// the bigger it is the more unstable the values in slice from the given argument "compare"
+func Stability[T Number](slice []T, compare T) float64 {
+	stabilitySum := 0.0
+	for _, x := range slice {
+		diff := x - compare
+		if x < compare {
+			diff = compare - x
+		}
+		stabilitySum += float64(diff) / float64(compare)
+	}
+	return stabilitySum / float64(len(slice))
 }
 
 func Contains[T comparable](slice []T, elem T) bool {

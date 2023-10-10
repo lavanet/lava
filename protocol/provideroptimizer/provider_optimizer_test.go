@@ -83,7 +83,7 @@ func TestProbabilitiesCalculations(t *testing.T) {
 	for _, tt := range playbook {
 		t.Run(tt.name, func(t *testing.T) {
 			eventRate := tt.timeHas.Seconds() / tt.averageBlockTime.Seconds()
-			probabilityBlockError := CumulativeProbabilityFunctionForPoissonDist(uint64(tt.blockGap-1), eventRate)
+			probabilityBlockError := CumulativeProbabilityFunctionForPoissonDist(tt.blockGap-1, eventRate)
 			require.LessOrEqual(t, probabilityBlockError, tt.expectedProbabilityHigherLimit)
 			require.GreaterOrEqual(t, probabilityBlockError, tt.expectedProbabilityLowerLimit)
 		})

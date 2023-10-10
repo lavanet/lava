@@ -61,7 +61,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
 		AverageBlockTime:  time.Duration(averageBlockTime) * time.Second,
-		ServerBlockMemory: BlocksToSaveLavaChainTracker,
+		ServerBlockMemory: 50 + BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 	return cst, err

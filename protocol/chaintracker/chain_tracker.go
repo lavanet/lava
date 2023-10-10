@@ -13,6 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	rand "github.com/lavanet/lava/utils/rand"
+
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils/slices"
 
@@ -31,6 +33,7 @@ const (
 	maxFails                               = 10
 	debug                                  = false
 	updatePollingTimeBasedOnBlockGapTicker = 3 * time.Minute
+	GoodStabilityThreshold                 = 0.3
 )
 
 type ChainFetcher interface {
@@ -301,7 +304,9 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			}
 			blocksUpdated := uint64(newLatestBlock - prev_latest)
 			// update our timer resolution
-			cs.AddBlockGap(time.Since(cs.latestChangeTime), blocksUpdated)
+			if !cs.latestChangeTime.IsZero() {
+				cs.AddBlockGap(time.Since(cs.latestChangeTime), blocksUpdated)
+			}
 			cs.latestChangeTime = time.Now()
 		}
 		if forked {
@@ -320,8 +325,8 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	// start polling every averageBlockTime/4, then averageBlockTime/8 after passing middle, then averageBlockTime/16 after passing averageBlockTime*3/4
 	// so polling at averageBlockTime/4,averageBlockTime/2,averageBlockTime*5/8,averageBlockTime*3/4,averageBlockTime*13/16,,averageBlockTime*14/16,,averageBlockTime*15/16,averageBlockTime*16/16,averageBlockTime*17/16
 	// initial polling = averageBlockTime/16
-	initialPollingTime := pollingTime / 16               // on boot we need to query often to catch changes
-	cs.latestChangeTime = time.Now().Add(-1 * time.Hour) // set it in the past so we have a fine grained resolution on when we are finding a change
+	initialPollingTime := pollingTime / 16 // on boot we need to query often to catch changes
+	cs.latestChangeTime = time.Time{}      // we will discard the first change time, so this is uninitialized
 	cs.timer = time.NewTimer(initialPollingTime)
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
@@ -412,15 +417,29 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 }
 
 func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) (pollTime time.Duration, enoughSampled bool) {
-	if uint64(len(ct.blockEventsGap)) > ct.serverBlockMemory/2 { // check we have enough samples
-		averageTime := slices.Median(ct.blockEventsGap)
-		// only update if there is a big difference, meaning the config is probably grossly wrong
-		if averageTime < (pollingTime*8/10) || averageTime > (pollingTime*12/10) {
-			utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "averageTime new polling time", Value: averageTime}, utils.Attribute{Key: "original polling time", Value: pollingTime})
-			go ct.updateAverageBlockTimeForRegistrations(averageTime)
-			return averageTime, true
+	blockGapsLen := len(ct.blockEventsGap)
+	if blockGapsLen > 10 { // check we have enough samples
+		medianTime := slices.Median(ct.blockEventsGap)
+		stability := slices.Stability(ct.blockEventsGap, medianTime)
+		if debug {
+			utils.LavaFormatDebug("block gaps", utils.Attribute{Key: "block gaps", Value: ct.blockEventsGap}, utils.Attribute{Key: "specID", Value: ct.endpoint.ChainID})
 		}
-		return pollingTime, true
+		if blockGapsLen > int(ct.serverBlockMemory)-2 || stability < GoodStabilityThreshold {
+			// only update if there is a big difference, meaning the config/existing measurement is grossly enough wrong
+			if medianTime < (pollingTime*8/10) || medianTime > (pollingTime*12/10) {
+				utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "blocks measured", Value: blockGapsLen}, utils.Attribute{Key: "median new polling time", Value: medianTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
+				if medianTime > pollingTime*2 {
+					utils.LavaFormatWarning("[-] substantial polling time increase for chain detected", nil, utils.Attribute{Key: "median new polling time", Value: medianTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
+				}
+				go ct.updateAverageBlockTimeForRegistrations(medianTime)
+				return medianTime, true
+			}
+			return pollingTime, true
+		} else {
+			if debug {
+				utils.LavaFormatDebug("current stability measurement", utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
+			}
+		}
 	}
 	return pollingTime, false
 }
@@ -430,13 +449,15 @@ func (ct *ChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {
 	if uint64(len(ct.blockEventsGap)) < ct.serverBlockMemory {
 		ct.blockEventsGap = append(ct.blockEventsGap, averageBlockTimeForOneBlock)
 	} else {
-		ct.blockEventsGap = append(ct.blockEventsGap[1:], averageBlockTimeForOneBlock)
+		// we need to discard an index at random because this list is sorted by values and not by insertion time
+		randomIndex := rand.Intn(len(ct.blockEventsGap)) // it's not inclusive so len is fine
+		ct.blockEventsGap[randomIndex] = averageBlockTimeForOneBlock
 	}
 }
 
 func (ct *ChainTracker) latestBlockGap() time.Duration {
 	length := len(ct.blockEventsGap)
-	if length == 0 {
+	if length <= 1 {
 		return 0
 	}
 	return ct.blockEventsGap[length-1]
@@ -514,6 +535,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
+
 	err = chainTracker.serve(ctx, config.ServerAddress)
 	return
 }
