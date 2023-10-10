@@ -9,8 +9,7 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-type ProtocolBinaryLinker struct {
-}
+type ProtocolBinaryLinker struct{}
 
 func (pbl *ProtocolBinaryLinker) CreateLink(binaryPath string) error {
 	dest, err := pbl.findLavaProtocolPath(binaryPath)
