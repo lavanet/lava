@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -175,6 +176,11 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
 	}
 
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", utils.LavaFormatError("Could not get current user", err)
+	}
+
 	content := "[Unit]\n"
 	content += "  Description=" + serviceId + " daemon\n"
 	content += "  After=network-online.target\n"
@@ -187,7 +193,7 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	}
 	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
-	content += "  User=ubuntu\n"
+	content += "  User=:" + currentUser.Username + "\n"
 	content += "  Restart=always\n"
 	content += "  RestartSec=180\n"
 	content += "  LimitNOFILE=infinity\n"
