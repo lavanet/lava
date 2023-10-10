@@ -421,7 +421,7 @@ func (pbf *ProtocolBinaryFetcher) verifyGoInstallation(lavavisorPath string) (st
 		utils.LavaFormatInfo("Go was not found in PATH")
 
 		potentialGoCommands := []string{
-			goPath,
+			filepath.Join(goPath, "/go/bin/go"),
 			filepath.Join(homePath, "/go/bin/go"), // ~/go/bin/go
 			"/usr/local/go/bin/go",
 		}
@@ -432,6 +432,7 @@ func (pbf *ProtocolBinaryFetcher) verifyGoInstallation(lavavisorPath string) (st
 
 			installedGoVersion, err = pbf.getInstalledGoVersion(potentialGoCommand)
 			if err == nil {
+				utils.LavaFormatInfo(fmt.Sprintf("Found go %s with version %s", potentialGoCommand, installedGoVersion))
 				found = true
 				goCommand = potentialGoCommand
 				break
@@ -455,7 +456,7 @@ func (pbf *ProtocolBinaryFetcher) verifyGoInstallation(lavavisorPath string) (st
 	}
 
 	if installedGoVersion != expectedGeVersion {
-		utils.LavaFormatInfo(fmt.Sprintf("Found Go at %s with version %s. Installing %s", goCommand, installedGoVersion, expectedGeVersion))
+		utils.LavaFormatInfo(fmt.Sprintf("Version %s of Go mismatch the desired version. Installing %s", installedGoVersion, expectedGeVersion))
 		if _, err := os.Stat(goPath); err != nil {
 			err := os.RemoveAll(goPath)
 			if err != nil {
