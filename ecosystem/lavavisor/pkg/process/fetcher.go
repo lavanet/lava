@@ -168,6 +168,7 @@ func (pbf *ProtocolBinaryFetcher) handleExistingDir(versionDir string, autoDownl
 		if !autoDownload {
 			return "", utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
 		}
+		utils.LavaFormatDebug("An error occurred when validating the protocol version in existing dir, treating as missing dir", utils.Attribute{Key: "error", Value: err})
 		binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
 		if err != nil {
 			return "", err
