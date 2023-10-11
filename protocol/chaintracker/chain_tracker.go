@@ -28,12 +28,12 @@ import (
 )
 
 const (
-	initRetriesCount                       = 4
-	BACKOFF_MAX_TIME                       = 10 * time.Minute
-	maxFails                               = 10
-	debug                                  = false
-	updatePollingTimeBasedOnBlockGapTicker = 3 * time.Minute
-	GoodStabilityThreshold                 = 0.3
+	initRetriesCount       = 4
+	BACKOFF_MAX_TIME       = 10 * time.Minute
+	maxFails               = 10
+	debug                  = false
+	GoodStabilityThreshold = 0.3
+	PollingUpdateLength    = 10
 )
 
 type ChainFetcher interface {
@@ -371,7 +371,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 }
 
 func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uint64) {
-	blockGap := cs.latestBlockGap()
+	blockGap := cs.smallestBlockGap()
 	timeSinceLastUpdate := time.Since(cs.latestChangeTime)
 	var newPollingTime time.Duration
 	if timeSinceLastUpdate <= tickerBaseTime/2 && blockGap > tickerBaseTime/4 {
@@ -418,15 +418,15 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 
 func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) (pollTime time.Duration, enoughSampled bool) {
 	blockGapsLen := len(ct.blockEventsGap)
-	if blockGapsLen > 10 { // check we have enough samples
+	if blockGapsLen > PollingUpdateLength { // check we have enough samples
 		medianTime := slices.Median(ct.blockEventsGap)
 		stability := slices.Stability(ct.blockEventsGap, medianTime)
 		if debug {
 			utils.LavaFormatDebug("block gaps", utils.Attribute{Key: "block gaps", Value: ct.blockEventsGap}, utils.Attribute{Key: "specID", Value: ct.endpoint.ChainID})
 		}
 		if blockGapsLen > int(ct.serverBlockMemory)-2 || stability < GoodStabilityThreshold {
-			// only update if there is a big difference, meaning the config/existing measurement is grossly enough wrong
-			if medianTime < (pollingTime*8/10) || medianTime > (pollingTime*12/10) {
+			// only update if there is a 10% difference or more
+			if medianTime < (pollingTime*9/10) || medianTime > (pollingTime*11/10) {
 				utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "blocks measured", Value: blockGapsLen}, utils.Attribute{Key: "median new polling time", Value: medianTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
 				if medianTime > pollingTime*2 {
 					utils.LavaFormatWarning("[-] substantial polling time increase for chain detected", nil, utils.Attribute{Key: "median new polling time", Value: medianTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
@@ -455,12 +455,12 @@ func (ct *ChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {
 	}
 }
 
-func (ct *ChainTracker) latestBlockGap() time.Duration {
+func (ct *ChainTracker) smallestBlockGap() time.Duration {
 	length := len(ct.blockEventsGap)
-	if length <= 1 {
+	if length < PollingUpdateLength {
 		return 0
 	}
-	return ct.blockEventsGap[length-1]
+	return ct.blockEventsGap[0] // this list is sorted
 }
 
 // this function serves a grpc server if configuration for it was provided, the goal is to enable stateTracker to serve several processes and minimize node queries
@@ -522,6 +522,9 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 }
 
 func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
+	if !rand.Initialized() {
+		utils.LavaFormatFatal("can't start chainTracker with nil rand source", nil)
+	}
 	err = config.validate()
 	if err != nil {
 		return nil, err
