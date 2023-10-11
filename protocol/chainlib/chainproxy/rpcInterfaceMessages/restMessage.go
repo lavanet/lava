@@ -52,6 +52,9 @@ func (cp RestMessage) GetParams() interface{} {
 			}
 		}
 	}
+	if len(parameters) == 0 {
+		return nil
+	}
 	return parameters
 }
 

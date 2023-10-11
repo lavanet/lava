@@ -561,7 +561,7 @@ describe("ProviderOptimizer", () => {
     }
 
     let sampleTime = now();
-    const improvedLatency = 270; // milliseconds
+    const improvedLatency = 280; // milliseconds
     const normalLatency = TEST_BASE_WORLD_LATENCY * 2;
     const improvedBlock = syncBlock + 1;
 
