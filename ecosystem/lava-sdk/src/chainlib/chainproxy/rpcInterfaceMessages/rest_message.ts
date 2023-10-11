@@ -52,7 +52,7 @@ export class RestMessage extends BaseMessage implements RPCInput {
         }
       }
     }
-    if (parameters.size === 0) {
+    if (Object.keys(parameters).length === 0) {
       return null;
     }
     return parameters;
