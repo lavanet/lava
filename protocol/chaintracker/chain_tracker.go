@@ -419,20 +419,22 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) (pollTime time.Duration, enoughSampled bool) {
 	blockGapsLen := len(ct.blockEventsGap)
 	if blockGapsLen > PollingUpdateLength { // check we have enough samples
-		medianTime := slices.Median(ct.blockEventsGap)
-		stability := slices.Stability(ct.blockEventsGap, medianTime)
+		// smaller times give more resolution to indentify changes, and also make block arrival predicitons more optimistic
+		// so we take a 0.33 percentile because we want to be on the safe side by have a smaller time than expected
+		percentileTime := slices.Percentile(ct.blockEventsGap, 0.33)
+		stability := slices.Stability(ct.blockEventsGap, percentileTime)
 		if debug {
 			utils.LavaFormatDebug("block gaps", utils.Attribute{Key: "block gaps", Value: ct.blockEventsGap}, utils.Attribute{Key: "specID", Value: ct.endpoint.ChainID})
 		}
 		if blockGapsLen > int(ct.serverBlockMemory)-2 || stability < GoodStabilityThreshold {
 			// only update if there is a 10% difference or more
-			if medianTime < (pollingTime*9/10) || medianTime > (pollingTime*11/10) {
-				utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "blocks measured", Value: blockGapsLen}, utils.Attribute{Key: "median new polling time", Value: medianTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
-				if medianTime > pollingTime*2 {
-					utils.LavaFormatWarning("[-] substantial polling time increase for chain detected", nil, utils.Attribute{Key: "median new polling time", Value: medianTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
+			if percentileTime < (pollingTime*9/10) || percentileTime > (pollingTime*11/10) {
+				utils.LavaFormatInfo("updated chain tracker polling time", utils.Attribute{Key: "blocks measured", Value: blockGapsLen}, utils.Attribute{Key: "median new polling time", Value: percentileTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
+				if percentileTime > pollingTime*2 {
+					utils.LavaFormatWarning("[-] substantial polling time increase for chain detected", nil, utils.Attribute{Key: "median new polling time", Value: percentileTime}, utils.Attribute{Key: "original polling time", Value: pollingTime}, utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
 				}
-				go ct.updateAverageBlockTimeForRegistrations(medianTime)
-				return medianTime, true
+				go ct.updateAverageBlockTimeForRegistrations(percentileTime)
+				return percentileTime, true
 			}
 			return pollingTime, true
 		} else {

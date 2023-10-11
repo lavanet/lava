@@ -129,6 +129,57 @@ func TestMedian(t *testing.T) {
 	}
 }
 
+func TestPercentile(t *testing.T) {
+	// test it equals median
+	for _, tt := range []struct {
+		name   string
+		slice  []int
+		median int
+	}{
+		{"empty", []int{}, 0},
+		{"one element", []int{1}, 1},
+		{"min is first", []int{1, 2, 3}, 2},
+		{"min is middle", []int{2, 1, 3}, 2},
+		{"min is last", []int{3, 2, 1}, 2},
+		{"min is zero", []int{3, 0, 1}, 1},
+		{"min < zero", []int{3, -2, 1}, 1},
+		{"min twice", []int{3, 1, 1}, 1},
+		{"even length", []int{4, 4, 2, 2}, 3},
+		{"even length identical", []int{4, 4, 4, 4}, 4},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			percentile := Percentile(tt.slice, 0.5)
+			median := Median(tt.slice)
+			require.Equal(t, tt.median, median)
+			require.Equal(t, tt.median, percentile)
+		})
+	}
+
+	for _, tt2 := range []struct {
+		name       string
+		slice      []time.Duration
+		percentile time.Duration
+		rank       float64
+	}{
+		{"rank empty", []time.Duration{}, 0, 0.3},
+		{"rank one element", []time.Duration{1 * time.Millisecond}, 1 * time.Millisecond, 0.3},
+		{"rank min is first", []time.Duration{0 * time.Millisecond, 1 * time.Millisecond, 2 * time.Millisecond}, 0, 0.33},
+		{"rank min is middle", []time.Duration{2 * time.Millisecond, 1 * time.Millisecond, 3 * time.Millisecond}, 1 * time.Millisecond, 0.33},
+		{"rank min is last", []time.Duration{3 * time.Millisecond, 2 * time.Millisecond, 1 * time.Millisecond}, 1 * time.Millisecond, 0.33},
+		{"rank min is zero", []time.Duration{3 * time.Millisecond, 0 * time.Millisecond, 1 * time.Millisecond}, 0, 0.33},
+		{"rank min < zero", []time.Duration{3 * time.Millisecond, -2 * time.Millisecond, 1 * time.Millisecond}, -2 * time.Millisecond, 0.33},
+		{"rank min twice", []time.Duration{3 * time.Millisecond, 1 * time.Millisecond, 1 * time.Millisecond}, 1 * time.Millisecond, 0.33},
+		{"rank even length", []time.Duration{4 * time.Millisecond, 4 * time.Millisecond, 2 * time.Millisecond, 2 * time.Millisecond}, 2 * time.Millisecond, 0.33},
+		{"rank even length", []time.Duration{1 * time.Millisecond, 2 * time.Millisecond, 3 * time.Millisecond, 4 * time.Millisecond}, 1330 * time.Microsecond, 0.33},
+		{"rank even length identical", []time.Duration{4 * time.Millisecond, 4 * time.Millisecond, 4 * time.Millisecond, 4 * time.Millisecond}, 4 * time.Millisecond, 0.33},
+	} {
+		t.Run(tt2.name, func(t *testing.T) {
+			percentile := Percentile(tt2.slice, tt2.rank)
+			require.Equal(t, tt2.percentile, percentile)
+		})
+	}
+}
+
 func TestMin(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

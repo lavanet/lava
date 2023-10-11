@@ -83,6 +83,28 @@ func Median[T Number](slice []T) T {
 	}
 }
 
+func Percentile[T Number](slice []T, rank float64) T {
+	data_len := len(slice)
+	if data_len == 0 || rank < 0.0 || rank > 1.0 {
+		return 0
+	}
+	slices.Sort(slice)
+
+	// Calculate the position based on the rank
+	position := int(float64(data_len-1) * rank)
+
+	// Calculate the fractional part
+
+	if data_len%2 == 0 {
+		// Interpolate between two middle values
+		lower := slice[position]
+		upper := slice[position+1]
+		return lower + T(float64(upper-lower)*rank)
+	} else {
+		return slice[position]
+	}
+}
+
 // the bigger it is the more unstable the values in slice from the given argument "compare"
 func Stability[T Number](slice []T, compare T) float64 {
 	stabilitySum := 0.0
