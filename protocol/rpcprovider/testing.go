@@ -61,15 +61,19 @@ func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
 	defer resp.Body.Close()
 
 	// Check for the presence of "Access-Control-Allow-Origin" header
-	corsHeader := resp.Header.Get("Access-Control-Allow-Origin")
-	if corsHeader != "*" {
-		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsHeader", Value: corsHeader})
+	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
+	if corsOrigin != "*" {
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
 	}
 
-	// Check for the presence of "Access-Control-Allow-Headers" header and whether it includes "x-grpc-web"
-	allowHeaders := resp.Header.Get("Access-Control-Allow-Headers")
-	if !strings.Contains(strings.ToLower(allowHeaders), "x-grpc-web") {
-		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' to include 'x-grpc-web'.", nil, utils.Attribute{Key: "allowHeaders", Value: allowHeaders})
+	// Headers that must be present in "Access-Control-Allow-Headers"
+	requiredHeaders := []string{"x-grpc-web", "lava-sdk-relay-timeout"}
+
+	corsHeaders := strings.ToLower(resp.Header.Get("Access-Control-Allow-Headers"))
+	for _, requiredHeader := range requiredHeaders {
+		if !strings.Contains(corsHeaders, strings.ToLower(requiredHeader)) {
+			return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' are not present.", nil, utils.Attribute{Key: "corsHeaders", Value: corsHeaders}, utils.Attribute{Key: "requiredHeader", Value: requiredHeader})
+		}
 	}
 
 	return nil
