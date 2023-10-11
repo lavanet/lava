@@ -27,13 +27,13 @@ export class RestMessage extends BaseMessage implements RPCInput {
     const objectSpec = this.specPath.split("/");
     const objectPath = parsedMethod.split("/");
 
-    const parameters = new Map<string, any>();
+    const parameters: { [key: string]: any } = {};
 
     for (let index = 0; index < objectSpec.length; index++) {
       const element = objectSpec[index];
       if (element.includes("{")) {
         if (element.startsWith("{") && element.endsWith("}")) {
-          parameters.set(element.slice(1, -1), objectPath[index]);
+          parameters[element.slice(1, -1)] = objectPath[index];
         }
       }
     }
