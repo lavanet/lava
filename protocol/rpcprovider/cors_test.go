@@ -78,6 +78,7 @@ func TestPerformCORSCheckFailXGrpcWeb(t *testing.T) {
 	require.NotNil(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "x-grpc-web"), "Expected error to relate to x-grpc-web")
 }
+
 func TestPerformCORSCheckFailLavaSdkRelayTimeout(t *testing.T) {
 	endpoint := epochstoragetypes.Endpoint{
 		IPPORT: "localhost:8082",
