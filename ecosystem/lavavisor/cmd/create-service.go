@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// TODO: Make sure that not already in yml file
 type ServiceParams struct {
 	ServiceType               string
 	ServiceConfigFile         string
