@@ -26,6 +26,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/conflict/conflict_vote";
 	}
 
+	// Gets a consumer's conflict list (active and resolved).
+	rpc ConsumerConflicts(QueryConsumerConflictsRequest) returns (QueryConsumerConflictsResponse) {
+		option (google.api.http).get = "/lavanet/lava/conflict/consumer_conflicts/{consumer}";
+	}
+
 // this line is used by starport scaffolding # 2
 }
 
@@ -54,6 +59,14 @@ message QueryAllConflictVoteRequest {
 message QueryAllConflictVoteResponse {
 	repeated ConflictVote conflictVote = 1 [(gogoproto.nullable) = false];
 	cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryConsumerConflictsRequest {
+	string consumer = 1;
+}
+
+message QueryConsumerConflictsResponse {
+	repeated string conflicts = 1;
 }
 
 // this line is used by starport scaffolding # 3
