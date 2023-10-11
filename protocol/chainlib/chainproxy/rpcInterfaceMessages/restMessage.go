@@ -29,14 +29,29 @@ func (cp RestMessage) GetParams() interface{} {
 	objectSpec := strings.Split(cp.SpecPath, "/")
 	objectPath := strings.Split(parsedMethod, "/")
 
-	var parameters []interface{}
+	parameters := map[string]interface{}{}
 
 	for index, element := range objectSpec {
 		if strings.Contains(element, "{") {
-			parameters = append(parameters, objectPath[index])
+			element = strings.Trim(element, "{}")
+			parameters[element] = objectPath[index]
 		}
 	}
-
+	if idx > -1 {
+		queryParams := cp.Path[idx:]
+		if len(queryParams) > 0 {
+			queryParamsList := strings.Split(queryParams, "&")
+			for _, queryParamNameValue := range queryParamsList {
+				queryParamNameValueSplitted := strings.SplitN(queryParamNameValue, "=", 2)
+				if len(queryParamNameValueSplitted) != 2 {
+					continue
+				}
+				queryParamName := queryParamNameValueSplitted[0]
+				queryParamValue := queryParamNameValueSplitted[1]
+				parameters[queryParamName] = queryParamValue
+			}
+		}
+	}
 	return parameters
 }
 

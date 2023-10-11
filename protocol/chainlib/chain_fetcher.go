@@ -323,7 +323,34 @@ func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage Chain
 }
 
 type DummyChainFetcher struct {
-	ChainFetcher
+	*ChainFetcher
+}
+
+func (cf *DummyChainFetcher) Validate(ctx context.Context) error {
+	for _, url := range cf.endpoint.NodeUrls {
+		addons := url.Addons
+		verifications, err := cf.chainParser.GetVerifications(addons)
+		if err != nil {
+			return err
+		}
+		if len(verifications) == 0 {
+			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
+		}
+		for _, verification := range verifications {
+			// we give several chances for starting up
+			var err error
+			for attempts := 0; attempts < 3; attempts++ {
+				err = cf.Verify(ctx, verification, 0)
+				if err == nil {
+					break
+				}
+			}
+			if err != nil {
+				return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
+			}
+		}
+	}
+	return nil
 }
 
 // overwrite this
@@ -337,6 +364,7 @@ func (cf *DummyChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 }
 
 func NewVerificationsOnlyChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
-	cf := &DummyChainFetcher{ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}}
+	cfi := ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
+	cf := &DummyChainFetcher{ChainFetcher: &cfi}
 	return cf
 }

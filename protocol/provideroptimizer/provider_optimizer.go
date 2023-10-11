@@ -80,7 +80,7 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success {
 		if latency > 0 {
-			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)
+			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)/2
 			if isHangingApi {
 				baseLatency += po.averageBlockTime // hanging apis take longer
 			}

@@ -56,9 +56,9 @@
                                 "name": "/blocks/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "height","=","0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": false,
@@ -794,9 +794,9 @@
                                 "name": "/cosmos/base/tendermint/v1beta1/blocks/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "height","=","0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -866,9 +866,9 @@
                                 "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "height"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1658,9 +1658,9 @@
                                 "name": "/cosmos/staking/v1beta1/historical_info/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "height","=","0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1838,9 +1838,9 @@
                                 "name": "/cosmos/tx/v1beta1/txs/block/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "height","=","0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1928,9 +1928,9 @@
                                 "name": "/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "last_height","=","0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -2000,9 +2000,9 @@
                                 "name": "/validatorsets/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0"
+                                        "height","=","0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "last_height"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,

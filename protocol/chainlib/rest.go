@@ -69,8 +69,11 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 		return nil, errors.New("RestChainParser not defined")
 	}
 
+	splittedUrl := strings.SplitN(url, "?", 2)
+	urlWithNoQuery := splittedUrl[0]
+
 	// Check api is supported and save it in nodeMsg
-	apiCont, err := apip.getSupportedApi(url, connectionType)
+	apiCont, err := apip.getSupportedApi(urlWithNoQuery, connectionType)
 	if err != nil {
 		return nil, err
 	}
@@ -89,15 +92,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:         data,
 		Path:        url,
-		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
-	}
-	if connectionType == http.MethodGet {
-		// support for optional params, our listener puts them inside Msg data
-		restMessage = rpcInterfaceMessages.RestMessage{
-			Msg:         nil,
-			Path:        url + string(data),
-			BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
-		}
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 	}
 	// add spec path to rest message so we can extract the requested block.
 	restMessage.SpecPath = apiCont.api.Name
@@ -258,7 +253,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		defer endTx()
 
 		msgSeed := apil.logger.GetMessageSeed()
-
+		query := "?" + string(c.Request().URI().QueryString())
 		path := "/" + c.Params("*")
 
 		metadataValues := c.GetReqHeaders()
@@ -273,7 +268,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 		requestBody := string(c.Body())
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, analytics, restHeaders)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, analytics, restHeaders)
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -320,14 +315,14 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics, restHeaders)
+		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", c.Method(), dappID, analytics, restHeaders)
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, err)
 
 			// Set status to internal error
 			c.Status(fiber.StatusInternalServerError)
