@@ -66,6 +66,12 @@ func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
 		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsHeader", Value: corsHeader})
 	}
 
+	// Check for the presence of "Access-Control-Allow-Headers" header and whether it includes "x-grpc-web"
+	allowHeaders := resp.Header.Get("Access-Control-Allow-Headers")
+	if !strings.Contains(strings.ToLower(allowHeaders), "x-grpc-web") {
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' to include 'x-grpc-web'.", nil, utils.Attribute{Key: "allowHeaders", Value: allowHeaders})
+	}
+
 	return nil
 }
 
