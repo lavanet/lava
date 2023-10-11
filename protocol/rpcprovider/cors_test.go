@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/stretchr/testify/require"
 )
 
 // StartTestServer starts a simple HTTP server without CORS headers for testing.
@@ -32,7 +34,6 @@ func TestPerformCORSCheckFail(t *testing.T) {
 	}
 
 	err := performCORSCheck(endpoint)
-	if err == nil {
-		t.Fatalf("Expected CORS check to fail but it passed")
-	}
+	require.NotNil(t, err, "Expected CORS check to fail but it passed")
+	require.True(t, strings.Contains(err.Error(), "CORS check failed"), "Expected CORS related error message")
 }
