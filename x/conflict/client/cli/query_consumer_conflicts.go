@@ -10,7 +10,7 @@ import (
 func CmdConsumerConflicts() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-conflicts <consumer>",
-		Short: "Gets a consumer's conflict list (active and resolved)",
+		Short: "Gets a consumer's active conflict list",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)

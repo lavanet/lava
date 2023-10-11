@@ -26,7 +26,7 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/conflict/conflict_vote";
 	}
 
-	// Gets a consumer's conflict list (active and resolved).
+	// Gets a consumer's active conflict list.
 	rpc ConsumerConflicts(QueryConsumerConflictsRequest) returns (QueryConsumerConflictsResponse) {
 		option (google.api.http).get = "/lavanet/lava/conflict/consumer_conflicts/{consumer}";
 	}
