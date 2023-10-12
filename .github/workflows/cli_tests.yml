@@ -1,4 +1,4 @@
-name: Lava Consensus Tests
+name: Lava cli Tests
 
 on: [pull_request]
 
@@ -35,33 +35,9 @@ jobs:
       run: tree
     - name: ls -l
       run: ls -l
-
-    ######################################################
-    ### Run Consensus unitests
-    ######################################################
-    - name: lava utils unit Tests
-      run: go test ./utils/...
-
-    - name: lava common unit Tests
-      run: go test ./common/...
-
-    - name: lava pairing unit Tests
-      run: go test ./x/pairing/...
-      
-    - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/...
-
-    - name: lava spec unit Tests
-      run: go test ./x/spec/...
-
-    - name: lava conflict unit Tests
-      run: go test ./x/conflict/...
-
-    - name: lava plans unit Tests
-      run: go test ./x/plans/...
-
-    - name: lava projects unit Tests
-      run: go test ./x/projects/... 
-
-    - name: lava subscription unit Tests
-      run: go test ./x/subscription/... 
+    
+    - name: lavad cli test
+      run: |
+        chmod +x ./scripts/cli_test.sh    
+        ./scripts/cli_test.sh     
+        killall lavad    
