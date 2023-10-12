@@ -10,6 +10,6 @@ function localNodeTimePerCu(computeUnits: number): number {
   return baseTimePerCU(computeUnits) + AverageWorldLatency;
 }
 
-function baseTimePerCU(computeUnits: number): number {
+export function baseTimePerCU(computeUnits: number): number {
   return computeUnits * TimePerCU;
 }

@@ -105,7 +105,10 @@ function constructRelaySession(
       fractions = fractions.slice(0, 18);
     }
     const toPad = DecPrecision - fractions.length;
-    return (whole + fractions + "0".repeat(toPad)).replace(/^0+/, "");
+    return (whole + fractions + "0".repeat(toPad)).replace(
+      /^0+(?=[1-9]|0$)/,
+      ""
+    );
   }
 
   function serializeToDec(input: string): string {
@@ -120,6 +123,7 @@ function constructRelaySession(
     }
     return padWithZeros(wholenumber, fraction);
   }
+
   try {
     if (lastQos != undefined) {
       newQualityOfServiceReport = new QualityOfServiceReport();
