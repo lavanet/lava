@@ -61,6 +61,7 @@ message RelayPrivateData {
     repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
     string addon = 8;
     repeated string extensions = 9;
+    int64 seen_block = 10;
 }
 
 message ReportedProvider {

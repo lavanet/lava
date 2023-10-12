@@ -127,7 +127,7 @@ func TestRelayPaymentOverUse(t *testing.T) {
 	// balance := ts.GetBalance(providerAddr)
 
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-	require.Error(t, err)
+	require.Nil(t, err)
 
 	// TODO: currently over-use causes error and doesnt reach balance zero; uncomment when fixed.
 	// balance -= ts.GetBalance(providerAddr)

@@ -301,9 +301,9 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       FLOAT_PRECISION
     );
     const report: QualityOfServiceReport = new QualityOfServiceReport();
-    report.setLatency(latencyScore.toPrecision());
-    report.setAvailability(availabilityScore.toPrecision());
-    report.setSync(syncScore.toPrecision());
+    report.setLatency(latencyScore.toFixed());
+    report.setAvailability(availabilityScore.toFixed());
+    report.setSync(syncScore.toFixed());
 
     Logger.debug("QoS excellence for provider", {
       providerAddress,

@@ -52,6 +52,7 @@ func (rp RelayPrivateData) GetContentHashData() []byte {
 		metadataBytes = append(metadataBytes, []byte(metadataEntry.Name+metadataEntry.Value)...)
 	}
 	requestBlockBytes := sigs.EncodeUint64(uint64(rp.RequestBlock))
+	seenBlockBytes := sigs.EncodeUint64(uint64(rp.SeenBlock))
 	msgParts := [][]byte{
 		metadataBytes,
 		[]byte(strings.Join(rp.Extensions, "")),
@@ -61,6 +62,7 @@ func (rp RelayPrivateData) GetContentHashData() []byte {
 		[]byte(rp.ApiUrl),
 		rp.Data,
 		requestBlockBytes,
+		seenBlockBytes,
 		rp.Salt,
 	}
 	msgData := sigs.Join(msgParts)

@@ -82,6 +82,6 @@ describe("consumerTypes", () => {
     expect(BigNumber(result.downtimePercentage).toNumber() * 2).toEqual(
       AVAILABILITY_PERCENTAGE
     );
-    expect(result.scaledAvailabilityScore).toEqual(halfDec.toPrecision());
+    expect(result.scaledAvailabilityScore).toEqual(halfDec.toFixed());
   });
 });
