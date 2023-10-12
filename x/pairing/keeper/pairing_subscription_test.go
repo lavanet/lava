@@ -86,12 +86,11 @@ func TestRelayPaymentSubscription(t *testing.T) {
 		policies, proj.Project.UsedCu, sub.Sub.MonthCuLeft)
 
 	tests := []struct {
-		name  string
-		cu    uint64
-		valid bool
+		name string
+		cu   uint64
 	}{
-		{"happyflow", ts.spec.ApiCollections[0].Apis[0].ComputeUnits, true},
-		{"epochCULimit", allowedCu + 1, false},
+		{"happyflow", ts.spec.ApiCollections[0].Apis[0].ComputeUnits},
+		{"epochCULimit", allowedCu + 1},
 	}
 
 	for i, tt := range tests {
@@ -99,7 +98,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, uint64(i), tt.cu, ts.BlockHeight(), 0)
 			relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
 			_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-			require.Equal(t, tt.valid, err == nil,
+			require.Nil(t, err,
 				"results incorrect for usage of %d err == nil: %t", tt.cu, err == nil)
 		})
 	}
