@@ -1,6 +1,8 @@
 package types
 
-import common "github.com/lavanet/lava/common"
+import (
+	"github.com/lavanet/lava/x/fixationstore"
+)
 
 // DefaultIndex is the default capability global index
 const DefaultIndex uint64 = 1
@@ -10,7 +12,7 @@ func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:  DefaultParams(),
-		PlansFS: *common.DefaultGenesis(),
+		PlansFS: *fixationstore.DefaultGenesis(),
 	}
 }
 

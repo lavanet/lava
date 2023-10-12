@@ -1,4 +1,4 @@
-package common
+package timerstore
 
 import (
 	"math"
@@ -6,6 +6,13 @@ import (
 	"testing"
 	"time"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/store"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
@@ -20,11 +27,6 @@ func initCtxAndTimerStores(t *testing.T, count int) (sdk.Context, []*TimerStore)
 	}
 
 	return ctx, tstore
-}
-
-func initCtxAndTimerStore(t *testing.T) (sdk.Context, *TimerStore) {
-	ctx, tstore := initCtxAndTimerStores(t, 1)
-	return ctx, tstore[0]
 }
 
 type timerTemplate struct {
@@ -252,4 +254,27 @@ func TestTimerEarlyExpiry(t *testing.T) {
 		what := p[0].op + " " + p[0].name
 		require.Panics(t, func() { testWithTimerTemplate(t, p, 1) }, what)
 	}
+}
+
+var (
+	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
+)
+
+// Helper function to init a mock keeper and context
+func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
+	db := tmdb.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db)
+
+	registry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(registry)
+
+	stateStore.MountStoreWithDB(mockStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(mockMemStoreKey, storetypes.StoreTypeMemory, nil)
+
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
+
+	return ctx, cdc
 }
