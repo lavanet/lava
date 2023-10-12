@@ -90,8 +90,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 }
 
 func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpoch uint64) {
-	csm.lock.Lock()
-	defer csm.lock.Unlock()
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
 	for _, consumerSessionWithProvider := range csm.pairing {
 		if consumerSessionWithProvider == nil {
 			continue

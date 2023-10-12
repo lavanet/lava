@@ -271,6 +271,10 @@ func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch
 	if virtualEpoch == 0 {
 		return
 	}
+	if atomic.LoadUint64(&psm.latestVirtualEpoch) == virtualEpoch {
+		utils.LavaFormatError("The same virtual epoch update occurred", nil, utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch})
+		return
+	}
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	latestVirtualEpoch := psm.latestVirtualEpoch

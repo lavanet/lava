@@ -37,8 +37,8 @@ func (dpu *DowntimeParamsUpdater) UpdaterKey() string {
 }
 
 func (dpu *DowntimeParamsUpdater) RegisterDowntimeParamsUpdatable(ctx context.Context, downtimeParamsUpdatable *DowntimeParamsUpdatable) error {
-	dpu.lock.RLock()
-	defer dpu.lock.RUnlock()
+	dpu.lock.Lock()
+	defer dpu.lock.Unlock()
 
 	var params *downtimev1.Params
 	if dpu.downtimeParams != nil {
