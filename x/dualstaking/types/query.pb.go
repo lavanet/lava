@@ -550,7 +550,7 @@ type QueryClient interface {
 	DelegatorProviders(ctx context.Context, in *QueryDelegatorProvidersRequest, opts ...grpc.CallOption) (*QueryDelegatorProvidersResponse, error)
 	// Queries a provider for all its delegators.
 	ProviderDelegators(ctx context.Context, in *QueryProviderDelegatorsRequest, opts ...grpc.CallOption) (*QueryProviderDelegatorsResponse, error)
-	// Queries a provider for all its delegators.
+	// Queries a the unclaimed rewards of a delegator.
 	DelegatorRewards(ctx context.Context, in *QueryDelegatorRewardsRequest, opts ...grpc.CallOption) (*QueryDelegatorRewardsResponse, error)
 }
 
@@ -606,7 +606,7 @@ type QueryServer interface {
 	DelegatorProviders(context.Context, *QueryDelegatorProvidersRequest) (*QueryDelegatorProvidersResponse, error)
 	// Queries a provider for all its delegators.
 	ProviderDelegators(context.Context, *QueryProviderDelegatorsRequest) (*QueryProviderDelegatorsResponse, error)
-	// Queries a provider for all its delegators.
+	// Queries a the unclaimed rewards of a delegator.
 	DelegatorRewards(context.Context, *QueryDelegatorRewardsRequest) (*QueryDelegatorRewardsResponse, error)
 }
 
