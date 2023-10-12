@@ -29,6 +29,7 @@ func CmdRelayPayment() *cobra.Command {
 				clientCtx.GetFromAddress().String(),
 				[]*types.RelaySession{},
 				"",
+				nil,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

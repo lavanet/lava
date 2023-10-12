@@ -82,12 +82,17 @@ type RewardServer struct {
 	rewardsSnapshotTimeoutDuration time.Duration
 	rewardsSnapshotTimer           *timer.Timer
 	rewardsSnapshotThresholdCh     chan struct{}
+	chainTrackerSpecsInf           ChainTrackerSpecsInf
 }
 
 type RewardsTxSender interface {
-	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
+}
+
+type ChainTrackerSpecsInf interface {
+	GetLatestBlockNumForSpec(specID string) int64
 }
 
 func (rws *RewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
@@ -154,6 +159,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 	if err != nil {
 		return err
 	}
+	specs := map[string]struct{}{}
 	for _, relay := range rewardsToClaim {
 		consumerAddr, err := sigs.ExtractSignerAddress(relay)
 		if err != nil {
@@ -172,9 +178,10 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		}
 		rws.addExpectedPayment(expectedPay)
 		rws.updateCUServiced(relay.CuSum)
+		specs[relay.SpecId] = struct{}{}
 	}
 	if len(rewardsToClaim) > 0 {
-		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10))
+		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10), rws.latestBlockReports(specs))
 		if err != nil {
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
@@ -365,7 +372,7 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 	}
 }
 
-func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB, rewardStoragePath string, rewardsSnapshotThreshold uint, rewardsSnapshotTimeoutSec uint) *RewardServer {
+func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.ProviderMetricsManager, rewardDB *RewardDB, rewardStoragePath string, rewardsSnapshotThreshold uint, rewardsSnapshotTimeoutSec uint, chainTrackerSpecsInf ChainTrackerSpecsInf) *RewardServer {
 	rws := &RewardServer{totalCUServiced: 0, totalCUPaid: 0}
 	rws.serverID = uint64(rand.Int63())
 	rws.rewardsTxSender = rewardsTxSender
@@ -378,6 +385,7 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec) * time.Second
 	rws.rewardsSnapshotTimer = timer.NewTimer(rws.rewardsSnapshotTimeoutDuration)
 	rws.rewardsSnapshotThresholdCh = make(chan struct{})
+	rws.chainTrackerSpecsInf = chainTrackerSpecsInf
 
 	go rws.saveRewardsSnapshotToDBJob()
 	return rws
@@ -479,6 +487,25 @@ func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
 	utils.LavaFormatInfo("restored rewards from DB", utils.Attribute{Key: "proofs", Value: len(rewards)})
 
 	return nil
+}
+
+func (rws *RewardServer) latestBlockReports(specs map[string]struct{}) (latestBlockReports []*pairingtypes.LatestBlockReport) {
+	latestBlockReports = []*pairingtypes.LatestBlockReport{}
+	if rws.chainTrackerSpecsInf == nil {
+		return
+	}
+	for spec := range specs {
+		latestBlock := rws.chainTrackerSpecsInf.GetLatestBlockNumForSpec(spec)
+		if latestBlock < 0 {
+			continue
+		}
+		blockReport := &pairingtypes.LatestBlockReport{
+			SpecId:      spec,
+			LatestBlock: uint64(latestBlock),
+		}
+		latestBlockReports = append(latestBlockReports, blockReport)
+	}
+	return
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {

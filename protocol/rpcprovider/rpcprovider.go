@@ -56,7 +56,7 @@ type ProviderStateTrackerInf interface {
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context) error
-	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error
+	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
 	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
 	LatestBlock() int64
@@ -82,10 +82,10 @@ type RPCProvider struct {
 	addr                   sdk.AccAddress
 	blockMemorySize        uint64
 	chainMutexes           map[string]*sync.Mutex
-	stateTrackersPerChain  sync.Map
 	parallelConnections    uint
 	cache                  *performance.Cache
 	shardID                uint // shardID is a flag that allows setting up multiple provider databases of the same chain
+	chainTrackers          *ChainTrackers
 }
 
 func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string, rewardTTL time.Duration, shardID uint, rewardsSnapshotThreshold uint, rewardsSnapshotTimeoutSec uint) (err error) {
@@ -96,6 +96,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		signal.Stop(signalChan)
 		cancel()
 	}()
+	rpcp.chainTrackers = &ChainTrackers{}
 	rpcp.parallelConnections = parallelConnections
 	rpcp.cache = cache
 	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(metricsListenAddress) // start up prometheus metrics
@@ -124,7 +125,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 
 	// single reward server
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
-	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, rewardStoragePath, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec)
+	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, rewardStoragePath, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
 	keyName, err := sigs.GetKeyName(clientCtx)
@@ -307,8 +308,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		if err != nil {
 			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 		}
-
-		chainTrackerInf, found := rpcp.stateTrackersPerChain.Load(chainID)
+		var found bool
+		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
@@ -323,13 +324,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			}
 			// Any validation needs to be before we store chain tracker for given chain id
-			rpcp.stateTrackersPerChain.Store(rpcProviderEndpoint.ChainID, chainTracker)
+			rpcp.chainTrackers.SetTrackerForChain(rpcProviderEndpoint.ChainID, chainTracker)
 		} else {
-			var ok bool
-			chainTracker, ok = chainTrackerInf.(*chaintracker.ChainTracker)
-			if !ok {
-				utils.LavaFormatFatal("invalid usage of syncmap, could not cast result into a chaintracker", nil)
-			}
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
 		return nil

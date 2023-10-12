@@ -1,4 +1,4 @@
-package common
+package fixationstore
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +30,7 @@ func TestMigrate1to2(t *testing.T) {
 
 	ctx, cdc := initCtx(t)
 
-	ts := NewTimerStore(mockStoreKey, cdc, mockPrefix)
+	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts)
 	fs.Init(ctx, types.GenesisState{Version: 1})
 
@@ -140,7 +141,7 @@ func TestMigrate2to3(t *testing.T) {
 
 	ctx, cdc := initCtx(t)
 
-	ts := NewTimerStore(mockStoreKey, cdc, mockPrefix)
+	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts)
 	fs.Init(ctx, types.GenesisState{Version: 2})
 

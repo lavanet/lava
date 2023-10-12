@@ -20,7 +20,6 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/lavanet/lava/common"
 	"github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -249,14 +248,14 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
-	ks.Dualstaking.InitDelegations(ctx, *common.DefaultGenesis())
-	ks.Dualstaking.InitDelegators(ctx, *common.DefaultGenesis())
+	ks.Dualstaking.InitDelegations(ctx, *fixationstore.DefaultGenesis())
+	ks.Dualstaking.InitDelegators(ctx, *fixationstore.DefaultGenesis())
 	ks.Dualstaking.InitUnbondings(ctx, []types.RawMessage{})
-	ks.Plans.InitPlans(ctx, *common.DefaultGenesis())
-	ks.Subscription.InitSubscriptions(ctx, *common.DefaultGenesis())
+	ks.Plans.InitPlans(ctx, *fixationstore.DefaultGenesis())
+	ks.Subscription.InitSubscriptions(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptionsTimers(ctx, []types.RawMessage{})
-	ks.Projects.InitDevelopers(ctx, *common.DefaultGenesis())
-	ks.Projects.InitProjects(ctx, *common.DefaultGenesis())
+	ks.Projects.InitDevelopers(ctx, *fixationstore.DefaultGenesis())
+	ks.Projects.InitProjects(ctx, *fixationstore.DefaultGenesis())
 
 	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())

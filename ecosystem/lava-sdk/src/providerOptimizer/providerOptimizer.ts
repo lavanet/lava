@@ -17,7 +17,8 @@ const MAX_HALF_TIME = 14 * 24 * hourInMillis;
 const PROBE_UPDATE_WEIGHT = 0.25;
 const RELAY_UPDATE_WEIGHT = 1;
 const INITIAL_DATA_STALENESS = 24;
-const WANTED_PRECISION = 8;
+export const FLOAT_PRECISION = 8;
+export const DECIMAL_PRECISION = 36;
 export const DEFAULT_EXPLORATION_CHANCE = 0.1;
 export const COST_EXPLORATION_CHANCE = 0.01;
 
@@ -287,24 +288,22 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       return;
     }
 
-    const precision = WANTED_PRECISION;
     const latencyScore = floatToBigNumber(
       providerData.latency.num / providerData.latency.denom,
-      precision
+      FLOAT_PRECISION
     );
     const syncScore = floatToBigNumber(
       providerData.sync.num / providerData.sync.denom,
-      precision
+      FLOAT_PRECISION
     );
     const availabilityScore = floatToBigNumber(
       providerData.availability.num / providerData.availability.denom,
-      precision
+      FLOAT_PRECISION
     );
-
     const report: QualityOfServiceReport = new QualityOfServiceReport();
-    report.setLatency(latencyScore.toPrecision(precision));
-    report.setAvailability(availabilityScore.toPrecision(precision));
-    report.setSync(syncScore.toPrecision(precision));
+    report.setLatency(latencyScore.toFixed());
+    report.setAvailability(availabilityScore.toFixed());
+    report.setSync(syncScore.toFixed());
 
     Logger.debug("QoS excellence for provider", {
       providerAddress,

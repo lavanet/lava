@@ -112,8 +112,8 @@ func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 	return err
 }
 
-func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error {
-	return pst.txSender.TxRelayPayment(ctx, relayRequests, description)
+func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
+	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }
 
 func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {

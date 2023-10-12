@@ -99,6 +99,13 @@ export class ConsumerSessionManager {
     return this.pairingAddresses.size;
   }
 
+  public getPairingListForCurrentEpoch(): Map<
+    string,
+    ConsumerSessionsWithProvider
+  > {
+    return this.pairing;
+  }
+
   public async updateAllProviders(
     epoch: number,
     pairingList: ConsumerSessionsWithProvider[],

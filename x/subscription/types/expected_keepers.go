@@ -4,9 +4,10 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/lavanet/lava/common"
+	"github.com/lavanet/lava/x/fixationstore"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/x/timerstore"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -48,9 +49,9 @@ type PlansKeeper interface {
 }
 
 type FixationStoreKeeper interface {
-	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *common.FixationStore
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstore.FixationStore
 }
 
 type TimerStoreKeeper interface {
-	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *common.TimerStore
+	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
 }
