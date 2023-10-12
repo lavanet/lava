@@ -1,6 +1,8 @@
 package types
 
-import common "github.com/lavanet/lava/common"
+import (
+	"github.com/lavanet/lava/x/fixationstore"
+)
 
 // this line is used by starport scaffolding # genesis/types/import
 
@@ -12,8 +14,8 @@ func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:      DefaultParams(),
-		ProjectsFS:  *common.DefaultGenesis(),
-		DeveloperFS: *common.DefaultGenesis(),
+		ProjectsFS:  *fixationstore.DefaultGenesis(),
+		DeveloperFS: *fixationstore.DefaultGenesis(),
 	}
 }
 

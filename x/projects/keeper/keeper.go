@@ -5,11 +5,11 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/lavanet/lava/x/fixationstore"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/common"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
@@ -23,8 +23,8 @@ type (
 
 		epochstorageKeeper types.EpochStorageKeeper
 
-		projectsFS      common.FixationStore
-		developerKeysFS common.FixationStore
+		projectsFS      fixationstore.FixationStore
+		developerKeysFS fixationstore.FixationStore
 	}
 )
 

@@ -1,12 +1,20 @@
-package common
+package fixationstore
 
 import (
 	"fmt"
 	"strconv"
 	"testing"
 
+	tmdb "github.com/cometbft/cometbft-db"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/store"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +24,7 @@ func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*Fixation
 	fs := make([]*FixationStore, count)
 	for i := 0; i < count; i++ {
 		fixationKey := "mock_fix_" + strconv.Itoa(i)
-		ts := NewTimerStore(mockStoreKey, cdc, fixationKey)
+		ts := timerstore.NewTimerStore(mockStoreKey, cdc, fixationKey)
 		fs[i] = NewFixationStore(mockStoreKey, cdc, fixationKey, ts)
 	}
 
@@ -92,7 +100,7 @@ func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countOb
 			} else {
 				require.False(t, found, what)
 			}
-		case "has": //nolint:goconst
+		case "has":
 			has := fs[play.store].HasEntry(ctx, index, block)
 			require.Equal(t, !play.fail, has, what)
 		case "stale":
@@ -718,3 +726,25 @@ func TestGetAllEntries(t *testing.T) {
 
 	testWithFixationTemplate(t, playbook, 6, 1)
 }
+
+func initCtx(t *testing.T) (sdk.Context, *codec.ProtoCodec) {
+	db := tmdb.NewMemDB()
+	stateStore := store.NewCommitMultiStore(db)
+
+	registry := codectypes.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(registry)
+
+	stateStore.MountStoreWithDB(mockStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(mockMemStoreKey, storetypes.StoreTypeMemory, nil)
+
+	require.NoError(t, stateStore.LoadLatestVersion())
+
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.TestingLogger())
+
+	return ctx, cdc
+}
+
+var (
+	mockStoreKey    = sdk.NewKVStoreKey("storeKey")
+	mockMemStoreKey = storetypes.NewMemoryStoreKey("storeMemKey")
+)
