@@ -36,7 +36,6 @@ type StateQuery struct {
 	EpochStorageQueryClient epochstoragetypes.QueryClient
 	ProtocolClient          protocoltypes.QueryClient
 	DowntimeClient          downtimev1.QueryClient
-	TendermintClient        client.TendermintRPC
 	ResponsesCache          *ristretto.Cache
 }
 
@@ -47,7 +46,6 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	sq.EpochStorageQueryClient = epochstoragetypes.NewQueryClient(clientCtx)
 	sq.ProtocolClient = protocoltypes.NewQueryClient(clientCtx)
 	sq.DowntimeClient = downtimev1.NewQueryClient(clientCtx)
-	sq.TendermintClient = clientCtx.Client
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -206,7 +204,8 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 		psq.ResponsesCache.SetWithTTL(MaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
 	}
 
-	return userEntryRes.GetMaxCU() * (virtualEpoch + 1), nil
+	// increase CU during emergency mode for passed virtual epochs
+	return userEntryRes.GetMaxCU() * (virtualEpoch + 1), err
 }
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch uint64, providerAddress string) string {

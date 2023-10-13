@@ -141,7 +141,7 @@ export class StateChainQuery {
           );
         }
 
-        // increase virtual epoch, if current epoch hasn't change
+        // check if epoch has not changed
         if (
           this.latestEpoch == currentEpoch &&
           virtualEpoch == 0 &&
@@ -158,7 +158,9 @@ export class StateChainQuery {
           ) {
             const delay = Date.now() - lastBlockTime;
 
+            // check if emergency mode is enabled
             if (delay > downtimeDuration.getSeconds() * 1000) {
+              // calculate current virtual epoch
               virtualEpoch = Math.ceil(
                 (delay - pairing.getTimeLeftToNextPairing()) /
                   (epochDuration.getSeconds() * 1000)
@@ -193,6 +195,7 @@ export class StateChainQuery {
 
       this.latestEpoch = currentEpoch;
 
+      // in case of emergency mode timeLeftToNextPairing is equal to epochDuration from downtimeParams
       if (virtualEpoch != 0 && downtimeParams != undefined) {
         const epochDuration = downtimeParams.getEpochDuration();
         if (epochDuration != undefined) {

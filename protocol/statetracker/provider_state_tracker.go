@@ -43,6 +43,7 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
 
+	// register for updates in case of emergency mode is enabled
 	epochUpdaterWithEmergencyRaw := pst.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
 	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*EpochUpdater)
 	if !ok {
@@ -94,7 +95,8 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	paymentUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
 }
 
-func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context) error {
+func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
 	downtimeParamsUpdater := NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
 	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
 	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
@@ -102,14 +104,7 @@ func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
 	}
 
-	downtimeParamsUpdatable := DowntimeParamsUpdatable(pst.StateTracker.chainTracker)
-
-	err := downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
-	if err != nil {
-		utils.LavaFormatFatal("failed to register downtime params updatable", err)
-	}
-
-	return err
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {

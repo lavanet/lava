@@ -261,7 +261,8 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 	return newLatestBlock > cs.GetLatestBlockNum()
 }
 
-// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any
+// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any.
+// if a new block or fork is not found, check the emergency mode
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {

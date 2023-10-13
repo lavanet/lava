@@ -56,7 +56,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	defer pu.lock.Unlock()
 	ctx := context.Background()
 
-	// if !isEmergency will be set 0
+	// reset virtual epoch after the end of emergency mode
 	pu.currentVirtualEpoch = 0
 
 	if int64(pu.nextBlockForUpdate) > latestBlock {
@@ -90,6 +90,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	pu.nextBlockForUpdate = nextBlockForUpdateMin
 }
 
+// updateConsumerSessionManagerCULimits for new virtual epoch when emergency mode is enabled
 func (pu *PairingUpdater) updateConsumerSessionManagerCULimits(virtualEpoch uint64) {
 	consumerSessionManagersMap := pu.consumerSessionManagersMap
 	for chainID, consumerSessionManagers := range consumerSessionManagersMap {

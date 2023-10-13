@@ -96,6 +96,7 @@ export class StateBadgeQuery {
       throw StateTrackerErrors.errTimeTillNextEpochMissing;
     }
 
+    // If virtualEpoch is undefined providers work in regular mode
     if (virtualEpoch == undefined) {
       virtualEpoch = 0;
     }

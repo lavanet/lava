@@ -45,6 +45,7 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", err)
 	}
 
+	// register for updates in case of emergency mode is enabled
 	epochUpdaterWithEmergencyRaw := st.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
 	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*statetracker.EpochUpdater)
 	if !ok {
@@ -53,7 +54,8 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, AddBlockDelayForEpochUpdaterBadgeServer)
 }
 
-func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context) error {
+func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
 	downtimeParamsUpdater := statetracker.NewDowntimeParamsUpdater(st.stateQuery, st.EventTracker)
 	downtimeParamsUpdaterRaw := st.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
 	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*statetracker.DowntimeParamsUpdater)
@@ -61,14 +63,7 @@ func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Contex
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
 	}
 
-	downtimeParamsUpdatable := statetracker.DowntimeParamsUpdatable(st.StateTracker.GetChainTracker())
-
-	err := downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
-	if err != nil {
-		utils.LavaFormatFatal("failed to register downtime params updatable", err)
-	}
-
-	return err
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (st *BadgeStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {

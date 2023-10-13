@@ -77,7 +77,7 @@ type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
-	RegisterForDowntimeParamsUpdates(ctx context.Context) error
+	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
@@ -100,9 +100,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
 
-	err = rpcc.consumerStateTracker.RegisterForDowntimeParamsUpdates(ctx)
+	err = rpcc.consumerStateTracker.RegisterForDowntimeParamsUpdates(ctx, consumerStateTracker.GetChainTracker())
 	if err != nil {
-		return utils.LavaFormatError("failed to RegisterForDowntimeParamsUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err)
+		return utils.LavaFormatError("failed to register for downtime params updates", err)
 	}
 
 	lavaChainID := clientCtx.ChainID

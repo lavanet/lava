@@ -89,6 +89,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	return nil
 }
 
+// UpdateMaxCULimit for new virtual epoch when emergency mode is enabled
 func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpoch uint64) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()

@@ -104,6 +104,7 @@ func (eu *EpochUpdater) Update(latestBlock int64) {
 	}
 }
 
+// update virtual epoch for registered updatables during emergency mode
 func (eu *EpochUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
 	eu.lock.RLock()
 	defer eu.lock.RUnlock()

@@ -20,6 +20,7 @@ type DowntimeParamsUpdatable interface {
 	SetDowntimeParams(downtimev1.Params)
 }
 
+// DowntimeParamsUpdater update downtime params for registered updatables after params change proposals
 type DowntimeParamsUpdater struct {
 	lock                     sync.RWMutex
 	eventTracker             *EventTracker
@@ -70,6 +71,7 @@ func (dpu *DowntimeParamsUpdater) Update(latestBlock int64) {
 			return
 		}
 		for _, downtimeParamsUpdatable := range dpu.downtimeParamsUpdatables {
+			// iterate over all updaters and execute their updatable
 			(*downtimeParamsUpdatable).SetDowntimeParams(*params)
 		}
 	}

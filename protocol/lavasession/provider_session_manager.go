@@ -267,6 +267,7 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.latestVirtualEpoch = 0
 }
 
+// on a new virtual epoch, during emergency mode we are updating CU limits for consumer sessions
 func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {
 	if virtualEpoch == 0 {
 		return
