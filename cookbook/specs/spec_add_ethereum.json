@@ -1091,11 +1091,7 @@
                                     },
                                     "api_name": "eth_chainId"
                                 },
-                                "values": [
-                                    {
-                                        "expected_value": "0x41"
-                                    }
-                                ]
+                                "values": []
                             },
                             {
                                 "name": "pruning",
