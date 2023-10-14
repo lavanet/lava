@@ -10,8 +10,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
 )
 
@@ -429,7 +429,8 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.Safe
 	if block != ctxBlock {
 		// panic:ok: state is badly invalid, because we expect the expiry block of a
 		// timer that expired now to be same as current block height.
-		utils.LavaFormatPanic("fixation: future callback block mismatch",
+		// TODO: make this a panic
+		utils.LavaFormatWarning("fixation: future callback block mismatch",
 			fmt.Errorf("wrong expiry block %d != current block %d", block, ctxBlock),
 			utils.Attribute{Key: "prefix", Value: fs.prefix},
 			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
@@ -477,7 +478,8 @@ func (fs *FixationStore) deleteMarkedEntry(ctx sdk.Context, safeIndex types.Safe
 
 	if entry.DeleteAt != ctxBlock {
 		// panic:ok: internal state mismatch, unknown outcome if we proceed
-		utils.LavaFormatPanic("fixation: delete entry callback invalid state",
+		// TODO: make this a panic
+		utils.LavaFormatWarning("fixation: delete entry callback invalid state",
 			fmt.Errorf("entry delete at %d != current block %d", entry.DeleteAt, ctxBlock),
 			utils.Attribute{Key: "prefix", Value: fs.prefix},
 			utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
