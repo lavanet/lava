@@ -173,7 +173,7 @@ func TestSendNewProof(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20)
+		rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20, nil)
 		existingCU, updatedWithProf := uint64(0), false
 		for _, proof := range testCase.Proofs {
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
@@ -191,7 +191,7 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
 
 	prevProof := common.BuildRelayRequestWithBadge(ctx, "providerAddr", []byte{}, uint64(1), uint64(0), "specId", nil, &pairingtypes.Badge{})
 	prevProof.Epoch = int64(1)
@@ -213,7 +213,7 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
 
 	const providerAddr = "providerAddr"
 	specId := "specId"
@@ -239,7 +239,7 @@ func TestUpdateEpoch(t *testing.T) {
 		err := rewardDB.AddDB(db)
 		require.NoError(t, err)
 
-		rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 10)
+		rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 10, nil)
 
 		return rws, &stubRewardsTxSender, rewardDB
 	}
@@ -320,7 +320,7 @@ func TestSaveRewardsToDB(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 2, 1000)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 2, 1000, nil)
 
 	epoch := uint64(1)
 
@@ -354,7 +354,7 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 100)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 100, nil)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
@@ -392,25 +392,25 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 	rand.InitRandomSeed()
 	const providerAddr = "providerAddr"
-	specs := []string{"spec1", "spec2"}
+	chainIds := []string{"LAV1", "ETH1"}
 
 	rewardDB := NewRewardDB()
-	for _, spec := range specs {
-		db := NewMemoryDB(spec)
+	for _, chainId := range chainIds {
+		db := NewMemoryDB(chainId)
 		err := rewardDB.AddDB(db)
 		require.NoError(t, err)
 	}
 
 	stubRewardsTxSender := rewardsTxSenderDouble{}
 
-	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 100)
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 100, nil)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
 	proofs := []*pairingtypes.RelaySession{}
-	for _, spec := range specs {
-		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), spec, nil))
+	for _, chainId := range chainIds {
+		proofs = append(proofs, common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(10), chainId, nil))
 	}
 
 	for _, proof := range proofs {
@@ -427,8 +427,8 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 	newEpoch := epoch + 1
 	stubRewardsTxSender.earliestBlockInMemory = newEpoch
 	rws.UpdateEpoch(newEpoch)
-	for _, spec := range specs {
-		epochRewards, err := rewardDB.FindAllInDB(spec)
+	for _, chainId := range chainIds {
+		epochRewards, err := rewardDB.FindAllInDB(chainId)
 		require.NoError(t, err)
 
 		_, found := epochRewards[epoch]
@@ -450,7 +450,7 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 
 	stubRewardsTxSender := rewardsTxSenderDouble{}
 
-	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1)
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
@@ -470,7 +470,7 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 	rws.rewardsSnapshotThresholdCh <- struct{}{}
 
 	stubRewardsTxSender = rewardsTxSenderDouble{}
-	rws = NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1)
+	rws = NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
 
 	for _, spec := range specs {
 		rws.restoreRewardsFromDB(spec)
@@ -492,7 +492,7 @@ func BenchmarkSendNewProofInMemory(b *testing.B) {
 	err = rewardStore.AddDB(db2)
 	require.NoError(b, err)
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
 	b.ResetTimer()
@@ -516,7 +516,7 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	defer func() {
 		rewardStore.Close()
 	}()
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10)
+	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
 
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
@@ -548,7 +548,7 @@ type rewardsTxSenderDouble struct {
 	sentPayments          []*pairingtypes.RelaySession
 }
 
-func (rts *rewardsTxSenderDouble) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string) error {
+func (rts *rewardsTxSenderDouble) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string, _ []*pairingtypes.LatestBlockReport) error {
 	rts.sentPayments = append(rts.sentPayments, payments...)
 
 	return nil

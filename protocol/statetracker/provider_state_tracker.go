@@ -41,7 +41,7 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
-	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable)
+	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, 0) // adding 0 delay for provider updater
 }
 
 func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
@@ -87,8 +87,8 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
 }
 
-func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string) error {
-	return pst.txSender.TxRelayPayment(ctx, relayRequests, description)
+func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
+	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }
 
 func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {

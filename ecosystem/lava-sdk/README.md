@@ -22,10 +22,16 @@ Roadmap highlights:
 1. ~Send Relays per Lava Pairing~ ✅
 2. ~Find seed providers for the initial connection~ ✅
 3. ~EtherJS Integration~ ✅
-4. ~Ability to run in the browser without compromising keys✅
-5. ~High throughput via session management✅
-6. More libraries integrations (Cosmjs, web3.js...)
-7. Other Lava consensus implementations (e.g. QoS, data reliability, ...)
+4. ~Ability to run in the browser without compromising keys~✅
+5. ~High throughput via session management~✅
+6. ~More libraries integrations (Cosmjs, web3.js...)~✅
+7. ~Provider Optimizer~✅
+8. ~Quality of Service reports / provider unresponsive reports / QOS Excellence reports~✅
+9. Data Reliability
+
+# Lava SDK integrations with third party libraries
+
+could be found here: https://github.com/lavanet/lava-sdk-providers
 
 <!-- Prerequisites -->
 

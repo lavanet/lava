@@ -226,6 +226,9 @@ export class RelayPrivateData extends jspb.Message {
   setExtensionsList(value: Array<string>): void;
   addExtensions(value: string, index?: number): string;
 
+  getSeenBlock(): number;
+  setSeenBlock(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): RelayPrivateData.AsObject;
   static toObject(includeInstance: boolean, msg: RelayPrivateData): RelayPrivateData.AsObject;
@@ -247,6 +250,7 @@ export namespace RelayPrivateData {
     metadataList: Array<Metadata.AsObject>,
     addon: string,
     extensionsList: Array<string>,
+    seenBlock: number,
   }
 }
 

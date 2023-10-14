@@ -8,8 +8,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/common"
 	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/x/fixationstore"
+	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -26,9 +27,9 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
 
-		delegationFS common.FixationStore // map proviers/chainID -> delegations
-		delegatorFS  common.FixationStore // map delegators -> providers
-		unbondingTS  common.TimerStore    // track unbonding timeouts
+		delegationFS fixationstore.FixationStore // map proviers/chainID -> delegations
+		delegatorFS  fixationstore.FixationStore // map delegators -> providers
+		unbondingTS  timerstore.TimerStore       // track unbonding timeouts
 	}
 )
 

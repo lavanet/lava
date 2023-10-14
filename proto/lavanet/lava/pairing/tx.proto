@@ -46,6 +46,12 @@ message MsgRelayPayment {
   string creator = 1;
   repeated RelaySession relays = 2;
   string descriptionString = 4;
+  repeated LatestBlockReport latest_block_reports =5;
+}
+
+message LatestBlockReport {
+  string spec_id = 1;
+  uint64 latest_block =2;
 }
 
 message MsgRelayPaymentResponse {

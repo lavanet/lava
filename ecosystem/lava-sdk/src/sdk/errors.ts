@@ -33,6 +33,8 @@ class SDKErrors {
   static sessionSyncLoss: Error = new Error("session out of sync error");
 
   static relayTimeout: Error = new Error("Timeout exceeded");
+
+  static noResponseTimeout: Error = new Error("No responses returned in time");
 }
 
 export default SDKErrors;

@@ -65,9 +65,15 @@ jobs:
 
     - name: lava subscription unit Tests
       run: go test ./x/subscription/... 
+
+    - name: lava dualstaking unit Tests
+      run: go test ./x/dualstaking/... 
+
+    - name: lava fixation unit Tests
+      run: go test ./x/fixationstore/... 
+
+    - name: lava timerstore unit Tests
+      run: go test ./x/timerstore/... 
     
-    - name: lavad cli test
-      run: |
-        chmod +x ./scripts/cli_test.sh    
-        ./scripts/cli_test.sh     
-        killall lavad    
+    - name: lava downtime unit Tests
+      run: go test ./x/downtime/... 

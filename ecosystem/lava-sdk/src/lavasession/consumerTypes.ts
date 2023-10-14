@@ -52,8 +52,8 @@ export interface ProviderOptimizer {
   ): void;
 
   chooseProvider(
-    allAddresses: string[],
-    ignoredProviders: string[],
+    allAddresses: Set<string>,
+    ignoredProviders: Set<string>,
     cu: number,
     requestedBlock: number,
     perturbationPercentage: number
@@ -61,7 +61,7 @@ export interface ProviderOptimizer {
 
   getExcellenceQoSReportForProvider(
     providerAddress: string
-  ): QualityOfServiceReport;
+  ): QualityOfServiceReport | undefined;
 }
 
 export interface QoSReport {
@@ -85,16 +85,14 @@ export function calculateAvailabilityScore(qosReport: QoSReport): {
   const scaledAvailabilityScore = BigNumber(AVAILABILITY_PERCENTAGE)
     .minus(downtimePercentage)
     .div(AVAILABILITY_PERCENTAGE)
-    .toPrecision();
+    .toFixed();
 
   return {
-    downtimePercentage: downtimePercentage.toPrecision(
-      DEFAULT_DECIMAL_PRECISION
-    ),
+    downtimePercentage: downtimePercentage.toFixed(),
     scaledAvailabilityScore: BigNumber.max(
       BigNumber(0),
       scaledAvailabilityScore
-    ).toPrecision(DEFAULT_DECIMAL_PRECISION),
+    ).toFixed(),
   };
 }
 
@@ -213,9 +211,7 @@ export class SingleConsumerSession {
       const sync = BigNumber(this.qoSInfo.syncScoreSum).div(
         this.qoSInfo.totalSyncScore
       );
-      this.qoSInfo.lastQoSReport.setSync(
-        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
-      );
+      this.qoSInfo.lastQoSReport.setSync(sync.toFixed());
 
       if (BigNumber(1).gt(sync)) {
         Logger.debug(
@@ -229,9 +225,7 @@ export class SingleConsumerSession {
       }
     } else {
       const sync = BigNumber(1);
-      this.qoSInfo.lastQoSReport.setSync(
-        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
-      );
+      this.qoSInfo.lastQoSReport.setSync(sync.toFixed());
     }
     return;
   }
@@ -244,9 +238,7 @@ export class SingleConsumerSession {
     const bigExpectedLatency = BigNumber(expectedLatency);
     const bigLatency = BigNumber(latency);
 
-    return BigNumber.min(oneDec, bigExpectedLatency)
-      .div(bigLatency)
-      .toPrecision(DEFAULT_DECIMAL_PRECISION);
+    return BigNumber.min(oneDec, bigExpectedLatency).div(bigLatency).toFixed();
   }
 }
 
@@ -445,7 +437,7 @@ export class ConsumerSessionsWithProvider {
     endpoint: Endpoint;
     providerAddress: string;
   }> {
-    for (const endpoint of this.endpoints) {
+    for (const [idx, endpoint] of this.endpoints.entries()) {
       if (endpoint.enabled) {
         endpoint.client = new RelayerClient(
           "https://" + endpoint.networkAddress,
@@ -454,7 +446,7 @@ export class ConsumerSessionsWithProvider {
           }
         );
 
-        this.endpoints.push(endpoint);
+        this.endpoints[idx] = endpoint;
 
         return {
           connected: true,

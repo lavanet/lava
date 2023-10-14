@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	keepertest "github.com/lavanet/lava/testutil/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -193,7 +194,8 @@ func TestExtensions(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0xf9ccdff90234a064"}`)
 	})
 
-	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"archive"})
+	specname := "ETH1"
+	chainParser, chainRouter, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, specname, spectypes.APIInterfaceJsonRPC, serverHandle, "../../", []string{"archive"})
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainRouter)
@@ -201,9 +203,29 @@ func TestExtensions(t *testing.T) {
 	configuredExtensions := map[string]struct{}{
 		"archive": {},
 	}
+	spec, err := keepertest.GetASpec(specname, "../../", nil, nil)
+	require.NoError(t, err)
+
 	chainParser.SetConfiguredExtensions(configuredExtensions)
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
+	cuCost := uint64(0)
+	for _, api := range spec.ApiCollections[0].Apis {
+		if api.Name == parsingForCrafting.ApiName {
+			cuCost = api.ComputeUnits
+			break
+		}
+	}
+	require.NotZero(t, cuCost)
+	cuCostExt := uint64(0)
+	for _, ext := range spec.ApiCollections[0].Extensions {
+		_, ok := configuredExtensions[ext.Name]
+		if ok {
+			cuCostExt = cuCost * uint64(ext.CuMultiplier)
+			break
+		}
+	}
+	require.NotZero(t, cuCostExt)
 	latestTemplate := strings.Replace(parsingForCrafting.FunctionTemplate, "0x%x", "%s", 1)
 	latestReq := []byte(fmt.Sprintf(latestTemplate, "latest"))
 	reqSpecific := []byte(fmt.Sprintf(parsingForCrafting.FunctionTemplate, 99))
@@ -212,25 +234,28 @@ func TestExtensions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Empty(t, chainMessage.GetExtensions())
+	require.Equal(t, cuCost, chainMessage.GetApi().ComputeUnits)
+
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 0)
+	require.NoError(t, err)
+	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
+	require.Len(t, chainMessage.GetExtensions(), 1)
+	require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
+	require.Equal(t, cuCostExt, chainMessage.GetApi().ComputeUnits)
 
 	// with latest block set
 	chainMessage, err = chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 100)
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Empty(t, chainMessage.GetExtensions())
+	require.Equal(t, cuCost, chainMessage.GetApi().ComputeUnits)
 
-	// with latest block not set
-	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 0)
-	require.NoError(t, err)
-	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
-	require.Len(t, chainMessage.GetExtensions(), 1)
-
-	// with latest block set
 	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 100)
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Len(t, chainMessage.GetExtensions(), 1)
 	require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
+	require.Equal(t, cuCostExt, chainMessage.GetApi().ComputeUnits)
 	if closeServer != nil {
 		closeServer()
 	}
@@ -267,6 +292,47 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, response, string(relayReply.Data))
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+}
+
+func TestJsonRpcBatchCallSameID(t *testing.T) {
+	ctx := context.Background()
+	gotCalled := false
+	batchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}]` // call same id
+	const responseExpected = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":1,"result":"0x1"}]`         // response is expected to be like the user asked
+	// we are sending and receiving something else
+	const response = `[{"jsonrpc":"2.0","id":1,"result":"0x1"},{"jsonrpc":"2.0","id":3,"result":"0x1"}]`                     // response of the server is to the different ids
+	sentBatchCallData := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":3,"method":"eth_chainId"}]` // what is being sent is different ids
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotCalled = true
+		data := make([]byte, len([]byte(batchCallData)))
+		r.Body.Read(data)
+		// require.NoError(t, err)
+		require.Equal(t, sentBatchCallData, string(data))
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, response)
+	})
+
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, 0)
+	require.NoError(t, err)
+	requestedBlock, _ := chainMessage.RequestedBlock()
+	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
+	relayReply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
+	require.True(t, gotCalled)
+	require.NoError(t, err)
+	require.NotNil(t, relayReply)
+	require.Equal(t, responseExpected, string(relayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()

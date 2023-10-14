@@ -143,9 +143,9 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 	batch := make([]rpcclient.BatchElemWithId, len(msgs))
 	for idx, msg := range msgs {
 		switch params := msg.Params.(type) {
-		case []interface{}, map[string]interface{}:
+		case []interface{}, map[string]interface{}, nil:
 		default:
-			return JsonrpcBatchMessage{}, fmt.Errorf("invalid params in batch, batching only supports ordered or dictionary arguments  %s %+v", msg.Method, params)
+			return JsonrpcBatchMessage{}, fmt.Errorf("invalid params in batch, batching only supports empty, ordered or dictionary arguments  %s %+v", msg.Method, params)
 		}
 		element, err := rpcclient.NewBatchElementWithId(msg.Method, msg.Params, &json.RawMessage{}, msg.ID)
 		if err != nil {

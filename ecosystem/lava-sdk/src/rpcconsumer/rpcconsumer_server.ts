@@ -2,14 +2,13 @@ import { Logger } from "../logger/logger";
 import { Relayer } from "../relayer/relayer";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 import {
+  RPCEndpoint,
   SingleConsumerSession,
-  ConsumerSessionsWithProvider,
 } from "../lavasession/consumerTypes";
 import {
   BaseChainParser,
   SendRelayOptions,
   SendRestRelayOptions,
-  ChainMessage,
 } from "../chainlib/base_chain_parser";
 import {
   constructRelayRequest,
@@ -19,7 +18,6 @@ import {
   verifyFinalizationData,
   verifyRelayReply,
 } from "../lavaprotocol/request_builder";
-import { RPCEndpoint } from "../lavasession/consumerTypes";
 import {
   RelayPrivateData,
   RelayReply,
@@ -28,7 +26,10 @@ import {
 import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
-import { BACKOFF_TIME_ON_FAILURE } from "../common/common";
+import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
+import { ParsedMessage } from "../chainlib/chain_message";
+import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
+import { promiseAny } from "../util/common";
 
 const MaxRelayRetries = 4;
 
@@ -60,6 +61,11 @@ export class RPCConsumerServer {
     this.finalizationConsensus = finalizationConsensus;
   }
 
+  // returning getSessionManager for debugging / data reading.
+  public getSessionManager(): ConsumerSessionManager {
+    return this.consumerSessionManager;
+  }
+
   public setChainParser(chainParser: BaseChainParser) {
     this.chainParser = chainParser;
   }
@@ -81,6 +87,7 @@ export class RPCConsumerServer {
       apiInterface: this.rpcEndpoint.apiInterface,
       chainId: this.rpcEndpoint.chainId,
       requestedBlock: chainMessage.getRequestedBlock(),
+      headers: chainMessage.getRPCMessage().getHeaders(),
     };
     const relayPrivateData = newRelayData(relayData);
     let blockOnSyncLoss = true;
@@ -119,7 +126,7 @@ export class RPCConsumerServer {
   }
 
   private async sendRelayToProvider(
-    chainMessage: ChainMessage,
+    chainMessage: ParsedMessage,
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
   ): Promise<RelayResult | Array<RelayError> | Error> {
@@ -140,27 +147,42 @@ export class RPCConsumerServer {
       extraRelayTimeout +
       getTimePerCu(chainMessage.getApi().getComputeUnits()) +
       AverageWorldLatency;
-    try {
-      const consumerSessionsMap = this.consumerSessionManager.getSessions(
-        chainMessage.getApi().getComputeUnits(),
-        unwantedProviders,
-        chainMessage.getRequestedBlock(),
-        "",
-        []
-      );
-      if (consumerSessionsMap instanceof Error) {
-        return consumerSessionsMap;
+    const consumerSessionsMap = this.consumerSessionManager.getSessions(
+      chainMessage.getApi().getComputeUnits(),
+      unwantedProviders,
+      LATEST_BLOCK,
+      "",
+      []
+    );
+    if (consumerSessionsMap instanceof Error) {
+      return consumerSessionsMap;
+    }
+
+    if (consumerSessionsMap.size == 0) {
+      return new Error("returned empty consumerSessionsMap");
+    }
+
+    let finalRelayResult: RelayResult | RelayError[] | Error | undefined;
+    let responsesReceived = 0;
+
+    const trySetFinalRelayResult = (
+      res: RelayResult | RelayError[] | Error
+    ) => {
+      const isError = res instanceof Error || Array.isArray(res);
+      if (!isError && finalRelayResult === undefined) {
+        finalRelayResult = res;
       }
-      // TODO: send to several
-      // return this.sendRelayToAllProvidersAndRace(
-      //   consumerSessionsMap,
-      //   extraRelayTimeout
-      // );
-      const firstEntry = consumerSessionsMap.entries().next();
-      if (firstEntry.done) {
-        return new Error("returned empty consumerSessionsMap");
+
+      if (
+        finalRelayResult === undefined &&
+        responsesReceived == consumerSessionsMap.size
+      ) {
+        finalRelayResult = res;
       }
-      const [providerPublicAddress, sessionInfo] = firstEntry.value;
+    };
+
+    const promises = [];
+    for (const [providerPublicAddress, sessionInfo] of consumerSessionsMap) {
       const relayResult: RelayResult = {
         providerAddress: providerPublicAddress,
         request: undefined,
@@ -172,7 +194,7 @@ export class RPCConsumerServer {
       const epoch = sessionInfo.epoch;
       const reportedProviders = sessionInfo.reportedProviders;
 
-      const relayRequest = constructRelayRequest(
+      relayResult.request = constructRelayRequest(
         lavaChainId,
         chainID,
         relayData,
@@ -181,68 +203,103 @@ export class RPCConsumerServer {
         epoch,
         reportedProviders
       );
-      relayResult.request = relayRequest;
-      const relayResponse = await this.relayInner(
+
+      Logger.debug(`sending relay to provider ${providerPublicAddress}`);
+
+      const promise = this.relayInner(
         singleConsumerSession,
         relayResult,
+        chainMessage,
         relayTimeout
-      );
-      if (relayResponse.err != undefined) {
-        const callSessionFailure = () => {
-          const err = this.consumerSessionManager.onSessionFailure(
-            singleConsumerSession,
-            relayResponse.err
-          );
-          if (err instanceof Error) {
-            Logger.error("failed on session failure %s", err);
-          }
-        };
-        if (relayResponse.backoff) {
-          const backOffDuration = BACKOFF_TIME_ON_FAILURE;
-          setTimeout(callSessionFailure, backOffDuration); // call sessionFailure after a delay
-        } else {
-          callSessionFailure();
-        }
-        const relayError: RelayError = {
-          providerAddress: providerPublicAddress,
-          err: relayResponse.err,
-        };
-        return [relayError];
-      }
-      const reply = relayResult.reply;
-      if (reply == undefined) {
-        return new Error("reply is undefined");
-      }
+      )
+        .then((relayResponse: RelayResponse) => {
+          responsesReceived++;
 
-      // we got here if everything is valid
-      const { expectedBlockHeight, numOfProviders } =
-        this.finalizationConsensus.getExpectedBlockHeight(this.chainParser);
-      const pairingAddressesLen =
-        this.consumerSessionManager.getPairingAddressesLength();
-      const latestBlock = reply.getLatestBlock();
-      this.consumerSessionManager.onSessionDone(
-        singleConsumerSession,
-        latestBlock,
-        chainMessage.getApi().getComputeUnits(),
-        relayResponse.latency,
-        singleConsumerSession.calculateExpectedLatency(relayTimeout),
-        expectedBlockHeight,
-        numOfProviders,
-        pairingAddressesLen,
-        isHangingapi
-      );
-      return relayResult;
-    } catch (err) {
-      if (err instanceof Error) {
-        return err;
-      }
-      return new Error("unsupported error " + err);
+          if (relayResponse.err != undefined) {
+            const callSessionFailure = () => {
+              const err = this.consumerSessionManager.onSessionFailure(
+                singleConsumerSession,
+                relayResponse.err
+              );
+              if (err instanceof Error) {
+                Logger.error("failed on session failure %s", err);
+              }
+            };
+            if (relayResponse.backoff) {
+              const backOffDuration = BACKOFF_TIME_ON_FAILURE;
+              setTimeout(callSessionFailure, backOffDuration); // call sessionFailure after a delay
+            } else {
+              callSessionFailure();
+            }
+            const relayError: RelayError = {
+              providerAddress: providerPublicAddress,
+              err: relayResponse.err,
+            };
+
+            const response = [relayError];
+            trySetFinalRelayResult(response);
+
+            return response;
+          }
+          const reply = relayResult.reply;
+          if (reply == undefined) {
+            const err = new Error("reply is undefined");
+
+            trySetFinalRelayResult(err);
+
+            return err;
+          }
+
+          // we got here if everything is valid
+          const { expectedBlockHeight, numOfProviders } =
+            this.finalizationConsensus.getExpectedBlockHeight(this.chainParser);
+          const pairingAddressesLen =
+            this.consumerSessionManager.getPairingAddressesLength();
+          const latestBlock = reply.getLatestBlock();
+          this.consumerSessionManager.onSessionDone(
+            singleConsumerSession,
+            latestBlock,
+            chainMessage.getApi().getComputeUnits(),
+            relayResponse.latency,
+            singleConsumerSession.calculateExpectedLatency(relayTimeout),
+            expectedBlockHeight,
+            numOfProviders,
+            pairingAddressesLen,
+            isHangingapi
+          );
+
+          trySetFinalRelayResult(relayResult);
+
+          return relayResult;
+        })
+        .catch((err: unknown) => {
+          if (err instanceof Error) {
+            return err;
+          }
+
+          return new Error("unsupported error " + err);
+        });
+
+      promises.push(promise);
     }
+
+    const response = await promiseAny(promises);
+    if (response instanceof Error) {
+      return response;
+    }
+
+    // this should never happen, but we need to satisfy the typescript compiler
+    if (finalRelayResult === undefined) {
+      return new Error("finalRelayResult is undefined");
+    }
+
+    return finalRelayResult;
   }
 
   protected async relayInner(
     singleConsumerSession: SingleConsumerSession,
     relayResult: RelayResult,
+    chainMessage: ParsedMessage,
     relayTimeout: number
   ): Promise<RelayResponse> {
     const relayRequest = relayResult.request;
@@ -293,14 +350,25 @@ export class RPCConsumerServer {
       chainBlockStats.blockDistanceForFinalizedData
     );
     relayResult.finalized = finalized;
-    // TODO: when we add headers
-    // filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+    const headersHandler = this.chainParser.handleHeaders(
+      reply.getMetadataList(),
+      chainMessage.getApiCollection(),
+      Header.HeaderType.PASS_REPLY
+    );
+
+    reply.setMetadataList(headersHandler.filteredHeaders);
 
     const err = verifyRelayReply(reply, relayRequest, providerPublicAddress);
     if (err instanceof Error) {
       relayResponse.err = err;
       return relayResponse;
     }
+
+    reply.setMetadataList([
+      ...headersHandler.filteredHeaders,
+      ...headersHandler.ignoredMetadata,
+    ]);
+
     const existingSessionLatestBlock = singleConsumerSession.latestBlock;
     const dataReliabilityParams = this.chainParser.dataReliabilityParams();
     if (dataReliabilityParams.enabled) {
@@ -401,53 +469,6 @@ export class RPCConsumerServer {
       return relayResponse;
     }
   }
-  // use this as an initial scaffold to send to several providers
-  // protected async sendRelayToAllProvidersAndRace(
-  //   consumerSessionsMap: ConsumerSessionsMap,
-  //   timeoutMs: number
-  // ): Promise<any> {
-  //   let lastError;
-  //   const allRelays: Map<string, Promise<any>> = new Map();
-  //   function addTimeoutToPromise(
-  //     promise: Promise<any>,
-  //     timeoutMs: number
-  //   ): Promise<any> {
-  //     return Promise.race([
-  //       promise,
-  //       new Promise((_, reject) =>
-  //         setTimeout(() => reject(new Error("Timeout")), timeoutMs)
-  //       ),
-  //     ]);
-  //   }
-  //   for (const [providerAddress, sessionInfo] of consumerSessionsMap) {
-  //     const providerRelayPromise = this.relayer.sendRelay(
-  //       provider.options,
-  //       sessionInfo.session
-  //     );
-  //     allRelays.set(
-  //       providerAddress,
-  //       addTimeoutToPromise(providerRelayPromise, timeoutMs)
-  //     );
-  //   }
-
-  //   while (allRelays.size > 0) {
-  //     const returnedResponse = await Promise.race([...allRelays.values()]);
-  //     if (returnedResponse) { // maybe change this if the promise returns an Error and not throws it
-  //       console.log("Ended sending to all providers and race");
-  //       return returnedResponse;
-  //     }
-  //     // Handle removal of completed promises separately (Optional and based on your needs)
-  //     allRelays.forEach((promise, key) => {
-  //       promise
-  //         .then(() => allRelays.delete(key))
-  //         .catch(() => allRelays.delete(key));
-  //     });
-  //   }
-
-  //   throw new Error(
-  //     "Failed all promises SendRelayToAllProvidersAndRace: " + String(lastError)
-  //   );
-  // }
 }
 
 class RelayError {

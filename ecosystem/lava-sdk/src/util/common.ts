@@ -1,21 +1,21 @@
+import { JsonrpcMessage } from "../chainlib/chainproxy/rpcInterfaceMessages/json_rpc_message";
+
 export function base64ToUint8Array(str: string): Uint8Array {
   const buffer = Buffer.from(str, "base64");
 
   return new Uint8Array(buffer);
 }
 
-let globalId = 0;
-
-export function generateRPCData(method: string, params: Array<any>): string {
-  const stringifyMethod = JSON.stringify(method);
-  const stringifyParam = JSON.stringify(params, (key, value) => {
+export function generateRPCData(rpcMessage: JsonrpcMessage): string {
+  const stringifyVersion = JSON.stringify(rpcMessage.version);
+  const stringifyMethod = JSON.stringify(rpcMessage.method);
+  const stringifyParam = JSON.stringify(rpcMessage.params, (key, value) => {
     if (typeof value === "bigint") {
       return value.toString();
     }
     return value;
   });
-  globalId += 1;
-  return `{"jsonrpc": "2.0", "id": ${globalId}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
+  return `{"jsonrpc": ${stringifyVersion}, "id": ${rpcMessage.id}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
 }
 
 export function parseLong(long: Long): number {
@@ -75,4 +75,63 @@ export function median(values: number[]): number {
     // If it's odd, return the middle value
     return sortedValues[middleIndex];
   }
+}
+
+export function encodeUtf8(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+export function byteArrayToString(
+  byteArray: Uint8Array,
+  replaceDoubleQuotes = false
+): string {
+  let output = "";
+  for (let i = 0; i < byteArray.length; i++) {
+    const byte = byteArray[i];
+    if (byte === 0x09) {
+      output += "\\t";
+    } else if (byte === 0x0a) {
+      output += "\\n";
+    } else if (byte === 0x0d) {
+      output += "\\r";
+    } else if (byte === 0x5c) {
+      output += "\\\\";
+    } else if (replaceDoubleQuotes && byte === 0x22) {
+      output += '\\"';
+    } else if (byte >= 0x20 && byte <= 0x7e) {
+      output += String.fromCharCode(byte);
+    } else {
+      output += "\\" + byte.toString(8).padStart(3, "0");
+    }
+  }
+  return output;
+}
+
+export function promiseAny<T>(promises: PromiseLike<T>[]): Promise<T> {
+  let errorCounter = 0;
+  let hasResolved = false;
+  const errorOutput: Error[] = new Array(promises.length);
+
+  return new Promise<T>((resolve, reject) => {
+    const resolveOnce = (value: T) => {
+      if (!hasResolved) {
+        hasResolved = true;
+        resolve(value);
+      }
+    };
+
+    const rejection = (idx: number, error: any) => {
+      errorCounter++;
+      errorOutput[idx] = error;
+      if (errorCounter === promises.length) {
+        reject(errorOutput);
+      }
+    };
+
+    for (const [idx, promise] of promises.entries()) {
+      Promise.resolve(promise)
+        .then(resolveOnce)
+        .catch((error: any) => rejection(idx, error));
+    }
+  });
 }

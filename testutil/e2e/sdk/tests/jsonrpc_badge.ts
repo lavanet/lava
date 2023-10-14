@@ -23,6 +23,7 @@ async function main() {
             const result = await eth.sendRelay({
                 method: "eth_chainId",
                 params: [],
+                id: "1",
             }).catch(e => {
                 throw new Error(` ERR ${i} [jsonrpc_badge] failed sending relay jsonrpc badge test`);
             });
