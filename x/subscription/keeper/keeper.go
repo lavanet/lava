@@ -31,6 +31,8 @@ type (
 
 		subsFS fixationstore.FixationStore
 		subsTS timerstore.TimerStore
+
+		cuTrackerFS fixationstore.FixationStore // key: "<sub> <provider>", value: month aggregated CU
 	}
 )
 
@@ -54,6 +56,7 @@ func NewKeeper(
 	}
 
 	fs := *fixationStoreKeeper.NewFixationStore(storeKey, types.SubsFixationPrefix)
+	cuTracker := *fixationStoreKeeper.NewFixationStore(storeKey, types.CuTrackerFixationPrefix)
 
 	keeper := &Keeper{
 		cdc:        cdc,
@@ -67,7 +70,8 @@ func NewKeeper(
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
 
-		subsFS: fs,
+		subsFS:      fs,
+		cuTrackerFS: cuTracker,
 	}
 
 	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
