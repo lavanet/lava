@@ -710,15 +710,19 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 		deadline, ok := ctx.Deadline()
 		probabilityBlockError := 0.0
 		probabilityBlockErrorIfWeDontWait := 0.0
+		oneWayTravelTime := common.AverageWorldLatency / 2
 		if ok {
-			if time.Until(deadline)/2 < common.AverageWorldLatency/2 {
+			halfTimeLeft := time.Until(deadline) / 2
+			if halfTimeLeft < oneWayTravelTime {
 				return lavaErrorOnNodeError, 0, utils.LavaFormatError("not enough time to process relay", nil, utils.Attribute{Key: "time", Value: time.Until(deadline)})
 			}
-			timeProviderHasIfWeDontWait := time.Since(changeTime) + common.AverageWorldLatency/2                   // reduce world latency to have enoiugh time to send it back
-			timeProviderHas := timeProviderHasIfWeDontWait + time.Until(deadline)/2 - common.AverageWorldLatency/2 // add waiting half the timeout time
+			timeProviderHasIfWeDontWait := time.Since(changeTime) + oneWayTravelTime                      // reduce world latency to have enoiugh time to send it back
+			timeProviderHasS := (timeProviderHasIfWeDontWait + halfTimeLeft - oneWayTravelTime).Seconds() // add waiting half the timeout time
 
-			eventRate := timeProviderHas.Seconds() / averageBlockTime.Seconds()                         // a new block every average block time, numerator is time we have, gamma=rt
-			eventRateIfWeDontWait := timeProviderHasIfWeDontWait.Seconds() / averageBlockTime.Seconds() // a new block every average block time, numerator is time we have, gamma=rt
+			averageBlockTimeS := averageBlockTime.Seconds()
+
+			eventRate := timeProviderHasS / averageBlockTimeS                                  // a new block every average block time, numerator is time we have, gamma=rt
+			eventRateIfWeDontWait := timeProviderHasIfWeDontWait.Seconds() / averageBlockTimeS // a new block every average block time, numerator is time we have, gamma=rt
 
 			probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
 			probabilityBlockErrorIfWeDontWait = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(
@@ -729,9 +733,9 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 			return lavaErrorOnNodeError, 0, utils.LavaFormatError("Requested a block that is too new", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		}
 
-		if probabilityBlockErrorIfWeDontWait > 0.3 {
+		if ok && probabilityBlockErrorIfWeDontWait > 0.3 {
 			utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-			time.Sleep(time.Until(deadline)/2 - common.AverageWorldLatency/2)
+			time.Sleep(time.Until(deadline)/2 - oneWayTravelTime)
 			// see if there is an updated info
 			latestBlock, _ = rpcps.reliabilityManager.GetLatestBlockNum()
 		}
