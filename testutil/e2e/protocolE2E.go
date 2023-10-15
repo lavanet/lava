@@ -614,7 +614,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting REST Consumer")
-		reply, err := getRequest(fmt.Sprintf("%s/blocks/latest", rpcURL))
+		reply, err := getRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/blocks/latest", rpcURL))
 		if err != nil || strings.Contains(string(reply), "error") {
 			time.Sleep(time.Second)
 			continue
@@ -630,12 +630,12 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	utils.LavaFormatInfo("Starting REST Tests")
 	errors := []string{}
 	mostImportantApisToTest := []string{
-		"%s/blocks/latest",
+		"%s/cosmos/base/tendermint/v1beta1/blocks/latest",
 		"%s/lavanet/lava/pairing/providers/LAV1",
 		"%s/lavanet/lava/pairing/clients/LAV1",
 		"%s/cosmos/gov/v1beta1/proposals",
 		"%s/lavanet/lava/spec/spec",
-		"%s/blocks/1",
+		"%s/cosmos/base/tendermint/v1beta1/blocks/1",
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {
 		for _, api := range mostImportantApisToTest {
@@ -926,7 +926,7 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 
 	// REST:
 	restNodeURL := "http://0.0.0.0:1317"
-	apiMethodRest := "%s/blocks/1"
+	apiMethodRest := "%s/cosmos/base/tendermint/v1beta1/blocks/1"
 
 	providerReply, err = getRequest(fmt.Sprintf(apiMethodRest, restConsumerURL))
 	if err != nil {
