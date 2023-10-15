@@ -101,6 +101,8 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.Protoco
 	// version is ok.
 	utils.LavaFormatInfo("Validated protocol version",
 		utils.Attribute{Key: "current_binary", Value: currentBinaryVersion},
+		utils.Attribute{Key: "version_min", Value: incoming.Version.ProviderMin},
+		utils.Attribute{Key: "version_target", Value: incoming.Version.ProviderTarget},
 		utils.Attribute{Key: "lava_block_number", Value: incoming.BlockNumber})
 	return nil
 }
