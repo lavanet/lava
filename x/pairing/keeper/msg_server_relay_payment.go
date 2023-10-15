@@ -9,10 +9,12 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type BadgeData struct {
@@ -230,6 +232,23 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 			details["rewardedCU"] = strconv.FormatInt(reward.Quo(coinsPerCu).TruncateInt64(), 10)
 		}
+
+		// track the provider's CU (after QoS influence)
+		sub, found := k.subscriptionKeeper.GetSubscription(ctx, clientAddr.String())
+		if !found {
+			return nil, utils.LavaFormatError("critical: cannot get client subscription", legacyerrors.ErrKeyNotFound)
+		}
+		cuAfterQos := uint64(reward.Quo(coinsPerCu).TruncateInt64())
+		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, cuAfterQos, sub.Block)
+		if err != nil {
+			return nil, err
+		}
+
+		utils.LogLavaEvent(ctx, logger, subscriptiontypes.AddTrackedCuEventName, map[string]string{
+			"provider":     relay.Provider,
+			"subscription": sub.Consumer,
+			"added_cu":     strconv.FormatUint(cuAfterQos, 10),
+		}, "Relay Payment CU were added to CU tracker")
 
 		if relay.QosExcellenceReport != nil {
 			details["ExcellenceQoSLatency"] = relay.QosExcellenceReport.Latency.String()
