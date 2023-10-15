@@ -28,11 +28,11 @@ const (
 	CuTrackerFixationPrefix = "cu-tracker-fs"
 )
 
-func CuTrackerKey(sub string, provider string) string {
-	return sub + " " + provider
+func CuTrackerKey(sub string, provider string, chainID string) string {
+	return sub + " " + provider + " " + chainID
 }
 
-func DecodeCuTrackerKey(key string) (sub string, provider string) {
+func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string) {
 	decodedKey := strings.Split(key, " ")
-	return decodedKey[0], decodedKey[1]
+	return decodedKey[0], decodedKey[1], decodedKey[2]
 }

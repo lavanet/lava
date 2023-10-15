@@ -248,7 +248,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 		cuAfterQos := uint64(reward.Quo(coinsPerCu).TruncateInt64())
-		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, cuAfterQos, sub.Block)
+		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, sub.Block)
 		if err != nil {
 			return nil, err
 		}
