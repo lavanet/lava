@@ -39,7 +39,7 @@ type Config struct {
 	Services []string `yaml:"services"`
 }
 
-func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, services []*processmanager.ServiceProcess) (err error) {
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, services []string) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -74,10 +74,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
 
-	// A goroutine that checks for process manager's trigger flag!
-	versionMonitor.MonitorVersionUpdates(ctx)
-
-	// tearing down
+	// tear down
 	select {
 	case <-ctx.Done():
 		utils.LavaFormatInfo("Lavavisor ctx.Done")
@@ -149,16 +146,17 @@ func LavavisorStart(cmd *cobra.Command) error {
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
 		return utils.LavaFormatError("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
-	var processes []*processmanager.ServiceProcess
 	for _, process := range config.Services {
 		utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
-		serviceDir := lavavisorServicesDir + process
-		processes = processmanager.StartProcess(processes, process, serviceDir)
+		err := processmanager.StartProcess(process)
+		if err != nil {
+			utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
+		}
 	}
 
 	// Start lavavisor version monitor process
 	lavavisor := LavaVisor{}
-	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, processes)
+	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, config.Services)
 	return err
 }
 

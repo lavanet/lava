@@ -74,7 +74,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			}
 
 			// .lavavisor/ service config dir
-			lavavisorServiceConfigDir := lavavisorServicesDir + "/service_configs"
+			lavavisorServiceConfigDir := lavavisorServicesDir + "/protocol_yml_configs"
 			err = os.MkdirAll(lavavisorServiceConfigDir, 0o755)
 			if err != nil {
 				return utils.LavaFormatError("failed to create service logs directory", err)
@@ -194,7 +194,7 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	} else if serviceParams.ServiceType == "provider" {
 		content += "  ExecStart=" + workingDir + "lavap rpcprovider "
 	}
-	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
+	content += ".lavavisor/services/protocol_yml_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
 
 	content += "  User=" + currentUser.Username + "\n"
 	content += "  Restart=always\n"

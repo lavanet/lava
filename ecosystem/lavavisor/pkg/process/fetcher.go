@@ -65,6 +65,7 @@ func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protoco
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
 		utils.LavaFormatInfo("Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
 		versionDir := filepath.Join(pbf.lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
+		utils.LavaFormatInfo("Version Directory", utils.Attribute{Key: "versionDir", Value: versionDir})
 		selectedBinaryPath, err = pbf.checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
 		if err == nil {
 			return selectedBinaryPath, nil
@@ -122,15 +123,8 @@ func (pbf *ProtocolBinaryFetcher) checkAndHandleVersionDir(versionDir string, au
 			return "", err
 		}
 	}
-	// validate binary version after it has been set
-	vm := VersionMonitor{
-		BinaryPath: binaryPath,
-	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion); err != nil {
-		return "", err
-	}
 
-	utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
+	utils.LavaFormatInfo("Protocol binary with target version has been successfully set! path: " + binaryPath)
 	return binaryPath, nil
 }
 
@@ -144,13 +138,21 @@ func (pbf *ProtocolBinaryFetcher) handleMissingDir(versionDir string, autoDownlo
 		return "", utils.LavaFormatError("Sub-directory for version not found and auto-download is disabled.", nil, utils.Attribute{Key: "Version", Value: currentVersion})
 	}
 	utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
+	utils.LavaFormatInfo("creating directory: " + versionDir)
+	errMkdir := os.MkdirAll(versionDir, os.ModePerm)
+	if errMkdir != nil {
+		return "", utils.LavaFormatError("Failed to create binary directory", err)
+	}
+	utils.LavaFormatInfo("created " + versionDir + " successfully")
+
 	utils.LavaFormatInfo("Trying to download:", utils.Attribute{Key: "Version", Value: currentVersion})
-	os.MkdirAll(versionDir, os.ModePerm)
 	if err := pbf.downloadAndBuildFromGithub(lvutil.FormatFromSemanticVersion(currentVersion), versionDir); err == nil {
 		binaryPath = filepath.Join(versionDir, "lavap")
 		return binaryPath, nil
 	}
+
 	// upon failed operation, remove versionDir
+	utils.LavaFormatInfo("Failed downloading, deleting directory, retrying next block", utils.Attribute{Key: "Version", Value: currentVersion})
 	err = os.RemoveAll(versionDir)
 	if err != nil {
 		return "", err
