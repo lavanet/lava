@@ -36,10 +36,10 @@ echo "[Lavavisor Setup] adding lavavisor screen"
 screen -d -m -S lavavisor bash -c "lavavisor start --auto-download";
 screen -ls
 echo "[Lavavisor Setup] sleeping 60 seconds for lavavisor to finish setup (if its not enough increase timeout)"
-sleep 60
+sleep 10
 
 echo "[Lavavisor Setup] submitting param change vote"
-lavad tx gov submit-legacy-proposal param-change ./param_change_version_upgrade.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava; 
+lavad tx gov submit-legacy-proposal param-change ./cookbook/param_changes/param_change_version_upgrade.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava; 
 wait_next_block
 wait_next_block
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava;
