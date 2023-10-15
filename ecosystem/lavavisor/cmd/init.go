@@ -85,10 +85,10 @@ func LavavisorInit(cmd *cobra.Command) error {
 	if err != nil {
 		return utils.LavaFormatError("Protocol version cannot be fetched from consensus", err)
 	}
-	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
+	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.Version.ProviderMin})
 
 	// fetcher returns binaryPath (according to selected min or target version)
-	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(autoDownload, protocolConsensusVersion)
+	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(autoDownload, protocolConsensusVersion.Version)
 	if err != nil {
 		return utils.LavaFormatError("Protocol binary couldn't be fetched", nil)
 	}

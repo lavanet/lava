@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -166,7 +167,7 @@ func (pbf *ProtocolBinaryFetcher) handleExistingDir(versionDir string, autoDownl
 	vm := VersionMonitor{
 		BinaryPath: binaryPath,
 	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion); err != nil {
+	if err := vm.ValidateProtocolVersion(&statetracker.ProtocolVersionResponse{Version: protocolConsensusVersion}); err != nil {
 		if !autoDownload {
 			return "", utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
 		}

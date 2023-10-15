@@ -16,6 +16,8 @@ import (
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -27,6 +29,11 @@ const (
 	MaxCuResponseKey            = "max-cu-resp"
 	EffectivePolicyRespKey      = "effective-policy-resp"
 )
+
+type ProtocolVersionResponse struct {
+	Version     *protocoltypes.Version
+	BlockNumber string
+}
 
 type StateQuery struct {
 	SpecQueryClient         spectypes.QueryClient
@@ -50,12 +57,18 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	return sq
 }
 
-func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
-	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{})
+func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
+	header := metadata.MD{}
+	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{}, grpc.Header(&header))
 	if err != nil {
 		return nil, err
 	}
-	return &param.Params.Version, nil
+	blockHeight := "unInitialized"
+	blockHeights := header.Get("x-cosmos-block-height")
+	if len(blockHeights) > 0 {
+		blockHeight = blockHeights[0]
+	}
+	return &ProtocolVersionResponse{BlockNumber: blockHeight, Version: &param.Params.Version}, nil
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {

@@ -35,7 +35,7 @@ lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 echo "[Lavavisor Setup] adding lavavisor screen"
 screen -d -m -S lavavisor bash -c "lavavisor start --auto-download";
 screen -ls
-echo "[Lavavisor Setup] sleeping 60 seconds for lavavisor to finish setup (if its not enough increase timeout)"
+echo "[Lavavisor Setup] sleeping 10 seconds for lavavisor to finish setup (if its not enough increase timeout)"
 sleep 10
 
 echo "[Lavavisor Setup] submitting param change vote"

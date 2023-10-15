@@ -28,7 +28,7 @@ import (
 
 type LavavisorStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 }
 
 type LavaVisor struct {
@@ -63,7 +63,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	}
 
 	// Select most recent version set by init command (in the range of min-target version)
-	selectedVersion, err := SelectMostRecentVersionFromDir(lavavisorPath, version)
+	selectedVersion, err := SelectMostRecentVersionFromDir(lavavisorPath, version.Version)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting most recent version from .lavavisor dir", err)
 	}
@@ -72,7 +72,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	// Initialize version monitor with selected most recent version
 	versionMonitor := processmanager.NewVersionMonitor(selectedVersion, lavavisorPath, services, autoDownload)
 
-	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
+	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version.Version, versionMonitor)
 
 	// tear down
 	select {

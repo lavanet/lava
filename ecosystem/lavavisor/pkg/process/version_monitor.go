@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -39,7 +40,7 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []str
 	}
 }
 
-func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) {
+func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) error {
 	// set latest known version to incoming.
 	utils.LavaFormatInfo("Update detected. Lavavisor starting the auto-upgrade...")
 	vm.lastKnownVersion = incoming
@@ -52,21 +53,18 @@ func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) {
 	// fetcher
 	_, err := vm.protocolBinaryFetcher.FetchProtocolBinary(vm.autoDownload, vm.lastKnownVersion)
 	if err != nil {
-		utils.LavaFormatWarning("Lavavisor was not able to fetch updated version. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
-		return
+		return utils.LavaFormatError("Lavavisor was not able to fetch updated version. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
 	}
 
 	// linker
 	err = vm.protocolBinaryLinker.CreateLink(binaryPath)
 	if err != nil {
-		utils.LavaFormatWarning("Lavavisor was not able to create link to the binaries. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
-		return
+		return utils.LavaFormatError("Lavavisor was not able to create link to the binaries. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
 	}
 
 	lavavisorServicesDir := vm.LavavisorPath + "/services/"
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
-		utils.LavaFormatError("Directory does not exist. Skipping.", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
-		return
+		return utils.LavaFormatError("Directory does not exist. Skipping.", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
 	for _, process := range vm.processes {
 		utils.LavaFormatInfo("Restarting process", utils.Attribute{Key: "Process", Value: process})
@@ -76,9 +74,10 @@ func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) {
 		}
 	}
 	utils.LavaFormatInfo("Lavavisor successfully updated protocol version!", utils.Attribute{Key: "Upgraded version:", Value: vm.lastKnownVersion.ProviderTarget})
+	return nil
 }
 
-func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Version) error {
+func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.ProtocolVersionResponse) error {
 	if !vm.lock.TryLock() { // if an upgrade is currently ongoing we don't need to check versions. just wait for the flow to end.
 		utils.LavaFormatDebug("ValidateProtocolVersion is locked, assuming upgrade is ongoing")
 		return nil
@@ -89,14 +88,19 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *protocoltypes.Versio
 		return utils.LavaFormatError("failed to get binary version", err)
 	}
 
-	if ValidateMismatch(incoming, currentBinaryVersion) {
+	if ValidateMismatch(incoming.Version, currentBinaryVersion) {
 		utils.LavaFormatInfo("New version detected", utils.Attribute{Key: "incoming", Value: incoming})
 		utils.LavaFormatInfo("Started Version Upgrade flow")
-		vm.handleUpdateTrigger(incoming)
-		return nil
+		err := vm.handleUpdateTrigger(incoming.Version)
+		if err != nil {
+			utils.LavaFormatInfo("protocol update failed, lavavisor will continue trying to upgrade version every block until it succeeds")
+		}
+		return err
 	}
 
 	// version is ok.
-	utils.LavaFormatInfo("Validated protocol version", utils.Attribute{Key: "current binary", Value: currentBinaryVersion})
+	utils.LavaFormatInfo("Validated protocol version",
+		utils.Attribute{Key: "current_binary", Value: currentBinaryVersion},
+		utils.Attribute{Key: "lava_block_number", Value: incoming.BlockNumber})
 	return nil
 }
