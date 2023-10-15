@@ -31,6 +31,15 @@ type Updater interface {
 	UpdaterKey() string
 }
 
+// TODO: fix average block time.
+func GetAverageBlockTime() int {
+	averageBlockTime := 1
+	if utils.ExtendedLogLevel == "production" {
+		averageBlockTime = 30
+	}
+	return averageBlockTime
+}
+
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
@@ -50,17 +59,11 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 
-	// TODO: fix average block time.
-	averageBlockTime := 1
-	if utils.ExtendedLogLevel == "production" {
-		averageBlockTime = 30
-	}
-
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(averageBlockTime) * time.Second,
+		AverageBlockTime:  time.Duration(GetAverageBlockTime()) * time.Second,
 		ServerBlockMemory: BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
