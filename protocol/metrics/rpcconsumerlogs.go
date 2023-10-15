@@ -151,7 +151,7 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
-	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue := headers[RefererHeaderKey]
 	userAgentHeaderValue := headers[UserAgentHeaderKey]
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -161,7 +161,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, he
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
-	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -179,7 +179,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 		}
 		return headerValue
 	}
-	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
