@@ -9,7 +9,10 @@ echo "installing all binaries"
 make install-all 
 
 echo "setting up a new lava node"
-screen -d -m -S node bash -c "./scripts/start_env_dev.sh"; sleep 20;
+screen -d -m -S node bash -c "./scripts/start_env_dev.sh"
+screen -ls
+echo "sleeping 20 seconds for node to finish setup (if its not enough increase timeout)"
+sleep 20
 
 echo "checking node is up"
 lavad status
@@ -26,7 +29,11 @@ wait_next_block
 wait_next_block
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava;
 
-screen -d -m -S node bash -c "lavavisor start --auto-download"; sleep 60
+echo "adding lavavisor screen"
+screen -d -m -S lavavisor bash -c "lavavisor start --auto-download";
+screen -ls
+echo "sleeping 60 seconds for lavavisor to finish setup (if its not enough increase timeout)"
+sleep 60
 
 echo "submitting param change vote"
 lavad tx gov submit-legacy-proposal param-change ./param_change_version_upgrade.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava; 
