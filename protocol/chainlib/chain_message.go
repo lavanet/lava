@@ -24,7 +24,6 @@ type parsedMessage struct {
 }
 
 func (pm *parsedMessage) DisableErrorHandling() {
-
 }
 
 func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {

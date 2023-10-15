@@ -701,7 +701,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	return reply, nil
 }
 
-func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64) (FailOnError bool, latestBlock int64, err error) {
+func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64) (failOnError bool, latestBlock int64, err error) {
 	latestBlock, changeTime := rpcps.reliabilityManager.GetLatestBlockNum()
 	lavaErrorOnNodeError := false
 	if requestBlock > latestBlock {

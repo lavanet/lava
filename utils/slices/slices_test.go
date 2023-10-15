@@ -24,6 +24,7 @@ func TestSlice(t *testing.T) {
 		})
 	}
 }
+
 func TestCalculateVariance(t *testing.T) {
 	// Test case 1: Variance of a single data point (undefined)
 	data1 := []float64{5.0}
