@@ -29,7 +29,7 @@ lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --ga
 screen -d -m -S node bash -c "lavavisor start --auto-download"; sleep 60
 
 echo "submitting param change vote"
-lavad tx gov submit-legacy-proposal param-change ./param_change_epoch_params.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava; 
+lavad tx gov submit-legacy-proposal param-change ./param_change_version_upgrade.json --from alice -y --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava; 
 wait_next_block
 wait_next_block
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava;
