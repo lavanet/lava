@@ -71,7 +71,7 @@ func (vu *LavaVisorVersionUpdater) Update() {
 	// fetch updated version from consensus
 	version, err := vu.VersionStateQuery.GetProtocolVersion(context.Background())
 	if err != nil {
-		utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
+		utils.LavaFormatError("could not get version from node, its possible the node is down", err)
 		return
 	}
 	vu.LastKnownVersion = version
