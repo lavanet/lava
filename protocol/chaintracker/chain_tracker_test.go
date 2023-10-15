@@ -485,7 +485,7 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 			// initial delay
 			time.Sleep(play.startDelay)
 			// chainTracker will poll every localTimeForPollingMock/16
-			for i := 0; i < iterations*2; i++ {
+			for i := 0; i < iterations*2+1; i++ {
 				mockChainFetcher.AdvanceBlock()
 				time.Sleep(play.updateTime)
 			}

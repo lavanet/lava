@@ -28,12 +28,13 @@ import (
 )
 
 const (
-	initRetriesCount       = 4
-	BACKOFF_MAX_TIME       = 10 * time.Minute
-	maxFails               = 10
-	debug                  = false
-	GoodStabilityThreshold = 0.3
-	PollingUpdateLength    = 10
+	initRetriesCount              = 4
+	BACKOFF_MAX_TIME              = 10 * time.Minute
+	maxFails                      = 10
+	debug                         = false
+	GoodStabilityThreshold        = 0.3
+	PollingUpdateLength           = 10
+	MostFrequentPollingMultiplier = 16
 )
 
 type ChainFetcher interface {
@@ -325,8 +326,8 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	// start polling every averageBlockTime/4, then averageBlockTime/8 after passing middle, then averageBlockTime/16 after passing averageBlockTime*3/4
 	// so polling at averageBlockTime/4,averageBlockTime/2,averageBlockTime*5/8,averageBlockTime*3/4,averageBlockTime*13/16,,averageBlockTime*14/16,,averageBlockTime*15/16,averageBlockTime*16/16,averageBlockTime*17/16
 	// initial polling = averageBlockTime/16
-	initialPollingTime := pollingTime / 16 // on boot we need to query often to catch changes
-	cs.latestChangeTime = time.Time{}      // we will discard the first change time, so this is uninitialized
+	initialPollingTime := pollingTime / MostFrequentPollingMultiplier // on boot we need to query often to catch changes
+	cs.latestChangeTime = time.Time{}                                 // we will discard the first change time, so this is uninitialized
 	cs.timer = time.NewTimer(initialPollingTime)
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
@@ -375,11 +376,11 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 	timeSinceLastUpdate := time.Since(cs.latestChangeTime)
 	var newPollingTime time.Duration
 	if timeSinceLastUpdate <= tickerBaseTime/2 && blockGap > tickerBaseTime/4 {
-		newPollingTime = tickerBaseTime / 4
+		newPollingTime = tickerBaseTime / (MostFrequentPollingMultiplier / 4)
 	} else if timeSinceLastUpdate <= (tickerBaseTime*3)/4 && blockGap > tickerBaseTime/4 {
-		newPollingTime = tickerBaseTime / 8
+		newPollingTime = tickerBaseTime / (MostFrequentPollingMultiplier / 2)
 	} else {
-		newPollingTime = tickerBaseTime / 16
+		newPollingTime = tickerBaseTime / MostFrequentPollingMultiplier
 	}
 	newTickerDuration := exponentialBackoff(newPollingTime, fetchFails)
 	if debug {

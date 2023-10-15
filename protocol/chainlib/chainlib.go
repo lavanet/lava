@@ -68,6 +68,7 @@ type ChainMessage interface {
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 	GetExtensions() []*spectypes.Extension
+	DisableErrorHandling()
 	ChainMessageForSend
 }
 
