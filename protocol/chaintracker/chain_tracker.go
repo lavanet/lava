@@ -69,19 +69,19 @@ type ChainTracker struct {
 // it supports requests for [spectypes.LATEST_BLOCK-distance1, spectypes.LATEST_BLOCK-distance2)
 // spectypes.NOT_APPLICABLE in fromBlock or toBlock results in only returning specific block.
 // if specific block is spectypes.NOT_APPLICABLE it is ignored
-func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, err error) {
+func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*BlockStore, changeTime time.Time, err error) {
 	cs.blockQueueMu.RLock()
 	defer cs.blockQueueMu.RUnlock()
 
 	latestBlock = cs.GetAtomicLatestBlockNum()
 	if len(cs.blocksQueue) == 0 {
-		return latestBlock, nil, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+		return latestBlock, nil, time.Time{}, utils.LavaFormatError("ChainTracker GetLatestBlockData had no blocks", nil, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 	}
 	earliestBlockSaved := cs.getEarliestBlockUnsafe().Block
 	wantedBlocksData := WantedBlocksData{}
 	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
 	if err != nil {
-		return latestBlock, nil, sdkerrors.Wrap(err, fmt.Sprintf("invalid input for GetLatestBlockData %v", &map[string]string{
+		return latestBlock, nil, time.Time{}, sdkerrors.Wrap(err, fmt.Sprintf("invalid input for GetLatestBlockData %v", &map[string]string{
 			"fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10),
 			"latestBlock": strconv.FormatInt(latestBlock, 10), "earliestBlockSaved": strconv.FormatInt(earliestBlockSaved, 10),
 		}))
@@ -90,11 +90,12 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
 		blockStore := cs.blocksQueue[blocksQueueIdx]
 		if !wantedBlocksData.IsWanted(blockStore.Block) {
-			return latestBlock, nil, utils.LavaFormatError("invalid wantedBlocksData Iteration", err, utils.Attribute{Key: "blocksQueueIdx", Value: blocksQueueIdx}, utils.Attribute{Key: "blockStore", Value: blockStore},
+			return latestBlock, nil, time.Time{}, utils.LavaFormatError("invalid wantedBlocksData Iteration", err, utils.Attribute{Key: "blocksQueueIdx", Value: blocksQueueIdx}, utils.Attribute{Key: "blockStore", Value: blockStore},
 				utils.Attribute{Key: "wantedBlocksData", Value: wantedBlocksData})
 		}
 		requestedHashes = append(requestedHashes, &blockStore)
 	}
+	changeTime = cs.latestChangeTime
 	return
 }
 
@@ -568,4 +569,12 @@ func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock, toBlock
 		}
 	}
 	return requestedBlockHash, finalizedBlockHashes
+}
+
+func BuildProofFromBlocks(requestedHashes []*BlockStore) map[int64]interface{} {
+	finalizedBlockHashes := map[int64]interface{}{}
+	for _, block := range requestedHashes {
+		finalizedBlockHashes[block.Block] = block.Hash
+	}
+	return finalizedBlockHashes
 }

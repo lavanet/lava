@@ -125,7 +125,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 	}
 }
 
-func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
+func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
 	return rm.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 

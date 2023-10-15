@@ -41,7 +41,9 @@ func (cp RestMessage) GetParams() interface{} {
 }
 
 func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
-	return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+	// return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+	// removed until behaviour inconsistency with the cosmos sdk header is solved
+	return false
 	// if !done else we need a different setter
 }
 

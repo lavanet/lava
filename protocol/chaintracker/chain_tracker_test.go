@@ -174,7 +174,7 @@ func TestChainTracker(t *testing.T) {
 				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-				latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
+				latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
 				require.GreaterOrEqual(t, latestBlock, int64(0))
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 				require.NoError(t, err)
@@ -231,7 +231,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-				latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
+				latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 				require.NoError(t, err)
 				require.Equal(t, tt.requestBlocks, int64(len(requestedHashes)))
@@ -316,7 +316,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			latestBlock := chainTracker.GetAtomicLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
+			latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 			require.NoError(t, err)
 			require.Equal(t, requestBlocks, len(requestedHashes))
@@ -557,7 +557,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 			latestBlock := chainTracker.GetAtomicLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
+			latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 			require.NoError(t, err)
 			require.Equal(t, requestBlocks, len(requestedHashes))
@@ -589,21 +589,21 @@ func TestFindRequestedBlockHash(t *testing.T) {
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
-	latestBlock, onlyLatestBlockData, err := chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
+	latestBlock, onlyLatestBlockData, _, err := chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)
 	requestedHash, hashesMap := chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, map[int64]interface{}{})
 	require.NotNil(t, requestedHash)
 	require.Len(t, hashesMap, 1)
 
-	latestBlock, onlyLatestBlockData, err = chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK-3, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
+	latestBlock, onlyLatestBlockData, _, err = chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK-3, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)
 	requestedHash, hashesMap = chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK-3, map[int64]interface{}{})
 	require.NotNil(t, requestedHash)
 	require.Len(t, hashesMap, 4)
 
-	latestBlock, onlyLatestBlockData, err = chainTracker.GetLatestBlockData(currentLatestBlockInMock-3, currentLatestBlockInMock, currentLatestBlockInMock)
+	latestBlock, onlyLatestBlockData, _, err = chainTracker.GetLatestBlockData(currentLatestBlockInMock-3, currentLatestBlockInMock, currentLatestBlockInMock)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)
 	requestedHash, hashesMap = chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, currentLatestBlockInMock, currentLatestBlockInMock-3, map[int64]interface{}{})

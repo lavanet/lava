@@ -20,7 +20,7 @@ func (cts *ChainTrackerService) GetLatestBlockNum(context.Context, *empty.Empty)
 }
 
 func (cts *ChainTrackerService) GetLatestBlockData(ctx context.Context, latestBlockData *LatestBlockData) (*LatestBlockDataResponse, error) {
-	latestBlockNum, requestedHashes, err := cts.ChainTracker.GetLatestBlockData(latestBlockData.FromBlock, latestBlockData.ToBlock, latestBlockData.SpecificBlock)
+	latestBlockNum, requestedHashes, _, err := cts.ChainTracker.GetLatestBlockData(latestBlockData.FromBlock, latestBlockData.ToBlock, latestBlockData.SpecificBlock)
 	if err != nil {
 		return nil, err
 	}
