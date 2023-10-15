@@ -234,9 +234,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// track the provider's CU (after QoS influence)
-		sub, found := k.subscriptionKeeper.GetSubscription(ctx, clientAddr.String())
+		proj, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
+		if err != nil {
+			return nil, utils.LavaFormatError("critical: cannot get client project", legacyerrors.ErrKeyNotFound,
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "block", Value: strconv.FormatUint(uint64(relay.Epoch), 10)},
+			)
+		}
+		sub, found := k.subscriptionKeeper.GetSubscription(ctx, proj.Subscription)
 		if !found {
-			return nil, utils.LavaFormatError("critical: cannot get client subscription", legacyerrors.ErrKeyNotFound)
+			return nil, utils.LavaFormatError("critical: cannot get client subscription", legacyerrors.ErrKeyNotFound,
+				utils.Attribute{Key: "sub_consumer", Value: proj.Subscription},
+			)
 		}
 		cuAfterQos := uint64(reward.Quo(coinsPerCu).TruncateInt64())
 		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, cuAfterQos, sub.Block)
