@@ -344,6 +344,7 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 }
 
 func TestProviderOptimizerStrategiesScoring(t *testing.T) {
+	rand.InitRandomSeed()
 	providerOptimizer := setupProviderOptimizer(1)
 	providersCount := 5
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
@@ -376,7 +377,7 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	}
 
 	sampleTime := time.Now()
-	improvedLatency := 270 * time.Millisecond
+	improvedLatency := 280 * time.Millisecond
 	normalLatency := TEST_BASE_WORLD_LATENCY * 2
 	improvedBlock := syncBlock + 1
 	// provider 0 gets a good latency
