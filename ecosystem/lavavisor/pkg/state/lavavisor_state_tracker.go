@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 // Lava visor doesn't require complicated state tracker, it just needs to periodically fetch the protocol version.
