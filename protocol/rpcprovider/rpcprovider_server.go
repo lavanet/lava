@@ -714,7 +714,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 		if ok {
 			halfTimeLeft := time.Until(deadline) / 2
 			if halfTimeLeft < oneWayTravelTime {
-				return lavaErrorOnNodeError, 0, utils.LavaFormatError("not enough time to process relay", nil, utils.Attribute{Key: "time", Value: time.Until(deadline)})
+				return lavaErrorOnNodeError, 0, utils.LavaFormatWarning("not enough time to process relay", nil, utils.Attribute{Key: "time", Value: time.Until(deadline)})
 			}
 			timeProviderHasIfWeDontWait := time.Since(changeTime) + oneWayTravelTime                      // reduce world latency to have enoiugh time to send it back
 			timeProviderHasS := (timeProviderHasIfWeDontWait + halfTimeLeft - oneWayTravelTime).Seconds() // add waiting half the timeout time
@@ -730,7 +730,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 		}
 
 		if blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.3) {
-			return lavaErrorOnNodeError, 0, utils.LavaFormatError("Requested a block that is too new", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+			return lavaErrorOnNodeError, 0, utils.LavaFormatWarning("Requested a block that is too new", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		}
 
 		if ok && probabilityBlockErrorIfWeDontWait > 0.3 {
