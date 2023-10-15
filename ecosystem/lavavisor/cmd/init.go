@@ -52,8 +52,10 @@ func CreateLavaVisorInitCobraCommand() *cobra.Command {
 
 func LavavisorInit(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
+	lavavisorFetcher := processmanager.ProtocolBinaryFetcher{}
+
 	// Build path to ./lavavisor
-	lavavisorPath, err := processmanager.SetupLavavisorDir(dir)
+	err := lavavisorFetcher.SetupLavavisorDir(dir)
 	if err != nil {
 		return err
 	}
@@ -70,7 +72,7 @@ func LavavisorInit(cmd *cobra.Command) error {
 	}
 	txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
 	if err != nil {
-		utils.LavaFormatFatal("failed to create tx factory", err)
+		utils.LavaFormatFatal("Failed to create tx factory", err)
 	}
 
 	lavavisorChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
@@ -81,17 +83,22 @@ func LavavisorInit(cmd *cobra.Command) error {
 	// fetch lavap version from consensus
 	protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
-		return utils.LavaFormatError("protcol version cannot be fetched from consensus", err)
+		return utils.LavaFormatError("Protocol version cannot be fetched from consensus", err)
 	}
-	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.ProviderMin})
+	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.Version.ProviderMin})
 
 	// fetcher returns binaryPath (according to selected min or target version)
-	binaryPath, err := processmanager.FetchProtocolBinary(lavavisorPath, autoDownload, protocolConsensusVersion)
+	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(autoDownload, protocolConsensusVersion.Version)
 	if err != nil {
 		return utils.LavaFormatError("Protocol binary couldn't be fetched", nil)
 	}
+
 	// linker
-	processmanager.CreateLink(binaryPath)
+	binaryLinker := processmanager.ProtocolBinaryLinker{}
+	err = binaryLinker.CreateLink(binaryPath)
+	if err != nil {
+		return utils.LavaFormatError("Could'nt create link for the protocol binary", err)
+	}
 
 	return nil
 }

@@ -99,6 +99,6 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return cst.stateQuery.GetProtocolVersion(ctx)
 }
