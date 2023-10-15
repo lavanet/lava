@@ -26,6 +26,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/conflict/conflict_vote";
 	}
 
+	// Gets a consumer's active conflict list.
+	rpc ConsumerConflicts(QueryConsumerConflictsRequest) returns (QueryConsumerConflictsResponse) {
+		option (google.api.http).get = "/lavanet/lava/conflict/consumer_conflicts/{consumer}";
+	}
+
 	// Queries a provider's conflict list (ones that the provider was reported in and ones that the provider needs to vote)
 	rpc ProviderConflicts(QueryProviderConflictsRequest) returns (QueryProviderConflictsResponse) {
 		option (google.api.http).get = "/lavanet/lava/conflict/provider_conflicts/{provider}";
@@ -68,6 +73,14 @@ message QueryProviderConflictsRequest {
 message QueryProviderConflictsResponse {
 	repeated string reported = 1;
 	repeated string not_voted = 2;
+}
+
+message QueryConsumerConflictsRequest {
+	string consumer = 1;
+}
+
+message QueryConsumerConflictsResponse {
+	repeated string conflicts = 1;
 }
 
 // this line is used by starport scaffolding # 3
