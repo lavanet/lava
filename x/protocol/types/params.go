@@ -14,9 +14,9 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 var (
 	KeyVersion     = []byte("Version")
 	DefaultVersion = Version{
-		ProviderTarget: "0.24.1",
+		ProviderTarget: "0.24.0", // todo don't merge to main without changing back
 		ProviderMin:    "0.24.0",
-		ConsumerTarget: "0.24.1",
+		ConsumerTarget: "0.24.0", // todo don't merge to main without changing back
 		ConsumerMin:    "0.24.0",
 	}
 )
