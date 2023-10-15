@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/lavanet/lava/x/fixationstore"
+	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/common"
-	commontypes "github.com/lavanet/lava/common/types"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -29,8 +30,8 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
-		badgeTimerStore    common.TimerStore
-		providerQosFS      common.FixationStore
+		badgeTimerStore    timerstore.TimerStore
+		providerQosFS      fixationstore.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
 		dualStakingKeeper  types.DualStakingKeeper
 	}
@@ -115,10 +116,10 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	}
 }
 
-func (k Keeper) InitProviderQoS(ctx sdk.Context, gs commontypes.GenesisState) {
+func (k Keeper) InitProviderQoS(ctx sdk.Context, gs fixationtypes.GenesisState) {
 	k.providerQosFS.Init(ctx, gs)
 }
 
-func (k Keeper) ExportProviderQoS(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportProviderQoS(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.providerQosFS.Export(ctx)
 }
