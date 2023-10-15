@@ -37,7 +37,7 @@ func (bcp *BaseChainParser) Active() bool {
 func (bcp *BaseChainParser) UpdateBlockTime(newBlockTime time.Duration) {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
-	utils.LavaFormatInfo("chainParser updated block time", utils.Attribute{Key: "newTime", Value: newBlockTime}, utils.Attribute{Key: "oldTime", Value: time.Duration(bcp.spec.AverageBlockTime) * time.Millisecond}, utils.Attribute{Key: "specID", Value: bcp.spec})
+	utils.LavaFormatInfo("chainParser updated block time", utils.Attribute{Key: "newTime", Value: newBlockTime}, utils.Attribute{Key: "oldTime", Value: time.Duration(bcp.spec.AverageBlockTime) * time.Millisecond}, utils.Attribute{Key: "specID", Value: bcp.spec.Index})
 	bcp.spec.AverageBlockTime = newBlockTime.Milliseconds()
 }
 
