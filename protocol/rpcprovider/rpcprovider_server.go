@@ -24,10 +24,15 @@ import (
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+)
+
+const (
+	debugConsistency = true
 )
 
 type RPCProviderServer struct {
@@ -598,10 +603,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		var optimisticQuery bool
 		optimisticQuery, latestBlock, requestedHashes, err = rpcps.handleConsistency(ctx, request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
-			// TODO: bailing on ConsistencyError disabled temporarily for gradual deployment on main
-			if !lavaprotocol.ConsistencyError.Is(err) {
-				return nil, err
-			}
+			return nil, err
 		}
 		if optimisticQuery {
 			chainMsg.DisableErrorHandling()
@@ -701,20 +703,33 @@ func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Conte
 	proofBlock := requiredProofBlock
 	toBlock := proofBlock - int64(blockDistanceToFinalization)
 	fromBlock := toBlock - int64(blocksInFinalizationData) + 1
-	proofBlock, requestedHashes, _, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
-	timeSlept := 0 * time.Millisecond
 	deadline, ok := ctx.Deadline()
-	refreshTime := averageBlockTime / chaintracker.MostFrequentPollingMultiplier
 	oneSideTravel := common.AverageWorldLatency / 2
-	for timeCanWait := time.Until(deadline) - oneSideTravel; err != nil && ok && timeCanWait > refreshTime && timeSlept < 5*refreshTime; {
-		time.Sleep(refreshTime)
+	timeCanWait := time.Until(deadline) - oneSideTravel
+	if !ok {
+		timeCanWait = 0
+	}
+	timeSlept := 0 * time.Millisecond
+	refreshTime := (averageBlockTime / chaintracker.MostFrequentPollingMultiplier) / 2
+	sleepTime := slices.Min([]time.Duration{10 * refreshTime, timeCanWait})
+	sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
+	fetchedWithoutError := func() bool {
 		timeSlept += refreshTime
+		proofBlock, requestedHashes, _, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
+		return err != nil
+	}
+	rpcps.SleepUntilTimeOrConditionReached(sleepContext, refreshTime, fetchedWithoutError)
+	cancel()
+
+	for err != nil && ok && timeCanWait > refreshTime && timeSlept < 5*refreshTime {
+		time.Sleep(refreshTime)
+
 		proofBlock, requestedHashes, _, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
 		deadline, ok = ctx.Deadline()
 		timeCanWait = time.Until(deadline) - oneSideTravel
 	}
 	if err != nil {
-		return 0, nil, utils.LavaFormatError("error getting block range for optimistic finalization proof", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "requiredProofBlock", Value: requiredProofBlock}, utils.Attribute{Key: "timeWaited", Value: timeSlept}, utils.Attribute{Key: "proofBlock", Value: proofBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return 0, nil, utils.LavaFormatError("error getting block range for optimistic finalization proof", err, utils.Attribute{Key: "refreshTime", Value: refreshTime}, utils.Attribute{Key: "timeCanWait", Value: timeCanWait}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "requiredProofBlock", Value: requiredProofBlock}, utils.Attribute{Key: "timeWaited", Value: timeSlept}, utils.Attribute{Key: "proofBlock", Value: proofBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 	return proofBlock, requestedHashes, err
 }
@@ -736,26 +751,42 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 			if halfTimeLeft < oneWayTravelTime {
 				return optimisticQuery, latestBlock, requestedHashes, utils.LavaFormatWarning("not enough time to process relay", nil, utils.Attribute{Key: "time", Value: time.Until(deadline)})
 			}
-			timeProviderHasIfWeDontWait := time.Since(changeTime) + oneWayTravelTime                      // reduce world latency to have enoiugh time to send it back
+			timeProviderHasIfWeDontWait := time.Since(changeTime) + oneWayTravelTime                      // add oneWayTravelTime to the time we have left because that's the propagation time we assume for chainTracker
 			timeProviderHasS := (timeProviderHasIfWeDontWait + halfTimeLeft - oneWayTravelTime).Seconds() // add waiting half the timeout time
-
+			if changeTime.IsZero() {
+				// we don't have information on block changes
+				timeProviderHasIfWeDontWait = oneWayTravelTime
+				timeProviderHasS = halfTimeLeft.Seconds()
+			}
 			averageBlockTimeS := averageBlockTime.Seconds()
-
 			eventRate := timeProviderHasS / averageBlockTimeS                                  // a new block every average block time, numerator is time we have, gamma=rt
 			eventRateIfWeDontWait := timeProviderHasIfWeDontWait.Seconds() / averageBlockTimeS // a new block every average block time, numerator is time we have, gamma=rt
-
-			probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
-			probabilityBlockErrorIfWeDontWait = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(
-				uint64(blockGap-1), eventRateIfWeDontWait) // this calculates the probability we received insufficient blocks. too few
+			if eventRate < 0 || eventRateIfWeDontWait < 0 {
+				utils.LavaFormatError("invalid rate params", nil, utils.Attribute{Key: "changeTime", Value: changeTime}, utils.Attribute{Key: "timeProviderHasIfWeDontWait", Value: timeProviderHasIfWeDontWait}, utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRateIfWeDontWait", Value: eventRateIfWeDontWait}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+			} else {
+				probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
+				probabilityBlockErrorIfWeDontWait = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(
+					uint64(blockGap-1), eventRateIfWeDontWait) // this calculates the probability we received insufficient blocks. too few
+				if debugConsistency {
+					utils.LavaFormatDebug("consistency calculations breakdown", utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRateIfWeDontWait", Value: eventRateIfWeDontWait}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "probabilityBlockErrorIfWeDontWait", Value: probabilityBlockErrorIfWeDontWait}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+				}
+			}
 		}
 
 		if blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.3) {
-			return optimisticQuery, latestBlock, requestedHashes, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+			return optimisticQuery, latestBlock, requestedHashes, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		}
 
 		if ok && probabilityBlockErrorIfWeDontWait > 0.3 {
-			utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-			time.Sleep(time.Until(deadline)/2 - oneWayTravelTime)
+			utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "probabilityBlockErrorIfWeDontWait", Value: probabilityBlockErrorIfWeDontWait}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+			sleepTime := time.Until(deadline)/2 - oneWayTravelTime
+			sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
+			getLatestBlock := func() bool {
+				ret, _ := rpcps.reliabilityManager.GetLatestBlockNum()
+				return ret >= requestBlock
+			}
+			rpcps.SleepUntilTimeOrConditionReached(sleepContext, 50*time.Millisecond, getLatestBlock)
+			cancel()
 			// see if there is an updated info
 			latestBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
 			if err != nil {
@@ -768,6 +799,31 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 		}
 	}
 	return optimisticQuery, latestBlock, requestedHashes, nil
+}
+
+func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Context, queryTime time.Duration, condition func() bool) {
+	blockReached := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return // Context canceled, exit goroutine
+			default:
+				time.Sleep(queryTime)
+				if condition() {
+					close(blockReached) // Signal that the block is reached
+					return
+				}
+			}
+		}
+	}()
+
+	select {
+	case <-blockReached:
+		return
+	case <-ctx.Done():
+		return
+	}
 }
 
 func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {

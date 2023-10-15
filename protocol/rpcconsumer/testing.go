@@ -52,7 +52,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				utils.LavaFormatInfo("Received a new Block",
 					utils.Attribute{Key: "block", Value: block},
 					utils.Attribute{Key: "hash", Value: hash},
-					utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
 				)
 			}

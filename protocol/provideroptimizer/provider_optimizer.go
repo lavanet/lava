@@ -439,7 +439,11 @@ func CumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64
 	// GammaIncReg is the lower incomplete gamma function GammaIncReg(a,x) = (1/ Γ(a)) \int_0^x e^{-t} t^{a-1} dt
 	// the CPF for k events (less than equal k) is the regularized upper incomplete gamma function
 	// so to get the CPF we need to return 1 - prob
-	prob := mathext.GammaIncReg(float64(k_events+1), lambda)
+	argument := float64(k_events + 1)
+	if argument <= 0 || lambda < 0 {
+		utils.LavaFormatFatal("invalid function arguments", nil, utils.Attribute{Key: "argument", Value: argument}, utils.Attribute{Key: "lambda", Value: lambda})
+	}
+	prob := mathext.GammaIncReg(argument, lambda)
 	return 1 - prob
 }
 

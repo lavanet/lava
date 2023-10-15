@@ -344,7 +344,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 				if debug {
 					utils.LavaFormatDebug("chain tracker fetch triggered", utils.Attribute{Key: "currTime", Value: time.Now()})
 				}
-				fetchCtx, cancel := context.WithTimeout(ctx, 2*time.Second) // protect this flow from hanging code
+				fetchCtx, cancel := context.WithTimeout(ctx, 3*time.Second) // protect this flow from hanging code
 				err := cs.fetchAllPreviousBlocksIfNecessary(fetchCtx)
 				cancel()
 				if err != nil {
