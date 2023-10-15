@@ -5,6 +5,10 @@ killall screen
 rm -rf ~/.lavavisor
 rm -rf ~/.lava
 
+LOGS_DIR=${__dir}/../../testutil/debugging/logs
+mkdir -p $LOGS_DIR
+rm $LOGS_DIR/*.log
+
 echo "[Lavavisor Setup] installing all binaries"
 make install-all 
 
@@ -33,7 +37,7 @@ wait_next_block
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava;
 
 echo "[Lavavisor Setup] adding lavavisor screen"
-screen -d -m -S lavavisor bash -c "lavavisor start --auto-download";
+screen -d -m -S lavavisor bash -c "lavavisor start --auto-download 2>&1 | tee $LOGS_DIR/LAVAVISOR.log";
 screen -ls
 echo "[Lavavisor Setup] sleeping 10 seconds for lavavisor to finish setup (if its not enough increase timeout)"
 sleep 10
