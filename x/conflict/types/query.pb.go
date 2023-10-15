@@ -457,7 +457,7 @@ type QueryClient interface {
 	ConflictVote(ctx context.Context, in *QueryGetConflictVoteRequest, opts ...grpc.CallOption) (*QueryGetConflictVoteResponse, error)
 	// Queries a list of ConflictVote items.
 	ConflictVoteAll(ctx context.Context, in *QueryAllConflictVoteRequest, opts ...grpc.CallOption) (*QueryAllConflictVoteResponse, error)
-	// Gets a consumer's conflict list (active and resolved).
+	// Gets a consumer's active conflict list.
 	ConsumerConflicts(ctx context.Context, in *QueryConsumerConflictsRequest, opts ...grpc.CallOption) (*QueryConsumerConflictsResponse, error)
 }
 
@@ -513,7 +513,7 @@ type QueryServer interface {
 	ConflictVote(context.Context, *QueryGetConflictVoteRequest) (*QueryGetConflictVoteResponse, error)
 	// Queries a list of ConflictVote items.
 	ConflictVoteAll(context.Context, *QueryAllConflictVoteRequest) (*QueryAllConflictVoteResponse, error)
-	// Gets a consumer's conflict list (active and resolved).
+	// Gets a consumer's active conflict list.
 	ConsumerConflicts(context.Context, *QueryConsumerConflictsRequest) (*QueryConsumerConflictsResponse, error)
 }
 

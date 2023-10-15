@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	commontypes "github.com/lavanet/lava/common/types"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/plans/types"
 )
 
@@ -53,12 +53,12 @@ func NewKeeper(
 }
 
 // Export all plans from the KVStore
-func (k Keeper) ExportPlans(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportPlans(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.plansFS.Export(ctx)
 }
 
 // Init all plans in the KVStore
-func (k Keeper) InitPlans(ctx sdk.Context, gs commontypes.GenesisState) {
+func (k Keeper) InitPlans(ctx sdk.Context, gs fixationtypes.GenesisState) {
 	k.plansFS.Init(ctx, gs)
 }
 
