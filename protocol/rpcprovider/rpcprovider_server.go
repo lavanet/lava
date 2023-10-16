@@ -663,33 +663,34 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			return nil, err
 		}
 	}
-
-	// now we need to provide the proof for the response
-	proofBlock := latestBlock
-	if !updatedChainMessage || len(requestedHashes) == 0 {
-		// we can fetch a more advanced finalization proof, than we fetched previously
-		proofBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
-		if err != nil {
-			return nil, err
+	if dataReliabilityEnabled {
+		// now we need to provide the proof for the response
+		proofBlock := latestBlock
+		if !updatedChainMessage || len(requestedHashes) == 0 {
+			// we can fetch a more advanced finalization proof, than we fetched previously
+			proofBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
+			if err != nil {
+				return nil, err
+			}
+		} // else: we updated the chain message to request the specific latestBlock we fetched earlier, so use the previously fetched latest block and hashes
+		if proofBlock < modifiedReqBlock {
+			// we requested with a newer block, but don't necessarily have the finaliziation proof, chaintracker might be behind
+			proofBlock = modifiedReqBlock
+			proofBlock, requestedHashes, err = rpcps.GetBlockDataForOptimisticFetch(ctx, proofBlock, blockDistanceToFinalization, blocksInFinalizationData, averageBlockTime)
+			if err != nil {
+				return nil, utils.LavaFormatError("error getting block range for finalization proof", err)
+			}
 		}
-	} // else: we updated the chain message to request the specific latestBlock we fetched earlier, so use the previously fetched latest block and hashes
-	if proofBlock < modifiedReqBlock {
-		// we requested with a newer block, but don't necessarily have the finaliziation proof, chaintracker might be behind
-		proofBlock = modifiedReqBlock
-		proofBlock, requestedHashes, err = rpcps.GetBlockDataForOptimisticFetch(ctx, proofBlock, blockDistanceToFinalization, blocksInFinalizationData, averageBlockTime)
-		if err != nil {
-			return nil, utils.LavaFormatError("error getting block range for finalization proof", err)
-		}
-	}
 
-	finalizedBlockHashes := chaintracker.BuildProofFromBlocks(requestedHashes)
-	jsonStr, err := json.Marshal(finalizedBlockHashes)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err, utils.Attribute{Key: "GUID", Value: ctx},
-			utils.Attribute{Key: "finalizedBlockHashes", Value: finalizedBlockHashes}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		finalizedBlockHashes := chaintracker.BuildProofFromBlocks(requestedHashes)
+		jsonStr, err := json.Marshal(finalizedBlockHashes)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err, utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "finalizedBlockHashes", Value: finalizedBlockHashes}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		}
+		reply.FinalizedBlocksHashes = jsonStr
+		reply.LatestBlock = proofBlock
 	}
-	reply.FinalizedBlocksHashes = jsonStr
-	reply.LatestBlock = proofBlock
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, err
