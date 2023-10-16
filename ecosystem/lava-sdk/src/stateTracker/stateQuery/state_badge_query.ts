@@ -77,6 +77,7 @@ export class StateBadgeQuery {
       // Parse time till next epoch
       timeLeftToNextPairing = pairingResponse.getTimeLeftToNextPairing();
 
+      // Parse current virtual epoch
       virtualEpoch = badge.getVirtualEpoch();
 
       // Generate StakeEntry

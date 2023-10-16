@@ -21,11 +21,6 @@ import { SendRelayOptions } from "../../chainlib/base_chain_parser";
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
-import {
-  QueryParamsRequest,
-  QueryParamsResponse,
-} from "../../grpc_web_services/lavanet/lava/downtime/v1/query_pb";
-import { Params } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
   stakeEntry: StakeEntry[];
@@ -42,7 +37,6 @@ export class StateChainQuery {
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
-  private downtimeParams: Params | undefined;
   private latestEpoch: number | undefined;
 
   constructor(
@@ -195,7 +189,7 @@ export class StateChainQuery {
 
       this.latestEpoch = currentEpoch;
 
-      // in case of emergency mode timeLeftToNextPairing is equal to epochDuration from downtimeParams
+      // in case of emergency mode, timeLeftToNextPairing is equal to epochDuration from downtimeParams
       if (virtualEpoch != 0 && downtimeParams != undefined) {
         const epochDuration = downtimeParams.getEpochDuration();
         if (epochDuration != undefined) {
