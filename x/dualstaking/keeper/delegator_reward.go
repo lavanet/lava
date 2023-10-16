@@ -148,7 +148,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // CalcProviderRewardWithDelegations is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error) {
+func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int, senderModule string) (providerReward math.Int, err error) {
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
 		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
@@ -177,7 +177,20 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward)
 
-	return providerReward.Add(leftoverRewards), nil
+	fullProviderReward := providerReward.Add(leftoverRewards)
+	if fullProviderReward.GT(math.ZeroInt()) {
+		fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, fullProviderReward)}
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, fullProviderRewardCoins)
+		if err != nil {
+			// panic:ok: reward transfer should never fail
+			utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+				utils.Attribute{Key: "provider", Value: providerAddr},
+				utils.Attribute{Key: "reward", Value: fullProviderRewardCoins},
+			)
+		}
+	}
+
+	return fullProviderReward, nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
