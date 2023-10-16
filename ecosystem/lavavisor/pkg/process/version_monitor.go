@@ -13,7 +13,6 @@ import (
 type VersionMonitor struct {
 	BinaryPath            string
 	LavavisorPath         string
-	updateTriggered       chan *protocoltypes.Version
 	lastKnownVersion      *protocoltypes.Version
 	processes             []string
 	autoDownload          bool
@@ -25,18 +24,17 @@ type VersionMonitor struct {
 func NewVersionMonitor(initVersion string, lavavisorPath string, processes []string, autoDownload bool) *VersionMonitor {
 	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
 	binaryPath := filepath.Join(versionDir, "lavap")
-
+	fetcher := &ProtocolBinaryFetcher{
+		lavavisorPath: lavavisorPath,
+	}
 	return &VersionMonitor{
-		BinaryPath:      binaryPath,
-		LavavisorPath:   lavavisorPath,
-		updateTriggered: make(chan *protocoltypes.Version),
-		processes:       processes,
-		autoDownload:    autoDownload,
-		protocolBinaryFetcher: &ProtocolBinaryFetcher{
-			lavavisorPath: lavavisorPath,
-		},
-		protocolBinaryLinker: &ProtocolBinaryLinker{},
-		lock:                 sync.Mutex{},
+		BinaryPath:            binaryPath,
+		LavavisorPath:         lavavisorPath,
+		processes:             processes,
+		autoDownload:          autoDownload,
+		protocolBinaryFetcher: fetcher,
+		protocolBinaryLinker:  &ProtocolBinaryLinker{Fetcher: fetcher},
+		lock:                  sync.Mutex{},
 	}
 }
 
@@ -66,13 +64,30 @@ func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) e
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
 		return utils.LavaFormatError("Directory does not exist. Skipping.", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
-	for _, process := range vm.processes {
-		utils.LavaFormatInfo("Restarting process", utils.Attribute{Key: "Process", Value: process})
-		err := StartProcess(process)
-		if err != nil {
-			utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
-		}
+
+	// First reload the daemon.
+	err = ReloadDaemon()
+	if err != nil {
+		utils.LavaFormatError("Failed reloading daemon", err)
 	}
+
+	// now start all services
+	var wg sync.WaitGroup
+	for _, process := range vm.processes {
+		wg.Add(1)
+		go func(process string) {
+			defer wg.Done() // Decrement the WaitGroup when done
+			utils.LavaFormatInfo("Restarting process", utils.Attribute{Key: "Process", Value: process})
+			err := StartProcess(process)
+			if err != nil {
+				utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
+			}
+			utils.LavaFormatInfo("Finished restarting process successfully", utils.Attribute{Key: "Process", Value: process})
+		}(process)
+	}
+	// Wait for all Goroutines to finish
+	wg.Wait()
+
 	utils.LavaFormatInfo("Lavavisor successfully updated protocol version!", utils.Attribute{Key: "Upgraded version:", Value: vm.lastKnownVersion.ProviderTarget})
 	return nil
 }
