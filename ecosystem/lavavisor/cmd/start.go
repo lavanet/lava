@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -106,6 +107,8 @@ func CreateLavaVisorStartCobraCommand() *cobra.Command {
 func LavavisorStart(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
 	binaryFetcher := processmanager.ProtocolBinaryFetcher{}
+	// Validate we have go in Path if we dont we add it to the $PATH and if directory is missing we will download go.
+	binaryFetcher.VerifyGoInstallation()
 	// Build path to ./lavavisor
 	lavavisorPath, err := binaryFetcher.ValidateLavavisorDir(dir)
 	if err != nil {
@@ -146,13 +149,30 @@ func LavavisorStart(cmd *cobra.Command) error {
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
 		return utils.LavaFormatError("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
-	for _, process := range config.Services {
-		utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
-		err := processmanager.StartProcess(process)
-		if err != nil {
-			utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
-		}
+
+	// TODO first check if we have a new version if we do don't start.
+
+	// First reload the daemon.
+	err = processmanager.ReloadDaemon()
+	if err != nil {
+		utils.LavaFormatError("Failed reloading daemon", err)
 	}
+
+	// now start all services
+	var wg sync.WaitGroup
+	for _, process := range config.Services {
+		wg.Add(1)
+		go func(process string) {
+			defer wg.Done() // Decrement the WaitGroup when done
+			utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
+			err := processmanager.StartProcess(process)
+			if err != nil {
+				utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
+			}
+		}(process)
+	}
+	// Wait for all Goroutines to finish
+	wg.Wait()
 
 	// Start lavavisor version monitor process
 	lavavisor := LavaVisor{}
