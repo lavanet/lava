@@ -2,6 +2,7 @@ package rpcprovider
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -45,7 +46,7 @@ func validatePortNumber(ipPort string) string {
 func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
 	utils.LavaFormatDebug("Checking CORS", utils.Attribute{Key: "endpoint", Value: endpoint})
 	// Construct the URL for the RPC endpoint
-	endpointURL := "http://" + endpoint.IPPORT // Assuming HTTP,
+	endpointURL := "https://" + endpoint.IPPORT // Providers must have HTTPS support
 
 	// Send an HTTP OPTIONS request to the endpoint
 	req, err := http.NewRequest("OPTIONS", endpointURL, nil)
@@ -53,10 +54,15 @@ func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
 		return err
 	}
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
 	// Perform the HTTP request
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("error making HTTP request to %s: %w", endpointURL, err)
 	}
 	defer resp.Body.Close()
 

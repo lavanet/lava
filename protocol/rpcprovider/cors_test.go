@@ -2,6 +2,7 @@ package rpcprovider
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -11,12 +12,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Testing Prerequisites:
+// Create certificate: "openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes"
+// Move certificates to this directory
+
 func StartTestServer() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello, this server doesn't set CORS headers!")
 	})
-	http.ListenAndServe(":8080", mux)
+	err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", mux)
+	if err != nil {
+		log.Fatalf("Failed to start server 8080: %s", err.Error())
+	}
 }
 
 func StartTestServerWithOriginHeader() {
@@ -25,7 +33,10 @@ func StartTestServerWithOriginHeader() {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		fmt.Fprint(w, "Hello, this server sets Access-Control-Allow-Origin but not x-grpc-web!")
 	})
-	http.ListenAndServe(":8081", mux)
+	err := http.ListenAndServeTLS(":8081", "cert.pem", "key.pem", mux)
+	if err != nil {
+		log.Fatalf("Failed to start server 8081: %s", err.Error())
+	}
 }
 
 func StartTestServerWithXGrpcWeb() {
@@ -35,7 +46,10 @@ func StartTestServerWithXGrpcWeb() {
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web")
 		fmt.Fprint(w, "Hello, this server sets Access-Control-Allow-Origin and x-grpc-web but not lava-sdk-relay-timeout!")
 	})
-	http.ListenAndServe(":8082", mux)
+	err := http.ListenAndServeTLS(":8082", "cert.pem", "key.pem", mux)
+	if err != nil {
+		log.Fatalf("Failed to start server 8082: %s", err.Error())
+	}
 }
 
 func StartTestServerWithAllHeaders() {
@@ -45,7 +59,10 @@ func StartTestServerWithAllHeaders() {
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
 		fmt.Fprint(w, "Hello, this server sets all required headers!")
 	})
-	http.ListenAndServe(":8083", mux)
+	err := http.ListenAndServeTLS(":8083", "cert.pem", "key.pem", mux)
+	if err != nil {
+		log.Fatalf("Failed to start server 8083: %s", err.Error())
+	}
 }
 
 func TestMain(m *testing.M) {
