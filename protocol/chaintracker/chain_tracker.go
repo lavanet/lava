@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -44,11 +45,14 @@ type ChainTracker struct {
 	blocksQueue             []BlockStore        // holds all past hashes up until latest block
 	forkCallback            func(int64)         // a function to be called when a fork is detected
 	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
+	oldBlockCallback        func(block int64)   // a function to be called when an old block is detected
 	serverBlockMemory       uint64
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
 	blockCheckpoint         uint64 // last time checkpoint was met
 	ticker                  *time.Ticker
+	isEmergencyMode         bool
+	downtimeParams          downtimev1.Params
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -97,8 +101,20 @@ func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
 	return cs.blocksQueue[len(cs.blocksQueue)-1]
 }
 
+func (cs *ChainTracker) SetDowntimeParams(params downtimev1.Params) {
+	cs.blockQueueMu.Lock()
+	defer cs.blockQueueMu.Unlock()
+	cs.downtimeParams = params
+}
+
 func (cs *ChainTracker) GetLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
+}
+
+func (cs *ChainTracker) GetDowntimeParams() downtimev1.Params {
+	cs.blockQueueMu.RLock()
+	defer cs.blockQueueMu.RUnlock()
+	return cs.downtimeParams
 }
 
 func (cs *ChainTracker) setLatestBlockNum(value int64) {
@@ -245,7 +261,8 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 	return newLatestBlock > cs.GetLatestBlockNum()
 }
 
-// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any
+// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any.
+// if a new block or fork is not found, check the emergency mode
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
@@ -275,6 +292,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 				cs.forkCallback(newLatestBlock)
 			}
 		}
+	} else if cs.oldBlockCallback != nil {
+		cs.oldBlockCallback(newLatestBlock)
 	}
 	return err
 }
@@ -414,7 +433,17 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance}
+
+	chainTracker = &ChainTracker{
+		forkCallback:            config.ForkCallback,
+		newLatestCallback:       config.NewLatestCallback,
+		oldBlockCallback:        config.OldBlockCallback,
+		blocksToSave:            config.BlocksToSave,
+		chainFetcher:            chainFetcher,
+		latestBlockNum:          0,
+		serverBlockMemory:       config.ServerBlockMemory,
+		blockCheckpointDistance: config.blocksCheckpointDistance,
+	}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}

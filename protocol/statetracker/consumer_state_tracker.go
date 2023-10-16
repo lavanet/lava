@@ -47,6 +47,13 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
 	}
+
+	// register for updates in case of emergency mode is enabled
+	pairingUpdaterWithEmergencyRaw := cst.StateTracker.RegisterForEmergencyModeUpdates(ctx, pairingUpdater)
+	pairingUpdater, ok = pairingUpdaterWithEmergencyRaw.(*PairingUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterWithEmergencyRaw})
+	}
 	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 	if err != nil {
 		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
@@ -97,6 +104,18 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
 	}
 	versionUpdater.RegisterVersionUpdatable()
+}
+
+func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
+	downtimeParamsUpdater := NewDowntimeParamsUpdater(cst.stateQuery, cst.EventTracker)
+	downtimeParamsUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {

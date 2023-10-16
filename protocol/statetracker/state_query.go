@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
 	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
@@ -40,6 +42,7 @@ type StateQuery struct {
 	PairingQueryClient      pairingtypes.QueryClient
 	EpochStorageQueryClient epochstoragetypes.QueryClient
 	ProtocolClient          protocoltypes.QueryClient
+	DowntimeClient          downtimev1.QueryClient
 	ResponsesCache          *ristretto.Cache
 }
 
@@ -49,6 +52,7 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 	sq.PairingQueryClient = pairingtypes.NewQueryClient(clientCtx)
 	sq.EpochStorageQueryClient = epochstoragetypes.NewQueryClient(clientCtx)
 	sq.ProtocolClient = protocoltypes.NewQueryClient(clientCtx)
+	sq.DowntimeClient = downtimev1.NewQueryClient(clientCtx)
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -79,6 +83,14 @@ func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.
 		return nil, utils.LavaFormatError("Failed Querying spec for chain", err, utils.Attribute{Key: "ChainID", Value: chainID})
 	}
 	return &spec.Spec, nil
+}
+
+func (csq *StateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Params, error) {
+	res, err := csq.DowntimeClient.QueryParams(ctx, &downtimev1.QueryParamsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return res.Params, nil
 }
 
 type ConsumerStateQuery struct {
@@ -186,7 +198,7 @@ func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *Provi
 	return csq
 }
 
-func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
+func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch, virtualEpoch uint64) (maxCu uint64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, "")
 	cachedInterface, found := psq.ResponsesCache.Get(MaxCuResponseKey + key)
 	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
@@ -205,7 +217,8 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 		psq.ResponsesCache.SetWithTTL(MaxCuResponseKey+key, userEntryRes, 1, DefaultTimeToLiveExpiration)
 	}
 
-	return userEntryRes.GetMaxCU(), err
+	// increase CU during emergency mode for passed virtual epochs
+	return userEntryRes.GetMaxCU() * (virtualEpoch + 1), err
 }
 
 func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch uint64, providerAddress string) string {

@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -41,6 +42,13 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
+
+	// register for updates in case of emergency mode is enabled
+	epochUpdaterWithEmergencyRaw := pst.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
+	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*EpochUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterWithEmergencyRaw})
+	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, 0) // adding 0 delay for provider updater
 }
 
@@ -77,14 +85,26 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	payemntUpdater := NewPaymentUpdater(pst.EventTracker)
-	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
-	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
+	paymentUpdater := NewPaymentUpdater(pst.EventTracker)
+	paymentUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, paymentUpdater)
+	paymentUpdater, ok := paymentUpdaterRaw.(*PaymentUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: payemntUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: paymentUpdaterRaw})
 	}
 
-	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+	paymentUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+}
+
+func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
+	downtimeParamsUpdater := NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
+	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
@@ -104,7 +124,20 @@ func (pst *ProviderStateTracker) LatestBlock() int64 {
 }
 
 func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
-	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
+	latestBlockTime := pst.EventTracker.getLatestBlockTime()
+	downtimeParams := pst.chainTracker.GetDowntimeParams()
+
+	delay := time.Now().UTC().Sub(latestBlockTime)
+
+	epochDuration := downtimeParams.EpochDuration.Milliseconds()
+	virtualEpoch := uint64(0)
+	// check if emergency mode is enabled
+	if delay > downtimeParams.DowntimeDuration {
+		// division delay by epoch duration rounded up, subtract one to skip regular epoch
+		virtualEpoch = uint64((delay.Milliseconds()+epochDuration-1)/epochDuration - 1)
+	}
+
+	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch, virtualEpoch)
 }
 
 func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {

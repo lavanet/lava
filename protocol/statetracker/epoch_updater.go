@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/context"
@@ -13,6 +14,7 @@ const (
 
 type EpochUpdatable interface {
 	UpdateEpoch(epoch uint64)
+	UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64)
 }
 
 type EpochUpdatableWithBlockDelay struct {
@@ -42,10 +44,11 @@ type EpochStateQueryInterface interface {
 }
 
 type EpochUpdater struct {
-	lock            sync.RWMutex
-	epochUpdatables []*EpochUpdatableWithBlockDelay
-	currentEpoch    uint64
-	stateQuery      EpochStateQueryInterface
+	lock                sync.RWMutex
+	epochUpdatables     []*EpochUpdatableWithBlockDelay
+	currentEpoch        uint64
+	currentVirtualEpoch uint64
+	stateQuery          EpochStateQueryInterface
 }
 
 func NewEpochUpdater(stateQuery EpochStateQueryInterface) *EpochUpdater {
@@ -99,4 +102,24 @@ func (eu *EpochUpdater) Update(latestBlock int64) {
 		// iterate over all the delayed updates and execute their updatable. if delay is 0 it will execute immediately
 		epochUpdatable.UpdateOnBlock(currentEpoch, latestBlock)
 	}
+}
+
+// update virtual epoch for registered updatables during emergency mode
+func (eu *EpochUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
+	eu.lock.RLock()
+	defer eu.lock.RUnlock()
+
+	if virtualEpoch <= eu.currentVirtualEpoch {
+		return
+	}
+
+	utils.LavaFormatDebug("Emergency mode is turn on", utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch})
+	for _, epochUpdatable := range eu.epochUpdatables {
+		if epochUpdatable == nil {
+			continue
+		}
+		epochUpdatable.UpdateVirtualEpoch(eu.currentEpoch, virtualEpoch)
+	}
+
+	atomic.StoreUint64(&eu.currentVirtualEpoch, virtualEpoch)
 }

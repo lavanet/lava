@@ -152,6 +152,8 @@ func (rws *RewardServer) UpdateEpoch(epoch uint64) {
 	_, _ = rws.identifyMissingPayments(ctx)
 }
 
+func (rws *RewardServer) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {}
+
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
 	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch)
 	if err != nil {

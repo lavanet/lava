@@ -89,6 +89,21 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	return nil
 }
 
+// UpdateMaxCULimit for new virtual epoch when emergency mode is enabled
+func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpoch uint64) {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	for _, consumerSessionWithProvider := range csm.pairing {
+		if consumerSessionWithProvider == nil {
+			continue
+		}
+
+		maxCU := consumerSessionWithProvider.GetMaxCULimit()
+		maxCU = maxCU / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
+		consumerSessionWithProvider.atomicWriteMaxCULimit(maxCU)
+	}
+}
+
 func (csm *ConsumerSessionManager) Initialized() bool {
 	csm.lock.RLock()         // start by locking the class lock.
 	defer csm.lock.RUnlock() // we defer here so in case we return an error it will unlock automatically.

@@ -20,14 +20,20 @@ const (
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type StateTracker struct {
-	chainTracker         *chaintracker.ChainTracker
-	registrationLock     sync.RWMutex
-	newLavaBlockUpdaters map[string]Updater
-	EventTracker         *EventTracker
+	chainTracker          *chaintracker.ChainTracker
+	registrationLock      sync.RWMutex
+	newLavaBlockUpdaters  map[string]Updater
+	emergencyModeUpdaters map[string]EmergencyModeUpdater
+	EventTracker          *EventTracker
 }
 
 type Updater interface {
 	Update(int64)
+	UpdaterKey() string
+}
+
+type EmergencyModeUpdater interface {
+	EmergencyModeUpdate(virtualEpoch uint64)
 	UpdaterKey() string
 }
 
@@ -59,9 +65,15 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 
-	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
+	cst := &StateTracker{
+		newLavaBlockUpdaters:  map[string]Updater{},
+		emergencyModeUpdaters: map[string]EmergencyModeUpdater{},
+		EventTracker:          eventTracker,
+	}
+
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
+		OldBlockCallback:  cst.oldLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
 		AverageBlockTime:  time.Duration(GetAverageBlockTime()) * time.Second,
 		ServerBlockMemory: BlocksToSaveLavaChainTracker,
@@ -82,6 +94,30 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	}
 }
 
+func (st *StateTracker) oldLavaBlock(latestBlock int64) {
+	st.registrationLock.RLock()
+	defer st.registrationLock.RUnlock()
+
+	latestBlockTime := st.EventTracker.getLatestBlockTime()
+	downtimeParams := st.chainTracker.GetDowntimeParams()
+
+	delay := time.Now().UTC().Sub(latestBlockTime)
+
+	// check if emergency mode is enabled
+	if delay < downtimeParams.DowntimeDuration {
+		return
+	}
+
+	epochDuration := downtimeParams.EpochDuration.Milliseconds()
+
+	// division delay by epoch duration rounded up, subtract one to skip regular epoch
+	virtualEpoch := (delay.Milliseconds()+epochDuration-1)/epochDuration - 1
+
+	for _, updater := range st.emergencyModeUpdaters {
+		updater.EmergencyModeUpdate(uint64(virtualEpoch))
+	}
+}
+
 func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater) Updater {
 	st.registrationLock.Lock()
 	defer st.registrationLock.Unlock()
@@ -93,7 +129,23 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 	return existingUpdater
 }
 
+func (st *StateTracker) RegisterForEmergencyModeUpdates(ctx context.Context, updater EmergencyModeUpdater) EmergencyModeUpdater {
+	st.registrationLock.Lock()
+	defer st.registrationLock.Unlock()
+	existingUpdater, ok := st.emergencyModeUpdaters[updater.UpdaterKey()]
+	if !ok {
+		st.emergencyModeUpdaters[updater.UpdaterKey()] = updater
+		existingUpdater = updater
+	}
+	return existingUpdater
+}
+
 // For lavavisor access
 func (s *StateTracker) GetEventTracker() *EventTracker {
 	return s.EventTracker
+}
+
+// For badgeserver access
+func (s *StateTracker) GetChainTracker() *chaintracker.ChainTracker {
+	return s.chainTracker
 }

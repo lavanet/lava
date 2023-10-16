@@ -18,6 +18,7 @@ type ProviderSessionManager struct {
 	rpcProviderEndpoint           *RPCProviderEndpoint
 	blockDistanceForEpochValidity uint64                             // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
 	consumerPairedWithProjectMap  map[uint64]*projectConsumerMapping // consumer address as key, project as value
+	latestVirtualEpoch            uint64
 }
 
 // reads cs.BlockedEpoch atomically
@@ -122,7 +123,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	}
 
 	mapOfProviderSessionsWithConsumer, foundEpochInMap := psm.sessionsWithAllConsumers[epoch]
-	if !foundEpochInMap {
+	if !foundEpochInMap || len(mapOfProviderSessionsWithConsumer.sessionMap) == 0 {
 		mapOfProviderSessionsWithConsumer = sessionData{sessionMap: make(map[string]*ProviderSessionsWithConsumerProject)}
 		psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
 	}
@@ -263,6 +264,49 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.currentEpoch = epoch
 	psm.consumerPairedWithProjectMap = filterOldEpochEntries(psm.blockedEpochHeight, psm.consumerPairedWithProjectMap)
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
+	psm.latestVirtualEpoch = 0
+}
+
+// on a new virtual epoch, during emergency mode we are updating CU limits for consumer sessions
+func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {
+	if virtualEpoch == 0 {
+		return
+	}
+	if atomic.LoadUint64(&psm.latestVirtualEpoch) == virtualEpoch {
+		utils.LavaFormatError("The same virtual epoch update occurred", nil, utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch})
+		return
+	}
+	psm.lock.Lock()
+	defer psm.lock.Unlock()
+	latestVirtualEpoch := psm.latestVirtualEpoch
+	// current_max_cu = max_cu + max_cu * prev_virtual_epoch = max_cu * current_virtual_epoch
+	// next_max_cu = max_cu + max_cu * current_virtual_epoch =  max_cu * (current_virtual_epoch + 1)
+	mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]
+	if !ok {
+		return
+	}
+
+	for _, sessionsWithConsumerProject := range mapOfProviderSessionsWithConsumer.sessionMap {
+		sessionsWithConsumerProject.epochData.MaxComputeUnits = sessionsWithConsumerProject.epochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
+
+		for _, badgeEpochData := range sessionsWithConsumerProject.badgeEpochData {
+			if badgeEpochData == nil {
+				continue
+			}
+
+			badgeEpochData.MaxComputeUnits = badgeEpochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
+		}
+
+		for _, singleSession := range sessionsWithConsumerProject.Sessions {
+			if singleSession == nil || singleSession.BadgeUserData == nil {
+				continue
+			}
+
+			singleSession.BadgeUserData.MaxComputeUnits = singleSession.BadgeUserData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
+		}
+	}
+	psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
+	psm.latestVirtualEpoch = virtualEpoch
 }
 
 func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
