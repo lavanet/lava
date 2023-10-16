@@ -40,6 +40,7 @@ func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context,
 		VersionValidationInf: versionValidator,
 	}}
 	lst.ticker = time.NewTicker(lst.averageBlockTime)
+	lst.versionUpdater.Update()
 	go func() {
 		for {
 			select {
