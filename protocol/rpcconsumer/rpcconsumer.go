@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -77,7 +78,7 @@ type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 }

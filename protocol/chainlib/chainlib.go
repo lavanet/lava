@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -87,7 +88,7 @@ type RelaySender interface {
 		dappID string,
 		analytics *metrics.RelayMetrics,
 		metadataValues []pairingtypes.Metadata,
-	) (*pairingtypes.RelayReply, *pairingtypes.Relayer_RelaySubscribeClient, error)
+	) (*common.RelayResult, error)
 }
 
 type ChainListener interface {

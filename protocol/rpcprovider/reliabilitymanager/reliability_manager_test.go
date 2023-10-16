@@ -11,6 +11,7 @@ import (
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
@@ -95,7 +96,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 	_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
 	require.NoError(t, err)
 
-	relayResult := &lavaprotocol.RelayResult{
+	relayResult := &common.RelayResult{
 		Request:         relay,
 		Reply:           reply,
 		ProviderAddress: provider_address.String(),
@@ -127,7 +128,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 	require.NoError(t, err)
 	_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 	require.NoError(t, err)
-	relayResultDR := &lavaprotocol.RelayResult{
+	relayResultDR := &common.RelayResult{
 		Request:         relayDR,
 		Reply:           replyDR,
 		ProviderAddress: providerDR_address.String(),
@@ -250,7 +251,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
 	require.NoError(t, err)
 
-	relayResult := &lavaprotocol.RelayResult{
+	relayResult := &common.RelayResult{
 		Request:         relay,
 		Reply:           reply,
 		ProviderAddress: provider_address.String(),
@@ -287,7 +288,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 	require.NoError(t, err)
 	_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 	require.NoError(t, err)
-	relayResultDR := &lavaprotocol.RelayResult{
+	relayResultDR := &common.RelayResult{
 		Request:         relayDR,
 		Reply:           replyDR,
 		ProviderAddress: providerDR_address.String(),

@@ -21,9 +21,11 @@ type parsedMessage struct {
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
 	extensions             []*spectypes.Extension
+	disabledErrorHandling  bool
 }
 
 func (pm *parsedMessage) DisableErrorHandling() {
+	pm.msg.DisableErrorHandling()
 }
 
 func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {

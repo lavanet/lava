@@ -331,7 +331,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, metricsData, nil)
+			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, metricsData, nil)
+			reply := relayResult.GetReply()
+			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
 
 			if err != nil {
@@ -397,7 +399,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
 		}
-		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, metricsData, nil)
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, metricsData, nil)
+		reply := relayResult.GetReply()
+
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
@@ -407,7 +411,11 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, err)
 
 			// Set status to internal error
-			fiberCtx.Status(fiber.StatusInternalServerError)
+			if relayResult.GetStatusCode() != 0 {
+				fiberCtx.Status(relayResult.StatusCode)
+			} else {
+				fiberCtx.Status(fiber.StatusInternalServerError)
+			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
@@ -425,7 +433,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			msgSeed,
 			nil,
 		)
-
+		if relayResult.GetStatusCode() != 0 {
+			fiberCtx.Status(relayResult.StatusCode)
+		}
 		// Return json response
 		return fiberCtx.SendString(string(reply.Data))
 	})
@@ -601,6 +611,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true)
 		if err != nil {
+			// here we are getting an error for every code that is not 200-300
 			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
@@ -608,6 +619,9 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
 			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
 				return nil, "", nil, parsedError
+			}
+			if nodeMessage.GetDisableErrorHandling() {
+				return nil, "", nil, err
 			}
 		}
 	}
@@ -623,7 +637,6 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		replyMsg = *replyMessage
-
 		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,

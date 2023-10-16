@@ -26,11 +26,14 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -202,6 +205,9 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 		return nil, err
 	}
 
+	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(resp.StatusCode))
+	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+
 	err = ValidateStatusCodes(resp.StatusCode)
 	if err != nil {
 		return nil, err
@@ -224,9 +230,9 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 }
 
 func ValidateStatusCodes(statusCode int) error {
-	if statusCode == 504 {
+	if statusCode == http.StatusGatewayTimeout {
 		return common.StatusCodeError504
-	} else if statusCode == 429 {
+	} else if statusCode == http.StatusTooManyRequests {
 		return common.StatusCodeError429
 	}
 	return nil

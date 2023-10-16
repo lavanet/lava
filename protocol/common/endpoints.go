@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/utils"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/peer"
 )
@@ -156,4 +157,40 @@ func ValidateEndpoint(endpoint, apiInterface string) error {
 	default:
 		return utils.LavaFormatError("unsupported apiInterface", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
 	}
+}
+
+type ConflictHandlerInterface interface {
+	ConflictAlreadyReported() bool
+	StoreConflictReported()
+}
+
+type RelayResult struct {
+	Request         *pairingtypes.RelayRequest
+	Reply           *pairingtypes.RelayReply
+	ProviderAddress string
+	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
+	Finalized       bool
+	ConflictHandler ConflictHandlerInterface
+	StatusCode      int
+}
+
+func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
+	if rr == nil {
+		return nil
+	}
+	return rr.ReplyServer
+}
+
+func (rr *RelayResult) GetReply() *pairingtypes.RelayReply {
+	if rr == nil {
+		return nil
+	}
+	return rr.Reply
+}
+
+func (rr *RelayResult) GetStatusCode() int {
+	if rr == nil {
+		return 0
+	}
+	return rr.StatusCode
 }

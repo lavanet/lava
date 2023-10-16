@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -63,7 +64,7 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }
 
-func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error {
+func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error {
 	if conflictHandler.ConflictAlreadyReported() {
 		return nil // already reported
 	}

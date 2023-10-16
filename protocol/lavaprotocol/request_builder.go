@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -30,20 +31,6 @@ type RelayRequestCommonData struct {
 	Data           []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 	RequestBlock   int64  `protobuf:"varint,5,opt,name=request_block,json=requestBlock,proto3" json:"request_block,omitempty"`
 	ApiInterface   string `protobuf:"bytes,6,opt,name=apiInterface,proto3" json:"apiInterface,omitempty"`
-}
-
-type ConflictHandlerInterface interface {
-	ConflictAlreadyReported() bool
-	StoreConflictReported()
-}
-
-type RelayResult struct {
-	Request         *pairingtypes.RelayRequest
-	Reply           *pairingtypes.RelayReply
-	ProviderAddress string
-	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
-	Finalized       bool
-	ConflictHandler ConflictHandlerInterface
 }
 
 func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
@@ -139,7 +126,7 @@ func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
+func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *common.RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
 	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, *originalResult.Reply, *originalResult.Request, *dataReliabilityResult.Reply, *dataReliabilityResult.Request, apiCollection, headerFilterer)
 	if conflict_now {
 		return detectionMessage

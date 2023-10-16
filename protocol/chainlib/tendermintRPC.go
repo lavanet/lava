@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,8 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type TendermintChainParser struct {
@@ -366,7 +369,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			reply, replyServer, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData, nil)
+			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData, nil)
+			reply := relayResult.GetReply()
+			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
@@ -428,7 +433,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: c.Body()}, utils.Attribute{Key: "dappID", Value: dappID})
-		reply, _, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData, nil)
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData, nil)
+		reply := relayResult.GetReply()
+
 		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -439,7 +446,11 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
 
 			// Set status to internal error
-			c.Status(fiber.StatusInternalServerError)
+			if relayResult.GetStatusCode() != 0 {
+				c.Status(relayResult.StatusCode)
+			} else {
+				c.Status(fiber.StatusInternalServerError)
+			}
 
 			// Construct json response
 			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, c.Body())
@@ -449,7 +460,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
-
+		if relayResult.GetStatusCode() != 0 {
+			c.Status(relayResult.StatusCode)
+		}
 		// Return json response
 		return c.SendString(string(reply.Data))
 	})
@@ -470,7 +483,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("urirpc in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: path}, utils.Attribute{Key: "dappID", Value: dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData, nil)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData, nil)
+		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -481,7 +495,11 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
 
 			// Set status to internal error
-			c.Status(fiber.StatusInternalServerError)
+			if relayResult.GetStatusCode() != 0 {
+				c.Status(relayResult.StatusCode)
+			} else {
+				c.Status(fiber.StatusInternalServerError)
+			}
 
 			if string(c.Body()) != "" {
 				errMasking = addAttributeToError("recommendation", "For jsonRPC use POST", errMasking)
@@ -495,7 +513,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, nil)
-
+		if relayResult.GetStatusCode() != 0 {
+			c.Status(relayResult.StatusCode)
+		}
 		// Return json response
 		return c.SendString(string(reply.Data))
 	})
@@ -610,7 +630,8 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	if err != nil {
 		return nil, "", nil, err
 	}
-
+	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
+	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	// close the response body
 	if res.Body != nil {
 		defer res.Body.Close()
