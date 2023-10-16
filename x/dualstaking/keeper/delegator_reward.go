@@ -146,9 +146,9 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 	return nil
 }
 
-// CalcProviderRewardWithDelegations is the main function handling provider rewards with delegations
+// RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int, senderModule string) (providerReward math.Int, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int, senderModule string) (providerReward math.Int, err error) {
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
 		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,

@@ -125,7 +125,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		providerReward, err := k.dualstakingKeeper.CalcProviderRewardWithDelegations(ctx, providerAddr, trackedCuInfo.chainID, block, totalMonthlyReward, types.ModuleName)
+		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, trackedCuInfo.chainID, block, totalMonthlyReward, types.ModuleName)
 		if err != nil {
 			utils.LavaFormatError("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},

@@ -411,7 +411,7 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 
 // distributeRewards is the main function for reward distribution for providers and delegators
 func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) error {
-	providerReward, err := k.dualStakingKeeper.CalcProviderRewardWithDelegations(ctx, providerAddr, chainID, block, totalReward, types.ModuleName)
+	providerReward, err := k.dualStakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, block, totalReward, types.ModuleName)
 	if err != nil {
 		return utils.LavaFormatError(types.ProviderRewardError.Error(), err,
 			utils.Attribute{Key: "provider", Value: providerAddr.String()},

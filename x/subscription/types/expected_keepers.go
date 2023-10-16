@@ -58,5 +58,5 @@ type TimerStoreKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int, senderModule string) (providerReward math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int, senderModule string) (providerReward math.Int, err error)
 }
