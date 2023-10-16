@@ -221,10 +221,10 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		Name:  "banana",
 		Value: "55",
 	}
-	chainMessage, err := chainParser.ParseMsg("/blocks/latest", []byte{}, "GET", metadataValue, 0)
+	chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, 0)
 	require.NoError(t, err)
 	reqBlock, _ := chainMessage.RequestedBlock()
-	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/blocks/latest", []byte{}, reqBlock, spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
+	relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, reqBlock, spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
 
 	relay, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
 	require.Nil(t, err)

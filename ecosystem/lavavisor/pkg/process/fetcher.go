@@ -6,21 +6,68 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
-func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
-	currentVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderTarget)
-	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin)
+type ProtocolBinaryFetcher struct {
+	lavavisorPath string
+}
 
+func (pbf *ProtocolBinaryFetcher) SetupLavavisorDir(dir string) error {
+	lavavisorPath, err := pbf.buildLavavisorPath(dir)
+	if err != nil {
+		return err
+	}
+	pbf.lavavisorPath = lavavisorPath
+	// Check if ./lavavisor directory exists
+	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
+		// If not, create the directory
+		err = pbf.setUpLavavisorDirectory()
+		if err != nil {
+			return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
+		}
+		utils.LavaFormatInfo(".lavavisor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
+	}
+
+	return nil
+}
+
+func (pbf *ProtocolBinaryFetcher) ValidateLavavisorDir(dir string) (lavavisorPath string, err error) {
+	lavavisorPath, err = pbf.buildLavavisorPath(dir)
+	if err != nil {
+		return "", err
+	}
+	pbf.lavavisorPath = lavavisorPath
+
+	// Validate the existence of ./lavavisor directory
+	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
+		return "", utils.LavaFormatError("lavavisor directory is not found", err)
+	}
+	return lavavisorPath, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
+	if pbf.lavavisorPath == "" {
+		return "", utils.LavaFormatError("The lavavisor path is not initialized. Should not get here!", nil)
+	}
+
+	currentVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderTarget)
+	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin) // min(currentRunning, minVersionInParams)
+
+	// TODO: Avoid downgrading by mistake: Validate current install version
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
 		utils.LavaFormatInfo("Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
-		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
-		selectedBinaryPath, err = checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
+		versionDir := filepath.Join(pbf.lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
+		utils.LavaFormatInfo("Version Directory", utils.Attribute{Key: "versionDir", Value: versionDir})
+		selectedBinaryPath, err = pbf.checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
 		if err == nil {
 			return selectedBinaryPath, nil
 		}
@@ -29,36 +76,7 @@ func FetchProtocolBinary(lavavisorPath string, autoDownload bool, protocolConsen
 	return "", utils.LavaFormatError("Failed to fetch protocol binary for both target and min versions", nil)
 }
 
-func SetupLavavisorDir(dir string) (lavavisorPath string, err error) {
-	lavavisorPath, err = buildLavavisorPath(dir)
-	if err != nil {
-		return "", err
-	}
-	// Check if ./lavavisor directory exists
-	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
-		// If not, create the directory
-		err = setUpLavavisorDirectory(lavavisorPath)
-		if err != nil {
-			return "", utils.LavaFormatError("unable to create .lavavisor/ directory", err)
-		}
-		utils.LavaFormatInfo(".lavavisor/ folder successfully created", utils.Attribute{Key: "path:", Value: lavavisorPath})
-	}
-	return lavavisorPath, nil
-}
-
-func ValidateLavavisorDir(dir string) (lavavisorPath string, err error) {
-	lavavisorPath, err = buildLavavisorPath(dir)
-	if err != nil {
-		return "", err
-	}
-	// Validate the existence of ./lavavisor directory
-	if _, err := os.Stat(lavavisorPath); os.IsNotExist(err) {
-		return "", utils.LavaFormatError("lavavisor directory is not found", err)
-	}
-	return lavavisorPath, nil
-}
-
-func buildLavavisorPath(dir string) (string, error) {
+func (pbf *ProtocolBinaryFetcher) buildLavavisorPath(dir string) (string, error) {
 	dir, err := lvutil.ExpandTilde(dir)
 	if err != nil {
 		return "", utils.LavaFormatError("unable to expand directory path", err)
@@ -67,13 +85,13 @@ func buildLavavisorPath(dir string) (string, error) {
 	return filepath.Join(dir, ".lavavisor"), nil
 }
 
-func setUpLavavisorDirectory(lavavisorPath string) error {
-	err := os.MkdirAll(lavavisorPath, 0o755)
+func (pbf *ProtocolBinaryFetcher) setUpLavavisorDirectory() error {
+	err := os.MkdirAll(pbf.lavavisorPath, 0o755)
 	if err != nil {
-		return utils.LavaFormatError("unable to create .lavavisor/ directory", err)
+		return utils.LavaFormatError("unable to create .lavavisor/ directory", err, utils.Attribute{Key: "lavavisorPath", Value: pbf.lavavisorPath})
 	}
 	// Create config.yml file inside .lavavisor and write placeholder text
-	configPath := filepath.Join(lavavisorPath, "config.yml")
+	configPath := filepath.Join(pbf.lavavisorPath, "config.yml")
 	configFile, err := os.Create(configPath)
 	if err != nil {
 		return utils.LavaFormatError("unable to create or clean config.yml", err)
@@ -81,7 +99,7 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 	defer configFile.Close() // Close the file
 
 	// Create 'upgrades' directory inside .lavavisor
-	upgradesPath := filepath.Join(lavavisorPath, "upgrades")
+	upgradesPath := filepath.Join(pbf.lavavisorPath, "upgrades")
 	if _, err := os.Stat(upgradesPath); os.IsNotExist(err) {
 		err = os.MkdirAll(upgradesPath, 0o755)
 		if err != nil {
@@ -91,48 +109,51 @@ func setUpLavavisorDirectory(lavavisorPath string) error {
 	return nil
 }
 
-func checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (selectedBinaryPath string, err error) {
+func (pbf *ProtocolBinaryFetcher) checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (selectedBinaryPath string, err error) {
 	var binaryPath string
-	if dirExists(versionDir) {
-		binaryPath, err = handleExistingDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
+	if pbf.dirExists(versionDir) {
+		utils.LavaFormatDebug("Handling existing version dir", utils.Attribute{Key: "versionDir", Value: versionDir})
+		binaryPath, err = pbf.handleExistingDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
 		if err != nil {
 			return "", err
 		}
 	} else {
-		binaryPath, err = handleMissingDir(versionDir, autoDownload, currentVersion)
+		utils.LavaFormatDebug("Handling missing version dir", utils.Attribute{Key: "versionDir", Value: versionDir})
+		binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
 		if err != nil {
 			return "", err
 		}
 	}
-	// validate binary version after it has been set
-	vm := VersionMonitor{
-		BinaryPath: binaryPath,
-	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion); err != nil {
-		return "", err
-	}
 
-	utils.LavaFormatInfo("Protocol binary with target version has been successfully set!")
+	utils.LavaFormatInfo("Protocol binary with target version has been successfully set! path: " + binaryPath)
 	return binaryPath, nil
 }
 
-func dirExists(versionDir string) bool {
+func (pbf *ProtocolBinaryFetcher) dirExists(versionDir string) bool {
 	_, err := os.Stat(versionDir)
 	return !os.IsNotExist(err)
 }
 
-func handleMissingDir(versionDir string, autoDownload bool, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
+func (pbf *ProtocolBinaryFetcher) handleMissingDir(versionDir string, autoDownload bool, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
 	if !autoDownload {
 		return "", utils.LavaFormatError("Sub-directory for version not found and auto-download is disabled.", nil, utils.Attribute{Key: "Version", Value: currentVersion})
 	}
 	utils.LavaFormatInfo("Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
+	utils.LavaFormatInfo("creating directory: " + versionDir)
+	errMkdir := os.MkdirAll(versionDir, os.ModePerm)
+	if errMkdir != nil {
+		return "", utils.LavaFormatError("Failed to create binary directory", err)
+	}
+	utils.LavaFormatInfo("created " + versionDir + " successfully")
+
 	utils.LavaFormatInfo("Trying to download:", utils.Attribute{Key: "Version", Value: currentVersion})
-	os.MkdirAll(versionDir, os.ModePerm)
-	if err := downloadAndBuildFromGithub(lvutil.FormatFromSemanticVersion(currentVersion), versionDir); err == nil {
+	if err := pbf.downloadAndBuildFromGithub(lvutil.FormatFromSemanticVersion(currentVersion), versionDir); err == nil {
 		binaryPath = filepath.Join(versionDir, "lavap")
 		return binaryPath, nil
 	}
+
 	// upon failed operation, remove versionDir
+	utils.LavaFormatInfo("Failed downloading, deleting directory, retrying next block", utils.Attribute{Key: "Version", Value: currentVersion})
 	err = os.RemoveAll(versionDir)
 	if err != nil {
 		return "", err
@@ -141,16 +162,17 @@ func handleMissingDir(versionDir string, autoDownload bool, currentVersion *lvut
 	return "", utils.LavaFormatError("Failed to auto-download binary from GitHub\n ", nil)
 }
 
-func handleExistingDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
+func (pbf *ProtocolBinaryFetcher) handleExistingDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
 	binaryPath = filepath.Join(versionDir, "lavap")
 	vm := VersionMonitor{
 		BinaryPath: binaryPath,
 	}
-	if err := vm.ValidateProtocolVersion(protocolConsensusVersion); err != nil {
+	if err := vm.ValidateProtocolVersion(&statetracker.ProtocolVersionResponse{Version: protocolConsensusVersion}); err != nil {
 		if !autoDownload {
 			return "", utils.LavaFormatError("Protocol version mismatch or binary not found in lavavisor directory\n ", err)
 		}
-		binaryPath, err = handleMissingDir(versionDir, autoDownload, currentVersion)
+		utils.LavaFormatDebug("An error occurred when validating the protocol version in existing dir, treating as missing dir", utils.Attribute{Key: "error", Value: err})
+		binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
 		if err != nil {
 			return "", err
 		}
@@ -158,7 +180,7 @@ func handleExistingDir(versionDir string, autoDownload bool, protocolConsensusVe
 	return binaryPath, nil
 }
 
-func downloadAndBuildFromGithub(version, versionDir string) error {
+func (pbf *ProtocolBinaryFetcher) downloadAndBuildFromGithub(version, versionDir string) error {
 	// Clean up the binary directory if it exists
 	err := os.RemoveAll(versionDir)
 	if err != nil {
@@ -183,12 +205,9 @@ func downloadAndBuildFromGithub(version, versionDir string) error {
 	// Prepare the path for downloaded zip
 	zipPath := filepath.Join(versionDir, version+".zip")
 	// Make sure the directory exists
-	dir := filepath.Dir(zipPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0o755)
-		if err != nil {
-			return err
-		}
+	err = pbf.createDirIfNotExist(filepath.Dir(zipPath))
+	if err != nil {
+		return err
 	}
 
 	// Write the body to file
@@ -209,19 +228,25 @@ func downloadAndBuildFromGithub(version, versionDir string) error {
 	}
 	utils.LavaFormatInfo("Unzipping...")
 
+	// Verify Go installation
+	goCommand, err := pbf.verifyGoInstallation(pbf.lavavisorPath)
+	if err != nil {
+		return err
+	}
+
 	// Build the binary
 	srcPath := versionDir + "/lava-" + version
 	protocolPath := srcPath + "/cmd/lavap"
 	utils.LavaFormatInfo("building protocol", utils.Attribute{Key: "protocol-path", Value: protocolPath})
 
-	cmd := exec.Command("go", "build", "-o", "lavap")
+	cmd := exec.Command(goCommand, "build", "-o", "lavap")
 	cmd.Dir = protocolPath
 	err = cmd.Run()
 	if err != nil {
 		// try with "cmd/lavad" path again - this is for older versions than v0.22.0
 		protocolPath = srcPath + "/cmd/lavad"
 		utils.LavaFormatInfo("attempting to building protocol again", utils.Attribute{Key: "protocol-path", Value: protocolPath})
-		cmd := exec.Command("go", "build", "-o", "lavap")
+		cmd := exec.Command(goCommand, "build", "-o", "lavap")
 		cmd.Dir = protocolPath
 		err = cmd.Run()
 		if err != nil {
@@ -261,4 +286,195 @@ func downloadAndBuildFromGithub(version, versionDir string) error {
 	utils.LavaFormatInfo("Auto-download successful.")
 
 	return nil
+}
+
+func (pbf *ProtocolBinaryFetcher) createDirIfNotExist(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0o755)
+		if err != nil {
+			return utils.LavaFormatError("Failed creating directory", err, utils.Attribute{Key: "dir", Value: dir})
+		}
+	}
+	return nil
+}
+
+func (pbf *ProtocolBinaryFetcher) getInstalledGoVersion(goPath string) (string, error) {
+	goVersionRun := exec.Command(goPath, "version")
+	goVersion, err := goVersionRun.Output()
+	if err != nil {
+		return "", utils.LavaFormatInfo("Error running go version", utils.Attribute{Key: "err", Value: err}, utils.Attribute{Key: "command", Value: goVersionRun})
+	}
+
+	stringGoVersion := string(goVersion)
+	splitGoVersion := strings.Split(stringGoVersion, " ") // go version go1.20.5 linux/amd64
+	if len(splitGoVersion) < 3 {
+		return "", utils.LavaFormatError("Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
+	}
+
+	versionBeforeCut := splitGoVersion[2]
+	if !strings.HasPrefix(versionBeforeCut, "go") {
+		utils.LavaFormatError("Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
+	}
+	version := versionBeforeCut[2:]
+	utils.LavaFormatDebug("Verified that go is on the right version", utils.Attribute{Key: "version", Value: version})
+	return version, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) getHomePath() (string, error) {
+	homeDir := os.Getenv("HOME")
+	if homeDir != "" {
+		return homeDir, nil
+	}
+
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", utils.LavaFormatError("Unable to get current user", err)
+	}
+	return currentUser.HomeDir, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) downloadGo(downloadPath string, version string) (string, error) {
+	if runtime.GOARCH == "" {
+		return "", utils.LavaFormatError("Could not determine the machine architecture (runtime.GOARCH is empty). Aborting", nil)
+	}
+
+	if runtime.GOOS == "" {
+		return "", utils.LavaFormatError("Could not determine the machine OS (runtime.GOOS is empty). Aborting", nil)
+	}
+
+	url := fmt.Sprintf("https://go.dev/dl/go%s.%s-%s.tar.gz", version, runtime.GOOS, runtime.GOARCH)
+	utils.LavaFormatInfo(fmt.Sprintf("Downloading Go from %s", url))
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", utils.LavaFormatError(fmt.Sprintf("Unable to download Go version %s", version), err)
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		return "", utils.LavaFormatError(fmt.Sprintf("Unable to download Go version %s. Got status code: %d", version, resp.StatusCode), err,
+			utils.Attribute{Key: "response", Value: resp})
+	}
+
+	// Write the body to file
+	goInstallationFilePath := fmt.Sprintf(filepath.Join(downloadPath, "go%s.tar.gz"), version)
+	goInstallationFileHandler, err := os.Create(goInstallationFilePath)
+	if err != nil {
+		return "", utils.LavaFormatError("Unable to create Go installation file", err, utils.Attribute{Key: "filePath", Value: goInstallationFilePath})
+	}
+	defer goInstallationFileHandler.Close()
+
+	_, err = io.Copy(goInstallationFileHandler, resp.Body)
+	if err != nil {
+		os.Remove(goInstallationFilePath)
+		return "", utils.LavaFormatError("Error copying downloaded file data. Deleting file.", err, utils.Attribute{Key: "filePath", Value: goInstallationFilePath})
+	}
+
+	utils.LavaFormatInfo("Finished downloading go", utils.Attribute{Key: "goInstallationPath", Value: goInstallationFilePath})
+	return goInstallationFilePath, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) installGo(installPath string, goFilePath string) (string, error) {
+	utils.LavaFormatDebug("Extracting go files...", utils.Attribute{Key: "installPath", Value: installPath}, utils.Attribute{Key: "goFilePath", Value: goFilePath})
+	goInstallCommand := exec.Command("tar", "-C", installPath, "-xzf", goFilePath)
+	output, err := goInstallCommand.Output()
+	if err != nil {
+		return "", utils.LavaFormatError("Unable to install Go", err, utils.Attribute{Key: "command", Value: goInstallCommand}, utils.Attribute{Key: "output", Value: output})
+	}
+	utils.LavaFormatDebug("Finished extracting go")
+	return filepath.Join(installPath, "/go/bin/go"), nil
+}
+
+func (pbf *ProtocolBinaryFetcher) downloadInstallAndVerifyGo(installPath string, goVersion string) (string, error) {
+	goFilePath, err := pbf.downloadGo(installPath, goVersion)
+	if err != nil {
+		return "", err
+	}
+
+	goBinary, err := pbf.installGo(installPath, goFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	installedGoVersion, err := pbf.getInstalledGoVersion(goBinary)
+	if err != nil {
+		return "", err
+	}
+
+	if installedGoVersion != goVersion {
+		return "", utils.LavaFormatError("Installed Go version does not match expected version", nil,
+			utils.Attribute{Key: "expectedVersion", Value: installedGoVersion},
+			utils.Attribute{Key: "installedVersion", Value: goVersion})
+	}
+
+	return goBinary, nil
+}
+
+func (pbf *ProtocolBinaryFetcher) verifyGoInstallation(lavavisorPath string) (string, error) {
+	emptyGoCommand := ""
+	goCommand := "go"
+	expectedGeVersion := "1.20.5"
+
+	homePath, err := pbf.getHomePath()
+	if err != nil {
+		return emptyGoCommand, err
+	}
+	goPath := filepath.Join(lavavisorPath, "go_installation") // In case go is not installed
+
+	installedGoVersion, err := pbf.getInstalledGoVersion(goCommand)
+	if err != nil {
+		utils.LavaFormatInfo("Go was not found in PATH")
+
+		potentialGoCommands := []string{
+			filepath.Join(goPath, "/go/bin/go"),
+			filepath.Join(homePath, "/go/bin/go"), // ~/go/bin/go
+			"/usr/local/go/bin/go",
+		}
+
+		found := false
+		for _, potentialGoCommand := range potentialGoCommands {
+			utils.LavaFormatInfo(fmt.Sprintf("Attempting %s", potentialGoCommand))
+
+			installedGoVersion, err = pbf.getInstalledGoVersion(potentialGoCommand)
+			if err == nil {
+				utils.LavaFormatInfo(fmt.Sprintf("Found go %s with version %s", potentialGoCommand, installedGoVersion))
+				found = true
+				goCommand = potentialGoCommand
+				break
+			}
+		}
+
+		if !found {
+			utils.LavaFormatInfo("Could not find Go. Installing Go...")
+
+			err = pbf.createDirIfNotExist(goPath)
+			if err != nil {
+				return "", err
+			}
+
+			goCommand, err = pbf.downloadInstallAndVerifyGo(goPath, expectedGeVersion)
+			if err != nil {
+				return emptyGoCommand, utils.LavaFormatError("Unable to download and install Go", err)
+			}
+			return goCommand, nil
+		}
+	}
+
+	if installedGoVersion != expectedGeVersion {
+		utils.LavaFormatInfo(fmt.Sprintf("Version %s of Go mismatch the desired version. Installing %s", installedGoVersion, expectedGeVersion))
+		if _, err := os.Stat(goPath); err != nil {
+			err := os.RemoveAll(goPath)
+			if err != nil {
+				return emptyGoCommand, utils.LavaFormatError("Unable to remove existing Go installation", err)
+			}
+		}
+
+		goCommand, err = pbf.downloadInstallAndVerifyGo(goPath, expectedGeVersion)
+		if err != nil {
+			return emptyGoCommand, utils.LavaFormatError("Unable to download and install Go", err)
+		}
+	}
+
+	return goCommand, nil
 }

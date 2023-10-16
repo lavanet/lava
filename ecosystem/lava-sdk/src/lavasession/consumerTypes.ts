@@ -85,16 +85,14 @@ export function calculateAvailabilityScore(qosReport: QoSReport): {
   const scaledAvailabilityScore = BigNumber(AVAILABILITY_PERCENTAGE)
     .minus(downtimePercentage)
     .div(AVAILABILITY_PERCENTAGE)
-    .toPrecision();
+    .toFixed();
 
   return {
-    downtimePercentage: downtimePercentage.toPrecision(
-      DEFAULT_DECIMAL_PRECISION
-    ),
+    downtimePercentage: downtimePercentage.toFixed(),
     scaledAvailabilityScore: BigNumber.max(
       BigNumber(0),
       scaledAvailabilityScore
-    ).toPrecision(DEFAULT_DECIMAL_PRECISION),
+    ).toFixed(),
   };
 }
 
@@ -213,9 +211,7 @@ export class SingleConsumerSession {
       const sync = BigNumber(this.qoSInfo.syncScoreSum).div(
         this.qoSInfo.totalSyncScore
       );
-      this.qoSInfo.lastQoSReport.setSync(
-        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
-      );
+      this.qoSInfo.lastQoSReport.setSync(sync.toFixed());
 
       if (BigNumber(1).gt(sync)) {
         Logger.debug(
@@ -229,9 +225,7 @@ export class SingleConsumerSession {
       }
     } else {
       const sync = BigNumber(1);
-      this.qoSInfo.lastQoSReport.setSync(
-        sync.toPrecision(DEFAULT_DECIMAL_PRECISION)
-      );
+      this.qoSInfo.lastQoSReport.setSync(sync.toFixed());
     }
     return;
   }
@@ -244,9 +238,7 @@ export class SingleConsumerSession {
     const bigExpectedLatency = BigNumber(expectedLatency);
     const bigLatency = BigNumber(latency);
 
-    return BigNumber.min(oneDec, bigExpectedLatency)
-      .div(bigLatency)
-      .toPrecision(DEFAULT_DECIMAL_PRECISION);
+    return BigNumber.min(oneDec, bigExpectedLatency).div(bigLatency).toFixed();
   }
 }
 

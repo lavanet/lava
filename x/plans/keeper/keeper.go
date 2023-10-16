@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/lavanet/lava/x/fixationstore"
 
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/common"
-	commontypes "github.com/lavanet/lava/common/types"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/plans/types"
 )
 
@@ -23,7 +23,7 @@ type (
 		epochstorageKeeper types.EpochStorageKeeper
 		specKeeper         types.SpecKeeper
 
-		plansFS common.FixationStore
+		plansFS fixationstore.FixationStore
 	}
 )
 
@@ -53,12 +53,12 @@ func NewKeeper(
 }
 
 // Export all plans from the KVStore
-func (k Keeper) ExportPlans(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportPlans(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.plansFS.Export(ctx)
 }
 
 // Init all plans in the KVStore
-func (k Keeper) InitPlans(ctx sdk.Context, gs commontypes.GenesisState) {
+func (k Keeper) InitPlans(ctx sdk.Context, gs fixationtypes.GenesisState) {
 	k.plansFS.Init(ctx, gs)
 }
 

@@ -8,8 +8,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/common"
-	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
+	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -26,9 +27,9 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
 
-		delegationFS common.FixationStore // map proviers/chainID -> delegations
-		delegatorFS  common.FixationStore // map delegators -> providers
-		unbondingTS  common.TimerStore    // track unbonding timeouts
+		delegationFS fixationstore.FixationStore // map proviers/chainID -> delegations
+		delegatorFS  fixationstore.FixationStore // map delegators -> providers
+		unbondingTS  timerstore.TimerStore       // track unbonding timeouts
 	}
 )
 
@@ -87,32 +88,32 @@ func NewKeeper(
 }
 
 // ExportDelegations exports dualstaking delegations data (for genesis)
-func (k Keeper) ExportDelegations(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportDelegations(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.delegationFS.Export(ctx)
 }
 
 // ExportDelegators exports dualstaking delegators data (for genesis)
-func (k Keeper) ExportDelegators(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportDelegators(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.delegatorFS.Export(ctx)
 }
 
 // ExportUnbondings exports dualstaking unbonding timers data (for genesis)
-func (k Keeper) ExportUnbondings(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportUnbondings(ctx sdk.Context) []fixationtypes.RawMessage {
 	return k.unbondingTS.Export(ctx)
 }
 
 // InitDelegations imports dualstaking delegations data (from genesis)
-func (k Keeper) InitDelegations(ctx sdk.Context, data commontypes.GenesisState) {
+func (k Keeper) InitDelegations(ctx sdk.Context, data fixationtypes.GenesisState) {
 	k.delegationFS.Init(ctx, data)
 }
 
 // InitDelegators imports dualstaking delegators data (from genesis)
-func (k Keeper) InitDelegators(ctx sdk.Context, data commontypes.GenesisState) {
+func (k Keeper) InitDelegators(ctx sdk.Context, data fixationtypes.GenesisState) {
 	k.delegatorFS.Init(ctx, data)
 }
 
 // InitUnbondings imports subscriptions timers data (from genesis)
-func (k Keeper) InitUnbondings(ctx sdk.Context, data []commontypes.RawMessage) {
+func (k Keeper) InitUnbondings(ctx sdk.Context, data []fixationtypes.RawMessage) {
 	k.unbondingTS.Init(ctx, data)
 }
 

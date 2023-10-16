@@ -3,8 +3,8 @@ package types
 import (
 	fmt "fmt"
 
-	"github.com/lavanet/lava/common"
-	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 )
 
 // DefaultIndex is the default global index
@@ -16,9 +16,9 @@ func DefaultGenesis() *GenesisState {
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:              DefaultParams(),
 		DelegatorRewardList: []DelegatorReward{},
-		DelegationsFS:       *common.DefaultGenesis(),
-		DelegatorsFS:        *common.DefaultGenesis(),
-		UnbondingsTS:        []commontypes.RawMessage{},
+		DelegationsFS:       *fixationstore.DefaultGenesis(),
+		DelegatorsFS:        *fixationstore.DefaultGenesis(),
+		UnbondingsTS:        []fixationtypes.RawMessage{},
 	}
 }
 

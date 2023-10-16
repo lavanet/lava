@@ -1,0 +1,17 @@
+{
+    "title": "Protocol Version Change",
+    "description": "Update version",
+    "changes": [
+        {
+          "subspace": "protocol",
+          "key": "Version",
+          "value": {
+            "provider_target": "0.24.1",
+            "consumer_target": "0.24.1",
+            "provider_min": "0.24.0",
+            "consumer_min": "0.24.0"
+          }
+        }
+    ],
+    "deposit": "10000000ulava"
+}

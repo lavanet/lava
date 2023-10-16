@@ -49,6 +49,8 @@ trace lavad q protocol params >/dev/null
 echo "Testing conflict q commands"
 trace lavad q conflict params >/dev/null
 trace lavad q conflict list-conflict-vote >/dev/null
+trace lavad q conflict provider-conflicts $(lavad keys show servicer1 -a) >/dev/null
+trace lavad q conflict consumer-conflicts $(lavad keys show user1 -a) >/dev/null
 # trace lavad q conflict show-conflict-vote stam >/dev/null ## canot test that here
 
 echo "Testing downtime q commands"
