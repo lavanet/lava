@@ -136,7 +136,7 @@ func CreateSelfSignedCertificate(certPath, keyPath string, validFor time.Duratio
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization: []string{"Example Co."},
+			Organization: []string{"Lava Network"},
 		},
 		NotBefore:             notBefore,
 		NotAfter:              notAfter,
