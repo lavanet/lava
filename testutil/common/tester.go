@@ -254,8 +254,8 @@ func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
 	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
 }
 
-func (ts *Tester) GetPlanFromSubscription(addr string) (planstypes.Plan, error) {
-	return ts.Keepers.Subscription.GetPlanFromSubscription(ts.Ctx, addr)
+func (ts *Tester) GetPlanFromSubscription(addr string, block uint64) (planstypes.Plan, error) {
+	return ts.Keepers.Subscription.GetPlanFromSubscription(ts.Ctx, addr, block)
 }
 
 func (ts *Tester) GetProjectForBlock(projectID string, block uint64) (projectstypes.Project, error) {

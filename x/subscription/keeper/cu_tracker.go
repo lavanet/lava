@@ -91,7 +91,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	trackedCuList, totalCuUsedBySub := k.getSubTrackedCuInfo(ctx, sub, block)
 
-	plan, err := k.GetPlanFromSubscription(ctx, sub)
+	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
 	if err != nil {
 		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
 			utils.Attribute{Key: "sub_consumer", Value: sub},

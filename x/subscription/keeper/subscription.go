@@ -278,9 +278,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	}
 }
 
-func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
+func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error) {
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
 		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
 		)

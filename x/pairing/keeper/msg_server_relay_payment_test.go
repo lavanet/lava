@@ -697,7 +697,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 
 	epochStart := ts.EpochStart()
 
-	plan, err := ts.GetPlanFromSubscription(client1Addr)
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
@@ -768,7 +768,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 
 	epochStart := ts.EpochStart()
 
-	plan, err := ts.GetPlanFromSubscription(client1Addr)
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
@@ -848,7 +848,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 
 	epochStart := ts.EpochStart()
 
-	plan, err := ts.GetPlanFromSubscription(client1Addr)
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit / 2
 

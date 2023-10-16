@@ -175,7 +175,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 }
 
 func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (*planstypes.Policy, string, error) {
-	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription(), uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, "", err
 	}
