@@ -48,24 +48,36 @@ func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
 	// Construct the URL for the RPC endpoint
 	endpointURL := "https://" + endpoint.IPPORT // Providers must have HTTPS support
 
-	// Send an HTTP OPTIONS request to the endpoint
-	req, err := http.NewRequest("OPTIONS", endpointURL, nil)
-	if err != nil {
-		return err
-	}
-
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
 
-	// Perform the HTTP request
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("error making HTTP request to %s: %w", endpointURL, err)
-	}
-	defer resp.Body.Close()
+	methods := []string{"OPTIONS", "GET", "POST", "PUT"}
+	for _, method := range methods {
+		req, err := http.NewRequest(method, endpointURL, nil)
+		if err != nil {
+			return err
+		}
 
+		// Perform the HTTP request
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("error making %s request to %s: %w", method, endpointURL, err)
+		}
+		defer resp.Body.Close()
+
+		// Perform CORS Validation
+		err = validateCORSHeaders(resp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateCORSHeaders(resp *http.Response) error {
 	// Check for the presence of "Access-Control-Allow-Origin" header
 	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	if corsOrigin != "*" {
