@@ -3,8 +3,8 @@ package types
 import (
 	fmt "fmt"
 
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 )
 
 // DefaultIndex is the default global index
@@ -18,7 +18,7 @@ func DefaultGenesis() *GenesisState {
 		DelegatorRewardList: []DelegatorReward{},
 		DelegationsFS:       *fixationstore.DefaultGenesis(),
 		DelegatorsFS:        *fixationstore.DefaultGenesis(),
-		UnbondingsTS:        []commontypes.RawMessage{},
+		UnbondingsTS:        []fixationtypes.RawMessage{},
 	}
 }
 

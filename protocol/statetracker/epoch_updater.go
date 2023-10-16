@@ -25,7 +25,7 @@ type EpochUpdatableWithBlockDelay struct {
 
 // Add a method to EpochUpdatableWithBlockDelay to update based on block delay.
 func (euwbd *EpochUpdatableWithBlockDelay) UpdateOnBlock(currentEpoch uint64, latestBlock int64) {
-	utils.LavaFormatDebug("UpdateOnBlock", utils.Attribute{Key: "epoch", Value: currentEpoch}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+	// utils.LavaFormatDebug("UpdateOnBlock", utils.Attribute{Key: "epoch", Value: currentEpoch}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 	keysToDelete := []int64{}
 	for triggerBlock := range euwbd.triggerUpdateOnBlock {
 		if triggerBlock <= latestBlock { // making sure we didn't miss any updates by comparing to <= instead of ==

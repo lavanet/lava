@@ -215,9 +215,11 @@
                                 "name": "/blocks/by_height/{block_height}",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "block_height",
+                                        "=",
                                         "0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,

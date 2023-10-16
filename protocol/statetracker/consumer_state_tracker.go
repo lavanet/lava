@@ -118,6 +118,6 @@ func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
-func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return cst.stateQuery.GetProtocolVersion(ctx)
 }

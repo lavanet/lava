@@ -156,7 +156,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     );
     if (success) {
       if (latency > 0) {
-        let baseLatency = this.baseWorldLatency + baseTimePerCU(cu);
+        let baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
         if (isHangingApi) {
           baseLatency += this.averageBlockTime;
         }
