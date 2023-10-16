@@ -209,6 +209,16 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		return
 	}
 
+	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
+	if err != nil {
+		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
+			utils.Attribute{Key: "block", Value: block},
+		)
+		return
+	}
+	cuTrackerTimerKey := types.CuTrackerTimerKey(sub.Consumer, sub.Block)
+	k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(cuTrackerTimerKey), []byte{})
+
 	if sub.DurationLeft == 0 {
 		// subscription duration has already reached zero before and should have
 		// been removed before. Extend duration by another month (without adding
