@@ -94,6 +94,7 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	}
 }
 
+// block handler for emergency mode checking
 func (st *StateTracker) oldLavaBlock(latestBlock int64) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
