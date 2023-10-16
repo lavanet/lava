@@ -202,7 +202,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		// pairing is valid, we can pay provider for work
 		coinsPerCu := k.Keeper.MintCoinsPerCU(ctx)
-		reward := coinsPerCu.MulInt64(int64(rewardedCU))
+		rewardedCUDec := sdk.OneDec().MulInt64(int64(rewardedCU))
+		reward := coinsPerCu.Mul(rewardedCUDec)
 		if reward.IsZero() {
 			continue
 		}
@@ -228,9 +229,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details["QoSSync"] = relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
-			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
+			rewardedCUDec = rewardedCUDec.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
+			reward = coinsPerCu.Mul(rewardedCUDec)
 			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
-			details["rewardedCU"] = strconv.FormatInt(reward.Quo(coinsPerCu).TruncateInt64(), 10)
+			details["rewardedCU"] = "0"
+			if coinsPerCu != sdk.ZeroDec() {
+				details["rewardedCU"] = strconv.FormatInt(reward.Quo(coinsPerCu).TruncateInt64(), 10)
+			}
 		}
 
 		// track the provider's CU (after QoS influence)
@@ -247,7 +252,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "sub_consumer", Value: proj.Subscription},
 			)
 		}
-		cuAfterQos := uint64(reward.Quo(coinsPerCu).TruncateInt64())
+		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
 		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, sub.Block)
 		if err != nil {
 			return nil, err

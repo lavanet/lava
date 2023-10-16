@@ -12,7 +12,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
 	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
-	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1
+	DefaultMintCoinsPerCU sdk.Dec = sdk.ZeroDec()
 )
 
 var (
