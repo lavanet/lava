@@ -108,7 +108,8 @@ export class ConsumerSessionManager {
 
   public async updateAllProviders(
     epoch: number,
-    pairingList: ConsumerSessionsWithProvider[]
+    pairingList: ConsumerSessionsWithProvider[],
+    virtualEpoch: number
   ): Promise<Error | undefined> {
     Logger.info(
       "updateAllProviders called. epoch:",
@@ -128,7 +129,8 @@ export class ConsumerSessionManager {
       // For LAVA's initialization, we need to allow the pairing to be updated twice
       // This condition permits the pairing to be overwritten just once for the same epoch
       // After this one-time allowance, any attempt to overwrite will result in an error
-      if (epoch != 0) {
+      // Also allow fetch pairing for the same epoch in case of emergency mode(virtualEpoch != 0)
+      if (epoch != 0 && virtualEpoch == 0) {
         if (
           this.allowedUpdateForCurrentEpoch &&
           epoch === this.currentEpoch &&

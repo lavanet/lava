@@ -1,10 +1,13 @@
 package types
 
 import (
+	"time"
+
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/fixationstore"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -89,6 +92,8 @@ type PlanKeeper interface {
 
 type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
+	GetParams(ctx sdk.Context) (params v1.Params)
+	GetLastBlockTime(ctx sdk.Context) (time.Time, bool)
 }
 
 type DualStakingKeeper interface {

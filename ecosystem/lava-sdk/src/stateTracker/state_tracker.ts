@@ -26,6 +26,7 @@ export class StateTracker {
   private updaters: Map<string, Updater>;
   private stateQuery: StateQuery;
   private timeTillNextEpoch = 0;
+  private virtualEpoch = 0;
 
   // Constructor for State Tracker
   constructor(
@@ -89,17 +90,18 @@ export class StateTracker {
     // Run all updaters
     // Only for chain query
     if (this.stateQuery instanceof StateChainQuery) {
-      await this.update();
+      await this.update(0);
     }
 
     // Fetch Pairing
-    this.timeTillNextEpoch = await this.stateQuery.fetchPairing();
+    [this.timeTillNextEpoch, this.virtualEpoch] =
+      await this.stateQuery.fetchPairing();
   }
 
   async startTracking() {
     Logger.debug("State Tracker started");
     // update all consumer session managers with the provider lists after initialization.
-    await this.update();
+    await this.update(0);
     // Set up a timer to call this method again when the next epoch begins
     setTimeout(
       () => this.executeUpdateOnNewEpoch(),
@@ -113,13 +115,14 @@ export class StateTracker {
       Logger.debug("New epoch started, fetching pairing list");
 
       // Fetching all the info including the time_till_next_epoch
-      const timeTillNextEpoch = await this.stateQuery.fetchPairing();
+      const [timeTillNextEpoch, virtualEpoch] =
+        await this.stateQuery.fetchPairing();
 
       Logger.debug(
         "Pairing list fetched, started new epoch in: " + timeTillNextEpoch
       );
 
-      await this.update();
+      await this.update(virtualEpoch);
 
       // Set up a timer to call this method again when the next epoch begins
       setTimeout(
@@ -152,11 +155,11 @@ export class StateTracker {
     pairingUpdater.registerPairing(consumerSessionManager);
   }
 
-  private async update() {
+  private async update(virtualEpoch: number) {
     // Call update method on all registered updaters
     const promiseArray = [];
     for (const updater of this.updaters.values()) {
-      promiseArray.push(updater.update());
+      promiseArray.push(updater.update(virtualEpoch));
     }
     await Promise.allSettled(promiseArray);
   }

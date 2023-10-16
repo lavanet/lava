@@ -37,5 +37,12 @@ func (k Keeper) SdkPairing(goCtx context.Context, req *types.QueryGetPairingRequ
 		return nil, err
 	}
 
-	return &types.QuerySdkPairingResponse{Pairing: pairing, Spec: spec, MaxCu: strictestPolicy.EpochCuLimit}, err
+	downtimeParams := k.downtimeKeeper.GetParams(ctx)
+
+	lastBlockTime, ok := k.downtimeKeeper.GetLastBlockTime(ctx)
+	if !ok {
+		lastBlockTime = ctx.BlockTime()
+	}
+
+	return &types.QuerySdkPairingResponse{Pairing: pairing, Spec: spec, MaxCu: strictestPolicy.EpochCuLimit, DowntimeParams: &downtimeParams, LatestBlockTime: lastBlockTime.UnixMilli()}, err
 }

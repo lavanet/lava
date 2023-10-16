@@ -15,6 +15,7 @@ import "lavanet/lava/pairing/unique_payment_storage_client_provider.proto";
 import "lavanet/lava/epochstorage/stake_entry.proto";
 import "lavanet/lava/subscription/subscription.proto";
 import "lavanet/lava/projects/project.proto";
+import "lavanet/lava/downtime/v1/downtime.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
@@ -235,6 +236,8 @@ message QueryEffectivePolicyResponse {
 message QuerySdkPairingResponse {
   QueryGetPairingResponse pairing = 1;
   uint64 max_cu = 2;
-  lavanet.lava.spec.Spec spec = 3; 
+  lavanet.lava.spec.Spec spec = 3;
+  lavanet.lava.downtime.v1.Params downtime_params = 4;
+  int64 latest_block_time = 5;
 }
 

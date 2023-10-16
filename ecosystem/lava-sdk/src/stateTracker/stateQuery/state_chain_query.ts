@@ -21,6 +21,11 @@ import { SendRelayOptions } from "../../chainlib/base_chain_parser";
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
+import {
+  QueryParamsRequest,
+  QueryParamsResponse,
+} from "../../grpc_web_services/lavanet/lava/downtime/v1/query_pb";
+import { Params } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
   stakeEntry: StakeEntry[];
@@ -37,6 +42,8 @@ export class StateChainQuery {
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
+  private downtimeParams: Params | undefined;
+  private latestEpoch: number | undefined;
 
   constructor(
     pairingListConfig: string,
@@ -75,11 +82,14 @@ export class StateChainQuery {
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
-  public async fetchPairing(): Promise<number> {
+  public async fetchPairing(): Promise<[number, number]> {
     try {
       Logger.debug("Fetching pairing started");
       // Save time till next epoch
       let timeLeftToNextPairing;
+      let currentEpoch;
+      let downtimeParams;
+      let virtualEpoch = 0;
 
       const lavaPairing = this.getPairing("LAV1");
 
@@ -120,18 +130,59 @@ export class StateChainQuery {
           continue;
         }
 
+        downtimeParams = pairingResponse.getDowntimeParams();
+
         const providers = pairing.getProvidersList();
         timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
-        const currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
+        currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
         if (!currentEpoch) {
           throw Logger.fatal(
             "Failed fetching current epoch from pairing request."
           );
         }
+
+        // check if epoch has not changed
+        if (
+          this.latestEpoch == currentEpoch &&
+          virtualEpoch == 0 &&
+          downtimeParams != undefined
+        ) {
+          const lastBlockTime = pairingResponse.getLatestBlockTime();
+          const downtimeDuration = downtimeParams.getDowntimeDuration();
+          const epochDuration = downtimeParams.getEpochDuration();
+
+          if (
+            lastBlockTime != undefined &&
+            downtimeDuration != undefined &&
+            epochDuration != undefined
+          ) {
+            const delay = Date.now() - lastBlockTime;
+
+            // check if emergency mode is enabled
+            if (delay > downtimeDuration.getSeconds() * 1000) {
+              // calculate current virtual epoch
+              virtualEpoch = Math.ceil(
+                (delay - pairing.getTimeLeftToNextPairing()) /
+                  (epochDuration.getSeconds() * 1000)
+              );
+
+              // should check in case delay < TimeLeftToNextPairing
+              if (virtualEpoch < 0) {
+                virtualEpoch = 0;
+              }
+            }
+          }
+        }
+
+        let maxCu = pairingResponse.getMaxCu();
+
+        // add additional CU for virtual epochs(if emergency mode is disabled, virtualEpoch == 0)
+        maxCu += maxCu * virtualEpoch;
+
         // Save pairing response for chainID
         this.pairing.set(chainID, {
           providers: providers,
-          maxCu: pairingResponse.getMaxCu(),
+          maxCu: maxCu,
           currentEpoch: currentEpoch,
           spec: spec,
         });
@@ -142,10 +193,22 @@ export class StateChainQuery {
         throw StateTrackerErrors.errTimeTillNextEpochMissing;
       }
 
+      this.latestEpoch = currentEpoch;
+
+      // in case of emergency mode timeLeftToNextPairing is equal to epochDuration from downtimeParams
+      if (virtualEpoch != 0 && downtimeParams != undefined) {
+        const epochDuration = downtimeParams.getEpochDuration();
+        if (epochDuration != undefined) {
+          timeLeftToNextPairing = epochDuration.getSeconds();
+        }
+
+        Logger.debug("Virtual epoch: " + virtualEpoch);
+      }
+
       Logger.debug("Fetching pairing ended");
 
       // Return timeLeftToNextPairing
-      return timeLeftToNextPairing;
+      return [timeLeftToNextPairing, virtualEpoch];
     } catch (err) {
       throw err;
     }

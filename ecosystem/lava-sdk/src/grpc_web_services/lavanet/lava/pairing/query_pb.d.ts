@@ -14,6 +14,7 @@ import * as lavanet_lava_pairing_unique_payment_storage_client_provider_pb from 
 import * as lavanet_lava_epochstorage_stake_entry_pb from "../../../lavanet/lava/epochstorage/stake_entry_pb";
 import * as lavanet_lava_subscription_subscription_pb from "../../../lavanet/lava/subscription/subscription_pb";
 import * as lavanet_lava_projects_project_pb from "../../../lavanet/lava/projects/project_pb";
+import * as lavanet_lava_downtime_v1_downtime_pb from "../../../lavanet/lava/downtime/v1/downtime_pb";
 
 export class QueryParamsRequest extends jspb.Message {
   serializeBinary(): Uint8Array;
@@ -713,6 +714,14 @@ export class QuerySdkPairingResponse extends jspb.Message {
   getSpec(): lavanet_lava_spec_spec_pb.Spec | undefined;
   setSpec(value?: lavanet_lava_spec_spec_pb.Spec): void;
 
+  hasDowntimeParams(): boolean;
+  clearDowntimeParams(): void;
+  getDowntimeParams(): lavanet_lava_downtime_v1_downtime_pb.Params | undefined;
+  setDowntimeParams(value?: lavanet_lava_downtime_v1_downtime_pb.Params): void;
+
+  getLatestBlockTime(): number;
+  setLatestBlockTime(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): QuerySdkPairingResponse.AsObject;
   static toObject(includeInstance: boolean, msg: QuerySdkPairingResponse): QuerySdkPairingResponse.AsObject;
@@ -728,6 +737,8 @@ export namespace QuerySdkPairingResponse {
     pairing?: QueryGetPairingResponse.AsObject,
     maxCu: number,
     spec?: lavanet_lava_spec_spec_pb.Spec.AsObject,
+    downtimeParams?: lavanet_lava_downtime_v1_downtime_pb.Params.AsObject,
+    latestBlockTime: number,
   }
 }
 

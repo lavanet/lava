@@ -25,6 +25,7 @@ type Server struct {
 	pairingtypes.UnimplementedBadgeGeneratorServer
 	ProjectsConfiguration map[string]map[string]*ProjectConfiguration // geolocation/project_id/project_data
 	epoch                 uint64
+	virtualEpoch          uint64
 	grpcFetcher           *grpc.GRPCFetcher
 	ChainId               string
 	IpService             *IpService
@@ -76,10 +77,21 @@ func (s *Server) SetSpec(specUpdate spectypes.Spec) {
 func (s *Server) UpdateEpoch(epoch uint64) {
 	utils.LavaFormatDebug("Got epoch update", utils.Attribute{Key: "epoch", Value: epoch})
 	atomic.StoreUint64(&s.epoch, epoch)
+	// reset virtual epoch after the end of emergency mode
+	atomic.StoreUint64(&s.virtualEpoch, 0)
+}
+
+func (s *Server) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {
+	utils.LavaFormatDebug("Got virtual epoch update", utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch})
+	atomic.StoreUint64(&s.virtualEpoch, virtualEpoch)
 }
 
 func (s *Server) GetEpoch() uint64 {
 	return atomic.LoadUint64(&s.epoch)
+}
+
+func (s *Server) GetVirtualEpoch() uint64 {
+	return atomic.LoadUint64(&s.virtualEpoch)
 }
 
 func (s *Server) checkSpecExists(specID string) (spectypes.Spec, bool) {
@@ -126,10 +138,11 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		return nil, err
 	}
 	badge := pairingtypes.Badge{
-		CuAllocation: uint64(projectData.EpochsMaxCu),
+		CuAllocation: uint64(projectData.EpochsMaxCu) * (s.GetVirtualEpoch() + 1), // add additional CU due to emergency mode
 		Epoch:        s.GetEpoch(),
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,
+		VirtualEpoch: s.GetVirtualEpoch(),
 	}
 
 	result := pairingtypes.GenerateBadgeResponse{

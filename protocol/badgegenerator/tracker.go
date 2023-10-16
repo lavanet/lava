@@ -44,7 +44,26 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 		err := fmt.Errorf("invalid type")
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", err)
 	}
+
+	// register for updates in case of emergency mode is enabled
+	epochUpdaterWithEmergencyRaw := st.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
+	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*statetracker.EpochUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterWithEmergencyRaw})
+	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, AddBlockDelayForEpochUpdaterBadgeServer)
+}
+
+func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
+	downtimeParamsUpdater := statetracker.NewDowntimeParamsUpdater(st.stateQuery, st.EventTracker)
+	downtimeParamsUpdaterRaw := st.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*statetracker.DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (st *BadgeStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {

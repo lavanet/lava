@@ -1,3 +1,3 @@
 export interface Updater {
-  update(): Promise<any>;
+  update(virtualEpoch: number): Promise<any>;
 }

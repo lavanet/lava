@@ -40,10 +40,11 @@ export class StateBadgeQuery {
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
-  public async fetchPairing(): Promise<number> {
+  public async fetchPairing(): Promise<[number, number]> {
     Logger.debug("Fetching pairing started");
 
     let timeLeftToNextPairing;
+    let virtualEpoch;
 
     for (const chainID of this.chainIDs) {
       const badgeResponse = await this.fetchNewBadge(chainID);
@@ -76,6 +77,8 @@ export class StateBadgeQuery {
       // Parse time till next epoch
       timeLeftToNextPairing = pairingResponse.getTimeLeftToNextPairing();
 
+      virtualEpoch = badge.getVirtualEpoch();
+
       // Generate StakeEntry
       const stakeEntry = pairingResponse.getProvidersList();
 
@@ -93,9 +96,14 @@ export class StateBadgeQuery {
       throw StateTrackerErrors.errTimeTillNextEpochMissing;
     }
 
+    // If virtualEpoch is undefined providers work in regular mode
+    if (virtualEpoch == undefined) {
+      virtualEpoch = 0;
+    }
+
     Logger.debug("Fetching pairing ended");
 
-    return timeLeftToNextPairing;
+    return [timeLeftToNextPairing, virtualEpoch];
   }
 
   public async init(): Promise<void> {

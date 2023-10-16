@@ -170,6 +170,9 @@ export class Badge extends jspb.Message {
   getProjectSig_asB64(): string;
   setProjectSig(value: Uint8Array | string): void;
 
+  getVirtualEpoch(): number;
+  setVirtualEpoch(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Badge.AsObject;
   static toObject(includeInstance: boolean, msg: Badge): Badge.AsObject;
@@ -187,6 +190,7 @@ export namespace Badge {
     address: string,
     lavaChainId: string,
     projectSig: Uint8Array | string,
+    virtualEpoch: number,
   }
 }
 
