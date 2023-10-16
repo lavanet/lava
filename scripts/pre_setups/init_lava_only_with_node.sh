@@ -16,7 +16,7 @@ make install-all
 echo "[Test Setup] setting up a new lava node"
 screen -d -m -S node bash -c "./scripts/start_env_dev.sh"
 screen -ls
-echo "[Lavavisor Setup] sleeping 20 seconds for node to finish setup (if its not enough increase timeout)"
+echo "[Test Setup] sleeping 20 seconds for node to finish setup (if its not enough increase timeout)"
 sleep 20
 
 GASPRICE="0.000000001ulava"
