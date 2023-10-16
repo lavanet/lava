@@ -461,6 +461,7 @@ func New(
 		&app.EpochstorageKeeper,
 		app.ProjectsKeeper,
 		app.PlansKeeper,
+		app.DualstakingKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 	)
