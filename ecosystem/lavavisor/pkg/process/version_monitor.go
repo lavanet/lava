@@ -19,11 +19,15 @@ type VersionMonitor struct {
 	protocolBinaryFetcher *ProtocolBinaryFetcher
 	protocolBinaryLinker  *ProtocolBinaryLinker
 	lock                  sync.Mutex
+	LaunchedServices      bool // indicates whether version was matching or not so we can decide wether to launch services
 }
 
 func NewVersionMonitor(initVersion string, lavavisorPath string, processes []string, autoDownload bool) *VersionMonitor {
-	versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
-	binaryPath := filepath.Join(versionDir, "lavap")
+	var binaryPath string
+	if initVersion != "" { // handle case if not found valid lavap at all
+		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
+		binaryPath = filepath.Join(versionDir, "lavap")
+	}
 	fetcher := &ProtocolBinaryFetcher{
 		lavavisorPath: lavavisorPath,
 	}
@@ -87,7 +91,7 @@ func (vm *VersionMonitor) handleUpdateTrigger(incoming *protocoltypes.Version) e
 	}
 	// Wait for all Goroutines to finish
 	wg.Wait()
-
+	vm.LaunchedServices = true
 	utils.LavaFormatInfo("Lavavisor successfully updated protocol version!", utils.Attribute{Key: "Upgraded version:", Value: vm.lastKnownVersion.ProviderTarget})
 	return nil
 }
@@ -98,12 +102,9 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.Protoco
 		return nil
 	}
 	defer vm.lock.Unlock()
-	currentBinaryVersion, err := GetBinaryVersion(vm.BinaryPath)
-	if err != nil || currentBinaryVersion == "" {
-		return utils.LavaFormatError("failed to get binary version", err)
-	}
+	currentBinaryVersion, _ := GetBinaryVersion(vm.BinaryPath)
 
-	if ValidateMismatch(incoming.Version, currentBinaryVersion) {
+	if currentBinaryVersion == "" || ValidateMismatch(incoming.Version, currentBinaryVersion) {
 		utils.LavaFormatInfo("New version detected", utils.Attribute{Key: "incoming", Value: incoming})
 		utils.LavaFormatInfo("Started Version Upgrade flow")
 		err := vm.handleUpdateTrigger(incoming.Version)
