@@ -11,7 +11,6 @@ import (
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
@@ -200,16 +199,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		coinsPerCu := k.Keeper.MintCoinsPerCU(ctx)
 		rewardedCUDec := sdk.OneDec().MulInt64(int64(rewardedCU))
-		reward := coinsPerCu.Mul(rewardedCUDec)
-
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 		details["rewardedCU"] = strconv.FormatUint(relay.CuSum, 10)
 
 		if relay.QosReport != nil {
@@ -226,12 +221,33 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details["QoSScore"] = QoS.String()
 
 			rewardedCUDec = rewardedCUDec.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
-			reward = coinsPerCu.Mul(rewardedCUDec)
-			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
-			details["rewardedCU"] = "0"
-			if coinsPerCu != sdk.ZeroDec() {
-				details["rewardedCU"] = strconv.FormatInt(reward.Quo(coinsPerCu).TruncateInt64(), 10)
-			}
+		}
+
+		if relay.QosExcellenceReport != nil {
+			details["ExcellenceQoSLatency"] = relay.QosExcellenceReport.Latency.String()
+			details["ExcellenceQoSAvailability"] = relay.QosExcellenceReport.Availability.String()
+			details["ExcellenceQoSSync"] = relay.QosExcellenceReport.Sync.String()
+		}
+
+		details["projectID"] = projectID
+		details["badge"] = fmt.Sprint(badgeSig)
+		details["clientFee"] = "0"
+		details["reliabilityPay"] = "false"
+		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
+		// differentiate between different relays by providing the index in the keys
+		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
+		// calling the same event repeatedly within a transaction just appends the new keys to the event
+		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
+
+		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
+		if err != nil {
+			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
+		}
+
+		// update provider payment storage with complainer's CU
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, projectID)
+		if err != nil {
+			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
 
 		// track the provider's CU (after QoS influence)
@@ -259,58 +275,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			"subscription": sub.Consumer,
 			"added_cu":     strconv.FormatUint(cuAfterQos, 10),
 		}, "Relay Payment CU were added to CU tracker")
-
-		if relay.QosExcellenceReport != nil {
-			details["ExcellenceQoSLatency"] = relay.QosExcellenceReport.Latency.String()
-			details["ExcellenceQoSAvailability"] = relay.QosExcellenceReport.Availability.String()
-			details["ExcellenceQoSSync"] = relay.QosExcellenceReport.Sync.String()
-		}
-
-		details["projectID"] = projectID
-		details["badge"] = fmt.Sprint(badgeSig)
-		details["clientFee"] = "0"
-		details["reliabilityPay"] = "false"
-		details["Mint"] = details["BasePay"]
-
-		// Mint to module
-		if !rewardCoins.AmountOf(epochstoragetypes.TokenDenom).IsZero() {
-			err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
-			if err != nil {
-				// panic:ok: mint coins should never fail
-				utils.LavaFormatPanic("critical: failed to mint coins to reward provider", err,
-					utils.Attribute{Key: "provider", Value: providerAddr},
-					utils.Attribute{Key: "reward", Value: rewardCoins},
-				)
-			}
-
-			_, err := k.dualStakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), rewardCoins.AmountOf(epochstoragetypes.TokenDenom), types.ModuleName)
-			if err != nil {
-				return nil, utils.LavaFormatError(types.ProviderRewardError.Error(), err,
-					utils.Attribute{Key: "provider", Value: providerAddr.String()},
-					utils.Attribute{Key: "chainID", Value: relay.SpecId},
-					utils.Attribute{Key: "block", Value: uint64(relay.Epoch)},
-					utils.Attribute{Key: "reward", Value: reward},
-				)
-			}
-		}
-
-		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
-		// differentiate between different relays by providing the index in the keys
-		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
-		// calling the same event repeatedly within a transaction just appends the new keys to the event
-		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
-
-		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
-		if err != nil {
-			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
-		}
-
-		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, projectID)
-		if err != nil {
-			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
-		}
 	}
+
 	latestBlockReports := map[string]string{
 		"provider": msg.GetCreator(),
 	}
