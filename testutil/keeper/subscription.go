@@ -12,6 +12,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
+	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/fixationstore"
 	planskeeper "github.com/lavanet/lava/x/plans/keeper"
@@ -76,6 +77,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
 		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, fsKeeper),
 		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper),
+		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, nil, nil, nil, fsKeeper, tsKeeper),
 		fsKeeper,
 		tsKeeper,
 	)

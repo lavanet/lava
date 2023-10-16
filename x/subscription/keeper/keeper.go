@@ -28,11 +28,13 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
+		dualstakingKeeper  types.DualStakingKeeper
 
 		subsFS fixationstore.FixationStore
 		subsTS timerstore.TimerStore
 
 		cuTrackerFS fixationstore.FixationStore // key: "<sub> <provider>", value: month aggregated CU
+		cuTrackerTS timerstore.TimerStore
 	}
 )
 
@@ -47,6 +49,7 @@ func NewKeeper(
 	epochstorageKeeper types.EpochstorageKeeper,
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
+	dualstakingKeeper types.DualStakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -80,6 +83,13 @@ func NewKeeper(
 
 	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
+
+	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, _ []byte) {
+		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey)
+	}
+
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
+		WithCallbackByBlockTime(cuTrackerCallback)
 
 	return keeper
 }
