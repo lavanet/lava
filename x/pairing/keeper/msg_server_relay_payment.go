@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -204,9 +203,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		coinsPerCu := k.Keeper.MintCoinsPerCU(ctx)
 		rewardedCUDec := sdk.OneDec().MulInt64(int64(rewardedCU))
 		reward := coinsPerCu.Mul(rewardedCUDec)
-		if reward.IsZero() {
-			continue
-		}
 
 		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
 
@@ -287,9 +283,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			err = k.distributeRewards(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), reward.TruncateInt())
+			_, err := k.dualStakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), rewardCoins.AmountOf(epochstoragetypes.TokenDenom), types.ModuleName)
 			if err != nil {
-				return nil, utils.LavaFormatError("could not distribute rewards for provider and delegators", err)
+				return nil, utils.LavaFormatError(types.ProviderRewardError.Error(), err,
+					utils.Attribute{Key: "provider", Value: providerAddr.String()},
+					utils.Attribute{Key: "chainID", Value: relay.SpecId},
+					utils.Attribute{Key: "block", Value: uint64(relay.Epoch)},
+					utils.Attribute{Key: "reward", Value: reward},
+				)
 			}
 		}
 
@@ -412,31 +413,4 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 		to[key+"."+sessionIDStr] = value
 	}
 	return to
-}
-
-// distributeRewards is the main function for reward distribution for providers and delegators
-func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) error {
-	providerReward, err := k.dualStakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, block, totalReward, types.ModuleName)
-	if err != nil {
-		return utils.LavaFormatError(types.ProviderRewardError.Error(), err,
-			utils.Attribute{Key: "provider", Value: providerAddr.String()},
-			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "block", Value: block},
-			utils.Attribute{Key: "totalReward", Value: totalReward},
-		)
-	}
-
-	if providerReward.GT(math.ZeroInt()) {
-		providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
-		if err != nil {
-			// panic:ok: reward transfer should never fail
-			utils.LavaFormatPanic("critical: failed to send reward to provider", err,
-				utils.Attribute{Key: "provider", Value: providerAddr},
-				utils.Attribute{Key: "reward", Value: providerRewardCoins},
-			)
-		}
-	}
-
-	return nil
 }

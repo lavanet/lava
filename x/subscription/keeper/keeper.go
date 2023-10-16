@@ -72,6 +72,7 @@ func NewKeeper(
 		epochstorageKeeper: epochstorageKeeper,
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
+		dualstakingKeeper:  dualstakingKeeper,
 
 		subsFS:      fs,
 		cuTrackerFS: cuTracker,
@@ -89,7 +90,7 @@ func NewKeeper(
 	}
 
 	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
-		WithCallbackByBlockTime(cuTrackerCallback)
+		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper
 }

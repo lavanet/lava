@@ -180,7 +180,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	fullProviderReward := providerReward.Add(leftoverRewards)
 	if fullProviderReward.GT(math.ZeroInt()) {
 		fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, fullProviderReward)}
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, fullProviderRewardCoins)
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, providerAddr, fullProviderRewardCoins)
 		if err != nil {
 			// panic:ok: reward transfer should never fail
 			utils.LavaFormatPanic("critical: failed to send reward to provider", err,
