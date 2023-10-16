@@ -42,6 +42,9 @@ This E2E performs the steps below to test if the system is working as expected.
 15. Send multiple requests through each gateway.
 16. Check if a gateway responds with an error.
 17. Check if payments are paid.
+18. Start lava in emergency mode.
+19. Wait until downtime and 2 virtual epochs will be passed.
+20. Send requests to check that max CU was increased. 
 
 After the steps above are finished (even if a step fails and the E2E ends) the E2E will save all the captured logs.
 

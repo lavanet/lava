@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"go/build"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 	"os"
@@ -45,8 +46,8 @@ const (
 )
 
 var (
-	checkedPlansE2E         = []string{"DefaultPlan"}
-	checkedSubscriptions    = []string{"user1", "user2", "user3"}
+	checkedPlansE2E         = []string{"DefaultPlan", "EmergencyModePlan"}
+	checkedSubscriptions    = []string{"user1", "user2", "user3", "user5"}
 	checkedSpecsE2E         = []string{"LAV1", "ETH1"}
 	checkedSpecsE2ELOL      = []string{"GTH1"}
 	checkedSubscriptionsLOL = []string{"user4"}
@@ -219,7 +220,7 @@ func (lt *lavaTest) checkStakeLava(
 
 	// check if plans added exist
 	if len(planQueryRes.PlansInfo) != planCount {
-		panic("Staking Failed PLAN count" + fmt.Sprintf("expected %d, got %d", planCount, len(planQueryRes.PlansInfo)))
+		panic("Staking Failed PLAN count " + fmt.Sprintf("expected %d, got %d", planCount, len(planQueryRes.PlansInfo)))
 	}
 
 	for _, plan := range planQueryRes.PlansInfo {
@@ -530,6 +531,19 @@ func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	utils.LavaFormatInfo("startRPCConsumer OK")
 }
 
+func (lt *lavaTest) startLavaEmergencyConsumer(ctx context.Context) {
+	for idx, u := range []string{"user5"} {
+		command := fmt.Sprintf(
+			"%s rpcconsumer %s/lavaConsumerEmergency%d.yml --chain-id=lava --from %s %s",
+			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+		)
+		logName := "11_RPCEmergencyConsumer_" + fmt.Sprintf("%02d", idx+1)
+		funcName := fmt.Sprintf("startRPCEmergencyConsumer (consumer %02d)", idx+1)
+		lt.execCommand(ctx, funcName, logName, command, false)
+	}
+	utils.LavaFormatInfo("startRPCEmergencyConsumer OK")
+}
+
 func (lt *lavaTest) checkTendermintConsumer(rpcURL string, timeout time.Duration) {
 	for start := time.Now(); time.Since(start) < timeout; {
 		utils.LavaFormatInfo("Waiting TENDERMINT Consumer")
@@ -608,7 +622,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
 	// - produce 1 plan: "DefaultPlan"
 
-	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -646,6 +660,23 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 				errors = append(errors, string(reply))
 			}
 		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ",\n"))
+	}
+	return nil
+}
+
+func restRelayTest(rpcURL string) error {
+	errors := []string{}
+	apiToTest := "%s/cosmos/base/tendermint/v1beta1/blocks/1"
+
+	reply, err := getRequest(fmt.Sprintf(apiToTest, rpcURL))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("%s", err))
+	} else if strings.Contains(string(reply), "error") {
+		errors = append(errors, string(reply))
 	}
 
 	if len(errors) > 0 {
@@ -896,6 +927,65 @@ func (lt *lavaTest) checkQoS() error {
 	return nil
 }
 
+func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit int) {
+	command := "./scripts/emergency_mode.sh " + strconv.Itoa(timeoutCommit)
+	logName := "10_StartLavaInEmergencyMode"
+	funcName := "startLavaInEmergencyMode"
+
+	lt.execCommand(ctx, funcName, logName, command, true)
+	utils.LavaFormatInfo(funcName + " OK")
+}
+
+func (lt *lavaTest) sleepUntilNextEpoch() {
+	cmd := exec.Command("/bin/bash", "-c", "source ./scripts/useful_commands.sh && sleep_until_next_epoch")
+
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	utils.LavaFormatInfo("sleepUntilNextEpoch" + " OK")
+}
+
+func (lt *lavaTest) stopLava() {
+	cmd := exec.Command("killall", "lavad")
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	utils.LavaFormatInfo("stopLava" + " OK")
+}
+
+func (lt *lavaTest) getLatestBlockTime() time.Time {
+	cmd := exec.Command("lavad", "status")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(err)
+	}
+
+	jsonString := strings.TrimSpace(string(output))
+
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonString), &data); err != nil {
+		panic(err)
+	}
+
+	latestBlockRawTime, ok := data["SyncInfo"].(map[string]interface{})["latest_block_time"].(string)
+	if !ok {
+		panic("failed to get latest block time")
+	}
+
+	latestBlockTime, err := time.Parse("2006-01-02T15:04:05Z", latestBlockRawTime)
+	if err != nil {
+		panic(err)
+	}
+
+	utils.LavaFormatInfo("getLastBlockTime" + " OK")
+
+	return latestBlockTime
+}
+
 func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL string, grpcConsumerURL string) error {
 	utils.LavaFormatInfo("Starting Relay Response Integrity Tests")
 
@@ -1084,7 +1174,7 @@ func runProtocolE2E(timeout time.Duration) {
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
@@ -1178,6 +1268,63 @@ func runProtocolE2E(timeout time.Duration) {
 	// TODO: Add payment tests when subscription payment mechanism is implemented
 
 	lt.checkQoS()
+
+	// emergency mode
+	utils.LavaFormatInfo("Sleeping Until New Epoch")
+	lt.sleepUntilNextEpoch()
+
+	// wait 3 seconds to allow rpcproviders claim rewards before node will be restarted(after restarting node
+	// we have ctx.BlockHeight == 0, until new block will be created)
+	time.Sleep(time.Second * 3)
+
+	utils.LavaFormatInfo("Restarting lava to emergency mode")
+
+	lt.stopLava()
+	go lt.startLavaInEmergencyMode(ctx, 100000)
+
+	lt.checkLava(timeout)
+	utils.LavaFormatInfo("Starting Lava OK")
+
+	// set in init_chain.sh
+	var epochDuration int64 = 30 * 1.2
+
+	signalChannel := make(chan bool)
+	url := "http://127.0.0.1:3347"
+
+	lt.startLavaEmergencyConsumer(ctx)
+	lt.checkRESTConsumer(url, time.Second*30)
+
+	latestBlockTime := lt.getLatestBlockTime()
+
+	go func() {
+		epochCounter := (time.Now().Unix() - latestBlockTime.Unix()) / epochDuration
+
+		for {
+			time.Sleep(time.Until(latestBlockTime.Add(time.Second * time.Duration(epochDuration*(epochCounter+1)))))
+			utils.LavaFormatInfo(fmt.Sprintf("%d : VIRTUAL EPOCH ENDED", epochCounter))
+
+			epochCounter++
+			signalChannel <- true
+		}
+	}()
+
+	utils.LavaFormatInfo("Waiting for finishing current epoch and waiting for 2 more virtual epochs")
+
+	// we should have approximately (numOfProviders * epoch_cu_limit * 4) CU
+	// skip 1st epoch and 2 virtual epochs
+	repeat(3, func(m int) {
+		<-signalChannel
+	})
+
+	// check that there was an increase CU due to virtual epochs
+	repeat(70, func(m int) {
+		if err := restRelayTest(url); err != nil {
+			utils.LavaFormatError(fmt.Sprintf("Error while sending relay number %d: ", m), err)
+			panic(err)
+		}
+	})
+
+	utils.LavaFormatInfo("REST RELAY TESTS OK")
 
 	lt.finishTestSuccessfully()
 }
