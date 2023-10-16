@@ -279,8 +279,8 @@ func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
 	latestVirtualEpoch := psm.latestVirtualEpoch
-	// current_max_cu = max_cu + max_cu * prev_virtual_epoch = max_cu * current_virtual_epoch
-	// next_max_cu = max_cu + max_cu * current_virtual_epoch =  max_cu * (current_virtual_epoch + 1)
+	// current_max_cu = max_cu + (max_cu * prev_virtual_epoch)
+	// next_max_cu = max_cu + (max_cu * current_virtual_epoch)
 	mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]
 	if !ok {
 		return

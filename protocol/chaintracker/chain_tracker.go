@@ -51,7 +51,6 @@ type ChainTracker struct {
 	blockCheckpointDistance uint64 // used to do something every X blocks
 	blockCheckpoint         uint64 // last time checkpoint was met
 	ticker                  *time.Ticker
-	isEmergencyMode         bool
 	downtimeParams          downtimev1.Params
 }
 
@@ -293,6 +292,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			}
 		}
 	} else if cs.oldBlockCallback != nil {
+		// if new block is not found we should check emergency mode
 		cs.oldBlockCallback(newLatestBlock)
 	}
 	return err

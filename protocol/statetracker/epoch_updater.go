@@ -89,6 +89,7 @@ func (eu *EpochUpdater) Update(latestBlock int64) {
 	if currentEpoch > eu.currentEpoch {
 		addTrigger = true
 		eu.currentEpoch = currentEpoch // update the current epoch
+		eu.currentVirtualEpoch = 0     // reset virtual epoch after the end of emergency mode
 	}
 
 	for _, epochUpdatable := range eu.epochUpdatables {
@@ -118,6 +119,7 @@ func (eu *EpochUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
 		if epochUpdatable == nil {
 			continue
 		}
+		// iterate over all updatables and update current virtual epoch
 		epochUpdatable.UpdateVirtualEpoch(eu.currentEpoch, virtualEpoch)
 	}
 

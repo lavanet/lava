@@ -104,6 +104,7 @@ func (et *EventTracker) getLatestVersionEvents() (updated bool) {
 }
 
 func (et *EventTracker) getLatestDowntimeParamsUpdateEvents() (updated bool) {
+	// check DowntimeParams change proposal results
 	et.lock.RLock()
 	defer et.lock.RUnlock()
 	for _, event := range et.blockResults.EndBlockEvents {

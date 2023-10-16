@@ -98,6 +98,9 @@ func (csm *ConsumerSessionManager) UpdateMaxCULimit(virtualEpoch, prevVirtualEpo
 			continue
 		}
 
+		// set maxCU for new virtual epoch
+		// currentMaxCU = regularMaxCU * (prevVirtualEpoch + 1)
+		// extendedMaxCU = regularMaxCU * (virtualEpoch + 1)
 		maxCU := consumerSessionWithProvider.GetMaxCULimit()
 		maxCU = maxCU / (prevVirtualEpoch + 1) * (virtualEpoch + 1)
 		consumerSessionWithProvider.atomicWriteMaxCULimit(maxCU)
