@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"strings"
 
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -49,18 +48,7 @@ func (pbl *ProtocolBinaryLinker) copyBinaryToSystemPath(binaryPath string) (stri
 
 	goBinPath := strings.TrimSpace(string(goBin)) + "/bin/"
 	pbl.validateBinaryExecutable(binaryPath)
-	pbl.removeExistingLink(goBinPath + "lavap")
-
-	err = lvutil.Copy(binaryPath, goBinPath+"lavap")
-	if err != nil {
-		return "", utils.LavaFormatError("Couldn't copy binary to system path", err)
-	}
-
-	out, err := exec.LookPath("lavap")
-	if err != nil {
-		return "", utils.LavaFormatError("Couldn't find the binary in the system path", err)
-	}
-	return strings.TrimSpace(out), nil
+	return goBinPath + "lavap", nil
 }
 
 func (pbl *ProtocolBinaryLinker) validateBinaryExecutable(path string) {
