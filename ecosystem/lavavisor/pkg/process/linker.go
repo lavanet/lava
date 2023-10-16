@@ -9,7 +9,14 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-type ProtocolBinaryLinker struct{}
+// TODOs:
+// validate the binary that was created? if our lavap points to old its still bad.
+// on bootstrap just download the right binary.
+// try with which lavap, if it works dont use go path.
+
+type ProtocolBinaryLinker struct {
+	Fetcher *ProtocolBinaryFetcher
+}
 
 func (pbl *ProtocolBinaryLinker) CreateLink(binaryPath string) error {
 	dest, err := pbl.findLavaProtocolPath(binaryPath)
@@ -31,12 +38,16 @@ func (pbl *ProtocolBinaryLinker) findLavaProtocolPath(binaryPath string) (string
 }
 
 func (pbl *ProtocolBinaryLinker) copyBinaryToSystemPath(binaryPath string) (string, error) {
-	gobin, err := exec.Command("go", "env", "GOPATH").Output()
+	goPath, err := pbl.Fetcher.VerifyGoInstallation()
+	if err != nil {
+		return "", utils.LavaFormatError("Couldn't get go binary path", err)
+	}
+	goBin, err := exec.Command(goPath, "env", "GOPATH").Output()
 	if err != nil {
 		return "", utils.LavaFormatError("Couldn't determine Go binary path", err)
 	}
 
-	goBinPath := strings.TrimSpace(string(gobin)) + "/bin/"
+	goBinPath := strings.TrimSpace(string(goBin)) + "/bin/"
 	pbl.validateBinaryExecutable(binaryPath)
 	pbl.removeExistingLink(goBinPath + "lavap")
 
@@ -69,6 +80,7 @@ func (pbl *ProtocolBinaryLinker) removeExistingLink(linkPath string) {
 	} else if !os.IsNotExist(err) {
 		utils.LavaFormatFatal("Unexpected error when checking for existing link", err)
 	}
+	utils.LavaFormatInfo("Removed Link Successfully")
 }
 
 func (pbl *ProtocolBinaryLinker) createAndVerifySymlink(binaryPath, dest string) {
