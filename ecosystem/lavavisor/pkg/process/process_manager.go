@@ -51,7 +51,7 @@ func GetBinaryVersion(binaryPath string) (string, error) {
 	cmd := exec.Command(binaryPath, "version")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", utils.LavaFormatError("GetBinaryVersion failed to execute command", err)
+		return "", utils.LavaFormatWarning("GetBinaryVersion failed to execute command, lavavisor will try to fetch version from github", err)
 	}
 	return strings.TrimSpace(string(output)), nil
 }
