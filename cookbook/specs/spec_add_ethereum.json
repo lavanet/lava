@@ -1049,7 +1049,7 @@
                                         "parser_func": "PARSE_BY_ARG",
                                         "encoding": "base64"
                                     },
-                                    "api_name": "eth_chainId"
+                                    "api_name": "net_version"
                                 },
                                 "values": [
                                     {
@@ -1069,7 +1069,7 @@
                                         "parser_func": "PARSE_BY_ARG",
                                         "encoding": "base64"
                                     },
-                                    "api_name": "eth_chainId"
+                                    "api_name": "web3_clientVersion"
                                 },
                                 "values": [
                                     {
@@ -1089,7 +1089,7 @@
                                         "parser_func": "PARSE_BY_ARG",
                                         "encoding": "hex"
                                     },
-                                    "api_name": "eth_chainId"
+                                    "api_name": "eth_protocolVersion"
                                 },
                                 "values": []
                             },
