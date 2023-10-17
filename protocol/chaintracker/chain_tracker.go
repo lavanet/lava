@@ -317,13 +317,12 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 				cs.forkCallback(newLatestBlock)
 			}
 		}
-	} else {
-		if prev_latest > newLatestBlock {
-			if cs.consistencyCallback != nil {
-				cs.consistencyCallback(prev_latest, newLatestBlock)
-			}
+	} else if prev_latest > newLatestBlock {
+		if cs.consistencyCallback != nil {
+			cs.consistencyCallback(prev_latest, newLatestBlock)
 		}
 	}
+
 	return err
 }
 
