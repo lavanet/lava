@@ -460,13 +460,9 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		defer res.Body.Close()
 	}
 
-	err = rcp.HandleStatusError(res.StatusCode)
+	err = rcp.HandleStatusError(res.StatusCode, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode}, utils.Attribute{Key: "chainID", Value: rcp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
-	}
-
-	if nodeMessage.GetDisableErrorHandling() && res.StatusCode != http.StatusOK {
-		return nil, "", nil, err
 	}
 
 	body, err := io.ReadAll(res.Body)

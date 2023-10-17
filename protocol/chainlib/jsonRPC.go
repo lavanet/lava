@@ -536,7 +536,7 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 	batch := nodeMessage.GetBatch()
-	err = rpc.BatchCallContext(connectCtx, batch)
+	err = rpc.BatchCallContext(connectCtx, batch, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -609,19 +609,16 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true)
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
 		if err != nil {
 			// here we are getting an error for every code that is not 200-300
-			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) {
+			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
 			// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
 			if parsedError := cp.HandleNodeError(ctx, err); parsedError != nil {
 				return nil, "", nil, parsedError
-			}
-			if nodeMessage.GetDisableErrorHandling() {
-				return nil, "", nil, err
 			}
 		}
 	}

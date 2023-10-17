@@ -143,12 +143,12 @@ func DialHTTP(endpoint string) (*Client, error) {
 	return DialHTTPWithClient(endpoint, new(http.Client))
 }
 
-func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool) error {
+func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool, strict bool) error {
 	hc, ok := c.writeConn.(*httpConn)
 	if !ok {
 		return fmt.Errorf("sendHTTP - c.writeConn.(*httpConn) - type assertion failed" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msg, isJsonRPC)
+	respBody, err := hc.doRequest(ctx, msg, isJsonRPC, strict)
 	if err != nil {
 		return err
 	}
@@ -162,12 +162,12 @@ func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, i
 	return nil
 }
 
-func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*JsonrpcMessage) error {
+func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*JsonrpcMessage, strict bool) error {
 	hc, ok := c.writeConn.(*httpConn)
 	if !ok {
 		return fmt.Errorf("sendBatchHTTP - c.writeConn.(*httpConn) - type assertion failed, type:" + fmt.Sprintf("%s", c.writeConn))
 	}
-	respBody, err := hc.doRequest(ctx, msgs, true)
+	respBody, err := hc.doRequest(ctx, msgs, true, strict)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (c *Client) sendBatchHTTP(ctx context.Context, op *requestOp, msgs []*Jsonr
 	return nil
 }
 
-func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bool) (io.ReadCloser, error) {
+func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bool, strict bool) (io.ReadCloser, error) {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(resp.StatusCode))
 	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 
-	err = ValidateStatusCodes(resp.StatusCode)
+	err = ValidateStatusCodes(resp.StatusCode, strict)
 	if err != nil {
 		return nil, err
 	}
@@ -229,11 +229,16 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 	return resp.Body, nil
 }
 
-func ValidateStatusCodes(statusCode int) error {
+func ValidateStatusCodes(statusCode int, strict bool) error {
 	if statusCode == http.StatusGatewayTimeout {
 		return common.StatusCodeError504
 	} else if statusCode == http.StatusTooManyRequests {
 		return common.StatusCodeError429
+	}
+	if strict {
+		if (statusCode != 0 && statusCode < 200) || statusCode > 300 {
+			return common.StatusCodeErrorStrict
+		}
 	}
 	return nil
 }

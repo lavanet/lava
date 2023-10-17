@@ -637,7 +637,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		defer res.Body.Close()
 	}
 
-	err = cp.HandleStatusError(res.StatusCode)
+	err = cp.HandleStatusError(res.StatusCode, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode}, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 	}
@@ -710,9 +710,9 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		// perform the rpc call
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false)
+		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
 		if err != nil {
-			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) {
+			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error
