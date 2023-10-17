@@ -52,7 +52,7 @@ func CreateLavaVisorInitCobraCommand() *cobra.Command {
 
 func LavavisorInit(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
-	lavavisorFetcher := processmanager.ProtocolBinaryFetcher{}
+	lavavisorFetcher := &processmanager.ProtocolBinaryFetcher{}
 
 	// Build path to ./lavavisor
 	err := lavavisorFetcher.SetupLavavisorDir(dir)
@@ -94,7 +94,7 @@ func LavavisorInit(cmd *cobra.Command) error {
 	}
 
 	// linker
-	binaryLinker := processmanager.ProtocolBinaryLinker{}
+	binaryLinker := processmanager.ProtocolBinaryLinker{Fetcher: lavavisorFetcher}
 	err = binaryLinker.CreateLink(binaryPath)
 	if err != nil {
 		return utils.LavaFormatError("Could'nt create link for the protocol binary", err)

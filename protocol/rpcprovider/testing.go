@@ -2,7 +2,9 @@ package rpcprovider
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -39,6 +41,60 @@ func validatePortNumber(ipPort string) string {
 		return ""
 	}
 	return ipPort
+}
+
+func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
+	utils.LavaFormatDebug("Checking CORS", utils.Attribute{Key: "endpoint", Value: endpoint})
+	// Construct the URL for the RPC endpoint
+	endpointURL := "https://" + endpoint.IPPORT // Providers must have HTTPS support
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	methods := []string{"OPTIONS", "GET", "POST", "PUT"}
+	for _, method := range methods {
+		req, err := http.NewRequest(method, endpointURL, nil)
+		if err != nil {
+			return err
+		}
+
+		// Perform the HTTP request
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("error making %s request to %s: %w", method, endpointURL, err)
+		}
+		defer resp.Body.Close()
+
+		// Perform CORS Validation
+		err = validateCORSHeaders(resp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateCORSHeaders(resp *http.Response) error {
+	// Check for the presence of "Access-Control-Allow-Origin" header
+	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
+	if corsOrigin != "*" {
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
+	}
+
+	// Headers that must be present in "Access-Control-Allow-Headers"
+	requiredHeaders := []string{"x-grpc-web", "lava-sdk-relay-timeout"}
+
+	corsHeaders := strings.ToLower(resp.Header.Get("Access-Control-Allow-Headers"))
+	for _, requiredHeader := range requiredHeaders {
+		if !strings.Contains(corsHeaders, strings.ToLower(requiredHeader)) {
+			return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' are not present.", nil, utils.Attribute{Key: "corsHeaders", Value: corsHeaders}, utils.Attribute{Key: "requiredHeader", Value: requiredHeader})
+		}
+	}
+
+	return nil
 }
 
 func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
@@ -81,6 +137,11 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				relayLatency := time.Since(relaySentTime)
 				if guid != probeResp.GetGuid() {
 					return 0, 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+				}
+
+				// CORS check
+				if err := performCORSCheck(endpoint); err != nil {
+					return 0, 0, err
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
