@@ -116,14 +116,10 @@ func (vm *VersionMonitor) validateLinkPointsToTheRightTarget() error {
 		if err != nil {
 			utils.LavaFormatInfo("failed reading link from lavap path", utils.Attribute{Key: "error", Value: err})
 			createLink = true
-		} else {
+		} else if targetPath != vm.BinaryPath {
 			// utils.LavaFormatDebug("target validation", utils.Attribute{Key: "targetPath", Value: targetPath})
-			if targetPath != vm.BinaryPath {
-				utils.LavaFormatInfo("lavap link was pointing to the wrong binary. removing and creating a new link")
-				createLink = true
-			} else {
-				// utils.LavaFormatDebug("targets match", utils.Attribute{Key: "targetPath", Value: targetPath}, utils.Attribute{Key: " vm.BinaryPath", Value: vm.BinaryPath})
-			}
+			utils.LavaFormatInfo("lavap link was pointing to the wrong binary. removing and creating a new link")
+			createLink = true
 		}
 	}
 	if createLink {
@@ -150,9 +146,7 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.Protoco
 			utils.LavaFormatInfo("protocol update failed, lavavisor will continue trying to upgrade version every block until it succeeds")
 		}
 		return err
-
-	} else if currentBinaryVersion != "" {
-		// in case we have the latest version already installed we need to validate a few things.
+	} else if currentBinaryVersion != "" { // in case we have the latest version already installed we need to validate a few things.
 		err := vm.validateLinkPointsToTheRightTarget()
 		if err != nil {
 			return utils.LavaFormatError("Failed to validateLinkPointsToTheRightTarget", err)
