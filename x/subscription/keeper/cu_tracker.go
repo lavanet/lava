@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -130,8 +131,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, trackedCuInfo.chainID, trackedCuInfo.relayBlock, totalMonthlyReward, types.ModuleName)
-		if err != nil {
+		// Note: if the reward function doesn't reward the provider because he was unstaked, we only print an error and not returning
+		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, trackedCuInfo.chainID, uint64(ctx.BlockHeight()), totalMonthlyReward, types.ModuleName)
+		if err == dualstakingtypes.ErrProviderNotStaked {
+			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
+				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
+				utils.Attribute{Key: "current_block", Value: ctx.BlockHeight()},
+			)
+		} else if err != nil {
 			utils.LavaFormatError("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
 				utils.Attribute{Key: "tracked_cu", Value: trackedCuInfo.trackedCu},
@@ -142,15 +149,16 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				utils.Attribute{Key: "relay_block", Value: strconv.FormatUint(subBlock, 10)},
 			)
 			return
+		} else {
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
+				"provider":   trackedCuInfo.provider,
+				"sub":        sub,
+				"plan":       plan.Index,
+				"tracked_cu": strconv.FormatUint(trackedCuInfo.trackedCu, 10),
+				"plan_price": plan.Price.String(),
+				"reward":     providerReward.String(),
+			}, "Provider got monthly reward successfully")
 		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-			"provider":   trackedCuInfo.provider,
-			"sub":        sub,
-			"plan":       plan.Index,
-			"tracked_cu": strconv.FormatUint(trackedCuInfo.trackedCu, 10),
-			"plan_price": plan.Price.String(),
-			"reward":     providerReward.String(),
-		}, "Provider got monthly reward successfully")
 
 		err = k.removeCuTracker(ctx, sub, trackedCuInfo.provider, trackedCuInfo.chainID, trackedCuInfo.relayBlock)
 		// TODO: what to do if err != nil? the money has been paid but the tracked CU entry was not removed
