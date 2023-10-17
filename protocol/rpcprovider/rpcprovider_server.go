@@ -778,9 +778,9 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, requestBl
 			return optimisticQuery, latestBlock, requestedHashes, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		}
 
-		if ok && probabilityBlockErrorIfWeDontWait > 0.3 {
+		if ok && probabilityBlockErrorIfWeDontWait > 0.1 {
 			utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "probabilityBlockErrorIfWeDontWait", Value: probabilityBlockErrorIfWeDontWait}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
-			sleepTime := time.Until(deadline)/2 - oneWayTravelTime
+			sleepTime := time.Until(deadline)/2 - oneWayTravelTime // sleep up to half the timeout so we actually have time to do the relay
 			sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
 			getLatestBlock := func() bool {
 				ret, _ := rpcps.reliabilityManager.GetLatestBlockNum()

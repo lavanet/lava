@@ -201,12 +201,14 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 
 	// do request
 	resp, err := hc.client.Do(req)
+	if resp != nil {
+		// resp can be non nil on error
+		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(resp.StatusCode))
+		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(resp.StatusCode))
-	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 
 	err = ValidateStatusCodes(resp.StatusCode, strict)
 	if err != nil {

@@ -55,6 +55,7 @@ type ChainTracker struct {
 	blocksQueue             []BlockStore        // holds all past hashes up until latest block
 	forkCallback            func(int64)         // a function to be called when a fork is detected
 	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
+	consistencyCallback     func(oldBlock int64, block int64)
 	serverBlockMemory       uint64
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
@@ -291,8 +292,8 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 	if err != nil {
 		return utils.LavaFormatWarning("could not fetchLatestBlock Hash in ChainTracker", err, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
+	prev_latest := cs.GetAtomicLatestBlockNum()
 	if gotNewBlock || forked {
-		prev_latest := cs.GetAtomicLatestBlockNum()
 		latestHash, err := cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if err != nil {
 			return err
@@ -314,6 +315,12 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		if forked {
 			if cs.forkCallback != nil {
 				cs.forkCallback(newLatestBlock)
+			}
+		}
+	} else {
+		if prev_latest > newLatestBlock {
+			if cs.consistencyCallback != nil {
+				cs.consistencyCallback(prev_latest, newLatestBlock)
 			}
 		}
 	}
@@ -531,7 +538,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}}
+	chainTracker = &ChainTracker{consistencyCallback: config.ConsistencyCallback, forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
@@ -543,38 +550,4 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 
 	err = chainTracker.serve(ctx, config.ServerAddress)
 	return
-}
-
-func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
-	if fails > maxFails {
-		fails = maxFails
-	}
-	maxIncrease := BACKOFF_MAX_TIME
-	backoff := baseTime * (1 << fails)
-	if backoff > maxIncrease {
-		backoff = maxIncrease
-	}
-	return backoff
-}
-
-func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock, toBlock, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesMapRet map[int64]interface{}) {
-	for _, block := range requestedHashes {
-		if block.Block == requestBlock {
-			requestedBlockHash = []byte(block.Hash)
-			if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
-				finalizedBlockHashes[block.Block] = block.Hash
-			}
-		} else {
-			finalizedBlockHashes[block.Block] = block.Hash
-		}
-	}
-	return requestedBlockHash, finalizedBlockHashes
-}
-
-func BuildProofFromBlocks(requestedHashes []*BlockStore) map[int64]interface{} {
-	finalizedBlockHashes := map[int64]interface{}{}
-	for _, block := range requestedHashes {
-		finalizedBlockHashes[block.Block] = block.Hash
-	}
-	return finalizedBlockHashes
 }

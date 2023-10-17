@@ -627,11 +627,14 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	cp.httpNodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 	// send the http request and get the response
 	res, err := httpClient.Do(req)
+	if res != nil {
+		// resp can be non nil on error
+		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
+		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	}
 	if err != nil {
 		return nil, "", nil, err
 	}
-	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
-	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	// close the response body
 	if res.Body != nil {
 		defer res.Body.Close()

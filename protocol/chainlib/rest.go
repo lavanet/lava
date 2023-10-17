@@ -444,8 +444,11 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		)
 	}
 	res, err := httpClient.Do(req)
-	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
-	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	if res != nil {
+		// resp can be non nil on error
+		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
+		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	}
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
