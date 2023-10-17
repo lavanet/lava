@@ -17,7 +17,6 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
-	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
@@ -89,7 +88,7 @@ type RPCConsumer struct {
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string, maxConcurrentProviders uint) (err error) {
-	if commonlib.IsTestMode(ctx) {
+	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
 	// spawn up ConsumerStateTracker
@@ -173,7 +172,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				value, exists := optimizers.Load(chainID)
 				if !exists {
 					// doesn't exist for this chain create a new one
-					baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, maxConcurrentProviders)
 					optimizers.Store(chainID, optimizer)
 				} else {
@@ -227,7 +226,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 }
 
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(commonlib.EndpointsConfigName, &endpoints)
+	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
@@ -292,7 +291,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
-				viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
+				viper_endpoints, err = common.ParseEndpointArgs(args, Yaml_config_properties, common.EndpointsConfigName)
 				if err != nil {
 					return utils.LavaFormatError("invalid endpoints arguments", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(args, "")})
 				}
@@ -338,11 +337,11 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			utils.LoggingLevel(logLevel)
 
-			test_mode, err := cmd.Flags().GetBool(commonlib.TestModeFlagName)
+			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read test_mode flag", err)
 			}
-			ctx = context.WithValue(ctx, commonlib.Test_mode_ctx_key{}, test_mode)
+			ctx = context.WithValue(ctx, common.Test_mode_ctx_key{}, test_mode)
 			// check if the command includes --pprof-address
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
 			if pprofAddressFlagUsed {
@@ -359,7 +358,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			err = commonlib.VerifyAndHandleUnsupportedFlags(cmd.Flags())
+			err = common.VerifyAndHandleUnsupportedFlags(cmd.Flags())
 			if err != nil {
 				utils.LavaFormatFatal("failed to verify cmd flags", err)
 			}
@@ -386,7 +385,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				}
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
-			maxConcurrentProviders := viper.GetUint(commonlib.MaximumConcurrentProvidersFlagName)
+			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr, maxConcurrentProviders)
 			return err
 		},
@@ -395,12 +394,12 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
-	cmdRPCConsumer.Flags().Uint64(commonlib.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCConsumer.Flags().Uint(commonlib.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
-	cmdRPCConsumer.MarkFlagRequired(commonlib.GeolocationFlag)
+	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCConsumer.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
+	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
-	cmdRPCConsumer.Flags().Bool(commonlib.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
+	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
