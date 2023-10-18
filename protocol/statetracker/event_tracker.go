@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -32,7 +33,9 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	if latestBlock == 0 {
 		var res *ctypes.ResultStatus
 		for i := 0; i < 3; i++ {
-			res, err = et.clientCtx.Client.Status(ctx)
+			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+			res, err = et.clientCtx.Client.Status(timeoutCtx)
+			cancel()
 			if err == nil {
 				break
 			}
@@ -47,14 +50,17 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 		return utils.LavaFormatError("could not get block result provider", err)
 	}
 	var blockResults *ctypes.ResultBlockResults
-	for i := 0; i < 3; i++ {
-		blockResults, err = brp.BlockResults(ctx, &latestBlock)
+	for i := 0; i < 5; i++ {
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+		blockResults, err = brp.BlockResults(timeoutCtx, &latestBlock)
+		cancel()
 		if err == nil {
 			break
 		}
+		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesnt just spam the attempts, and tendermint fails getting block results pretty often
 	}
 	if err != nil {
-		return err
+		return utils.LavaFormatError("could not get block result", err)
 	}
 	// lock for update after successful block result query
 	et.lock.Lock()
@@ -62,6 +68,8 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	if latestBlock > et.latestUpdatedBlock {
 		et.latestUpdatedBlock = latestBlock
 		et.blockResults = blockResults
+	} else {
+		utils.LavaFormatDebug("event tracker got an outdated block", utils.Attribute{Key: "block", Value: latestBlock}, utils.Attribute{Key: "latestUpdatedBlock", Value: et.latestUpdatedBlock})
 	}
 	return nil
 }

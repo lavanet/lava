@@ -75,7 +75,10 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 	// first update event tracker
-	st.EventTracker.updateBlockResults(latestBlock)
+	err := st.EventTracker.updateBlockResults(latestBlock)
+	if err != nil {
+		utils.LavaFormatWarning("calling update without updated events tracker", err)
+	}
 	// after events were updated we can trigger updaters
 	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)
