@@ -4,5 +4,6 @@ package lavanet.lava.subscription;
 option go_package = "github.com/lavanet/lava/x/subscription/types";
 
 message TrackedCu {
-    uint64 cu = 1;
+    uint64 cu_with_qos = 1; // CU counter for CU after QoS consideration
+    uint64 cu_without_qos = 2; // CU counter for CU before QoS consideration
 }
