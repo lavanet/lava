@@ -216,7 +216,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		)
 		return
 	}
-	cuTrackerTimerKey := types.CuTrackerTimerKey(sub.Consumer, sub.Block)
+	cuTrackerTimerKey := sub.Consumer
 	k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(cuTrackerTimerKey), []byte{})
 
 	if sub.DurationLeft == 0 {

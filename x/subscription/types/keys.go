@@ -1,7 +1,6 @@
 package types
 
 import (
-	"strconv"
 	"strings"
 )
 
@@ -43,19 +42,4 @@ func CuTrackerKey(sub string, provider string, chainID string) string {
 func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string) {
 	decodedKey := strings.Split(key, " ")
 	return decodedKey[0], decodedKey[1], decodedKey[2]
-}
-
-// CuTrackerTimerKey encodes a key using the subscription's consumer address and its creation block
-func CuTrackerTimerKey(sub string, subBlock uint64) string {
-	return sub + " " + strconv.FormatUint(subBlock, 10)
-}
-
-// DecodeCuTrackerTimerKey decodes the CU tracker timer key. Caller need to check for ""
-func DecodeCuTrackerTimerKey(key string) (sub string, subBlock uint64) {
-	decodedKey := strings.Split(key, " ")
-	subBlock, err := strconv.ParseUint(decodedKey[1], 10, 64)
-	if err != nil {
-		return "", 0
-	}
-	return decodedKey[0], subBlock
 }
