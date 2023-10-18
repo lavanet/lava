@@ -11,32 +11,29 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
-func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, relayBlock uint64, subBlock uint64) (cu uint64, found bool, key string) {
-	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID, relayBlock)
+func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, subBlock uint64) (cuWithQos uint64, cuWithoutQos uint64, found bool, key string) {
+	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID)
 	var trackedCu types.TrackedCu
 	found = k.cuTrackerFS.FindEntry(ctx, cuTrackerKey, subBlock, &trackedCu)
-	return trackedCu.GetCu(), found, cuTrackerKey
+	return trackedCu.GetCuWithQos(), trackedCu.GetCuWithoutQos(), found, cuTrackerKey
 }
 
-func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, relayBlock uint64, subBlock uint64) error {
-	if sub == "" || provider == "" || subBlock > uint64(ctx.BlockHeight()) ||
-		relayBlock > uint64(ctx.BlockHeight()) {
+func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, cuBeforeQos uint64, subBlock uint64) error {
+	if sub == "" || provider == "" || subBlock > uint64(ctx.BlockHeight()) {
 		return utils.LavaFormatError("cannot add tracked CU",
-			fmt.Errorf("sub/provider cannot be empty. subBlock/relayBlock cannot be larger than current block"),
+			fmt.Errorf("sub/provider cannot be empty. subBlock cannot be larger than current block"),
 			utils.Attribute{Key: "sub", Value: sub},
 			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "relay_block", Value: strconv.FormatUint(relayBlock, 10)},
 			utils.Attribute{Key: "sub_block", Value: strconv.FormatUint(subBlock, 10)},
 		)
 	}
-	trackedCu, _, key := k.GetTrackedCu(ctx, sub, provider, chainID, relayBlock, subBlock)
-	err := k.cuTrackerFS.AppendEntry(ctx, key, subBlock, &types.TrackedCu{Cu: trackedCu + cu})
+	cuWithQos, cuWithoutQos, _, key := k.GetTrackedCu(ctx, sub, provider, chainID, subBlock)
+	err := k.cuTrackerFS.AppendEntry(ctx, key, subBlock, &types.TrackedCu{CuWithQos: cuWithQos + cu, CuWithoutQos: cuWithoutQos + cuBeforeQos})
 	if err != nil {
 		return utils.LavaFormatError("cannot add tracked CU", err,
 			utils.Attribute{Key: "tracked_cu_key", Value: key},
-			utils.Attribute{Key: "relay_block", Value: strconv.FormatUint(relayBlock, 10)},
 			utils.Attribute{Key: "sub_block", Value: strconv.FormatUint(subBlock, 10)},
-			utils.Attribute{Key: "current_cu", Value: trackedCu},
+			utils.Attribute{Key: "current_cu", Value: cuWithQos},
 			utils.Attribute{Key: "cu_to_be_added", Value: strconv.FormatUint(cu, 10)})
 	}
 	return nil
@@ -46,24 +43,23 @@ func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string 
 	return k.cuTrackerFS.GetAllEntryIndicesWithPrefix(ctx, sub)
 }
 
-func (k Keeper) removeCuTracker(ctx sdk.Context, sub string, provider string, chainID string, relayBlock uint64) error {
-	key := types.CuTrackerKey(sub, provider, chainID, relayBlock)
+func (k Keeper) removeCuTracker(ctx sdk.Context, sub string, provider string, chainID string) error {
+	key := types.CuTrackerKey(sub, provider, chainID)
 	return k.cuTrackerFS.DelEntry(ctx, key, uint64(ctx.BlockHeight()))
 }
 
 type trackedCuInfo struct {
-	provider   string
-	chainID    string
-	trackedCu  uint64
-	relayBlock uint64
+	provider  string
+	chainID   string
+	trackedCu uint64
 }
 
 func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string, subBlock uint64) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
-		_, provider, chainID, relayBlock := types.DecodeCuTrackerKey(key)
-		cu, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID, relayBlock, subBlock)
+		_, provider, chainID := types.DecodeCuTrackerKey(key)
+		cuWithQos, cuWithoutQos, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID, subBlock)
 		if !found {
 			utils.LavaFormatWarning("cannot remove cu tracker", legacyerrors.ErrKeyNotFound,
 				utils.Attribute{Key: "sub", Value: sub},
@@ -72,12 +68,11 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string, subBlock uint64
 			)
 		}
 		trackedCuList = append(trackedCuList, trackedCuInfo{
-			provider:   provider,
-			trackedCu:  cu,
-			chainID:    chainID,
-			relayBlock: relayBlock,
+			provider:  provider,
+			trackedCu: cuWithQos,
+			chainID:   chainID,
 		})
-		totalCuUsedBySub += cu
+		totalCuUsedBySub += cuWithoutQos
 	}
 
 	return trackedCuList, totalCuUsedBySub
@@ -160,7 +155,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			}, "Provider got monthly reward successfully")
 		}
 
-		err = k.removeCuTracker(ctx, sub, trackedCuInfo.provider, trackedCuInfo.chainID, trackedCuInfo.relayBlock)
+		err = k.removeCuTracker(ctx, sub, trackedCuInfo.provider, trackedCuInfo.chainID)
 		// TODO: what to do if err != nil? the money has been paid but the tracked CU entry was not removed
 		if err != nil {
 			utils.LavaFormatError("removing tracked CU entry failed", err,
@@ -168,7 +163,6 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				utils.Attribute{Key: "tracked_cu", Value: trackedCuInfo.trackedCu},
 				utils.Attribute{Key: "chain_id", Value: trackedCuInfo.chainID},
 				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "relay_block", Value: strconv.FormatUint(trackedCuInfo.relayBlock, 10)},
 			)
 			return
 		}

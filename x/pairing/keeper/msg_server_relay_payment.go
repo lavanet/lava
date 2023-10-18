@@ -200,6 +200,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		// pairing is valid, we can pay provider for work
 		rewardedCUDec := sdk.OneDec().MulInt64(int64(rewardedCU))
+		cuBeforeQos := rewardedCU
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -265,7 +266,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
-		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, uint64(relay.Epoch), sub.Block)
+		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, cuBeforeQos, sub.Block)
 		if err != nil {
 			return nil, err
 		}

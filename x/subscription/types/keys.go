@@ -34,19 +34,15 @@ const (
 	CuTrackerTimerPrefix = "cu-tracker-ts"
 )
 
-// CuTrackerKey encodes a keys using the subscription's consumer address, provider address, relay's chain ID and relay's block
-func CuTrackerKey(sub string, provider string, chainID string, relayBlock uint64) string {
-	return sub + " " + provider + " " + chainID + " " + strconv.FormatUint(relayBlock, 10)
+// CuTrackerKey encodes a keys using the subscription's consumer address, provider address and the relay's chain ID
+func CuTrackerKey(sub string, provider string, chainID string) string {
+	return sub + " " + provider + " " + chainID
 }
 
 // DecodeCuTrackerKey decodes the CU tracker key
-func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string, relayBlock uint64) {
+func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string) {
 	decodedKey := strings.Split(key, " ")
-	relayBlock, err := strconv.ParseUint(decodedKey[3], 10, 64)
-	if err != nil {
-		return "", "", "", 0
-	}
-	return decodedKey[0], decodedKey[1], decodedKey[2], relayBlock
+	return decodedKey[0], decodedKey[1], decodedKey[2]
 }
 
 // CuTrackerTimerKey encodes a key using the subscription's consumer address and its creation block

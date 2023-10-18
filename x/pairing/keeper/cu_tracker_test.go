@@ -40,14 +40,14 @@ func TestAddingTrackedCu(t *testing.T) {
 	ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, provider1Acct.Addr, true, true, 100)
 
 	// check trackedCU only updated on provider 1
-	cu, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index, uint64(relaySession.Epoch), sub.Block)
+	cu, _, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index, sub.Block)
 	require.True(t, found)
 	require.Equal(t, cuSum, cu)
 
-	_, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider2Addr, ts.spec.Index, uint64(relaySession.Epoch), sub.Block)
+	_, _, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider2Addr, ts.spec.Index, sub.Block)
 	require.False(t, found)
 
 	// check trackedCU was created on the sub's creation block (and not before)
-	_, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index, uint64(relaySession.Epoch), sub.Block-1)
+	_, _, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index, sub.Block-1)
 	require.False(t, found)
 }
