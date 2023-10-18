@@ -73,8 +73,8 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 func (su *SpecUpdater) Update(latestBlock int64) {
 	su.lock.RLock()
 	defer su.lock.RUnlock()
-	specUpdated := su.eventTracker.getLatestSpecModifyEvents()
-	if specUpdated {
+	specUpdated, err := su.eventTracker.getLatestSpecModifyEvents(latestBlock)
+	if specUpdated || err != nil {
 		spec, err := su.specGetter.GetSpec(context.Background(), su.chainId)
 		if err != nil {
 			utils.LavaFormatError("could not get spec when updated, did not update specs and needed to", err)
