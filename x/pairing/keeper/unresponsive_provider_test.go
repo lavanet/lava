@@ -73,7 +73,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		require.Nil(t, err)
 		providerIndex := rand.Intn(len(pairing.Providers))
 		providerAddress := pairing.Providers[providerIndex].Address
-		providerSdkAddress, err := sdk.AccAddressFromBech32(providerAddress)
+		_, err = sdk.AccAddressFromBech32(providerAddress)
 		require.Nil(t, err)
 
 		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
@@ -89,7 +89,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		}
 
 		// send relay payment and check the funds did transfer normally
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, providerSdkAddress, true, true, 100)
+		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 	}
 
 	// advance enough epochs so the unresponsive providers will be punished
@@ -158,7 +158,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
+		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 	}
 
 	// advance enough epochs so the unresponsive provider will be punished
@@ -233,7 +233,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		Relays:  slices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(relayPaymentMessage, clients[0].Addr, provider0_addr, true, true, 100)
+	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
 	// advance enough epochs so the unresponsive provider will be punished
 	if largerConst < recommendedEpochNumToCollectPayment {
@@ -260,7 +260,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
+		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 	}
 
 	// test the provider is still unstaked
