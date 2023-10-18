@@ -61,7 +61,7 @@ type trackedCuInfo struct {
 	trackedCu uint64
 }
 
-func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64) {
+func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64, entryBlock uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
@@ -82,15 +82,20 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 		totalCuUsedBySub += cuWithoutQos
 	}
 
-	return trackedCuList, totalCuUsedBySub
+	return trackedCuList, totalCuUsedBySub, entryBlock
 }
 
 // remove only before the sub is deleted
 func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte) {
 	sub := string(cuTrackerTimerKeyBytes)
-	trackedCuList, totalCuUsedBySub := k.getSubTrackedCuInfo(ctx, sub)
+	trackedCuList, totalCuUsedBySub, entryBlock := k.getSubTrackedCuInfo(ctx, sub)
+	if entryBlock == 0 {
+		utils.LavaFormatError("cannot find trackedCuEntry", types.ErrCuTrackerPayoutFailed,
+			utils.Attribute{Key: "sub", Value: sub},
+		)
+	}
 
-	plan, err := k.GetPlanFromSubscription(ctx, sub, uint64(ctx.BlockHeight()))
+	plan, err := k.GetPlanFromSubscription(ctx, sub, entryBlock)
 	if err != nil {
 		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
 			utils.Attribute{Key: "sub_consumer", Value: sub},
