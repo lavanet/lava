@@ -92,6 +92,7 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			block := int64(ts.BlockHeight()) + tt.blockTime
 
 			relaySession := ts.newRelaySession(providerAddr, 0, cuSum, uint64(block), 0)
+			relaySession.Epoch = block
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
 			require.Nil(t, err)
@@ -425,7 +426,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 			ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 			client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-			providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+			_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
@@ -438,15 +439,14 @@ func TestRelayPaymentQoS(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
 			relaySession.QosReport = qos
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
-			relaySession.Sig = sig
 			require.Nil(t, err)
+			relaySession.Sig = sig
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
-
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
 	}
 }

@@ -18,10 +18,11 @@ import (
 // Provider reward formula: reward = reward*(QOSScore*QOSWeight + (1-QOSWeight))
 func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	ts.setupForPayments(2, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, goodProviderAddr := ts.GetAccount(common.PROVIDER, 1)
 
 	// Create badQos: to see the effect of changing QosWeight, the provider need to
 	// provide bad service (here, his score is 0%)
@@ -29,6 +30,11 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 		Latency:      sdk.ZeroDec(),
 		Availability: sdk.ZeroDec(),
 		Sync:         sdk.ZeroDec(),
+	}
+	goodQoS := &pairingtypes.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.OneDec(),
 	}
 
 	// Simulate QosWeight to be 0.5 - the default value at the time of this writing
@@ -61,6 +67,17 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts.AdvanceEpoch()
 	epochQosWeightSeventyPercent := ts.EpochStart()
 
+	// send a relay with the good provider
+	relaySessionGood := ts.newRelaySession(goodProviderAddr, 0, 100, epochQosWeightSeventyPercent, 0)
+	relaySessionGood.QosReport = goodQoS
+	sigGood, err := sigs.Sign(client1Acct.SK, *relaySessionGood)
+	require.Nil(t, err)
+	relaySessionGood.Sig = sigGood
+	ts.relayPaymentWithoutPay(pairingtypes.MsgRelayPayment{
+		Creator: goodProviderAddr,
+		Relays:  []*pairingtypes.RelaySession{relaySessionGood},
+	}, true)
+
 	epochs := []uint64{epochQosWeightFiftyPercent, epochQosWeightSeventyPercent}
 	var relays []*pairingtypes.RelaySession
 	for i, epoch := range epochs {
@@ -78,14 +95,19 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 		Creator: providerAddr,
 		Relays:  relays,
 	}
+	ts.relayPaymentWithoutPay(relayPayment, true)
 
 	balance := ts.GetBalance(providerAcct.Addr)
-	ts.payAndVerifyBalance(relayPayment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
+
+	// advance month + blocksToSave + 1 to trigger the monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
 	newBalance := ts.GetBalance(providerAcct.Addr)
 
-	// check that the provider's balance is increased by planPrice * 60 / 200 (both relay with QosWeight=0.7)
-	// and not by planPrice * (30 + 50) / 200 (reward with QosWeight=0.7 and reward with QosWeight=0.5)
-	expectedReward := ts.plan.Price.Amount.Int64() * 60 / 200
+	// check that the provider's balance is increased by planPrice * 60 / 160 (both relay with QosWeight=0.7)
+	// and not by planPrice * (30 + 50) / 160 (reward with QosWeight=0.7 and reward with QosWeight=0.5)
+	expectedReward := ts.plan.Price.Amount.Int64() * 60 / 160
 	require.Equal(t, expectedReward, newBalance-balance)
 }
 
