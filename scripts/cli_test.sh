@@ -159,7 +159,7 @@ wait_count_blocks 1 >/dev/null
 (trace lavad tx dualstaking delegate $(lavad keys show alice -a) ETH1 $PROVIDERSTAKE $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx dualstaking redelegate $(lavad keys show alice -a) ETH1 $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
-wait_count_blocks 1 >/dev/null
+wait_count_blocks 2 >/dev/null
 (trace lavad tx dualstaking claim-rewards $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx dualstaking unbond $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
