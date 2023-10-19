@@ -721,7 +721,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 	defer consumerSession.lock.Unlock()               // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
-	if expectedBH-latestServicedBlock > 100 {
+	if expectedBH-latestServicedBlock > 1000 {
 		utils.LavaFormatWarning("identified block gap", nil,
 			utils.Attribute{Key: "expectedBH", Value: expectedBH},
 			utils.Attribute{Key: "latestServicedBlock", Value: latestServicedBlock},
@@ -755,6 +755,14 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
+	if expectedBH-latestServicedBlock > 1000 {
+		utils.LavaFormatWarning("identified block gap", nil,
+			utils.Attribute{Key: "expectedBH", Value: expectedBH},
+			utils.Attribute{Key: "latestServicedBlock", Value: latestServicedBlock},
+			utils.Attribute{Key: "session_id", Value: consumerSession.SessionId},
+			utils.Attribute{Key: "provider_address", Value: consumerSession.Parent.PublicLavaAddress},
+		)
+	}
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
