@@ -14,10 +14,11 @@ import (
 var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 	_ module.AppModule      = AppModule{}
+	_ module.HasServices    = AppModule{}
 )
 
 const (
-	ConsensusVersion = 1
+	ConsensusVersion = 1 + 1
 )
 
 // AppModuleBasic implements the module.AppModuleBasic interface for the downtime module.
@@ -50,6 +51,21 @@ type AppModule struct {
 	AppModuleBasic
 
 	k *Keeper
+}
+
+func (a AppModule) RegisterServices(configurator module.Configurator) {
+	err := configurator.RegisterMigration(ModuleName, 1, func(ctx sdk.Context) error {
+		for _, timer := range a.k.timerStores {
+			err := timerMigrate1to2(ctx, timer)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
