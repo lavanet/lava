@@ -214,10 +214,15 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
 			utils.Attribute{Key: "block", Value: block},
 		)
-		return
+	} else {
+		cuTrackerTimerKey := sub.Consumer + " "
+		if sub.DurationLeft <= 1 {
+			cuTrackerTimerKey += "0" // mark that the subscription is expired, so trackedCu object needs to be removed
+		} else {
+			cuTrackerTimerKey += "1"
+		}
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(cuTrackerTimerKey), []byte{})
 	}
-	cuTrackerTimerKey := sub.Consumer
-	k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(cuTrackerTimerKey), []byte{})
 
 	if sub.DurationLeft == 0 {
 		// subscription duration has already reached zero before and should have

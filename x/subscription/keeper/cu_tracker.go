@@ -50,18 +50,37 @@ func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string 
 }
 
 // removeCuTracker removes a trackedCu entry
-func (k Keeper) removeCuTracker(ctx sdk.Context, sub string, provider string, chainID string) error {
-	key := types.CuTrackerKey(sub, provider, chainID)
-	return k.cuTrackerFS.DelEntry(ctx, key, uint64(ctx.BlockHeight()))
+func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo, shouldRemove bool) error {
+	key := types.CuTrackerKey(sub, info.provider, info.chainID)
+	if shouldRemove {
+		return k.cuTrackerFS.DelEntry(ctx, key, uint64(ctx.BlockHeight()))
+	}
+
+	var trackedCu types.TrackedCu
+	found := k.cuTrackerFS.FindEntry(ctx, key, info.block, &trackedCu)
+	if !found {
+		return utils.LavaFormatError("cannot reset CU tracker", fmt.Errorf("trackedCU entry is not found"),
+			utils.Attribute{Key: "sub", Value: sub},
+			utils.Attribute{Key: "provider", Value: info.provider},
+			utils.Attribute{Key: "chainID", Value: info.chainID},
+			utils.Attribute{Key: "block", Value: strconv.FormatUint(info.block, 10)},
+		)
+	}
+
+	trackedCu.CuWithQos = 0
+	trackedCu.CuWithoutQos = 0
+	k.cuTrackerFS.ModifyEntry(ctx, key, info.block, &trackedCu)
+	return nil
 }
 
 type trackedCuInfo struct {
 	provider  string
 	chainID   string
 	trackedCu uint64
+	block     uint64
 }
 
-func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64, entryBlock uint64) {
+func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
@@ -78,40 +97,36 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 			provider:  provider,
 			trackedCu: cuWithQos,
 			chainID:   chainID,
+			block:     entryBlock,
 		})
 		totalCuUsedBySub += cuWithoutQos
 	}
 
-	return trackedCuList, totalCuUsedBySub, entryBlock
+	return trackedCuList, totalCuUsedBySub
 }
 
 // remove only before the sub is deleted
 func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte) {
-	sub := string(cuTrackerTimerKeyBytes)
-	trackedCuList, totalCuUsedBySub, entryBlock := k.getSubTrackedCuInfo(ctx, sub)
-	if entryBlock == 0 {
-		utils.LavaFormatError("cannot find trackedCuEntry", types.ErrCuTrackerPayoutFailed,
-			utils.Attribute{Key: "sub", Value: sub},
-		)
-		return
-	}
-
-	plan, err := k.GetPlanFromSubscription(ctx, sub, entryBlock)
-	if err != nil {
-		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
-			utils.Attribute{Key: "sub_consumer", Value: sub},
-		)
-		return
-	}
+	sub, shouldRemove := types.DecodeCuTrackerTimerKey(string(cuTrackerTimerKeyBytes))
+	trackedCuList, totalCuUsedBySub := k.getSubTrackedCuInfo(ctx, sub)
 
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
 		provider := trackedCuInfo.provider
 		chainID := trackedCuInfo.chainID
+		block := trackedCuInfo.block
 
-		err = k.removeCuTracker(ctx, sub, provider, chainID)
+		plan, err := k.GetPlanFromSubscription(ctx, sub, block)
 		if err != nil {
-			utils.LavaFormatError("removing tracked CU entry failed", err,
+			utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
+				utils.Attribute{Key: "sub_consumer", Value: sub},
+			)
+			return
+		}
+
+		err = k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
+		if err != nil {
+			utils.LavaFormatError("removing/reseting tracked CU entry failed", err,
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
 				utils.Attribute{Key: "chain_id", Value: chainID},

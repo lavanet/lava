@@ -43,3 +43,14 @@ func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string
 	decodedKey := strings.Split(key, " ")
 	return decodedKey[0], decodedKey[1], decodedKey[2]
 }
+
+// DecodeCuTrackerTimerKey decodes the CU tracker key
+func DecodeCuTrackerTimerKey(key string) (sub string, shouldRemove bool) {
+	decodedKey := strings.Split(key, " ")
+	if decodedKey[1] == "0" {
+		shouldRemove = true
+	} else {
+		shouldRemove = false
+	}
+	return decodedKey[0], shouldRemove
+}
