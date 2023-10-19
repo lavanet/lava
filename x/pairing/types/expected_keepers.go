@@ -80,7 +80,7 @@ type SubscriptionKeeper interface {
 	GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error)
 	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block, cuAmount uint64) error
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
-	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, cuBeforeQos uint64) error
+	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64) error
 }
 
 type PlanKeeper interface {

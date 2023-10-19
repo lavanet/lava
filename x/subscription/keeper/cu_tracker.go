@@ -12,34 +12,34 @@ import (
 )
 
 // GetTrackedCu gets the tracked CU counter (with/without QoS influence) and the trackedCu entry's block
-func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string) (cuWithQos uint64, cuWithoutQos uint64, entryBlock uint64, found bool, key string) {
+func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string) (cu uint64, entryBlock uint64, found bool, key string) {
 	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID)
 	var trackedCu types.TrackedCu
 	entryBlock, found = k.cuTrackerFS.FindEntry2(ctx, cuTrackerKey, uint64(ctx.BlockHeight()), &trackedCu)
 	if !found {
 		// entry not found -> this is the first, so not an error. return the current block and CUs=0
-		return 0, 0, uint64(ctx.BlockHeight()), found, cuTrackerKey
+		return 0, uint64(ctx.BlockHeight()), found, cuTrackerKey
 	}
-	return trackedCu.CuWithQos, trackedCu.CuWithoutQos, entryBlock, found, cuTrackerKey
+	return trackedCu.Cu, entryBlock, found, cuTrackerKey
 }
 
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
 // Note that the trackedCu entry always has one version (updating it using append in the same block acts as ModifyEntry)
-func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, cuBeforeQos uint64) error {
+func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64) error {
 	if sub == "" || provider == "" {
 		return utils.LavaFormatError("cannot add tracked CU", fmt.Errorf("sub/provider cannot be empty"),
 			utils.Attribute{Key: "sub", Value: sub},
 			utils.Attribute{Key: "provider", Value: provider},
 		)
 	}
-	cuWithQos, cuWithoutQos, entryBlock, _, key := k.GetTrackedCu(ctx, sub, provider, chainID)
-	err := k.cuTrackerFS.AppendEntry(ctx, key, entryBlock, &types.TrackedCu{CuWithQos: cuWithQos + cu, CuWithoutQos: cuWithoutQos + cuBeforeQos})
+	cu, entryBlock, _, key := k.GetTrackedCu(ctx, sub, provider, chainID)
+	err := k.cuTrackerFS.AppendEntry(ctx, key, entryBlock, &types.TrackedCu{Cu: cu + cuToAdd})
 	if err != nil {
 		return utils.LavaFormatError("cannot add tracked CU", err,
 			utils.Attribute{Key: "tracked_cu_key", Value: key},
 			utils.Attribute{Key: "sub_block", Value: strconv.FormatUint(entryBlock, 10)},
-			utils.Attribute{Key: "current_cu", Value: cuWithQos},
-			utils.Attribute{Key: "cu_to_be_added", Value: strconv.FormatUint(cu, 10)})
+			utils.Attribute{Key: "current_cu", Value: strconv.FormatUint(cu, 10)},
+			utils.Attribute{Key: "cu_to_be_added", Value: strconv.FormatUint(cuToAdd, 10)})
 	}
 	return nil
 }
@@ -67,8 +67,7 @@ func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo, 
 		)
 	}
 
-	trackedCu.CuWithQos = 0
-	trackedCu.CuWithoutQos = 0
+	trackedCu.Cu = 0
 	k.cuTrackerFS.ModifyEntry(ctx, key, info.block, &trackedCu)
 	return nil
 }
@@ -85,7 +84,7 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 
 	for _, key := range keys {
 		_, provider, chainID := types.DecodeCuTrackerKey(key)
-		cuWithQos, cuWithoutQos, entryBlock, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID)
+		cu, entryBlock, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID)
 		if !found {
 			utils.LavaFormatWarning("cannot remove cu tracker", legacyerrors.ErrKeyNotFound,
 				utils.Attribute{Key: "sub", Value: sub},
@@ -95,11 +94,11 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 		}
 		trackedCuList = append(trackedCuList, trackedCuInfo{
 			provider:  provider,
-			trackedCu: cuWithQos,
+			trackedCu: cu,
 			chainID:   chainID,
 			block:     entryBlock,
 		})
-		totalCuUsedBySub += cuWithoutQos
+		totalCuUsedBySub += cu
 	}
 
 	return trackedCuList, totalCuUsedBySub
