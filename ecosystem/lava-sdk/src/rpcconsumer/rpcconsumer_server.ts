@@ -92,13 +92,22 @@ export class RPCConsumerServer {
     const relayPrivateData = newRelayData(relayData);
     let blockOnSyncLoss = true;
     const errors = new Array<Error>();
-    for (let retries = 0; retries < MaxRelayRetries; retries++) {
+    // we use the larger value between MaxRelayRetries and valid addresses in the case we have blocked a few providers and get to 0 number of providers
+    // we want to reset the list and try again otherwise we will be left with no providers at all for the remaining of the epoch.
+    const maxRetriesAsSizeOfValidAddressesList = Math.max(
+      this.consumerSessionManager.getValidAddresses("", []).size,
+      MaxRelayRetries
+    );
+    for (
+      let retries = 0;
+      retries < maxRetriesAsSizeOfValidAddressesList;
+      retries++
+    ) {
       const relayResult = await this.sendRelayToProvider(
         chainMessage,
         relayPrivateData,
         unwantedProviders
       );
-
       if (relayResult instanceof Array) {
         // relayResult can be an Array of errors from relaying to multiple providers
         for (const oneResult of relayResult) {
