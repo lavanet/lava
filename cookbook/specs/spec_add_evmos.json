@@ -1532,11 +1532,7 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": [
-                                    {
-                                        "latest_distance": 10000
-                                    }
-                                ]
+                                "values": []
                             }
                         ]
                     }
