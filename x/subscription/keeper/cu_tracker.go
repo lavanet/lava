@@ -93,6 +93,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		utils.LavaFormatError("cannot find trackedCuEntry", types.ErrCuTrackerPayoutFailed,
 			utils.Attribute{Key: "sub", Value: sub},
 		)
+		return
 	}
 
 	plan, err := k.GetPlanFromSubscription(ctx, sub, entryBlock)
@@ -104,12 +105,28 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	}
 
 	for _, trackedCuInfo := range trackedCuList {
+		trackedCu := trackedCuInfo.trackedCu
+		provider := trackedCuInfo.provider
+		chainID := trackedCuInfo.chainID
+
+		err = k.removeCuTracker(ctx, sub, provider, chainID)
+		if err != nil {
+			utils.LavaFormatError("removing tracked CU entry failed", err,
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
+				utils.Attribute{Key: "chain_id", Value: chainID},
+				utils.Attribute{Key: "sub", Value: sub},
+				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
+			)
+			return
+		}
+
 		// TODO: deal with the reward's remainder (uint division...)
-		if trackedCuInfo.trackedCu > totalCuUsedBySub {
+		if trackedCu > totalCuUsedBySub {
 			utils.LavaFormatError("tracked CU of provider is larger than total of CU used by subscription", types.ErrCuTrackerPayoutFailed,
-				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
-				utils.Attribute{Key: "tracked_cu", Value: trackedCuInfo.trackedCu},
-				utils.Attribute{Key: "chain_id", Value: trackedCuInfo.chainID},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
+				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "sub_total_used_cu", Value: totalCuUsedBySub},
 				utils.Attribute{Key: "block", Value: strconv.FormatUint(uint64(ctx.BlockHeight()), 10)},
@@ -118,29 +135,29 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 
 		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
-		totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCuInfo.trackedCu)).QuoRaw(int64(totalCuUsedBySub))
+		totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
 
 		// calculate the provider reward (smaller than totalMonthlyReward because it's shared with delegators)
-		providerAddr, err := sdk.AccAddressFromBech32(trackedCuInfo.provider)
+		providerAddr, err := sdk.AccAddressFromBech32(provider)
 		if err != nil {
 			utils.LavaFormatError("invalid provider address", err,
-				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
+				utils.Attribute{Key: "provider", Value: provider},
 			)
 			return
 		}
 
 		// Note: if the reward function doesn't reward the provider because he was unstaked, we only print an error and not returning
-		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, trackedCuInfo.chainID, totalMonthlyReward, types.ModuleName)
+		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName)
 		if err == dualstakingtypes.ErrProviderNotStaked {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
+				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 			)
 		} else if err != nil {
 			utils.LavaFormatError("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
-				utils.Attribute{Key: "tracked_cu", Value: trackedCuInfo.trackedCu},
-				utils.Attribute{Key: "chain_id", Value: trackedCuInfo.chainID},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
+				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "sub_total_used_cu", Value: totalCuUsedBySub},
 				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
@@ -148,27 +165,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":   trackedCuInfo.provider,
+				"provider":   provider,
 				"sub":        sub,
 				"plan":       plan.Index,
-				"tracked_cu": strconv.FormatUint(trackedCuInfo.trackedCu, 10),
+				"tracked_cu": strconv.FormatUint(trackedCu, 10),
 				"plan_price": plan.Price.String(),
 				"reward":     providerReward.String(),
 				"block":      strconv.FormatInt(ctx.BlockHeight(), 10),
 			}, "Provider got monthly reward successfully")
-		}
-
-		err = k.removeCuTracker(ctx, sub, trackedCuInfo.provider, trackedCuInfo.chainID)
-		// TODO: what to do if err != nil? the money has been paid but the tracked CU entry was not removed
-		if err != nil {
-			utils.LavaFormatError("removing tracked CU entry failed", err,
-				utils.Attribute{Key: "provider", Value: trackedCuInfo.provider},
-				utils.Attribute{Key: "tracked_cu", Value: trackedCuInfo.trackedCu},
-				utils.Attribute{Key: "chain_id", Value: trackedCuInfo.chainID},
-				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
-			)
-			return
 		}
 	}
 }
