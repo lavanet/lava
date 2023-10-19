@@ -23,6 +23,7 @@ import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
 import { byteArrayToString, encodeUtf8 } from "../util/common";
+import { Logger } from "../logger/logger";
 
 export interface RelayerOptions {
   privKey: string;
@@ -77,20 +78,24 @@ export class Relayer {
     request.setApiInterface(apiInterface);
     request.setSpecId(specId);
     const requestPromise = new Promise<ProbeReply>((resolve, reject) => {
-      client.probe(
-        request,
-        (err: ServiceError | null, result: ProbeReply | null) => {
-          if (err != null) {
-            console.log("failed sending probe", err);
-            reject(err);
-          }
+      try {
+        client.probe(
+          request,
+          (err: ServiceError | null, result: ProbeReply | null) => {
+            if (err != null) {
+              console.log("failed sending probe", err);
+              reject(err);
+            }
 
-          if (result != null) {
-            resolve(result);
+            if (result != null) {
+              resolve(result);
+            }
+            reject(new Error("Didn't get an error nor result"));
           }
-          reject(new Error("Didn't get an error nor result"));
-        }
-      );
+        );
+      } catch (e) {
+        reject(e);
+      }
     });
     return this.relayWithTimeout(1250, requestPromise);
   }
@@ -119,21 +124,25 @@ export class Relayer {
     //   new Map<string, string>([["lava-sdk-relay-timeout", String(timeout)]]) // adding relay timeout.
     // );
     const requestPromise = new Promise<RelayReply>((resolve, reject) => {
-      client.relay(
-        relayRequest,
-        // metaData,
-        (err: ServiceError | null, result: RelayReply | null) => {
-          if (err != null) {
-            console.log("failed sending relay", err);
-            reject(err);
-          }
+      try {
+        client.relay(
+          relayRequest,
+          // metaData,
+          (err: ServiceError | null, result: RelayReply | null) => {
+            if (err != null) {
+              console.log("failed sending relay", err);
+              reject(err);
+            }
 
-          if (result != null) {
-            resolve(result);
+            if (result != null) {
+              resolve(result);
+            }
+            reject(new Error("Didn't get an error nor result"));
           }
-          reject(new Error("Didn't get an error nor result"));
-        }
-      );
+        );
+      } catch (e) {
+        reject(e);
+      }
     });
 
     return this.relayWithTimeout(timeout, requestPromise);
