@@ -206,6 +206,10 @@ func (ts *Tester) Policy(name string) planstypes.Policy {
 	return policy
 }
 
+func (ts *Tester) TokenDenom() string {
+	return epochstoragetypes.TokenDenom
+}
+
 func (ts *Tester) AddProjectData(name string, pd projectstypes.ProjectData) *Tester {
 	ts.projects[name] = pd
 	return ts

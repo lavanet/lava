@@ -284,7 +284,7 @@ func (ts *tester) newRelaySession(
 		SessionId:   session,
 		SpecId:      ts.spec.Name,
 		CuSum:       cusum,
-		Epoch:       int64(epoch),
+		Epoch:       int64(ts.EpochStart(epoch)),
 		RelayNum:    relay,
 	}
 	return relaySession
