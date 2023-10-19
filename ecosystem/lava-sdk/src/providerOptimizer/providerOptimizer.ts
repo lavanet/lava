@@ -238,13 +238,16 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
         );
       }
 
-      Logger.debug("scores information", {
-        providerAddress,
-        latencyScoreCurrent,
-        syncScoreCurrent,
-        latencyScore,
-        syncScore,
-      });
+      // Logger.debug(
+      //   "scores information",
+      //   JSON.stringify({
+      //     providerAddress,
+      //     latencyScoreCurrent,
+      //     syncScoreCurrent,
+      //     latencyScore,
+      //     syncScore,
+      //   })
+      // );
 
       const isBetterProviderScore = this.isBetterProviderScore(
         latencyScore,
@@ -272,10 +275,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       }
     }
 
-    Logger.debug("returned providers", {
-      providers: returnedProviders.join(","),
-      cu,
-    });
+    Logger.debug(
+      "returned providers",
+      JSON.stringify({
+        providers: returnedProviders.join(","),
+        cu,
+      })
+    );
 
     return returnedProviders;
   }
@@ -305,10 +311,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     report.setAvailability(availabilityScore.toFixed());
     report.setSync(syncScore.toFixed());
 
-    Logger.debug("QoS excellence for provider", {
-      providerAddress,
-      report,
-    });
+    // Logger.debug(
+    //   "QoS excellence for provider",
+    //   JSON.stringify({
+    //     providerAddress,
+    //     report,
+    //   })
+    // );
 
     return report;
   }
@@ -457,14 +466,17 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     const costTimeout = millisToSeconds(timeoutDuration) + baseLatencySeconds;
     const costSuccess = historicalLatencySeconds;
 
-    Logger.debug("latency calculation breakdown", {
-      probabilityBlockError,
-      costBlockError,
-      probabilityOfTimeout,
-      costTimeout,
-      probabilityOfSuccess,
-      costSuccess,
-    });
+    // Logger.debug(
+    //   "latency calculation breakdown",
+    //   JSON.stringify({
+    //     probabilityBlockError,
+    //     costBlockError,
+    //     probabilityOfTimeout,
+    //     costTimeout,
+    //     probabilityOfSuccess,
+    //     costSuccess,
+    //   })
+    // );
 
     return (
       probabilityBlockError * costBlockError +

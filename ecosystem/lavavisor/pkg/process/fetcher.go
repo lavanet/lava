@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -229,7 +228,7 @@ func (pbf *ProtocolBinaryFetcher) downloadAndBuildFromGithub(version, versionDir
 	utils.LavaFormatInfo("Unzipping...")
 
 	// Verify Go installation
-	goCommand, err := pbf.verifyGoInstallation(pbf.lavavisorPath)
+	goCommand, err := pbf.VerifyGoInstallation()
 	if err != nil {
 		return err
 	}
@@ -316,21 +315,8 @@ func (pbf *ProtocolBinaryFetcher) getInstalledGoVersion(goPath string) (string, 
 		utils.LavaFormatError("Unable to parse go version", nil, utils.Attribute{Key: "version", Value: stringGoVersion})
 	}
 	version := versionBeforeCut[2:]
-	utils.LavaFormatDebug("Verified that go is on the right version", utils.Attribute{Key: "version", Value: version})
+	utils.LavaFormatInfo("Verified that go is on the right version", utils.Attribute{Key: "version", Value: version})
 	return version, nil
-}
-
-func (pbf *ProtocolBinaryFetcher) getHomePath() (string, error) {
-	homeDir := os.Getenv("HOME")
-	if homeDir != "" {
-		return homeDir, nil
-	}
-
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", utils.LavaFormatError("Unable to get current user", err)
-	}
-	return currentUser.HomeDir, nil
 }
 
 func (pbf *ProtocolBinaryFetcher) downloadGo(downloadPath string, version string) (string, error) {
@@ -411,36 +397,38 @@ func (pbf *ProtocolBinaryFetcher) downloadInstallAndVerifyGo(installPath string,
 	return goBinary, nil
 }
 
-func (pbf *ProtocolBinaryFetcher) verifyGoInstallation(lavavisorPath string) (string, error) {
-	emptyGoCommand := ""
+func (pbf *ProtocolBinaryFetcher) VerifyGoInstallation() (string, error) {
 	goCommand := "go"
+	emptyGoCommand := ""
 	expectedGeVersion := "1.20.5"
-
-	homePath, err := pbf.getHomePath()
+	homePath, err := GetHomePath()
 	if err != nil {
 		return emptyGoCommand, err
 	}
-	goPath := filepath.Join(lavavisorPath, "go_installation") // In case go is not installed
+	goPath := filepath.Join(homePath, "go") // In case go is not installed
 
 	installedGoVersion, err := pbf.getInstalledGoVersion(goCommand)
 	if err != nil {
 		utils.LavaFormatInfo("Go was not found in PATH")
-
 		potentialGoCommands := []string{
-			filepath.Join(goPath, "/go/bin/go"),
-			filepath.Join(homePath, "/go/bin/go"), // ~/go/bin/go
-			"/usr/local/go/bin/go",
+			filepath.Join(homePath, "/go/bin"), // ~/go/bin/go
+			"/usr/local/go/bin",
 		}
 
 		found := false
 		for _, potentialGoCommand := range potentialGoCommands {
-			utils.LavaFormatInfo(fmt.Sprintf("Attempting %s", potentialGoCommand))
+			goBin := filepath.Join(potentialGoCommand, "/go")
+			utils.LavaFormatInfo(fmt.Sprintf("Attempting %s", goBin))
 
-			installedGoVersion, err = pbf.getInstalledGoVersion(potentialGoCommand)
+			installedGoVersion, err = pbf.getInstalledGoVersion(goBin)
 			if err == nil {
-				utils.LavaFormatInfo(fmt.Sprintf("Found go %s with version %s", potentialGoCommand, installedGoVersion))
+				utils.LavaFormatInfo(fmt.Sprintf("Found go %s with version %s", goBin, installedGoVersion))
 				found = true
-				goCommand = potentialGoCommand
+				goCommand = goBin
+				err := AddGoPathToDollarPath(potentialGoCommand)
+				if err == nil {
+					return goCommand, nil
+				}
 				break
 			}
 		}

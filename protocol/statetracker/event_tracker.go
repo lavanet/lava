@@ -30,33 +30,57 @@ type EventTracker struct {
 
 func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	ctx := context.Background()
-	var blockResults *ctypes.ResultBlockResults
-	var latestBlockTime time.Time
+
+	var latestBlockTime *time.Time
 	if latestBlock == 0 {
-		res, err := et.clientCtx.Client.Status(ctx)
+		var res *ctypes.ResultStatus
+		for i := 0; i < 3; i++ {
+			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+			res, err = et.clientCtx.Client.Status(timeoutCtx)
+			cancel()
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			return utils.LavaFormatWarning("could not get latest block height and requested latestBlock = 0", err)
 		}
 		latestBlock = res.SyncInfo.LatestBlockHeight
-		latestBlockTime = res.SyncInfo.LatestBlockTime
+		latestBlockTime = &res.SyncInfo.LatestBlockTime
 	}
 	brp, err := tryIntoTendermintRPC(et.clientCtx.Client)
 	if err != nil {
 		return utils.LavaFormatError("could not get block result provider", err)
 	}
-	blockResults, err = brp.BlockResults(ctx, &latestBlock)
+	var blockResults *ctypes.ResultBlockResults
+	for i := 0; i < 5; i++ {
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+		blockResults, err = brp.BlockResults(timeoutCtx, &latestBlock)
+		cancel()
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesnt just spam the attempts, and tendermint fails getting block results pretty often
+	}
 	if err != nil {
-		return err
+		return utils.LavaFormatError("could not get block result", err)
 	}
 	// lock for update after successful block result query
 	et.lock.Lock()
 	defer et.lock.Unlock()
-	if latestBlock > et.latestUpdatedBlock && et.latestUpdatedBlock != 0 {
-		latestBlockTime = time.Now().UTC()
+	if latestBlock > et.latestUpdatedBlock {
+		// if latestBlock from args != 0, we don't fetch time from chain,
+		// so we believe that lastBlockTime is equal to time now
+		if latestBlockTime == nil {
+			now := time.Now().UTC()
+			latestBlockTime = &now
+		}
+		et.latestBlockTime = *latestBlockTime
+		et.latestUpdatedBlock = latestBlock
+		et.blockResults = blockResults
+	} else {
+		utils.LavaFormatDebug("event tracker got an outdated block", utils.Attribute{Key: "block", Value: latestBlock}, utils.Attribute{Key: "latestUpdatedBlock", Value: et.latestUpdatedBlock})
 	}
-	et.latestBlockTime = latestBlockTime
-	et.latestUpdatedBlock = latestBlock
-	et.blockResults = blockResults
 	return nil
 }
 
@@ -88,19 +112,22 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 	return payments, nil
 }
 
-func (et *EventTracker) getLatestVersionEvents() (updated bool) {
+func (et *EventTracker) getLatestVersionEvents(latestBlock int64) (updated bool, err error) {
 	et.lock.RLock()
 	defer et.lock.RUnlock()
+	if et.latestUpdatedBlock != latestBlock {
+		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
+	}
 	for _, event := range et.blockResults.EndBlockEvents {
 		if event.Type == utils.EventPrefix+"param_change" {
 			for _, attribute := range event.Attributes {
 				if attribute.Key == "param" && attribute.Value == "Version" {
-					return true
+					return true, nil
 				}
 			}
 		}
 	}
-	return false
+	return false, nil
 }
 
 func (et *EventTracker) getLatestDowntimeParamsUpdateEvents() (updated bool) {
@@ -119,22 +146,27 @@ func (et *EventTracker) getLatestDowntimeParamsUpdateEvents() (updated bool) {
 	return false
 }
 
-func (et *EventTracker) getLatestSpecModifyEvents() (updated bool) {
+func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bool, err error) {
 	// SpecModifyEventName
 	et.lock.RLock()
 	defer et.lock.RUnlock()
+	if et.latestUpdatedBlock != latestBlock {
+		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
+	}
 	for _, event := range et.blockResults.EndBlockEvents {
 		if event.Type == utils.EventPrefix+spectypes.SpecModifyEventName {
-			return true
+			return true, nil
 		}
 	}
-	return
+	return false, nil
 }
 
-func (et *EventTracker) getLatestVoteEvents() (votes []*reliabilitymanager.VoteParams, err error) {
+func (et *EventTracker) getLatestVoteEvents(latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
 	et.lock.RLock()
 	defer et.lock.RUnlock()
-
+	if et.latestUpdatedBlock != latestBlock {
+		return nil, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
+	}
 	transactionResults := et.blockResults.TxsResults
 	for _, tx := range transactionResults {
 		events := tx.Events

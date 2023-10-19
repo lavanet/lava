@@ -1498,6 +1498,14 @@
                                         "expected_value": "evmos_9001-2"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 10000
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -1597,7 +1605,7 @@
                                       "expected_value": "evmos_9000-4"
                                   }
                               ]
-                          }
+                          }                          
                       ]
                     },
                     {
