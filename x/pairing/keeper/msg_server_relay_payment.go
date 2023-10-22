@@ -231,7 +231,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
-		details["Mint"] = details["BasePay"]
+		details["Mint"] = "0ulava"
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		details["rewardedCU"] = strconv.FormatUint(rewardedCU, 10)
 		// differentiate between different relays by providing the index in the keys
