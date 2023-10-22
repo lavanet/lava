@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -24,10 +23,10 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 	trackedCuInds := k.subscriptionKeeper.GetAllSubTrackedCuIndices(ctx, "")
 
 	type totalUsedCuInfo struct {
-		totalUsedCu uint64
-		relevant    bool // sub is relevant if the provider provided service for it
-		block       uint64
-		providerCu  uint64
+		totalUsedCu    uint64
+		relevant       bool // sub is relevant if the provider provided service for it
+		block          uint64
+		providerCuInfo map[string]uint64 // map[chainID]providerUsedCu
 	}
 
 	// get a map of sub+chainID to properties for reward calculation
@@ -47,45 +46,56 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 
 			// count CU (we also count CU of sub that is not relevant because it might got service from many
 			// providers, and one of them might be the requested provider)
-			key := sub + " " + chainID
+			key := sub
 			if usedCuInfo, ok := totalUsedCuMap[key]; ok {
 				usedCuInfo.totalUsedCu += cu
-				usedCuInfo.providerCu += providerCu
 				usedCuInfo.relevant = relevant
 				usedCuInfo.block = block
+				if providerCu != 0 {
+					providerCuInfoMap := usedCuInfo.providerCuInfo
+					providerCuInfoMap[chainID] = providerCu
+					usedCuInfo.providerCuInfo = providerCuInfoMap
+				}
+
 				totalUsedCuMap[key] = usedCuInfo
 			} else {
 				totalUsedCuMap[key] = totalUsedCuInfo{
 					totalUsedCu: cu,
 					relevant:    relevant,
 					block:       block,
-					providerCu:  providerCu,
+				}
+				if providerCu != 0 {
+					providerCuMap := map[string]uint64{chainID: providerCu}
+					info := totalUsedCuMap[key]
+					info.providerCuInfo = providerCuMap
+					totalUsedCuMap[key] = info
 				}
 			}
 		}
 	}
 
-	for key, usedCuInfo := range totalUsedCuMap {
+	// calculate the provider's reward
+	for sub, usedCuInfo := range totalUsedCuMap {
 		if usedCuInfo.relevant {
-			comps := strings.Split(key, " ")
-			sub := comps[0]
-			chainID := comps[1]
-			totalMonthlyReward, _ := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, sub, usedCuInfo.block, usedCuInfo.providerCu, usedCuInfo.totalUsedCu)
+			for chainID, providerCu := range usedCuInfo.providerCuInfo {
+				// totalMonthlyReward = providerReward + totalDelegatorsReward
+				totalMonthlyReward, _ := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, sub, usedCuInfo.block, providerCu, usedCuInfo.totalUsedCu)
 
-			providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
-			if err != nil {
-				return nil, utils.LavaFormatError("invalid provider address", err,
-					utils.Attribute{Key: "provider", Value: req.Provider},
-				)
+				providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
+				if err != nil {
+					return nil, utils.LavaFormatError("invalid provider address", err,
+						utils.Attribute{Key: "provider", Value: req.Provider},
+					)
+				}
+
+				// calculate only the provider reward
+				providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, subsciptiontypes.ModuleName, true)
+				if err != nil {
+					return nil, err
+				}
+
+				amount += providerReward.Uint64()
 			}
-
-			// calculate the provider reward (smaller than totalMonthlyReward because it's shared with delegators)
-			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, subsciptiontypes.ModuleName, true)
-			if err != nil {
-				return nil, err
-			}
-
-			amount += providerReward.Uint64()
 		}
 	}
 

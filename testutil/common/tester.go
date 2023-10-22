@@ -557,6 +557,14 @@ func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, bl
 	return ts.Keepers.Pairing.VerifyPairing(ts.GoCtx, msg)
 }
 
+// QueryPairingMonthlyPayout implements 'q pairing verfy-pairing'
+func (ts *Tester) QueryPairingMonthlyPayout(provider string) (*pairingtypes.QueryMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QueryMonthlyPayoutRequest{
+		Provider: provider,
+	}
+	return ts.Keepers.Pairing.MonthlyPayout(ts.GoCtx, msg)
+}
+
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
 func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{

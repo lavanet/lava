@@ -335,3 +335,73 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	balance := ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, balanceBeforePay+originalPlanPrice, balance)
 }
+
+// TestMonthlyPayoutQuery tests the monthly-payout query
+// Scenario: the provider provided service on two chains and in one of them he has a delegator
+func TestMonthlyPayoutQuery(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
+
+	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+	// stake the provider on an additional chain and apply pairing (advance epoch)
+	spec1 := ts.spec
+	spec1Name := "spec1"
+	spec1.Index = spec1Name
+	spec1.Name = spec1Name
+	ts.AddSpec(spec1Name, spec1)
+	err := ts.StakeProvider(provider, spec1, testStake)
+	require.Nil(t, err)
+	ts.AdvanceEpoch()
+
+	// change the provider's delegation limit and commission
+	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.True(t, found)
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
+	stakeEntry.DelegateCommission = 0
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.AdvanceEpoch()
+
+	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
+	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
+	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	require.Nil(t, err)
+	ts.AdvanceEpoch()
+
+	// send two relay payments in spec and spec1
+	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
+	relaySession2 := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
+	relaySession2.SpecId = spec1Name
+	sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+	require.Nil(t, err)
+	relaySession.Sig = sig
+	sig, err = sigs.Sign(clientAcc.SK, *relaySession2)
+	require.Nil(t, err)
+	relaySession2.Sig = sig
+	relayPaymentMessage := types.MsgRelayPayment{
+		Creator: provider,
+		Relays:  slices.Slice(relaySession, relaySession2),
+	}
+	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
+
+	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
+	// for planPrice=100, expected monthly payout is 50+33
+	expectedPayout := uint64(83)
+	res, err := ts.QueryPairingMonthlyPayout(provider)
+	require.Nil(t, err)
+	require.Equal(t, expectedPayout, res.Amount)
+
+	// advance month + blocksToSave + 1 to trigger the monthly payment
+	oldBalance := ts.GetBalance(providerAcct.Addr)
+
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	balance := ts.GetBalance(providerAcct.Addr)
+	require.Equal(t, expectedPayout, uint64(balance-oldBalance))
+
+	// verify that the monthly payout query return 0 after the payment was transferred to the provider
+	res, err = ts.QueryPairingMonthlyPayout(provider)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), res.Amount)
+}

@@ -194,6 +194,9 @@ func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, sub string, block uint64
 
 	// TODO: deal with the reward's remainder (uint division...)
 	// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+	if totalCuUsedBySub == 0 {
+		return math.ZeroInt(), plan
+	}
 	totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
 	return totalMonthlyReward, plan
 }
