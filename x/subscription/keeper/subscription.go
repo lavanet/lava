@@ -215,13 +215,11 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			utils.Attribute{Key: "block", Value: block},
 		)
 	} else {
-		cuTrackerTimerKey := sub.Consumer + " "
+		var shouldRemove string
 		if sub.DurationLeft <= 1 {
-			cuTrackerTimerKey += "0" // mark that the subscription is expired, so trackedCu object needs to be removed
-		} else {
-			cuTrackerTimerKey += "1"
+			shouldRemove = "0" // mark that the subscription is expired, so trackedCu object needs to be removed
 		}
-		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(cuTrackerTimerKey), []byte{})
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(sub.Consumer), []byte(shouldRemove))
 	}
 
 	if sub.DurationLeft == 0 {

@@ -26,12 +26,6 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
 // Note that the trackedCu entry always has one version (updating it using append in the same block acts as ModifyEntry)
 func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64) error {
-	if sub == "" || provider == "" {
-		return utils.LavaFormatError("cannot add tracked CU", fmt.Errorf("sub/provider cannot be empty"),
-			utils.Attribute{Key: "sub", Value: sub},
-			utils.Attribute{Key: "provider", Value: provider},
-		)
-	}
 	cu, entryBlock, _, key := k.GetTrackedCu(ctx, sub, provider, chainID)
 	err := k.cuTrackerFS.AppendEntry(ctx, key, entryBlock, &types.TrackedCu{Cu: cu + cuToAdd})
 	if err != nil {
@@ -105,8 +99,9 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 }
 
 // remove only before the sub is deleted
-func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte) {
-	sub, shouldRemove := types.DecodeCuTrackerTimerKey(string(cuTrackerTimerKeyBytes))
+func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte, cuTrackerTimerData []byte) {
+	sub := string(cuTrackerTimerKeyBytes)
+	shouldRemove := len(cuTrackerTimerData) != 0
 	trackedCuList, totalCuUsedBySub := k.getSubTrackedCuInfo(ctx, sub)
 
 	var block uint64

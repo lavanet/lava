@@ -85,8 +85,8 @@ func NewKeeper(
 	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
 
-	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, _ []byte) {
-		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey)
+	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
+		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
 	}
 
 	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
