@@ -39,8 +39,9 @@ func (vu *VoteUpdater) UpdaterKey() string {
 func (vu *VoteUpdater) Update(latestBlock int64) {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
-	votes, err := vu.eventTracker.getLatestVoteEvents()
+	votes, err := vu.eventTracker.getLatestVoteEvents(latestBlock)
 	if err != nil {
+		// TODO: we might have missed a vote here, try to recover it later
 		return
 	}
 	for _, vote := range votes {
