@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -82,6 +83,7 @@ type SubscriptionKeeper interface {
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64) error
 	GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string
 	GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string) (cu uint64, entryBlock uint64, found bool, key string)
+	CalcTotalMonthlyReward(ctx sdk.Context, sub string, block uint64, trackedCu uint64, totalCuUsedBySub uint64) (reward math.Int, plan planstypes.Plan)
 }
 
 type PlanKeeper interface {
@@ -91,6 +93,10 @@ type PlanKeeper interface {
 
 type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
+}
+
+type DualstakingKeeper interface {
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error)
 }
 
 type FixationStoreKeeper interface {

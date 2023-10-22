@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -79,7 +81,7 @@ type trackedCuInfo struct {
 	block     uint64
 }
 
-func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64) {
+func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
@@ -107,7 +109,7 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 // remove only before the sub is deleted
 func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte) {
 	sub, shouldRemove := types.DecodeCuTrackerTimerKey(string(cuTrackerTimerKeyBytes))
-	trackedCuList, totalCuUsedBySub := k.getSubTrackedCuInfo(ctx, sub)
+	trackedCuList, totalCuUsedBySub := k.GetSubTrackedCuInfo(ctx, sub)
 
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
@@ -139,17 +141,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		plan, err := k.GetPlanFromSubscription(ctx, sub, block)
-		if err != nil {
-			utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
-				utils.Attribute{Key: "sub_consumer", Value: sub},
-			)
-			return
-		}
-
-		// TODO: deal with the reward's remainder (uint division...)
-		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
-		totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
+		totalMonthlyReward, plan := k.CalcTotalMonthlyReward(ctx, sub, block, trackedCu, totalCuUsedBySub)
 
 		// calculate the provider reward (smaller than totalMonthlyReward because it's shared with delegators)
 		providerAddr, err := sdk.AccAddressFromBech32(provider)
@@ -189,4 +181,19 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			}, "Provider got monthly reward successfully")
 		}
 	}
+}
+
+func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, sub string, block uint64, trackedCu uint64, totalCuUsedBySub uint64) (reward math.Int, plan planstypes.Plan) {
+	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
+	if err != nil {
+		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
+			utils.Attribute{Key: "sub_consumer", Value: sub},
+		)
+		return math.ZeroInt(), planstypes.Plan{}
+	}
+
+	// TODO: deal with the reward's remainder (uint division...)
+	// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+	totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
+	return totalMonthlyReward, plan
 }
