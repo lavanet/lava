@@ -268,7 +268,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
 
-		details["tracked_cu_added"] = strconv.FormatUint(cuAfterQos, 10)
+		details["rewardedCU"] = strconv.FormatUint(cuAfterQos, 10)
 		// differentiate between different relays by providing the index in the keys
 		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
