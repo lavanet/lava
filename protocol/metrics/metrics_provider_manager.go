@@ -85,22 +85,22 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	fetchLatestFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_latest_fails",
 		Help: "The total number of get latest block queries that errored by chainfetcher",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec"})
 
 	fetchBlockFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_block_fails",
 		Help: "The total number of get specific block queries that errored by chainfetcher",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec"})
 
 	fetchLatestSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_latest_success",
 		Help: "The total number of get latest block queries that succeeded by chainfetcher",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec"})
 
 	fetchBlockSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_provider_fetch_block_success",
 		Help: "The total number of get specific block queries that succeeded by chainfetcher",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec"})
 
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
