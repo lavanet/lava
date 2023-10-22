@@ -320,6 +320,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 				ServerBlockMemory:   ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 				NewLatestCallback:   recordMetricsOnNewBlock,
 				ConsistencyCallback: consistencyErrorCallback,
+				Pmetrics:            rpcp.providerMetricsManager,
 			}
 
 			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

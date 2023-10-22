@@ -16,6 +16,7 @@ import (
 	rand "github.com/lavanet/lava/utils/rand"
 
 	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils/slices"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -64,6 +65,7 @@ type ChainTracker struct {
 	latestChangeTime        time.Time
 	blockEventsGap          []time.Duration
 	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
+	pmetrics                *metrics.ProviderMetricsManager
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -285,14 +287,18 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
-		return utils.LavaFormatWarning("could not fetchLatestBlockNum in ChainTracker", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		cs.pmetrics.SetLatestBlockFetchError(cs.endpoint.ChainID)
+		return err
 	}
+	cs.pmetrics.SetLatestBlockFetchSuccess(cs.endpoint.ChainID)
 	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
 	forked, err := cs.forkChanged(ctx, newLatestBlock)
 	if err != nil {
-		return utils.LavaFormatWarning("could not fetchLatestBlock Hash in ChainTracker", err, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+		cs.pmetrics.SetSpecificBlockFetchError(cs.endpoint.ChainID)
+		return utils.LavaFormatDebug("could not fetchLatestBlock Hash in ChainTracker", utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	prev_latest := cs.GetAtomicLatestBlockNum()
+	cs.pmetrics.SetSpecificBlockFetchSuccess(cs.endpoint.ChainID)
 	if gotNewBlock || forked {
 		latestHash, err := cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if err != nil {
@@ -358,6 +364,8 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 					cs.updateTimer(pollingTime, fetchFails)
 					if fetchFails > maxFails {
 						utils.LavaFormatError("failed to fetch all previous blocks and was necessary", err, utils.Attribute{Key: "fetchFails", Value: fetchFails}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
+					} else {
+						utils.LavaFormatDebug("failed to fetch all previous blocks", utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "fetchFails", Value: fetchFails}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
 					}
 				} else {
 					cs.updateTimer(pollingTime, 0)
@@ -409,10 +417,12 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 		}
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
-	_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
-	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
-		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
+	for idx := 0; idx < initRetriesCount; idx++ {
 		_, err = cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed fetching data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint.String()})
 	}
 	if err != nil {
 		// Add suggestion if error is due to context deadline exceeded
@@ -537,7 +547,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{consistencyCallback: config.ConsistencyCallback, forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}}
+	chainTracker = &ChainTracker{consistencyCallback: config.ConsistencyCallback, forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.blocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}, pmetrics: config.Pmetrics}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}

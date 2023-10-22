@@ -81,33 +81,8 @@ $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain
 # $PROVIDER3_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
 # Setup Portal
-screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer \
-127.0.0.1:3333 ETH1 jsonrpc \
-127.0.0.1:3334 GTH1 jsonrpc \
-127.0.0.1:3335 FTM250 jsonrpc \
-127.0.0.1:3346 CELO jsonrpc \
-127.0.0.1:3347 ALFAJORES jsonrpc \
-127.0.0.1:3348 ARB1 jsonrpc \
-127.0.0.1:3349 STRK jsonrpc \
-127.0.0.1:3350 APT1 rest \
-127.0.0.1:3351 POLYGON1 jsonrpc \
-127.0.0.1:3352 OPTM jsonrpc \
-127.0.0.1:3353 BASET jsonrpc \
-127.0.0.1:3354 COS3 rest 127.0.0.1:3355 COS3 tendermintrpc 127.0.0.1:3356 COS3 grpc \
-127.0.0.1:3357 COS4 rest 127.0.0.1:3358 COS4 tendermintrpc 127.0.0.1:3359 COS4 grpc \
-127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
-127.0.0.1:3363 COS5 rest 127.0.0.1:3364 COS5 tendermintrpc 127.0.0.1:3365 COS5 grpc \
-127.0.0.1:3366 JUN1 rest 127.0.0.1:3367 JUN1 tendermintrpc 127.0.0.1:3368 JUN1 grpc \
-127.0.0.1:3369 EVMOS jsonrpc 127.0.0.1:3370 EVMOS rest 127.0.0.1:3371 EVMOS tendermintrpc 127.0.0.1:3372 EVMOS grpc \
-127.0.0.1:3373 CANTO jsonrpc 127.0.0.1:3374 CANTO rest 127.0.0.1:3375 CANTO tendermintrpc 127.0.0.1:3376 CANTO grpc \
-127.0.0.1:3377 AXELAR rest 127.0.0.1:3378 AXELAR tendermintrpc 127.0.0.1:3379 AXELAR grpc \
-127.0.0.1:3380 BSC jsonrpc \
-127.0.0.1:3381 SOLANA jsonrpc \
-127.0.0.1:3382 SUIT jsonrpc \
-127.0.0.1:3383 AVAX jsonrpc \
-127.0.0.1:3384 FVM jsonrpc \
-127.0.0.1:3385 NEAR jsonrpc \
-$EXTRA_PORTAL_FLAGS --metrics-listen-address ":7779" --cache-be "127.0.0.1:7778" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/full_consumer_example.yml\
+$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
 # 127.0.0.1:3385 MANTLE jsonrpc \
 
 echo "--- setting up screens done ---"
