@@ -163,13 +163,15 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 	panic(panicReason)
 }
 
+const OKstr = " OK"
+
 func (lt *lavaTest) startLava(ctx context.Context) {
 	command := "./scripts/start_env_dev.sh"
 	logName := "00_StartLava"
 	funcName := "startLava"
 
 	lt.execCommand(ctx, funcName, logName, command, true)
-	utils.LavaFormatInfo(funcName + " OK")
+	utils.LavaFormatInfo(funcName + OKstr)
 }
 
 func (lt *lavaTest) checkLava(timeout time.Duration) {
@@ -196,7 +198,7 @@ func (lt *lavaTest) stakeLava(ctx context.Context) {
 	funcName := "stakeLava"
 
 	lt.execCommand(ctx, funcName, logName, command, true)
-	utils.LavaFormatInfo(funcName + " OK")
+	utils.LavaFormatInfo(funcName + OKstr)
 }
 
 func (lt *lavaTest) checkStakeLava(
@@ -319,7 +321,7 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	funcName := "startJSONRPCProxy"
 
 	lt.execCommand(ctx, funcName, logName, command, false)
-	utils.LavaFormatInfo(funcName + " OK")
+	utils.LavaFormatInfo(funcName + OKstr)
 }
 
 func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
