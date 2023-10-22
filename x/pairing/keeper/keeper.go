@@ -33,7 +33,6 @@ type (
 		badgeTimerStore    timerstore.TimerStore
 		providerQosFS      fixationstore.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
-		dualStakingKeeper  types.DualStakingKeeper
 	}
 )
 
@@ -61,7 +60,6 @@ func NewKeeper(
 	subscriptionKeeper types.SubscriptionKeeper,
 	planKeeper types.PlanKeeper,
 	downtimeKeeper types.DowntimeKeeper,
-	dualStakingKeeper types.DualStakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -83,7 +81,6 @@ func NewKeeper(
 		subscriptionKeeper: subscriptionKeeper,
 		planKeeper:         planKeeper,
 		downtimeKeeper:     downtimeKeeper,
-		dualStakingKeeper:  dualStakingKeeper,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)

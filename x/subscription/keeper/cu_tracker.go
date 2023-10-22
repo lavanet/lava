@@ -115,15 +115,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		chainID := trackedCuInfo.chainID
 		block := trackedCuInfo.block
 
-		plan, err := k.GetPlanFromSubscription(ctx, sub, block)
-		if err != nil {
-			utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
-				utils.Attribute{Key: "sub_consumer", Value: sub},
-			)
-			return
-		}
-
-		err = k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
+		err := k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
 		if err != nil {
 			utils.LavaFormatError("removing/reseting tracked CU entry failed", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -135,7 +127,6 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		// TODO: deal with the reward's remainder (uint division...)
 		if trackedCu > totalCuUsedBySub {
 			utils.LavaFormatError("tracked CU of provider is larger than total of CU used by subscription", types.ErrCuTrackerPayoutFailed,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -148,6 +139,15 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
+		plan, err := k.GetPlanFromSubscription(ctx, sub, block)
+		if err != nil {
+			utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
+				utils.Attribute{Key: "sub_consumer", Value: sub},
+			)
+			return
+		}
+
+		// TODO: deal with the reward's remainder (uint division...)
 		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 		totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
 
@@ -161,7 +161,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 
 		// Note: if the reward function doesn't reward the provider because he was unstaked, we only print an error and not returning
-		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName)
+		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName, false)
 		if err == dualstakingtypes.ErrProviderNotStaked {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: provider},

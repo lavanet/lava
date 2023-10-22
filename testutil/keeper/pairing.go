@@ -62,7 +62,6 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		nil,
-		nil,
 		fixationstore.NewKeeper(cdc, tsKeeper),
 		tsKeeper,
 	)
