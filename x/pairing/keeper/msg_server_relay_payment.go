@@ -199,7 +199,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.OneDec().MulInt64(int64(rewardedCU))
+		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -233,6 +233,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
+		details["Mint"] = details["BasePay"]
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 		// differentiate between different relays by providing the index in the keys
 		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))

@@ -109,21 +109,29 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	sub, shouldRemove := types.DecodeCuTrackerTimerKey(string(cuTrackerTimerKeyBytes))
 	trackedCuList, totalCuUsedBySub := k.getSubTrackedCuInfo(ctx, sub)
 
+	var block uint64
+	if len(trackedCuList) == 0 {
+		utils.LavaFormatWarning("no tracked CU", types.ErrCuTrackerPayoutFailed,
+			utils.Attribute{Key: "sub_consumer", Value: sub},
+		)
+		return
+	}
+
+	block = trackedCuList[0].block
+	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
+	if err != nil {
+		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
+			utils.Attribute{Key: "sub_consumer", Value: sub},
+		)
+		return
+	}
+
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
 		provider := trackedCuInfo.provider
 		chainID := trackedCuInfo.chainID
-		block := trackedCuInfo.block
 
-		plan, err := k.GetPlanFromSubscription(ctx, sub, block)
-		if err != nil {
-			utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
-				utils.Attribute{Key: "sub_consumer", Value: sub},
-			)
-			return
-		}
-
-		err = k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
+		err := k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
 		if err != nil {
 			utils.LavaFormatError("removing/reseting tracked CU entry failed", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -135,20 +143,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		// TODO: deal with the reward's remainder (uint division...)
-		if trackedCu > totalCuUsedBySub {
-			utils.LavaFormatError("tracked CU of provider is larger than total of CU used by subscription", types.ErrCuTrackerPayoutFailed,
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
-				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "sub_total_used_cu", Value: totalCuUsedBySub},
-				utils.Attribute{Key: "block", Value: strconv.FormatUint(uint64(ctx.BlockHeight()), 10)},
-			)
-			return
-		}
-
 		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+		// TODO: deal with the reward's remainder (uint division...)
 		totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
 
 		// calculate the provider reward (smaller than totalMonthlyReward because it's shared with delegators)
