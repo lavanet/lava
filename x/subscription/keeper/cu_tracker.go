@@ -28,12 +28,6 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
 // Note that the trackedCu entry always has one version (updating it using append in the same block acts as ModifyEntry)
 func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64) error {
-	if sub == "" || provider == "" {
-		return utils.LavaFormatError("cannot add tracked CU", fmt.Errorf("sub/provider cannot be empty"),
-			utils.Attribute{Key: "sub", Value: sub},
-			utils.Attribute{Key: "provider", Value: provider},
-		)
-	}
 	cu, entryBlock, _, key := k.GetTrackedCu(ctx, sub, provider, chainID)
 	err := k.cuTrackerFS.AppendEntry(ctx, key, entryBlock, &types.TrackedCu{Cu: cu + cuToAdd})
 	if err != nil {
@@ -107,15 +101,32 @@ func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 }
 
 // remove only before the sub is deleted
-func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte) {
-	sub, shouldRemove := types.DecodeCuTrackerTimerKey(string(cuTrackerTimerKeyBytes))
+func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte, cuTrackerTimerData []byte) {
+	sub := string(cuTrackerTimerKeyBytes)
+	shouldRemove := len(cuTrackerTimerData) != 0
 	trackedCuList, totalCuUsedBySub := k.GetSubTrackedCuInfo(ctx, sub)
+
+	var block uint64
+	if len(trackedCuList) == 0 {
+		utils.LavaFormatWarning("no tracked CU", types.ErrCuTrackerPayoutFailed,
+			utils.Attribute{Key: "sub_consumer", Value: sub},
+		)
+		return
+	}
+
+	block = trackedCuList[0].block
+	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
+	if err != nil {
+		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
+			utils.Attribute{Key: "sub_consumer", Value: sub},
+		)
+		return
+	}
 
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
 		provider := trackedCuInfo.provider
 		chainID := trackedCuInfo.chainID
-		block := trackedCuInfo.block
 
 		err := k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
 		if err != nil {
@@ -129,19 +140,9 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		if trackedCu > totalCuUsedBySub {
-			utils.LavaFormatError("tracked CU of provider is larger than total of CU used by subscription", types.ErrCuTrackerPayoutFailed,
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
-				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "sub_total_used_cu", Value: totalCuUsedBySub},
-				utils.Attribute{Key: "block", Value: strconv.FormatUint(uint64(ctx.BlockHeight()), 10)},
-			)
-			return
-		}
-
-		totalMonthlyReward, plan := k.CalcTotalMonthlyReward(ctx, sub, block, trackedCu, totalCuUsedBySub)
+		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+		// TODO: deal with the reward's remainder (uint division...)
+		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, plan, trackedCu, totalCuUsedBySub)
 
 		// calculate the provider reward (smaller than totalMonthlyReward because it's shared with delegators)
 		providerAddr, err := sdk.AccAddressFromBech32(provider)
@@ -183,20 +184,12 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	}
 }
 
-func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, sub string, block uint64, trackedCu uint64, totalCuUsedBySub uint64) (reward math.Int, plan planstypes.Plan) {
-	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
-	if err != nil {
-		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
-			utils.Attribute{Key: "sub_consumer", Value: sub},
-		)
-		return math.ZeroInt(), planstypes.Plan{}
-	}
-
+func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, plan planstypes.Plan, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
 	// TODO: deal with the reward's remainder (uint division...)
 	// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 	if totalCuUsedBySub == 0 {
-		return math.ZeroInt(), plan
+		return math.ZeroInt()
 	}
 	totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
-	return totalMonthlyReward, plan
+	return totalMonthlyReward
 }

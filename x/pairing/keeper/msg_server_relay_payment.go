@@ -8,11 +8,9 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type BadgeData struct {
@@ -199,7 +197,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.OneDec().MulInt64(int64(rewardedCU))
+		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -233,13 +231,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
+		details["Mint"] = details["BasePay"]
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
+		details["rewardedCU"] = strconv.FormatUint(rewardedCU, 10)
 		// differentiate between different relays by providing the index in the keys
 		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
-		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
+		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
+		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
@@ -249,32 +250,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
-
-		// track the provider's CU (after QoS influence)
-		proj, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), uint64(relay.Epoch))
-		if err != nil {
-			return nil, utils.LavaFormatError("critical: cannot get client project", legacyerrors.ErrKeyNotFound,
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
-				utils.Attribute{Key: "block", Value: strconv.FormatUint(uint64(relay.Epoch), 10)},
-			)
-		}
-		sub, found := k.subscriptionKeeper.GetSubscription(ctx, proj.Subscription)
-		if !found {
-			return nil, utils.LavaFormatError("critical: cannot get client subscription", legacyerrors.ErrKeyNotFound,
-				utils.Attribute{Key: "sub_consumer", Value: proj.Subscription},
-			)
-		}
-		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
-		err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos)
-		if err != nil {
-			return nil, err
-		}
-
-		utils.LogLavaEvent(ctx, logger, subscriptiontypes.AddTrackedCuEventName, map[string]string{
-			"provider":     relay.Provider,
-			"subscription": sub.Consumer,
-			"added_cu":     strconv.FormatUint(cuAfterQos, 10),
-		}, "Relay Payment CU were added to CU tracker")
 	}
 
 	latestBlockReports := map[string]string{
@@ -351,7 +326,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	return nil
 }
 
-func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession) error {
+func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession, cuAfterQos uint64) error {
 	epoch := uint64(relay.Epoch)
 
 	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
@@ -364,9 +339,14 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 		return fmt.Errorf("failed to add CU to the project")
 	}
 
-	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), epoch, relay.CuSum)
+	sub, err := k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the subscription")
+	}
+
+	err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos)
+	if err != nil {
+		return err
 	}
 
 	return nil

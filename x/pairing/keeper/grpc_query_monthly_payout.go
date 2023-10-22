@@ -77,9 +77,14 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 	// calculate the provider's reward
 	for sub, usedCuInfo := range totalUsedCuMap {
 		if usedCuInfo.relevant {
+			plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, sub, usedCuInfo.block)
+			if err != nil {
+				return nil, err
+			}
+
 			for chainID, providerCu := range usedCuInfo.providerCuInfo {
 				// totalMonthlyReward = providerReward + totalDelegatorsReward
-				totalMonthlyReward, _ := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, sub, usedCuInfo.block, providerCu, usedCuInfo.totalUsedCu)
+				totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, plan, providerCu, usedCuInfo.totalUsedCu)
 
 				providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
 				if err != nil {

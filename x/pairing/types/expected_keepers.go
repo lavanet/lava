@@ -78,12 +78,12 @@ type ProjectsKeeper interface {
 
 type SubscriptionKeeper interface {
 	GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error)
-	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block, cuAmount uint64) error
+	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block, cuAmount uint64) (subscriptiontypes.Subscription, error)
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64) error
 	GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string
 	GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string) (cu uint64, entryBlock uint64, found bool, key string)
-	CalcTotalMonthlyReward(ctx sdk.Context, sub string, block uint64, trackedCu uint64, totalCuUsedBySub uint64) (reward math.Int, plan planstypes.Plan)
+	CalcTotalMonthlyReward(ctx sdk.Context, plan planstypes.Plan, trackedCu uint64, totalCuUsedBySub uint64) math.Int
 }
 
 type PlanKeeper interface {

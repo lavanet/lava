@@ -198,7 +198,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
-	var totalCu uint64
+	var reward uint64
 	var relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
@@ -206,17 +206,18 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
 		require.Nil(t, err)
-		totalCu += relaySession.CuSum
+		reward += ts.plan.Price.Amount.Uint64()
 		relays = append(relays, relaySession)
 	}
 
 	balanceProviderBeforePayment := ts.GetBalance(provider1Acct.Addr)
 	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
 	require.Nil(t, err)
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Addr)
-	reward := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx).MulInt64(int64(totalCu)).TruncateInt64()
 	// reward + before == after
-	require.Equal(t, balanceProviderAfterPayment, reward+balanceProviderBeforePayment)
+	require.Equal(t, balanceProviderAfterPayment, int64(reward)+balanceProviderBeforePayment)
 }
 
 // test protection from unstaking if the amount of previous serices*2 is greater than complaints

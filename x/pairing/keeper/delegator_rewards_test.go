@@ -65,8 +65,6 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
 			ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
 			ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
-			err := ts.TxProposalChangeParam(types.ModuleName, string(types.KeyMintCoinsPerCU), "\"1\"")
-			require.Nil(t, err)
 
 			providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 			clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -88,7 +86,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			if amount1.IsZero() {
 				amount1.Amount = sdk.OneInt()
 			}
-			_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
+			_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
 			require.Nil(t, err)
 
 			amount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(tt.d2Amount*delegationAmount/100))
@@ -112,7 +110,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			require.Equal(t, 2, len(res.Delegations))
 
 			// calc useful consts
-			totalReward := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx).MulInt64(int64(relayCuSum))
+			totalReward := sdk.NewDec(int64(relayCuSum))
 
 			// send relay and check provider balance according to expected providerRewardPerc (done inside payAndVerifyBalance)
 			relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})

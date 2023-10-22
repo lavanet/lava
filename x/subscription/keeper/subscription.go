@@ -215,13 +215,11 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			utils.Attribute{Key: "block", Value: block},
 		)
 	} else {
-		cuTrackerTimerKey := sub.Consumer + " "
+		var shouldRemove string
 		if sub.DurationLeft <= 1 {
-			cuTrackerTimerKey += "0" // mark that the subscription is expired, so trackedCu object needs to be removed
-		} else {
-			cuTrackerTimerKey += "1"
+			shouldRemove = "0" // mark that the subscription is expired, so trackedCu object needs to be removed
 		}
-		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(cuTrackerTimerKey), []byte{})
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(sub.Consumer), []byte(shouldRemove))
 	}
 
 	if sub.DurationLeft == 0 {
@@ -350,10 +348,10 @@ func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string)
 	}
 }
 
-func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block, cuAmount uint64) error {
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block, cuAmount uint64) (types.Subscription, error) {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
-		return utils.LavaFormatError("can't charge cu to subscription",
+		return sub, utils.LavaFormatError("can't charge cu to subscription",
 			fmt.Errorf("subscription not found"),
 			utils.Attribute{Key: "subscription", Value: consumer},
 			utils.Attribute{Key: "block", Value: block},
@@ -367,5 +365,5 @@ func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer strin
 	}
 
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
-	return nil
+	return sub, nil
 }
