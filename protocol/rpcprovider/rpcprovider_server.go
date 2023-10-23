@@ -826,16 +826,15 @@ func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Con
 					close(blockReached) // Signal that the block is reached
 					return
 				}
-
 			}
 		}
 	}()
 
 	select {
 	case <-blockReached:
-		return
+		return sleepTime
 	case <-ctx.Done():
-		return
+		return sleepTime
 	}
 }
 

@@ -34,7 +34,6 @@ func (mct *MockChainTracker) SetLatestBlock(newLatest int64, changeTime time.Tim
 }
 
 func TestHandleConsistency(t *testing.T) {
-
 	plays := []struct {
 		seenBlock          int64
 		requestBlock       int64
