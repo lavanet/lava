@@ -6,6 +6,8 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
+const MONTH_DURATION = 2678395 // number of seconds in a month (assuming 30 days in a month)
+
 func NewDelegation(delegator, provider, chainID string, timestamp int64) Delegation {
 	return Delegation{
 		Delegator: delegator,

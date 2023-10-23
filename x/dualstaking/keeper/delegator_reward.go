@@ -188,9 +188,8 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 	return providerReward.Add(leftoverRewards), nil
 }
 
-// TODO: implement this!
 func isMonthPassed(delegationTimestamp int64, currentTimestamp int64) bool {
-	return true
+	return delegationTimestamp+types.MONTH_DURATION >= currentTimestamp
 }
 
 // updateDelegatorsReward updates the delegator rewards map
