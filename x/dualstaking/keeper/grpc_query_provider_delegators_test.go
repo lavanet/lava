@@ -28,7 +28,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
 
-	delegation := types.NewDelegation(delegator, provider, spec.Index)
+	delegation := types.NewDelegation(delegator, provider, spec.Index, ts.Ctx.BlockTime().UTC().Unix())
 	delegation.Amount = amount
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
@@ -76,7 +76,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	amountUint64 := uint64(100)
 	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(amountUint64))
 
-	delegation1 := types.NewDelegation(delegator1, provider, spec.Index)
+	delegation1 := types.NewDelegation(delegator1, provider, spec.Index, ts.Ctx.BlockTime().UTC().Unix())
 	delegation1.Amount = amount
 
 	// delegate without advancing an epoch
@@ -111,7 +111,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	require.True(t, delegationRes.Equal(&delegation1))
 
 	// delegate delegator2 and query again
-	delegation2 := types.NewDelegation(delegator2, provider, spec.Index)
+	delegation2 := types.NewDelegation(delegator2, provider, spec.Index, ts.Ctx.BlockTime().UTC().Unix())
 	delegation2.Amount = amount
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, spec.Index, amount)
 	require.Nil(t, err)
@@ -168,7 +168,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 		_, err := ts.TxDualstakingDelegate(delegators[i], provider, chainID, amount)
 		require.Nil(t, err)
 
-		delegation := types.NewDelegation(delegators[i], provider, chainID)
+		delegation := types.NewDelegation(delegators[i], provider, chainID, ts.Ctx.BlockTime().UTC().Unix())
 		delegation.Amount = amount
 		delegations = append(delegations, delegation)
 	}
@@ -208,7 +208,7 @@ func TestQueryProviderDelegatorsDelegatorMultipleProviders(t *testing.T) {
 		_, err := ts.TxDualstakingDelegate(delegator, providers[i], spec.Index, amount)
 		require.Nil(t, err)
 
-		delegation := types.NewDelegation(delegator, providers[i], spec.Index)
+		delegation := types.NewDelegation(delegator, providers[i], spec.Index, ts.Ctx.BlockTime().UTC().Unix())
 		delegation.Amount = amount
 		delegations = append(delegations, delegation)
 	}
