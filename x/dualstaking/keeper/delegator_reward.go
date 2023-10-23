@@ -80,8 +80,8 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
-	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry)
+func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegations []types.Delegation) (providerReward math.Int, delegatorsReward math.Int) {
+	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
 	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
 	rawDelegatorsReward := totalReward.Mul(effectiveDelegations).Quo(effectiveStake)
@@ -94,8 +94,12 @@ func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward
 // CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
 // effectiveDelegations = min(totalDelegations, delegateLimit)
 // effectiveStake = effectiveDelegations + providerStake
-func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int) {
-	effectiveDelegationsInt64 := math.Min(stakeEntry.DelegateTotal.Amount.Int64(), stakeEntry.DelegateLimit.Amount.Int64())
+func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry, delegations []types.Delegation) (effectiveDelegations math.Int, effectiveStake math.Int) {
+	var totalDelegations int64
+	for _, d := range delegations {
+		totalDelegations += d.Amount.Amount.Int64()
+	}
+	effectiveDelegationsInt64 := math.Min(totalDelegations, stakeEntry.DelegateLimit.Amount.Int64())
 	effectiveDelegations = math.NewInt(effectiveDelegationsInt64)
 	return effectiveDelegations, effectiveDelegations.Add(stakeEntry.Stake.Amount)
 }
@@ -170,14 +174,23 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 		return math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 
-	relevantDelegations := slices.Filter(delegations,
-		func(d types.Delegation) bool { return d.ChainID == chainID })
+	currentTimestamp := ctx.BlockTime().UTC().Unix()
 
-	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
+	relevantDelegations := slices.Filter(delegations,
+		func(d types.Delegation) bool {
+			return d.ChainID == chainID && isMonthPassed(d.Timestamp, currentTimestamp)
+		})
+
+	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward, relevantDelegations)
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward)
 
 	return providerReward.Add(leftoverRewards), nil
+}
+
+// TODO: implement this!
+func isMonthPassed(delegationTimestamp int64, currentTimestamp int64) bool {
+	return true
 }
 
 // updateDelegatorsReward updates the delegator rewards map
