@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -69,9 +70,12 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			require.Nil(t, err)
 
 			providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-			clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+			clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 			_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 			_, delegator2 := ts.GetAccount(common.CONSUMER, 2)
+
+			_, err = ts.TxSubscriptionBuy(client, client, ts.plan.Index, 9) // extend sub so it won't expire
+			require.Nil(t, err)
 
 			ts.AdvanceEpoch() // to apply pairing
 
@@ -94,7 +98,8 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			amount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(tt.d2Amount*delegationAmount/100))
 			_, err = ts.TxDualstakingDelegate(delegator2, provider, ts.spec.Index, amount2)
 			require.Nil(t, err)
-			ts.AdvanceEpoch() // apply delegations
+			ts.AdvanceEpoch()   // apply delegations
+			ts.AdvanceMonths(1) // make delegations count for reward
 
 			// change delegation traits of stake entry and get the modified one
 			stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
@@ -160,7 +165,7 @@ func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs [
 			SessionId:   sessionID,
 			SpecId:      chainID,
 			CuSum:       relayCuSum,
-			Epoch:       int64(ts.BlockHeight()),
+			Epoch:       int64(ts.EpochStart(ts.BlockHeight())),
 			RelayNum:    uint64(i),
 		}
 		sessionID += 1
@@ -184,20 +189,24 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 2)
+
+	_, err := ts.TxSubscriptionBuy(client, client, ts.plan.Index, 9) // extend sub so it won't expire
+	require.Nil(t, err)
 
 	ts.AdvanceEpoch() // to apply pairing
 
 	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)/2))
 	delegationAmount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)))
 
-	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, ts.spec.Index, delegationAmount2)
 	require.Nil(t, err)
-	ts.AdvanceEpoch() // apply delegations
+	ts.AdvanceEpoch()   // apply delegations
+	ts.AdvanceMonths(1) // make delegations count for reward
 
 	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 	require.True(t, found)
@@ -214,8 +223,14 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 
+	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
+	relevantDelegations := slices.Filter(res.Delegations,
+		func(d dualstakingtypes.Delegation) bool {
+			return d.ChainID == ts.spec.Index && d.IsFirstMonthPassed(currentTimestamp)
+		})
+
 	// check the provider's balance
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)), relevantDelegations)
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
 	expectedReward := mint.MulInt64(providerReward.Int64())
 
@@ -231,7 +246,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 
-	providerReward, _ = ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
+	providerReward, _ = ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)), relevantDelegations)
 	expectedReward = mint.MulInt64(providerReward.Int64())
 
 	balance = ts.GetBalance(providerAcc.Addr)
@@ -248,15 +263,19 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+
+	_, err := ts.TxSubscriptionBuy(client, client, ts.plan.Index, 9) // extend sub so it won't expire
+	require.Nil(t, err)
 
 	ts.AdvanceEpoch() // to apply pairing
 
 	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
-	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
-	ts.AdvanceEpoch() // apply delegations
+	ts.AdvanceEpoch()   // apply delegations
+	ts.AdvanceMonths(1) // make delegations count for reward
 
 	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 	require.True(t, found)
@@ -274,9 +293,15 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 1, len(res.Delegations))
 
+	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
+	relevantDelegations := slices.Filter(res.Delegations,
+		func(d dualstakingtypes.Delegation) bool {
+			return d.ChainID == ts.spec.Index && d.IsFirstMonthPassed(currentTimestamp)
+		})
+
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	totalReward := math.NewInt(int64(relayCuSum))
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalReward)
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalReward, relevantDelegations)
 
 	require.True(t, totalReward.Equal(providerReward))
 
@@ -355,15 +380,18 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	provider1Acc, provider1 := ts.GetAccount(common.PROVIDER, 0) // will have stake in "mock" and "mock1"
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1) // will have stake in "mock"
 	_, provider3 := ts.GetAccount(common.PROVIDER, 2)            // no one delegates to it
-	client1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+	client1Acc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 2) // delegates to no one
+
+	_, err := ts.TxSubscriptionBuy(client, client, ts.plan.Index, 9) // extend sub so it won't expire
+	require.Nil(t, err)
 
 	spec1 := common.CreateMockSpec()
 	spec1.Index = "mock1"
 	spec1.Name = "mock1"
 	ts.AddSpec(spec1.Index, spec1)
-	err := ts.StakeProvider(provider1, spec1, testStake)
+	err = ts.StakeProvider(provider1, spec1, testStake)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
@@ -380,7 +408,8 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(delegator1, provider2, ts.spec.Index, delegationAmount)
 	require.Nil(t, err)
 
-	ts.AdvanceEpoch() // apply delegations
+	ts.AdvanceEpoch()   // apply delegations
+	ts.AdvanceMonths(1) // make delegations count for reward
 
 	relayPaymentMessage := sendRelay(ts, provider1, client1Acc, []string{ts.spec.Index, spec1.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider1Acc.Addr, true, true, 50)
