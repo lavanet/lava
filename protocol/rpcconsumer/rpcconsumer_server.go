@@ -45,6 +45,7 @@ type RPCConsumerServer struct {
 	lavaChainID            string
 	consumerAddress        sdk.AccAddress
 	consumerServices       map[string]struct{}
+	consumerConsistency    *ConsumerConsistency
 }
 
 type ConsumerTxSender interface {
@@ -63,6 +64,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	cache *performance.Cache, // optional
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	consumerAddress sdk.AccAddress,
+	consumerConsistency *ConsumerConsistency,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -75,6 +77,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
+	rpccs.consumerConsistency = consumerConsistency
 	consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
 	if err != nil {
 		return err
@@ -144,7 +147,8 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 		return
 	}
 	reqBlock, _ := chainMessage.RequestedBlock()
-	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
+	seenBlock := int64(0)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
 	unwantedProviders := map[string]struct{}{}
 	for iter := 0; iter < count; iter++ {
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", &unwantedProviders)
@@ -198,7 +202,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
+	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, "")
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := true
@@ -482,6 +487,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}(relayTimeout)
 
 	response := <-result
+
+	if response.err == nil && response.relayResult != nil && response.relayResult.Reply != nil {
+		// no error, update the seen block
+		blockSeen := response.relayResult.Reply.LatestBlock
+		rpccs.consumerConsistency.SetSeenBlock(blockSeen, dappID, "")
+	}
+
 	return response.relayResult, response.err
 }
 
@@ -594,8 +606,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		// decided not to do data reliability
 		return nil
 	}
-
-	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
 	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}

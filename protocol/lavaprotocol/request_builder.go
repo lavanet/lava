@@ -46,12 +46,13 @@ func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	requestData.Salt = nonceBytes
 }
 
-func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
+func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, seenBlock int64, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
 		Data:           data,
 		RequestBlock:   requestBlock,
+		SeenBlock:      seenBlock,
 		ApiInterface:   apiInterface,
 		Metadata:       metadata,
 		Addon:          addon,

@@ -126,6 +126,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
 	}
 	var optimizers sync.Map
+	var consumerConsistencies sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
@@ -164,8 +165,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			}
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
-
-			getOrCreateOptimizer := func() error {
+			var consumerConsistency *ConsumerConsistency
+			getOrCreateChainAssets := func() error {
 				// this is locked so we don't race optimizers creation
 				chainMutexes[chainID].Lock()
 				defer chainMutexes[chainID].Unlock()
@@ -183,9 +184,22 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 						return err
 					}
 				}
+				value, exists = consumerConsistencies.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					consumerConsistency = NewConsumerConsistency(chainID)
+					consumerConsistencies.Store(chainID, consumerConsistency)
+				} else {
+					var ok bool
+					consumerConsistency, ok = value.(*ConsumerConsistency)
+					if !ok {
+						err = utils.LavaFormatError("failed loading consumer consistency, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
 				return nil
 			}
-			err = getOrCreateOptimizer()
+			err = getOrCreateChainAssets()
 			if err != nil {
 				errCh <- err
 				return err
@@ -200,7 +214,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err

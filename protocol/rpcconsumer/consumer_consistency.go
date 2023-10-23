@@ -45,12 +45,14 @@ func (cc *ConsumerConsistency) Key(dappId string, ip string) string {
 }
 
 func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, dappId string, ip string) {
-	cc.setLatestBlock(cc.Key(dappId, ip), blockSeen)
+	block, _ := cc.getLatestBlock(cc.Key(dappId, ip))
+	if block < blockSeen {
+		cc.setLatestBlock(cc.Key(dappId, ip), blockSeen)
+	}
 }
 
-func (cc *ConsumerConsistency) GetSeenBlock(dappId string, ip string) int64 {
-	block, _ := cc.getLatestBlock(cc.Key(dappId, ip))
-	return block
+func (cc *ConsumerConsistency) GetSeenBlock(dappId string, ip string) (int64, bool) {
+	return cc.getLatestBlock(cc.Key(dappId, ip))
 }
 
 func NewConsumerConsistency(specId string) *ConsumerConsistency {
