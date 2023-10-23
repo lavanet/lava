@@ -11,6 +11,7 @@ message Delegation {
     string chainID = 2;   // chainID to which staking delegate funds
     string delegator = 3; // delegator that owns the delegated funds
     cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+    int64 timestamp = 5; // Unix timestamp of the delegation
 }
 
 message Delegator {
