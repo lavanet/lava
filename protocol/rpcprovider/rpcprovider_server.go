@@ -601,7 +601,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 
 		// handle consistency, if the consumer requested information we do not have in the state tracker
 
-		latestBlock, requestedHashes, err = rpcps.handleConsistency(ctx, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData)
+		latestBlock, requestedHashes, _, err = rpcps.handleConsistency(ctx, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
 			return nil, err
 		}
@@ -732,40 +732,38 @@ func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Conte
 	return proofBlock, requestedHashes, err
 }
 
-func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
+func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, timeSlept time.Duration, err error) {
 	latestBlock, requestedHashes, changeTime, err := rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, 0, err
 	}
 	if requestBlock == spectypes.LATEST_BLOCK && seenBlock > latestBlock {
 		// we can't just replace requested block here with what we have, it must be with at least seen block
 		requestBlock = seenBlock
 	}
-	if requestBlock <= latestBlock {
-		// requested block is older than our information
-		return latestBlock, requestedHashes, nil
+	if requestBlock <= latestBlock || seenBlock <= latestBlock {
+		// requested block is older than our information, or the consumer is asking a future block he has no information about
+		return latestBlock, requestedHashes, 0, nil
 	}
 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, calculate wether we should wait and try to update
 	blockGap := requestBlock - latestBlock
+	if seenBlock < requestBlock {
+		// we don't have to wait until we reach requested block for consistency here, we just need to reach the seen block height
+		blockGap = seenBlock - latestBlock
+	}
 	deadline, ok := ctx.Deadline()
 	probabilityBlockError := 0.0
-	oneWayTravelTime := common.AverageWorldLatency / 2
 	if ok {
-		halfTimeLeft := time.Until(deadline) / 2
-		if halfTimeLeft < oneWayTravelTime {
-			return latestBlock, requestedHashes, utils.LavaFormatWarning("not enough time to process relay", nil, utils.Attribute{Key: "time", Value: time.Until(deadline)})
-		}
-		timeProviderHasIfWeDontWait := time.Since(changeTime) + oneWayTravelTime                      // add oneWayTravelTime to the time we have left because that's the propagation time we assume for chainTracker
-		timeProviderHasS := (timeProviderHasIfWeDontWait + halfTimeLeft - oneWayTravelTime).Seconds() // add waiting half the timeout time
+		halfTimeLeft := time.Until(deadline) / 2                              // giving the node at least half the timeout time to process
+		timeProviderHasS := (time.Since(changeTime) + halfTimeLeft).Seconds() // add waiting half the timeout time
 		if changeTime.IsZero() {
 			// we don't have information on block changes
-			timeProviderHasIfWeDontWait = oneWayTravelTime
 			timeProviderHasS = halfTimeLeft.Seconds()
 		}
 		averageBlockTimeS := averageBlockTime.Seconds()
 		eventRate := timeProviderHasS / averageBlockTimeS // a new block every average block time, numerator is time we have, gamma=rt
 		if eventRate < 0 {
-			utils.LavaFormatError("invalid rate params", nil, utils.Attribute{Key: "changeTime", Value: changeTime}, utils.Attribute{Key: "timeProviderHasIfWeDontWait", Value: timeProviderHasIfWeDontWait}, utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+			utils.LavaFormatError("invalid rate params", nil, utils.Attribute{Key: "changeTime", Value: changeTime}, utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
 		} else {
 			probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
 			if debugConsistency {
@@ -775,7 +773,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
 	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
-		return latestBlock, requestedHashes, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return latestBlock, requestedHashes, 0, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
 	if !ok {
@@ -784,28 +782,30 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock
 	}
 	// we are waiting for the state tracker to catch up with the requested block
 	utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
-	sleepTime := time.Until(deadline)/2 - oneWayTravelTime // sleep up to half the timeout so we actually have time to do the relay
+	sleepTime := time.Until(deadline) / 2 // sleep up to half the timeout so we actually have time to do the relay
 	sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
 	getLatestBlock := func() bool {
 		ret, _ := rpcps.reliabilityManager.GetLatestBlockNum()
-		return ret >= requestBlock
+		// if we hit either seen or requested we can return
+		return ret >= requestBlock || ret >= seenBlock
 	}
-	rpcps.SleepUntilTimeOrConditionReached(sleepContext, 50*time.Millisecond, getLatestBlock)
+	sleptTime := rpcps.SleepUntilTimeOrConditionReached(sleepContext, 50*time.Millisecond, getLatestBlock)
 	cancel()
 	// see if there is an updated info
 	latestBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
 	if err != nil {
-		return 0, nil, utils.LavaFormatWarning("delayed fetch failed", err, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return 0, nil, sleptTime, utils.LavaFormatWarning("delayed fetch failed", err, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
-	if requestBlock > latestBlock && seenBlock >= latestBlock {
+	if requestBlock > latestBlock && seenBlock > latestBlock {
 		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
-		return 0, nil, utils.LavaFormatWarning("rquested block is too new", nil, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return 0, nil, sleptTime, utils.LavaFormatWarning("rquested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
-	return latestBlock, requestedHashes, nil
+	return latestBlock, requestedHashes, sleptTime, nil
 }
 
-func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Context, queryTime time.Duration, condition func() bool) {
+func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Context, queryTime time.Duration, condition func() bool) (sleepTime time.Duration) {
+	sleepTime = 0
 	blockReached := make(chan struct{})
 	go func() {
 		for {
@@ -813,11 +813,20 @@ func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Con
 			case <-ctx.Done():
 				return // Context canceled, exit goroutine
 			default:
-				time.Sleep(queryTime)
+				var sleeping time.Duration
+				deadline, ok := ctx.Deadline()
+				if ok {
+					sleeping = slices.Min([]time.Duration{queryTime, time.Until(deadline) / 4})
+				} else {
+					sleeping = queryTime
+				}
+				sleepTime += sleeping
+				time.Sleep(sleeping)
 				if condition() {
 					close(blockReached) // Signal that the block is reached
 					return
 				}
+
 			}
 		}
 	}()
