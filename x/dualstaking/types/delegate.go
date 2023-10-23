@@ -40,6 +40,10 @@ func (delegation *Delegation) Equal(other *Delegation) bool {
 	return true
 }
 
+func (delegation *Delegation) IsFirstMonthPassed(currentTimestamp int64) bool {
+	return delegation.Timestamp+MONTH_DURATION <= currentTimestamp
+}
+
 func NewDelegator(delegator, provider string) Delegator {
 	return Delegator{
 		Providers: []string{provider},

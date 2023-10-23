@@ -178,7 +178,7 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 
 	relevantDelegations := slices.Filter(delegations,
 		func(d types.Delegation) bool {
-			return d.ChainID == chainID && isMonthPassed(d.Timestamp, currentTimestamp)
+			return d.ChainID == chainID && d.IsFirstMonthPassed(currentTimestamp)
 		})
 
 	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward, relevantDelegations)
@@ -186,10 +186,6 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward)
 
 	return providerReward.Add(leftoverRewards), nil
-}
-
-func isMonthPassed(delegationTimestamp int64, currentTimestamp int64) bool {
-	return delegationTimestamp+types.MONTH_DURATION >= currentTimestamp
 }
 
 // updateDelegatorsReward updates the delegator rewards map
