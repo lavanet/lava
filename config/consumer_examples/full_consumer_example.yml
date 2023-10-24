@@ -125,3 +125,4 @@ endpoints:
     - chain-id: FVM
       api-interface: jsonrpc
       network-address: 127.0.0.1:3384
+metrics-listen-address: ":7779"

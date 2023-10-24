@@ -195,7 +195,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
-			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
+			finalizationConsensus := lavaprotocol.NewFinalizationConsensus(rpcEndpoint.ChainID)
 			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 
 			rpcConsumerServer := &RPCConsumerServer{}

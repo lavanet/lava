@@ -19,7 +19,8 @@ type FinalizationConsensus struct {
 	prevEpochProviderHashesConsensus []ProviderHashesConsensus
 	providerDataContainersMu         sync.RWMutex
 	currentEpoch                     uint64
-	latestBlock                      uint64 // for caching
+	latestBlockByMedian              uint64 // for caching
+	specId                           string
 }
 
 type ProviderHashesConsensus struct {
@@ -37,6 +38,10 @@ type providerDataContainer struct {
 	RelayNum              uint64
 	LatestBlock           int64
 	// TODO:: keep relay request for conflict reporting
+}
+
+func NewFinalizationConsensus(specId string) *FinalizationConsensus {
+	return &FinalizationConsensus{specId: specId}
 }
 
 func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) int64 {
@@ -137,7 +142,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		}
 	}
 	if debug {
-		utils.LavaFormatDebug("finalization information update successfully", utils.Attribute{Key: "finalization data", Value: finalizedBlocks}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus})
+		utils.LavaFormatDebug("finalization information update successfully", utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "finalization data", Value: finalizedBlocks}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus})
 	}
 	return finalizationConflict, nil
 }
@@ -171,6 +176,9 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	defer fc.providerDataContainersMu.Unlock()
 
 	if fc.currentEpoch < epoch {
+		if debug {
+			utils.LavaFormatDebug("finalization information epoch changed", utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "epoch", Value: epoch})
+		}
 		// means it's time to refresh the epoch
 		fc.prevEpochProviderHashesConsensus = fc.currentProviderHashesConsensus
 		fc.currentProviderHashesConsensus = []ProviderHashesConsensus{}
@@ -178,17 +186,17 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	}
 }
 
-func (s *FinalizationConsensus) LatestBlock() uint64 {
-	s.providerDataContainersMu.RLock()
-	defer s.providerDataContainersMu.RUnlock()
-	return s.latestBlock
+func (fc *FinalizationConsensus) LatestBlock() uint64 {
+	fc.providerDataContainersMu.RLock()
+	defer fc.providerDataContainersMu.RUnlock()
+	return fc.latestBlockByMedian
 }
 
 // returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for
 // does the calculation on finalized entries then extrapolates the ending based on blockDistance
-func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
-	s.providerDataContainersMu.RLock()
-	defer s.providerDataContainersMu.RUnlock()
+func (fc *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
+	fc.providerDataContainersMu.RLock()
+	defer fc.providerDataContainersMu.RUnlock()
 	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
 
 	var highestBlockNumber int64 = 0
@@ -202,8 +210,8 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 		}
 	}
 
-	FindAndUpdateHighestBlockNumber(s.prevEpochProviderHashesConsensus) // update the highest in place
-	FindAndUpdateHighestBlockNumber(s.currentProviderHashesConsensus)
+	FindAndUpdateHighestBlockNumber(fc.prevEpochProviderHashesConsensus) // update the highest in place
+	FindAndUpdateHighestBlockNumber(fc.currentProviderHashesConsensus)
 
 	now := time.Now()
 	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, listProviderHashesConsensus []ProviderHashesConsensus) map[string]int64 {
@@ -222,8 +230,8 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	}
 	mapExpectedBlockHeights := map[string]int64{}
 	// prev must be before current because we overwrite
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, s.prevEpochProviderHashesConsensus)
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, s.currentProviderHashesConsensus)
+	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.prevEpochProviderHashesConsensus)
+	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.currentProviderHashesConsensus)
 
 	median := func(dataMap map[string]int64) int64 {
 		data := make([]int64, len(dataMap))
@@ -248,13 +256,13 @@ func (s *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainPa
 	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
 	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
 	if debug {
-		utils.LavaFormatDebug("finalization information", utils.Attribute{Key: "mapExpectedBlockHeights", Value: mapExpectedBlockHeights}, utils.Attribute{Key: "medianOfExpectedBlocks", Value: medianOfExpectedBlocks}, utils.Attribute{Key: "latestBlock", Value: providersMedianOfLatestBlock}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
+		utils.LavaFormatDebug("finalization information", utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "mapExpectedBlockHeights", Value: mapExpectedBlockHeights}, utils.Attribute{Key: "medianOfExpectedBlocks", Value: medianOfExpectedBlocks}, utils.Attribute{Key: "latestBlock", Value: fc.latestBlockByMedian}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
 	}
-	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > s.latestBlock {
-		if uint64(providersMedianOfLatestBlock) > s.latestBlock+1000 && s.latestBlock > 0 {
-			utils.LavaFormatError("uncontinuous jump in finalization data", nil, utils.Attribute{Key: "s.prevEpochProviderHashesConsensus", Value: s.prevEpochProviderHashesConsensus}, utils.Attribute{Key: "s.currentProviderHashesConsensus", Value: s.currentProviderHashesConsensus}, utils.Attribute{Key: "latestBlock", Value: s.latestBlock}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
+	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > fc.latestBlockByMedian {
+		if uint64(providersMedianOfLatestBlock) > fc.latestBlockByMedian+1000 && fc.latestBlockByMedian > 0 {
+			utils.LavaFormatError("uncontinuous jump in finalization data", nil, utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "s.prevEpochProviderHashesConsensus", Value: fc.prevEpochProviderHashesConsensus}, utils.Attribute{Key: "s.currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "latestBlock", Value: fc.latestBlockByMedian}, utils.Attribute{Key: "providersMedianOfLatestBlock", Value: providersMedianOfLatestBlock})
 		}
-		atomic.StoreUint64(&s.latestBlock, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
+		atomic.StoreUint64(&fc.latestBlockByMedian, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
 	}
 
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
