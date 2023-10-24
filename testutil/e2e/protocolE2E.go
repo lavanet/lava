@@ -22,6 +22,7 @@ import (
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -1008,6 +1009,53 @@ func (lt *lavaTest) getKeyAddress(key string) string {
 	return string(output)
 }
 
+func (lt *lavaTest) getProviderAddr() (sdk.AccAddress, error) {
+	chainID := "LAV1"
+
+	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
+	providersRequest := pairingTypes.QueryProvidersRequest{ChainID: chainID}
+	res, err := pairingQueryClient.Providers(context.Background(), &providersRequest)
+	if err != nil {
+		return nil, fmt.Errorf("could not get provider address. providers query failed: %s", err.Error())
+	}
+	providers := res.StakeEntry
+	if len(providers) < 1 {
+		return nil, fmt.Errorf("could not get provider address. no providers staked on %s", chainID)
+	}
+
+	bech32Addr := providers[0].Address
+	addr, err := sdk.AccAddressFromBech32(bech32Addr)
+	if err != nil {
+		return nil, fmt.Errorf("could not get provider address. invalid Bech32 address: %s. error: %s", bech32Addr, err.Error())
+	}
+
+	return addr, nil
+}
+
+func (lt *lavaTest) getBalance(addr sdk.AccAddress) (sdk.Coin, error) {
+	bankQueryClient := bankTypes.NewQueryClient(lt.grpcConn)
+
+	balanceRequest := bankTypes.NewQueryBalanceRequest(addr, epochStorageTypes.TokenDenom)
+	resB, err := bankQueryClient.Balance(context.Background(), balanceRequest)
+	if err != nil {
+		return sdk.NewCoin("", sdk.ZeroInt()), fmt.Errorf("could not get balance of address %s. err: %s", addr.String(), err.Error())
+	}
+	return *resB.Balance, nil
+}
+
+func (lt *lavaTest) checkPayment(addr sdk.AccAddress, initBalance sdk.Coin) {
+	// wait for month+blocksToSave pass (debug_month = 3min, debug_blocksToSave = 10)
+	time.Sleep(time.Minute * 5)
+
+	// get new balance and check that it was increased
+	newBalance, err := lt.getBalance(addr)
+	if err != nil {
+		panic(err)
+	} else if newBalance.IsLTE(initBalance) {
+		panic(fmt.Sprintf("provider did not receive payment. addr: %s", addr.String()))
+	}
+}
+
 func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
 	providerCU := make(map[string]uint64)
 	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
@@ -1087,6 +1135,16 @@ func runProtocolE2E(timeout time.Duration) {
 	// - produce 1 subscription (for both ETH1, LAV1)
 
 	lt.checkStakeLava(1, 5, 3, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+
+	// get balance of provider right after stake for payment check later
+	addr, err := lt.getProviderAddr()
+	if err != nil {
+		panic(err)
+	}
+	balance, err := lt.getBalance(addr)
+	if err != nil {
+		panic(err)
+	}
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
@@ -1177,7 +1235,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
 
-	// TODO: Add payment tests when subscription payment mechanism is implemented
+	lt.checkPayment(addr, balance)
 
 	lt.checkQoS()
 
