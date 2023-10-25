@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	debugConsistency = true
+	debugConsistency = false
 )
 
 type RPCProviderServer struct {
