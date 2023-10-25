@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -188,11 +189,11 @@ func GetListenerWithRetryGrpc(protocol, addr string) net.Listener {
 }
 
 // rest request headers are formatted like map[string]string
-func convertToMetadataMap(md map[string]string) []pairingtypes.Metadata {
+func convertToMetadataMap(md map[string][]string) []pairingtypes.Metadata {
 	metadata := make([]pairingtypes.Metadata, len(md))
 	indexer := 0
 	for k, v := range md {
-		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: v}
+		metadata[indexer] = pairingtypes.Metadata{Name: k, Value: strings.Join(v, ", ")}
 		indexer += 1
 	}
 	return metadata

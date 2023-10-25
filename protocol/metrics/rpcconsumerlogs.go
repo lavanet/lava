@@ -150,13 +150,13 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
-func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
+func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	refererHeaderValue := headers[RefererHeaderKey]
-	userAgentHeaderValue := headers[UserAgentHeaderKey]
+	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")
+	userAgentHeaderValue := strings.Join(headers[UserAgentHeaderKey], ", ")
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
 		originHeaderValue := headers[OriginHeaderKey]
-		rpccl.SendMetrics(data, err, originHeaderValue)
+		rpccl.SendMetrics(data, err, strings.Join(originHeaderValue, ", "))
 	}
 }
 
@@ -189,12 +189,10 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 }
 
 func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, userAgentHeaderValue string) bool {
-	result := true
 	if len(rpccl.excludeMetricsReferrers) > 0 && len(refererHeaderValue) > 0 {
-		result = !strings.Contains(refererHeaderValue, rpccl.excludeMetricsReferrers)
-	}
-	if !result {
-		return false
+		if strings.Contains(refererHeaderValue, rpccl.excludeMetricsReferrers) {
+			return false
+		}
 	}
 
 	if len(userAgentHeaderValue) > 0 {
@@ -204,7 +202,7 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 			}
 		}
 	}
-	return result
+	return true
 }
 
 func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {
