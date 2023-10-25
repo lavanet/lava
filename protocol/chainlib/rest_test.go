@@ -142,6 +142,10 @@ func TestRestChainProxy(t *testing.T) {
 	block, err := chainFetcher.FetchLatestBlockNum(ctx)
 	require.Greater(t, block, int64(0))
 	require.NoError(t, err)
+
+	_, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/{height}", nil, http.MethodGet, nil, 0)
+	require.NoError(t, err)
+
 	if closeServer != nil {
 		closeServer()
 	}

@@ -2,6 +2,7 @@ package rpcInterfaceMessages
 
 import (
 	"encoding/json"
+	"net/url"
 	"strings"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -18,14 +19,11 @@ type RestMessage struct {
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (cp RestMessage) GetParams() interface{} {
-	var parsedMethod string
-	idx := strings.Index(cp.Path, "?")
-	if idx == -1 {
-		parsedMethod = cp.Path
-	} else {
-		parsedMethod = cp.Path[0:idx]
+	urlObj, err := url.Parse(cp.Path)
+	if err != nil {
+		return nil
 	}
-
+	parsedMethod := urlObj.Path
 	objectSpec := strings.Split(cp.SpecPath, "/")
 	objectPath := strings.Split(parsedMethod, "/")
 
@@ -37,20 +35,8 @@ func (cp RestMessage) GetParams() interface{} {
 			parameters[element] = objectPath[index]
 		}
 	}
-	if idx > -1 {
-		queryParams := cp.Path[idx:]
-		if len(queryParams) > 0 {
-			queryParamsList := strings.Split(queryParams, "&")
-			for _, queryParamNameValue := range queryParamsList {
-				queryParamNameValueSplitted := strings.SplitN(queryParamNameValue, "=", 2)
-				if len(queryParamNameValueSplitted) != 2 {
-					continue
-				}
-				queryParamName := queryParamNameValueSplitted[0]
-				queryParamValue := queryParamNameValueSplitted[1]
-				parameters[queryParamName] = queryParamValue
-			}
-		}
+	for key, value := range urlObj.Query() {
+		parameters[key] = value
 	}
 	if len(parameters) == 0 {
 		return nil
