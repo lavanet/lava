@@ -185,22 +185,24 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	}
 	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}, {Key: "error", Value: err}}...)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" Failed formatResponseForParsing", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
+			{Key: "error", Value: err},
 		}...)
 	}
 	blockNum, err := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" Failed to parse Response", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed to parse Response", []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
+			{Key: "error", Value: err},
 		}...)
 	}
 	atomic.StoreInt64(&cf.latestBlock, blockNum)
@@ -242,7 +244,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return "", utils.LavaFormatWarning(tagName+" Failed formatResponseForParsing", err, []utils.Attribute{
+		return "", utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
+			{Key: "error", Value: err},
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
@@ -251,7 +254,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 
 	res, err := parser.ParseFromReplyAndDecode(parserInput, parsing.ResultParsing)
 	if err != nil {
-		return "", utils.LavaFormatWarning(tagName+" Failed ParseMessageResponse", err, []utils.Attribute{
+		return "", utils.LavaFormatDebug(tagName+" Failed ParseMessageResponse", []utils.Attribute{
+			{Key: "error", Value: err},
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
@@ -308,7 +312,7 @@ func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage Chain
 	var parserInput parser.RPCInput
 	respData := reply.Data
 	if len(respData) == 0 {
-		return nil, utils.LavaFormatWarning("result (reply.Data) is empty, can't be formatted for parsing", err)
+		return nil, utils.LavaFormatDebug("result (reply.Data) is empty, can't be formatted for parsing", utils.Attribute{Key: "error", Value: err})
 	}
 	rpcMessage := chainMessage.GetRPCMessage()
 	if customParsingMessage, ok := rpcMessage.(chainproxy.CustomParsingMessage); ok {

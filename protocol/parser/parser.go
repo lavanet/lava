@@ -235,7 +235,7 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, utils.LavaFormatError("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshaledDataTyped})
+		return nil, utils.LavaFormatProduction("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshaledDataTyped})
 	}
 }
 
