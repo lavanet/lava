@@ -152,7 +152,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 			unwantedProviders = map[string]struct{}{}
 			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderAddress}}...)
 		}
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 	}
 }
 
