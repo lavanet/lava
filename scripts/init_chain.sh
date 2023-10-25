@@ -22,14 +22,28 @@ config='config.toml'
 app='app.toml'
 
 # Edit genesis file
-data=$(cat "$path$genesis" \
-    | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
-    | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
-    | jq '.app_state.gov.params.voting_period = "3s"' \
-    | jq '.app_state.mint.params.mint_denom = "ulava"' \
-    | jq '.app_state.staking.params.bond_denom = "ulava"' \
-    | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
+if [ "$1" == "debug" ]; then
+    # Edit genesis file with additional line
+    data=$(cat "$path$genesis" \
+        | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
+        | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
+        | jq '.app_state.gov.params.voting_period = "3s"' \
+        | jq '.app_state.mint.params.mint_denom = "ulava"' \
+        | jq '.app_state.staking.params.bond_denom = "ulava"' \
+        | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
+        | jq '.app_state.epochstorage.params.epochsToSave = "1"' \
     )
+else
+    # Edit genesis file without the additional line
+    data=$(cat "$path$genesis" \
+        | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
+        | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
+        | jq '.app_state.gov.params.voting_period = "3s"' \
+        | jq '.app_state.mint.params.mint_denom = "ulava"' \
+        | jq '.app_state.staking.params.bond_denom = "ulava"' \
+        | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
+    )
+fi
 
 echo -n "$data" > "$path$genesis"
 
