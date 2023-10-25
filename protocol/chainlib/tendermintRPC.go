@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -111,8 +112,8 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		}
 		params := make(map[string]interface{})
 		queryValues := urlObj.Query()
-		for key, value := range queryValues {
-			params[key] = value
+		for key, values := range queryValues {
+			params[key] = strings.Join(values, ",")
 		}
 		msg.Params = params
 		msgs = []rpcInterfaceMessages.JsonrpcMessage{msg}

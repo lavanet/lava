@@ -35,8 +35,8 @@ func (cp RestMessage) GetParams() interface{} {
 			parameters[element] = objectPath[index]
 		}
 	}
-	for key, value := range urlObj.Query() {
-		parameters[key] = value
+	for key, values := range urlObj.Query() {
+		parameters[key] = strings.Join(values, ",")
 	}
 	if len(parameters) == 0 {
 		return nil
