@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -63,14 +64,16 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
+func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
 	}
-
-	splittedUrl := strings.SplitN(url, "?", 2)
-	urlWithNoQuery := splittedUrl[0]
+	urlObj, err := url.Parse(urlPath)
+	if err != nil {
+		return nil, err
+	}
+	urlWithNoQuery := urlObj.Path
 
 	// Check api is supported and save it in nodeMsg
 	apiCont, err := apip.getSupportedApi(urlWithNoQuery, connectionType)
@@ -91,7 +94,7 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:         data,
-		Path:        url,
+		Path:        urlPath,
 		BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 	}
 	// add spec path to rest message so we can extract the requested block.
