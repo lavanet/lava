@@ -203,6 +203,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, "")
+	if seenBlock < 0 {
+		seenBlock = 0
+	}
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
 	relayErrors := []error{}
@@ -322,6 +325,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := chainMessage.RequestedBlock()
+	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
+		// make optimizer select a provider that is likely to have the latest seen block
+		reqBlock = relayRequestData.SeenBlock
+	}
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, reqBlock, chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions())
 	if err != nil {
 		return &common.RelayResult{ProviderAddress: ""}, err

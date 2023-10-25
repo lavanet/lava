@@ -236,6 +236,10 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
 	}
+	seenBlock := request.RelayData.GetSeenBlock()
+	if seenBlock < 0 {
+		return utils.LavaFormatError("invalid seen block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
+	}
 	reqBlock, _ := chainMessage.RequestedBlock()
 	if reqBlock != request.RelayData.RequestBlock {
 		// the consumer either configured an invalid value or is modifying the requested block as part of a data reliability message
