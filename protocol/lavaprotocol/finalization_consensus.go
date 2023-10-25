@@ -49,6 +49,14 @@ func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) i
 	return latestBlock - finalization_criteria
 }
 
+// print the current status
+func (fc *FinalizationConsensus) String() string {
+	fc.providerDataContainersMu.RLock()
+	defer fc.providerDataContainersMu.RUnlock()
+	mapExpectedBlockHeights := fc.GetExpectedBlockHeights(10 * time.Millisecond) // it's not super important so we hardcode this
+	return fmt.Sprintf("{FinalizationConsensus: {mapExpectedBlockHeights:%v} epoch: %d latestBlockByMedian %d}", mapExpectedBlockHeights, fc.currentEpoch, fc.latestBlockByMedian)
+}
+
 func (fc *FinalizationConsensus) newProviderHashesConsensus(blockDistanceForFinalizedData int64, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:  GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
@@ -192,13 +200,7 @@ func (fc *FinalizationConsensus) LatestBlock() uint64 {
 	return fc.latestBlockByMedian
 }
 
-// returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for
-// does the calculation on finalized entries then extrapolates the ending based on blockDistance
-func (fc *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
-	fc.providerDataContainersMu.RLock()
-	defer fc.providerDataContainersMu.RUnlock()
-	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
-
+func (fc *FinalizationConsensus) GetExpectedBlockHeights(averageBlockTime_ms time.Duration) map[string]int64 {
 	var highestBlockNumber int64 = 0
 	FindAndUpdateHighestBlockNumber := func(listProviderHashesConsensus []ProviderHashesConsensus) {
 		for _, providerHashesConsensus := range listProviderHashesConsensus {
@@ -232,7 +234,16 @@ func (fc *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainP
 	// prev must be before current because we overwrite
 	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.prevEpochProviderHashesConsensus)
 	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.currentProviderHashesConsensus)
+	return mapExpectedBlockHeights
+}
 
+// returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for
+// does the calculation on finalized entries then extrapolates the ending based on blockDistance
+func (fc *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
+	fc.providerDataContainersMu.RLock()
+	defer fc.providerDataContainersMu.RUnlock()
+	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
+	mapExpectedBlockHeights := fc.GetExpectedBlockHeights(averageBlockTime_ms)
 	median := func(dataMap map[string]int64) int64 {
 		data := make([]int64, len(dataMap))
 		i := 0
