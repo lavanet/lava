@@ -243,3 +243,34 @@ func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 		}
 	}()
 }
+
+func TestTendermintURIRPC(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{
+			"jsonrpc": "2.0",
+			"id": 1,"result": "ok"
+		}`)
+	})
+
+	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+	requestUrl := "tx_search?query=%22recv_packet.packet_src_channel=%27channel-227%27%20AND%20recv_packet.packet_sequence=%271123%27%20%20AND%20recv_packet.packet_dst_channel=%27channel-3%27%22"
+	chainMessage, err := chainParser.ParseMsg(requestUrl, nil, "", nil, 0)
+	require.NoError(t, err)
+	nodeMessage, ok := chainMessage.GetRPCMessage().(*rpcInterfaceMessages.TendermintrpcMessage)
+	require.True(t, ok)
+	params := nodeMessage.GetParams()
+	casted, ok := params.(map[string]interface{})
+	require.True(t, ok)
+	_, ok = casted["query"]
+	require.True(t, ok)
+	if closeServer != nil {
+		closeServer()
+	}
+}

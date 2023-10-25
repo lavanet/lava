@@ -127,6 +127,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	var optimizers sync.Map
 	var consumerConsistencies sync.Map
+	var finalizationConsensuses sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
@@ -166,6 +167,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
 			var consumerConsistency *ConsumerConsistency
+			var finalizationConsensus *lavaprotocol.FinalizationConsensus
 			getOrCreateChainAssets := func() error {
 				// this is locked so we don't race optimizers creation
 				chainMutexes[chainID].Lock()
@@ -180,7 +182,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 					var ok bool
 					optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
 					if !ok {
-						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
 						return err
 					}
 				}
@@ -197,6 +199,21 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 						return err
 					}
 				}
+
+				value, exists = finalizationConsensuses.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					finalizationConsensus = lavaprotocol.NewFinalizationConsensus(rpcEndpoint.ChainID)
+					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+					finalizationConsensuses.Store(chainID, finalizationConsensus)
+				} else {
+					var ok bool
+					finalizationConsensus, ok = value.(*lavaprotocol.FinalizationConsensus)
+					if !ok {
+						err = utils.LavaFormatError("failed loading finalization consensus, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
 				return nil
 			}
 			err = getOrCreateChainAssets()
@@ -205,12 +222,15 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 
+			if finalizationConsensus == nil || optimizer == nil {
+				err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+				errCh <- err
+				return err
+			}
+
 			// Register For Updates
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
-
-			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
-			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})

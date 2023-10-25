@@ -159,6 +159,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 			unwantedProviders = map[string]struct{}{}
 			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderAddress}}...)
 		}
+		time.Sleep(2 * time.Millisecond)
 	}
 }
 
@@ -442,6 +443,16 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
+			if expectedBH-latestBlock > 1000 {
+				utils.LavaFormatWarning("identified block gap", nil,
+					utils.Attribute{Key: "expectedBH", Value: expectedBH},
+					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
+					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
+					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
+					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
+				)
+			}
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 			// set cache in a nonblocking call
 			go func() {
