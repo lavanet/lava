@@ -263,7 +263,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
 
 		cuAfterQos := uint64(reward.Quo(coinsPerCu).TruncateInt64())
-		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay, cuAfterQos)
+		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
@@ -354,7 +354,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	return nil
 }
 
-func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession, cuAfterQos uint64) error {
+func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession, cuAfterQos uint64) error {
 	epoch := uint64(relay.Epoch)
 
 	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
