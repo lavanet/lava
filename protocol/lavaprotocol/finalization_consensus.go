@@ -9,9 +9,9 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	"golang.org/x/exp/slices"
 )
 
 type FinalizationConsensus struct {
@@ -240,18 +240,7 @@ func (fc *FinalizationConsensus) ExpectedBlockHeight(chainParser chainlib.ChainP
 			data[i] = latestBlock
 			i++
 		}
-		slices.Sort(data)
-
-		var median int64
-		data_len := len(data)
-		if data_len == 0 {
-			return 0
-		} else if data_len%2 == 0 {
-			median = ((data[data_len/2-1] + data[data_len/2]) / 2.0)
-		} else {
-			median = data[data_len/2]
-		}
-		return median
+		return slices.Median(data)
 	}
 	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
 	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
