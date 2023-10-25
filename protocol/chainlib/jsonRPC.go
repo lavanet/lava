@@ -315,15 +315,16 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			msg         []byte
 			err         error
 		)
+		startTime := time.Now()
 		msgSeed := apil.logger.GetMessageSeed()
 		for {
 			if messageType, msg, err = websockConn.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 				break
 			}
 			dappID, ok := websockConn.Locals("dapp-id").(string)
 			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC)
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -337,7 +338,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
 
 			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 				continue
 			}
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
@@ -345,37 +346,37 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 				var reply pairingtypes.RelayReply
 				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 					continue
 				}
 
 				if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 					continue
 				}
-				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
+				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 				for {
 					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 						break
 					}
 
 					// If portal cant write to the client
 					if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
 						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 						// break
 					}
 
-					apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
+					apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 				}
 			} else {
 				if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC)
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 					continue
 				}
-				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
+				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 			}
 		}
 	})
@@ -386,7 +387,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -408,7 +409,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -431,6 +432,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			string(fiberCtx.Body()),
 			string(reply.Data),
 			msgSeed,
+			time.Since(startTime),
 			nil,
 		)
 		if relayResult.GetStatusCode() != 0 {

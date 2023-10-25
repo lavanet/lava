@@ -344,14 +344,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			err error
 		)
 		msgSeed := apil.logger.GetMessageSeed()
+		startTime := time.Now()
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 				break
 			}
 			dappID, ok := c.Locals("dappId").(string)
 			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC)
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -365,7 +366,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, c)
 			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 				continue
 			}
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
@@ -373,36 +374,36 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 				var reply pairingtypes.RelayReply
 				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 					continue
 				}
 
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 					continue
 				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
+				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 				for {
 					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 						break
 					}
 
 					// If portal cant write to the client
 					if err = c.WriteMessage(mt, reply.Data); err != nil {
 						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 						// break
 					}
-					apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
+					apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 				}
 			} else {
 				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint")
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 					continue
 				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, nil)
+				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 			}
 		}
 	})
@@ -413,7 +414,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	app.Post("/*", func(c *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -434,7 +435,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -450,7 +451,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			return c.SendString(response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			c.Status(relayResult.StatusCode)
 		}
@@ -464,7 +465,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
-
+		startTime := time.Now()
 		query := "?" + string(c.Request().URI().QueryString())
 		path := c.Params("*")
 		dappID := extractDappIDFromFiberContext(c)
@@ -483,7 +484,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -503,7 +504,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			return c.SendString(response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			c.Status(relayResult.StatusCode)
 		}

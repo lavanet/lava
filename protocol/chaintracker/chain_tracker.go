@@ -405,10 +405,13 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 }
 
 func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) {
-	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
-	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
-		utils.LavaFormatDebug("failed fetching block num data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+	var newLatestBlock int64
+	for idx := 0; idx < initRetriesCount+1; idx++ {
 		newLatestBlock, err = cs.fetchLatestBlockNum(ctx)
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed fetching block num data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	if err != nil {
 		// Add suggestion if error is due to context deadline exceeded

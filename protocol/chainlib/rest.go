@@ -254,7 +254,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	app.Post("/*", func(c *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
@@ -283,7 +283,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error\
 			if relayResult.GetStatusCode() != 0 {
@@ -299,7 +299,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			c.Status(relayResult.StatusCode)
 		}
@@ -311,7 +311,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	app.Use("/*", func(c *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -336,7 +336,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -355,7 +355,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			c.Status(relayResult.StatusCode)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
 		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
