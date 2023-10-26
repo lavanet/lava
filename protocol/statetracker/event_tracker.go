@@ -50,7 +50,7 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 		return utils.LavaFormatError("could not get block result provider", err)
 	}
 	var blockResults *ctypes.ResultBlockResults
-	for i := 0; i < 5; i++ {
+	for i := 0; i < BlockResultRetry; i++ {
 		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
 		blockResults, err = brp.BlockResults(timeoutCtx, &latestBlock)
 		cancel()

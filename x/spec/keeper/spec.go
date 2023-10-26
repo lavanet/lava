@@ -118,6 +118,8 @@ func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.
 	}
 
 	if len(inherited) > 0 {
+		// to get the original spec before the expanding
+		spec, _ = k.GetSpec(ctx, spec.Index)
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 		k.SetSpec(ctx, spec)
 	}

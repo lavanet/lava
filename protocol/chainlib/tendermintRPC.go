@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -79,7 +80,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
+func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the TendermintChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("TendermintChainParser not defined")
@@ -98,33 +99,23 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 		}
 	} else {
 		// assuming URI
-		var parsedMethod string
-		idx := strings.Index(url, "?")
-		if idx == -1 {
-			parsedMethod = url
-		} else {
-			parsedMethod = url[0:idx]
+		urlObj, err := url.Parse(urlPath)
+		if err != nil {
+			return nil, err
 		}
+		urlObj.Query()
 
 		msg := rpcInterfaceMessages.JsonrpcMessage{
 			ID:      []byte("1"),
 			Version: "2.0",
-			Method:  parsedMethod,
+			Method:  urlObj.Path,
 		}
-		if strings.Contains(url[idx+1:], "=") {
-			params := make(map[string]interface{})
-			rawParams := strings.Split(url[idx+1:], "&") // list with structure ['height=0x500',...]
-			for _, param := range rawParams {
-				splitParam := strings.Split(param, "=")
-				if len(splitParam) != 2 {
-					return nil, utils.LavaFormatError("Cannot parse query params", nil, utils.Attribute{Key: "params", Value: param})
-				}
-				params[splitParam[0]] = splitParam[1]
-			}
-			msg.Params = params
-		} else {
-			msg.Params = make(map[string]interface{}, 0)
+		params := make(map[string]interface{})
+		queryValues := urlObj.Query()
+		for key, values := range queryValues {
+			params[key] = strings.Join(values, ",")
 		}
+		msg.Params = params
 		msgs = []rpcInterfaceMessages.JsonrpcMessage{msg}
 	}
 	if len(msgs) == 0 {
@@ -212,7 +203,7 @@ func (apip *TendermintChainParser) ParseMsg(url string, data []byte, connectionT
 	if len(msgs) == 1 {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
-			tenderMsg.Path = url // add path
+			tenderMsg.Path = urlPath // add path
 		}
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &tenderMsg, apiCollection)
 	} else {
