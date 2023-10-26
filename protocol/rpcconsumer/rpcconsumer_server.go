@@ -213,7 +213,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	blockOnSyncLoss := true
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
-	for retries := 0; retries < MaxRelayRetries; retries++ {
+	retries := 0
+	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
 		if relayResult.ProviderAddress != "" {
@@ -283,6 +284,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
 		analytics.ComputeUnits = returnedResult.Request.RelaySession.CuSum
+	}
+	if retries > 0 {
+		utils.LavaFormatDebug("relay succeded after retries", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "retries", Value: retries})
 	}
 	return returnedResult, nil
 	// return returnedResult.Reply, returnedResult.ReplyServer, nil
