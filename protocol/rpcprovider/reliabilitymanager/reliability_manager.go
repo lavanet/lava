@@ -31,8 +31,13 @@ type TxSender interface {
 	SendVoteCommitment(voteID string, vote *VoteData) error
 }
 
+type ChainTrackerInf interface {
+	GetLatestBlockData(fromBlock int64, toBlock int64, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error)
+	GetLatestBlockNum() (int64, time.Time)
+}
+
 type ReliabilityManager struct {
-	chainTracker  *chaintracker.ChainTracker
+	chainTracker  ChainTrackerInf
 	votes_mutex   sync.Mutex
 	votes         map[string]*VoteData
 	txSender      TxSender
@@ -133,7 +138,7 @@ func (rm *ReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
 	return rm.chainTracker.GetLatestBlockNum()
 }
 
-func NewReliabilityManager(chainTracker *chaintracker.ChainTracker, txSender TxSender, publicAddress string, chainRouter chainlib.ChainRouter, chainParser chainlib.ChainParser) *ReliabilityManager {
+func NewReliabilityManager(chainTracker ChainTrackerInf, txSender TxSender, publicAddress string, chainRouter chainlib.ChainRouter, chainParser chainlib.ChainParser) *ReliabilityManager {
 	rm := &ReliabilityManager{
 		votes:         map[string]*VoteData{},
 		txSender:      txSender,

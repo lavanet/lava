@@ -56,6 +56,7 @@ type ChainTracker struct {
 	blocksQueue             []BlockStore        // holds all past hashes up until latest block
 	forkCallback            func(int64)         // a function to be called when a fork is detected
 	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
+	consistencyCallback     func(oldBlock int64, block int64)
 	serverBlockMemory       uint64
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
@@ -296,9 +297,9 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		cs.pmetrics.SetSpecificBlockFetchError(cs.endpoint.ChainID)
 		return utils.LavaFormatDebug("could not fetchLatestBlock Hash in ChainTracker", utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
+	prev_latest := cs.GetAtomicLatestBlockNum()
 	cs.pmetrics.SetSpecificBlockFetchSuccess(cs.endpoint.ChainID)
 	if gotNewBlock || forked {
-		prev_latest := cs.GetAtomicLatestBlockNum()
 		latestHash, err := cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if err != nil {
 			return err
@@ -322,7 +323,12 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 				cs.forkCallback(newLatestBlock)
 			}
 		}
+	} else if prev_latest > newLatestBlock {
+		if cs.consistencyCallback != nil {
+			cs.consistencyCallback(prev_latest, newLatestBlock)
+		}
 	}
+
 	return err
 }
 
@@ -399,10 +405,13 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 }
 
 func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) {
-	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
-	for idx := 0; idx < initRetriesCount && err != nil; idx++ {
-		utils.LavaFormatDebug("failed fetching block num data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
+	var newLatestBlock int64
+	for idx := 0; idx < initRetriesCount+1; idx++ {
 		newLatestBlock, err = cs.fetchLatestBlockNum(ctx)
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed fetching block num data on chain tracker init, retry", utils.Attribute{Key: "retry Num", Value: idx}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	if err != nil {
 		// Add suggestion if error is due to context deadline exceeded
@@ -541,7 +550,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.BlocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}, pmetrics: config.Pmetrics}
+	chainTracker = &ChainTracker{consistencyCallback: config.ConsistencyCallback, forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.BlocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}, pmetrics: config.Pmetrics}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
@@ -553,38 +562,4 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 
 	err = chainTracker.serve(ctx, config.ServerAddress)
 	return
-}
-
-func exponentialBackoff(baseTime time.Duration, fails uint64) time.Duration {
-	if fails > maxFails {
-		fails = maxFails
-	}
-	maxIncrease := BACKOFF_MAX_TIME
-	backoff := baseTime * (1 << fails)
-	if backoff > maxIncrease {
-		backoff = maxIncrease
-	}
-	return backoff
-}
-
-func FindRequestedBlockHash(requestedHashes []*BlockStore, requestBlock, toBlock, fromBlock int64, finalizedBlockHashes map[int64]interface{}) (requestedBlockHash []byte, finalizedBlockHashesMapRet map[int64]interface{}) {
-	for _, block := range requestedHashes {
-		if block.Block == requestBlock {
-			requestedBlockHash = []byte(block.Hash)
-			if int64(len(requestedHashes)) == (toBlock - fromBlock + 1) {
-				finalizedBlockHashes[block.Block] = block.Hash
-			}
-		} else {
-			finalizedBlockHashes[block.Block] = block.Hash
-		}
-	}
-	return requestedBlockHash, finalizedBlockHashes
-}
-
-func BuildProofFromBlocks(requestedHashes []*BlockStore) map[int64]interface{} {
-	finalizedBlockHashes := map[int64]interface{}{}
-	for _, block := range requestedHashes {
-		finalizedBlockHashes[block.Block] = block.Hash
-	}
-	return finalizedBlockHashes
 }

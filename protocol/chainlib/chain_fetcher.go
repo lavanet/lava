@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -238,9 +239,11 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if err != nil {
 		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+	start := time.Now()
 	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
-		return "", utils.LavaFormatWarning(tagName+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		timeTaken := time.Since(start)
+		return "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {

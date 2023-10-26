@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
@@ -251,7 +254,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	app.Post("/*", func(c *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
@@ -271,7 +274,8 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 		requestBody := string(c.Body())
-		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, analytics, restHeaders)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, analytics, restHeaders)
+		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 
 		if err != nil {
@@ -279,10 +283,14 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, time.Since(startTime), err)
 
-			// Set status to internal error
-			c.Status(fiber.StatusInternalServerError)
+			// Set status to internal error\
+			if relayResult.GetStatusCode() != 0 {
+				c.Status(relayResult.StatusCode)
+			} else {
+				c.Status(fiber.StatusInternalServerError)
+			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
@@ -291,8 +299,10 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
-
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
+		if relayResult.GetStatusCode() != 0 {
+			c.Status(relayResult.StatusCode)
+		}
 		// Return json response
 		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
 	})
@@ -301,7 +311,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	app.Use("/*", func(c *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
@@ -318,17 +328,22 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
-		reply, _, err := apil.relaySender.SendRelay(ctx, path+query, "", c.Method(), dappID, analytics, restHeaders)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", c.Method(), dappID, analytics, restHeaders)
+		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
-			c.Status(fiber.StatusInternalServerError)
+			if relayResult.GetStatusCode() != 0 {
+				c.Status(relayResult.StatusCode)
+			} else {
+				c.Status(fiber.StatusInternalServerError)
+			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
@@ -336,8 +351,11 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 			// Return error json response
 			return addHeadersAndSendString(c, reply.GetMetadata(), response)
 		}
+		if relayResult.GetStatusCode() != 0 {
+			c.Status(relayResult.StatusCode)
+		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
 		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
@@ -429,20 +447,26 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		)
 	}
 	res, err := httpClient.Do(req)
+	if res != nil {
+		// resp can be non nil on error
+		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
+		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	}
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
 		if parsedError := rcp.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, "", nil, parsedError
 		}
+		// always return a lava error in this case
 		return nil, "", nil, err
 	}
-
+	// here we received a response that can be an error response with Code >300 or code < 200
 	if res.Body != nil {
 		defer res.Body.Close()
 	}
 
-	err = rcp.HandleStatusError(res.StatusCode)
+	err = rcp.HandleStatusError(res.StatusCode, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode}, utils.Attribute{Key: "chainID", Value: rcp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 	}

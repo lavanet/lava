@@ -305,13 +305,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
+			consistencyErrorCallback := func(oldBlock, newBlock int64) {
+				utils.LavaFormatError("Consistency issue detected", nil,
+					utils.Attribute{Key: "oldBlock", Value: oldBlock},
+					utils.Attribute{Key: "newBlock", Value: newBlock},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+				)
+			}
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:      blocksToSaveChainTracker,
-				AverageBlockTime:  averageBlockTime,
-				ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-				NewLatestCallback: recordMetricsOnNewBlock,
-				Pmetrics:          rpcp.providerMetricsManager,
+				BlocksToSave:        blocksToSaveChainTracker,
+				AverageBlockTime:    averageBlockTime,
+				ServerBlockMemory:   ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:   recordMetricsOnNewBlock,
+				ConsistencyCallback: consistencyErrorCallback,
+				Pmetrics:            rpcp.providerMetricsManager,
 			}
 
 			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
