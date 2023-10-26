@@ -21,16 +21,16 @@ import (
 )
 
 const (
-	RewardServerStorageFlagName       = "reward-server-storage"
-	DefaultRewardServerStorage        = ".storage/rewardserver"
-	RewardTTLFlagName                 = "reward-ttl"
-	DefaultRewardTTL                  = 24 * 60 * time.Minute
-	MaxDBSaveRetries                  = 10
-	RewardsSnapshotThresholdFlagName  = "proofs-snapshot-threshold"
-	DefaultRewardsSnapshotThreshold   = 1000
-	RewardsSnapshotTimeoutSecFlagName = "proofs-snapshot-timeout-sec"
-	DefaultRewardsSnapshotTimeoutSec  = 30
-	MaxPaymentRequestsRetiresPerEpoch = 3
+	RewardServerStorageFlagName         = "reward-server-storage"
+	DefaultRewardServerStorage          = ".storage/rewardserver"
+	RewardTTLFlagName                   = "reward-ttl"
+	DefaultRewardTTL                    = 24 * 60 * time.Minute
+	MaxDBSaveRetries                    = 10
+	RewardsSnapshotThresholdFlagName    = "proofs-snapshot-threshold"
+	DefaultRewardsSnapshotThreshold     = 1000
+	RewardsSnapshotTimeoutSecFlagName   = "proofs-snapshot-timeout-sec"
+	DefaultRewardsSnapshotTimeoutSec    = 30
+	MaxPaymentRequestsRetiresForSession = 3
 )
 
 type PaymentRequest struct {
@@ -584,10 +584,10 @@ func (rws *RewardServer) updatePaymentRequestAttempt(paymentRequests []*pairingt
 		}
 
 		sessionWithAttempts.paymentRequestRetryAttempts++
-		if sessionWithAttempts.paymentRequestRetryAttempts >= MaxPaymentRequestsRetiresPerEpoch {
+		if sessionWithAttempts.paymentRequestRetryAttempts >= MaxPaymentRequestsRetiresForSession {
 			utils.LavaFormatInfo("Rewards for session are being removed due to surpassing the maximum allowed retries for payment requests.",
 				utils.Attribute{Key: "sessionIds", Value: sessionId},
-				utils.Attribute{Key: "maxRetriesAllowed", Value: MaxPaymentRequestsRetiresPerEpoch},
+				utils.Attribute{Key: "maxRetriesAllowed", Value: MaxPaymentRequestsRetiresForSession},
 			)
 
 			delete(rws.failedRewardsPaymentRequests, sessionId)
