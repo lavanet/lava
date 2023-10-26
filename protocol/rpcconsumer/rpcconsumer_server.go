@@ -286,7 +286,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		analytics.ComputeUnits = returnedResult.Request.RelaySession.CuSum
 	}
 	if retries > 0 {
-		utils.LavaFormatDebug("relay succeded after retries", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "retries", Value: retries})
+		utils.LavaFormatDebug("relay succeeded after retries", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "retries", Value: retries})
 	}
 	return returnedResult, nil
 	// return returnedResult.Reply, returnedResult.ReplyServer, nil
