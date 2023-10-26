@@ -5,6 +5,7 @@ import {
   RPCEndpoint,
   SingleConsumerSession,
 } from "../lavasession/consumerTypes";
+import { ConsumerConsistency } from "./consumerConsistency";
 import {
   BaseChainParser,
   SendRelayOptions,
@@ -42,6 +43,7 @@ export class RPCConsumerServer {
   private lavaChainId: string;
   private consumerAddress: string;
   private finalizationConsensus: FinalizationConsensus;
+  private consumerConsistency: ConsumerConsistency;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
@@ -49,7 +51,8 @@ export class RPCConsumerServer {
     geolocation: string,
     rpcEndpoint: RPCEndpoint,
     lavaChainId: string,
-    finalizationConsensus: FinalizationConsensus
+    finalizationConsensus: FinalizationConsensus,
+    consumerConsistency: ConsumerConsistency
   ) {
     this.consumerSessionManager = consumerSessionManager;
     this.geolocation = geolocation;
@@ -59,6 +62,7 @@ export class RPCConsumerServer {
     this.lavaChainId = lavaChainId;
     this.consumerAddress = "TODO"; // TODO: this needs to be the public address that the provider signs finalization data with, check on badges if it's the signer or the badge project key
     this.finalizationConsensus = finalizationConsensus;
+    this.consumerConsistency = consumerConsistency;
   }
 
   // returning getSessionManager for debugging / data reading.
@@ -86,6 +90,7 @@ export class RPCConsumerServer {
         chainMessage.getApiCollection().getCollectionData()?.getType() ?? "",
       apiInterface: this.rpcEndpoint.apiInterface,
       chainId: this.rpcEndpoint.chainId,
+      seenBlock: this.consumerConsistency.getSeenBlock(),
       requestedBlock: chainMessage.getRequestedBlock(),
       headers: chainMessage.getRPCMessage().getHeaders(),
     };
@@ -126,6 +131,10 @@ export class RPCConsumerServer {
       } else {
         if (errors.length > 0) {
           Logger.warn("relay succeeded but had some errors", ...errors);
+        }
+        const latestBlock = relayResult.reply?.getLatestBlock();
+        if (latestBlock) {
+          this.consumerConsistency.setSeenBlock(latestBlock);
         }
         return relayResult;
       }

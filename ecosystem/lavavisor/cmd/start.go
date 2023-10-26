@@ -18,6 +18,7 @@ import (
 	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/utils/rand"
 
 	"github.com/lavanet/lava/protocol/statetracker"
 
@@ -49,7 +50,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		signal.Stop(signalChan)
 		cancel()
 	}()
-
+	rand.InitRandomSeed()
 	// spawn up LavaVisor
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)

@@ -396,7 +396,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     let latencyWeight: number;
     switch (this.strategy) {
       case ProviderOptimizerStrategy.Latency:
-        latencyWeight = 0.9;
+        latencyWeight = 0.7;
         break;
       case ProviderOptimizerStrategy.SyncFreshness:
         latencyWeight = 0.2;
@@ -404,7 +404,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       case ProviderOptimizerStrategy.Privacy:
         return random.int(0, 2) === 0;
       default:
-        latencyWeight = 0.8;
+        latencyWeight = 0.6;
     }
 
     if (syncScoreCurrent === 0) {
@@ -462,7 +462,10 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
     const historicalLatencySeconds = millisToSeconds(historicalLatency);
     const baseLatencySeconds = millisToSeconds(baseLatency);
-    const costBlockError = historicalLatencySeconds + baseLatencySeconds;
+    let costBlockError = historicalLatencySeconds + baseLatencySeconds;
+    if (probabilityBlockError > 0.5) {
+      costBlockError *= 3; // consistency improvement
+    }
     const costTimeout = millisToSeconds(timeoutDuration) + baseLatencySeconds;
     const costSuccess = historicalLatencySeconds;
 

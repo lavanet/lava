@@ -2,6 +2,7 @@ package slices
 
 import (
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/slices"
 )
 
 type Number interface {
@@ -54,6 +55,67 @@ func Average[T Number](slice []T) T {
 		sum += val
 	}
 	return sum / T(len(slice))
+}
+
+func Variance[T Number](slice []T, mean T) T {
+	if len(slice) < 2 {
+		return T(0)
+	}
+	sumSquaredDiffs := T(0)
+	for _, x := range slice {
+		diff := x - mean
+		diffSq := diff * diff
+		sumSquaredDiffs += diffSq
+	}
+	variance := sumSquaredDiffs / T(len(slice)-1)
+	return variance
+}
+
+func Median[T Number](slice []T) T {
+	slices.Sort(slice)
+	data_len := len(slice)
+	if data_len == 0 {
+		return 0
+	} else if data_len%2 == 0 {
+		return ((slice[data_len/2-1] + slice[data_len/2]) / T(2))
+	} else {
+		return slice[(data_len-1)/2]
+	}
+}
+
+func Percentile[T Number](slice []T, rank float64) T {
+	data_len := len(slice)
+	if data_len == 0 || rank < 0.0 || rank > 1.0 {
+		return 0
+	}
+	slices.Sort(slice)
+
+	// Calculate the position based on the rank
+	position := int(float64(data_len-1) * rank)
+
+	// Calculate the fractional part
+
+	if data_len%2 == 0 {
+		// Interpolate between two middle values
+		lower := slice[position]
+		upper := slice[position+1]
+		return lower + T(float64(upper-lower)*rank)
+	} else {
+		return slice[position]
+	}
+}
+
+// the bigger it is the more unstable the values in slice from the given argument "compare"
+func Stability[T Number](slice []T, compare T) float64 {
+	stabilitySum := 0.0
+	for _, x := range slice {
+		diff := x - compare
+		if x < compare {
+			diff = compare - x
+		}
+		stabilitySum += float64(diff) / float64(compare)
+	}
+	return stabilitySum / float64(len(slice))
 }
 
 func Contains[T comparable](slice []T, elem T) bool {

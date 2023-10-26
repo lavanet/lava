@@ -9,12 +9,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
-	BlockResultRetry               = 10
+	BlockResultRetry               = 20
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -37,15 +38,6 @@ type EmergencyModeUpdater interface {
 	UpdaterKey() string
 }
 
-// TODO: fix average block time.
-func GetAverageBlockTime() int {
-	averageBlockTime := 1
-	if utils.ExtendedLogLevel == "production" {
-		averageBlockTime = 30
-	}
-	return averageBlockTime
-}
-
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
@@ -57,12 +49,24 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	}
 
 	eventTracker := &EventTracker{clientCtx: clientCtx}
-	err = eventTracker.updateBlockResults(0)
-	for i := 0; i < BlockResultRetry && err != nil; i++ {
+	for i := 0; i < BlockResultRetry; i++ {
 		err = eventTracker.updateBlockResults(0)
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesn't just spam the attempts, and tendermint fails getting block results pretty often
 	}
 	if err != nil {
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
+	}
+	specQueryClient := spectypes.NewQueryClient(clientCtx)
+	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+		ChainID: "LAV1",
+	})
+	for i := 0; i < BlockResultRetry && err != nil; i++ {
+		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+			ChainID: "LAV1",
+		})
 	}
 
 	cst := &StateTracker{
@@ -75,8 +79,8 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		NewLatestCallback: cst.newLavaBlock,
 		OldBlockCallback:  cst.oldLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(GetAverageBlockTime()) * time.Second,
-		ServerBlockMemory: BlocksToSaveLavaChainTracker,
+		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
+		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 	return cst, err

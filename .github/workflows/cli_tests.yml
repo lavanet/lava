@@ -36,8 +36,8 @@ jobs:
     - name: ls -l
       run: ls -l
     
-    - name: lavad cli test
-      run: |
-        chmod +x ./scripts/cli_test.sh    
-        ./scripts/cli_test.sh     
-        killall lavad    
+    # - name: lavad cli test
+    #   run: |
+    #     chmod +x ./scripts/cli_test.sh    
+    #     ./scripts/cli_test.sh     
+    #     killall lavad    

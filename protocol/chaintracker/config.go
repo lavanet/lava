@@ -1,6 +1,10 @@
 package chaintracker
 
-import "time"
+import (
+	"time"
+
+	"github.com/lavanet/lava/protocol/metrics"
+)
 
 const (
 	DefualtAssumedBlockMemory      = 20
@@ -10,12 +14,14 @@ const (
 type ChainTrackerConfig struct {
 	ForkCallback             func(block int64)              // a function to be called when a fork is detected
 	NewLatestCallback        func(block int64, hash string) // a function to be called when a new block is detected
-	OldBlockCallback         func(block int64)              // a function to be called when an old block is detected
-	ServerAddress            string                         // if not empty will open up a grpc server for that address
+	ConsistencyCallback      func(oldBlock int64, block int64)
+	OldBlockCallback         func(block int64)
+	ServerAddress            string // if not empty will open up a grpc server for that address
 	BlocksToSave             uint64
 	AverageBlockTime         time.Duration // how often to query latest block
 	ServerBlockMemory        uint64
-	blocksCheckpointDistance uint64 // this causes the chainTracker to trigger it's checkpoint every X blocks
+	BlocksCheckpointDistance uint64 // this causes the chainTracker to trigger it's checkpoint every X blocks
+	Pmetrics                 *metrics.ProviderMetricsManager
 }
 
 func (cnf *ChainTrackerConfig) validate() error {
@@ -29,8 +35,8 @@ func (cnf *ChainTrackerConfig) validate() error {
 	if cnf.ServerBlockMemory == 0 {
 		cnf.ServerBlockMemory = DefualtAssumedBlockMemory
 	}
-	if cnf.blocksCheckpointDistance == 0 {
-		cnf.blocksCheckpointDistance = DefaultBlockCheckpointDistance
+	if cnf.BlocksCheckpointDistance == 0 {
+		cnf.BlocksCheckpointDistance = DefaultBlockCheckpointDistance
 	}
 	// TODO: validate address is in the right format if not empty
 	return nil

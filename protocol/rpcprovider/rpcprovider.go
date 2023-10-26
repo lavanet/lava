@@ -311,12 +311,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
+			consistencyErrorCallback := func(oldBlock, newBlock int64) {
+				utils.LavaFormatError("Consistency issue detected", nil,
+					utils.Attribute{Key: "oldBlock", Value: oldBlock},
+					utils.Attribute{Key: "newBlock", Value: newBlock},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+				)
+			}
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:      blocksToSaveChainTracker,
-				AverageBlockTime:  averageBlockTime,
-				ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-				NewLatestCallback: recordMetricsOnNewBlock,
+				BlocksToSave:        blocksToSaveChainTracker,
+				AverageBlockTime:    averageBlockTime,
+				ServerBlockMemory:   ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:   recordMetricsOnNewBlock,
+				ConsistencyCallback: consistencyErrorCallback,
+				Pmetrics:            rpcp.providerMetricsManager,
 			}
 
 			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
@@ -368,6 +378,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
 	// prevents these objects form being overrun later
 	chainParser.Activate()
+	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 	return nil
 }

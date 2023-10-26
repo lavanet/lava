@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
@@ -31,6 +32,13 @@ func (bcp *BaseChainParser) Activate() {
 
 func (bcp *BaseChainParser) Active() bool {
 	return bcp.active
+}
+
+func (bcp *BaseChainParser) UpdateBlockTime(newBlockTime time.Duration) {
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
+	utils.LavaFormatInfo("chainParser updated block time", utils.Attribute{Key: "newTime", Value: newBlockTime}, utils.Attribute{Key: "oldTime", Value: time.Duration(bcp.spec.AverageBlockTime) * time.Millisecond}, utils.Attribute{Key: "specID", Value: bcp.spec.Index})
+	bcp.spec.AverageBlockTime = newBlockTime.Milliseconds()
 }
 
 func (bcp *BaseChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filteredHeaders []pairingtypes.Metadata, overwriteRequestedBlock string, ignoredMetadata []pairingtypes.Metadata) {
