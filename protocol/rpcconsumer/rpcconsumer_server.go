@@ -289,7 +289,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		utils.LavaFormatDebug("relay succeeded after retries", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "retries", Value: retries})
 	}
 	return returnedResult, nil
-	// return returnedResult.Reply, returnedResult.ReplyServer, nil
 }
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
