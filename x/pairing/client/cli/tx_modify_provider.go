@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -85,6 +86,23 @@ func CmdModifyProvider() *cobra.Command {
 				return err
 			}
 
+			dsquerier := dualstakingtypes.NewQueryClient(clientCtx)
+			delegations, err := dsquerier.ProviderDelegators(ctx, &dualstakingtypes.QueryProviderDelegatorsRequest{Provider: address.String()})
+			if err != nil {
+				return err
+			}
+			delegationfound := false
+			var selfdelegation dualstakingtypes.Delegation
+			for _, d := range delegations.Delegations {
+				if d.Delegator == d.Provider && d.ChainID == argChainID {
+					delegationfound = true
+					selfdelegation = d
+					break
+				}
+			}
+			if !delegationfound {
+				return utils.LavaFormatError("provider self delegation was not found", nil)
+			}
 			pairingQuerier := types.NewQueryClient(clientCtx)
 			response, err := pairingQuerier.Providers(ctx, &types.QueryProvidersRequest{
 				ChainID:    argChainID,
@@ -115,10 +133,10 @@ func CmdModifyProvider() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if providerEntry.Stake.Amount.GT(newStake.Amount) {
-					return utils.LavaFormatError("can't reduce provider stake", nil, utils.Attribute{Key: "current", Value: providerEntry.Stake}, utils.Attribute{Key: "requested", Value: providerEntry.Stake})
+				if selfdelegation.Amount.Amount.GT(newStake.Amount) {
+					return utils.LavaFormatError("can't reduce provider stake", nil, utils.Attribute{Key: "current", Value: selfdelegation.Amount}, utils.Attribute{Key: "requested", Value: newStake.Amount})
 				}
-				providerEntry.Stake = newStake
+				selfdelegation.Amount = newStake
 			}
 			var geolocation int32
 			if cmd.Flags().Changed(GeolocationFlag) {
@@ -171,7 +189,7 @@ func CmdModifyProvider() *cobra.Command {
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				argChainID,
-				providerEntry.Stake,
+				selfdelegation.Amount,
 				providerEntry.Endpoints,
 				providerEntry.Geolocation,
 				providerEntry.Moniker,

@@ -13,7 +13,7 @@ import (
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescription string) error {
 	logger := k.Logger(ctx)
-
+	nextEpoch, _ := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
 	// TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
@@ -45,12 +45,15 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 		)
 	}
 
+	// TODO handle errors
+	selfDelegation, _ := k.dualStakingKeeper.GetDelegation(ctx, existingEntry.GetAddress(), existingEntry.GetAddress(), existingEntry.GetChain(), nextEpoch)
+	_ = k.dualStakingKeeper.Unbond(ctx, existingEntry.GetAddress(), existingEntry.GetAddress(), existingEntry.GetChain(), selfDelegation.Amount)
+
 	details := map[string]string{
 		"address":     existingEntry.GetAddress(),
 		"chainID":     existingEntry.GetChain(),
 		"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
 		"moniker":     existingEntry.GetMoniker(),
-		"stake":       existingEntry.GetStake().Amount.String(),
 	}
 	utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, unstakeDescription)
 
@@ -60,11 +63,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) {
 	// this pops all the entries that had their deadline pass
-	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
-
-	if unstakingEntriesToCredit != nil {
-		k.creditUnstakingEntries(ctx, unstakingEntriesToCredit) // true for providers
-	}
+	k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 }
 
 func (k Keeper) refundUnstakingProvider(ctx sdk.Context, addr sdk.AccAddress, neededAmount sdk.Coin) error {
@@ -77,53 +76,6 @@ func (k Keeper) refundUnstakingProvider(ctx sdk.Context, addr sdk.AccAddress, ne
 		return fmt.Errorf("failed to send coins from module to %s: %w", addr, err)
 	}
 	return nil
-}
-
-func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) {
-	logger := k.Logger(ctx)
-
-	for _, unstakingEntry := range entriesToUnstake {
-		details := map[string]string{
-			"spec":     unstakingEntry.Chain,
-			"provider": unstakingEntry.Address,
-			"stake":    unstakingEntry.Stake.String(),
-		}
-
-		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
-			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
-			if err != nil {
-				// this should not happen; to avoid panic we simply skip this one (thus
-				// freeze the situation so it can be investigated and orderly resolved).
-				utils.LavaFormatError("critical: failed to get unstaking provider address", err,
-					utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-					utils.Attribute{Key: "provider", Value: unstakingEntry.Address},
-				)
-				continue
-			}
-			if unstakingEntry.Stake.Amount.GT(sdk.ZeroInt()) {
-				// transfer stake money to the stake entry account
-				err := k.refundUnstakingProvider(ctx, receiverAddr, unstakingEntry.Stake)
-				if err != nil {
-					// we should always be able to redund a provider that decides to unstake;
-					// but to avoid panic, just emit a critical error and proceed
-					utils.LavaFormatError("critical: failed to refund staked provider", err,
-						utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-						utils.Attribute{Key: "provider", Value: receiverAddr},
-						utils.Attribute{Key: "stake", Value: unstakingEntry.Stake},
-					)
-				} else {
-					utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, "Unstaking Providers Commit")
-				}
-			}
-		} else {
-			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
-			utils.LavaFormatWarning("trying to unstake while its stakeAppliedBlock wasn't reached", fmt.Errorf("unstake failed"),
-				utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-				utils.Attribute{Key: "provider", Value: unstakingEntry.Address},
-				utils.Attribute{Key: "stake", Value: unstakingEntry.Stake.String()},
-			)
-		}
-	}
 }
 
 // NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.

@@ -215,7 +215,9 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations))
 
 	// check the provider's balance
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
+	selfDelegation, err := ts.Keepers.Dualstaking.GetDelegation(ts.Ctx, providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index, ts.EpochStart())
+	require.Nil(t, err)
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, selfDelegation, math.NewInt(int64(relayCuSum)))
 	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
 	expectedReward := mint.MulInt64(providerReward.Int64())
 
@@ -231,7 +233,10 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 
-	providerReward, _ = ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
+	selfDelegation, err = ts.Keepers.Dualstaking.GetDelegation(ts.Ctx, providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index, ts.EpochStart())
+	require.Nil(t, err)
+
+	providerReward, _ = ts.Keepers.Dualstaking.CalcRewards(stakeEntry, selfDelegation, math.NewInt(int64(relayCuSum)))
 	expectedReward = mint.MulInt64(providerReward.Int64())
 
 	balance = ts.GetBalance(providerAcc.Addr)
@@ -275,8 +280,11 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, 1, len(res.Delegations))
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
+	selfDelegation, err := ts.Keepers.Dualstaking.GetDelegation(ts.Ctx, providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index, ts.EpochStart())
+	require.Nil(t, err)
+
 	totalReward := math.NewInt(int64(relayCuSum))
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalReward)
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, selfDelegation, totalReward)
 
 	require.True(t, totalReward.Equal(providerReward))
 

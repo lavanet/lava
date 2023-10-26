@@ -14,7 +14,7 @@ import (
 
 func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64) error {
 	logger := k.Logger(ctx)
-
+	nextEpoch, _ := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
 	// TODO: basic validation for chain ID
 	specChainID := chainID
 
@@ -39,23 +39,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		return utils.LavaFormatWarning("invalid address", err,
 			utils.Attribute{Key: "provider", Value: creator},
 		)
-	}
-	// define the function here for later use
-	verifySufficientAmountAndSendToModule := func(ctx sdk.Context, k Keeper, addr sdk.AccAddress, neededAmount sdk.Coin) error {
-		if k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom).IsLT(neededAmount) {
-			return utils.LavaFormatWarning("insufficient balance for staking", fmt.Errorf("insufficient funds"),
-				utils.Attribute{Key: "current balance", Value: k.bankKeeper.GetBalance(ctx, addr, epochstoragetypes.TokenDenom)},
-				utils.Attribute{Key: "stake amount", Value: neededAmount},
-			)
-		}
-		if neededAmount.Amount == sdk.ZeroInt() {
-			return nil
-		}
-		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, types.ModuleName, []sdk.Coin{neededAmount})
-		if err != nil {
-			return utils.LavaFormatError("invalid transfer coins to module", err)
-		}
-		return nil
 	}
 
 	if !planstypes.IsValidGeoEnum(geolocation) {
@@ -98,13 +81,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			{Key: "stake", Value: amount},
 		}
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
-		if amount.IsGTE(existingEntry.Stake) {
+		// TODO handle this
+		currentSelfDelegation, _ := k.dualStakingKeeper.GetDelegation(ctx, senderAddr.String(), senderAddr.String(), chainID, nextEpoch)
+		if amount.IsGTE(currentSelfDelegation.Amount) {
 			// support modifying with the same stake or greater only
-			if !amount.Equal(existingEntry.Stake) {
+			if !amount.Equal(currentSelfDelegation.Amount) {
 				// needs to charge additional tokens
-				err := verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount.Sub(existingEntry.Stake))
+				err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
 				if err != nil {
-					details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
+					details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(currentSelfDelegation.Amount).String()})
 					return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
 						details...,
 					)
@@ -114,8 +99,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 			// must also change the unstaking to create a new entry entirely
 
-			// paid the difference to module
-			existingEntry.Stake = amount
 			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpointsVerified
@@ -131,7 +114,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake")
 			return nil
 		}
-		details = append(details, utils.Attribute{Key: "existingStake", Value: existingEntry.Stake.String()})
+		details = append(details, utils.Attribute{Key: "existingStake", Value: currentSelfDelegation.Amount.String()})
 		return utils.LavaFormatWarning("can't decrease stake for existing provider", fmt.Errorf("cant decrease stake"),
 			details...,
 		)
@@ -145,15 +128,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		{Key: "stake", Value: amount.String()},
 		{Key: "geolocation", Value: geolocation},
 	}
-	err = verifySufficientAmountAndSendToModule(ctx, k, senderAddr, amount)
+
+	err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
 	if err != nil {
-		utils.LavaFormatWarning("insufficient amount to pay for stake", err,
+		utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,
 		)
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              amount,
 		Address:            creator,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
@@ -262,5 +245,9 @@ func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) 
 }
 
 func (k Keeper) GetAllChainIDs(ctx sdk.Context) []string {
+	return k.specKeeper.GetAllChainIDs(ctx)
+}
+
+func (k Keeper) EffectiveStake(ctx sdk.Context) []string {
 	return k.specKeeper.GetAllChainIDs(ctx)
 }

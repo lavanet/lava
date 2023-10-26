@@ -5,6 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/fixationstore"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -93,6 +94,9 @@ type DowntimeKeeper interface {
 
 type DualStakingKeeper interface {
 	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error)
+	Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error
+	GetDelegation(ctx sdk.Context, provider string, delegator string, chainID string, epoch uint64) (dualstakingtypes.Delegation, error)
+	Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error
 }
 
 type FixationStoreKeeper interface {

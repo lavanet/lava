@@ -140,7 +140,7 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	// get provider1's balance before the stake
 	provider1_balance := ts.GetBalance(provider1_addr)
 	staked_amount, _, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider1_addr)
-	balanceProvideratBeforeStake := staked_amount.Stake.Amount.Int64() + provider1_balance
+	balanceProvideratBeforeStake := staked_amount.DelegateTotal.Amount.Int64() + provider1_balance
 	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
 
 	// create relay requests for provider0 that contain complaints about provider1

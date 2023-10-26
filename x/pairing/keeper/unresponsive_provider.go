@@ -233,7 +233,7 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, provid
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID, "complaint_cu": strconv.FormatUint(complaintCU, 10), "serviced_cu": strconv.FormatUint(servicedCU, 10)}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
 	err = k.unsafeUnstakeProviderEntry(ctx, epoch, chainID, indexInStakeStorage, existingEntry)
 	if err != nil {
-		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "indexInStakeStorage", Value: indexInStakeStorage}, {Key: "existingEntry", Value: existingEntry.GetStake()}}...)
+		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "indexInStakeStorage", Value: indexInStakeStorage}}...)
 	}
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)

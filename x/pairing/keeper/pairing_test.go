@@ -263,7 +263,7 @@ func TestPairingStatic(t *testing.T) {
 	require.Nil(t, err)
 
 	for i, provider := range pairing.Providers {
-		require.Equal(t, provider.Stake.Amount.Int64(), testStake+int64(i))
+		require.Equal(t, provider.DelegateTotal.Amount.Int64(), testStake+int64(i))
 	}
 }
 
@@ -874,7 +874,7 @@ func TestPairingUniformDistribution(t *testing.T) {
 	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 5)
 	require.NoError(t, err)
 
-	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
+	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.EffectiveStake().Int64() }
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
 }
 
@@ -892,7 +892,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	stake := p.Stake.Amount.Int64()
+	stake := p.EffectiveStake().Int64()
 	err = ts.StakeProviderExtra(p.Address, ts.spec, stake*2, p.Endpoints, p.Geolocation, p.Moniker)
 	require.NoError(t, err)
 
@@ -902,7 +902,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
 	require.Nil(t, err)
 
-	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
+	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.EffectiveStake().Int64() }
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
 }
 
