@@ -173,7 +173,7 @@ func TestSendNewProof(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 20, nil)
+		rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardDB, "badger_test", 1, 20, nil)
 		existingCU, updatedWithProf := uint64(0), false
 		for _, proof := range testCase.Proofs {
 			existingCU, updatedWithProf = rws.SendNewProof(context.TODO(), proof, uint64(proof.Epoch), "consumerAddress", "apiInterface")
@@ -191,7 +191,7 @@ func TestSendNewProofWillSetBadgeWhenPrefProofDoesNotHaveOneSet(t *testing.T) {
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
+	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardStore, "badger_test", 1, 10, nil)
 
 	prevProof := common.BuildRelayRequestWithBadge(ctx, "providerAddr", []byte{}, uint64(1), uint64(0), "specId", nil, &pairingtypes.Badge{})
 	prevProof.Epoch = int64(1)
@@ -213,7 +213,7 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 	err := rewardStore.AddDB(db)
 	require.NoError(t, err)
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
+	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardStore, "badger_test", 1, 10, nil)
 
 	const providerAddr = "providerAddr"
 	specId := "specId"
@@ -232,8 +232,8 @@ func TestSendNewProofWillNotSetBadgeWhenPrefProofHasOneSet(t *testing.T) {
 
 func TestUpdateEpoch(t *testing.T) {
 	rand.InitRandomSeed()
-	setupRewardsServer := func() (*RewardServer, *rewardsTxSenderDouble, *RewardDB) {
-		stubRewardsTxSender := rewardsTxSenderDouble{}
+	setupRewardsServer := func() (*RewardServer, *rewardsTxSenderMock, *RewardDB) {
+		stubRewardsTxSender := rewardsTxSenderMock{}
 		db := NewMemoryDB("spec")
 		rewardDB := NewRewardDB()
 		err := rewardDB.AddDB(db)
@@ -320,7 +320,7 @@ func TestSaveRewardsToDB(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 2, 1000, nil)
+	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardDB, "badger_test", 2, 1000, nil)
 
 	epoch := uint64(1)
 
@@ -354,7 +354,7 @@ func TestDeleteRewardsFromDBWhenRewardApproved(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardDB, "badger_test", 1, 100, nil)
+	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardDB, "badger_test", 1, 100, nil)
 
 	epoch, sessionId := uint64(1), uint64(1)
 
@@ -401,7 +401,7 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	stubRewardsTxSender := rewardsTxSenderDouble{}
+	stubRewardsTxSender := rewardsTxSenderMock{}
 
 	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 100, nil)
 
@@ -448,7 +448,7 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	stubRewardsTxSender := rewardsTxSenderDouble{}
+	stubRewardsTxSender := rewardsTxSenderMock{}
 
 	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
 
@@ -469,7 +469,7 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 
 	rws.rewardsSnapshotThresholdCh <- struct{}{}
 
-	stubRewardsTxSender = rewardsTxSenderDouble{}
+	stubRewardsTxSender = rewardsTxSenderMock{}
 	rws = NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
 
 	for _, spec := range specs {
@@ -516,7 +516,7 @@ func BenchmarkSendNewProofLocal(b *testing.B) {
 	defer func() {
 		rewardStore.Close()
 	}()
-	rws := NewRewardServer(&rewardsTxSenderDouble{}, nil, rewardStore, "badger_test", 1, 10, nil)
+	rws := NewRewardServer(&rewardsTxSenderMock{}, nil, rewardStore, "badger_test", 1, 10, nil)
 
 	proofs := generateProofs(ctx, []string{"spec", "spec2"}, b.N)
 
@@ -543,21 +543,21 @@ func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *R
 	}
 }
 
-type rewardsTxSenderDouble struct {
+type rewardsTxSenderMock struct {
 	earliestBlockInMemory uint64
 	sentPayments          []*pairingtypes.RelaySession
 }
 
-func (rts *rewardsTxSenderDouble) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string, _ []*pairingtypes.LatestBlockReport) error {
+func (rts *rewardsTxSenderMock) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string, _ []*pairingtypes.LatestBlockReport) error {
 	rts.sentPayments = append(rts.sentPayments, payments...)
 
 	return nil
 }
 
-func (rts *rewardsTxSenderDouble) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
+func (rts *rewardsTxSenderMock) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
 	return 0, nil
 }
 
-func (rts *rewardsTxSenderDouble) EarliestBlockInMemory(_ context.Context) (uint64, error) {
+func (rts *rewardsTxSenderMock) EarliestBlockInMemory(_ context.Context) (uint64, error) {
 	return rts.earliestBlockInMemory, nil
 }
