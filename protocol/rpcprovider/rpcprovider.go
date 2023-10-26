@@ -363,6 +363,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
 	// prevents these objects form being overrun later
 	chainParser.Activate()
+	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	// "github.com/cosmos/cosmos-sdk/client/flags"
+	utilslib "github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/spec/client/utils"
 	"github.com/lavanet/lava/x/spec/types"
 
@@ -24,6 +25,7 @@ var DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Min
 const (
 	flagPacketTimeoutTimestamp = "packet-timeout-timestamp"
 	listSeparator              = ","
+	devTestFlagName            = "lava-dev-test"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -44,7 +46,7 @@ func GetTxCmd() *cobra.Command {
 // NewSubmitParamChangeProposalTxCmd returns a CLI command handler for creating
 // a parameter change proposal governance transaction.
 func NewSubmitSpecAddProposalTxCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "spec-add [proposal-file,proposal-file,...]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a spec add proposal",
@@ -83,6 +85,17 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 				return err
 			}
 
+			devTest, err := cmd.Flags().GetBool(devTestFlagName)
+			if err == nil && devTest {
+				// modify the lava spec for dev tests
+				for idx, spec := range content.Specs {
+					if spec.Index == "LAV1" {
+						utilslib.LavaFormatInfo("modified lava spec time for dev tests")
+						content.Specs[idx].AverageBlockTime = (1 * time.Second).Milliseconds()
+					}
+				}
+			}
+
 			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
 				return err
@@ -91,4 +104,6 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
+	cmd.Flags().Bool(devTestFlagName, false, "set to true to modify the average block time for lava spec")
+	return cmd
 }

@@ -256,12 +256,13 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 		block          int64
 		requestedBlock int64
 	}{
-		{
-			desc:           "no metadata",
-			metadata:       []pairingtypes.Metadata{},
-			block:          244589,
-			requestedBlock: spectypes.LATEST_BLOCK,
-		},
+		// Disabled due to inconsistency in cosmos sdk when adding these headers
+		// {
+		// 	desc:           "no metadata",
+		// 	metadata:       []pairingtypes.Metadata{},
+		// 	block:          244589,
+		// 	requestedBlock: spectypes.LATEST_BLOCK,
+		// },
 		{
 			desc:           "with-metadata",
 			metadata:       metadata,

@@ -23,6 +23,9 @@ type parsedMessage struct {
 	extensions             []*spectypes.Extension
 }
 
+func (pm *parsedMessage) DisableErrorHandling() {
+}
+
 func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
 	pm.msg.AppendHeader(metadata)
 }

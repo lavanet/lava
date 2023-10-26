@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -124,11 +125,11 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 	}
 }
 
-func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
+func (rm *ReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
 	return rm.chainTracker.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 }
 
-func (rm *ReliabilityManager) GetLatestBlockNum() int64 {
+func (rm *ReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
 	return rm.chainTracker.GetLatestBlockNum()
 }
 

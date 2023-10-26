@@ -252,7 +252,6 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	defer psm.lock.Unlock()
 	if epoch <= psm.blockedEpochHeight || epoch <= psm.currentEpoch {
 		// this shouldn't happen, but nothing to do
-		utils.LavaFormatWarning("called updateEpoch with invalid epoch", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "blockedEpoch", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "currentEpoch", Value: psm.currentEpoch})
 		return
 	}
 	if epoch > psm.blockDistanceForEpochValidity {
