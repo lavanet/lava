@@ -153,10 +153,16 @@ func (rws *RewardServer) UpdateEpoch(epoch uint64) {
 }
 
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
-	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch)
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	if err != nil {
+		return utils.LavaFormatError("sendRewardsClaim failed to get earliest block in memory", err)
+	}
+
+	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch, earliestSavedEpoch)
 	if err != nil {
 		return err
 	}
+
 	specs := map[string]struct{}{}
 	for _, relay := range rewardsToClaim {
 		consumerAddr, err := sigs.ExtractSignerAddress(relay)
@@ -258,7 +264,7 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 	return false
 }
 
-func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, errRet error) {
+func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64, earliestSavedEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, errRet error) {
 	blockDistanceForEpochValidity, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
@@ -266,11 +272,6 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 
 	if blockDistanceForEpochValidity > currentEpoch {
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
-	}
-
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
-	if err != nil {
-		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to get earliest block in memory", err)
 	}
 
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
