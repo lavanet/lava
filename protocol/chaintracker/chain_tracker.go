@@ -594,5 +594,5 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	}
 
 	err = chainTracker.serve(ctx, config.ServerAddress)
-	return
+	return chainTracker, err
 }
