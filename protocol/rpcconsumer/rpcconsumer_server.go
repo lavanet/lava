@@ -277,7 +277,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		analytics.ComputeUnits = returnedResult.Request.RelaySession.CuSum
 	}
 	return returnedResult, nil
-	// return returnedResult.Reply, returnedResult.ReplyServer, nil
 }
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
