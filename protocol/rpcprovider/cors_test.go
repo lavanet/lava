@@ -92,7 +92,7 @@ func TestPerformCORSCheckFail(t *testing.T) {
 
 	err := performCORSCheck(endpoint)
 	require.NotNil(t, err, "Expected CORS check to fail but it passed")
-	require.True(t, strings.Contains(err.Error(), "CORS check failed"), "Expected CORS related error message")
+	require.True(t, strings.Contains(err.Error(), "CORS check failed"), "Expected CORS related error message", err)
 }
 
 func TestPerformCORSCheckFailXGrpcWeb(t *testing.T) {
