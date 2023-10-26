@@ -686,7 +686,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		} // else: we updated the chain message to request the specific latestBlock we fetched earlier, so use the previously fetched latest block and hashes
 		if proofBlock < modifiedReqBlock && proofBlock < request.RelayData.SeenBlock {
 			// we requested with a newer block, but don't necessarily have the finaliziation proof, chaintracker might be behind
-			proofBlock = modifiedReqBlock
+			proofBlock = slices.Min([]int64{modifiedReqBlock, request.RelayData.SeenBlock})
 			proofBlock, requestedHashes, err = rpcps.GetBlockDataForOptimisticFetch(ctx, proofBlock, blockDistanceToFinalization, blocksInFinalizationData, averageBlockTime)
 			if err != nil {
 				return nil, utils.LavaFormatError("error getting block range for finalization proof", err)
@@ -768,8 +768,8 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock
 	}
 	deadline, ok := ctx.Deadline()
 	probabilityBlockError := 0.0
+	halfTimeLeft := time.Until(deadline) / 2 // giving the node at least half the timeout time to process
 	if ok {
-		halfTimeLeft := time.Until(deadline) / 2                              // giving the node at least half the timeout time to process
 		timeProviderHasS := (time.Since(changeTime) + halfTimeLeft).Seconds() // add waiting half the timeout time
 		if changeTime.IsZero() {
 			// we don't have information on block changes
