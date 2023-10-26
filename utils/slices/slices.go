@@ -79,7 +79,7 @@ func Median[T Number](slice []T) T {
 	} else if data_len%2 == 0 {
 		return ((slice[data_len/2-1] + slice[data_len/2]) / T(2))
 	} else {
-		return slice[data_len/2]
+		return slice[(data_len-1)/2]
 	}
 }
 
