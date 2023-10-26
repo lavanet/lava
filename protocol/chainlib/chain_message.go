@@ -28,9 +28,6 @@ func (pm *parsedMessage) DisableErrorHandling() {
 	pm.msg.DisableErrorHandling()
 }
 
-func (pm *parsedMessage) DisableErrorHandling() {
-}
-
 func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
 	pm.msg.AppendHeader(metadata)
 }

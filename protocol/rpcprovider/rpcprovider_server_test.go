@@ -243,7 +243,7 @@ func TestHandleConsistency(t *testing.T) {
 				// advance mockChainTracker
 				if len(play.chainTrackerBlocks) > 1 {
 					nextBlock := play.chainTrackerBlocks[1]
-					time.Sleep(3 * time.Millisecond)
+					time.Sleep(4 * time.Millisecond)
 					mockChainTracker.SetLatestBlock(nextBlock, time.Now())
 				}
 			}()
