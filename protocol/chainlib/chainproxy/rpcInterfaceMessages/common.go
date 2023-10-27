@@ -27,4 +27,5 @@ func (pri ParsableRPCInput) GetResult() json.RawMessage {
 
 type GenericMessage interface {
 	GetHeaders() []pairingtypes.Metadata
+	DisableErrorHandling()
 }

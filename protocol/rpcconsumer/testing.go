@@ -52,17 +52,26 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				utils.LavaFormatInfo("Received a new Block",
 					utils.Attribute{Key: "block", Value: block},
 					utils.Attribute{Key: "hash", Value: hash},
-					utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+				)
+			}
+			consistencyErrorCallback := func(oldBlock, newBlock int64) {
+				utils.LavaFormatError("Consistency issue detected", nil,
+					utils.Attribute{Key: "oldBlock", Value: oldBlock},
+					utils.Attribute{Key: "newBlock", Value: newBlock},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
 				)
 			}
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:      blocksToSaveChainTracker,
-				AverageBlockTime:  averageBlockTime,
-				ServerBlockMemory: rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-				NewLatestCallback: printOnNewLatestCallback,
+				BlocksToSave:        blocksToSaveChainTracker,
+				AverageBlockTime:    averageBlockTime,
+				ServerBlockMemory:   rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:   printOnNewLatestCallback,
+				ConsistencyCallback: consistencyErrorCallback,
 			}
 			chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint, nil)
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

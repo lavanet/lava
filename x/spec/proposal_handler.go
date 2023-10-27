@@ -101,14 +101,14 @@ func handleSpecProposal(ctx sdk.Context, k keeper.Keeper, p *types.SpecAddPropos
 	for _, spec := range p.Specs {
 		_, found := k.GetSpec(ctx, spec.Index)
 
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
+		k.SetSpec(ctx, spec)
+
 		details, err := k.ValidateSpec(ctx, spec)
 		if err != nil {
 			attrs := utils.StringMapToAttributes(details)
 			return utils.LavaFormatWarning("invalid spec", err, attrs...)
 		}
-
-		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
-		k.SetSpec(ctx, spec)
 
 		name := types.SpecAddEventName
 

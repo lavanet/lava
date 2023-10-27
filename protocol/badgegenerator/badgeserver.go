@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -46,7 +47,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 			v.SetConfigType("yml")
 			v.AddConfigPath(".")
 			v.AddConfigPath("./config")
-
+			rand.InitRandomSeed()
 			if err := v.ReadInConfig(); err != nil {
 				// It's okay if there isn't a config file
 				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

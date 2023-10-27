@@ -17,7 +17,6 @@ linters:
   enable:
     - dogsled
     - exportloopref
-    - goconst
     - gocritic
     - gofumpt
     - gosimple
@@ -32,7 +31,6 @@ linters:
     - unconvert
     #- unused we have a lot of unused code that we dont want to delete
     - forcetypeassert
-    - goconst
     - gofmt
     - goimports
     - importas

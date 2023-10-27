@@ -26,6 +26,7 @@ export interface SendRelayData {
   url: string;
   apiInterface: string;
   chainId: string;
+  seenBlock: number;
   requestedBlock: number;
   headers: Metadata[];
 }
@@ -39,7 +40,7 @@ export function newRelayData(relayData: SendRelayData): RelayPrivateData {
   requestPrivateData.setApiUrl(url);
   requestPrivateData.setData(enc.encode(data));
   requestPrivateData.setRequestBlock(relayData.requestedBlock);
-  requestPrivateData.setSeenBlock(0);
+  requestPrivateData.setSeenBlock(relayData.seenBlock);
   requestPrivateData.setApiInterface(relayData.apiInterface);
   requestPrivateData.setSalt(getNewSalt());
   requestPrivateData.setMetadataList(headers);

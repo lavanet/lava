@@ -125,3 +125,7 @@ endpoints:
     - chain-id: FVM
       api-interface: jsonrpc
       network-address: 127.0.0.1:3384
+    - chain-id: NEAR
+      api-interface: jsonrpc
+      network-address: 127.0.0.1:3385
+metrics-listen-address: ":7779"

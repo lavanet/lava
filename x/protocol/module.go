@@ -144,6 +144,24 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
 	}
+
+	// register v5 -> v6 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 5, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v6: %w", types.ModuleName, err))
+	}
+
+	// register v6 -> v7 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 6, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v7: %w", types.ModuleName, err))
+	}
+
+	// register v7 -> v8 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 7, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v8: %w", types.ModuleName, err))
+	}
 }
 
 // RegisterInvariants registers the capability module's invariants.
@@ -168,7 +186,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 5 }
+func (AppModule) ConsensusVersion() uint64 { return 8 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {

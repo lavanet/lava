@@ -343,7 +343,7 @@ export class ConsumerSessionManager {
 
         if (sessions.size === wantedSessions) {
           Logger.debug(
-            `returning sessions: ${JSON.stringify(sessions.values())}`,
+            `returning sessions: ${JSON.stringify(sessions)}`,
             sessions.size
           );
           return sessions;

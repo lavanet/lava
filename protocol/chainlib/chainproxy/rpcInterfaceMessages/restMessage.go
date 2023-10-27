@@ -2,6 +2,7 @@ package rpcInterfaceMessages
 
 import (
 	"encoding/json"
+	"net/url"
 	"strings"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -18,14 +19,11 @@ type RestMessage struct {
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (cp RestMessage) GetParams() interface{} {
-	var parsedMethod string
-	idx := strings.Index(cp.Path, "?")
-	if idx == -1 {
-		parsedMethod = cp.Path
-	} else {
-		parsedMethod = cp.Path[0:idx]
+	urlObj, err := url.Parse(cp.Path)
+	if err != nil {
+		return nil
 	}
-
+	parsedMethod := urlObj.Path
 	objectSpec := strings.Split(cp.SpecPath, "/")
 	objectPath := strings.Split(parsedMethod, "/")
 
@@ -37,20 +35,8 @@ func (cp RestMessage) GetParams() interface{} {
 			parameters[element] = objectPath[index]
 		}
 	}
-	if idx > -1 {
-		queryParams := cp.Path[idx:]
-		if len(queryParams) > 0 {
-			queryParamsList := strings.Split(queryParams, "&")
-			for _, queryParamNameValue := range queryParamsList {
-				queryParamNameValueSplitted := strings.SplitN(queryParamNameValue, "=", 2)
-				if len(queryParamNameValueSplitted) != 2 {
-					continue
-				}
-				queryParamName := queryParamNameValueSplitted[0]
-				queryParamValue := queryParamNameValueSplitted[1]
-				parameters[queryParamName] = queryParamValue
-			}
-		}
+	for key, values := range urlObj.Query() {
+		parameters[key] = strings.Join(values, ",")
 	}
 	if len(parameters) == 0 {
 		return nil
@@ -59,7 +45,9 @@ func (cp RestMessage) GetParams() interface{} {
 }
 
 func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
-	return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+	// return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
+	// removed until behaviour inconsistency with the cosmos sdk header is solved
+	return false
 	// if !done else we need a different setter
 }
 
