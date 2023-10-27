@@ -631,7 +631,8 @@ func (rts *rewardsTxSenderMock) defaultTxRelayPaymentCallback(_ context.Context,
 }
 
 func (rts *rewardsTxSenderMock) TxRelayPayment(ctx context.Context, payments []*pairingtypes.RelaySession,
-	description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
+	description string, latestBlocks []*pairingtypes.LatestBlockReport,
+) error {
 	if rts.txRelayPaymentCallback != nil {
 		return rts.txRelayPaymentCallback(ctx, payments, description, latestBlocks)
 	}
