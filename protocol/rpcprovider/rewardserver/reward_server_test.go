@@ -466,6 +466,100 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 	require.Equal(t, 2, len(stubRewardsTxSender.sentPayments))
 }
 
+func TestFailedPaymentRequestAttemptsHappyFlow(t *testing.T) {
+	rand.InitRandomSeed()
+	const providerAddr = "providerAddr"
+	spec := "spec1"
+	var rewardTxSent int
+
+	rewardDB, err := createInMemoryRewardDb([]string{spec})
+	require.NoError(t, err)
+
+	stubRewardsTxSender := rewardsTxSenderMock{
+		txRelayPaymentCallback: func(ctx context.Context, rs []*pairingtypes.RelaySession, s string, lbr []*pairingtypes.LatestBlockReport) error {
+			rewardTxSent++
+			return fmt.Errorf("Some error")
+		},
+	}
+
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
+
+	session := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, uint64(1), uint64(42), spec, nil)
+	rws.SendNewProof(ctx, session, 1, "consumerAddress", "apiInterface")
+
+	for i := 0; i < MaxPaymentRequestsRetiresForSession-1; i++ {
+		rws.sendRewardsClaim(ctx, 1)
+		require.Equal(t, 1, len(rws.failedRewardsPaymentRequests))
+	}
+
+	rws.sendRewardsClaim(ctx, 1)
+	require.Equal(t, 0, len(rws.failedRewardsPaymentRequests))
+	require.Equal(t, MaxPaymentRequestsRetiresForSession, rewardTxSent)
+}
+
+func TestFailedPaymentRequestAttemptsHappyMultipleSessions(t *testing.T) {
+	rand.InitRandomSeed()
+	const providerAddr = "providerAddr"
+	spec := "spec1"
+	var rewardTxSent int
+
+	rewardDB, err := createInMemoryRewardDb([]string{spec})
+	require.NoError(t, err)
+
+	stubRewardsTxSender := rewardsTxSenderMock{
+		txRelayPaymentCallback: func(ctx context.Context, rs []*pairingtypes.RelaySession, s string, lbr []*pairingtypes.LatestBlockReport) error {
+			rewardTxSent += len(rs)
+			return fmt.Errorf("Some error")
+		},
+	}
+
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 10000, 10000, nil)
+
+	require.Equal(t, 3, MaxPaymentRequestsRetiresForSession,
+		"This test assumes that the MaxPaymentRequestsRetiresForSession is 3. "+
+			"If that's not the case, please change the test accordingly")
+
+	privKey, acc := sigs.GenerateFloatingKey()
+
+	buildAndSendRelayPaymentRequest := func(sessionId uint64, epoch int64) {
+		session := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, sessionId, uint64(42), spec, nil)
+		session.Epoch = epoch
+		sig, err := sigs.Sign(privKey, *session)
+		require.NoError(t, err)
+		session.Sig = sig
+		rws.SendNewProof(ctx, session, 1, acc.String(), "apiInterface")
+		rws.sendRewardsClaim(ctx, 1)
+	}
+
+	buildAndSendRelayPaymentRequest(1, 1)
+	require.Equal(t, 1, rewardTxSent)
+	require.Equal(t, 1, len(rws.failedRewardsPaymentRequests)) // sessions: [1]
+	require.Equal(t, uint64(1), rws.failedRewardsPaymentRequests[1].relaySession.SessionId)
+
+	buildAndSendRelayPaymentRequest(2, 1)
+	require.Equal(t, 3, rewardTxSent)
+	require.Equal(t, 2, len(rws.failedRewardsPaymentRequests)) // sessions: [1, 2]
+	require.Equal(t, uint64(1), rws.failedRewardsPaymentRequests[1].relaySession.SessionId)
+	require.Equal(t, uint64(2), rws.failedRewardsPaymentRequests[2].relaySession.SessionId)
+
+	buildAndSendRelayPaymentRequest(3, 2)
+	require.Equal(t, 6, rewardTxSent)
+	require.Equal(t, 2, len(rws.failedRewardsPaymentRequests)) // sessions: [2, 3]
+	require.Equal(t, uint64(2), rws.failedRewardsPaymentRequests[2].relaySession.SessionId)
+	require.Equal(t, uint64(3), rws.failedRewardsPaymentRequests[3].relaySession.SessionId)
+
+	rws.sendRewardsClaim(ctx, 3)
+	require.Equal(t, 8, rewardTxSent)
+	require.Equal(t, 1, len(rws.failedRewardsPaymentRequests)) // sessions: [3]
+	require.Equal(t, uint64(3), rws.failedRewardsPaymentRequests[3].relaySession.SessionId)
+
+	rws.sendRewardsClaim(ctx, 5)
+	require.Equal(t, 9, rewardTxSent)
+	require.Equal(t, 0, len(rws.failedRewardsPaymentRequests)) // No sessions should be left
+}
+
 func BenchmarkSendNewProofInMemory(b *testing.B) {
 	rand.InitRandomSeed()
 	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
@@ -525,14 +619,24 @@ func sendProofs(ctx context.Context, proofs []*pairingtypes.RelaySession, rws *R
 }
 
 type rewardsTxSenderMock struct {
-	earliestBlockInMemory uint64
-	sentPayments          []*pairingtypes.RelaySession
+	earliestBlockInMemory  uint64
+	sentPayments           []*pairingtypes.RelaySession
+	txRelayPaymentCallback func(context.Context, []*pairingtypes.RelaySession, string, []*pairingtypes.LatestBlockReport) error
 }
 
-func (rts *rewardsTxSenderMock) TxRelayPayment(_ context.Context, payments []*pairingtypes.RelaySession, _ string, _ []*pairingtypes.LatestBlockReport) error {
+func (rts *rewardsTxSenderMock) defaultTxRelayPaymentCallback(_ context.Context, payments []*pairingtypes.RelaySession, _ string, _ []*pairingtypes.LatestBlockReport) error {
 	rts.sentPayments = append(rts.sentPayments, payments...)
 
 	return nil
+}
+
+func (rts *rewardsTxSenderMock) TxRelayPayment(ctx context.Context, payments []*pairingtypes.RelaySession,
+	description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
+	if rts.txRelayPaymentCallback != nil {
+		return rts.txRelayPaymentCallback(ctx, payments, description, latestBlocks)
+	}
+
+	return rts.defaultTxRelayPaymentCallback(ctx, payments, description, latestBlocks)
 }
 
 func (rts *rewardsTxSenderMock) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
