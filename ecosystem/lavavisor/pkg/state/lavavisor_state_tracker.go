@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 // Lava visor doesn't require complicated state tracker, it just needs to periodically fetch the protocol version.
@@ -29,7 +30,17 @@ func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientC
 	if txFactory.ChainID() != status.NodeInfo.Network {
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
 	}
-	lst := &LavaVisorStateTracker{stateQuery: statetracker.NewStateQuery(ctx, clientCtx), averageBlockTime: time.Duration(statetracker.GetAverageBlockTime()) * time.Second}
+	specQueryClient := spectypes.NewQueryClient(clientCtx)
+	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+		ChainID: "LAV1",
+	})
+	for i := 0; i < statetracker.BlockResultRetry && err != nil; i++ {
+		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+			ChainID: "LAV1",
+		})
+	}
+
+	lst := &LavaVisorStateTracker{stateQuery: statetracker.NewStateQuery(ctx, clientCtx), averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
 	return lst, nil
 }
 
@@ -40,6 +51,7 @@ func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context,
 		VersionValidationInf: versionValidator,
 	}}
 	lst.ticker = time.NewTicker(lst.averageBlockTime)
+	lst.versionUpdater.Update()
 	go func() {
 		for {
 			select {

@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -32,20 +33,6 @@ type RelayRequestCommonData struct {
 	ApiInterface   string `protobuf:"bytes,6,opt,name=apiInterface,proto3" json:"apiInterface,omitempty"`
 }
 
-type ConflictHandlerInterface interface {
-	ConflictAlreadyReported() bool
-	StoreConflictReported()
-}
-
-type RelayResult struct {
-	Request         *pairingtypes.RelayRequest
-	Reply           *pairingtypes.RelayReply
-	ProviderAddress string
-	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
-	Finalized       bool
-	ConflictHandler ConflictHandlerInterface
-}
-
 func GetSalt(requestData *pairingtypes.RelayPrivateData) uint64 {
 	salt := requestData.Salt
 	if len(salt) < 8 {
@@ -59,12 +46,13 @@ func SetSalt(requestData *pairingtypes.RelayPrivateData, value uint64) {
 	requestData.Salt = nonceBytes
 }
 
-func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
+func NewRelayData(ctx context.Context, connectionType, apiUrl string, data []byte, seenBlock int64, requestBlock int64, apiInterface string, metadata []pairingtypes.Metadata, addon string, extensions []string) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: connectionType,
 		ApiUrl:         apiUrl,
 		Data:           data,
 		RequestBlock:   requestBlock,
+		SeenBlock:      seenBlock,
 		ApiInterface:   apiInterface,
 		Metadata:       metadata,
 		Addon:          addon,
@@ -139,7 +127,7 @@ func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 	return requestedBlock
 }
 
-func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
+func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *common.RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {
 	conflict_now, detectionMessage := compareRelaysFindConflict(ctx, *originalResult.Reply, *originalResult.Request, *dataReliabilityResult.Reply, *dataReliabilityResult.Request, apiCollection, headerFilterer)
 	if conflict_now {
 		return detectionMessage

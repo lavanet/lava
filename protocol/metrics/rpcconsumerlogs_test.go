@@ -59,7 +59,7 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 		mt, _, _ := c.ReadMessage()
 		plog, _ := NewRPCConsumerLogs(nil)
 		responseError := errors.New("response error")
-		plog.AnalyzeWebSocketErrorAndWriteMessage(c, mt, responseError, "seed", []byte{}, "rpcType")
+		plog.AnalyzeWebSocketErrorAndWriteMessage(c, mt, responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
 	}))
 
 	listenFunc := func() {

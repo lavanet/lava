@@ -5,14 +5,20 @@ import (
 	"os/exec"
 	"strings"
 
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils"
 )
 
-type ProtocolBinaryLinker struct{}
+// TODOs:
+// validate the binary that was created? if our lavap points to old its still bad.
+// on bootstrap just download the right binary.
+// try with which lavap, if it works dont use go path.
+
+type ProtocolBinaryLinker struct {
+	Fetcher *ProtocolBinaryFetcher
+}
 
 func (pbl *ProtocolBinaryLinker) CreateLink(binaryPath string) error {
-	dest, err := pbl.findLavaProtocolPath(binaryPath)
+	dest, err := pbl.FindLavaProtocolPath(binaryPath)
 	if err != nil {
 		return utils.LavaFormatError("Error in findLavaProtocolPath", err)
 	}
@@ -22,53 +28,58 @@ func (pbl *ProtocolBinaryLinker) CreateLink(binaryPath string) error {
 	return nil
 }
 
-func (pbl *ProtocolBinaryLinker) findLavaProtocolPath(binaryPath string) (string, error) {
+func (pbl *ProtocolBinaryLinker) FindLavaProtocolPath(binaryPath string) (string, error) {
 	out, err := exec.LookPath("lavap")
 	if err == nil {
 		return strings.TrimSpace(out), nil
 	}
-	return pbl.copyBinaryToSystemPath(binaryPath)
+	// if failed searching for lavap using "which lavap", try searching it in the goBin directory
+	return pbl.searchLavapInGoPath(binaryPath)
 }
 
-func (pbl *ProtocolBinaryLinker) copyBinaryToSystemPath(binaryPath string) (string, error) {
-	gobin, err := exec.Command("go", "env", "GOPATH").Output()
+// sometimes lavap is not in this context's path. we are looking for it where we assume go will be located in.
+func (pbl *ProtocolBinaryLinker) searchLavapInGoPath(binaryPath string) (string, error) {
+	goPath, err := pbl.Fetcher.VerifyGoInstallation()
+	if err != nil {
+		return "", utils.LavaFormatError("Couldn't get go binary path", err)
+	}
+	goBin, err := exec.Command(goPath, "env", "GOPATH").Output()
 	if err != nil {
 		return "", utils.LavaFormatError("Couldn't determine Go binary path", err)
 	}
-
-	goBinPath := strings.TrimSpace(string(gobin)) + "/bin/"
-	pbl.validateBinaryExecutable(binaryPath)
-	pbl.removeExistingLink(goBinPath + "lavap")
-
-	err = lvutil.Copy(binaryPath, goBinPath+"lavap")
+	goBinPath := strings.TrimSpace(string(goBin)) + "/bin/"
+	err = pbl.validateBinaryExecutable(binaryPath)
 	if err != nil {
-		return "", utils.LavaFormatError("Couldn't copy binary to system path", err)
+		// failed to validate binary path is exeutable we need to remove it and re download next block.
+		if osErr := os.Remove(binaryPath); osErr != nil {
+			return "", utils.LavaFormatError("Couldn't remove existing link", osErr)
+		}
+		return "", utils.LavaFormatError("lavavisor removed the binary path and will attempt to download the lavap binary again", nil)
 	}
-
-	out, err := exec.LookPath("lavap")
-	if err != nil {
-		return "", utils.LavaFormatError("Couldn't find the binary in the system path", err)
-	}
-	return strings.TrimSpace(out), nil
+	return goBinPath + "lavap", nil
 }
 
-func (pbl *ProtocolBinaryLinker) validateBinaryExecutable(path string) {
+func (pbl *ProtocolBinaryLinker) validateBinaryExecutable(path string) error {
 	version, err := exec.Command(path, "version").Output()
 	if err != nil {
-		utils.LavaFormatFatal("Binary is not a valid executable: ", err)
+		return utils.LavaFormatError("Binary is not a valid executable: ", err)
 	}
 	utils.LavaFormatInfo("Executable binary validated.", utils.Attribute{Key: "version", Value: strings.TrimSpace(string(version))})
+	return nil
 }
 
 func (pbl *ProtocolBinaryLinker) removeExistingLink(linkPath string) {
 	if _, err := os.Lstat(linkPath); err == nil {
 		utils.LavaFormatInfo("Discovered an existing link. Attempting to refresh.")
 		if err := os.Remove(linkPath); err != nil {
-			utils.LavaFormatFatal("Couldn't remove existing link", err)
+			utils.LavaFormatError("Couldn't remove existing link", err)
+			return
 		}
 	} else if !os.IsNotExist(err) {
-		utils.LavaFormatFatal("Unexpected error when checking for existing link", err)
+		utils.LavaFormatError("Unexpected error when checking for existing link", err)
+		return
 	}
+	utils.LavaFormatInfo("Removed Link Successfully")
 }
 
 func (pbl *ProtocolBinaryLinker) createAndVerifySymlink(binaryPath, dest string) {

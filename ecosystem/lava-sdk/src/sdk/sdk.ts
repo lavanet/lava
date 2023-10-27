@@ -21,6 +21,9 @@ import {
   SendRelayOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
+import { JsonRpcChainParser } from "../chainlib/jsonrpc";
+import { RestChainParser } from "../chainlib/rest";
+import { TendermintRpcChainParser } from "../chainlib/tendermint";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 import { getDefaultLavaSpec } from "../chainlib/default_lava_spec";
 import {
@@ -28,6 +31,7 @@ import {
   ProviderOptimizerStrategy,
 } from "../providerOptimizer/providerOptimizer";
 import { AverageWorldLatency } from "../common/timeout";
+import { ConsumerConsistency } from "../rpcconsumer/consumerConsistency";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -165,19 +169,19 @@ export class LavaSDK {
 
     // Get default lava spec
     const spec = getDefaultLavaSpec();
-    // create provider optimizer
-    const baseOptimizerLatency = AverageWorldLatency / 2;
-    const optimizer = new ProviderOptimizer(
-      this.providerOptimizerStrategy,
-      spec.getAverageBlockTime(),
-      baseOptimizerLatency,
-      this.maxConcurrentProviders
-    );
+    // Get chain parser for tendermintrpc
+    const chainParse = getChainParser("tendermintrpc");
+
+    // Init lava Spec
+    chainParse.init(spec);
+    const chainAssets: Map<string, ChainAssets> = new Map();
 
     let rpcConsumerServerLoL: RPCConsumerServer | undefined;
     let lavaTendermintRpcConsumerSessionManager:
       | ConsumerSessionManager
       | undefined;
+    const baseOptimizerLatency = AverageWorldLatency / 2;
+
     // if badge is not active set rpc consumer server for lava queries
     if (!this.badgeManager.isActive()) {
       const rpcEndpoint = new RPCEndpoint(
@@ -186,6 +190,16 @@ export class LavaSDK {
         "tendermintrpc",
         this.geolocation // This is also deprecated
       );
+
+      const chainAsset = this.setupChainAssets(
+        chainParse,
+        baseOptimizerLatency,
+        rpcEndpoint.chainId,
+        chainAssets
+      );
+      // create provider optimizer
+
+      const optimizer = chainAsset.providerOptimizer;
 
       // create consumer session manager for lava tendermint
       lavaTendermintRpcConsumerSessionManager = new ConsumerSessionManager(
@@ -198,13 +212,8 @@ export class LavaSDK {
         }
       );
 
-      // Get chain parser for tendermintrpc
-      const chainParse = getChainParser("tendermintrpc");
-
-      // Init lava Spec
-      chainParse.init(spec);
-
-      const finalizationConsensus = new FinalizationConsensus();
+      const finalizationConsensus = chainAsset.finalizationConsensus;
+      const consumerConsistency = chainAsset.consumerConsistency;
 
       rpcConsumerServerLoL = new RPCConsumerServer(
         this.relayer,
@@ -213,7 +222,8 @@ export class LavaSDK {
         this.geolocation,
         rpcEndpoint,
         this.lavaChainId,
-        finalizationConsensus
+        finalizationConsensus,
+        consumerConsistency
       );
     }
 
@@ -249,8 +259,6 @@ export class LavaSDK {
 
     // Fetch init state query
     await tracker.initialize();
-
-    const chainProviderOptimizers: Map<string, ProviderOptimizer> = new Map();
 
     // init rpcconsumer servers
     for (const chainId of this.chainIDRpcInterface) {
@@ -307,6 +315,7 @@ export class LavaSDK {
             this.getRouterKey(chainId, apiInterface),
             rpcConsumerServerLoL
           );
+          // continue with the next chain and api interface
           continue;
         }
 
@@ -319,16 +328,17 @@ export class LavaSDK {
         );
 
         // create provider optimizer
-        let chainProviderOptimizer = chainProviderOptimizers.get(chainId);
-        if (chainProviderOptimizer == undefined) {
-          chainProviderOptimizer = new ProviderOptimizer(
-            this.providerOptimizerStrategy,
-            chainParser.chainBlockStats().averageBlockTime,
+        let chainAsset = chainAssets.get(chainId);
+        if (chainAsset == undefined) {
+          chainAsset = this.setupChainAssets(
+            chainParser,
             baseOptimizerLatency,
-            this.maxConcurrentProviders
+            chainId,
+            chainAssets
           );
         }
 
+        const chainProviderOptimizer = chainAsset.providerOptimizer;
         // create consumer session manager
         const csm = new ConsumerSessionManager(
           this.relayer,
@@ -342,11 +352,9 @@ export class LavaSDK {
 
         tracker.RegisterConsumerSessionManagerForPairingUpdates(csm);
 
-        // create finalization consensus
-        const finalizationConsensus = new FinalizationConsensus();
-        // TODO: when this is supported
-        // tracker.RegisterFinalizationConsensusForUpdates(finalizationConsensus);
-
+        // get finalization consensus
+        const finalizationConsensus = chainAsset.finalizationConsensus;
+        const consumerConsistency = chainAsset.consumerConsistency;
         // create rpc consumer server
         const rpcConsumerServer = new RPCConsumerServer(
           this.relayer,
@@ -355,7 +363,8 @@ export class LavaSDK {
           this.geolocation,
           rpcEndpoint,
           this.lavaChainId,
-          finalizationConsensus
+          finalizationConsensus,
+          consumerConsistency
         );
 
         // save rpc consumer server in map
@@ -366,6 +375,35 @@ export class LavaSDK {
       }
     }
     await tracker.startTracking();
+  }
+
+  private setupChainAssets(
+    chainParser:
+      | JsonRpcChainParser
+      | RestChainParser
+      | TendermintRpcChainParser,
+    baseOptimizerLatency: number,
+    chainId: string,
+    chainAssets: Map<string, ChainAssets>
+  ): ChainAssets {
+    const chainProviderOptimizer = new ProviderOptimizer(
+      this.providerOptimizerStrategy,
+      chainParser.chainBlockStats().averageBlockTime,
+      baseOptimizerLatency,
+      this.maxConcurrentProviders
+    );
+    const finalizationConsensus = new FinalizationConsensus();
+    // TODO:
+    // tracker.RegisterFinalizationConsensusForUpdates(
+    //   finalizationConsensus
+    // );
+    const chainAsset = {
+      providerOptimizer: chainProviderOptimizer,
+      finalizationConsensus: finalizationConsensus,
+      consumerConsistency: new ConsumerConsistency(chainId),
+    };
+    chainAssets.set(chainId, chainAsset);
+    return chainAsset;
   }
 
   getRpcConsumerServer(
@@ -514,6 +552,12 @@ export class LavaSDK {
   public getConsumerMap(): Map<string, RPCConsumerServer> {
     return this.rpcConsumerServerRouter;
   }
+}
+
+interface ChainAssets {
+  providerOptimizer: ProviderOptimizer;
+  finalizationConsensus: FinalizationConsensus;
+  consumerConsistency: ConsumerConsistency;
 }
 
 // exporting relay options to be used if needed.

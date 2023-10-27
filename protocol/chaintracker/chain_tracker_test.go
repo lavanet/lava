@@ -3,6 +3,7 @@ package chaintracker_test
 import (
 	"context"
 	fmt "fmt"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	chaintracker "github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
+	rand "github.com/lavanet/lava/utils/rand"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -22,11 +24,20 @@ const (
 	SleepChunks        = 5
 )
 
+type MockTimeUpdater struct {
+	callBack func(time.Duration)
+}
+
+func (mtu *MockTimeUpdater) UpdateBlockTime(arg time.Duration) {
+	mtu.callBack(arg)
+}
+
 type MockChainFetcher struct {
 	latestBlock int64
 	blockHashes []*chaintracker.BlockStore
 	mutex       sync.Mutex
 	fork        string
+	callBack    func()
 }
 
 func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
@@ -36,6 +47,9 @@ func (mcf *MockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 func (mcf *MockChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
 	mcf.mutex.Lock()
 	defer mcf.mutex.Unlock()
+	if mcf.callBack != nil {
+		mcf.callBack()
+	}
 	return mcf.latestBlock, nil
 }
 
@@ -101,12 +115,25 @@ func (mcf *MockChainFetcher) Shrink(newSize int) {
 	copy(newHashes, mcf.blockHashes[currentSize-newSize:])
 }
 
-func NewMockChainFetcher(startBlock, blocksToSave int64) *MockChainFetcher {
-	mockCHainFetcher := MockChainFetcher{}
+func NewMockChainFetcher(startBlock, blocksToSave int64, callback func()) *MockChainFetcher {
+	mockCHainFetcher := MockChainFetcher{callBack: callback}
 	for i := int64(0); i < blocksToSave; i++ {
 		mockCHainFetcher.SetBlock(startBlock + i)
 	}
 	return &mockCHainFetcher
+}
+
+func TestMain(m *testing.M) {
+	// This code will run once before any test cases are executed.
+	seed := time.Now().Unix()
+
+	rand.SetSpecificSeed(seed)
+	// Run the actual tests
+	exitCode := m.Run()
+	if exitCode != 0 {
+		utils.LavaFormatDebug("failed tests seed", utils.Attribute{Key: "seed", Value: seed})
+	}
+	os.Exit(exitCode)
 }
 
 func TestChainTracker(t *testing.T) {
@@ -127,7 +154,7 @@ func TestChainTracker(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utils.LavaFormatInfo("started test " + tt.name)
-			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks)
+			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks, nil)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
@@ -139,15 +166,15 @@ func TestChainTracker(t *testing.T) {
 				}
 				for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 					time.Sleep(SleepTime) // stateTracker polls asynchronously
-					latestBlock := chainTracker.GetLatestBlockNum()
+					latestBlock := chainTracker.GetAtomicLatestBlockNum()
 					if latestBlock >= currentLatestBlockInMock {
 						break
 					}
 				}
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-				latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
+				latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
 				require.GreaterOrEqual(t, latestBlock, int64(0))
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 				require.NoError(t, err)
@@ -184,7 +211,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks)
+			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks, nil)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
@@ -196,15 +223,15 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 				}
 				for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 					time.Sleep(SleepTime) // stateTracker polls asynchronously
-					latestBlock := chainTracker.GetLatestBlockNum()
+					latestBlock := chainTracker.GetAtomicLatestBlockNum()
 					if latestBlock >= currentLatestBlockInMock {
 						break
 					}
 				}
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-				latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
+				latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(tt.requestBlockFrom, tt.requestBlockTo, tt.specificBlock)
 				require.Equal(t, currentLatestBlockInMock, latestBlock)
 				require.NoError(t, err)
 				require.Equal(t, tt.requestBlocks, int64(len(requestedHashes)))
@@ -252,7 +279,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 		{name: "[t15]", advancement: 1, shouldFork: false, fork: "fork"},
 		{name: "[t16]", advancement: 0, shouldFork: true, fork: "another-fork"},
 	}
-	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
+	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, nil)
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 	// used to identify if the fork callback was called
@@ -281,15 +308,15 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			mockChainFetcher.Fork(tt.fork)
 			for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 				time.Sleep(SleepTime) // stateTracker polls asynchronously
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				if latestBlock >= currentLatestBlockInMock && tt.shouldFork == false {
 					break
 				}
 			}
-			latestBlock := chainTracker.GetLatestBlockNum()
+			latestBlock := chainTracker.GetAtomicLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
+			latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 			require.NoError(t, err)
 			require.Equal(t, requestBlocks, len(requestedHashes))
@@ -313,6 +340,164 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestChainTrackerFetchSpreadAcrossPollingTime(t *testing.T) {
+	t.Run("one long test", func(t *testing.T) {
+		mockBlocks := int64(50)
+		fetcherBlocks := 1
+		called := 0
+		lastCall := time.Now()
+		timeDiff := 0 * time.Millisecond
+		callback := func() {
+			called++
+			timeDiff = time.Since(lastCall)
+			lastCall = time.Now()
+		}
+		mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, callback)
+		mockChainFetcher.AdvanceBlock()
+		localTimeForPollingMock := 50 * time.Millisecond
+		chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
+		tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+		require.NoError(t, err)
+		// fool the tracker so it thinks blocks will come every 50ms, and not adjust it's polling timers
+		for i := 0; i < 50; i++ {
+			tracker.AddBlockGap(50*time.Millisecond, 1)
+		}
+		// initially we start with 1/16 block probing
+		time.Sleep(localTimeForPollingMock)                           // we expect 15+init calls
+		require.GreaterOrEqual(t, called, 15*8/10)                    // 15 to give a gap, give a 20% margin
+		require.Greater(t, timeDiff, localTimeForPollingMock/16*8/10) // give a 20% margin
+		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10)    // give a 20% margin
+		mockChainFetcher.AdvanceBlock()                               // we advanced a block
+		time.Sleep(localTimeForPollingMock / 2)
+		require.LessOrEqual(t, called, (3+16)*12/10)                 // init + 2 new + 16 from first block advancement, give 20% margin
+		require.GreaterOrEqual(t, called, 17*8/10)                   // give a 20% margin
+		require.Less(t, timeDiff, localTimeForPollingMock/2*12/10)   // give a 20% margin
+		require.Greater(t, timeDiff, localTimeForPollingMock/8*8/10) // give a 20% margin
+		time.Sleep(localTimeForPollingMock / 2)
+		require.GreaterOrEqual(t, called, (6+16)*8/10)
+		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10)    // give a 20% margin
+		require.Greater(t, timeDiff, localTimeForPollingMock/16*8/10) // give a 20% margin
+	})
+}
+
+func TestChainTrackerPollingTimeUpdate(t *testing.T) {
+	playbook := []struct {
+		name                    string
+		localTimeForPollingMock time.Duration
+		startDelay              time.Duration
+		updateTime              time.Duration
+	}{
+		{
+			name:                    "no-delay polling time decrease big",
+			localTimeForPollingMock: 16 * time.Millisecond,
+			startDelay:              0,
+			updateTime:              5 * time.Millisecond,
+		},
+		{
+			name:                    "no-delay polling time decrease small",
+			localTimeForPollingMock: 8 * time.Millisecond,
+			startDelay:              0,
+			updateTime:              5 * time.Millisecond,
+		},
+		{
+			name:                    "half delay polling time decrease big",
+			localTimeForPollingMock: 16 * time.Millisecond,
+			startDelay:              2500 * time.Microsecond,
+			updateTime:              5 * time.Millisecond,
+		},
+		{
+			name:                    "half delay polling time decrease small",
+			localTimeForPollingMock: 8 * time.Millisecond,
+			startDelay:              2500 * time.Microsecond,
+			updateTime:              5 * time.Millisecond,
+		},
+		{
+			name:                    "90Percent  delay polling time decrease big",
+			localTimeForPollingMock: 16 * time.Millisecond,
+			startDelay:              4500 * time.Microsecond,
+			updateTime:              5 * time.Millisecond,
+		},
+		{
+			name:                    "90Percent delay polling time decrease small",
+			localTimeForPollingMock: 8 * time.Millisecond,
+			startDelay:              4500 * time.Microsecond,
+			updateTime:              5 * time.Millisecond,
+		},
+		{
+			name:                    "no-delay polling time increase big",
+			localTimeForPollingMock: 5 * time.Millisecond,
+			startDelay:              0,
+			updateTime:              16 * time.Millisecond,
+		},
+		{
+			name:                    "no-delay polling time increase small",
+			localTimeForPollingMock: 5 * time.Millisecond,
+			startDelay:              0,
+			updateTime:              8 * time.Millisecond,
+		},
+		{
+			name:                    "half delay polling time increase big",
+			localTimeForPollingMock: 5 * time.Millisecond,
+			startDelay:              8 * time.Millisecond,
+			updateTime:              16 * time.Millisecond,
+		},
+		{
+			name:                    "half delay polling time increase small",
+			localTimeForPollingMock: 5 * time.Millisecond,
+			startDelay:              4 * time.Millisecond,
+			updateTime:              8 * time.Millisecond,
+		},
+		{
+			name:                    "90Percent  delay polling time increase big",
+			localTimeForPollingMock: 5 * time.Millisecond,
+			startDelay:              14 * time.Millisecond,
+			updateTime:              16 * time.Millisecond,
+		},
+		{
+			name:                    "90Percent delay polling time increase small",
+			localTimeForPollingMock: 5 * time.Millisecond,
+			startDelay:              7200 * time.Microsecond,
+			updateTime:              8 * time.Millisecond,
+		},
+	}
+	iterations := chaintracker.PollingUpdateLength
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			mockBlocks := int64(25)
+			fetcherBlocks := 1
+			called := 0
+			callback := func() {
+				called++
+			}
+			updatedTime := 0 * time.Second
+			updateCallback := func(arg time.Duration) {
+				updatedTime = arg
+			}
+			mockTimeUpdater := MockTimeUpdater{callBack: updateCallback}
+			mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, callback)
+			mockChainFetcher.AdvanceBlock()
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: play.localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
+			tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+			tracker.RegisterForBlockTimeUpdates(&mockTimeUpdater)
+			require.NoError(t, err)
+			// initial delay
+			time.Sleep(play.startDelay)
+			// chainTracker will poll every localTimeForPollingMock/16
+			for i := 0; i < iterations*2+1; i++ {
+				mockChainFetcher.AdvanceBlock()
+				time.Sleep(play.updateTime)
+			}
+			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
+			// if we wait more time we expect this to fine tune
+			for i := 0; i < iterations*4; i++ {
+				mockChainFetcher.AdvanceBlock()
+				time.Sleep(play.updateTime)
+			}
+			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
+		})
+	}
 }
 
 func TestChainTrackerMaintainMemory(t *testing.T) {
@@ -340,7 +525,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 		{name: "[t10]", shrink: false, advancement: 5},
 		{name: "[t11]", shrink: false, advancement: 1},
 	}
-	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
+	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, nil)
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 	// used to identify if the fork callback was called
@@ -364,15 +549,15 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 			}
 			for sleepChunk := 0; sleepChunk < SleepChunks; sleepChunk++ {
 				time.Sleep(SleepTime) // stateTracker polls asynchronously
-				latestBlock := chainTracker.GetLatestBlockNum()
+				latestBlock := chainTracker.GetAtomicLatestBlockNum()
 				if latestBlock >= currentLatestBlockInMock && tt.shrink == false {
 					break
 				}
 			}
-			latestBlock := chainTracker.GetLatestBlockNum()
+			latestBlock := chainTracker.GetAtomicLatestBlockNum()
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 
-			latestBlock, requestedHashes, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
+			latestBlock, requestedHashes, _, err := chainTracker.GetLatestBlockData(requestBlockFrom, requestBlockTo, specificBlock)
 			require.Equal(t, currentLatestBlockInMock, latestBlock)
 			require.NoError(t, err)
 			require.Equal(t, requestBlocks, len(requestedHashes))
@@ -398,27 +583,27 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 func TestFindRequestedBlockHash(t *testing.T) {
 	mockBlocks := int64(100)
 	fetcherBlocks := 50
-	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks)
+	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, nil)
 	currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
-	latestBlock, onlyLatestBlockData, err := chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
+	latestBlock, onlyLatestBlockData, _, err := chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)
 	requestedHash, hashesMap := chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, map[int64]interface{}{})
 	require.NotNil(t, requestedHash)
 	require.Len(t, hashesMap, 1)
 
-	latestBlock, onlyLatestBlockData, err = chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK-3, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
+	latestBlock, onlyLatestBlockData, _, err = chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK-3, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)
 	requestedHash, hashesMap = chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK-3, map[int64]interface{}{})
 	require.NotNil(t, requestedHash)
 	require.Len(t, hashesMap, 4)
 
-	latestBlock, onlyLatestBlockData, err = chainTracker.GetLatestBlockData(currentLatestBlockInMock-3, currentLatestBlockInMock, currentLatestBlockInMock)
+	latestBlock, onlyLatestBlockData, _, err = chainTracker.GetLatestBlockData(currentLatestBlockInMock-3, currentLatestBlockInMock, currentLatestBlockInMock)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)
 	requestedHash, hashesMap = chaintracker.FindRequestedBlockHash(onlyLatestBlockData, latestBlock, currentLatestBlockInMock, currentLatestBlockInMock-3, map[int64]interface{}{})
