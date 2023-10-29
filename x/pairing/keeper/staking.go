@@ -128,13 +128,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		{Key: "geolocation", Value: geolocation},
 	}
 
-	err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
-	if err != nil {
-		utils.LavaFormatWarning("provider self delegation failed", err,
-			details...,
-		)
-	}
-
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Address:            creator,
 		StakeAppliedBlock:  stakeAppliedBlock,
@@ -148,9 +141,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 	}
 
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
-	appended := false
 
-	details = append(details, utils.Attribute{Key: "effectiveImmediately", Value: appended})
+	err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
+	if err != nil {
+		utils.LavaFormatWarning("provider self delegation failed", err,
+			details...,
+		)
+	}
+
 	details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
 	detailsMap := map[string]string{}
