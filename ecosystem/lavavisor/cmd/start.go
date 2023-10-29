@@ -84,7 +84,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		// First reload the daemon.
 		err = processmanager.ReloadDaemon()
 		if err != nil {
-			utils.LavaFormatError("Failed reloading daemon", err)
+			utils.LavaFormatError("[Lavavisor] Failed reloading daemon", err)
 		}
 		// now start all services
 		var wg sync.WaitGroup
@@ -95,7 +95,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 				utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
 				err := processmanager.StartProcess(process)
 				if err != nil {
-					utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
+					utils.LavaFormatError("[Lavavisor] Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
 				}
 			}(process)
 		}
@@ -164,19 +164,19 @@ func LavavisorStart(cmd *cobra.Command) error {
 	configPath := filepath.Join(lavavisorPath, "/config.yml")
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
-		return utils.LavaFormatError("failed to read config.yaml: %v", err)
+		return utils.LavaFormatError("[Lavavisor] failed to read config.yaml: %v", err)
 	}
 
 	var config Config
 	err = yaml.Unmarshal(configData, &config)
 	if err != nil {
-		return utils.LavaFormatError("failed to unmarshal config.yaml: %v", err)
+		return utils.LavaFormatError("[Lavavisor] failed to unmarshal config.yaml: %v", err)
 	}
 
 	// Iterate over the list of services and start them
 	lavavisorServicesDir := lavavisorPath + "/services/"
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
-		return utils.LavaFormatError("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
+		return utils.LavaFormatError("[Lavavisor] directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
 
 	// Start lavavisor version monitor process

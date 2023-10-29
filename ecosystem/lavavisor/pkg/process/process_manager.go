@@ -16,7 +16,7 @@ func ReloadDaemon() error {
 	cmd := exec.Command("sudo", "systemctl", "daemon-reload")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return utils.LavaFormatError("Failed to run command", err, utils.Attribute{Key: "Output", Value: output})
+		return utils.LavaFormatError("[Lavavisor] Failed to run command", err, utils.Attribute{Key: "Output", Value: output})
 	}
 	return nil
 }
@@ -37,7 +37,7 @@ func StartProcess(process string) error {
 		utils.LavaFormatInfo("Running", utils.Attribute{Key: "command", Value: strings.Join(cmd.Args, " ")})
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			return utils.LavaFormatError("Failed to run command", err, utils.Attribute{Key: "Output", Value: output})
+			return utils.LavaFormatError("[Lavavisor] Failed to run command", err, utils.Attribute{Key: "Output", Value: output})
 		}
 		utils.LavaFormatInfo("Successfully run command", utils.Attribute{Key: "cmd", Value: cmd})
 		if len(output) != 0 {
@@ -71,7 +71,7 @@ func GetHomePath() (string, error) {
 
 	currentUser, err := user.Current()
 	if err != nil {
-		return "", utils.LavaFormatError("Unable to get current user", err)
+		return "", utils.LavaFormatError("[Lavavisor] Unable to get current user", err)
 	}
 	return currentUser.HomeDir, nil
 }

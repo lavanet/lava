@@ -67,27 +67,27 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			lavavisorServicesDir := lavavisorPath + "/services"
 			err = os.MkdirAll(lavavisorServicesDir, 0o755)
 			if err != nil {
-				return utils.LavaFormatError("failed to create services directory", err)
+				return utils.LavaFormatError("[Lavavisor] failed to create services directory", err)
 			}
 
 			// .lavavisor/ service logs dir
 			lavavisorLogsDir := lavavisorServicesDir + "/logs"
 			err = os.MkdirAll(lavavisorLogsDir, 0o755)
 			if err != nil {
-				return utils.LavaFormatError("failed to create service logs directory", err)
+				return utils.LavaFormatError("[Lavavisor] failed to create service logs directory", err)
 			}
 
 			// .lavavisor/ service config dir
 			lavavisorServiceConfigDir := lavavisorServicesDir + "/protocol_yml_configs"
 			err = os.MkdirAll(lavavisorServiceConfigDir, 0o755)
 			if err != nil {
-				return utils.LavaFormatError("failed to create service logs directory", err)
+				return utils.LavaFormatError("[Lavavisor] failed to create service logs directory", err)
 			}
 
 			// GET SERVICE PARAMS
 			serviceType := args[0]
 			if serviceType != ServiceTypeProvider && serviceType != ServiceTypeConsumer {
-				return utils.LavaFormatError("invalid service type, must be provider or consumer", nil)
+				return utils.LavaFormatError("[Lavavisor] invalid service type, must be provider or consumer", nil)
 			}
 			serviceConfigFile := args[1] // the path that contains provider or consumer's configuration yml file
 			// from user
@@ -133,7 +133,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			// Read the configuration file
 			err = viper.ReadInConfig()
 			if err != nil {
-				return utils.LavaFormatError("Error reading config file", err)
+				return utils.LavaFormatError("[Lavavisor] Error reading config file", err)
 			}
 
 			createLink, err := cmd.Flags().GetBool("create-link")
@@ -166,12 +166,12 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	// working dir:
 	out, err := exec.LookPath("lavap")
 	if err != nil {
-		return "", utils.LavaFormatError("could not detect a linked lavap binary", err)
+		return "", utils.LavaFormatError("[Lavavisor] could not detect a linked lavap binary", err)
 	}
 	workingDir := strings.TrimSpace(filepath.Dir(out) + "/")
 
 	if _, err := os.Stat(serviceParams.ServiceConfigFile); err != nil {
-		return "", utils.LavaFormatError("Service config file not found", err)
+		return "", utils.LavaFormatError("[Lavavisor] Service config file not found", err)
 	}
 
 	configChainID := viper.GetString("endpoints.0.chain-id")
@@ -180,12 +180,12 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 
 	err = lvutil.Copy(serviceParams.ServiceConfigFile, configPath)
 	if err != nil {
-		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
+		return "", utils.LavaFormatError("[Lavavisor] couldn't copy binary to system path", err)
 	}
 
 	currentUser, err := user.Current()
 	if err != nil {
-		return "", utils.LavaFormatError("Could not get current user", err)
+		return "", utils.LavaFormatError("[Lavavisor] Could not get current user", err)
 	}
 
 	content := "[Unit]\n"
@@ -218,13 +218,13 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 	filePath := serviceParams.LavavisorServicesDir + "/" + serviceId + ".service"
 	err = os.WriteFile(filePath, []byte(content), os.ModePerm)
 	if err != nil {
-		return "", utils.LavaFormatError("error writing to service file", err)
+		return "", utils.LavaFormatError("[Lavavisor] error writing to service file", err)
 	}
 
 	// Create a symbolic link to the systemd directory.
 	if createLink {
 		if err := createSystemdSymlink(filePath, serviceId+".service"); err != nil {
-			return "", utils.LavaFormatError("error creating symbolic link", err)
+			return "", utils.LavaFormatError("[Lavavisor] error creating symbolic link", err)
 		}
 	}
 
@@ -239,7 +239,7 @@ func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
 	configPath := filepath.Join(lavavisorPath, "config.yml")
 	file, err := os.OpenFile(configPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return utils.LavaFormatError("error opening config.yml for appending", err)
+		return utils.LavaFormatError("[Lavavisor] error opening config.yml for appending", err)
 	}
 	defer file.Close()
 
@@ -282,11 +282,11 @@ func createSystemdSymlink(source string, serviceName string) error {
 			// If there's a symlink exists, remove it.
 			cmdRemove := exec.Command("sudo", "rm", target)
 			if err := cmdRemove.Run(); err != nil {
-				return utils.LavaFormatError("failed to remove existing link.", nil, utils.Attribute{Key: "Target", Value: target})
+				return utils.LavaFormatError("[Lavavisor] failed to remove existing link.", nil, utils.Attribute{Key: "Target", Value: target})
 			}
 			utils.LavaFormatInfo("Old service file links are removed.", utils.Attribute{Key: "Path", Value: target})
 		} else {
-			return utils.LavaFormatError("file exists and is not a symlink.", nil, utils.Attribute{Key: "Target", Value: target})
+			return utils.LavaFormatError("[Lavavisor] file exists and is not a symlink.", nil, utils.Attribute{Key: "Target", Value: target})
 		}
 	}
 	// Create a new symbolic link pointing to the intended source.
