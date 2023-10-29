@@ -450,6 +450,21 @@ func New(
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
+	app.DualstakingKeeper = *dualstakingmodulekeeper.NewKeeper(
+		appCodec,
+		keys[dualstakingmoduletypes.StoreKey],
+		keys[dualstakingmoduletypes.MemStoreKey],
+		app.GetSubspace(dualstakingmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.EpochstorageKeeper,
+		app.SpecKeeper,
+		app.FixationStoreKeeper,
+		app.TimerStoreKeeper,
+	)
+	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
 		appCodec,
 		keys[subscriptionmoduletypes.StoreKey],
@@ -466,21 +481,6 @@ func New(
 		app.TimerStoreKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.DualstakingKeeper = *dualstakingmodulekeeper.NewKeeper(
-		appCodec,
-		keys[dualstakingmoduletypes.StoreKey],
-		keys[dualstakingmoduletypes.MemStoreKey],
-		app.GetSubspace(dualstakingmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.EpochstorageKeeper,
-		app.SpecKeeper,
-		app.FixationStoreKeeper,
-		app.TimerStoreKeeper,
-	)
-	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// downtime module
 	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)

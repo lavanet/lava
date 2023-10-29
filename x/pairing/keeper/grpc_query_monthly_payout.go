@@ -60,9 +60,10 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 				totalUsedCuMap[key] = usedCuInfo
 			} else {
 				totalUsedCuMap[key] = totalUsedCuInfo{
-					totalUsedCu: cu,
-					relevant:    relevant,
-					block:       block,
+					totalUsedCu:    cu,
+					relevant:       relevant,
+					block:          block,
+					providerCuInfo: map[string]uint64{},
 				}
 				if providerCu != 0 {
 					providerCuMap := map[string]uint64{chainID: providerCu}
