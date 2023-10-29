@@ -26,3 +26,14 @@ func TestLavaSDK(t *testing.T) {
 
 	runSDKE2E(timeout)
 }
+
+func TestLavaProtocolPayment(t *testing.T) {
+	// default timeout same as `go test`
+	timeout := time.Minute * 7
+
+	if deadline, ok := t.Deadline(); ok {
+		timeout = time.Until(deadline).Round(10 * time.Second)
+	}
+
+	runPaymentE2E(timeout)
+}
