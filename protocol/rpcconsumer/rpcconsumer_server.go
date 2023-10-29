@@ -151,7 +151,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
 	unwantedProviders := map[string]struct{}{}
 	for iter := 0; iter < count; iter++ {
-		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", &unwantedProviders)
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", "", &unwantedProviders)
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "unwantedProviders", Value: unwantedProviders}}...)
 			unwantedProviders[relayResult.ProviderAddress] = struct{}{}
@@ -178,6 +178,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	req string,
 	connectionType string,
 	dappID string,
+	consumerIp string,
 	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (relayResult *common.RelayResult, errRet error) {
@@ -203,7 +204,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
-	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, "")
+	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, consumerIp)
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
@@ -216,7 +217,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	retries := 0
 	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
-		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders)
 		if relayResult.ProviderAddress != "" {
 			if blockOnSyncLoss && lavasession.IsSessionSyncLoss(err) {
 				utils.LavaFormatDebug("Identified SyncLoss in provider, not removing it from list for another attempt", utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
@@ -264,7 +265,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			if found {
 				dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
 			}
-			go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, dappID, relayResult, chainMessage, dataReliabilityThreshold, unwantedProviders) // runs asynchronously
+			go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, dappID, consumerIp, relayResult, chainMessage, dataReliabilityThreshold, unwantedProviders) // runs asynchronously
 		}
 	}
 
@@ -297,6 +298,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	chainMessage chainlib.ChainMessage,
 	relayRequestData *pairingtypes.RelayPrivateData,
 	dappID string,
+	consumerIp string,
 	unwantedProviders *map[string]struct{},
 ) (relayResult *common.RelayResult, errRet error) {
 	// get a session for the relay from the ConsumerSessionManager
@@ -424,7 +426,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				utils.LavaFormatError("cache not connected", errResponse)
 			}
 
-			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout, chainMessage)
+			// unique per dappId and ip
+			consumerToken := common.GetUniqueToken(dappID, consumerIp)
+
+			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout, chainMessage, consumerToken)
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
 					backOffDuration := 0 * time.Second
@@ -513,13 +518,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if response.err == nil && response.relayResult != nil && response.relayResult.Reply != nil {
 		// no error, update the seen block
 		blockSeen := response.relayResult.Reply.LatestBlock
-		rpccs.consumerConsistency.SetSeenBlock(blockSeen, dappID, "")
+		rpccs.consumerConsistency.SetSeenBlock(blockSeen, dappID, consumerIp)
 	}
 
 	return response.relayResult, response.err
 }
 
-func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage) (relayResultRet *common.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
+func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string) (relayResultRet *common.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
 	providerPublicAddress := relayResult.ProviderAddress
@@ -527,6 +532,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		relaySentTime := time.Now()
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
+		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
+		metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
 		var trailer metadata.MD
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&trailer))
@@ -604,7 +611,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 	return relayResult, err
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, relayResult *common.RelayResult, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, unwantedProviders map[string]struct{}) error {
+func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, relayResult *common.RelayResult, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, unwantedProviders map[string]struct{}) error {
 	// validate relayResult is not nil
 	if relayResult == nil || relayResult.Reply == nil || relayResult.Request == nil {
 		return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable relayResult nil check", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayResult", Value: relayResult})
@@ -629,7 +636,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, &unwantedProviders)
+	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders)
 	if err != nil {
 		errAttributes := []utils.Attribute{}
 		// failed to send to a provider
