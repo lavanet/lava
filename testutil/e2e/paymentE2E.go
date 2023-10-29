@@ -143,6 +143,11 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 	}
 }
 
+var (
+	lavadPath = "/bin/lavad"
+	lavapPath = "/bin/lavap"
+)
+
 func runPaymentE2E(timeout time.Duration) {
 	cmd.InitSDKConfig()
 	os.RemoveAll(protocolLogsFolder)
@@ -157,8 +162,8 @@ func runPaymentE2E(timeout time.Duration) {
 	}
 	lt := &lavaTest{
 		grpcConn:     grpcConn,
-		lavadPath:    gopath + "/bin/lavad",
-		protocolPath: gopath + "/bin/lavap",
+		lavadPath:    gopath + lavadPath,
+		protocolPath: gopath + lavapPath,
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
 		logs:         make(map[string]*bytes.Buffer),
