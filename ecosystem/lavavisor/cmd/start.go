@@ -68,9 +68,9 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	// Select most recent version set by init command (in the range of min-target version)
 	selectedVersion, _ := SelectMostRecentVersionFromDir(lavavisorPath, version.Version)
 	if err != nil {
-		utils.LavaFormatWarning("failed getting most recent version from .lavavisor dir", err)
+		utils.LavaFormatWarning("[Lavavisor] failed getting most recent version from .lavavisor dir", err)
 	} else {
-		utils.LavaFormatInfo("Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
+		utils.LavaFormatInfo("[Lavavisor] Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
 	}
 
 	// Initialize version monitor with selected most recent version
@@ -80,7 +80,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 	// check whether lavavisor already started the services when downloading the binaries or not.
 	if !versionMonitor.LaunchedServices {
-		utils.LavaFormatInfo("Version matched existing lavap directory using it to launch the services")
+		utils.LavaFormatInfo("[Lavavisor] Version matched existing lavap directory using it to launch the services")
 		// First reload the daemon.
 		err = processmanager.ReloadDaemon()
 		if err != nil {
@@ -92,7 +92,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 			wg.Add(1)
 			go func(process string) {
 				defer wg.Done() // Decrement the WaitGroup when done
-				utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
+				utils.LavaFormatInfo("[Lavavisor] Starting process", utils.Attribute{Key: "Process", Value: process})
 				err := processmanager.StartProcess(process)
 				if err != nil {
 					utils.LavaFormatError("[Lavavisor] Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
@@ -101,15 +101,15 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		}
 		// Wait for all Goroutines to finish
 		wg.Wait()
-		utils.LavaFormatInfo("All services launched successfully")
+		utils.LavaFormatInfo("[Lavavisor] All services launched successfully")
 	}
 
 	// tear down
 	select {
 	case <-ctx.Done():
-		utils.LavaFormatInfo("Lavavisor ctx.Done")
+		utils.LavaFormatInfo("[Lavavisor] Lavavisor ctx.Done")
 	case <-signalChan:
-		utils.LavaFormatInfo("Lavavisor signalChan")
+		utils.LavaFormatInfo("[Lavavisor] Lavavisor signalChan")
 	}
 
 	return nil

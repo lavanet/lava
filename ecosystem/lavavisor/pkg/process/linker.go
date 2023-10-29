@@ -24,7 +24,7 @@ func (pbl *ProtocolBinaryLinker) CreateLink(binaryPath string) error {
 	}
 
 	pbl.createAndVerifySymlink(binaryPath, dest)
-	utils.LavaFormatInfo("Symbolic link created successfully.", utils.Attribute{Key: "Linked binary path", Value: dest})
+	utils.LavaFormatInfo("[Lavavisor] Symbolic link created successfully.", utils.Attribute{Key: "Linked binary path", Value: dest})
 	return nil
 }
 
@@ -64,13 +64,13 @@ func (pbl *ProtocolBinaryLinker) validateBinaryExecutable(path string) error {
 	if err != nil {
 		return utils.LavaFormatError("[Lavavisor] Binary is not a valid executable: ", err)
 	}
-	utils.LavaFormatInfo("Executable binary validated.", utils.Attribute{Key: "version", Value: strings.TrimSpace(string(version))})
+	utils.LavaFormatInfo("[Lavavisor] Executable binary validated.", utils.Attribute{Key: "version", Value: strings.TrimSpace(string(version))})
 	return nil
 }
 
 func (pbl *ProtocolBinaryLinker) removeExistingLink(linkPath string) {
 	if _, err := os.Lstat(linkPath); err == nil {
-		utils.LavaFormatInfo("Discovered an existing link. Attempting to refresh.")
+		utils.LavaFormatInfo("[Lavavisor] Discovered an existing link. Attempting to refresh.")
 		if err := os.Remove(linkPath); err != nil {
 			utils.LavaFormatError("[Lavavisor] Couldn't remove existing link", err)
 			return
@@ -79,7 +79,7 @@ func (pbl *ProtocolBinaryLinker) removeExistingLink(linkPath string) {
 		utils.LavaFormatError("[Lavavisor] Unexpected error when checking for existing link", err)
 		return
 	}
-	utils.LavaFormatInfo("Removed Link Successfully")
+	utils.LavaFormatInfo("[Lavavisor] Removed Link Successfully")
 }
 
 func (pbl *ProtocolBinaryLinker) createAndVerifySymlink(binaryPath, dest string) {

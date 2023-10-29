@@ -48,12 +48,12 @@ func LavavisorWrap(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	utils.LavaFormatInfo("Start Wrap command")
+	utils.LavaFormatInfo("[Lavavisor] Start Wrap command")
 	runCommand, err := cmd.Flags().GetString("cmd")
 	if err != nil {
 		return err
 	}
-	utils.LavaFormatInfo("Running", utils.Attribute{Key: "command", Value: runCommand})
+	utils.LavaFormatInfo("[Lavavisor] Running", utils.Attribute{Key: "command", Value: runCommand})
 
 	binaryFetcher := processmanager.ProtocolBinaryFetcher{}
 	// Validate we have go in Path if we dont we add it to the $PATH and if directory is missing we will download go.
@@ -110,9 +110,9 @@ func (lv *LavaVisor) Wrap(ctx context.Context, txFactory tx.Factory, clientCtx c
 	// Select most recent version set by init command (in the range of min-target version)
 	selectedVersion, _ := SelectMostRecentVersionFromDir(lavavisorPath, version.Version)
 	if err != nil {
-		utils.LavaFormatWarning("failed getting most recent version from .lavavisor dir", err)
+		utils.LavaFormatWarning("[Lavavisor] failed getting most recent version from .lavavisor dir", err)
 	} else {
-		utils.LavaFormatInfo("Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
+		utils.LavaFormatInfo("[Lavavisor] Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
 	}
 
 	// Initialize version monitor with selected most recent version
@@ -132,9 +132,9 @@ func (lv *LavaVisor) Wrap(ctx context.Context, txFactory tx.Factory, clientCtx c
 	// tear down
 	select {
 	case <-ctx.Done():
-		utils.LavaFormatInfo("Lavavisor ctx.Done")
+		utils.LavaFormatInfo("[Lavavisor] Lavavisor ctx.Done")
 	case <-signalChan:
-		utils.LavaFormatInfo("Lavavisor signalChan")
+		utils.LavaFormatInfo("[Lavavisor] Lavavisor signalChan")
 	}
 
 	return nil

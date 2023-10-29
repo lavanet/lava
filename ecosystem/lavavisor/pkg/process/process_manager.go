@@ -23,7 +23,7 @@ func ReloadDaemon() error {
 
 func StartProcess(process string) error {
 	// Extract the chain id from the process string
-	utils.LavaFormatInfo("Starting Process", utils.Attribute{Key: "process", Value: process})
+	utils.LavaFormatInfo("[Lavavisor] Starting Process", utils.Attribute{Key: "process", Value: process})
 
 	// Create command list
 	cmds := []*exec.Cmd{
@@ -34,14 +34,14 @@ func StartProcess(process string) error {
 
 	// Run the commands and capture their output
 	for _, cmd := range cmds {
-		utils.LavaFormatInfo("Running", utils.Attribute{Key: "command", Value: strings.Join(cmd.Args, " ")})
+		utils.LavaFormatInfo("[Lavavisor] Running", utils.Attribute{Key: "command", Value: strings.Join(cmd.Args, " ")})
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return utils.LavaFormatError("[Lavavisor] Failed to run command", err, utils.Attribute{Key: "Output", Value: output})
 		}
-		utils.LavaFormatInfo("Successfully run command", utils.Attribute{Key: "cmd", Value: cmd})
+		utils.LavaFormatInfo("[Lavavisor] Successfully run command", utils.Attribute{Key: "cmd", Value: cmd})
 		if len(output) != 0 {
-			utils.LavaFormatInfo("Command Output", utils.Attribute{Key: "out", Value: output})
+			utils.LavaFormatInfo("[Lavavisor] Command Output", utils.Attribute{Key: "out", Value: output})
 		}
 	}
 	return nil
@@ -51,7 +51,7 @@ func GetBinaryVersion(binaryPath string) (string, error) {
 	cmd := exec.Command(binaryPath, "version")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", utils.LavaFormatWarning("GetBinaryVersion failed to execute command, lavavisor will try to fetch version from github", err)
+		return "", utils.LavaFormatWarning("[Lavavisor] GetBinaryVersion failed to execute command, lavavisor will try to fetch version from github", err)
 	}
 	return strings.TrimSpace(string(output)), nil
 }
@@ -81,10 +81,10 @@ func AddGoPathToDollarPath(path string) error {
 	currentPath := os.Getenv("PATH")
 	// Check if the default Go bin path is already in the PATH
 	if strings.Contains(currentPath, path) {
-		utils.LavaFormatInfo("Validation completed successfully - Default Go bin path already exists in PATH")
+		utils.LavaFormatInfo("[Lavavisor] Validation completed successfully - Default Go bin path already exists in PATH")
 		return nil
 	}
-	utils.LavaFormatInfo("Adding Path to $PATH", utils.Attribute{Key: "path", Value: path})
+	utils.LavaFormatInfo("[Lavavisor] Adding Path to $PATH", utils.Attribute{Key: "path", Value: path})
 	// Append the default Go bin path to the existing PATH
 	newPath := fmt.Sprintf("%s:%s", currentPath, path)
 	// Set the updated PATH

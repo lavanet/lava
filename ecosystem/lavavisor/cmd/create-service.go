@@ -120,7 +120,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 				ParallelConnection:        uint64(parallelConnection),
 			}
 
-			utils.LavaFormatInfo("Creating the service file")
+			utils.LavaFormatInfo("[Lavavisor] Creating the service file")
 
 			filename := filepath.Base(serviceConfigFile)
 			configName := filename[0 : len(filename)-len(filepath.Ext(filename))]
@@ -228,7 +228,7 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 		}
 	}
 
-	utils.LavaFormatInfo("Service file has been created successfully", utils.Attribute{Key: "Path", Value: filePath})
+	utils.LavaFormatInfo("[Lavavisor] Service file has been created successfully", utils.Attribute{Key: "Path", Value: filePath})
 	// Extract filename from filePath
 	filename := filepath.Base(filePath)
 
@@ -249,7 +249,7 @@ func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
 		return err
 	}
 	if strings.Contains(string(existingData), serviceFileName) {
-		utils.LavaFormatInfo("Service already exists in ~/.lavavisor/config.yml skipping " + serviceFileName)
+		utils.LavaFormatInfo("[Lavavisor] Service already exists in ~/.lavavisor/config.yml skipping " + serviceFileName)
 		return nil
 	}
 
@@ -284,7 +284,7 @@ func createSystemdSymlink(source string, serviceName string) error {
 			if err := cmdRemove.Run(); err != nil {
 				return utils.LavaFormatError("[Lavavisor] failed to remove existing link.", nil, utils.Attribute{Key: "Target", Value: target})
 			}
-			utils.LavaFormatInfo("Old service file links are removed.", utils.Attribute{Key: "Path", Value: target})
+			utils.LavaFormatInfo("[Lavavisor] Old service file links are removed.", utils.Attribute{Key: "Path", Value: target})
 		} else {
 			return utils.LavaFormatError("[Lavavisor] file exists and is not a symlink.", nil, utils.Attribute{Key: "Target", Value: target})
 		}
@@ -295,7 +295,7 @@ func createSystemdSymlink(source string, serviceName string) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error creating symbolic link: %v", err)
 	}
-	utils.LavaFormatInfo("Symbolic link for to root has been created successfully.", utils.Attribute{Key: "Path", Value: target})
+	utils.LavaFormatInfo("[Lavavisor] Symbolic link for to root has been created successfully.", utils.Attribute{Key: "Path", Value: target})
 
 	return nil
 }
