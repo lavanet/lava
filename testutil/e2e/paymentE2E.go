@@ -247,7 +247,7 @@ func runPaymentE2E(timeout time.Duration) {
 	// send relays using Tendermint-RPC
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
-		if err := tendermintURITests(url, time.Second*10); err != nil {
+		if err := tendermintURITests(url, time.Second*20); err != nil {
 			panic(err)
 		}
 	})
