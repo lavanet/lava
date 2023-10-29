@@ -129,6 +129,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{
+		Stake:              sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
 		Address:            creator,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
