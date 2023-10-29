@@ -42,6 +42,7 @@ type EpochstorageKeeper interface {
 
 type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (active bool, found bool, providerType spectypes.Spec_ProvidersTypes)
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 }
 
 type StakingKeeper interface {

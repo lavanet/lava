@@ -256,7 +256,13 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 
 	if delegator == provider {
 		stakeEntry.Stake, err = stakeEntry.Stake.SafeSub(amount)
-		return fmt.Errorf("invalid or insufficient funds: %w", err)
+		if err != nil {
+			return fmt.Errorf("invalid or insufficient funds: %w", err)
+		}
+		if stakeEntry.Stake.IsLT(k.getMinStake(ctx, chainID)) {
+			return fmt.Errorf("Provider self unbond to less than min stake")
+		}
+
 	}
 
 	stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
@@ -549,7 +555,6 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RefundedEventName, details, "Refunded")
 }
 
-// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
 func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
@@ -569,6 +574,18 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	}
 
 	// NOT REACHED
+}
+
+func (k Keeper) getMinStake(ctx sdk.Context, chainID string) sdk.Coin {
+	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found {
+		utils.LavaFormatError("critical: failed to get spec for chainID",
+			fmt.Errorf("unknown chainID"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
+	}
+
+	return spec.MinStakeProvider
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to
