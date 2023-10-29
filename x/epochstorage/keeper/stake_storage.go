@@ -222,7 +222,7 @@ func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 		entries = stakeStorage.StakeEntries
 		// sort func needs to return true if the inserted entry is less than the existing entry
 		sortFunc := func(i int) bool {
-			return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
+			return stakeEntry.EffectiveStake().LT(entries[i].EffectiveStake())
 		}
 		// returns the smallest index in which the sort func is true
 		index := sort.Search(len(entries), sortFunc)
@@ -258,7 +258,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 	// the following code inserts stakeEntry into the existing entries by stake
 	// sort func needs to return true if the inserted entry is less than the existing entry
 	sortFunc := func(i int) bool {
-		return stakeEntry.Stake.Amount.LT(entries[i].Stake.Amount)
+		return stakeEntry.EffectiveStake().LT(entries[i].EffectiveStake())
 	}
 	// returns the smallest index in which the sort func is true
 	index := sort.Search(len(entries), sortFunc)

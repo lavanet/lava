@@ -98,7 +98,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	}
 
 	// update the stake entry
-	err = k.increaseStakeEntryDelegation(ctx, provider, chainID, amount)
+	err = k.increaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if err := k.decreaseStakeEntryDelegation(ctx, provider, chainID, amount); err != nil {
+	if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount); err != nil {
 		return err
 	}
 
@@ -199,7 +199,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 }
 
 // increaseStakeEntryDelegation increases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
@@ -221,6 +221,9 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID 
 		)
 	}
 
+	if delegator == provider {
+		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
+	}
 	stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
@@ -229,7 +232,7 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID 
 }
 
 // decreaseStakeEntryDelegation decreases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
@@ -249,6 +252,11 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, provider, chainID 
 			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "address", Value: stakeEntry.Address},
 		)
+	}
+
+	if delegator == provider {
+		stakeEntry.Stake, err = stakeEntry.Stake.SafeSub(amount)
+		return fmt.Errorf("invalid or insufficient funds: %w", err)
 	}
 
 	stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
