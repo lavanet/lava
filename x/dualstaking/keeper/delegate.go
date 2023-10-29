@@ -109,7 +109,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 // decreaseDelegation decreases the delegation of a delegator to a provider for a
 // given chain. It updates the fixation stores for both delegations and delegators,
 // and updates the (epochstorage) stake-entry.
-func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
+func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64, unstake bool) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
 	index := types.DelegationKey(provider, delegator, chainID)
@@ -191,7 +191,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount); err != nil {
+	if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount, unstake); err != nil {
 		return err
 	}
 
@@ -223,8 +223,9 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 
 	if delegator == provider {
 		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
+	} else {
+		stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
 	}
-	stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
 
@@ -232,7 +233,7 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 }
 
 // decreaseStakeEntryDelegation decreases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
@@ -259,15 +260,14 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 		if err != nil {
 			return fmt.Errorf("invalid or insufficient funds: %w", err)
 		}
-		if stakeEntry.Stake.IsLT(k.getMinStake(ctx, chainID)) {
-			return fmt.Errorf("Provider self unbond to less than min stake")
+		if !unstake && stakeEntry.Stake.IsLT(k.getMinStake(ctx, chainID)) {
+			return fmt.Errorf("provider self unbond to less than min stake")
 		}
-
-	}
-
-	stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
-	if err != nil {
-		return fmt.Errorf("invalid or insufficient funds: %w", err)
+	} else {
+		stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
+		if err != nil {
+			return fmt.Errorf("invalid or insufficient funds: %w", err)
+		}
 	}
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
@@ -365,7 +365,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		return nil
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch)
+	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -394,7 +394,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 // before released and transferred back to the delegator. The rewards from the
 // provider will be updated accordingly (or terminate) from the next epoch.
 // (effective on next epoch)
-func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
 	nextEpoch, err := k.getNextEpoch(ctx)
 	if err != nil {
 		return err
@@ -418,7 +418,7 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		return nil
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)
+	err = k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch, unstake)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},

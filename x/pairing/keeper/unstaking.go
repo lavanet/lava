@@ -29,7 +29,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 		)
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+	existingEntry, entryExists, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
 			utils.Attribute{Key: "provider", Value: creator},
@@ -37,7 +37,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 		)
 	}
 
-	err = k.dualStakingKeeper.Unbond(ctx, existingEntry.GetAddress(), existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake)
+	err = k.dualStakingKeeper.Unbond(ctx, existingEntry.GetAddress(), existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake, true)
 	if err != nil {
 		return utils.LavaFormatWarning("can't unbond seld delegation", err,
 			utils.Attribute{Key: "address", Value: existingEntry.Address},
@@ -45,6 +45,8 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 		)
 	}
 
+	// index might have changed in the unbond
+	_, _, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
 	if err != nil {
 		return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,

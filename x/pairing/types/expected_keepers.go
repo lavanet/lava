@@ -94,7 +94,7 @@ type DowntimeKeeper interface {
 type DualStakingKeeper interface {
 	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error)
 	Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error
-	Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error
+	Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error
 }
 
 type FixationStoreKeeper interface {
