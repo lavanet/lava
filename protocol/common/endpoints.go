@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"encoding/base64"
 	"net/url"
 	"strings"
 	"time"
@@ -213,5 +214,5 @@ func GetIpFromGrpcContext(ctx context.Context) string {
 
 func GetUniqueToken(consumerAddress string, ip string) string {
 	data := []byte(consumerAddress + ip)
-	return string(sigs.HashMsg(data))
+	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
 }
