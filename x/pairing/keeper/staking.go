@@ -64,7 +64,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		moniker = moniker[:50]
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+	existingEntry, entryExists, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if entryExists {
 		// modify the entry
 		if existingEntry.Address != creator {
@@ -99,6 +99,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			// must also change the unstaking to create a new entry entirely
 
 			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+			// the index might have in the delegation method
+			existingEntry, _, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+
 			existingEntry.Geolocation = geolocation
 			existingEntry.Endpoints = endpointsVerified
 			existingEntry.Moniker = moniker
