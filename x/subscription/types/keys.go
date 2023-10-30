@@ -1,6 +1,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -34,12 +35,12 @@ const (
 )
 
 // CuTrackerKey encodes a keys using the subscription's consumer address, provider address and the relay's chain ID
-func CuTrackerKey(sub string, provider string, chainID string) string {
-	return sub + " " + provider + " " + chainID
+func CuTrackerKey(sub string, provider string, chainID string, block uint64) string {
+	return sub + " " + provider + " " + chainID + " " + strconv.FormatUint(block, 10)
 }
 
 // DecodeCuTrackerKey decodes the CU tracker key
-func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string) {
+func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string, blockStr string) {
 	decodedKey := strings.Split(key, " ")
-	return decodedKey[0], decodedKey[1], decodedKey[2]
+	return decodedKey[0], decodedKey[1], decodedKey[2], decodedKey[3]
 }

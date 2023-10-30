@@ -344,7 +344,7 @@ func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, clientA
 		return fmt.Errorf("failed to add CU to the subscription")
 	}
 
-	err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos)
+	err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, sub.Block)
 	if err != nil {
 		return err
 	}
