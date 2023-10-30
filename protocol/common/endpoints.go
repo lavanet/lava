@@ -2,13 +2,16 @@ package common
 
 import (
 	"context"
+	"encoding/base64"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
 
@@ -56,9 +59,8 @@ func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter
 		// not necessary
 		return
 	}
-	grpcPeer, exists := peer.FromContext(ctx)
-	if exists {
-		peerAddress := grpcPeer.Addr.String()
+	peerAddress := GetIpFromGrpcContext(ctx)
+	if peerAddress != "" {
 		headerSetter(IP_FORWARDING_HEADER_NAME, peerAddress)
 	}
 }
@@ -193,4 +195,40 @@ func (rr *RelayResult) GetStatusCode() int {
 		return 0
 	}
 	return rr.StatusCode
+}
+
+func GetIpFromGrpcContext(ctx context.Context) string {
+	// peers should be always available
+	grpcPeer, exists := peer.FromContext(ctx)
+	if exists {
+		return grpcPeer.Addr.String()
+	}
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		ipforwardingHeader := md.Get(IP_FORWARDING_HEADER_NAME)
+		if len(ipforwardingHeader) > 0 {
+			return ipforwardingHeader[0]
+		}
+	}
+	return ""
+}
+
+func GetTokenFromGrpcContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		ipforwardingHeader := md.Get(IP_FORWARDING_HEADER_NAME)
+		if len(ipforwardingHeader) > 0 {
+			return ipforwardingHeader[0]
+		}
+	}
+	grpcPeer, exists := peer.FromContext(ctx)
+	if exists {
+		return grpcPeer.Addr.String()
+	}
+	return ""
+}
+
+func GetUniqueToken(consumerAddress string, ip string) string {
+	data := []byte(consumerAddress + ip)
+	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
 }

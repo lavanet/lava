@@ -86,6 +86,7 @@ type RelaySender interface {
 		req string,
 		connectionType string,
 		dappID string,
+		consumerIp string,
 		analytics *metrics.RelayMetrics,
 		metadataValues []pairingtypes.Metadata,
 	) (*common.RelayResult, error)

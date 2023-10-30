@@ -251,18 +251,18 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
-	app.Post("/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
 		msgSeed := apil.logger.GetMessageSeed()
-		query := "?" + string(c.Request().URI().QueryString())
-		path := "/" + c.Params("*")
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := "/" + fiberCtx.Params("*")
 
-		metadataValues := c.GetReqHeaders()
+		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -270,13 +270,13 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
-		dappID := extractDappIDFromFiberContext(c)
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
-		requestBody := string(c.Body())
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, analytics, restHeaders)
+		requestBody := string(fiberCtx.Body())
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 
 		if err != nil {
 			// Get unique GUID response
@@ -287,78 +287,78 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 			// Set status to internal error\
 			if relayResult.GetStatusCode() != 0 {
-				c.Status(relayResult.StatusCode)
+				fiberCtx.Status(relayResult.StatusCode)
 			} else {
-				c.Status(fiber.StatusInternalServerError)
+				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(c, reply.GetMetadata(), response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
-			c.Status(relayResult.StatusCode)
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Catch the others
-	app.Use("/*", func(c *fiber.Ctx) error {
+	app.Use("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
 
-		query := "?" + string(c.Request().URI().QueryString())
-		path := "/" + c.Params("*")
-		dappID := extractDappIDFromFiberContext(c)
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := "/" + fiberCtx.Params("*")
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
-		metadataValues := c.GetReqHeaders()
+		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", c.Method(), dappID, analytics, restHeaders)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("http in/out", true, fiberCtx.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
-				c.Status(relayResult.StatusCode)
+				fiberCtx.Status(relayResult.StatusCode)
 			} else {
-				c.Status(fiber.StatusInternalServerError)
+				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(c, reply.GetMetadata(), response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		if relayResult.GetStatusCode() != 0 {
-			c.Status(relayResult.StatusCode)
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
-		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Go
