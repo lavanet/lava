@@ -24,9 +24,14 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 }
 
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
-// Note that the trackedCu entry always has one version (updating it using append in the same block acts as ModifyEntry)
 func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64) error {
 	cu, entryBlock, _, key := k.GetTrackedCu(ctx, sub, provider, chainID)
+
+	// Note that the trackedCu entry usually has one version
+	// (updating it using append in the same block acts as ModifyEntry)
+	// At most, there can be two trackedCu entries. Two entries occur
+	// in the time period after a month has passed but before the payment
+	// timer ended (in this time, a provider can still request payment for the previous month)
 	err := k.cuTrackerFS.AppendEntry(ctx, key, entryBlock, &types.TrackedCu{Cu: cu + cuToAdd})
 	if err != nil {
 		return utils.LavaFormatError("cannot add tracked CU", err,
@@ -73,7 +78,7 @@ type trackedCuInfo struct {
 	block     uint64
 }
 
-func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuUsedBySub uint64) {
+func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
@@ -92,10 +97,10 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 			chainID:   chainID,
 			block:     entryBlock,
 		})
-		totalCuUsedBySub += cu
+		totalCuTracked += cu
 	}
 
-	return trackedCuList, totalCuUsedBySub
+	return trackedCuList, totalCuTracked
 }
 
 // remove only before the sub is deleted
