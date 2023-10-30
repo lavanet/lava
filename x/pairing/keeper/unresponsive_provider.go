@@ -274,5 +274,5 @@ func (k Keeper) unsafeUnstakeProviderEntry(ctx sdk.Context, epoch uint64, chainI
 	// Appened the provider's stake entry to the unstake entry list
 	k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 
-	return nil
+	return k.dualStakingKeeper.Unbond(ctx, existingEntry.Address, existingEntry.Address, chainID, existingEntry.Stake, true)
 }

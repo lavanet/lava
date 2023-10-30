@@ -480,3 +480,56 @@ func TestUnbond(t *testing.T) {
 	// not-bonded coins will have been returned to their delegator by now
 	require.True(t, ts.Keepers.Dualstaking.TotalNotBondedTokens(ts.Ctx).IsZero())
 }
+
+func TestBondUnbondBond(t *testing.T) {
+	ts := newTester(t)
+
+	// 1 delegator, 2 provider staked, 0 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(1, 2, 0, 0)
+
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+
+	delegated := zeroCoin
+	bonded := zeroCoin.AddAmount(sdk.NewIntFromUint64(uint64(2 * testStake))) // provider self delegation
+	notBonded := zeroCoin
+
+	// delegate once
+	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	require.NoError(t, err)
+	bonded = bonded.Add(amount)
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+	delegated = delegated.Add(amount)
+	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, bonded.Amount.Equal(ts.Keepers.Dualstaking.TotalBondedTokens(ts.Ctx)))
+	require.True(t, notBonded.Amount.Equal(ts.Keepers.Dualstaking.TotalNotBondedTokens(ts.Ctx)))
+
+	// unbond once
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
+	require.NoError(t, err)
+	bonded = bonded.Sub(amount)
+	notBonded = notBonded.Add(amount)
+	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, bonded.Amount.Equal(ts.Keepers.Dualstaking.TotalBondedTokens(ts.Ctx)))
+	require.True(t, notBonded.Amount.Equal(ts.Keepers.Dualstaking.TotalNotBondedTokens(ts.Ctx)))
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+	delegated = delegated.Sub(amount)
+	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, bonded.Amount.Equal(ts.Keepers.Dualstaking.TotalBondedTokens(ts.Ctx)))
+	require.True(t, notBonded.Amount.Equal(ts.Keepers.Dualstaking.TotalNotBondedTokens(ts.Ctx)))
+
+	// delegate second time
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	require.NoError(t, err)
+	bonded = bonded.Add(amount)
+
+	ts.AdvanceEpochs(200)
+}

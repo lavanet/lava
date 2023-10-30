@@ -109,7 +109,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// check that there are two delegators
 			res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 			require.Nil(t, err)
-			require.Equal(t, 2, len(res.Delegations))
+			require.Equal(t, 3, len(res.Delegations))
 
 			// calc useful consts
 			totalReward := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx).MulInt64(int64(relayCuSum))
@@ -212,7 +212,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 2, len(res.Delegations))
+	require.Equal(t, 3, len(res.Delegations))
 
 	// check the provider's balance
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
@@ -272,7 +272,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
+	require.Equal(t, 2, len(res.Delegations))
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	totalReward := math.NewInt(int64(relayCuSum))

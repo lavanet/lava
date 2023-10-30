@@ -171,7 +171,7 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 	}
 
 	relevantDelegations := slices.Filter(delegations,
-		func(d types.Delegation) bool { return d.ChainID == chainID })
+		func(d types.Delegation) bool { return d.ChainID == chainID && d.Delegator != d.Provider })
 
 	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
 
