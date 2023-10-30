@@ -533,7 +533,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		relaySentTime := time.Now()
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
 		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
-		metadata.NewOutgoingContext(connectCtx, metadataAdd)
+		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
 		var trailer metadata.MD
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&trailer))

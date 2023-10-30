@@ -653,9 +653,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
 		// add stickyness header
-		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickynessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))}})
+		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickynessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetTokenFromGrpcContext(ctx))}})
 		if debugConsistency {
-			utils.LavaFormatDebug("adding stickyness header", utils.LogAttr("ipFromContext", common.GetIpFromGrpcContext(ctx)), utils.LogAttr("token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
+			utils.LavaFormatDebug("adding stickyness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
 		}
 
 		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)

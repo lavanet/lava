@@ -198,6 +198,7 @@ func (rr *RelayResult) GetStatusCode() int {
 }
 
 func GetIpFromGrpcContext(ctx context.Context) string {
+	// peers should be always available
 	grpcPeer, exists := peer.FromContext(ctx)
 	if exists {
 		return grpcPeer.Addr.String()
@@ -208,6 +209,21 @@ func GetIpFromGrpcContext(ctx context.Context) string {
 		if len(ipforwardingHeader) > 0 {
 			return ipforwardingHeader[0]
 		}
+	}
+	return ""
+}
+
+func GetTokenFromGrpcContext(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		ipforwardingHeader := md.Get(IP_FORWARDING_HEADER_NAME)
+		if len(ipforwardingHeader) > 0 {
+			return ipforwardingHeader[0]
+		}
+	}
+	grpcPeer, exists := peer.FromContext(ctx)
+	if exists {
+		return grpcPeer.Addr.String()
 	}
 	return ""
 }
