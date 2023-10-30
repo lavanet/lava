@@ -11,13 +11,13 @@ import (
 	"strings"
 
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
 type ProtocolBinaryFetcher struct {
-	lavavisorPath string
+	lavavisorPath         string
+	CurrentRunningVersion string
 }
 
 func (pbf *ProtocolBinaryFetcher) SetupLavavisorDir(dir string) error {
@@ -58,11 +58,22 @@ func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protoco
 		return "", utils.LavaFormatError("[Lavavisor] The lavavisor path is not initialized. Should not get here!", nil)
 	}
 
+	var currentRunningVersion *lvutil.SemanticVer
+	if pbf.CurrentRunningVersion != "" {
+		currentRunningVersion = lvutil.ParseToSemanticVersion(pbf.CurrentRunningVersion)
+	}
 	currentVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderTarget)
 	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin) // min(currentRunning, minVersionInParams)
 
 	// TODO: Avoid downgrading by mistake: Validate current install version
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
+		if currentRunningVersion != nil && (lvutil.IsVersionEqual(currentRunningVersion, currentVersion) || lvutil.IsVersionGreaterThan(currentRunningVersion, currentVersion)) {
+			if !autoDownload {
+				return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, waiting for directory upgrade directory to be placed in lavavisor config", nil)
+			} else {
+				return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, couldn't fetch the new binary.", nil)
+			}
+		}
 		utils.LavaFormatInfo("[Lavavisor] Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
 		versionDir := filepath.Join(pbf.lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
 		utils.LavaFormatInfo("[Lavavisor] Version Directory", utils.Attribute{Key: "versionDir", Value: versionDir})
@@ -71,7 +82,6 @@ func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protoco
 			return selectedBinaryPath, nil
 		}
 	}
-
 	return "", utils.LavaFormatError("[Lavavisor] Failed to fetch protocol binary for both target and min versions", nil)
 }
 
@@ -163,18 +173,14 @@ func (pbf *ProtocolBinaryFetcher) handleMissingDir(versionDir string, autoDownlo
 
 func (pbf *ProtocolBinaryFetcher) handleExistingDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
 	binaryPath = filepath.Join(versionDir, "lavap")
-	vm := VersionMonitor{
-		BinaryPath: binaryPath,
+	version, _ := GetBinaryVersion(binaryPath)
+	if version != "" {
+		utils.LavaFormatInfo("found requested version", utils.Attribute{Key: "version", Value: version})
+		return binaryPath, nil // found version.
 	}
-	if err := vm.ValidateProtocolVersion(&statetracker.ProtocolVersionResponse{Version: protocolConsensusVersion}); err != nil {
-		if !autoDownload {
-			return "", utils.LavaFormatError("[Lavavisor] Protocol version mismatch or binary not found in lavavisor directory\n ", err)
-		}
-		utils.LavaFormatDebug("[Lavavisor] An error occurred when validating the protocol version in existing dir, treating as missing dir", utils.Attribute{Key: "error", Value: err})
-		binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
-		if err != nil {
-			return "", err
-		}
+	binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
+	if err != nil {
+		return "", err
 	}
 	return binaryPath, nil
 }

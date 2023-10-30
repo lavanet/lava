@@ -50,13 +50,11 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []str
 	}
 }
 
-func (vm *VersionMonitor) handleUpdateTrigger() error {
+func (vm *VersionMonitor) handleUpdateTrigger(currentBinaryVersion string) error {
 	// set latest known version to incoming.
 	utils.LavaFormatInfo("[Lavavisor] Update detected. Lavavisor starting the auto-upgrade...")
+	vm.protocolBinaryFetcher.CurrentRunningVersion = currentBinaryVersion
 	// 1. check lavavisor directory first and attempt to fetch new binary from there
-	versionDir := filepath.Join(vm.LavavisorPath, "upgrades", "v"+vm.lastKnownVersion.ProviderTarget)
-	binaryPath := filepath.Join(versionDir, "lavap")
-	vm.BinaryPath = binaryPath // updating new binary path for validating new binary
 
 	if vm.protocolBinaryFetcher == nil {
 		utils.LavaFormatError("[Lavavisor] for some reason the vm.protocolBinaryFetcher is nil", nil)
@@ -66,6 +64,10 @@ func (vm *VersionMonitor) handleUpdateTrigger() error {
 	if err != nil {
 		return utils.LavaFormatError("[Lavavisor] Lavavisor was not able to fetch updated version. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
 	}
+	versionDir := filepath.Join(vm.LavavisorPath, "upgrades", "v"+vm.lastKnownVersion.ProviderTarget)
+	binaryPath := filepath.Join(versionDir, "lavap")
+	vm.BinaryPath = binaryPath // updating new binary path for validating new binary
+
 	err = vm.createLink()
 	if err != nil {
 		return err
@@ -172,8 +174,9 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.Protoco
 
 	if currentBinaryVersion == "" || ValidateMismatch(incoming.Version, currentBinaryVersion) {
 		utils.LavaFormatInfo("[Lavavisor] New version detected", utils.Attribute{Key: "incoming", Value: incoming})
+		utils.LavaFormatInfo("[Lavavisor] Current Running Version", utils.Attribute{Key: "currentBinaryVersion", Value: currentBinaryVersion})
 		utils.LavaFormatInfo("[Lavavisor] Started Version Upgrade flow")
-		err := vm.handleUpdateTrigger()
+		err := vm.handleUpdateTrigger(currentBinaryVersion)
 		if err != nil {
 			utils.LavaFormatInfo("[Lavavisor] protocol update failed, lavavisor will continue trying to upgrade version every block until it succeeds")
 		}
