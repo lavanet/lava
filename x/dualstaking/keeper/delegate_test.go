@@ -99,7 +99,7 @@ func TestDelegate(t *testing.T) {
 	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 
 	delegated := zeroCoin
-	bonded := zeroCoin
+	bonded := zeroCoin.AddAmount(sdk.NewIntFromUint64(uint64(testStake))) // provider self delegation
 
 	// delegate once
 	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
@@ -251,7 +251,7 @@ func TestRedelegate(t *testing.T) {
 
 	delegated1 := zeroCoin
 	delegated2 := zeroCoin
-	bonded := zeroCoin
+	bonded := zeroCoin.AddAmount(sdk.NewIntFromUint64(uint64(2 * testStake))) // provider self delegation
 
 	// delegate once
 	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
@@ -292,6 +292,7 @@ func TestRedelegate(t *testing.T) {
 	require.True(t, bonded.Amount.Equal(ts.Keepers.Dualstaking.TotalBondedTokens(ts.Ctx)))
 
 	_, err = ts.TxPairingUnstakeProvider(provider1Addr, ts.spec.Name)
+	bonded = bonded.SubAmount(sdk.NewIntFromUint64(uint64(testStake)))
 	require.NoError(t, err)
 
 	// redelegate from unstaking provider
@@ -394,7 +395,7 @@ func TestUnbond(t *testing.T) {
 	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 
 	delegated := zeroCoin
-	bonded := zeroCoin
+	bonded := zeroCoin.AddAmount(sdk.NewIntFromUint64(uint64(2 * testStake))) // provider self delegation
 	notBonded := zeroCoin
 
 	// delegate once
@@ -454,6 +455,8 @@ func TestUnbond(t *testing.T) {
 	require.True(t, notBonded.Amount.Equal(ts.Keepers.Dualstaking.TotalNotBondedTokens(ts.Ctx)))
 
 	_, err = ts.TxPairingUnstakeProvider(provider1Addr, ts.spec.Name)
+	bonded = bonded.SubAmount(sdk.NewIntFromUint64(uint64(testStake)))
+	notBonded = notBonded.AddAmount(sdk.NewIntFromUint64(uint64(testStake))) // provider self delegation
 	require.NoError(t, err)
 
 	// unbond from unstaking provider

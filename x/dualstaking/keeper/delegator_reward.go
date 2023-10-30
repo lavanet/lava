@@ -175,14 +175,17 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 
 	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward)
+	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward)
 
 	return providerReward.Add(leftoverRewards), nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, totalReward math.Int, delegatorsReward math.Int) (leftoverRewards math.Int) {
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, delegatorsReward math.Int) (leftoverRewards math.Int) {
 	usedDelegatorRewards := math.ZeroInt() // the delegator rewards are calculated using int division, so there might be leftovers
+	if totalDelegations.IsZero() {
+		return delegatorsReward
+	}
 
 	for _, delegation := range delegations {
 		delegatorRewardAmount := k.CalcDelegatorReward(delegatorsReward, totalDelegations, delegation)
