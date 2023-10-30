@@ -158,7 +158,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	}
 	stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
 	if err != nil {
-		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), types.ErrProviderNotStaked,
+		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
 			utils.Attribute{Key: "provider", Value: providerAddr},
 			utils.Attribute{Key: "chainID", Value: chainID},
 			utils.Attribute{Key: "epoch", Value: epoch},

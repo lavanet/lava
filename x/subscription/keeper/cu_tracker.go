@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -153,7 +153,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// Note: if the reward function doesn't reward the provider because he was unstaked, we only print an error and not returning
 		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName)
-		if err == dualstakingtypes.ErrProviderNotStaked {
+		if err == epochstoragetypes.ErrProviderNotStaked || err == epochstoragetypes.ErrStakeStorageNotFound {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
