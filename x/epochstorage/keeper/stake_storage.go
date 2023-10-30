@@ -424,20 +424,12 @@ func (k Keeper) GetStakeStorageEpoch(ctx sdk.Context, block uint64, chainID stri
 func (k Keeper) GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
 	stakeStorage, found := k.GetStakeStorageEpoch(ctx, epoch, chainID)
 	if !found {
-		return nil, utils.LavaFormatWarning("cannot get stake entry", types.ErrStakeStorageNotFound,
-			utils.Attribute{Key: "epoch", Value: strconv.FormatUint(epoch, 10)},
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "provider", Value: selectedProvider.String()},
-		)
+		return nil, types.ErrStakeStorageNotFound
 	}
 
 	providerStakeEntry, found, _ := k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, selectedProvider)
 	if !found {
-		return nil, utils.LavaFormatWarning("cannot get stake entry", types.ErrProviderNotStaked,
-			utils.Attribute{Key: "epoch", Value: strconv.FormatUint(epoch, 10)},
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "provider", Value: selectedProvider.String()},
-		)
+		return nil, types.ErrProviderNotStaked
 	}
 	entry = &providerStakeEntry
 	return
