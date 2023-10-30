@@ -530,6 +530,7 @@ func TestBondUnbondBond(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 	bonded = bonded.Add(amount)
+	require.True(t, bonded.Amount.Equal(ts.Keepers.Dualstaking.TotalBondedTokens(ts.Ctx)))
 
-	ts.AdvanceEpochs(200)
+	ts.AdvanceEpoch()
 }
