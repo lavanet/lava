@@ -80,7 +80,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			{Key: "stake", Value: amount},
 		}
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
-		// TODO handle this
+
 		if amount.IsGTE(existingEntry.Stake) {
 			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 			existingEntry.Geolocation = geolocation
