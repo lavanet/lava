@@ -21,15 +21,16 @@ import (
 )
 
 const (
-	RewardServerStorageFlagName       = "reward-server-storage"
-	DefaultRewardServerStorage        = ".storage/rewardserver"
-	RewardTTLFlagName                 = "reward-ttl"
-	DefaultRewardTTL                  = 24 * 60 * time.Minute
-	MaxDBSaveRetries                  = 10
-	RewardsSnapshotThresholdFlagName  = "proofs-snapshot-threshold"
-	DefaultRewardsSnapshotThreshold   = 1000
-	RewardsSnapshotTimeoutSecFlagName = "proofs-snapshot-timeout-sec"
-	DefaultRewardsSnapshotTimeoutSec  = 30
+	RewardServerStorageFlagName         = "reward-server-storage"
+	DefaultRewardServerStorage          = ".storage/rewardserver"
+	RewardTTLFlagName                   = "reward-ttl"
+	DefaultRewardTTL                    = 24 * 60 * time.Minute
+	MaxDBSaveRetries                    = 10
+	RewardsSnapshotThresholdFlagName    = "proofs-snapshot-threshold"
+	DefaultRewardsSnapshotThreshold     = 1000
+	RewardsSnapshotTimeoutSecFlagName   = "proofs-snapshot-timeout-sec"
+	DefaultRewardsSnapshotTimeoutSec    = 30
+	MaxPaymentRequestsRetiresForSession = 3
 )
 
 type PaymentRequest struct {
@@ -67,6 +68,11 @@ type EpochRewards struct {
 	consumerRewards map[string]*ConsumerRewards // key is consumerRewardsKey
 }
 
+type RelaySessionsToRetryAttempts struct {
+	relaySession                *pairingtypes.RelaySession
+	paymentRequestRetryAttempts uint64
+}
+
 type RewardServer struct {
 	rewardsTxSender                RewardsTxSender
 	lock                           sync.RWMutex
@@ -82,6 +88,7 @@ type RewardServer struct {
 	rewardsSnapshotTimeoutDuration time.Duration
 	rewardsSnapshotTimer           *timer.Timer
 	rewardsSnapshotThresholdCh     chan struct{}
+	failedRewardsPaymentRequests   map[uint64]*RelaySessionsToRetryAttempts // key is SessionId
 	chainTrackerSpecsInf           ChainTrackerSpecsInf
 }
 
@@ -153,10 +160,32 @@ func (rws *RewardServer) UpdateEpoch(epoch uint64) {
 }
 
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
-	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch)
+	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	if err != nil {
+		return utils.LavaFormatError("sendRewardsClaim failed to get earliest block in memory", err)
+	}
+
+	failedRewardRequestsToRetry := rws.gatherFailedRequestPaymentsToRetry(earliestSavedEpoch)
+	if len(failedRewardRequestsToRetry) > 0 {
+		specs := map[string]struct{}{}
+		for _, relay := range failedRewardRequestsToRetry {
+			specs[relay.SpecId] = struct{}{}
+		}
+
+		err = rws.rewardsTxSender.TxRelayPayment(ctx, failedRewardRequestsToRetry, strconv.FormatUint(rws.serverID, 10), rws.latestBlockReports(specs))
+		if err != nil {
+			rws.updatePaymentRequestAttempt(failedRewardRequestsToRetry, false)
+			utils.LavaFormatError("failed sending previously failed payment requests", err)
+		} else {
+			rws.updatePaymentRequestAttempt(failedRewardRequestsToRetry, true)
+		}
+	}
+
+	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch, earliestSavedEpoch)
 	if err != nil {
 		return err
 	}
+
 	specs := map[string]struct{}{}
 	for _, relay := range rewardsToClaim {
 		consumerAddr, err := sigs.ExtractSignerAddress(relay)
@@ -181,8 +210,10 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 	if len(rewardsToClaim) > 0 {
 		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10), rws.latestBlockReports(specs))
 		if err != nil {
+			rws.updatePaymentRequestAttempt(rewardsToClaim, false)
 			return utils.LavaFormatError("failed sending rewards claim", err)
 		}
+		rws.updatePaymentRequestAttempt(rewardsToClaim, true)
 
 		utils.LavaFormatDebug("sent rewards claim", utils.Attribute{Key: "number_of_relay_sessions_sent", Value: len(rewardsToClaim)})
 	} else {
@@ -258,7 +289,7 @@ func (rws *RewardServer) RemoveExpectedPayment(paidCUToFInd uint64, expectedClie
 	return false
 }
 
-func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, errRet error) {
+func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch uint64, earliestSavedEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession, errRet error) {
 	blockDistanceForEpochValidity, err := rws.rewardsTxSender.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	if err != nil {
 		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment", err)
@@ -266,11 +297,6 @@ func (rws *RewardServer) gatherRewardsForClaim(ctx context.Context, currentEpoch
 
 	if blockDistanceForEpochValidity > currentEpoch {
 		return nil, utils.LavaFormatWarning("gatherRewardsForClaim current epoch is too low to claim rewards", nil, utils.Attribute{Key: "current epoch", Value: currentEpoch})
-	}
-
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
-	if err != nil {
-		return nil, utils.LavaFormatError("gatherRewardsForClaim failed to get earliest block in memory", err)
 	}
 
 	activeEpochThreshold := currentEpoch - blockDistanceForEpochValidity
@@ -383,6 +409,7 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec) * time.Second
 	rws.rewardsSnapshotTimer = timer.NewTimer(rws.rewardsSnapshotTimeoutDuration)
 	rws.rewardsSnapshotThresholdCh = make(chan struct{})
+	rws.failedRewardsPaymentRequests = make(map[uint64]*RelaySessionsToRetryAttempts)
 	rws.chainTrackerSpecsInf = chainTrackerSpecsInf
 
 	go rws.saveRewardsSnapshotToDBJob()
@@ -504,6 +531,84 @@ func (rws *RewardServer) latestBlockReports(specs map[string]struct{}) (latestBl
 		latestBlockReports = append(latestBlockReports, blockReport)
 	}
 	return
+}
+
+func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch uint64) (rewardsForClaim []*pairingtypes.RelaySession) {
+	rws.lock.Lock()
+	defer rws.lock.Unlock()
+
+	if len(rws.failedRewardsPaymentRequests) == 0 {
+		return
+	}
+
+	var sessionsToDelete []uint64
+	for key, val := range rws.failedRewardsPaymentRequests {
+		if val.relaySession.Epoch < int64(earliestSavedEpoch) {
+			sessionsToDelete = append(sessionsToDelete, key)
+			continue
+		}
+
+		rewardsForClaim = append(rewardsForClaim, val.relaySession)
+	}
+
+	for _, sessionId := range sessionsToDelete {
+		rws.deleteRelaySessionFromRewardDB(rws.failedRewardsPaymentRequests[sessionId].relaySession)
+		delete(rws.failedRewardsPaymentRequests, sessionId)
+	}
+
+	return
+}
+
+func (rws *RewardServer) updatePaymentRequestAttempt(paymentRequests []*pairingtypes.RelaySession, success bool) {
+	rws.lock.Lock()
+	defer rws.lock.Unlock()
+
+	for _, relaySession := range paymentRequests {
+		sessionId := relaySession.SessionId
+		sessionWithAttempts, found := rws.failedRewardsPaymentRequests[sessionId]
+		if !found {
+			if !success {
+				utils.LavaFormatDebug("Adding new session to failedRewardsPaymentRequests", utils.Attribute{Key: "sessionId", Value: sessionId})
+				rws.failedRewardsPaymentRequests[sessionId] = &RelaySessionsToRetryAttempts{
+					relaySession:                relaySession,
+					paymentRequestRetryAttempts: 1,
+				}
+			}
+			continue
+		}
+
+		if success {
+			utils.LavaFormatDebug("Removing session from failedRewardsPaymentRequests", utils.Attribute{Key: "sessionId", Value: sessionId})
+			delete(rws.failedRewardsPaymentRequests, sessionId)
+			continue
+		}
+
+		sessionWithAttempts.paymentRequestRetryAttempts++
+		if sessionWithAttempts.paymentRequestRetryAttempts >= MaxPaymentRequestsRetiresForSession {
+			utils.LavaFormatInfo("Rewards for session are being removed due to surpassing the maximum allowed retries for payment requests.",
+				utils.Attribute{Key: "sessionIds", Value: sessionId},
+				utils.Attribute{Key: "maxRetriesAllowed", Value: MaxPaymentRequestsRetiresForSession},
+			)
+
+			delete(rws.failedRewardsPaymentRequests, sessionId)
+			rws.deleteRelaySessionFromRewardDB(relaySession)
+			continue
+		}
+
+		rws.failedRewardsPaymentRequests[sessionId] = sessionWithAttempts
+	}
+}
+
+func (rws *RewardServer) deleteRelaySessionFromRewardDB(relaySession *pairingtypes.RelaySession) error {
+	// Must be called inside a lock!
+	consumerAddr, err := sigs.ExtractSignerAddress(relaySession)
+	if err != nil {
+		return utils.LavaFormatError("invalid consumer address extraction from relay", err, utils.Attribute{Key: "relay", Value: relaySession})
+	}
+
+	rws.rewardDB.DeleteClaimedRewards(uint64(relaySession.Epoch), consumerAddr.String(), relaySession.SessionId,
+		getKeyForConsumerRewards(relaySession.SpecId, consumerAddr.String()))
+	return nil
 }
 
 func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64) ([]*PaymentRequest, error) {
