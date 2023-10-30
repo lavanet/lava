@@ -64,7 +64,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		moniker = moniker[:50]
 	}
 
-	existingEntry, entryExists, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if entryExists {
 		// modify the entry
 		if existingEntry.Address != creator {
@@ -82,6 +82,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 		// TODO handle this
 		if amount.IsGTE(existingEntry.Stake) {
+			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+			existingEntry.Geolocation = geolocation
+			existingEntry.Endpoints = endpointsVerified
+			existingEntry.Moniker = moniker
+			existingEntry.DelegateCommission = delegationCommission
+			existingEntry.DelegateLimit = delegationLimit
+
+			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
+
 			// support modifying with the same stake or greater only
 			if !amount.Equal(existingEntry.Stake) {
 				// delegate the difference
@@ -98,17 +107,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 			// must also change the unstaking to create a new entry entirely
 
-			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
-			// the index might have in the delegation method
-			existingEntry, _, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
-
-			existingEntry.Geolocation = geolocation
-			existingEntry.Endpoints = endpointsVerified
-			existingEntry.Moniker = moniker
-			existingEntry.DelegateCommission = delegationCommission
-			existingEntry.DelegateLimit = delegationLimit
-
-			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 			detailsMap := map[string]string{}
 			for _, val := range details {
 				detailsMap[val.Key] = fmt.Sprint(val.Value)
