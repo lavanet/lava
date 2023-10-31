@@ -443,7 +443,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
-	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "the address to expose prometheus metrics (such as localhost:7779)")
+	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
 	return cmdRPCConsumer
 }
 
