@@ -202,7 +202,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		}
 	}
 
-	var nodeMsg *parsedMessage
+	var nodeMsg *baseChainMessageContainer
 	if len(msgs) == 1 {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
@@ -221,12 +221,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	return nodeMsg, nil
 }
 
-func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
 	}
-	nodeMsg := &parsedMessage{
+	nodeMsg := &baseChainMessageContainer{
 		api:                    serviceApi,
 		apiCollection:          apiCollection,
 		latestRequestedBlock:   requestedBlock,
@@ -236,8 +236,8 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 	return nodeMsg, err
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  serviceApi,
 		apiCollection:        apiCollection,
 		latestRequestedBlock: requestedBlock,

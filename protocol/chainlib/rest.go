@@ -123,8 +123,8 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	return nodeMsg, nil
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  serviceApi,
 		apiCollection:        apiCollection,
 		msg:                  restMessage,
