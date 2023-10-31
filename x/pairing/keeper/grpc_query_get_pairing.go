@@ -62,9 +62,9 @@ func (k Keeper) getPairing(ctx sdk.Context, req *types.QueryGetPairingRequest) (
 	currentEpoch := k.epochStorageKeeper.GetEpochStart(ctx)
 
 	// Get the block in which there was the latest change for the current spec
-	spec, found := k.specKeeper.GetSpec(ctx, req.GetChainID())
-	if !found {
-		return nil, nil, errors.New("spec not found or not enabled")
+	spec, err := k.specKeeper.GetExpandedSpec(ctx, req.GetChainID())
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return &types.QueryGetPairingResponse{Providers: providers, CurrentEpoch: currentEpoch, TimeLeftToNextPairing: timeLeftToNextPairing, SpecLastUpdatedBlock: spec.BlockLastUpdated, BlockOfNextPairing: nextPairingBlock}, &spec, nil

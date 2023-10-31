@@ -8,6 +8,8 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -479,78 +481,73 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	require.Equal(t, 0, len(res.EpochPayments))
 }
 
-// TODO: not sure how to fix this test. The test checks that the monthly CU is updated correctly on the
-// project and subscription. But, to trigger the payment, we have to advance a month, so all the CU
-// related fields are reset - so the test checks nothing
+// Test that after the consumer uses some CU it's updated in its project and subscription
+func TestCuUsageInProjectsAndSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(0, 0, 2)    // 0 sub, 0 adm, 2 dev
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-// // Test that after the consumer uses some CU it's updated in its project and subscription
-// func TestCuUsageInProjectsAndSubscription(t *testing.T) {
-// 	ts := newTester(t)
-// 	ts.SetupAccounts(0, 0, 2)    // 0 sub, 0 adm, 2 dev
-// 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	dev1Acct, dev1Addr := ts.Account("dev1")
+	_, dev2Addr := ts.Account("dev2")
 
-// 	dev1Acct, dev1Addr := ts.Account("dev1")
-// 	_, dev2Addr := ts.Account("dev2")
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-// 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-// 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	projectData := projectstypes.ProjectData{
+		Name:    "proj1",
+		Enabled: true,
+		ProjectKeys: []projectstypes.ProjectKey{
+			projectstypes.ProjectDeveloperKey(dev1Addr),
+		},
+		Policy: &planstypes.Policy{
+			GeolocationProfile: int32(1),
+			MaxProvidersToPair: 3,
+			TotalCuLimit:       1000,
+			EpochCuLimit:       100,
+		},
+	}
+	err := ts.TxSubscriptionAddProject(client1Addr, projectData)
+	require.Nil(t, err)
 
-// 	projectData := projecttypes.ProjectData{
-// 		Name:    "proj1",
-// 		Enabled: true,
-// 		ProjectKeys: []projecttypes.ProjectKey{
-// 			projecttypes.ProjectDeveloperKey(dev1Addr),
-// 		},
-// 		Policy: &planstypes.Policy{
-// 			GeolocationProfile: int32(1),
-// 			MaxProvidersToPair: 3,
-// 			TotalCuLimit:       1000,
-// 			EpochCuLimit:       100,
-// 		},
-// 	}
-// 	err := ts.TxSubscriptionAddProject(client1Addr, projectData)
-// 	require.Nil(t, err)
+	projectData.Name = "proj2"
+	projectData.ProjectKeys = []projectstypes.ProjectKey{
+		projectstypes.ProjectDeveloperKey(dev2Addr),
+	}
+	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
+	require.Nil(t, err)
 
-// 	projectData.Name = "proj2"
-// 	projectData.ProjectKeys = []projecttypes.ProjectKey{
-// 		projecttypes.ProjectDeveloperKey(dev2Addr),
-// 	}
-// 	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
-// 	require.Nil(t, err)
+	ts.AdvanceEpoch()
 
-// 	ts.AdvanceEpoch()
+	qos := types.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.OneDec(),
+	}
 
-// 	qos := types.QualityOfServiceReport{
-// 		Latency:      sdk.OneDec(),
-// 		Availability: sdk.OneDec(),
-// 		Sync:         sdk.OneDec(),
-// 	}
+	relaySession := ts.newRelaySession(providerAddr, 0, 1, ts.BlockHeight(), 0)
+	relaySession.QosReport = &qos
+	relaySession.Sig, err = sigs.Sign(dev1Acct.SK, *relaySession)
+	require.Nil(t, err)
 
-// 	relaySession := ts.newRelaySession(providerAddr, 0, 1, ts.BlockHeight(), 0)
-// 	relaySession.QosReport = &qos
-// 	relaySession.Sig, err = sigs.Sign(dev1Acct.SK, *relaySession)
-// 	require.Nil(t, err)
+	// Request payment (helper validates the balances and verifies expected errors through valid)
+	relayPaymentMessage := types.MsgRelayPayment{
+		Creator: providerAddr,
+		Relays:  slices.Slice(relaySession),
+	}
+	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-// 	// Request payment (helper validates the balances and verifies expected errors through valid)
-// 	relayPaymentMessage := types.MsgRelayPayment{
-// 		Creator: providerAddr,
-// 		Relays:  slices.Slice(relaySession),
-// 	}
+	sub, err := ts.QuerySubscriptionCurrent(client1Addr)
+	require.Nil(t, err)
+	require.True(t, sub.Sub != nil)
 
-// 	ts.payAndVerifyBalance(relayPaymentMessage, dev1Acct.Addr, providerAcct.Addr, true, true, 100)
+	proj1, err := ts.QueryProjectDeveloper(dev1Addr)
+	require.Nil(t, err)
+	require.Equal(t, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft, proj1.Project.UsedCu)
 
-// 	sub, err := ts.QuerySubscriptionCurrent(client1Addr)
-// 	require.Nil(t, err)
-// 	require.True(t, sub.Sub != nil)
-
-// 	proj1, err := ts.QueryProjectDeveloper(dev1Addr)
-// 	require.Nil(t, err)
-// 	require.Equal(t, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft, proj1.Project.UsedCu)
-
-// 	proj2, err := ts.QueryProjectDeveloper(dev2Addr)
-// 	require.Nil(t, err)
-// 	require.NotEqual(t, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft, proj2.Project.UsedCu)
-// }
+	proj2, err := ts.QueryProjectDeveloper(dev2Addr)
+	require.Nil(t, err)
+	require.NotEqual(t, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft, proj2.Project.UsedCu)
+}
 
 func TestBadgeValidation(t *testing.T) {
 	ts := newTester(t)

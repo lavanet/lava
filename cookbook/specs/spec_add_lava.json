@@ -37,42 +37,6 @@
                         },
                         "apis": [
                             {
-                                "name": "/blocks/latest",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/blocks/{height}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
                                 "name": "/cosmos/authz/v1beta1/grants",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -472,9 +436,9 @@
                                 "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "3"
+                                        "block","=","3"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,

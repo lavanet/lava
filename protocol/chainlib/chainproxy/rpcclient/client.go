@@ -287,7 +287,7 @@ func (c *Client) SetHeader(key, value string) {
 //
 // The result must be a pointer so that package json can unmarshal into it. You
 // can also pass nil, in which case the result is ignored.
-func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method string, params interface{}, isJsonRPC bool) (*JsonrpcMessage, error) {
+func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method string, params interface{}, isJsonRPC bool, strict bool) (*JsonrpcMessage, error) {
 	var msg *JsonrpcMessage
 	var err error
 	switch p := params.(type) {
@@ -308,7 +308,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 	op := &requestOp{ids: []json.RawMessage{msg.ID}, resp: make(chan *JsonrpcMessage, 1)}
 
 	if c.isHTTP {
-		err = c.sendHTTP(ctx, op, msg, isJsonRPC)
+		err = c.sendHTTP(ctx, op, msg, isJsonRPC, strict)
 	} else {
 		err = c.send(ctx, op, msg)
 	}
@@ -333,9 +333,9 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 // a request is reported through the Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCall(b []BatchElemWithId) error {
+func (c *Client) BatchCall(b []BatchElemWithId, strict bool) error {
 	ctx := context.Background()
-	return c.BatchCallContext(ctx, b)
+	return c.BatchCallContext(ctx, b, strict)
 }
 
 // BatchCallContext sends all given requests as a single batch and waits for the server
@@ -347,7 +347,7 @@ func (c *Client) BatchCall(b []BatchElemWithId) error {
 // Error field of the corresponding BatchElem.
 //
 // Note that batch calls may not be executed atomically on the server side.
-func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) error {
+func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, strict bool) error {
 	var (
 		msgs = make([]*JsonrpcMessage, len(b))
 		byID = make(map[string]int, len(b))
@@ -393,7 +393,7 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId) erro
 
 	var err error
 	if c.isHTTP {
-		err = c.sendBatchHTTP(ctx, op, msgs)
+		err = c.sendBatchHTTP(ctx, op, msgs, strict)
 	} else {
 		err = c.send(ctx, op, msgs)
 	}
@@ -429,7 +429,7 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 	msg.ID = nil
 
 	if c.isHTTP {
-		return c.sendHTTP(ctx, op, msg, true)
+		return c.sendHTTP(ctx, op, msg, true, false)
 	}
 	return c.send(ctx, op, msg)
 }

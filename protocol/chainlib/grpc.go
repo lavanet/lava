@@ -282,23 +282,24 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		msgSeed := apil.logger.GetMessageSeed()
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
-
+		startTime := time.Now()
 		// Extract dappID from grpc header
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
-		var relayReply *pairingtypes.RelayReply
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
-		relayReply, _, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, metricsData, grpcHeaders)
+		consumerIp := common.GetIpFromGrpcContext(ctx)
+		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
+		relayReply := relayResult.GetReply()
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
 		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
-			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err)
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
 		}
-		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
 
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}

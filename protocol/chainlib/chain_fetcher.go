@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -185,22 +186,24 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	}
 	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}, {Key: "error", Value: err}}...)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" Failed formatResponseForParsing", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
+			{Key: "error", Value: err},
 		}...)
 	}
 	blockNum, err := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing)
 	if err != nil {
-		return spectypes.NOT_APPLICABLE, utils.LavaFormatWarning(tagName+" Failed to parse Response", err, []utils.Attribute{
+		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed to parse Response", []utils.Attribute{
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
+			{Key: "error", Value: err},
 		}...)
 	}
 	atomic.StoreInt64(&cf.latestBlock, blockNum)
@@ -236,13 +239,16 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if err != nil {
 		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+	start := time.Now()
 	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
-		return "", utils.LavaFormatWarning(tagName+" failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		timeTaken := time.Since(start)
+		return "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return "", utils.LavaFormatWarning(tagName+" Failed formatResponseForParsing", err, []utils.Attribute{
+		return "", utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
+			{Key: "error", Value: err},
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
@@ -251,7 +257,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 
 	res, err := parser.ParseFromReplyAndDecode(parserInput, parsing.ResultParsing)
 	if err != nil {
-		return "", utils.LavaFormatWarning(tagName+" Failed ParseMessageResponse", err, []utils.Attribute{
+		return "", utils.LavaFormatDebug(tagName+" Failed ParseMessageResponse", []utils.Attribute{
+			{Key: "error", Value: err},
 			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
@@ -308,7 +315,7 @@ func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage Chain
 	var parserInput parser.RPCInput
 	respData := reply.Data
 	if len(respData) == 0 {
-		return nil, utils.LavaFormatWarning("result (reply.Data) is empty, can't be formatted for parsing", err)
+		return nil, utils.LavaFormatDebug("result (reply.Data) is empty, can't be formatted for parsing", utils.Attribute{Key: "error", Value: err})
 	}
 	rpcMessage := chainMessage.GetRPCMessage()
 	if customParsingMessage, ok := rpcMessage.(chainproxy.CustomParsingMessage); ok {
@@ -323,7 +330,34 @@ func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage Chain
 }
 
 type DummyChainFetcher struct {
-	ChainFetcher
+	*ChainFetcher
+}
+
+func (cf *DummyChainFetcher) Validate(ctx context.Context) error {
+	for _, url := range cf.endpoint.NodeUrls {
+		addons := url.Addons
+		verifications, err := cf.chainParser.GetVerifications(addons)
+		if err != nil {
+			return err
+		}
+		if len(verifications) == 0 {
+			utils.LavaFormatDebug("no verifications for NodeUrl", utils.Attribute{Key: "url", Value: url.String()})
+		}
+		for _, verification := range verifications {
+			// we give several chances for starting up
+			var err error
+			for attempts := 0; attempts < 3; attempts++ {
+				err = cf.Verify(ctx, verification, 0)
+				if err == nil {
+					break
+				}
+			}
+			if err != nil {
+				return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
+			}
+		}
+	}
+	return nil
 }
 
 // overwrite this
@@ -337,6 +371,7 @@ func (cf *DummyChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum i
 }
 
 func NewVerificationsOnlyChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint) *DummyChainFetcher {
-	cf := &DummyChainFetcher{ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}}
+	cfi := ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
+	cf := &DummyChainFetcher{ChainFetcher: &cfi}
 	return cf
 }

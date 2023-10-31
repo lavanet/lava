@@ -100,7 +100,7 @@ func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabi
 }
 
 func (pst *ProviderStateTracker) LatestBlock() int64 {
-	return pst.StateTracker.chainTracker.GetLatestBlockNum()
+	return pst.StateTracker.chainTracker.GetAtomicLatestBlockNum()
 }
 
 func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
@@ -127,6 +127,6 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 }
 
-func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error) {
+func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return pst.stateQuery.GetProtocolVersion(ctx)
 }

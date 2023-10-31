@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.common;
 
-option go_package = "github.com/lavanet/lava/common/types";
+option go_package = "github.com/lavanet/lava/fixationstore/types";
 import "gogoproto/gogo.proto"; 
 
 message Entry {

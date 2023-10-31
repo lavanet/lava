@@ -21,13 +21,22 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
+
+const (
+	debugConsistency = false
+	debugLatency     = false
+)
+
+var RPCProviderStickynessHeaderName = "X-Node-Sticky"
 
 type RPCProviderServer struct {
 	cache                     *performance.Cache
@@ -46,8 +55,8 @@ type RPCProviderServer struct {
 }
 
 type ReliabilityManagerInf interface {
-	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error)
-	GetLatestBlockNum() int64
+	GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error)
+	GetLatestBlockNum() (int64, time.Time)
 }
 
 type RewardServerInf interface {
@@ -98,7 +107,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
 	ctx = utils.AppendUniqueIdentifier(ctx, lavaprotocol.GetSalt(request.RelayData))
-
+	startTime := time.Now()
 	// This is for the SDK, since the timeout is not automatically added to the request like in Go
 	timeout, timeoutFound, err := rpcps.tryGetTimeoutFromRequest(ctx)
 	if err != nil {
@@ -119,19 +128,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
 		utils.Attribute{Key: "relay addon", Value: request.RelayData.Addon},
 		utils.Attribute{Key: "relay extensions", Value: request.RelayData.GetExtensions()},
+		utils.Attribute{Key: "seenBlock", Value: request.RelayData.GetSeenBlock()},
+		utils.Attribute{Key: "requestBlock", Value: request.RelayData.GetRequestBlock()},
 	)
-
-	if request.RelaySession.QosExcellenceReport != nil {
-		utils.LavaFormatDebug("DEBUG",
-			utils.Attribute{Key: "qosExc latency", Value: request.RelaySession.GetQosExcellenceReport().Latency.String()},
-		)
-	}
-	if request.RelaySession.QosReport != nil {
-		utils.LavaFormatDebug("DEBUG",
-			utils.Attribute{Key: "qos latency", Value: request.RelaySession.GetQosReport().Latency.String()},
-		)
-	}
-
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
@@ -189,6 +188,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
+		utils.Attribute{Key: "timeTaken", Value: time.Since(startTime)},
 	)
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
@@ -241,6 +241,10 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 	// this is a temporary solution until we have a working block parsing in lava-sdk
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
+	}
+	seenBlock := request.RelayData.GetSeenBlock()
+	if seenBlock < 0 {
+		return utils.LavaFormatError("invalid seen block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
 	}
 	reqBlock, _ := chainMessage.RequestedBlock()
 	if reqBlock != request.RelayData.RequestBlock {
@@ -300,7 +304,7 @@ func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, req
 	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String(), apiInterface)
 	if !updatedWithProof && storedCU > request.RelaySession.CuSum {
 		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.RelaySession.SessionId, storedCU)
-		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU})
+		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "session_cu_sum", Value: request.RelaySession.CuSum}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU}, utils.Attribute{Key: "sessionId", Value: request.RelaySession.SessionId}, utils.Attribute{Key: "chainID", Value: request.RelaySession.SpecId})
 		return rpcps.handleRelayErrorStatus(err)
 	}
 	return nil
@@ -584,56 +588,49 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	default:
 		reqMsg = nil
 	}
-	latestBlock := int64(0)
-	finalizedBlockHashes := map[int64]interface{}{}
 	var requestedBlockHash []byte = nil
 	finalized := false
 	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
+	var latestBlock int64
+	var requestedHashes []*chaintracker.BlockStore
+	var modifiedReqBlock int64
+	var blocksInFinalizationData uint32
+	var blockDistanceToFinalization uint32
+	var averageBlockTime time.Duration
+	updatedChainMessage := false
 	if dataReliabilityEnabled {
-		// Add latest block and finalization data
+		var blockLagForQosSync int64
+		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData = rpcps.chainParser.ChainBlockStats()
 		var err error
-		_, _, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
-		toBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization)
-		fromBlock := toBlock - int64(blocksInFinalizationData) + 1
-		var requestedHashes []*chaintracker.BlockStore
 		specificBlock := request.RelayData.RequestBlock
 		if specificBlock < spectypes.LATEST_BLOCK {
+			// cases of EARLIEST, FINALIZED, SAFE
 			// GetLatestBlockData only supports latest relative queries or specific block numbers
 			specificBlock = spectypes.NOT_APPLICABLE
 		}
-		latestBlock, requestedHashes, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+
+		// handle consistency, if the consumer requested information we do not have in the state tracker
+
+		latestBlock, requestedHashes, _, err = rpcps.handleConsistency(ctx, request.RelayData.GetSeenBlock(), request.RelayData.GetRequestBlock(), averageBlockTime, blockLagForQosSync, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
-			if chaintracker.InvalidRequestedSpecificBlock.Is(err) {
-				// specific block is invalid, try again without specific block
-				latestBlock, requestedHashes, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
-				if err != nil {
-					return nil, utils.LavaFormatError("error getting range even without specific block", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
-				}
-			} else {
-				return nil, utils.LavaFormatError("Could not guarantee data reliability", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
-			}
+			return nil, err
+		}
+		// get specific block data for caching
+		_, specificRequestedHashes, _, err := rpcps.reliabilityManager.GetLatestBlockData(spectypes.NOT_APPLICABLE, spectypes.NOT_APPLICABLE, specificBlock)
+		if err == nil && len(specificRequestedHashes) == 1 {
+			requestedBlockHash = []byte(specificRequestedHashes[0].Hash)
 		}
 
-		chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
+		// TODO: take latestBlock and lastSeenBlock and put the greater one of them
+		updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
-		request.RelayData.RequestBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
-		requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
-		finalized = spectypes.IsFinalizedBlock(request.RelayData.RequestBlock, latestBlock, blockDistanceToFinalization)
-		if !finalized && requestedBlockHash == nil && request.RelayData.RequestBlock != spectypes.NOT_APPLICABLE {
+		modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, modifiedReqBlock)
+		// requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
+		finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, blockDistanceToFinalization)
+		if !finalized && requestedBlockHash == nil && modifiedReqBlock != spectypes.NOT_APPLICABLE {
 			// avoid using cache, but can still service
-			reqHashesAttr := utils.Attribute{Key: "hashes", Value: requestedHashes}
-			elementsToTake := 10
-			if len(requestedHashes) > elementsToTake {
-				reqHashesAttr = utils.Attribute{Key: "hashes", Value: requestedHashes[len(requestedHashes)-elementsToTake:]}
-			}
-			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, reqHashesAttr)
+			utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "modifiedReqBlock", Value: modifiedReqBlock}, utils.Attribute{Key: "specificBlock", Value: specificBlock})
 		}
-
-		// TODO: add a mechanism to handle this
-		// if request.RelayData.RequestBlock > latestBlock {
-		// 	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR
-		// 	return nil, utils.LavaFormatError("Requested a block that is too new", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-		// }
 	}
 	cache := rpcps.cache
 	// TODO: handle cache on fork for dataReliability = false
@@ -651,14 +648,26 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	}
 	if err != nil || reply == nil {
 		// cache miss or invalid
+		sendTime := time.Now()
+		if debugLatency {
+			utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		}
+		// add stickyness header
+		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickynessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetTokenFromGrpcContext(ctx))}})
+		if debugConsistency {
+			utils.LavaFormatDebug("adding stickyness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
+		}
+
 		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
-			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		}
+		if debugLatency {
+			utils.LavaFormatDebug("node reply received", utils.Attribute{Key: "timeTaken", Value: time.Since(sendTime)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if requestedBlockHash != nil || finalized {
-			// TODO: we do not add ignoredMetadata to the cache response
 			err := cache.SetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
 			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
@@ -673,14 +682,34 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			return nil, err
 		}
 	}
+	if dataReliabilityEnabled {
+		// now we need to provide the proof for the response
+		proofBlock := latestBlock
+		if !updatedChainMessage || len(requestedHashes) == 0 {
+			// we can fetch a more advanced finalization proof, than we fetched previously
+			proofBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
+			if err != nil {
+				return nil, err
+			}
+		} // else: we updated the chain message to request the specific latestBlock we fetched earlier, so use the previously fetched latest block and hashes
+		if proofBlock < modifiedReqBlock && proofBlock < request.RelayData.SeenBlock {
+			// we requested with a newer block, but don't necessarily have the finaliziation proof, chaintracker might be behind
+			proofBlock = slices.Min([]int64{modifiedReqBlock, request.RelayData.SeenBlock})
+			proofBlock, requestedHashes, err = rpcps.GetBlockDataForOptimisticFetch(ctx, proofBlock, blockDistanceToFinalization, blocksInFinalizationData, averageBlockTime)
+			if err != nil {
+				return nil, utils.LavaFormatError("error getting block range for finalization proof", err)
+			}
+		}
 
-	jsonStr, err := json.Marshal(finalizedBlockHashes)
-	if err != nil {
-		return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err, utils.Attribute{Key: "GUID", Value: ctx},
-			utils.Attribute{Key: "finalizedBlockHashes", Value: finalizedBlockHashes})
+		finalizedBlockHashes := chaintracker.BuildProofFromBlocks(requestedHashes)
+		jsonStr, err := json.Marshal(finalizedBlockHashes)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed unmarshaling finalizedBlockHashes", err, utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "finalizedBlockHashes", Value: finalizedBlockHashes}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		}
+		reply.FinalizedBlocksHashes = jsonStr
+		reply.LatestBlock = proofBlock
 	}
-	reply.FinalizedBlocksHashes = jsonStr
-	reply.LatestBlock = latestBlock
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, err
@@ -688,6 +717,160 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
 	// return reply to user
 	return reply, nil
+}
+
+func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Context, requiredProofBlock int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32, averageBlockTime time.Duration) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, err error) {
+	utils.LavaFormatDebug("getting new blockData for optimistic fetch", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requiredProofBlock", Value: requiredProofBlock})
+	proofBlock := requiredProofBlock
+	toBlock := proofBlock - int64(blockDistanceToFinalization)
+	fromBlock := toBlock - int64(blocksInFinalizationData) + 1
+	deadline, ok := ctx.Deadline()
+	oneSideTravel := common.AverageWorldLatency / 2
+	timeCanWait := time.Until(deadline) - oneSideTravel
+	if !ok {
+		timeCanWait = 0
+	}
+	timeSlept := 0 * time.Millisecond
+	refreshTime := (averageBlockTime / chaintracker.MostFrequentPollingMultiplier) / 2
+	sleepTime := slices.Min([]time.Duration{10 * refreshTime, timeCanWait})
+	sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
+	fetchedWithoutError := func() bool {
+		timeSlept += refreshTime
+		proofBlock, requestedHashes, _, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
+		return err != nil
+	}
+	rpcps.SleepUntilTimeOrConditionReached(sleepContext, refreshTime, fetchedWithoutError)
+	cancel()
+
+	for err != nil && ok && timeCanWait > refreshTime && timeSlept < 5*refreshTime {
+		time.Sleep(refreshTime)
+
+		proofBlock, requestedHashes, _, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
+		deadline, ok = ctx.Deadline()
+		timeCanWait = time.Until(deadline) - oneSideTravel
+	}
+	if err != nil {
+		return 0, nil, utils.LavaFormatError("error getting block range for optimistic finalization proof", err, utils.Attribute{Key: "refreshTime", Value: refreshTime}, utils.Attribute{Key: "timeCanWait", Value: timeCanWait}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "requiredProofBlock", Value: requiredProofBlock}, utils.Attribute{Key: "timeWaited", Value: timeSlept}, utils.Attribute{Key: "proofBlock", Value: proofBlock}, utils.Attribute{Key: "toBlock", Value: toBlock}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	}
+	return proofBlock, requestedHashes, err
+}
+
+func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, timeSlept time.Duration, err error) {
+	latestBlock, requestedHashes, changeTime, err := rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
+	if err != nil {
+		return 0, nil, 0, err
+	}
+	if requestBlock == spectypes.LATEST_BLOCK && seenBlock > latestBlock {
+		// we can't just replace requested block here with what we have, it must be with at least seen block
+		requestBlock = seenBlock
+	}
+	if requestBlock <= latestBlock || seenBlock <= latestBlock {
+		// requested block is older than our information, or the consumer is asking a future block he has no information about
+		return latestBlock, requestedHashes, 0, nil
+	}
+	// consumer asked for a block that is newer than our state tracker, we cant sign this for DR, calculate wether we should wait and try to update
+	blockGap := requestBlock - latestBlock
+	if seenBlock < requestBlock {
+		// we don't have to wait until we reach requested block for consistency here, we just need to reach the seen block height
+		blockGap = seenBlock - latestBlock
+	}
+	deadline, ok := ctx.Deadline()
+	probabilityBlockError := 0.0
+	halfTimeLeft := time.Until(deadline) / 2 // giving the node at least half the timeout time to process
+	if ok {
+		timeProviderHasS := (time.Since(changeTime) + halfTimeLeft).Seconds() // add waiting half the timeout time
+		if changeTime.IsZero() {
+			// we don't have information on block changes
+			timeProviderHasS = halfTimeLeft.Seconds()
+		}
+		averageBlockTimeS := averageBlockTime.Seconds()
+		eventRate := timeProviderHasS / averageBlockTimeS // a new block every average block time, numerator is time we have, gamma=rt
+		if eventRate < 0 {
+			utils.LavaFormatError("invalid rate params", nil, utils.Attribute{Key: "changeTime", Value: changeTime}, utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+		} else {
+			probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
+			if debugConsistency {
+				utils.LavaFormatDebug("consistency calculations breakdown", utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+			}
+		}
+	}
+	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
+	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
+		return latestBlock, requestedHashes, 0, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	}
+
+	if !ok {
+		// we didn't get any timeout so we are using a default waiting time
+		deadline = time.Now().Add(500 * time.Millisecond)
+	}
+	// we are waiting for the state tracker to catch up with the requested block
+	utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+	sleepTime := time.Until(deadline) / 2 // sleep up to half the timeout so we actually have time to do the relay
+	sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
+	getLatestBlock := func() bool {
+		ret, _ := rpcps.reliabilityManager.GetLatestBlockNum()
+		// if we hit either seen or requested we can return
+		return ret >= requestBlock || ret >= seenBlock
+	}
+	sleptTime := rpcps.SleepUntilTimeOrConditionReached(sleepContext, 50*time.Millisecond, getLatestBlock)
+	cancel()
+	// see if there is an updated info
+	latestBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
+	if err != nil {
+		return 0, nil, sleptTime, utils.LavaFormatWarning("delayed fetch failed", err, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	}
+	if requestBlock > latestBlock && seenBlock > latestBlock {
+		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
+		return 0, nil, sleptTime, utils.LavaFormatWarning("rquested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	}
+	if debugConsistency {
+		utils.LavaFormatDebug("consistency sleep done", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sleptTime", Value: sleptTime})
+	}
+	return latestBlock, requestedHashes, sleptTime, nil
+}
+
+func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Context, queryTime time.Duration, condition func() bool) (sleepTime time.Duration) {
+	sleepTime = 0
+	blockReached := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return // Context canceled, exit goroutine
+			default:
+				var sleeping time.Duration
+				deadline, ok := ctx.Deadline()
+				if ok {
+					sleeping = slices.Min([]time.Duration{queryTime, time.Until(deadline) / 4})
+				} else {
+					sleeping = queryTime
+				}
+				sleepTime += sleeping
+				time.Sleep(sleeping)
+				if condition() {
+					close(blockReached) // Signal that the block is reached
+					return
+				}
+			}
+		}
+	}()
+
+	select {
+	case <-blockReached:
+		return sleepTime
+	case <-ctx.Done():
+		return sleepTime
+	}
+}
+
+func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
+	toBlock := spectypes.LATEST_BLOCK - int64(blockDistanceToFinalization)
+	fromBlock := toBlock - int64(blocksInFinalizationData) + 1
+	latestBlock, requestedHashes, changeTime, err = rpcps.reliabilityManager.GetLatestBlockData(fromBlock, toBlock, spectypes.NOT_APPLICABLE)
+	if err != nil {
+		err = utils.LavaFormatError("failed fetching finalization block data", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
+	}
+	return
 }
 
 func (rpcps *RPCProviderServer) processUnsubscribe(ctx context.Context, apiName string, consumerAddr sdk.AccAddress, reqParams interface{}, epoch uint64) error {
@@ -712,9 +895,10 @@ func (rpcps *RPCProviderServer) processUnsubscribe(ctx context.Context, apiName 
 }
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
+	latestB, _ := rpcps.reliabilityManager.GetLatestBlockNum()
 	probeReply := &pairingtypes.ProbeReply{
 		Guid:                  probeReq.GetGuid(),
-		LatestBlock:           rpcps.reliabilityManager.GetLatestBlockNum(),
+		LatestBlock:           latestB,
 		FinalizedBlocksHashes: []byte{},
 		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),

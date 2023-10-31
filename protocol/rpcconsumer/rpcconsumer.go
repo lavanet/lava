@@ -16,7 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
-	commonlib "github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
@@ -77,9 +77,9 @@ type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
-	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler lavaprotocol.ConflictHandlerInterface) error
+	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 }
 
 type RPCConsumer struct {
@@ -88,7 +88,7 @@ type RPCConsumer struct {
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string, maxConcurrentProviders uint) (err error) {
-	if commonlib.IsTestMode(ctx) {
+	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
 	// spawn up ConsumerStateTracker
@@ -126,6 +126,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
 	}
 	var optimizers sync.Map
+	var consumerConsistencies sync.Map
+	var finalizationConsensuses sync.Map
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
@@ -144,7 +146,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
-	consumerStateTracker.RegisterForVersionUpdates(ctx, version, &upgrade.ProtocolVersion{})
+	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -164,29 +166,64 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			}
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
-
-			getOrCreateOptimizer := func() error {
+			var consumerConsistency *ConsumerConsistency
+			var finalizationConsensus *lavaprotocol.FinalizationConsensus
+			getOrCreateChainAssets := func() error {
 				// this is locked so we don't race optimizers creation
 				chainMutexes[chainID].Lock()
 				defer chainMutexes[chainID].Unlock()
 				value, exists := optimizers.Load(chainID)
 				if !exists {
 					// doesn't exist for this chain create a new one
-					baseLatency := commonlib.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, maxConcurrentProviders)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool
 					optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
 					if !ok {
-						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
+				value, exists = consumerConsistencies.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					consumerConsistency = NewConsumerConsistency(chainID)
+					consumerConsistencies.Store(chainID, consumerConsistency)
+				} else {
+					var ok bool
+					consumerConsistency, ok = value.(*ConsumerConsistency)
+					if !ok {
+						err = utils.LavaFormatError("failed loading consumer consistency, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
+
+				value, exists = finalizationConsensuses.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					finalizationConsensus = lavaprotocol.NewFinalizationConsensus(rpcEndpoint.ChainID)
+					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
+					finalizationConsensuses.Store(chainID, finalizationConsensus)
+				} else {
+					var ok bool
+					finalizationConsensus, ok = value.(*lavaprotocol.FinalizationConsensus)
+					if !ok {
+						err = utils.LavaFormatError("failed loading finalization consensus, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
 						return err
 					}
 				}
 				return nil
 			}
-			err = getOrCreateOptimizer()
+			err = getOrCreateChainAssets()
 			if err != nil {
+				errCh <- err
+				return err
+			}
+
+			if finalizationConsensus == nil || optimizer == nil {
+				err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
 				errCh <- err
 				return err
 			}
@@ -195,12 +232,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
-			finalizationConsensus := &lavaprotocol.FinalizationConsensus{}
-			consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
-
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -226,7 +260,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 }
 
 func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(commonlib.EndpointsConfigName, &endpoints)
+	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
@@ -291,7 +325,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			var rpcEndpoints []*lavasession.RPCEndpoint
 			var viper_endpoints *viper.Viper
 			if len(args) > 1 {
-				viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
+				viper_endpoints, err = common.ParseEndpointArgs(args, Yaml_config_properties, common.EndpointsConfigName)
 				if err != nil {
 					return utils.LavaFormatError("invalid endpoints arguments", err, utils.Attribute{Key: "endpoint_strings", Value: strings.Join(args, "")})
 				}
@@ -337,11 +371,11 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 			}
 			utils.LoggingLevel(logLevel)
 
-			test_mode, err := cmd.Flags().GetBool(commonlib.TestModeFlagName)
+			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read test_mode flag", err)
 			}
-			ctx = context.WithValue(ctx, commonlib.Test_mode_ctx_key{}, test_mode)
+			ctx = context.WithValue(ctx, common.Test_mode_ctx_key{}, test_mode)
 			// check if the command includes --pprof-address
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
 			if pprofAddressFlagUsed {
@@ -358,7 +392,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			err = commonlib.VerifyAndHandleUnsupportedFlags(cmd.Flags())
+			err = common.VerifyAndHandleUnsupportedFlags(cmd.Flags())
 			if err != nil {
 				utils.LavaFormatFatal("failed to verify cmd flags", err)
 			}
@@ -385,7 +419,7 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				}
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
-			maxConcurrentProviders := viper.GetUint(commonlib.MaximumConcurrentProvidersFlagName)
+			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr, maxConcurrentProviders)
 			return err
 		},
@@ -394,12 +428,12 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdRPCConsumer)
 	cmdRPCConsumer.MarkFlagRequired(flags.FlagFrom)
-	cmdRPCConsumer.Flags().Uint64(commonlib.GeolocationFlag, 0, "geolocation to run from")
-	cmdRPCConsumer.Flags().Uint(commonlib.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
-	cmdRPCConsumer.MarkFlagRequired(commonlib.GeolocationFlag)
+	cmdRPCConsumer.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
+	cmdRPCConsumer.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
+	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
-	cmdRPCConsumer.Flags().Bool(commonlib.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
+	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))

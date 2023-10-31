@@ -294,7 +294,7 @@ export class FinalizationConsensus {
         medianResult =
           (data[data.length / 2 - 1] + data[data.length / 2]) / 2.0;
       } else {
-        medianResult = data[data.length / 2];
+        medianResult = data[(data.length - 1) / 2];
       }
       return medianResult;
     };
