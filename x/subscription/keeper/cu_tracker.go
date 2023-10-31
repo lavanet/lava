@@ -44,8 +44,8 @@ func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chain
 }
 
 // GetAllSubTrackedCuIndices gets all the trackedCu entries that are related to a specific subscription
-func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string {
-	return k.cuTrackerFS.GetAllEntryIndicesWithPrefix(ctx, sub)
+func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string, blockStr string) []string {
+	return k.cuTrackerFS.GetAllEntryIndicesWithPrefix(ctx, sub+" "+blockStr)
 }
 
 // removeCuTracker removes a trackedCu entry
@@ -61,8 +61,8 @@ type trackedCuInfo struct {
 	block     uint64
 }
 
-func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
-	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
+func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
+	keys := k.GetAllSubTrackedCuIndices(ctx, sub, subBlockStr)
 
 	for _, key := range keys {
 		_, provider, chainID, blockStr := types.DecodeCuTrackerKey(key)
@@ -102,7 +102,15 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 // remove only before the sub is deleted
 func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte, cuTrackerTimerData []byte) {
 	sub := string(cuTrackerTimerKeyBytes)
-	trackedCuList, totalCuTracked := k.getSubTrackedCuInfo(ctx, sub)
+	blockStr := string(cuTrackerTimerData)
+	_, err := strconv.ParseUint(blockStr, 10, 64)
+	if err != nil {
+		utils.LavaFormatError(types.ErrCuTrackerPayoutFailed.Error(), err,
+			utils.Attribute{Key: "blockStr", Value: blockStr},
+		)
+		return
+	}
+	trackedCuList, totalCuTracked := k.getSubTrackedCuInfo(ctx, sub, blockStr)
 
 	var block uint64
 	if len(trackedCuList) == 0 {
