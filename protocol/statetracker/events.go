@@ -133,7 +133,7 @@ func checkEventForShow(eventName string, event types.Event, hasAttributeName str
 			if len(attributesFilter) == 0 {
 				return true
 			}
-			for attrName, _ := range attributesFilter {
+			for attrName := range attributesFilter {
 				if strings.Contains(attr.Key, attrName) {
 					return true
 				}
