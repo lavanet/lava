@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	commontypes "github.com/lavanet/lava/common/types"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
 
@@ -59,18 +59,18 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-func (k Keeper) ExportProjects(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportProjects(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.projectsFS.Export(ctx)
 }
 
-func (k Keeper) InitProjects(ctx sdk.Context, gs commontypes.GenesisState) {
+func (k Keeper) InitProjects(ctx sdk.Context, gs fixationtypes.GenesisState) {
 	k.projectsFS.Init(ctx, gs)
 }
 
-func (k Keeper) ExportDevelopers(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportDevelopers(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.developerKeysFS.Export(ctx)
 }
 
-func (k Keeper) InitDevelopers(ctx sdk.Context, gs commontypes.GenesisState) {
+func (k Keeper) InitDevelopers(ctx sdk.Context, gs fixationtypes.GenesisState) {
 	k.developerKeysFS.Init(ctx, gs)
 }

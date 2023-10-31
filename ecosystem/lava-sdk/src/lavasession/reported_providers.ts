@@ -44,7 +44,7 @@ export class ReportedProviders {
     const reportedProviderValue = this.addedToPurgeAndReport.get(address);
     if (reportedProviderValue == undefined) {
       reportedProvider = new ReportedProviderEntry();
-      reportedProvider.addedTime = performance.now();
+      reportedProvider.addedTime = Math.floor(Date.now() / 1000);
     } else {
       reportedProvider = reportedProviderValue;
     }

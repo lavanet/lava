@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -111,13 +112,13 @@ func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error,
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
 // We dont want to alert error monitoring for that purpses.
-func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string) {
+func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) {
 	if err != nil {
 		if err.Error() == webSocketCloseMessage {
 			utils.LavaFormatInfo("Websocket connection closed by the user, " + err.Error())
 			return
 		}
-		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, err)
+		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, timeTaken, err)
 
 		jsonResponse, _ := json.Marshal(fiber.Map{
 			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
@@ -127,12 +128,12 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.
 	}
 }
 
-func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, err error) {
+func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, timeTaken time.Duration, err error) {
 	if hasError && err != nil {
-		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+		utils.LavaFormatError(module, err, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 		return
 	}
-	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
+	utils.LavaFormatDebug(module, []utils.Attribute{{Key: "GUID", Value: msgSeed}, {Key: "timeTaken", Value: timeTaken}, {Key: "request", Value: req}, {Key: "response", Value: parser.CapStringLen(resp)}, {Key: "method", Value: method}, {Key: "path", Value: path}, {Key: "HasError", Value: hasError}}...)
 }
 
 func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
@@ -151,7 +152,7 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string]string) {
-	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue := headers[RefererHeaderKey]
 	userAgentHeaderValue := headers[UserAgentHeaderKey]
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -161,7 +162,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, he
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
-	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -179,7 +180,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 		}
 		return headerValue
 	}
-	rpccl.consumerMetricsManager.SetRelayMetrics(data)
+	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {

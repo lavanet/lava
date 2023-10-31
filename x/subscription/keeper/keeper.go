@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	commontypes "github.com/lavanet/lava/common/types"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -89,21 +89,21 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // ExportSubscriptions exports subscriptions data (for genesis)
-func (k Keeper) ExportSubscriptions(ctx sdk.Context) commontypes.GenesisState {
+func (k Keeper) ExportSubscriptions(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.subsFS.Export(ctx)
 }
 
 // ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
-func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []commontypes.RawMessage {
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []fixationtypes.RawMessage {
 	return k.subsTS.Export(ctx)
 }
 
 // InitSubscriptions imports subscriptions data (from genesis)
-func (k Keeper) InitSubscriptions(ctx sdk.Context, gs commontypes.GenesisState) {
+func (k Keeper) InitSubscriptions(ctx sdk.Context, gs fixationtypes.GenesisState) {
 	k.subsFS.Init(ctx, gs)
 }
 
 // InitSubscriptions imports subscriptions timers data (from genesis)
-func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []commontypes.RawMessage) {
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
 	k.subsTS.Init(ctx, data)
 }

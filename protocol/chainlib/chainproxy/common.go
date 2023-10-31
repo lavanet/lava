@@ -21,6 +21,15 @@ type CustomParsingMessage interface {
 type BaseMessage struct {
 	Headers                 []pairingtypes.Metadata
 	LatestBlockHeaderSetter *spectypes.ParseDirective
+	disableErrorHandling    bool
+}
+
+func (bm *BaseMessage) DisableErrorHandling() {
+	bm.disableErrorHandling = true
+}
+
+func (bm *BaseMessage) GetDisableErrorHandling() bool {
+	return bm.disableErrorHandling
 }
 
 // appends only headers that do not exist

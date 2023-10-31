@@ -542,6 +542,26 @@
                                         "expected_value": "0x534e5f4d41494e"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pending-support",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_getBlockWithTxs\",\"params\":[\"pending\"],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "status"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "starknet_chainId"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "PENDING"
+                                    }
+                                ]
                             }
                         ]
                     }

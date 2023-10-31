@@ -1,12 +1,15 @@
 package lavavisor
 
+// TODO: Parallel service restart
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -15,6 +18,7 @@ import (
 	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
 	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/utils/rand"
 
 	"github.com/lavanet/lava/protocol/statetracker"
 
@@ -27,7 +31,7 @@ import (
 
 type LavavisorStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 }
 
 type LavaVisor struct {
@@ -38,7 +42,7 @@ type Config struct {
 	Services []string `yaml:"services"`
 }
 
-func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, services []*processmanager.ServiceProcess) (err error) {
+func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, services []string) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -46,7 +50,7 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 		signal.Stop(signalChan)
 		cancel()
 	}()
-
+	rand.InitRandomSeed()
 	// spawn up LavaVisor
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	lavavisorStateTracker, err := lvstatetracker.NewLavaVisorStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
@@ -62,21 +66,45 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	}
 
 	// Select most recent version set by init command (in the range of min-target version)
-	selectedVersion, err := SelectMostRecentVersionFromDir(lavavisorPath, version)
+	selectedVersion, _ := SelectMostRecentVersionFromDir(lavavisorPath, version.Version)
 	if err != nil {
-		utils.LavaFormatFatal("failed getting most recent version from .lavavisor dir", err)
+		utils.LavaFormatWarning("failed getting most recent version from .lavavisor dir", err)
+	} else {
+		utils.LavaFormatInfo("Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
 	}
-	utils.LavaFormatInfo("Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
 
 	// Initialize version monitor with selected most recent version
 	versionMonitor := processmanager.NewVersionMonitor(selectedVersion, lavavisorPath, services, autoDownload)
 
-	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version, versionMonitor)
+	lavavisorStateTracker.RegisterForVersionUpdates(ctx, version.Version, versionMonitor)
 
-	// A goroutine that checks for process manager's trigger flag!
-	versionMonitor.MonitorVersionUpdates(ctx)
+	// check whether lavavisor already started the services when downloading the binaries or not.
+	if !versionMonitor.LaunchedServices {
+		utils.LavaFormatInfo("Version matched existing lavap directory using it to launch the services")
+		// First reload the daemon.
+		err = processmanager.ReloadDaemon()
+		if err != nil {
+			utils.LavaFormatError("Failed reloading daemon", err)
+		}
+		// now start all services
+		var wg sync.WaitGroup
+		for _, process := range services {
+			wg.Add(1)
+			go func(process string) {
+				defer wg.Done() // Decrement the WaitGroup when done
+				utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
+				err := processmanager.StartProcess(process)
+				if err != nil {
+					utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
+				}
+			}(process)
+		}
+		// Wait for all Goroutines to finish
+		wg.Wait()
+		utils.LavaFormatInfo("All services launched successfully")
+	}
 
-	// tearing down
+	// tear down
 	select {
 	case <-ctx.Done():
 		utils.LavaFormatInfo("Lavavisor ctx.Done")
@@ -107,8 +135,11 @@ func CreateLavaVisorStartCobraCommand() *cobra.Command {
 
 func LavavisorStart(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
+	binaryFetcher := processmanager.ProtocolBinaryFetcher{}
+	// Validate we have go in Path if we dont we add it to the $PATH and if directory is missing we will download go.
+	binaryFetcher.VerifyGoInstallation()
 	// Build path to ./lavavisor
-	lavavisorPath, err := processmanager.ValidateLavavisorDir(dir)
+	lavavisorPath, err := binaryFetcher.ValidateLavavisorDir(dir)
 	if err != nil {
 		return err
 	}
@@ -147,16 +178,10 @@ func LavavisorStart(cmd *cobra.Command) error {
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
 		return utils.LavaFormatError("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
-	var processes []*processmanager.ServiceProcess
-	for _, process := range config.Services {
-		utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
-		serviceDir := lavavisorServicesDir + process
-		processes = processmanager.StartProcess(processes, process, serviceDir)
-	}
 
 	// Start lavavisor version monitor process
 	lavavisor := LavaVisor{}
-	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, processes)
+	err = lavavisor.Start(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, config.Services)
 	return err
 }
 
@@ -208,7 +233,7 @@ func SelectMostRecentVersionFromDir(lavavisorPath string, version *protocoltypes
 	}
 
 	if selectedVersion == "" {
-		return "", utils.LavaFormatError("No valid version found in the range", nil)
+		return "", fmt.Errorf("did not find any valid versions in lavavisor directory, will try to fetch from github")
 	}
 
 	return selectedVersion, nil

@@ -33,6 +33,6 @@ func (ct *ChainTrackers) GetLatestBlockNumForSpec(specID string) int64 {
 	if !found {
 		return 0
 	}
-	latestBlock := chainTracker.GetLatestBlockNum()
+	latestBlock, _ := chainTracker.GetLatestBlockNum()
 	return latestBlock
 }
