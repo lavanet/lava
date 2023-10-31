@@ -153,7 +153,7 @@ func checkEventForShow(eventName string, event types.Event, hasAttributeName str
 		if stmore == "" {
 			return ""
 		}
-		return st
+		return st + stmore
 	}
 	if eventName == "" || strings.Contains(event.Type, eventName) {
 		printEventTriggerValue := false
