@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -135,17 +136,17 @@ func checkEventForShow(eventName string, event types.Event, hasAttributeName str
 		st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
 		return st
 	}
-	if eventName == "" || event.Type == eventName {
+	if eventName == "" || strings.Contains(event.Type, eventName) {
 		printEventTrigger := false
 		printEventAttribute := ""
 		for _, attribute := range event.Attributes {
-			if hasAttributeName == "" || attribute.Key == hasAttributeName {
-				if value == "" || attribute.Value == value {
+			if hasAttributeName == "" || strings.Contains(attribute.Key, hasAttributeName) {
+				if value == "" || strings.Contains(attribute.Value, value) {
 					printEventTrigger = true
 				}
 			}
 			if showAttributeName != "" {
-				if attribute.Key == showAttributeName {
+				if strings.Contains(attribute.Key, showAttributeName) {
 					printEventAttribute = printAttribute(event, attribute)
 					printEventTrigger = true
 				}
