@@ -17,7 +17,6 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
@@ -25,13 +24,15 @@ import (
 )
 
 const (
-	FlagTimeout   = "timeout"
-	FlagValue     = "value"
-	FlagEventName = "event"
-	FlagBreak     = "break"
+	FlagTimeout           = "timeout"
+	FlagValue             = "value"
+	FlagEventName         = "event"
+	FlagBreak             = "break"
+	FlagHasAttributeName  = "has-attribute"
+	FlagShowAttributeName = "show-attribute"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string, shouldBreak bool) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string, shouldBreak bool, hasAttributeName string, showAttributeName string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -48,17 +49,6 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		return utils.LavaFormatError("requested blocks is bigger than latest block height", nil, utils.Attribute{Key: "requested", Value: blocks}, utils.Attribute{Key: "latestHeight", Value: latestHeight})
 	}
 
-	printEvent := func(event types.Event) string {
-		st := event.Type + ": "
-		sort.Slice(event.Attributes, func(i, j int) bool {
-			return event.Attributes[i].Key < event.Attributes[j].Key
-		})
-		for _, attr := range event.Attributes {
-			st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
-		}
-		return st
-	}
-
 	readEventsFromBlock := func(block int64, hash string) {
 		brp, err := tryIntoTendermintRPC(clientCtx.Client)
 		if err != nil {
@@ -70,25 +60,13 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 			return
 		}
 		for _, event := range blockResults.BeginBlockEvents {
-			if eventName == "" || event.Type == eventName {
-				for _, attribute := range event.Attributes {
-					if value == "" || attribute.Value == value {
-						utils.LavaFormatInfo("Found BBlock event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
-					}
-				}
-			}
+			checkEventForShow(eventName, event, hasAttributeName, value, block, showAttributeName)
 		}
 		transactionResults := blockResults.TxsResults
 		for _, tx := range transactionResults {
 			events := tx.Events
 			for _, event := range events {
-				if eventName == "" || event.Type == eventName {
-					for _, attribute := range event.Attributes {
-						if value == "" || attribute.Value == value {
-							utils.LavaFormatInfo("Found Tx event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
-						}
-					}
-				}
+				checkEventForShow(eventName, event, hasAttributeName, value, block, showAttributeName)
 			}
 		}
 	}
@@ -139,6 +117,46 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		utils.LavaFormatInfo("events signalChan")
 	}
 	return nil
+}
+
+func checkEventForShow(eventName string, event types.Event, hasAttributeName string, value string, block int64, showAttributeName string) {
+	printEvent := func(event types.Event) string {
+		st := event.Type + ": "
+		sort.Slice(event.Attributes, func(i, j int) bool {
+			return event.Attributes[i].Key < event.Attributes[j].Key
+		})
+		for _, attr := range event.Attributes {
+			st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
+		}
+		return st
+	}
+	printAttribute := func(event types.Event, attr types.EventAttribute) string {
+		st := event.Type + ": "
+		st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
+		return st
+	}
+	if eventName == "" || event.Type == eventName {
+		printEventTrigger := false
+		printEventAttribute := ""
+		for _, attribute := range event.Attributes {
+			if hasAttributeName == "" || attribute.Key == hasAttributeName {
+				if value == "" || attribute.Value == value {
+					printEventTrigger = true
+				}
+			}
+			if showAttributeName != "" {
+				if attribute.Key == showAttributeName {
+					printEventAttribute = printAttribute(event, attribute)
+					printEventTrigger = true
+				}
+			}
+		}
+		if printEventTrigger && printEventAttribute == "" && showAttributeName == "" {
+			utils.LavaFormatInfo("Found event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
+		} else if printEventAttribute != "" {
+			utils.LavaFormatInfo("Found event", utils.Attribute{Key: "event", Value: printEventAttribute}, utils.Attribute{Key: "height", Value: block})
+		}
+	}
 }
 
 func CreateEventsCobraCommand() *cobra.Command {
@@ -201,9 +219,13 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			if err != nil {
 				utils.LavaFormatFatal("failed to read --event flag", err)
 			}
-			// check at least one filter is up
-			if eventName == "" && value == "" {
-				utils.LavaFormatFatal("it is necessary to define either an event name or a value for lookup", err)
+			hasAttirbuteName, err := cmd.Flags().GetString(FlagHasAttributeName)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read --attribute flag", err)
+			}
+			showAttirbuteName, err := cmd.Flags().GetString(FlagShowAttributeName)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read --attribute flag", err)
 			}
 			blocks, err := strconv.ParseInt(args[0], 0, 64)
 			if err != nil {
@@ -241,17 +263,18 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			rand.InitRandomSeed()
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak)
+			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak, hasAttirbuteName, showAttirbuteName)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
 	flags.AddKeyringFlags(cmdEvents.Flags())
 	cmdEvents.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
 	cmdEvents.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
-	cmdEvents.Flags().String(FlagValue, "", "the value to look for inside all event attributes")
+	cmdEvents.Flags().String(FlagValue, "", "used to show only events that has this value in one of the attributes")
 	cmdEvents.Flags().Bool(FlagBreak, false, "if true will break after reading the specified amount of blocks instead of listening forward")
 	cmdEvents.Flags().String(FlagEventName, "", "event name/type to look for")
 	cmdEvents.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmdEvents.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
+	cmdEvents.Flags().String(FlagHasAttributeName, "", "only show events containing specific attribute name")
+	cmdEvents.Flags().String(FlagShowAttributeName, "", "only show a specific attribute name, and no other attributes")
 	return cmdEvents
 }
