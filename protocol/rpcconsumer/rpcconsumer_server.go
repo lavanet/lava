@@ -539,13 +539,31 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&trailer))
 		statuses := trailer.Get(common.StatusCodeMetadataKey)
 		if len(statuses) > 0 {
-			codeNum, err := strconv.Atoi(statuses[0])
-			if err != nil {
-				utils.LavaFormatWarning("failed converting status code", err)
+			codeNum, errStatus := strconv.Atoi(statuses[0])
+			if errStatus != nil {
+				utils.LavaFormatWarning("failed converting status code", errStatus)
 			}
 			relayResult.StatusCode = codeNum
 		}
 		relayLatency = time.Since(relaySentTime)
+		if DebugRelaysFlag {
+			utils.LavaFormatDebug("sending relay to provider",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("addon", relayRequest.RelayData.Addon),
+				utils.LogAttr("extensions", relayRequest.RelayData.Extensions),
+				utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock),
+				utils.LogAttr("seenBlock", relayRequest.RelayData.SeenBlock),
+				utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+				utils.LogAttr("cuSum", relayRequest.RelaySession.CuSum),
+				utils.LogAttr("QosReport", relayRequest.RelaySession.QosReport),
+				utils.LogAttr("QosReportExcellence", relayRequest.RelaySession.QosExcellenceReport),
+				utils.LogAttr("relayNum", relayRequest.RelaySession.RelayNum),
+				utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+				utils.LogAttr("latency", relayLatency),
+				utils.LogAttr("replyErred", err != nil),
+				utils.LogAttr("replyLatestBlock", reply.GetLatestBlock()),
+			)
+		}
 		if err != nil {
 			backoff := false
 			if errors.Is(connectCtx.Err(), context.DeadlineExceeded) {

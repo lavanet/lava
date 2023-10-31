@@ -18,6 +18,7 @@ Policy:
             type: "POST"
           extensions:
             - "archive"
+          mixed: true
     - chain_id: GTH1
       requirements:
         - collection:
@@ -25,4 +26,5 @@ Policy:
             type: "POST"
           extensions:
             - "archive"
+          mixed: true
     - chain_id: "*" # allows all other chains without specifying
