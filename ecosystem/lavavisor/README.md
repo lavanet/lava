@@ -39,7 +39,7 @@ Here are the operations that `lavavisor init` performs:
 ## Wrap command
 Wrap command is used for wrapping a single process in environment that cannot run with systemd (services) such as k8s or some containers. 
 
-the wrapping have two states. 
+The wrapping have two states. 
 
 1. running the command while having golang installed and prerequisites to build the lavap binary. 
 ```bash
