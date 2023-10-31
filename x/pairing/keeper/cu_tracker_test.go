@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
@@ -70,7 +69,8 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 				ts.AdvanceBlocks(ts.BlocksToSave() - ts.EpochBlocks())
 				relayBlock = ts.BlockHeight()
 			case BTS:
-				ts.AdvanceBlocks(commontypes.STALE_ENTRY_TIME + 3) // advance enough blocks to delete the entry
+				ts.AdvanceBlockUntilStale()
+				ts.AdvanceBlocks(3) // advance enough blocks to delete the entry
 			}
 
 			// when advancing for the last time, don't send another relay to verify the original isn't found
