@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -50,26 +49,9 @@ func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string 
 }
 
 // removeCuTracker removes a trackedCu entry
-func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo, shouldRemove bool) error {
+func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo) error {
 	key := types.CuTrackerKey(sub, info.provider, info.chainID, info.block)
-	if shouldRemove {
-		return k.cuTrackerFS.DelEntry(ctx, key, uint64(ctx.BlockHeight()))
-	}
-
-	var trackedCu types.TrackedCu
-	found := k.cuTrackerFS.FindEntry(ctx, key, info.block, &trackedCu)
-	if !found {
-		return utils.LavaFormatError("cannot reset CU tracker", fmt.Errorf("trackedCU entry is not found"),
-			utils.Attribute{Key: "sub", Value: sub},
-			utils.Attribute{Key: "provider", Value: info.provider},
-			utils.Attribute{Key: "chainID", Value: info.chainID},
-			utils.Attribute{Key: "block", Value: strconv.FormatUint(info.block, 10)},
-		)
-	}
-
-	trackedCu.Cu = 0
-	k.cuTrackerFS.ModifyEntry(ctx, key, info.block, &trackedCu)
-	return nil
+	return k.cuTrackerFS.DelEntry(ctx, key, uint64(ctx.BlockHeight()))
 }
 
 type trackedCuInfo struct {
@@ -120,7 +102,6 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string) (trackedCuList 
 // remove only before the sub is deleted
 func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte, cuTrackerTimerData []byte) {
 	sub := string(cuTrackerTimerKeyBytes)
-	shouldRemove := len(cuTrackerTimerData) != 0
 	trackedCuList, totalCuTracked := k.getSubTrackedCuInfo(ctx, sub)
 
 	var block uint64
@@ -149,7 +130,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		provider := trackedCuInfo.provider
 		chainID := trackedCuInfo.chainID
 
-		err := k.resetCuTracker(ctx, sub, trackedCuInfo, shouldRemove)
+		err := k.resetCuTracker(ctx, sub, trackedCuInfo)
 		if err != nil {
 			utils.LavaFormatError("removing/reseting tracked CU entry failed", err,
 				utils.Attribute{Key: "provider", Value: provider},

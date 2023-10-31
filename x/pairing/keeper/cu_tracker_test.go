@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
@@ -42,12 +43,13 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	tests := []struct {
 		name       string
 		advance    Advance // amount to advance
+		live       bool
 		expectedCu uint64
 	}{
-		{"FirstBlock", NONE, relayCuSum},
-		{"AfterMonth", MONTH, relayCuSum * 2},
-		{"AfterAlmostBlocksToSave", BTS_1, relayCuSum * 2}, // after a month has passed, there should be a new trackedCu entry so the old one doesn't change
-		{"AfterBlocksToSave", BTS, 0},
+		{"FirstBlock", NONE, true, relayCuSum},
+		{"AfterMonth", MONTH, true, relayCuSum * 2},
+		{"AfterAlmostBlocksToSave", BTS_1, true, relayCuSum * 2}, // after a month has passed, there should be a new trackedCu entry so the old one doesn't change
+		{"AfterBlocksToSave", BTS, false, 0},
 	}
 
 	sessionId := uint64(0)
@@ -68,7 +70,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 				ts.AdvanceBlocks(ts.BlocksToSave() - ts.EpochBlocks())
 				relayBlock = ts.BlockHeight()
 			case BTS:
-				ts.AdvanceEpoch()
+				ts.AdvanceBlocks(commontypes.STALE_ENTRY_TIME + 3) // advance enough blocks to delete the entry
 			}
 
 			// when advancing for the last time, don't send another relay to verify the original isn't found
@@ -88,8 +90,12 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 
 			// check trackedCU only updated on provider 1
 			cu, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index, originalSubBlock)
-			require.True(t, found)
-			require.Equal(t, tt.expectedCu, cu)
+			if tt.live {
+				require.True(t, found)
+				require.Equal(t, tt.expectedCu, cu)
+			} else {
+				require.False(t, found)
+			}
 
 			_, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider2Addr, ts.spec.Index, originalSubBlock)
 			require.False(t, found)
