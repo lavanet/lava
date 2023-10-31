@@ -13,8 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestAddingTrackedCuWithoutPay checks adding tracked CU works properly
-// Up until a month_of_blocks + blocksToSave - 1 the CU should be counted. After that it needs to reset
+// TestAddingTrackedCuWithoutPay checks adding tracked CU works properly.
+// Up until a month_of_blocks the CU should be counted for the old month.
+// After that it needs to be counted for the new month. The old entry should
+// reset only after month_of_blocks + blocks_to_save
 func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 0) // 2 providers, 1 client, default providers-to-pair
@@ -36,37 +38,44 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 		BTS   Advance = 3
 	)
 
-	// define tests
+	// define tests - only after month+blocksToSave CU should stop aggregating
 	tests := []struct {
 		name       string
 		advance    Advance // amount to advance
+		live       bool
 		expectedCu uint64
 	}{
-		{"FirstBlock", NONE, relayCuSum},
-		{"AfterMonth", MONTH, relayCuSum * 2},
-		{"AfterAlmostBlocksToSave", BTS_1, relayCuSum * 3},
-		{"AfterBlocksToSave", BTS, 0},
+		{"FirstBlock", NONE, true, relayCuSum},
+		{"AfterMonth", MONTH, true, relayCuSum * 2},
+		{"AfterAlmostBlocksToSave", BTS_1, true, relayCuSum * 2}, // after a month has passed, there should be a new trackedCu entry so the old one doesn't change
+		{"AfterBlocksToSave", BTS, false, 0},
 	}
 
 	sessionId := uint64(0)
+	originalSubBlock := sub.Block
+	var relayBlock uint64
 
 	for _, tt := range tests {
 		sessionId += 1
 		t.Run(tt.name, func(t *testing.T) {
 			switch tt.advance {
+			case NONE:
+				relayBlock = ts.BlockHeight()
 			case MONTH:
 				ts.AdvanceMonths(1)
+				relayBlock = ts.BlockHeight() // note that this is before a month has passed since AdvanceMonths is actually month-5sec
 				ts.AdvanceBlocks(ts.EpochBlocks() - 1)
 			case BTS_1:
 				ts.AdvanceBlocks(ts.BlocksToSave() - ts.EpochBlocks())
+				relayBlock = ts.BlockHeight()
 			case BTS:
-				ts.AdvanceEpoch()
+				ts.AdvanceBlockUntilStale()
+				ts.AdvanceBlocks(3) // advance enough blocks to delete the entry
 			}
 
 			// when advancing for the last time, don't send another relay to verify the original isn't found
 			if tt.advance != BTS {
-				relaySession := ts.newRelaySession(provider1Addr, sessionId, relayCuSum, ts.BlockHeight(), 0)
-
+				relaySession := ts.newRelaySession(provider1Addr, sessionId, relayCuSum, relayBlock, 0)
 				sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 				require.Nil(t, err)
 				relaySession.Sig = sig
@@ -80,11 +89,15 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 			}
 
 			// check trackedCU only updated on provider 1
-			cu, _, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index)
-			require.True(t, found)
-			require.Equal(t, tt.expectedCu, cu)
+			cu, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider1Addr, ts.spec.Index, originalSubBlock)
+			if tt.live {
+				require.True(t, found)
+				require.Equal(t, tt.expectedCu, cu)
+			} else {
+				require.False(t, found)
+			}
 
-			_, _, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider2Addr, ts.spec.Index)
+			_, found, _ = ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, sub.Consumer, provider2Addr, ts.spec.Index, originalSubBlock)
 			require.False(t, found)
 		})
 	}

@@ -3,8 +3,9 @@ parent:
   order: false
 -->
 
+
 <div align="center">
-  <h1> Lava Network </h1>
+  <h1> <img src="https://user-images.githubusercontent.com/2770565/223762290-44afc792-8ad4-4dbb-b2c2-532780d6c5de.png" alt="Logo" width="30" height="25"> Lava Network  </h1>
 </div>
 
 ![image](https://user-images.githubusercontent.com/2770565/203528359-dced4d06-f020-4b6a-bb5f-319124924689.png)
@@ -18,14 +19,33 @@ Read more about Lava in the [litepaper](https://litepaper.lavanet.xyz?utm_source
 
 Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) which runs on top of [Tendermint Core](https://github.com/tendermint/tendermint) consensus engine.
 
-**Note**: Requires [Go 1.18](https://golang.org/dl/)
+**Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 
-
-### Build `lavad`
-
+### Installing development dependencies
+before running the scripts make sure you have go installed and added to $PATH, you can validate by running `which go`
+init_install will install all necessary dependencies to develop on lava.
 ```bash
-make build
+./scripts/init_install.sh
 ```
+
+## Building the binaries
+install-all will build all lava binaries (lavad, lavap, lavavisor) and place them in the go bin path on your environment.
+```bash
+make install-all
+```
+
+### Building the binaries locally
+You can also build the binaries locally (path will be ./build/...) by running 
+```bash
+make build-all
+```
+
+### Building only a specific binary
+it is possible to also build only one binary, for example lavad only. 
+```bash
+LAVA_BINARY=lavad make install
+```
+
 
 Or check out the latest [release](https://github.com/lavanet/lava/releases).
 

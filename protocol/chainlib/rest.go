@@ -6,6 +6,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,8 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
@@ -63,14 +67,19 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
+func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
 	}
+	urlObj, err := url.Parse(urlPath)
+	if err != nil {
+		return nil, err
+	}
+	urlWithNoQuery := urlObj.Path
 
 	// Check api is supported and save it in nodeMsg
-	apiCont, err := apip.getSupportedApi(url, connectionType)
+	apiCont, err := apip.getSupportedApi(urlWithNoQuery, connectionType)
 	if err != nil {
 		return nil, err
 	}
@@ -88,16 +97,8 @@ func (apip *RestChainParser) ParseMsg(url string, data []byte, connectionType st
 	// Construct restMessage
 	restMessage := rpcInterfaceMessages.RestMessage{
 		Msg:         data,
-		Path:        url,
-		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
-	}
-	if connectionType == http.MethodGet {
-		// support for optional params, our listener puts them inside Msg data
-		restMessage = rpcInterfaceMessages.RestMessage{
-			Msg:         nil,
-			Path:        url + string(data),
-			BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
-		}
+		Path:        urlPath,
+		BaseMessage: chainproxy.BaseMessage{Headers: metadata, LatestBlockHeaderSetter: settingHeaderDirective},
 	}
 	// add spec path to rest message so we can extract the requested block.
 	restMessage.SpecPath = apiCont.api.Name
@@ -250,18 +251,18 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
-	app.Post("/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
 		msgSeed := apil.logger.GetMessageSeed()
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := "/" + fiberCtx.Params("*")
 
-		path := "/" + c.Params("*")
-
-		metadataValues := c.GetReqHeaders()
+		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -269,80 +270,95 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
-		dappID := extractDappIDFromFiberContext(c)
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
-		requestBody := string(c.Body())
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, requestBody, http.MethodPost, dappID, analytics, restHeaders)
-		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
+		requestBody := string(fiberCtx.Body())
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
+		reply := relayResult.GetReply()
+		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodPost, path, requestBody, errMasking, msgSeed, time.Since(startTime), err)
 
-			// Set status to internal error
-			c.Status(fiber.StatusInternalServerError)
+			// Set status to internal error\
+			if relayResult.GetStatusCode() != 0 {
+				fiberCtx.Status(relayResult.StatusCode)
+			} else {
+				fiberCtx.Status(fiber.StatusInternalServerError)
+			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(c, reply.GetMetadata(), response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, nil)
-
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
+		if relayResult.GetStatusCode() != 0 {
+			fiberCtx.Status(relayResult.StatusCode)
+		}
 		// Return json response
-		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Catch the others
-	app.Use("/*", func(c *fiber.Ctx) error {
+	app.Use("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
 
-		query := "?" + string(c.Request().URI().QueryString())
-		path := "/" + c.Params("*")
-		dappID := extractDappIDFromFiberContext(c)
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := "/" + fiberCtx.Params("*")
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
-		metadataValues := c.GetReqHeaders()
+		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 
-		reply, _, err := apil.relaySender.SendRelay(ctx, path, query, http.MethodGet, dappID, analytics, restHeaders)
-		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
+		reply := relayResult.GetReply()
+		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, http.MethodGet, path, "", errMasking, msgSeed, err)
+			apil.logger.LogRequestAndResponse("http in/out", true, fiberCtx.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
-			c.Status(fiber.StatusInternalServerError)
+			if relayResult.GetStatusCode() != 0 {
+				fiberCtx.Status(relayResult.StatusCode)
+			} else {
+				fiberCtx.Status(fiber.StatusInternalServerError)
+			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(c, reply.GetMetadata(), response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		}
+		if relayResult.GetStatusCode() != 0 {
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, nil)
+		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
-		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Go
@@ -431,20 +447,26 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		)
 	}
 	res, err := httpClient.Do(req)
+	if res != nil {
+		// resp can be non nil on error
+		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
+		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	}
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
 		if parsedError := rcp.HandleNodeError(ctx, err); parsedError != nil {
 			return nil, "", nil, parsedError
 		}
+		// always return a lava error in this case
 		return nil, "", nil, err
 	}
-
+	// here we received a response that can be an error response with Code >300 or code < 200
 	if res.Body != nil {
 		defer res.Body.Close()
 	}
 
-	err = rcp.HandleStatusError(res.StatusCode)
+	err = rcp.HandleStatusError(res.StatusCode, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nil, utils.Attribute{Key: "Status Code", Value: res.StatusCode}, utils.Attribute{Key: "chainID", Value: rcp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 	}

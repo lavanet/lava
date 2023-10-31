@@ -110,10 +110,11 @@ func (pme *ConsumerMetricsManager) SetBlock(block int64) {
 	pme.blockMetric.WithLabelValues("lava").Set(float64(block))
 }
 
-func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics) {
+func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, err error) {
 	if pme == nil {
 		return
 	}
+	relayMetric.Success = err == nil
 	pme.latencyMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Set(float64(relayMetric.Latency))
 	pme.totalCURequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(float64(relayMetric.ComputeUnits))
 	pme.totalRelaysRequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)

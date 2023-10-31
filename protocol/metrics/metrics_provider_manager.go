@@ -27,6 +27,10 @@ type ProviderMetricsManager struct {
 	blockMetric                 *prometheus.GaugeVec
 	lastServicedBlockTimeMetric *prometheus.GaugeVec
 	disabledChainsMetric        *prometheus.GaugeVec
+	fetchLatestFailedMetric     *prometheus.CounterVec
+	fetchBlockFailedMetric      *prometheus.CounterVec
+	fetchLatestSuccessMetric    *prometheus.CounterVec
+	fetchBlockSuccessMetric     *prometheus.CounterVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -78,6 +82,26 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Help: "value of 1 for each disabled chain at measurement time",
 	}, []string{"chainID", "apiInterface"})
 
+	fetchLatestFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_provider_fetch_latest_fails",
+		Help: "The total number of get latest block queries that errored by chainfetcher",
+	}, []string{"spec"})
+
+	fetchBlockFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_provider_fetch_block_fails",
+		Help: "The total number of get specific block queries that errored by chainfetcher",
+	}, []string{"spec"})
+
+	fetchLatestSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_provider_fetch_latest_success",
+		Help: "The total number of get latest block queries that succeeded by chainfetcher",
+	}, []string{"spec"})
+
+	fetchBlockSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_provider_fetch_block_success",
+		Help: "The total number of get specific block queries that succeeded by chainfetcher",
+	}, []string{"spec"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -87,6 +111,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(blockMetric)
 	prometheus.MustRegister(lastServicedBlockTimeMetric)
 	prometheus.MustRegister(disabledChainsMetric)
+	prometheus.MustRegister(fetchLatestFailedMetric)
+	prometheus.MustRegister(fetchBlockFailedMetric)
+	prometheus.MustRegister(fetchLatestSuccessMetric)
+	prometheus.MustRegister(fetchBlockSuccessMetric)
+
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -102,6 +131,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		blockMetric:                 blockMetric,
 		lastServicedBlockTimeMetric: lastServicedBlockTimeMetric,
 		disabledChainsMetric:        disabledChainsMetric,
+		fetchLatestFailedMetric:     fetchLatestFailedMetric,
+		fetchBlockFailedMetric:      fetchBlockFailedMetric,
+		fetchLatestSuccessMetric:    fetchLatestSuccessMetric,
+		fetchBlockSuccessMetric:     fetchBlockSuccessMetric,
 	}
 }
 
@@ -178,4 +211,32 @@ func (pme *ProviderMetricsManager) SetEnabledChain(specID string, apInterface st
 		return
 	}
 	pme.disabledChainsMetric.WithLabelValues(specID, apInterface).Set(0)
+}
+
+func (pme *ProviderMetricsManager) SetLatestBlockFetchError(specID string) {
+	if pme == nil {
+		return
+	}
+	pme.fetchLatestFailedMetric.WithLabelValues(specID).Add(1)
+}
+
+func (pme *ProviderMetricsManager) SetSpecificBlockFetchError(specID string) {
+	if pme == nil {
+		return
+	}
+	pme.fetchBlockFailedMetric.WithLabelValues(specID).Add(1)
+}
+
+func (pme *ProviderMetricsManager) SetLatestBlockFetchSuccess(specID string) {
+	if pme == nil {
+		return
+	}
+	pme.fetchLatestSuccessMetric.WithLabelValues(specID).Add(1)
+}
+
+func (pme *ProviderMetricsManager) SetSpecificBlockFetchSuccess(specID string) {
+	if pme == nil {
+		return
+	}
+	pme.fetchBlockSuccessMetric.WithLabelValues(specID).Add(1)
 }

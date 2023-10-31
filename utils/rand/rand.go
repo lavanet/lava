@@ -30,6 +30,10 @@ func Seed(rng *rand.Rand, data []byte) {
 // we set the seed once for the entire process.
 var protocolRand *rand.Rand
 
+func Initialized() bool {
+	return protocolRand != nil
+}
+
 func InitRandomSeed() {
 	seed := time.Now().UnixNano()
 	protocolRand = rand.New(rand.NewSource(seed))
