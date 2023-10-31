@@ -462,6 +462,19 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
+			if singleConsumerSession.QoSInfo.LastExcellenceQoSReport != nil && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
+				singleConsumerSession.QoSInfo.LastExcellenceQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.001")) &&
+				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.001")) {
+				utils.LavaFormatWarning("identified QoS mismatch", nil,
+					utils.Attribute{Key: "expectedBH", Value: expectedBH},
+					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
+					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
+					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
+					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
+					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSInfo},
+					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
+				)
+			}
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 			// set cache in a nonblocking call
 			go func() {

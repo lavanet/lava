@@ -121,41 +121,57 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 }
 
 func checkEventForShow(eventName string, event types.Event, hasAttributeName string, value string, block int64, showAttributeName string) {
-	printEvent := func(event types.Event) string {
+	printEvent := func(event types.Event, showAttributeName string) string {
+		attributesFilter := map[string]struct{}{}
+		if showAttributeName != "" {
+			attributes := strings.Split(showAttributeName, " ")
+			for _, attr := range attributes {
+				attributesFilter[attr] = struct{}{}
+			}
+		}
+		passFilter := func(attr types.EventAttribute) bool {
+			if len(attributesFilter) == 0 {
+				return true
+			}
+			for attrName, _ := range attributesFilter {
+				if strings.Contains(attr.Key, attrName) {
+					return true
+				}
+			}
+			return false
+		}
 		st := event.Type + ": "
 		sort.Slice(event.Attributes, func(i, j int) bool {
 			return event.Attributes[i].Key < event.Attributes[j].Key
 		})
+		stmore := ""
 		for _, attr := range event.Attributes {
-			st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
+			if passFilter(attr) {
+				stmore += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
+			}
 		}
-		return st
-	}
-	printAttribute := func(event types.Event, attr types.EventAttribute) string {
-		st := event.Type + ": "
-		st += fmt.Sprintf("%s = %s, ", attr.Key, attr.Value)
+		if stmore == "" {
+			return ""
+		}
 		return st
 	}
 	if eventName == "" || strings.Contains(event.Type, eventName) {
-		printEventTrigger := false
+		printEventTriggerValue := false
+		printEventTriggerHasAttr := false
 		printEventAttribute := ""
 		for _, attribute := range event.Attributes {
 			if hasAttributeName == "" || strings.Contains(attribute.Key, hasAttributeName) {
-				if value == "" || strings.Contains(attribute.Value, value) {
-					printEventTrigger = true
-				}
+				printEventTriggerHasAttr = true
 			}
-			if showAttributeName != "" {
-				if strings.Contains(attribute.Key, showAttributeName) {
-					printEventAttribute = printAttribute(event, attribute)
-					printEventTrigger = true
-				}
+			if value == "" || strings.Contains(attribute.Value, value) {
+				printEventTriggerValue = true
 			}
 		}
-		if printEventTrigger && printEventAttribute == "" && showAttributeName == "" {
-			utils.LavaFormatInfo("Found event", utils.Attribute{Key: "event", Value: printEvent(event)}, utils.Attribute{Key: "height", Value: block})
-		} else if printEventAttribute != "" {
-			utils.LavaFormatInfo("Found event", utils.Attribute{Key: "event", Value: printEventAttribute}, utils.Attribute{Key: "height", Value: block})
+		if printEventTriggerHasAttr && printEventTriggerValue && printEventAttribute == "" {
+			printEventData := printEvent(event, showAttributeName)
+			if printEventData != "" {
+				utils.LavaFormatInfo("Found event", utils.Attribute{Key: "event", Value: printEventData}, utils.Attribute{Key: "height", Value: block})
+			}
 		}
 	}
 }
