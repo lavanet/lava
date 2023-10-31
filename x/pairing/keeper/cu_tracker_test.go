@@ -348,3 +348,29 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	balance := ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, balanceBeforePay+originalPlanPrice, balance)
 }
+
+// TestFrozenProviderGetReward checks that frozen providers still get rewards.
+// providers can freeze themselves or be forcibly frozen due to unresponsiveness
+func TestFrozenProviderGetReward(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 2)
+
+	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	ts.relayPaymentWithoutPay(relayPayment, true)
+
+	balanceBeforePay := ts.GetBalance(providerAcc.Addr)
+
+	err := ts.Keepers.Pairing.FreezeProvider(ts.Ctx, provider, []string{ts.spec.Index}, "unresponsiveness")
+	require.Nil(t, err)
+
+	// advance month + blocksToSave + 1 to trigger the monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	balance := ts.GetBalance(providerAcc.Addr)
+	planPrice := ts.plan.Price.Amount.Int64()
+	require.Equal(t, balanceBeforePay+planPrice, balance)
+}
