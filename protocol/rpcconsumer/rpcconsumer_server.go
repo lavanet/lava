@@ -284,7 +284,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
-		analytics.ComputeUnits = returnedResult.Request.RelaySession.CuSum
+		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
 	}
 	if retries > 0 {
 		utils.LavaFormatDebug("relay succeeded after retries", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "retries", Value: retries})
