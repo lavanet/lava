@@ -14,14 +14,20 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
+type ProtocolBinaryFetcherInf interface {
+	SetCurrentRunningVersion(currentVersion string)
+	FetchProtocolBinary(protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error)
+}
+
 type VersionMonitor struct {
 	BinaryPath            string
 	LavavisorPath         string
 	lastKnownVersion      *protocoltypes.Version
 	processes             []string
 	autoDownload          bool
-	protocolBinaryFetcher *ProtocolBinaryFetcher
+	protocolBinaryFetcher ProtocolBinaryFetcherInf
 	protocolBinaryLinker  *ProtocolBinaryLinker
+	allowNilLinker        bool
 	lock                  sync.Mutex
 	restart               chan struct{}
 	isWrapProcess         bool
@@ -38,6 +44,7 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []str
 	}
 	fetcher := &ProtocolBinaryFetcher{
 		lavavisorPath: lavavisorPath,
+		AutoDownload:  autoDownload,
 	}
 	return &VersionMonitor{
 		BinaryPath:            binaryPath,
@@ -53,14 +60,14 @@ func NewVersionMonitor(initVersion string, lavavisorPath string, processes []str
 func (vm *VersionMonitor) handleUpdateTrigger(currentBinaryVersion string) error {
 	// set latest known version to incoming.
 	utils.LavaFormatInfo("[Lavavisor] Update detected. Lavavisor starting the auto-upgrade...")
-	vm.protocolBinaryFetcher.CurrentRunningVersion = currentBinaryVersion
+	vm.protocolBinaryFetcher.SetCurrentRunningVersion(currentBinaryVersion)
 	// 1. check lavavisor directory first and attempt to fetch new binary from there
 
 	if vm.protocolBinaryFetcher == nil {
 		utils.LavaFormatError("[Lavavisor] for some reason the vm.protocolBinaryFetcher is nil", nil)
 	}
 	// fetcher
-	_, err := vm.protocolBinaryFetcher.FetchProtocolBinary(vm.autoDownload, vm.lastKnownVersion)
+	_, err := vm.protocolBinaryFetcher.FetchProtocolBinary(vm.lastKnownVersion)
 	if err != nil {
 		return utils.LavaFormatError("[Lavavisor] Lavavisor was not able to fetch updated version. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
 	}
@@ -75,8 +82,15 @@ func (vm *VersionMonitor) handleUpdateTrigger(currentBinaryVersion string) error
 	return vm.TriggerRestartProcess()
 }
 
+// create link to the golang go env path of "lavap"
 func (vm *VersionMonitor) createLink() error {
-	// linker
+	if vm.protocolBinaryLinker == nil { // this happens in the pods flow where we don't link and don't validate golang installations
+		if vm.allowNilLinker {
+			return nil
+		} else {
+			utils.LavaFormatFatal("vm.protocolBinaryLinker is nil and its not allowed", nil)
+		}
+	}
 	err := vm.protocolBinaryLinker.CreateLink(vm.BinaryPath)
 	if err != nil {
 		return utils.LavaFormatError("[Lavavisor] Lavavisor was not able to create link to the binaries. Skipping.", err, utils.Attribute{Key: "Version", Value: vm.lastKnownVersion.ProviderTarget})
@@ -129,6 +143,13 @@ func (vm *VersionMonitor) TriggerRestartProcess() error {
 }
 
 func (vm *VersionMonitor) validateLinkPointsToTheRightTarget() error {
+	if vm.protocolBinaryLinker == nil { // this happens in the pods flow where we don't link and don't validate golang installations
+		if vm.allowNilLinker {
+			return nil
+		} else {
+			utils.LavaFormatFatal("vm.protocolBinaryLinker is nil and its not allowed", nil)
+		}
+	}
 	lavapPath, err := vm.protocolBinaryLinker.FindLavaProtocolPath(vm.BinaryPath)
 	if err != nil {
 		return utils.LavaFormatError("[Lavavisor] Failed searching for lavap path, failed to validate link exists for lavap latest version", err)
@@ -239,7 +260,7 @@ func (vm *VersionMonitor) startSubprocess() {
 	}()
 
 	utils.LavaFormatInfo("[Lavavisor] Starting subprocess...")
-	vm.onGoingCmd = exec.Command("lavap", vm.command...)
+	vm.onGoingCmd = exec.Command(vm.BinaryPath, vm.command...)
 
 	// Set up output redirection so you can see the subprocess's output
 	vm.onGoingCmd.Stdout = os.Stdout
@@ -268,19 +289,41 @@ func NewVersionMonitorProcessWrapFlow(initVersion string, lavavisorPath string, 
 	}
 	fetcher := &ProtocolBinaryFetcher{
 		lavavisorPath: lavavisorPath,
+		AutoDownload:  autoDownload,
 	}
 
 	// Check if the string starts with "lavap"
-	if strings.HasPrefix(command, "lavap ") {
-		// Remove "lavap " from the start of the string
-		command = command[6:]
-	}
+	command = strings.TrimPrefix(command, "lavap ")
 	return &VersionMonitor{
 		BinaryPath:            binaryPath,
 		LavavisorPath:         lavavisorPath,
 		autoDownload:          autoDownload,
 		protocolBinaryFetcher: fetcher,
 		protocolBinaryLinker:  &ProtocolBinaryLinker{Fetcher: fetcher},
+		lock:                  sync.Mutex{},
+		isWrapProcess:         true,
+		restart:               make(chan struct{}),
+		command:               strings.Fields(command),
+	}
+}
+
+func NewVersionMonitorProcessPodFlow(initVersion string, lavavisorPath string, command string) *VersionMonitor {
+	var binaryPath string
+	if initVersion != "" { // handle case if not found valid lavap at all
+		versionDir := filepath.Join(lavavisorPath, "upgrades", "v"+initVersion)
+		binaryPath = filepath.Join(versionDir, "lavap")
+	}
+	fetcher := &ProtocolBinaryFetcherWithoutBuild{
+		lavavisorPath: lavavisorPath,
+	}
+
+	// Check if the string starts with "lavap"
+	command = strings.TrimPrefix(command, "lavap ")
+	return &VersionMonitor{
+		BinaryPath:            binaryPath,
+		LavavisorPath:         lavavisorPath,
+		protocolBinaryFetcher: fetcher,
+		allowNilLinker:        true,
 		lock:                  sync.Mutex{},
 		isWrapProcess:         true,
 		restart:               make(chan struct{}),

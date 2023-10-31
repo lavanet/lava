@@ -52,18 +52,19 @@ func CreateLavaVisorInitCobraCommand() *cobra.Command {
 
 func LavavisorInit(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
-	lavavisorFetcher := &processmanager.ProtocolBinaryFetcher{}
 
-	// Build path to ./lavavisor
-	err := lavavisorFetcher.SetupLavavisorDir(dir)
-	if err != nil {
-		return err
-	}
 	// check auto-download flag
 	autoDownload, err := cmd.Flags().GetBool("auto-download")
 	if err != nil {
 		return err
 	}
+	// Build path to ./lavavisor
+	lavavisorFetcher := &processmanager.ProtocolBinaryFetcher{AutoDownload: autoDownload}
+	err = lavavisorFetcher.SetupLavavisorDir(dir)
+	if err != nil {
+		return err
+	}
+
 	// initialize lavavisor state tracker
 	ctx := context.Background()
 	clientCtx, err := client.GetClientQueryContext(cmd)
@@ -88,7 +89,7 @@ func LavavisorInit(cmd *cobra.Command) error {
 	utils.LavaFormatInfo("[Lavavisor] Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.Version.ProviderMin})
 
 	// fetcher returns binaryPath (according to selected min or target version)
-	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(autoDownload, protocolConsensusVersion.Version)
+	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(protocolConsensusVersion.Version)
 	if err != nil {
 		return utils.LavaFormatError("[Lavavisor] Protocol binary couldn't be fetched", nil)
 	}

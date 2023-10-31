@@ -36,12 +36,28 @@ Here are the operations that `lavavisor init` performs:
 
 **For a fully automated experience, usage of `--auto-download` flag is suggested**
 
-### Known Issue:
-Some older versions of `lavap` lack the `version` command, which LavaVisor employs to validate binary versions. When these older version binaries are downloaded using the auto-download option, LavaVisor will accept these binaries without signaling an error. However, when restarting LavaVisor with this binary, an error will be raised. This is because the binary validation will fail since the version command cannot be executed.
+## Wrap command
+Wrap command is used for wrapping a single process in environment that cannot run with systemd (services) such as k8s or some containers. 
 
-**Workaround**: 
-- Use the latest version of the protocol.
-- Set up the binaries manually.
+the wrapping have two states. 
+
+1. running the command while having golang installed and prerequisites to build the lavap binary. 
+```bash
+lavavisor wrap --cmd 'lavap rpcconsumer ./config/consumer_examples/lava_consumer.yml --from user1 --log_level debug --geolocation 1 --chain-id lava' --auto-download
+```
+
+2. running the command in lean pod environments that does not have golang / build dependencies and will fetch the binary from the github release page 
+without building the binary and having a golang setup on the VM
+
+* lavavisor pod does not require lavavisor init. as it will set everything on the go.
+
+```bash
+lavavisor pod --cmd 'lavap rpcconsumer ./config/consumer_examples/lava_consumer.yml --from user1 --log_level debug --geolocation 1 --chain-id lava'
+```
+
+### running multiple wrap commands on the same VM
+if you would like to run multiple wrappers on the same machine, you can set up one --auto-download process while the others are running with --auto-download disabled (default behavior) this will result with one process managing downloading and building while others just wait for the task to be completed. 
+
 ___
 
 2- **`lavavisor create-service`**: Creates system files according to given consumer / provider config file and configuration flags.

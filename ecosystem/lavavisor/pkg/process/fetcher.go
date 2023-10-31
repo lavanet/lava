@@ -18,6 +18,11 @@ import (
 type ProtocolBinaryFetcher struct {
 	lavavisorPath         string
 	CurrentRunningVersion string
+	AutoDownload          bool
+}
+
+func (pbf *ProtocolBinaryFetcher) SetCurrentRunningVersion(currentVersion string) {
+	pbf.CurrentRunningVersion = currentVersion
 }
 
 func (pbf *ProtocolBinaryFetcher) SetupLavavisorDir(dir string) error {
@@ -53,7 +58,7 @@ func (pbf *ProtocolBinaryFetcher) ValidateLavavisorDir(dir string) (lavavisorPat
 	return lavavisorPath, nil
 }
 
-func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
+func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error) {
 	if pbf.lavavisorPath == "" {
 		return "", utils.LavaFormatError("[Lavavisor] The lavavisor path is not initialized. Should not get here!", nil)
 	}
@@ -65,10 +70,9 @@ func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protoco
 	currentVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderTarget)
 	minVersion := lvutil.ParseToSemanticVersion(protocolConsensusVersion.ProviderMin) // min(currentRunning, minVersionInParams)
 
-	// TODO: Avoid downgrading by mistake: Validate current install version
 	for ; !lvutil.IsVersionLessThan(currentVersion, minVersion); lvutil.DecrementVersion(currentVersion) {
 		if currentRunningVersion != nil && (lvutil.IsVersionEqual(currentRunningVersion, currentVersion) || lvutil.IsVersionGreaterThan(currentRunningVersion, currentVersion)) {
-			if !autoDownload {
+			if !pbf.AutoDownload {
 				return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, waiting for directory upgrade directory to be placed in lavavisor config", nil)
 			} else {
 				return "", utils.LavaFormatError("[Lavavisor] Failed upgrading flow, couldn't fetch the new binary.", nil)
@@ -77,7 +81,7 @@ func (pbf *ProtocolBinaryFetcher) FetchProtocolBinary(autoDownload bool, protoco
 		utils.LavaFormatInfo("[Lavavisor] Trying to fetch", utils.Attribute{Key: "version", Value: lvutil.FormatFromSemanticVersion(currentVersion)})
 		versionDir := filepath.Join(pbf.lavavisorPath, "upgrades", "v"+lvutil.FormatFromSemanticVersion(currentVersion))
 		utils.LavaFormatInfo("[Lavavisor] Version Directory", utils.Attribute{Key: "versionDir", Value: versionDir})
-		selectedBinaryPath, err = pbf.checkAndHandleVersionDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
+		selectedBinaryPath, err = pbf.checkAndHandleVersionDir(versionDir, protocolConsensusVersion, currentVersion)
 		if err == nil {
 			return selectedBinaryPath, nil
 		}
@@ -118,17 +122,17 @@ func (pbf *ProtocolBinaryFetcher) setUpLavavisorDirectory() error {
 	return nil
 }
 
-func (pbf *ProtocolBinaryFetcher) checkAndHandleVersionDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (selectedBinaryPath string, err error) {
+func (pbf *ProtocolBinaryFetcher) checkAndHandleVersionDir(versionDir string, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (selectedBinaryPath string, err error) {
 	var binaryPath string
 	if pbf.dirExists(versionDir) {
 		utils.LavaFormatDebug("[Lavavisor] Handling existing version dir", utils.Attribute{Key: "versionDir", Value: versionDir})
-		binaryPath, err = pbf.handleExistingDir(versionDir, autoDownload, protocolConsensusVersion, currentVersion)
+		binaryPath, err = pbf.handleExistingDir(versionDir, protocolConsensusVersion, currentVersion)
 		if err != nil {
 			return "", err
 		}
 	} else {
 		utils.LavaFormatDebug("[Lavavisor] Handling missing version dir", utils.Attribute{Key: "versionDir", Value: versionDir})
-		binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
+		binaryPath, err = pbf.handleMissingDir(versionDir, currentVersion)
 		if err != nil {
 			return "", err
 		}
@@ -143,8 +147,8 @@ func (pbf *ProtocolBinaryFetcher) dirExists(versionDir string) bool {
 	return !os.IsNotExist(err)
 }
 
-func (pbf *ProtocolBinaryFetcher) handleMissingDir(versionDir string, autoDownload bool, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
-	if !autoDownload {
+func (pbf *ProtocolBinaryFetcher) handleMissingDir(versionDir string, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
+	if !pbf.AutoDownload {
 		return "", utils.LavaFormatError("[Lavavisor] Sub-directory for version not found and auto-download is disabled.", nil, utils.Attribute{Key: "Version", Value: currentVersion})
 	}
 	utils.LavaFormatInfo("[Lavavisor] Version directory does not exist, but auto-download is enabled. Attempting to download binary from GitHub...")
@@ -171,14 +175,14 @@ func (pbf *ProtocolBinaryFetcher) handleMissingDir(versionDir string, autoDownlo
 	return "", utils.LavaFormatError("[Lavavisor] Failed to auto-download binary from GitHub\n ", nil)
 }
 
-func (pbf *ProtocolBinaryFetcher) handleExistingDir(versionDir string, autoDownload bool, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
+func (pbf *ProtocolBinaryFetcher) handleExistingDir(versionDir string, protocolConsensusVersion *protocoltypes.Version, currentVersion *lvutil.SemanticVer) (binaryPath string, err error) {
 	binaryPath = filepath.Join(versionDir, "lavap")
 	version, _ := GetBinaryVersion(binaryPath)
 	if version != "" {
 		utils.LavaFormatInfo("found requested version", utils.Attribute{Key: "version", Value: version})
 		return binaryPath, nil // found version.
 	}
-	binaryPath, err = pbf.handleMissingDir(versionDir, autoDownload, currentVersion)
+	binaryPath, err = pbf.handleMissingDir(versionDir, currentVersion)
 	if err != nil {
 		return "", err
 	}

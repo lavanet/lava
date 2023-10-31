@@ -24,6 +24,7 @@ func main() {
 	cmdLavavisorStart := lvcmd.CreateLavaVisorStartCobraCommand()
 	// lavavisor wrap cobra command
 	cmdLavavisorWrap := lvcmd.CreateLavaVisorWrapCobraCommand()
+	cmdLavavisorPod := lvcmd.CreateLavaVisorPodCobraCommand()
 	// lavavisor service creator cobra command
 	cmdLavavisorCreateService := lvcmd.CreateLavaVisorCreateServiceCobraCommand()
 
@@ -35,6 +36,7 @@ func main() {
 	rootCmd.AddCommand(cmdLavavisorStart)
 	// Add Lavavisor Wrap
 	rootCmd.AddCommand(cmdLavavisorWrap)
+	rootCmd.AddCommand(cmdLavavisorPod)
 	// Add Lavavisor Create Service
 	rootCmd.AddCommand(cmdLavavisorCreateService)
 
