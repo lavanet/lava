@@ -721,7 +721,7 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 	defer consumerSession.lock.Unlock()               // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
-	if expectedBH-latestServicedBlock > 100 {
+	if expectedBH-latestServicedBlock > 1000 {
 		utils.LavaFormatWarning("identified block gap", nil,
 			utils.Attribute{Key: "expectedBH", Value: expectedBH},
 			utils.Attribute{Key: "latestServicedBlock", Value: latestServicedBlock},

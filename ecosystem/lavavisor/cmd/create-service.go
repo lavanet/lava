@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +17,11 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+const (
+	ServiceTypeProvider = "provider"
+	ServiceTypeConsumer = "consumer"
 )
 
 type ServiceParams struct {
@@ -43,15 +49,17 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 		each service using the 'systemctl' command.
 		After a service file is created, the name of the service is added to "config.yml" file inside Lavavisor directory.`,
 		Args: cobra.ExactArgs(2),
-		Example: `required flags: --geolocation | --from
+		Example: `required flags: --geolocation | --from | --chain-id | --keyring-backend
 			optional flags: --log-level  | --node  | --keyring-backend
 			lavavisor create-service provider ./config --geolocation 1 --from alice --log-level warn
 			lavavisor create-service consumer ./config --geolocation 1 --from bob --log-level info`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// 1. read config.yml -> this will tell us what service files this command will create
 			dir, _ := cmd.Flags().GetString("directory")
+
+			binariesFetcher := processmanager.ProtocolBinaryFetcher{}
 			// Build path to ./lavavisor
-			lavavisorPath, err := processmanager.ValidateLavavisorDir(dir)
+			lavavisorPath, err := binariesFetcher.ValidateLavavisorDir(dir)
 			if err != nil {
 				return err
 			}
@@ -70,7 +78,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 			}
 
 			// .lavavisor/ service config dir
-			lavavisorServiceConfigDir := lavavisorServicesDir + "/service_configs"
+			lavavisorServiceConfigDir := lavavisorServicesDir + "/protocol_yml_configs"
 			err = os.MkdirAll(lavavisorServiceConfigDir, 0o755)
 			if err != nil {
 				return utils.LavaFormatError("failed to create service logs directory", err)
@@ -78,7 +86,7 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 
 			// GET SERVICE PARAMS
 			serviceType := args[0]
-			if serviceType != "provider" && serviceType != "consumer" {
+			if serviceType != ServiceTypeProvider && serviceType != ServiceTypeConsumer {
 				return utils.LavaFormatError("invalid service type, must be provider or consumer", nil)
 			}
 			serviceConfigFile := args[1] // the path that contains provider or consumer's configuration yml file
@@ -142,13 +150,15 @@ func CreateLavaVisorCreateServiceCobraCommand() *cobra.Command {
 		},
 	}
 	flags.AddTxFlagsToCmd(cmdLavavisorCreateService)
-	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagFrom)
 	cmdLavavisorCreateService.Flags().Bool("create-link", false, "Creates a symbolic link to the /etc/systemd/system/ directory")
 	cmdLavavisorCreateService.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
-	cmdLavavisorCreateService.MarkFlagRequired(common.GeolocationFlag)
 	cmdLavavisorCreateService.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorCreateService.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdLavavisorCreateService.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagFrom)
+	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagChainID)
+	cmdLavavisorCreateService.MarkFlagRequired(flags.FlagKeyringBackend)
+	cmdLavavisorCreateService.MarkFlagRequired(common.GeolocationFlag)
 	return cmdLavavisorCreateService
 }
 
@@ -173,19 +183,31 @@ func CreateServiceFile(serviceParams *ServiceParams, createLink bool) (string, e
 		return "", utils.LavaFormatError("couldn't copy binary to system path", err)
 	}
 
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", utils.LavaFormatError("Could not get current user", err)
+	}
+
 	content := "[Unit]\n"
 	content += "  Description=" + serviceId + " daemon\n"
 	content += "  After=network-online.target\n"
 	content += "[Service]\n"
 	content += "  WorkingDirectory=" + workingDir + "\n"
-	if serviceParams.ServiceType == "consumer" {
+	if serviceParams.ServiceType == ServiceTypeConsumer {
 		content += "  ExecStart=" + workingDir + "lavap rpcconsumer "
-	} else if serviceParams.ServiceType == "provider" {
+	} else if serviceParams.ServiceType == ServiceTypeProvider {
 		content += "  ExecStart=" + workingDir + "lavap rpcprovider "
 	}
-	content += ".lavavisor/services/service_configs/" + filepath.Base(serviceParams.ServiceConfigFile) + " --from " + serviceParams.FromUser + " --keyring-backend " + serviceParams.KeyringBackend + " --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) + " --chain-id " + serviceParams.ChainID + " --geolocation " + fmt.Sprint(serviceParams.GeoLocation) + " --log_level " + serviceParams.LogLevel + " --node " + serviceParams.Node + "\n"
+	content += ".lavavisor/services/protocol_yml_configs/" + filepath.Base(serviceParams.ServiceConfigFile) +
+		" --from " + serviceParams.FromUser +
+		" --keyring-backend " + serviceParams.KeyringBackend +
+		" --parallel-connections " + fmt.Sprint(serviceParams.ParallelConnection) +
+		" --chain-id " + serviceParams.ChainID +
+		" --geolocation " + fmt.Sprint(serviceParams.GeoLocation) +
+		" --log_level " + serviceParams.LogLevel +
+		" --node " + serviceParams.Node + "\n"
 
-	content += "  User=ubuntu\n"
+	content += "  User=" + currentUser.Username + "\n"
 	content += "  Restart=always\n"
 	content += "  RestartSec=180\n"
 	content += "  LimitNOFILE=infinity\n"
@@ -220,6 +242,17 @@ func WriteToConfigFile(lavavisorPath string, serviceFileName string) error {
 		return utils.LavaFormatError("error opening config.yml for appending", err)
 	}
 	defer file.Close()
+
+	// Read the existing contents of the file to validate we don't have serviceFileName already there
+	existingData, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+	if strings.Contains(string(existingData), serviceFileName) {
+		utils.LavaFormatInfo("Service already exists in ~/.lavavisor/config.yml skipping " + serviceFileName)
+		return nil
+	}
+
 	// Check if the file is newly created by checking its size
 	fileInfo, err := file.Stat()
 	if err != nil {

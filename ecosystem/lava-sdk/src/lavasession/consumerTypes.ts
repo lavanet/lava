@@ -179,7 +179,7 @@ export class SingleConsumerSession {
       calculateAvailabilityScore(this.qoSInfo);
     this.qoSInfo.lastQoSReport?.setAvailability(scaledAvailabilityScore);
     if (BigNumber(1).gt(this.qoSInfo.lastQoSReport.getAvailability())) {
-      Logger.info(
+      Logger.debug(
         `QoS availability report ${JSON.stringify({
           availability: this.qoSInfo.lastQoSReport.getAvailability(),
           downPercent: downtimePercentage,
@@ -215,12 +215,14 @@ export class SingleConsumerSession {
 
       if (BigNumber(1).gt(sync)) {
         Logger.debug(
-          `QoS sync report ${JSON.stringify({
-            sync: this.qoSInfo.lastQoSReport.getSync(),
-            blockDiff: blockHeightDiff,
-            syncScore: `${this.qoSInfo.syncScoreSum}/${this.qoSInfo.totalSyncScore}`,
-            sessionId: this.sessionId,
-          })}`
+          `QoS sync report 
+            sync: ${this.qoSInfo.lastQoSReport.getSync()},
+            blockDiff: ${blockHeightDiff},
+            syncScore: ${this.qoSInfo.syncScoreSum}/${
+            this.qoSInfo.totalSyncScore
+          },
+            sessionId: ${this.sessionId},
+          `
         );
       }
     } else {

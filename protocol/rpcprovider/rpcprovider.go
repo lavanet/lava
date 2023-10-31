@@ -41,8 +41,9 @@ const (
 	ChainTrackerDefaultMemory  = 100
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
 
-	ShardIDFlagName      = "shard-id"
-	DefaultShardID  uint = 0
+	ShardIDFlagName           = "shard-id"
+	StickynessHeaderName      = "sticky-header"
+	DefaultShardID       uint = 0
 )
 
 var (
@@ -66,7 +67,7 @@ type ProviderStateTrackerInf interface {
 	RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable statetracker.PaymentUpdatable)
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
-	GetProtocolVersion(ctx context.Context) (*protocoltypes.Version, error)
+	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 }
 
 type RPCProvider struct {
@@ -115,7 +116,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
-	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version, &upgrade.ProtocolVersion{})
+	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
 	// single reward server
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
@@ -305,12 +306,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
+			consistencyErrorCallback := func(oldBlock, newBlock int64) {
+				utils.LavaFormatError("Consistency issue detected", nil,
+					utils.Attribute{Key: "oldBlock", Value: oldBlock},
+					utils.Attribute{Key: "newBlock", Value: newBlock},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+				)
+			}
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
-				BlocksToSave:      blocksToSaveChainTracker,
-				AverageBlockTime:  averageBlockTime,
-				ServerBlockMemory: ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-				NewLatestCallback: recordMetricsOnNewBlock,
+				BlocksToSave:        blocksToSaveChainTracker,
+				AverageBlockTime:    averageBlockTime,
+				ServerBlockMemory:   ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:   recordMetricsOnNewBlock,
+				ConsistencyCallback: consistencyErrorCallback,
+				Pmetrics:            rpcp.providerMetricsManager,
 			}
 
 			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
@@ -362,6 +373,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
 	// prevents these objects form being overrun later
 	chainParser.Activate()
+	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 	return nil
 }
@@ -531,6 +543,10 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			for _, endpoint := range rpcProviderEndpoints {
 				utils.LavaFormatDebug("endpoint description", utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
+			stickynessHeaderName := viper.GetString(StickynessHeaderName)
+			if stickynessHeaderName != "" {
+				RPCProviderStickynessHeaderName = stickynessHeaderName
+			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
@@ -561,6 +577,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint(ShardIDFlagName, DefaultShardID, "shard id")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotThresholdFlagName, rewardserver.DefaultRewardsSnapshotThreshold, "the number of rewards to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
+	cmdRPCProvider.Flags().String(StickynessHeaderName, RPCProviderStickynessHeaderName, "the name of the header to be attacked to requests for stickyness by consumer, used for consistency")
 
 	return cmdRPCProvider
 }

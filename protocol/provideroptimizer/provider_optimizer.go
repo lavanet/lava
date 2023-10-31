@@ -80,7 +80,7 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 	providerData = po.updateProbeEntryAvailability(providerData, success, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success {
 		if latency > 0 {
-			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)
+			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)/2
 			if isHangingApi {
 				baseLatency += po.averageBlockTime // hanging apis take longer
 			}
@@ -220,7 +220,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCur
 	var latencyWeight float64
 	switch po.strategy {
 	case STRATEGY_LATENCY:
-		latencyWeight = 0.9
+		latencyWeight = 0.7
 	case STRATEGY_SYNC_FRESHNESS:
 		latencyWeight = 0.2
 	case STRATEGY_PRIVACY:
@@ -230,7 +230,7 @@ func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCur
 		}
 		return false
 	default:
-		latencyWeight = 0.8
+		latencyWeight = 0.6
 	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
@@ -271,6 +271,9 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 
 	// in case of block error we are paying the time cost of this provider and the time cost of the next provider on retry
 	costBlockError := historicalLatency.Seconds() + baseLatency.Seconds()
+	if probabilityBlockError > 0.5 {
+		costBlockError *= 3 // consistency improvement
+	}
 	// in case of a time out we are paying the time cost of a timeout and the time cost of the next provider on retry
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()
 	// on success we are paying the time cost of this provider
@@ -310,7 +313,7 @@ func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int
 			eventRate := timeSinceSyncReceived / averageBlockTime // a new block every average block time, numerator is time passed, gamma=rt
 			// probValueAfterRepetitions(k,lambda) calculates the probability for k events or less meaning p(x<=k),
 			// an error occurs if we didn't have enough blocks, so the chance of error is p(x<k) where k is the required number of blocks so we do p(x<=k-1)
-			probabilityBlockError = cumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
+			probabilityBlockError = CumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
 		} else {
 			probabilityBlockError = 0
 		}
@@ -431,12 +434,16 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 // calculate the probability a random variable with a poisson distribution
 // poisson distribution calculates the probability of K events, in this case the probability enough blocks pass and the request will be accessible in the block
 
-func cumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64) float64 {
+func CumulativeProbabilityFunctionForPoissonDist(k_events uint64, lambda float64) float64 {
 	// calculate cumulative probability of observing k events (having k or more events):
 	// GammaIncReg is the lower incomplete gamma function GammaIncReg(a,x) = (1/ Γ(a)) \int_0^x e^{-t} t^{a-1} dt
 	// the CPF for k events (less than equal k) is the regularized upper incomplete gamma function
 	// so to get the CPF we need to return 1 - prob
-	prob := mathext.GammaIncReg(float64(k_events+1), lambda)
+	argument := float64(k_events + 1)
+	if argument <= 0 || lambda < 0 {
+		utils.LavaFormatFatal("invalid function arguments", nil, utils.Attribute{Key: "argument", Value: argument}, utils.Attribute{Key: "lambda", Value: lambda})
+	}
+	prob := mathext.GammaIncReg(argument, lambda)
 	return 1 - prob
 }
 

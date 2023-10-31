@@ -9,12 +9,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
-	BlockResultRetry               = 10
+	BlockResultRetry               = 20
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -42,26 +43,32 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	}
 
 	eventTracker := &EventTracker{clientCtx: clientCtx}
-	err = eventTracker.updateBlockResults(0)
-	for i := 0; i < BlockResultRetry && err != nil; i++ {
+	for i := 0; i < BlockResultRetry; i++ {
 		err = eventTracker.updateBlockResults(0)
+		if err == nil {
+			break
+		}
+		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesn't just spam the attempts, and tendermint fails getting block results pretty often
 	}
 	if err != nil {
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
-
-	// TODO: fix average block time.
-	averageBlockTime := 1
-	if utils.ExtendedLogLevel == "production" {
-		averageBlockTime = 30
+	specQueryClient := spectypes.NewQueryClient(clientCtx)
+	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+		ChainID: "LAV1",
+	})
+	for i := 0; i < BlockResultRetry && err != nil; i++ {
+		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+			ChainID: "LAV1",
+		})
 	}
 
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(averageBlockTime) * time.Second,
-		ServerBlockMemory: BlocksToSaveLavaChainTracker,
+		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
+		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
 	}
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 	return cst, err
@@ -72,7 +79,10 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 	// first update event tracker
-	st.EventTracker.updateBlockResults(latestBlock)
+	err := st.EventTracker.updateBlockResults(latestBlock)
+	if err != nil {
+		utils.LavaFormatWarning("calling update without updated events tracker", err)
+	}
 	// after events were updated we can trigger updaters
 	for _, updater := range st.newLavaBlockUpdaters {
 		updater.Update(latestBlock)

@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/x/fixationstore/types"
 )
 
 // TimerStore manages timers to efficiently support future timeouts. Timeouts

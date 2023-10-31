@@ -27,16 +27,32 @@ export class RestMessage extends BaseMessage implements RPCInput {
     const objectSpec = this.specPath.split("/");
     const objectPath = parsedMethod.split("/");
 
-    const parameters: any[] = [];
+    const parameters: { [key: string]: any } = {};
 
     for (let index = 0; index < objectSpec.length; index++) {
       const element = objectSpec[index];
       if (element.includes("{")) {
-        parameters.push(objectPath[index]);
+        if (element.startsWith("{") && element.endsWith("}")) {
+          parameters[element.slice(1, -1)] = objectPath[index];
+        }
       }
     }
-
-    if (parameters.length === 0) {
+    if (idx > -1) {
+      const queryParams = this.path.substring(idx);
+      if (queryParams != undefined && queryParams.length > 0) {
+        const queryParamsList = queryParams.split("&");
+        for (const queryParamNameValue of queryParamsList) {
+          const queryParamNameValueSplitted = queryParamNameValue.split("=");
+          if (queryParamNameValueSplitted.length !== 2) {
+            continue;
+          }
+          const queryParamName = queryParamNameValueSplitted[0];
+          const queryParamValue = queryParamNameValueSplitted[1];
+          parameters.set(queryParamName, queryParamValue);
+        }
+      }
+    }
+    if (Object.keys(parameters).length === 0) {
       return null;
     }
     return parameters;

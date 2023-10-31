@@ -156,7 +156,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     );
     if (success) {
       if (latency > 0) {
-        let baseLatency = this.baseWorldLatency + baseTimePerCU(cu);
+        let baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
         if (isHangingApi) {
           baseLatency += this.averageBlockTime;
         }
@@ -238,13 +238,16 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
         );
       }
 
-      Logger.debug("scores information", {
-        providerAddress,
-        latencyScoreCurrent,
-        syncScoreCurrent,
-        latencyScore,
-        syncScore,
-      });
+      // Logger.debug(
+      //   "scores information",
+      //   JSON.stringify({
+      //     providerAddress,
+      //     latencyScoreCurrent,
+      //     syncScoreCurrent,
+      //     latencyScore,
+      //     syncScore,
+      //   })
+      // );
 
       const isBetterProviderScore = this.isBetterProviderScore(
         latencyScore,
@@ -272,10 +275,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       }
     }
 
-    Logger.debug("returned providers", {
-      providers: returnedProviders.join(","),
-      cu,
-    });
+    Logger.debug(
+      "returned providers",
+      JSON.stringify({
+        providers: returnedProviders.join(","),
+        cu,
+      })
+    );
 
     return returnedProviders;
   }
@@ -305,10 +311,13 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     report.setAvailability(availabilityScore.toFixed());
     report.setSync(syncScore.toFixed());
 
-    Logger.debug("QoS excellence for provider", {
-      providerAddress,
-      report,
-    });
+    // Logger.debug(
+    //   "QoS excellence for provider",
+    //   JSON.stringify({
+    //     providerAddress,
+    //     report,
+    //   })
+    // );
 
     return report;
   }
@@ -387,7 +396,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     let latencyWeight: number;
     switch (this.strategy) {
       case ProviderOptimizerStrategy.Latency:
-        latencyWeight = 0.9;
+        latencyWeight = 0.7;
         break;
       case ProviderOptimizerStrategy.SyncFreshness:
         latencyWeight = 0.2;
@@ -395,7 +404,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       case ProviderOptimizerStrategy.Privacy:
         return random.int(0, 2) === 0;
       default:
-        latencyWeight = 0.8;
+        latencyWeight = 0.6;
     }
 
     if (syncScoreCurrent === 0) {
@@ -453,18 +462,24 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
 
     const historicalLatencySeconds = millisToSeconds(historicalLatency);
     const baseLatencySeconds = millisToSeconds(baseLatency);
-    const costBlockError = historicalLatencySeconds + baseLatencySeconds;
+    let costBlockError = historicalLatencySeconds + baseLatencySeconds;
+    if (probabilityBlockError > 0.5) {
+      costBlockError *= 3; // consistency improvement
+    }
     const costTimeout = millisToSeconds(timeoutDuration) + baseLatencySeconds;
     const costSuccess = historicalLatencySeconds;
 
-    Logger.debug("latency calculation breakdown", {
-      probabilityBlockError,
-      costBlockError,
-      probabilityOfTimeout,
-      costTimeout,
-      probabilityOfSuccess,
-      costSuccess,
-    });
+    // Logger.debug(
+    //   "latency calculation breakdown",
+    //   JSON.stringify({
+    //     probabilityBlockError,
+    //     costBlockError,
+    //     probabilityOfTimeout,
+    //     costTimeout,
+    //     probabilityOfSuccess,
+    //     costSuccess,
+    //   })
+    // );
 
     return (
       probabilityBlockError * costBlockError +
