@@ -902,7 +902,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/txs/dencode",
+                                "name": "/txs/decode",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
