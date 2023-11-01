@@ -1611,6 +1611,63 @@
                                     "hanging": true
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/deregister_controller",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/register_controller",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/update_governance_key",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging": true
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
