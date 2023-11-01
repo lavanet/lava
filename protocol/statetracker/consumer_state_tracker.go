@@ -25,10 +25,12 @@ type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
 	ConsumerTxSenderInf
 	*StateTracker
+	*EmergencyTracker
 }
 
 func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *ConsumerStateTracker, err error) {
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher)
+	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker()
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +38,12 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), ConsumerTxSenderInf: txSender}
+	cst := &ConsumerStateTracker{
+		StateTracker:        stateTrackerBase,
+		stateQuery:          NewConsumerStateQuery(ctx, clientCtx),
+		ConsumerTxSenderInf: txSender,
+		EmergencyTracker:    emergencyTracker,
+	}
 	return cst, nil
 }
 

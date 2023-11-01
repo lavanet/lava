@@ -123,7 +123,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	}
 
 	mapOfProviderSessionsWithConsumer, foundEpochInMap := psm.sessionsWithAllConsumers[epoch]
-	if !foundEpochInMap || len(mapOfProviderSessionsWithConsumer.sessionMap) == 0 {
+	if !foundEpochInMap {
 		mapOfProviderSessionsWithConsumer = sessionData{sessionMap: make(map[string]*ProviderSessionsWithConsumerProject)}
 		psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
 	}

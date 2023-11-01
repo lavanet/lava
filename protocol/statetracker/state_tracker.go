@@ -38,7 +38,7 @@ type EmergencyModeUpdater interface {
 	UpdaterKey() string
 }
 
-func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
+func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
@@ -77,7 +77,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
-		OldBlockCallback:  cst.oldLavaBlock,
+		OldBlockCallback:  blockNotFoundCallback,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
 		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
 		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
@@ -109,7 +109,7 @@ func (st *StateTracker) oldLavaBlock(latestBlock int64) {
 	latestBlockTime := st.EventTracker.getLatestBlockTime()
 	downtimeParams := st.chainTracker.GetDowntimeParams()
 
-	delay := time.Now().UTC().Sub(latestBlockTime)
+	delay := time.Since(latestBlockTime)
 
 	// check if emergency mode is enabled
 	if delay < downtimeParams.DowntimeDuration {
@@ -149,11 +149,11 @@ func (st *StateTracker) RegisterForEmergencyModeUpdates(ctx context.Context, upd
 }
 
 // For lavavisor access
-func (s *StateTracker) GetEventTracker() *EventTracker {
-	return s.EventTracker
+func (st *StateTracker) GetEventTracker() *EventTracker {
+	return st.EventTracker
 }
 
 // For badgeserver access
-func (s *StateTracker) GetChainTracker() *chaintracker.ChainTracker {
-	return s.chainTracker
+func (st *StateTracker) GetChainTracker() *chaintracker.ChainTracker {
+	return st.chainTracker
 }

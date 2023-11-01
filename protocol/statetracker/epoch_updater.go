@@ -114,7 +114,7 @@ func (eu *EpochUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
 		return
 	}
 
-	utils.LavaFormatDebug("Emergency mode is turn on", utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch})
+	utils.LavaFormatDebug("Emergency mode enabled", utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch})
 	for _, epochUpdatable := range eu.epochUpdatables {
 		if epochUpdatable == nil {
 			continue

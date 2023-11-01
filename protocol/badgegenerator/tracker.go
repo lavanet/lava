@@ -20,19 +20,25 @@ const AddBlockDelayForEpochUpdaterBadgeServer = 2
 type BadgeStateTracker struct {
 	stateQuery *statetracker.EpochStateQuery
 	*statetracker.StateTracker
+	*statetracker.EmergencyTracker
 }
 
 func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, chainFetcher chaintracker.ChainFetcher, chainId string) (ret *BadgeStateTracker, err error) {
+	emergencyTracker, blockNotFoundCallback := statetracker.NewEmergencyTracker()
 	txFactory := tx.Factory{}
 	txFactory = txFactory.WithChainID(chainId)
-	stateTrackerBase, err := statetracker.NewStateTracker(ctx, txFactory, clientCtx, chainFetcher)
+	stateTrackerBase, err := statetracker.NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
 	sq := statetracker.NewStateQuery(ctx, clientCtx)
 	esq := statetracker.NewEpochStateQuery(sq)
 
-	pst := &BadgeStateTracker{StateTracker: stateTrackerBase, stateQuery: esq}
+	pst := &BadgeStateTracker{
+		StateTracker:     stateTrackerBase,
+		stateQuery:       esq,
+		EmergencyTracker: emergencyTracker,
+	}
 	return pst, nil
 }
 

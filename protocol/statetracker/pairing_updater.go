@@ -97,7 +97,7 @@ func (pu *PairingUpdater) updateConsumerSessionManagerCULimits(virtualEpoch uint
 			if consumerSessionManager == nil {
 				continue
 			}
-			consumerSessionManager.UpdateMaxCULimit(virtualEpoch, pu.currentVirtualEpoch)
+			consumerSessionManager.UpdateVirtualEpoch(virtualEpoch, pu.currentVirtualEpoch)
 		}
 	}
 }

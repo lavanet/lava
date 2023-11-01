@@ -33,24 +33,29 @@ var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout o
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
-	chainParser            chainlib.ChainParser
-	consumerSessionManager *lavasession.ConsumerSessionManager
-	listenEndpoint         *lavasession.RPCEndpoint
-	rpcConsumerLogs        *metrics.RPCConsumerLogs
-	cache                  *performance.Cache
-	privKey                *btcec.PrivateKey
-	consumerTxSender       ConsumerTxSender
-	requiredResponses      int
-	finalizationConsensus  *lavaprotocol.FinalizationConsensus
-	lavaChainID            string
-	consumerAddress        sdk.AccAddress
-	consumerServices       map[string]struct{}
-	consumerConsistency    *ConsumerConsistency
+	chainParser              chainlib.ChainParser
+	consumerSessionManager   *lavasession.ConsumerSessionManager
+	listenEndpoint           *lavasession.RPCEndpoint
+	rpcConsumerLogs          *metrics.RPCConsumerLogs
+	cache                    *performance.Cache
+	privKey                  *btcec.PrivateKey
+	consumerTxSender         ConsumerTxSender
+	requiredResponses        int
+	finalizationConsensus    *lavaprotocol.FinalizationConsensus
+	lavaChainID              string
+	consumerAddress          sdk.AccAddress
+	consumerServices         map[string]struct{}
+	consumerConsistency      *ConsumerConsistency
+	consumerEmergencyTracker ConsumerEmergencyTracker
 }
 
 type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
+}
+
+type ConsumerEmergencyTracker interface {
+	GetVirtualEpoch(epoch uint64) uint64
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -78,6 +83,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
+	rpccs.consumerEmergencyTracker = consumerStateTracker
 	consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
 	if err != nil {
 		return err
@@ -334,7 +340,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
 	}
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, reqBlock, chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions())
+	virtualEpoch := rpccs.consumerEmergencyTracker.GetVirtualEpoch(rpccs.consumerSessionManager.GetCurrentEpoch())
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, reqBlock, chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions(), virtualEpoch)
 	if err != nil {
 		return &common.RelayResult{ProviderAddress: ""}, err
 	}

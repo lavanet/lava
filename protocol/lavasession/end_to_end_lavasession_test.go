@@ -32,7 +32,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, 0) // get a session
 	require.Nil(t, err)
 
 	for _, cs := range css {
@@ -56,7 +56,7 @@ func TestHappyFlowE2E(t *testing.T) {
 		require.NotNil(t, sps)
 
 		// prepare session for usage
-		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0)
+		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0, 0)
 
 		// validate session was prepared successfully
 		require.Nil(t, err)

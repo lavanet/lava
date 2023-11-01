@@ -20,10 +20,12 @@ type ProviderStateTracker struct {
 	stateQuery *ProviderStateQuery
 	txSender   *ProviderTxSender
 	*StateTracker
+	*EmergencyTracker
 }
 
 func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *ProviderStateTracker, err error) {
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher)
+	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker()
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +33,12 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	pst := &ProviderStateTracker{StateTracker: stateTrackerBase, stateQuery: NewProviderStateQuery(ctx, clientCtx), txSender: txSender}
+	pst := &ProviderStateTracker{
+		StateTracker:     stateTrackerBase,
+		stateQuery:       NewProviderStateQuery(ctx, clientCtx),
+		txSender:         txSender,
+		EmergencyTracker: emergencyTracker,
+	}
 	return pst, nil
 }
 

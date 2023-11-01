@@ -239,11 +239,14 @@ func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() 
 }
 
 // Validate the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error {
+func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu}, utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits})
+	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*virtualEpoch {
+		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
+			utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu},
+			utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits * virtualEpoch},
+		)
 	}
 	return nil
 }

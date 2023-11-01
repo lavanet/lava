@@ -54,10 +54,10 @@ type ChainTracker struct {
 	blocksToSave            uint64       // how many finalized blocks to keep
 	latestBlockNum          int64
 	blockQueueMu            sync.RWMutex
-	blocksQueue             []BlockStore        // holds all past hashes up until latest block
-	forkCallback            func(int64)         // a function to be called when a fork is detected
-	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
-	oldBlockCallback        func(block int64)   // a function to be called when an old block is detected
+	blocksQueue             []BlockStore                    // holds all past hashes up until latest block
+	forkCallback            func(int64)                     // a function to be called when a fork is detected
+	newLatestCallback       func(int64, string)             // a function to be called when a new block is detected
+	oldBlockCallback        func(latestBlockTime time.Time) // a function to be called when an old block is detected
 	consistencyCallback     func(oldBlock int64, block int64)
 	serverBlockMemory       uint64
 	endpoint                lavasession.RPCProviderEndpoint
@@ -66,6 +66,7 @@ type ChainTracker struct {
 	downtimeParams          downtimev1.Params
 	timer                   *time.Timer
 	latestChangeTime        time.Time
+	startupTime             time.Time
 	blockEventsGap          []time.Duration
 	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
 	pmetrics                *metrics.ProviderMetricsManager
@@ -344,8 +345,12 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			cs.consistencyCallback(prev_latest, newLatestBlock)
 		}
 	} else if cs.oldBlockCallback != nil {
+		latestBlockTime := cs.latestChangeTime
+		if cs.latestChangeTime.IsZero() {
+			latestBlockTime = cs.startupTime
+		}
 		// if new block is not found we should check emergency mode
-		cs.oldBlockCallback(newLatestBlock)
+		cs.oldBlockCallback(latestBlockTime)
 	}
 
 	return err
@@ -582,6 +587,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 		blockCheckpointDistance: config.BlocksCheckpointDistance,
 		blockEventsGap:          []time.Duration{},
 		blockTimeUpdatables:     map[blockTimeUpdatable]struct{}{},
+		startupTime:             time.Now(),
 		pmetrics:                config.Pmetrics,
 	}
 	if chainFetcher == nil {

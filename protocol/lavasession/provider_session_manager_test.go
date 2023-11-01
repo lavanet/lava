@@ -64,7 +64,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	require.NotNil(t, sps)
 
 	// prepare session for usage
-	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, 0)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
@@ -114,7 +114,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 
 func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleProviderSession) {
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
+	err := sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, 0)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
@@ -181,7 +181,7 @@ func TestMissingCu(t *testing.T) {
 	// (relayCu * number of requests {2}) !=
 	for i := 0; i < 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-		err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu*uint64(i+1), 0.07)
+		err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu*uint64(i+1), 0.07, 0)
 		require.Nil(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+1)
 		require.Nil(t, err)
@@ -198,7 +198,7 @@ func TestMissingCuFailureOnThreshold(t *testing.T) {
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.01)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.01, 0)
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
 
@@ -212,13 +212,13 @@ func TestMissingMultipleMissingAttempts(t *testing.T) {
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-	err = sps.PrepareSessionForUsage(ctx, 1, relayCu, 0.5)
+	err = sps.PrepareSessionForUsage(ctx, 1, relayCu, 0.5, 0)
 	require.Nil(t, err)
 	err = psm.OnSessionDone(sps, relayNumber+1)
 	require.Nil(t, err)
 	for i := 0; i < 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-		err = sps.PrepareSessionForUsage(ctx, 1, relayCu*uint64(i+1), 0.5)
+		err = sps.PrepareSessionForUsage(ctx, 1, relayCu*uint64(i+1), 0.5, 0)
 		require.Nil(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+2)
 		require.Nil(t, err)
@@ -349,7 +349,7 @@ func TestPSMPrepareTwice(t *testing.T) {
 	_, sps := prepareSession(t, context.Background())
 
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0)
+	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
 }
@@ -436,7 +436,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
-	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
@@ -456,7 +456,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
-	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0)
+	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
@@ -751,7 +751,7 @@ func TestPSMUsageSync(t *testing.T) {
 					switch choice {
 					case 0:
 						cuToUse := uint64(rand.Intn(10)) + 1
-						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0, 0)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = true
 						sessionStoreTest.history = append(sessionStoreTest.history, ",PrepareForUsage")
@@ -761,7 +761,7 @@ func TestPSMUsageSync(t *testing.T) {
 						if cuToUse+sessionStoreTest.currentCU <= uint64(cuMissing) {
 							cuToUse += 1
 						}
-						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0, 0)
 						require.Error(t, err)
 						sessionStoreTest.session.lock.Unlock()
 						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")

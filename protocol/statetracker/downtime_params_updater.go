@@ -3,6 +3,7 @@ package statetracker
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
@@ -62,14 +63,18 @@ func (dpu *DowntimeParamsUpdater) RegisterDowntimeParamsUpdatable(ctx context.Co
 func (dpu *DowntimeParamsUpdater) Update(latestBlock int64) {
 	dpu.lock.Lock()
 	defer dpu.lock.Unlock()
-	paramsUpdated := dpu.eventTracker.getLatestDowntimeParamsUpdateEvents()
-	if paramsUpdated {
+	paramsUpdated, err := dpu.eventTracker.getLatestDowntimeParamsUpdateEvents(latestBlock)
+	if paramsUpdated || err != nil {
+		var params *downtimev1.Params
 		// fetch updated downtime params from consensus
-		params, err := dpu.downtimeParamsStateQuery.GetDowntimeParams(context.Background())
-		if err != nil {
-			utils.LavaFormatError("could not get downtime params when updated, did not update downtime params and needed to", err)
-			return
+		for i := 0; i < BlockResultRetry; i++ {
+			params, err = dpu.downtimeParamsStateQuery.GetDowntimeParams(context.Background())
+			if err == nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond * time.Duration(i+1))
 		}
+
 		for _, downtimeParamsUpdatable := range dpu.downtimeParamsUpdatables {
 			// iterate over all updaters and execute their updatable
 			(*downtimeParamsUpdatable).SetDowntimeParams(*params)
