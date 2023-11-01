@@ -90,18 +90,6 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	pu.nextBlockForUpdate = nextBlockForUpdateMin
 }
 
-// updateConsumerSessionManagerCULimits for new virtual epoch when emergency mode is enabled
-func (pu *PairingUpdater) updateConsumerSessionManagerCULimits(virtualEpoch uint64) {
-	for _, consumerSessionManagers := range pu.consumerSessionManagersMap {
-		for _, consumerSessionManager := range consumerSessionManagers {
-			if consumerSessionManager == nil {
-				continue
-			}
-			consumerSessionManager.UpdateVirtualEpoch(virtualEpoch, pu.currentVirtualEpoch)
-		}
-	}
-}
-
 func (pu *PairingUpdater) updateConsummerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
 	pairingListForThisCSM, err := pu.filterPairingListByEndpoint(ctx, pairingList, consumerSessionManager.RPCEndpoint(), epoch)
 	if err != nil {
@@ -170,12 +158,4 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 	}
 	// replace previous pairing with new providers
 	return pairing, nil
-}
-
-func (pu *PairingUpdater) EmergencyModeUpdate(virtualEpoch uint64) {
-	pu.lock.Lock()
-	defer pu.lock.Unlock()
-	pu.updateConsumerSessionManagerCULimits(virtualEpoch)
-
-	pu.currentVirtualEpoch = virtualEpoch
 }

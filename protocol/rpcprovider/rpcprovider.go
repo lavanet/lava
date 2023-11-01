@@ -119,7 +119,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
-	err = rpcp.providerStateTracker.RegisterForDowntimeParamsUpdates(ctx, providerStateTracker.GetChainTracker())
+	err = rpcp.providerStateTracker.RegisterForDowntimeParamsUpdates(ctx, providerStateTracker.EmergencyTracker)
 	if err != nil {
 		return utils.LavaFormatError("failed to register for downtime params updates", err)
 	}

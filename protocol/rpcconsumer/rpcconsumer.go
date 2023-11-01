@@ -101,7 +101,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
 
-	err = rpcc.consumerStateTracker.RegisterForDowntimeParamsUpdates(ctx, consumerStateTracker.GetChainTracker())
+	err = rpcc.consumerStateTracker.RegisterForDowntimeParamsUpdates(ctx, consumerStateTracker.EmergencyTracker)
 	if err != nil {
 		return utils.LavaFormatError("failed to register for downtime params updates", err)
 	}

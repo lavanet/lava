@@ -49,13 +49,6 @@ func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, ep
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
-
-	// register for updates in case of emergency mode is enabled
-	epochUpdaterWithEmergencyRaw := pst.StateTracker.RegisterForEmergencyModeUpdates(ctx, epochUpdater)
-	epochUpdater, ok = epochUpdaterWithEmergencyRaw.(*EpochUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterWithEmergencyRaw})
-	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, 0) // adding 0 delay for provider updater
 }
 

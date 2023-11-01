@@ -32,8 +32,6 @@ func (esqt *epochUpdatable) UpdateEpoch(epoch uint64) {
 	esqt.updatedBlock = epoch
 }
 
-func (esqt *epochUpdatable) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {}
-
 func TestEpochUpdaterDelay(t *testing.T) {
 	epochUpdater := NewEpochUpdater(&epochStateQueryTest{})
 	updatable := &epochUpdatable{updatedBlock: 0}

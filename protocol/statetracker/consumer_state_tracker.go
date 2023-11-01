@@ -55,13 +55,6 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
 	}
-
-	// register for updates in case of emergency mode is enabled
-	pairingUpdaterWithEmergencyRaw := cst.StateTracker.RegisterForEmergencyModeUpdates(ctx, pairingUpdater)
-	pairingUpdater, ok = pairingUpdaterWithEmergencyRaw.(*PairingUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterWithEmergencyRaw})
-	}
 	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 	if err != nil {
 		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})

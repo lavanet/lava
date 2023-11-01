@@ -266,48 +266,6 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.latestVirtualEpoch = 0
 }
 
-// on a new virtual epoch, during emergency mode we are updating CU limits for consumer sessions
-func (psm *ProviderSessionManager) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {
-	if virtualEpoch == 0 {
-		return
-	}
-	if atomic.LoadUint64(&psm.latestVirtualEpoch) == virtualEpoch {
-		utils.LavaFormatError("The same virtual epoch update occurred", nil, utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch})
-		return
-	}
-	psm.lock.Lock()
-	defer psm.lock.Unlock()
-	latestVirtualEpoch := psm.latestVirtualEpoch
-	// current_max_cu = max_cu + (max_cu * prev_virtual_epoch)
-	// next_max_cu = max_cu + (max_cu * current_virtual_epoch)
-	mapOfProviderSessionsWithConsumer, ok := psm.sessionsWithAllConsumers[epoch]
-	if !ok {
-		return
-	}
-
-	for _, sessionsWithConsumerProject := range mapOfProviderSessionsWithConsumer.sessionMap {
-		sessionsWithConsumerProject.epochData.MaxComputeUnits = sessionsWithConsumerProject.epochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
-
-		for _, badgeEpochData := range sessionsWithConsumerProject.badgeEpochData {
-			if badgeEpochData == nil {
-				continue
-			}
-
-			badgeEpochData.MaxComputeUnits = badgeEpochData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
-		}
-
-		for _, singleSession := range sessionsWithConsumerProject.Sessions {
-			if singleSession == nil || singleSession.BadgeUserData == nil {
-				continue
-			}
-
-			singleSession.BadgeUserData.MaxComputeUnits = singleSession.BadgeUserData.MaxComputeUnits / (latestVirtualEpoch + 1) * (virtualEpoch + 1)
-		}
-	}
-	psm.sessionsWithAllConsumers[epoch] = mapOfProviderSessionsWithConsumer
-	psm.latestVirtualEpoch = virtualEpoch
-}
-
 func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
 	// In order to avoid running over the map twice, (1. mark 2. delete.) better technique is to copy and filter
 	// which has better O(n) vs O(2n)

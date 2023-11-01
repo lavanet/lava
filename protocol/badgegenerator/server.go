@@ -78,8 +78,6 @@ func (s *Server) UpdateEpoch(epoch uint64) {
 	atomic.StoreUint64(&s.epoch, epoch)
 }
 
-func (s *Server) UpdateVirtualEpoch(epoch uint64, virtualEpoch uint64) {}
-
 func (s *Server) GetEpoch() uint64 {
 	return atomic.LoadUint64(&s.epoch)
 }
