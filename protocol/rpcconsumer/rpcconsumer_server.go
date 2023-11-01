@@ -462,10 +462,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
-			if singleConsumerSession.QoSInfo.LastExcellenceQoSReport != nil && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
-				singleConsumerSession.QoSInfo.LastExcellenceQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.001")) &&
-				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.001")) {
-				utils.LavaFormatWarning("identified QoS mismatch", nil,
+			if DebugRelaysFlag && singleConsumerSession.QoSInfo.LastExcellenceQoSReport != nil && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
+				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
+				utils.LavaFormatDebug("identified QoS mismatch",
 					utils.Attribute{Key: "expectedBH", Value: expectedBH},
 					utils.Attribute{Key: "latestServicedBlock", Value: latestBlock},
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
