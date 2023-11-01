@@ -5,11 +5,6 @@
 #    DISABLED = 3;   // selected providers feature is disabled
 
 Policy:
-  geolocation_profile: 1  # USC
-  selected_providers_mode: ALLOWED
-  total_cu_limit: 9223372036854775807
-  epoch_cu_limit: 9223372036854775807
-  max_providers_to_pair: 9223372036854775807
   chain_policies:
     - chain_id: ETH1
       requirements:
@@ -24,6 +19,32 @@ Policy:
         - collection:
             api_interface: "jsonrpc"
             type: "POST"
+          extensions:
+            - "archive"
+          mixed: true
+    - chain_id: EVMOS
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "rest"
+            type: "GET"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "grpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "tendermintrpc"
+            type: ""
           extensions:
             - "archive"
           mixed: true
