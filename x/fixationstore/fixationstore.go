@@ -440,24 +440,29 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.Safe
 	}
 
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block-1)
-	if found {
+	if found && latestEntry.IsLatest {
 		// previous latest entry should never have its DeleteAt set for this block:
 		// if our AppendEntry happened before some DelEntry, we would get marked for
 		// delete with DeleteAt (and not the previous latest entry); if the DelEntry
 		// happened first, then upon our AppendEntry() we would inherit the DeleteAt
 		// from the previous latest entry.
 
-		latestEntry.IsLatest = false
-		if latestEntry.HasDeleteAt() {
-			// if the latest entry is marked delete we dont need to decrease the refcount (this is done in the delete method)
-
-			fs.setEntry(ctx, latestEntry)
-		} else {
-			// latest entry had extra refcount for being the latest; so drop that refcount
-			// because from now on it is no longer so.
-
-			fs.putEntry(ctx, latestEntry) // also saves updated latestEntry
+		if latestEntry.IsDeletedBy(block) {
+			// panic:ok: internal state mismatch, unknown outcome if we proceed
+			utils.LavaFormatPanic("fixation: future entry callback invalid state",
+				fmt.Errorf("previous latest entry marked delete at %d", latestEntry.DeleteAt),
+				utils.Attribute{Key: "prefix", Value: fs.prefix},
+				utils.Attribute{Key: "index", Value: types.DesanitizeIndex(safeIndex)},
+				utils.Attribute{Key: "block", Value: block},
+				utils.Attribute{Key: "latest", Value: latestEntry.Block},
+			)
 		}
+
+		// latest entry had extra refcount for being the latest; so drop that refcount
+		// because from now on it is no longer so.
+
+		latestEntry.IsLatest = false
+		fs.putEntry(ctx, latestEntry) // also saves updated latestEntry
 	}
 
 	// we are now the latest entry - make it official by setting IsLatest
