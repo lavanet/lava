@@ -73,6 +73,27 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		require.Nil(t, err)
 		providerIndex := rand.Intn(len(pairing.Providers))
 		providerAddress := pairing.Providers[providerIndex].Address
+		// NOTE: the following loop contains a random factor in it. We make sure that we pick
+		// a provider in random that is not one of the defined unresponsive providers
+		// If we did, we pick one of the providers in random again and check whether it's
+		// one of the unresponsive ones.
+		// With a large number of provider and a small number of unresponsive providers,
+		// this is very likely not to get stuck in an infinite loop
+		for {
+			isProviderUnresponsive := false
+			for _, unresponsiveProviderList := range unresponsiveDataList {
+				for _, unresponsiveProvider := range unresponsiveProviderList {
+					if providerAddress == unresponsiveProvider.Address {
+						isProviderUnresponsive = true
+					}
+				}
+			}
+			if !isProviderUnresponsive {
+				break
+			}
+			providerIndex = rand.Intn(len(pairing.Providers))
+			providerAddress = pairing.Providers[providerIndex].Address
+		}
 		providerSdkAddress, err := sdk.AccAddressFromBech32(providerAddress)
 		require.Nil(t, err)
 
