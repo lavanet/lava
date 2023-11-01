@@ -163,3 +163,7 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return pst.stateQuery.GetProtocolVersion(ctx)
 }
+
+func (pst *ProviderStateTracker) GetEmergencyTracker() *EmergencyTracker {
+	return pst.EmergencyTracker
+}

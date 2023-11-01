@@ -217,11 +217,11 @@ func (sps *SingleProviderSession) DisbandSession() error {
 func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU, maxCu, virtualEpoch uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
 	for {
 		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
-		if badgeUsedCu+currentCU > maxCu*virtualEpoch {
+		if badgeUsedCu+currentCU > maxCu*(virtualEpoch+1) {
 			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
 				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
 				utils.Attribute{Key: "currentCU", Value: currentCU},
-				utils.Attribute{Key: "maxCu", Value: maxCu * virtualEpoch},
+				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
 			)
 		}
 		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
@@ -242,11 +242,11 @@ func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, ba
 func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU, maxCu, virtualEpoch uint64) error {
 	for {
 		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
-		if usedCu+currentCU > maxCu*virtualEpoch {
+		if usedCu+currentCU > maxCu*(virtualEpoch+1) {
 			return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
 				utils.Attribute{Key: "usedCu", Value: usedCu},
 				utils.Attribute{Key: "currentCU", Value: currentCU},
-				utils.Attribute{Key: "maxCu", Value: maxCu * virtualEpoch},
+				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
 			)
 		}
 		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again
