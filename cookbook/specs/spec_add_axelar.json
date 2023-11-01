@@ -1775,6 +1775,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "axelar.evm.v1beta1.QueryService/Command",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "axelar.evm.v1beta1.QueryService/ConfirmationHeight",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -1902,24 +1920,6 @@
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/TokenInfo",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/Command",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2135,6 +2135,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "axelar.nexus.v1beta1.QueryService/Message",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -2190,24 +2208,6 @@
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/TransfersForChain",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/Message",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
