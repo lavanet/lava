@@ -15,15 +15,13 @@ import (
 
 	rand "github.com/lavanet/lava/utils/rand"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils/slices"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
-
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -63,7 +61,6 @@ type ChainTracker struct {
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
 	blockCheckpoint         uint64 // last time checkpoint was met
-	downtimeParams          downtimev1.Params
 	timer                   *time.Timer
 	latestChangeTime        time.Time
 	startupTime             time.Time
@@ -133,12 +130,6 @@ func (cs *ChainTracker) getLatestBlockUnsafe() BlockStore {
 	return cs.blocksQueue[len(cs.blocksQueue)-1]
 }
 
-func (cs *ChainTracker) SetDowntimeParams(params downtimev1.Params) {
-	cs.blockQueueMu.Lock()
-	defer cs.blockQueueMu.Unlock()
-	cs.downtimeParams = params
-}
-
 func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
 	cs.blockQueueMu.RLock()
 	defer cs.blockQueueMu.RUnlock()
@@ -147,12 +138,6 @@ func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
 
 func (cs *ChainTracker) GetAtomicLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
-}
-
-func (cs *ChainTracker) GetDowntimeParams() downtimev1.Params {
-	cs.blockQueueMu.RLock()
-	defer cs.blockQueueMu.RUnlock()
-	return cs.downtimeParams
 }
 
 func (cs *ChainTracker) setLatestBlockNum(value int64) {

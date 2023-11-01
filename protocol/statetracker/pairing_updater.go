@@ -17,7 +17,6 @@ type PairingUpdater struct {
 	lock                       sync.RWMutex
 	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
-	currentVirtualEpoch        uint64
 	stateQuery                 *ConsumerStateQuery
 }
 
@@ -52,12 +51,9 @@ func (pu *PairingUpdater) UpdaterKey() string {
 }
 
 func (pu *PairingUpdater) Update(latestBlock int64) {
-	pu.lock.Lock()
-	defer pu.lock.Unlock()
+	pu.lock.RLock()
+	defer pu.lock.RUnlock()
 	ctx := context.Background()
-
-	// reset virtual epoch after the end of emergency mode
-	pu.currentVirtualEpoch = 0
 
 	if int64(pu.nextBlockForUpdate) > latestBlock {
 		return

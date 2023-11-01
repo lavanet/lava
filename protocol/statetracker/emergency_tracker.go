@@ -1,10 +1,11 @@
 package statetracker
 
 import (
-	"github.com/lavanet/lava/utils"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 	"sync"
 	"time"
+
+	"github.com/lavanet/lava/utils"
+	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
 type EmergencyTracker struct {

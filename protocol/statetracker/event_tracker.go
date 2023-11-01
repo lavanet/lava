@@ -25,13 +25,11 @@ type EventTracker struct {
 	clientCtx          client.Context
 	blockResults       *ctypes.ResultBlockResults
 	latestUpdatedBlock int64
-	latestBlockTime    time.Time
 }
 
 func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	ctx := context.Background()
 
-	var latestBlockTime *time.Time
 	if latestBlock == 0 {
 		var res *ctypes.ResultStatus
 		for i := 0; i < 3; i++ {
@@ -46,7 +44,6 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 			return utils.LavaFormatWarning("could not get latest block height and requested latestBlock = 0", err)
 		}
 		latestBlock = res.SyncInfo.LatestBlockHeight
-		latestBlockTime = &res.SyncInfo.LatestBlockTime
 	}
 	brp, err := tryIntoTendermintRPC(et.clientCtx.Client)
 	if err != nil {
@@ -69,25 +66,12 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 	et.lock.Lock()
 	defer et.lock.Unlock()
 	if latestBlock > et.latestUpdatedBlock {
-		// if latestBlock from args != 0, we don't fetch time from chain,
-		// so we believe that lastBlockTime is equal to time now
-		if latestBlockTime == nil {
-			now := time.Now().UTC()
-			latestBlockTime = &now
-		}
-		et.latestBlockTime = *latestBlockTime
 		et.latestUpdatedBlock = latestBlock
 		et.blockResults = blockResults
 	} else {
 		utils.LavaFormatDebug("event tracker got an outdated block", utils.Attribute{Key: "block", Value: latestBlock}, utils.Attribute{Key: "latestUpdatedBlock", Value: et.latestUpdatedBlock})
 	}
 	return nil
-}
-
-func (et *EventTracker) getLatestBlockTime() time.Time {
-	et.lock.RLock()
-	defer et.lock.RUnlock()
-	return et.latestBlockTime
 }
 
 func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.PaymentRequest, err error) {

@@ -2,7 +2,6 @@ package statetracker
 
 import (
 	"context"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -124,20 +123,7 @@ func (pst *ProviderStateTracker) LatestBlock() int64 {
 }
 
 func (pst *ProviderStateTracker) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
-	latestBlockTime := pst.EventTracker.getLatestBlockTime()
-	downtimeParams := pst.chainTracker.GetDowntimeParams()
-
-	delay := time.Now().UTC().Sub(latestBlockTime)
-
-	epochDuration := downtimeParams.EpochDuration.Milliseconds()
-	virtualEpoch := uint64(0)
-	// check if emergency mode is enabled
-	if delay > downtimeParams.DowntimeDuration {
-		// division delay by epoch duration rounded up, subtract one to skip regular epoch
-		virtualEpoch = uint64((delay.Milliseconds()+epochDuration-1)/epochDuration - 1)
-	}
-
-	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch, virtualEpoch)
+	return pst.stateQuery.GetMaxCuForUser(ctx, consumerAddress, chainID, epoch)
 }
 
 func (pst *ProviderStateTracker) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {

@@ -18,7 +18,6 @@ type ProviderSessionManager struct {
 	rpcProviderEndpoint           *RPCProviderEndpoint
 	blockDistanceForEpochValidity uint64                             // sessionsWithAllConsumers with epochs older than ((latest epoch) - numberOfBlocksKeptInMemory) are deleted.
 	consumerPairedWithProjectMap  map[uint64]*projectConsumerMapping // consumer address as key, project as value
-	latestVirtualEpoch            uint64
 }
 
 // reads cs.BlockedEpoch atomically
@@ -263,7 +262,6 @@ func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.currentEpoch = epoch
 	psm.consumerPairedWithProjectMap = filterOldEpochEntries(psm.blockedEpochHeight, psm.consumerPairedWithProjectMap)
 	psm.sessionsWithAllConsumers = filterOldEpochEntries(psm.blockedEpochHeight, psm.sessionsWithAllConsumers)
-	psm.latestVirtualEpoch = 0
 }
 
 func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMap map[uint64]T) (validEpochsMap map[uint64]T) {
