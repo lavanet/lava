@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
+	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -251,6 +252,23 @@ func runPaymentE2E(timeout time.Duration) {
 			panic(err)
 		}
 	})
+
+	// sometimes not enough relays are transmitted to influence the project's CU
+	// if the total CU is equal to the remaining CU, send more relays
+	subQ := subscriptionTypes.NewQueryClient(lt.grpcConn)
+	res, err := subQ.List(context.Background(), &subscriptionTypes.QueryListRequest{})
+	if err != nil {
+		panic(err)
+	}
+	if res.SubsInfo[0].MonthCuTotal == res.SubsInfo[0].MonthCuLeft {
+		repeat(1, func(n int) {
+			url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
+			if err := tendermintURITests(url, time.Second*30); err != nil {
+				panic(err)
+			}
+		})
+	}
+
 	utils.LavaFormatInfo("TENDERMINTRPC URI TEST OK")
 
 	utils.LavaFormatInfo("CHECKING PAYMENT")
