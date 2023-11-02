@@ -531,7 +531,7 @@ func TestVirtualEpochMissingCu(t *testing.T) {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
 		err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, maxCuForVirtualEpoch*(virtualEpoch+uint64(i)+1), 0.07, virtualEpoch+uint64(i))
 		require.Nil(t, err)
-		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+1)
+		err = psm.OnSessionDone(sps, relayNumber+uint64(i))
 		require.Nil(t, err)
 	}
 }
