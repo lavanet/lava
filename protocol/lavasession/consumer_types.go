@@ -244,7 +244,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 }
 
 // Validate and add the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu uint64, virtualEpoch uint64) error {
+func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {

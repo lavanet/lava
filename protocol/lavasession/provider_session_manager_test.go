@@ -97,7 +97,7 @@ func prepareSessionForVirtualEpochTests(t *testing.T, ctx context.Context) (*Pro
 	require.Nil(t, err)
 	require.NotNil(t, sps)
 
-	// prepare session for usage
+	// prepare session for usage and use all available cu = (virtualEpoch+1)*maxCuForVirtualEpoch
 	err = sps.PrepareSessionForUsage(ctx, (virtualEpoch+1)*maxCuForVirtualEpoch, (virtualEpoch+1)*maxCuForVirtualEpoch, 0, virtualEpoch)
 
 	// validate session was prepared successfully
@@ -511,6 +511,7 @@ func TestPSMVirtualEpochUpdateCuMaxCuReached(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
+	// as virtual epoch = 1, cu limit = (virtualEpoch+1)*maxCuForVirtualEpoch
 	err = sps.PrepareSessionForUsage(ctx, relayCu, (virtualEpoch+1)*maxCuForVirtualEpoch+relayCu, 0, virtualEpoch)
 	require.Error(t, err)
 	sps.lock.Unlock()
@@ -525,7 +526,6 @@ func TestVirtualEpochMissingCu(t *testing.T) {
 	// validate session done data
 	require.Nil(t, err)
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
-	// (relayCu * number of requests {2}) !=
 
 	for i := 1; i <= 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
