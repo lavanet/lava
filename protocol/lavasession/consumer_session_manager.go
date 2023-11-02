@@ -393,7 +393,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			}
 
 			// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
-			err = consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession)
+			err = consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession, virtualEpoch)
 			if err != nil {
 				utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", utils.Attribute{Key: "Error", Value: err.Error()})
 				if MaxComputeUnitsExceededError.Is(err) {

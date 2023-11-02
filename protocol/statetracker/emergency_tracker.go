@@ -16,6 +16,12 @@ type EmergencyTracker struct {
 	latestEpochTime  time.Time
 }
 
+func (cs *EmergencyTracker) GetVirtualEpoch(epoch uint64) uint64 {
+	cs.lock.RLock()
+	defer cs.lock.RUnlock()
+	return cs.virtualEpochsMap[epoch]
+}
+
 func (cs *EmergencyTracker) SetDowntimeParams(params downtimev1.Params) {
 	cs.lock.Lock()
 	defer cs.lock.Unlock()
@@ -61,12 +67,6 @@ func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
 
 		cs.virtualEpochsMap[cs.latestEpoch] = virtualEpoch
 	}
-}
-
-func (cs *EmergencyTracker) GetVirtualEpoch(epoch uint64) uint64 {
-	cs.lock.RLock()
-	defer cs.lock.RUnlock()
-	return cs.virtualEpochsMap[epoch]
 }
 
 func NewEmergencyTracker() (emergencyTracker *EmergencyTracker, emergencyCallback func(latestBlockTime time.Time)) {
