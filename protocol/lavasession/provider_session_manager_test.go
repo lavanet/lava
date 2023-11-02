@@ -517,6 +517,25 @@ func TestPSMVirtualEpochUpdateCuMaxCuReached(t *testing.T) {
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
 }
 
+func TestVirtualEpochMissingCu(t *testing.T) {
+	ctx := context.Background()
+	psm, sps := prepareSessionForVirtualEpochTests(t, ctx)
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+	// validate session done data
+	require.Nil(t, err)
+	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
+	// (relayCu * number of requests {2}) !=
+
+	for i := 1; i <= 10; i++ {
+		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
+		err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, maxCuForVirtualEpoch*(virtualEpoch+uint64(i)+1), 0.07, virtualEpoch+uint64(i))
+		require.Nil(t, err)
+		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+1)
+		require.Nil(t, err)
+	}
+}
+
 func TestPSMCUMisMatch(t *testing.T) {
 	ctx := context.Background()
 	// init test
