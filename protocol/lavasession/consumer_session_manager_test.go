@@ -172,11 +172,19 @@ func TestHappyFlowVirtualEpoch(t *testing.T) {
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
-
-		err = cs.Session.Parent.addUsedComputeUnits(10, virtualEpoch)
-		require.Error(t, err)
 	}
+}
 
+// Test exceeding maxCu
+func TestVirtualEpochWithFailure(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+
+	_, err = csm.GetSessions(ctx, cuForVirtualEpoch+10, nil, servicedBlockNumber, "", nil, virtualEpoch) // get a session
+	require.Error(t, err)
 }
 
 func TestPairingReset(t *testing.T) {
