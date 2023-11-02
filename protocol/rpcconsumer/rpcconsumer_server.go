@@ -596,7 +596,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	finalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, blockDistanceForFinalizedData)
 	filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
-	err = lavaprotocol.VerifyRelayReply(reply, relayRequest, providerPublicAddress)
+	err = lavaprotocol.VerifyRelayReply(ctx, reply, relayRequest, providerPublicAddress)
 	if err != nil {
 		return relayResult, 0, err, false
 	}
