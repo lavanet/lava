@@ -28,12 +28,14 @@ const (
 	numberOfAllowedSessionsPerConsumer = 10
 	firstEpochHeight                   = 20
 	secondEpochHeight                  = 40
-	cuForFirstRequest                  = uint64(10)
+	cuForFirstRequest                  = uint64(400)
 	servicedBlockNumber                = int64(30)
 	relayNumberAfterFirstCall          = uint64(1)
 	relayNumberAfterFirstFail          = uint64(1)
 	latestRelayCuAfterDone             = uint64(0)
 	cuSumOnFailure                     = uint64(0)
+	virtualEpoch                       = uint64(1)
+	cuForVirtualEpoch                  = uint64(400)
 )
 
 // This variable will hold grpc server address
@@ -149,6 +151,32 @@ func TestHappyFlow(t *testing.T) {
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
 	}
+}
+
+func TestHappyFlowVirtualEpoch(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+	css, err := csm.GetSessions(ctx, cuForVirtualEpoch, nil, servicedBlockNumber, "", nil, virtualEpoch) // get a session
+	require.Nil(t, err)
+
+	for _, cs := range css {
+		require.NotNil(t, cs)
+		require.Equal(t, cs.Epoch, csm.currentEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, cuForVirtualEpoch)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		require.Nil(t, err)
+		require.Equal(t, cs.Session.CuSum, cuForVirtualEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
+		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
+		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+
+		err = cs.Session.Parent.addUsedComputeUnits(10, virtualEpoch)
+		require.Error(t, err)
+	}
+
 }
 
 func TestPairingReset(t *testing.T) {
