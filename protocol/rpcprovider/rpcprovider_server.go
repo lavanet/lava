@@ -625,6 +625,10 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
 		modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, modifiedReqBlock)
+		if modifiedReqBlock != request.RelayData.RequestBlock {
+			request.RelayData.RequestBlock = modifiedReqBlock
+			updatedChainMessage = true // meaning we can't bring a newer proof
+		}
 		// requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
 		finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, blockDistanceToFinalization)
 		if !finalized && requestedBlockHash == nil && modifiedReqBlock != spectypes.NOT_APPLICABLE {
@@ -647,7 +651,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 	}
 	if err != nil || reply == nil {
-		// cache miss or invalid
+		// we need to send relay, cache miss or invalid
 		sendTime := time.Now()
 		if debugLatency {
 			utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
