@@ -1,6 +1,7 @@
 package lavaprotocol
 
 import (
+	"context"
 	"encoding/json"
 	"sort"
 
@@ -39,7 +40,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	return reply, nil
 }
 
-func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
+func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
 	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
 	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {
@@ -50,7 +51,7 @@ func VerifyRelayReply(reply *pairingtypes.RelayReply, relayRequest *pairingtypes
 		return err
 	}
 	if serverAddr.String() != addr {
-		return utils.LavaFormatError("reply server address mismatch ", ProviderFinzalizationDataError, utils.Attribute{Key: "parsed Address", Value: serverAddr.String()}, utils.Attribute{Key: "expected address", Value: addr})
+		return utils.LavaFormatError("reply server address mismatch ", ProviderFinzalizationDataError, utils.LogAttr("GUID", ctx), utils.Attribute{Key: "parsed Address", Value: serverAddr.String()}, utils.Attribute{Key: "expected address", Value: addr}, utils.Attribute{Key: "requestedBlock", Value: relayRequest.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: reply.GetLatestBlock()})
 	}
 
 	return nil

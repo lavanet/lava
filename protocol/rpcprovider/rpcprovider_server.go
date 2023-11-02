@@ -624,7 +624,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// TODO: take latestBlock and lastSeenBlock and put the greater one of them
 		updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
-		modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, modifiedReqBlock)
+		modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 		if modifiedReqBlock != request.RelayData.RequestBlock {
 			request.RelayData.RequestBlock = modifiedReqBlock
 			updatedChainMessage = true // meaning we can't bring a newer proof
@@ -714,6 +714,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.FinalizedBlocksHashes = jsonStr
 		reply.LatestBlock = proofBlock
 	}
+	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, err
