@@ -34,6 +34,8 @@ const (
 	relayNumberAfterFirstFail          = uint64(1)
 	latestRelayCuAfterDone             = uint64(0)
 	cuSumOnFailure                     = uint64(0)
+	virtualEpoch                       = uint64(1)
+	maxCuForVirtualEpoch               = uint64(200)
 )
 
 // This variable will hold grpc server address
@@ -149,6 +151,39 @@ func TestHappyFlow(t *testing.T) {
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
 	}
+}
+
+func TestHappyFlowVirtualEpoch(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1), nil, servicedBlockNumber, "", nil, virtualEpoch) // get a session
+	require.Nil(t, err)
+
+	for _, cs := range css {
+		require.NotNil(t, cs)
+		require.Equal(t, cs.Epoch, csm.currentEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, maxCuForVirtualEpoch*(virtualEpoch+1))
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch*(virtualEpoch+1), time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		require.Nil(t, err)
+		require.Equal(t, cs.Session.CuSum, maxCuForVirtualEpoch*(virtualEpoch+1))
+		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
+		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
+		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+	}
+}
+
+// Test exceeding maxCu
+func TestVirtualEpochWithFailure(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.Nil(t, err)
+
+	_, err = csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1)+10, nil, servicedBlockNumber, "", nil, virtualEpoch) // get a session
 }
 
 func TestPairingReset(t *testing.T) {
