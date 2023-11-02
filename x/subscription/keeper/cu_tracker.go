@@ -12,7 +12,7 @@ import (
 
 // GetTrackedCu gets the tracked CU counter (with/without QoS influence) and the trackedCu entry's block
 func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, block uint64) (cu uint64, found bool, key string) {
-	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID, block)
+	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID)
 	var trackedCu types.TrackedCu
 	found = k.cuTrackerFS.FindEntry(ctx, cuTrackerKey, block, &trackedCu)
 	if !found {
@@ -44,13 +44,13 @@ func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chain
 }
 
 // GetAllSubTrackedCuIndices gets all the trackedCu entries that are related to a specific subscription
-func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string, blockStr string) []string {
-	return k.cuTrackerFS.GetAllEntryIndicesWithPrefix(ctx, sub+" "+blockStr)
+func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string {
+	return k.cuTrackerFS.GetAllEntryIndicesWithPrefix(ctx, sub)
 }
 
 // removeCuTracker removes a trackedCu entry
 func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo) error {
-	key := types.CuTrackerKey(sub, info.provider, info.chainID, info.block)
+	key := types.CuTrackerKey(sub, info.provider, info.chainID)
 	return k.cuTrackerFS.DelEntry(ctx, key, uint64(ctx.BlockHeight()))
 }
 
@@ -62,17 +62,17 @@ type trackedCuInfo struct {
 }
 
 func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
-	keys := k.GetAllSubTrackedCuIndices(ctx, sub, subBlockStr)
+	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
-		_, provider, chainID, blockStr := types.DecodeCuTrackerKey(key)
-		block, err := strconv.ParseUint(blockStr, 10, 64)
+		_, provider, chainID := types.DecodeCuTrackerKey(key)
+		block, err := strconv.ParseUint(subBlockStr, 10, 64)
 		if err != nil {
 			utils.LavaFormatError("cannot remove cu tracker", err,
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "block_str", Value: blockStr},
+				utils.Attribute{Key: "block_str", Value: subBlockStr},
 			)
 			continue
 		}
@@ -83,7 +83,7 @@ func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr str
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "block", Value: blockStr},
+				utils.Attribute{Key: "block", Value: subBlockStr},
 			)
 			continue
 		}
