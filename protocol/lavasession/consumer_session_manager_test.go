@@ -184,6 +184,7 @@ func TestVirtualEpochWithFailure(t *testing.T) {
 	require.Nil(t, err)
 
 	_, err = csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1)+10, nil, servicedBlockNumber, "", nil, virtualEpoch) // get a session
+	require.Error(t, err)
 }
 
 func TestPairingReset(t *testing.T) {
