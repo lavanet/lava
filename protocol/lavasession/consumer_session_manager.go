@@ -21,9 +21,7 @@ const (
 	debug = false
 )
 
-var (
-	DebugProbes = false
-)
+var DebugProbes = false
 
 // created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
