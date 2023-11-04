@@ -7,14 +7,12 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/common"
 	metrics "github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -643,8 +641,6 @@ func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsum
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
-	code := status.Code(errorReceived)
-
 	if err := csm.verifyLock(consumerSession); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
@@ -657,11 +653,11 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
-
+	consumerSession.errosCount += 1
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
 	var consumerSessionBlockListed bool
-	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || code == codes.Code(SessionOutOfSyncError.ABCICode()) {
-		utils.LavaFormatDebug("Blocking consumer session", utils.Attribute{Key: "id", Value: consumerSession.SessionId})
+	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || IsSessionSyncLoss(errorReceived) {
+		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveNumberOfFailures", consumerSession.ConsecutiveNumberOfFailures), utils.LogAttr("errosCount", consumerSession.errosCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
 		consumerSession.BlockListed = true // block this session from future usages
 		consumerSessionBlockListed = true
 	}
