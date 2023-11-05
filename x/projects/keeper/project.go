@@ -15,7 +15,7 @@ import (
 // getProjectForBlock returns the version of a given project at a given block
 func (k Keeper) getProjectForBlock(ctx sdk.Context, projectID string, block uint64) (types.Project, uint64, error) {
 	var project types.Project
-	block, found := k.projectsFS.FindEntry2(ctx, projectID, block, &project)
+	block, _, found := k.projectsFS.FindEntryDetailed(ctx, projectID, block, &project)
 	if !found {
 		return project, 0, legacyerrors.ErrNotFound
 	}

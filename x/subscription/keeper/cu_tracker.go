@@ -14,9 +14,9 @@ import (
 func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, block uint64) (cu uint64, found bool, key string) {
 	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID)
 	var trackedCu types.TrackedCu
-	found = k.cuTrackerFS.FindEntry(ctx, cuTrackerKey, block, &trackedCu)
-	if !found {
-		// entry not found -> this is the first, so not an error. return CU=0
+	_, isDeleted, found := k.cuTrackerFS.FindEntryDetailed(ctx, cuTrackerKey, block, &trackedCu)
+	if !found || isDeleted {
+		// entry not found/deleted -> this is the first, so not an error. return CU=0
 		return 0, found, cuTrackerKey
 	}
 	return trackedCu.Cu, found, cuTrackerKey
