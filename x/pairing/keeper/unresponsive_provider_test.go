@@ -12,11 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (ts *tester) checkProviderUnstaked(provider sdk.AccAddress) {
-	_, unstakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
-	require.True(ts.T, unstakeStoragefound)
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
-	require.False(ts.T, stakeStorageFound)
+func (ts *tester) checkProviderFreeze(provider sdk.AccAddress, shouldFreeze bool) {
+	stakeEntry, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+	require.True(ts.T, stakeStorageFound)
+	if shouldFreeze {
+		require.Equal(ts.T, uint64(types.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
+	} else {
+		require.NotEqual(ts.T, uint64(types.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
+	}
 }
 
 func (ts *tester) checkComplainerReset(provider sdk.AccAddress, epoch uint64) {
@@ -100,7 +103,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	ts.AdvanceEpochs(largerConst)
 
 	for i := 0; i < unresponsiveCount; i++ {
-		ts.checkProviderUnstaked(providers[i].Addr)
+		ts.checkProviderFreeze(providers[i].Addr, true)
 		ts.checkComplainerReset(providers[i].Addr, relayEpoch)
 	}
 
@@ -110,7 +113,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 }
 
 // Test to measure the time the check for unresponsiveness every epoch start takes
-func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
+func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 	// setup test for unresponsiveness
 	clientsCount := 1
 	providersCount := 10
@@ -138,9 +141,6 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
 
 	// get provider1's balance before the stake
-	provider1_balance := ts.GetBalance(provider1_addr)
-	staked_amount, _, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider1_addr)
-	balanceProvideratBeforeStake := staked_amount.Stake.Amount.Int64() + provider1_balance
 	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
 
 	// create relay requests for provider0 that contain complaints about provider1
@@ -168,29 +168,12 @@ func TestUnstakingProviderForUnresponsiveness(t *testing.T) {
 
 	ts.AdvanceEpochs(largerConst)
 
-	ts.checkProviderUnstaked(provider1_addr)
+	ts.checkProviderFreeze(provider1_addr, true)
 	ts.checkComplainerReset(provider1_addr, relayEpoch)
 	ts.checkProviderStaked(provider0_addr)
-
-	// advance enough epochs so the current block will be deleted
-	epochBlocks := ts.EpochBlocks()
-	epochsToSkip := (ts.BlocksToSave() + epochBlocks - 1) / epochBlocks
-	ts.AdvanceEpochs(epochsToSkip)
-
-	// validate that the provider is no longer unstaked
-	// but also validate that the provider hasn't returned to the stake pool
-	_, unstakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider1_addr)
-	require.False(t, unstakeStoragefound)
-
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider1_addr)
-	require.False(t, stakeStorageFound)
-
-	// validate that the provider's balance after the unstake is the same as before he staked
-	balanceProviderAfterUnstakeMoneyReturned := ts.GetBalance(provider1_addr)
-	require.Equal(t, balanceProvideratBeforeStake, balanceProviderAfterUnstakeMoneyReturned)
 }
 
-func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *testing.T) {
+func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *testing.T) {
 	clientsCount := 1
 	providersCount := 5
 
@@ -242,7 +225,7 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 
 	ts.AdvanceEpochs(largerConst)
 
-	ts.checkProviderUnstaked(provider1_addr)
+	ts.checkProviderFreeze(provider1_addr, true)
 	ts.checkComplainerReset(provider1_addr, relayEpoch)
 
 	ts.AdvanceEpochs(2)
@@ -263,27 +246,11 @@ func TestUnstakingProviderForUnresponsivenessContinueComplainingAfterUnstake(t *
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 	}
 
-	// test the provider is still unstaked
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider1_addr)
-	require.False(t, stakeStorageFound)
-	_, unStakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider1_addr)
-	require.True(t, unStakeStoragefound)
-
-	// get the current unstake storage
-	storage, foundStorage := ts.Keepers.Epochstorage.GetStakeStorageUnstake(ts.Ctx)
-	require.True(t, foundStorage)
-
-	// validate the punished provider is not shown twice (or more) in the unstake storage
-	var numberOfAppearances int
-	for _, stored := range storage.StakeEntries {
-		if stored.Address == provider1_addr.String() {
-			numberOfAppearances += 1
-		}
-	}
-	require.Equal(t, numberOfAppearances, 1)
+	// test the provider is still frozen
+	ts.checkProviderFreeze(provider1_addr, true)
 }
 
-func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
+func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	clientsCount := 1
 	providersCount := 2
 
@@ -340,9 +307,6 @@ func TestNotUnstakingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 
 	ts.AdvanceEpochs(largerConst)
 
-	// test the unresponsive provider1 has been unstaked
-	_, unstakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider1_addr)
-	require.False(t, unstakeStoragefound)
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider1_addr)
-	require.True(t, stakeStorageFound)
+	// test the unresponsive provider1 hasn't froze
+	ts.checkProviderFreeze(provider1_addr, false)
 }
