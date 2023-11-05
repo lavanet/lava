@@ -2,7 +2,7 @@ package keeper
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -21,7 +21,7 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 	var amount uint64
 
 	// get all tracked CU entries
-	trackedCuInds := k.subscriptionKeeper.GetAllSubTrackedCuIndices(ctx, "", "")
+	trackedCuInds := k.subscriptionKeeper.GetAllSubTrackedCuIndices(ctx, "")
 
 	type totalUsedCuInfo struct {
 		totalUsedCu    uint64
@@ -33,18 +33,18 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 	// get a map of sub+chainID to properties for reward calculation
 	totalUsedCuMap := map[string]totalUsedCuInfo{}
 	for _, ind := range trackedCuInds {
-		sub, provider, chainID, blockStr := subsciptiontypes.DecodeCuTrackerKey(ind)
-		block, err := strconv.ParseUint(blockStr, 10, 64)
-		if err != nil {
-			return nil, utils.LavaFormatError("invalid block in CU tracker key", err,
+		sub, provider, chainID := subsciptiontypes.DecodeCuTrackerKey(ind)
+		subObj, found := k.subscriptionKeeper.GetSubscription(ctx, sub)
+		if !found {
+			return nil, utils.LavaFormatError("cannot get tracked CU", fmt.Errorf("subscription not found"),
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "block_string", Value: blockStr},
 			)
 		}
 
-		cu, found, _ := k.subscriptionKeeper.GetTrackedCu(ctx, sub, provider, chainID, block)
+		subBlock := subObj.Block
+		cu, found, _ := k.subscriptionKeeper.GetTrackedCu(ctx, sub, provider, chainID, subBlock)
 		if found {
 			// check if sub got service from provider (mark relevant and keep the provider's CU)
 			relevant := false
@@ -60,7 +60,7 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 			if usedCuInfo, ok := totalUsedCuMap[key]; ok {
 				usedCuInfo.totalUsedCu += cu
 				usedCuInfo.relevant = relevant
-				usedCuInfo.block = block
+				usedCuInfo.block = subBlock
 				if providerCu != 0 {
 					providerCuInfoMap := usedCuInfo.providerCuInfo
 					providerCuInfoMap[chainID] = providerCu
@@ -72,7 +72,7 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 				totalUsedCuMap[key] = totalUsedCuInfo{
 					totalUsedCu:    cu,
 					relevant:       relevant,
-					block:          block,
+					block:          subBlock,
 					providerCuInfo: map[string]uint64{},
 				}
 				if providerCu != 0 {

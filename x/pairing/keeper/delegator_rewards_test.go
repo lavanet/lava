@@ -149,6 +149,7 @@ var (
 
 func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs []string) types.MsgRelayPayment {
 	var relays []*types.RelaySession
+	epoch := int64(ts.EpochStart(ts.BlockHeight()))
 
 	// Create relay request. Change session ID each call to avoid double spending error
 	for i, chainID := range chainIDs {
@@ -158,7 +159,7 @@ func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs [
 			SessionId:   sessionID,
 			SpecId:      chainID,
 			CuSum:       relayCuSum,
-			Epoch:       int64(ts.EpochStart(ts.BlockHeight())),
+			Epoch:       epoch,
 			RelayNum:    uint64(i),
 		}
 		sessionID += 1
