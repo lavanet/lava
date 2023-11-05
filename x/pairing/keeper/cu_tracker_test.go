@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -373,4 +374,60 @@ func TestFrozenProviderGetReward(t *testing.T) {
 	balance := ts.GetBalance(providerAcc.Addr)
 	planPrice := ts.plan.Price.Amount.Int64()
 	require.Equal(t, balanceBeforePay+planPrice, balance)
+}
+
+// TestTrackedCuDeletion makes sure that if there are two trackedCU entries
+// both with some CU, when the deletion occurs it deletes the older one
+func TestTrackedCuDeletion(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 2)
+
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
+	_, provider := ts.GetAccount(common.PROVIDER, 0)
+	sub, _ := ts.Keepers.Subscription.GetSubscription(ts.Ctx, client)
+	fmt.Printf("sub.String(): %v\n", sub.String())
+	// send relay to track CU
+	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	ts.relayPaymentWithoutPay(relayPayment, true)
+	oldMonthBlock := relayPayment.Relays[0].Epoch
+
+	// send relay after a month (opens a new trackedCU entry)
+	ts.AdvanceMonths(1).AdvanceEpoch()
+	relayPayment = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	ts.relayPaymentWithoutPay(relayPayment, true)
+
+	// send another relay but to the old trackedCU entry
+	relayPayment = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	relayPayment.Relays[0].Epoch = oldMonthBlock
+	sig, err := sigs.Sign(clientAcc.SK, *relayPayment.Relays[0])
+	relayPayment.Relays[0].Sig = sig
+	require.Nil(ts.T, err)
+	ts.relayPaymentWithoutPay(relayPayment, true)
+
+	keys := ts.Keepers.Subscription.GetAllSubTrackedCuIndices(ts.Ctx, client)
+	fmt.Printf("keys: %v\n", keys)
+
+	// advance blocksToSave to trigger a reset for the old CU tracker
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	keys1 := ts.Keepers.Subscription.GetAllSubTrackedCuIndices(ts.Ctx, client)
+	fmt.Printf("keys1: %v\n", keys1)
+
+	// advance blocks until the old trackedCU entry stale period is over -> should be deleted
+	ts.AdvanceBlockUntilStale()
+
+	keys2 := ts.Keepers.Subscription.GetAllSubTrackedCuIndices(ts.Ctx, client)
+	fmt.Printf("keys2: %v\n", keys2)
+
+	// try to find the old tracked CU (should not succeed)
+	// also verify that the existent trackedCU has relayCuSum and not 2*relayCuSum (as the old one has)
+	_, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, client, provider, ts.spec.Index, uint64(oldMonthBlock))
+	require.False(t, found)
+
+	sub, found = ts.Keepers.Subscription.GetSubscription(ts.Ctx, client)
+	require.True(t, found)
+
+	cu, found, _ := ts.Keepers.Subscription.GetTrackedCu(ts.Ctx, client, provider, ts.spec.Index, sub.Block)
+	require.True(t, found)
+	require.Equal(t, relayCuSum, cu)
 }
