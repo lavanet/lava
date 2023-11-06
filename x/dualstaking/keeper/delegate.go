@@ -19,28 +19,15 @@ package keeper
 
 import (
 	"fmt"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-// getNextEpoch returns the block of next epoch.
-// (all delegate transaction take effect in the subsequent epoch)
-func (k Keeper) getNextEpoch(ctx sdk.Context) (uint64, error) {
-	block := uint64(ctx.BlockHeight())
-	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
-	if err != nil {
-		return 0, utils.LavaFormatError("critical: failed to get next epoch", err,
-			utils.Attribute{Key: "block", Value: block},
-		)
-	}
-	return nextEpoch, nil
-}
+const EMPTY_PROVIDER = "empty_provider"
 
 // validateCoins validates that the input amount is valid and non-negative
 func validateCoins(amount sdk.Coin) error {
@@ -95,10 +82,12 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		)
 	}
 
-	// update the stake entry
-	err = k.increaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
-	if err != nil {
-		return err
+	if provider != EMPTY_PROVIDER {
+		// update the stake entry
+		err = k.increaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -189,8 +178,10 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount, unstake); err != nil {
-		return err
+	if provider != EMPTY_PROVIDER {
+		if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount, unstake); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -276,37 +267,27 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 // Delegate lets a delegator delegate an amount of coins to a provider.
 // (effective on next epoch)
 func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return err
-	}
+	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
-	delegatorAddr, err := sdk.AccAddressFromBech32(delegator)
+	_, err := sdk.AccAddressFromBech32(delegator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid delegator address", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 		)
 	}
 
-	if _, err = sdk.AccAddressFromBech32(provider); err != nil {
-		return utils.LavaFormatWarning("invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: provider},
-		)
+	if provider != EMPTY_PROVIDER {
+		if _, err = sdk.AccAddressFromBech32(provider); err != nil {
+			return utils.LavaFormatWarning("invalid provider address", err,
+				utils.Attribute{Key: "provider", Value: provider},
+			)
+		}
 	}
 
 	if err := validateCoins(amount); err != nil {
 		return err
 	} else if amount.IsZero() {
 		return nil
-	}
-
-	balance := k.bankKeeper.GetBalance(ctx, delegatorAddr, epochstoragetypes.TokenDenom)
-	if balance.IsLT(amount) {
-		return utils.LavaFormatWarning("insufficient funds to delegate",
-			sdkerrors.ErrInsufficientFunds,
-			utils.Attribute{Key: "balance", Value: balance},
-			utils.Attribute{Key: "amount", Value: amount},
-		)
 	}
 
 	err = k.increaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)
@@ -326,24 +307,21 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 // without the funds being subject to unstakeHoldBlocks witholding period.
 // (effective on next epoch)
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return err
-	}
+	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
-	if _, err = sdk.AccAddressFromBech32(delegator); err != nil {
+	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
 		return utils.LavaFormatWarning("invalid delegator address", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 		)
 	}
 
-	if _, err = sdk.AccAddressFromBech32(from); err != nil {
+	if _, err := sdk.AccAddressFromBech32(from); err != nil {
 		return utils.LavaFormatWarning("invalid from-provider address", err,
 			utils.Attribute{Key: "from_provider", Value: from},
 		)
 	}
 
-	if _, err = sdk.AccAddressFromBech32(to); err != nil {
+	if _, err := sdk.AccAddressFromBech32(to); err != nil {
 		return utils.LavaFormatWarning("invalid to-provider address", err,
 			utils.Attribute{Key: "to_provider", Value: to},
 		)
@@ -355,7 +333,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		return nil
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
+	err := k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -385,18 +363,15 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 // provider will be updated accordingly (or terminate) from the next epoch.
 // (effective on next epoch)
 func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
-	nextEpoch, err := k.getNextEpoch(ctx)
-	if err != nil {
-		return err
-	}
+	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
-	if _, err = sdk.AccAddressFromBech32(delegator); err != nil {
+	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
 		return utils.LavaFormatWarning("invalid delegator address", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 		)
 	}
 
-	if _, err = sdk.AccAddressFromBech32(provider); err != nil {
+	if _, err := sdk.AccAddressFromBech32(provider); err != nil {
 		return utils.LavaFormatWarning("invalid provider address", err,
 			utils.Attribute{Key: "provider", Value: provider},
 		)
@@ -408,7 +383,7 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		return nil
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch, unstake)
+	err := k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch, unstake)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -418,35 +393,6 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 	}
 
 	return nil
-}
-
-var space = " "
-
-// encodeForTimer generates timer key unique to a specific delegation; thus it
-// must include the delegator, provider, and chainID.
-func encodeForTimer(delegator, provider, chainID string) []byte {
-	dlen, plen, clen := len(delegator), len(provider), len(chainID)
-
-	encodedKey := make([]byte, dlen+plen+clen+2)
-
-	index := 0
-	index += copy(encodedKey[index:], delegator)
-	encodedKey[index] = []byte(space)[0]
-	index += copy(encodedKey[index+1:], provider) + 1
-	encodedKey[index] = []byte(space)[0]
-	copy(encodedKey[index+1:], chainID)
-
-	return encodedKey
-}
-
-// decodeForTimer extracts the delegation details from a timer key.
-func decodeForTimer(encodedKey []byte) (string, string, string) {
-	split := strings.Split(string(encodedKey), space)
-	if len(split) != 3 {
-		return "", "", ""
-	}
-	delegator, provider, chainID := split[0], split[1], split[2]
-	return delegator, provider, chainID
 }
 
 func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {

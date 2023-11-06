@@ -476,7 +476,6 @@ func New(
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
 		app.FixationStoreKeeper,
-		app.TimerStoreKeeper,
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -708,6 +707,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -719,7 +719,6 @@ func New(
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
-		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		downtimemoduletypes.ModuleName,

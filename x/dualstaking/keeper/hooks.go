@@ -67,7 +67,8 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		_ = ""
 	} else if sumProviderDelegations.LT(sumValidatorDelegations) {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
-		_ = ""
+		amount := sumValidatorDelegations.Sub(sumProviderDelegations)
+		h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, "", sdk.NewCoin("ulava", amount))
 	} else if sumProviderDelegations.GT(sumValidatorDelegations) {
 		// more provider delegation, unbond operation was done, unbond from providers
 		_ = ""
