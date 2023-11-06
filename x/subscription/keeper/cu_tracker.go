@@ -124,9 +124,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	var block uint64
 	if len(trackedCuList) == 0 {
-		utils.LavaFormatWarning("no tracked CU", types.ErrCuTrackerPayoutFailed,
-			utils.Attribute{Key: "sub_consumer", Value: sub},
-		)
+		// no tracked CU for this sub, nothing to do
 		return
 	}
 
