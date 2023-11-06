@@ -53,7 +53,12 @@ func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
 			return
 		}
 
-		virtualEpoch := uint64(time.Since(cs.latestEpochTime).Milliseconds() + epochDuration - 1/epochDuration)
+		latestEpochTime := cs.latestEpochTime
+		if cs.latestEpochTime.IsZero() {
+			latestEpochTime = latestBlockTime
+		}
+
+		virtualEpoch := uint64((time.Since(latestEpochTime).Milliseconds() + epochDuration - 1) / epochDuration)
 		if virtualEpoch > 0 && cs.virtualEpochsMap[cs.latestEpoch] != virtualEpoch {
 			utils.LavaFormatDebug("Emergency Tracker: emergency mode enabled", utils.Attribute{
 				Key:   "virtual_epoch",

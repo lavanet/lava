@@ -340,7 +340,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
 	}
-	virtualEpoch := rpccs.consumerEmergencyTracker.GetVirtualEpoch(rpccs.consumerSessionManager.GetCurrentEpoch())
+	virtualEpoch := rpccs.consumerEmergencyTracker.GetVirtualEpoch(0)
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, reqBlock, chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions(), virtualEpoch)
 	if err != nil {
 		return &common.RelayResult{ProviderAddress: ""}, err
