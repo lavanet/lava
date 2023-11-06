@@ -7,8 +7,3 @@ const (
 	RefundedEventName     = "refund_to_delegator"
 	ClaimRewardsEventName = "delegator_claim_rewards"
 )
-
-const (
-	NotBondedPoolName = "not_bonded_dualstaking_pool"
-	BondedPoolName    = "bonded_dualstaking_pool"
-)

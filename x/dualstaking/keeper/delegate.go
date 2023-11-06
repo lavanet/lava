@@ -18,14 +18,12 @@ package keeper
 // tracking the list of providers for a delegator, indexed by the delegator.
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -321,14 +319,6 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		)
 	}
 
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, delegatorAddr, types.BondedPoolName, sdk.NewCoins(amount))
-	if err != nil {
-		return utils.LavaFormatError("failed to transfer coins to module", err,
-			utils.Attribute{Key: "balance", Value: balance},
-			utils.Attribute{Key: "amount", Value: amount},
-		)
-	}
-
 	return nil
 }
 
@@ -427,19 +417,6 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		)
 	}
 
-	// in unbonding the funds to not return immediately to the delegator; instead
-	// they transfer to the NotBondedPoolName module account, where they are held
-	// for the hold period before they are finally released.
-
-	k.bondedTokensToNotBonded(ctx, amount.Amount)
-
-	err = k.setUnbondingTimer(ctx, delegator, provider, chainID, amount)
-	if err != nil {
-		return utils.LavaFormatError("failed to unbond delegated coins", err,
-			utils.Attribute{Key: "amount", Value: amount},
-		)
-	}
-
 	return nil
 }
 
@@ -470,89 +447,6 @@ func decodeForTimer(encodedKey []byte) (string, string, string) {
 	}
 	delegator, provider, chainID := split[0], split[1], split[2]
 	return delegator, provider, chainID
-}
-
-// setUnbondingTimer creates a timer for an unbonding operation, that will expire
-// in the spec's unbonding-hold-blocks blocks from now. only one unbonding request
-// can be placed per block (for a given delegator/provider/chainID combination).
-func (k Keeper) setUnbondingTimer(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
-	key := encodeForTimer(delegator, provider, chainID)
-
-	unholdBlocks := k.getUnbondHoldBlocks(ctx, chainID)
-	timeout := uint64(ctx.BlockHeight()) + unholdBlocks
-
-	// the timer key encodes the unique delegator/provider/chainID combination.
-	// the timer data holds the amount to be released in the future (marshalled).
-	if k.unbondingTS.HasTimerByBlockHeight(ctx, timeout, key) {
-		return types.ErrUnbondingInProgress
-	}
-
-	data, _ := json.Marshal(amount)
-	k.unbondingTS.AddTimerByBlockHeight(ctx, timeout, key, data)
-
-	return nil
-}
-
-// finalizeUnbonding is called when the unbond hold period terminated; it extracts
-// the delegation details from the timer key and data and releases the bonder funds
-// back to the delegator.
-func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
-	delegator, provider, chainID := decodeForTimer(key)
-
-	attrs := slices.Slice(
-		utils.Attribute{Key: "delegator", Value: delegator},
-		utils.Attribute{Key: "provider", Value: provider},
-		utils.Attribute{Key: "chainID", Value: chainID},
-		utils.Attribute{Key: "data", Value: data},
-	)
-
-	var amount sdk.Coin
-	err := json.Unmarshal(data, &amount)
-	if err != nil {
-		utils.LavaFormatError("critical: finalizeBonding failed to decode", err, attrs...)
-	}
-
-	// sanity: delegator address must be valid
-	delegatorAddr, err := sdk.AccAddressFromBech32(delegator)
-	if err != nil {
-		utils.LavaFormatError("critical: finalizeBonding invalid delegator", err, attrs...)
-		return
-	}
-
-	// sanity: provider address must be valid
-	if _, err := sdk.AccAddressFromBech32(provider); err != nil {
-		utils.LavaFormatError("critical: finalizeBonding invalid provider", err, attrs...)
-		return
-	}
-
-	// sanity: saved amount is valid
-	if err := validateCoins(amount); err != nil {
-		utils.LavaFormatError("critical: finalizeBonding invalid amount", err, attrs...)
-		return
-	} else if amount.IsZero() {
-		utils.LavaFormatError("critical: finalizeBonding zero amount", sdkerrors.ErrInsufficientFunds, attrs...)
-		return
-	}
-
-	// sanity: verify that BondedPool has enough funds
-	if k.TotalNotBondedTokens(ctx).LT(amount.Amount) {
-		utils.LavaFormatError("critical: finalizeBonding insufficient bonds", err, attrs...)
-		return
-	}
-
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.NotBondedPoolName, delegatorAddr, sdk.NewCoins(amount))
-	if err != nil {
-		utils.LavaFormatError("critical: finalizeBonding failed to transfer", err, attrs...)
-	}
-
-	details := map[string]string{
-		"delegator": delegator,
-		"provider":  provider,
-		"chainID":   chainID,
-		"amount":    amount.String(),
-	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RefundedEventName, details, "Refunded")
 }
 
 func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {

@@ -251,7 +251,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Dualstaking.InitDelegations(ctx, *fixationstore.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationstore.DefaultGenesis())
-	ks.Dualstaking.InitUnbondings(ctx, []types.RawMessage{})
 	ks.Plans.InitPlans(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptionsTimers(ctx, []types.RawMessage{})
