@@ -63,6 +63,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		&mockBankKeeper{},
+		nil, // TODO YAROM
 		&mockAccountKeeper{},
 		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),

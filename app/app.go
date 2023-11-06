@@ -394,11 +394,6 @@ func New(
 	// Upgrade the KVStoreKey after upgrade keeper initialization
 	app.setupUpgradeStoreLoaders()
 
-	// register the staking hooks
-	app.StakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
-	)
-
 	// ... other modules keepers
 
 	// Create IBC Keeper
@@ -478,6 +473,7 @@ func New(
 		app.GetSubspace(dualstakingmoduletypes.ModuleName),
 
 		app.BankKeeper,
+		app.StakingKeeper,
 		app.AccountKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
@@ -595,6 +591,11 @@ func New(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
+
+	// register the staking hooks
+	app.StakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.DualstakingKeeper.Hooks()),
+	)
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(

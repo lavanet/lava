@@ -23,6 +23,7 @@ type (
 		paramstore paramtypes.Subspace
 
 		bankKeeper         types.BankKeeper
+		stakingKeeper      types.StakingKeeper
 		accountKeeper      types.AccountKeeper
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
@@ -39,6 +40,7 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
+	stakingKeeper types.StakingKeeper,
 	accountKeeper types.AccountKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
@@ -57,6 +59,7 @@ func NewKeeper(
 		paramstore: ps,
 
 		bankKeeper:         bankKeeper,
+		stakingKeeper:      stakingKeeper,
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
 		specKeeper:         specKeeper,
