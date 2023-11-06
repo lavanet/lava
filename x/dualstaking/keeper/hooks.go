@@ -68,10 +68,13 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 	} else if sumProviderDelegations.LT(sumValidatorDelegations) {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
 		amount := sumValidatorDelegations.Sub(sumProviderDelegations)
-		h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, "", sdk.NewCoin("ulava", amount))
+		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, sdk.NewCoin("ulava", amount))
+		_ = err
 	} else if sumProviderDelegations.GT(sumValidatorDelegations) {
 		// more provider delegation, unbond operation was done, unbond from providers
-		_ = ""
+		amount := sumProviderDelegations.Sub(sumValidatorDelegations)
+		err = h.k.UnbondUniform(ctx, delAddr.String(), sdk.NewCoin("ulava", amount))
+		_ = err
 	}
 
 	return nil

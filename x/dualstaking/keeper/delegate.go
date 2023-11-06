@@ -23,11 +23,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const EMPTY_PROVIDER = "empty_provider"
+const (
+	EMPTY_PROVIDER         = "empty_provider"
+	EMPTY_PROVIDER_CHAINID = ""
+)
 
 // validateCoins validates that the input amount is valid and non-negative
 func validateCoins(amount sdk.Coin) error {
@@ -315,16 +319,20 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		)
 	}
 
-	if _, err := sdk.AccAddressFromBech32(from); err != nil {
-		return utils.LavaFormatWarning("invalid from-provider address", err,
-			utils.Attribute{Key: "from_provider", Value: from},
-		)
+	if from != EMPTY_PROVIDER {
+		if _, err := sdk.AccAddressFromBech32(from); err != nil {
+			return utils.LavaFormatWarning("invalid from-provider address", err,
+				utils.Attribute{Key: "from_provider", Value: from},
+			)
+		}
 	}
 
-	if _, err := sdk.AccAddressFromBech32(to); err != nil {
-		return utils.LavaFormatWarning("invalid to-provider address", err,
-			utils.Attribute{Key: "to_provider", Value: to},
-		)
+	if to != EMPTY_PROVIDER_CHAINID {
+		if _, err := sdk.AccAddressFromBech32(to); err != nil {
+			return utils.LavaFormatWarning("invalid to-provider address", err,
+				utils.Attribute{Key: "to_provider", Value: to},
+			)
+		}
 	}
 
 	if err := validateCoins(amount); err != nil {
@@ -371,10 +379,12 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		)
 	}
 
-	if _, err := sdk.AccAddressFromBech32(provider); err != nil {
-		return utils.LavaFormatWarning("invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: provider},
-		)
+	if provider != EMPTY_PROVIDER {
+		if _, err := sdk.AccAddressFromBech32(provider); err != nil {
+			return utils.LavaFormatWarning("invalid provider address", err,
+				utils.Attribute{Key: "provider", Value: provider},
+			)
+		}
 	}
 
 	if err := validateCoins(amount); err != nil {
@@ -501,4 +511,33 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 	}
 
 	return delegations
+}
+
+func (k Keeper) UnbondUniform(ctx sdk.Context, delegator string, amount sdk.Coin) error {
+	epoch, _, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	providers, err := k.GetDelegatorProviders(ctx, delegator, epoch)
+	_ = err
+
+	// first remove from the empty provider
+	if slices.Contains[string](providers, EMPTY_PROVIDER) {
+		delegation, found := k.GetDelegation(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, epoch)
+		_ = found
+		if delegation.Amount.Amount.GTE(amount.Amount) {
+			// we have enough here, remove all from empty delegator and bail
+			err = k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, amount, false)
+			_ = err
+			return nil
+		} else {
+			// we dont have enough in the empty provider, remove everything and continue with the rest
+			err = k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
+			amount = amount.Sub(delegation.Amount)
+		}
+		_ = err
+	}
+
+	providers, _ = slices.Remove[string](providers, EMPTY_PROVIDER)
+	_ = providers
+	// we need to decide how to remove from the rest, with a fixed amount or by percentage
+
+	return nil
 }
