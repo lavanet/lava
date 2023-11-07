@@ -265,7 +265,10 @@ export class StateChainQuery {
         params: ["/lavanet.lava.pairing.Query/SdkPairing", hexData, "0", false],
       };
 
-      const response = await this.rpcConsumer.sendRelay(sendRelayOptions, this.virtualEpoch);
+      const response = await this.rpcConsumer.sendRelay(
+        sendRelayOptions,
+        this.virtualEpoch
+      );
 
       const reply = response.reply;
 

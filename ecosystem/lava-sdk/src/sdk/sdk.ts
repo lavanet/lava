@@ -510,7 +510,7 @@ export class LavaSDK {
 
     let virtualEpoch = 0;
     if (this.stateTracker) {
-      virtualEpoch = this.stateTracker.getVirtualEpoch()
+      virtualEpoch = this.stateTracker.getVirtualEpoch();
     }
 
     const relayResult = rpcConsumerServer.sendRelay(options, virtualEpoch);

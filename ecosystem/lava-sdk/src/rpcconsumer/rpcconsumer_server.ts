@@ -81,7 +81,10 @@ export class RPCConsumerServer {
     };
   }
 
-  async sendRelay(options: SendRelayOptions | SendRestRelayOptions, virtualEpoch: number) {
+  async sendRelay(
+    options: SendRelayOptions | SendRestRelayOptions,
+    virtualEpoch: number
+  ) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
     const relayData = {

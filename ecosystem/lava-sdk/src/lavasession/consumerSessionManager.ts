@@ -621,8 +621,10 @@ export class ConsumerSessionManager {
           );
         }
 
-        const err =
-          consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch);
+        const err = consumerSessionsWithProvider.validateComputeUnits(
+          cuNeededForSession,
+          virtualEpoch
+        );
         if (err) {
           ignoredProviders.providers.add(providerAddress);
           continue;
