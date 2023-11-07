@@ -227,7 +227,7 @@ LAVA_ALL_BINARIES := lavad lavap lavavisor
 
 # helper target/build functions
 
-# return prefix of $2 before first occurence of $1
+# return prefix of $2 before first occurrence of $1
 # example: $(call prefix -,hello-world) yields "hello"
 define prefix
 $(word 1,$(subst $1,$(whitespace),$2))
