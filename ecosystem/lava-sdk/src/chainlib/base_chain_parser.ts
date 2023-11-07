@@ -30,6 +30,19 @@ export interface SendRelayOptions {
   apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
 }
 
+export interface SingleRelayOptions {
+  method: string; // Required: The RPC method to be called
+  params: Array<any> | Record<string, any>; // Required: An array of parameters to be passed to the RPC method
+  id?: number | string; // Optional: The ID of the relay. If not specified, it is set to a random number.
+  metadata?: Metadata[]; // Optional: Headers to be sent with the request.
+}
+
+export interface SendRelaysBatchOptions {
+  relays: Array<SingleRelayOptions>; // Required: The relays to send
+  chainId?: string; // Optional: The chain id to send the request to, if only one chain is initialized it will be chosen by default
+  apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
+}
+
 /**
  * Options for sending Rest relay.
  */
@@ -70,7 +83,7 @@ export function CollectionKeyToString(key: CollectionKey): CollectionKeyString {
   return `'{"addon":"${key.addon}","internalPath":"${key.internalPath}","connectionType":"${key.connectionType}"}'`;
 }
 
-interface ApiContainer {
+export interface ApiContainer {
   api: Api;
   collectionKey: CollectionKey;
   apiKey: ApiKey;
@@ -341,7 +354,7 @@ export abstract class BaseChainParser {
   }
 
   protected isRest(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): options is SendRestRelayOptions {
     return "connectionType" in options; // how to check which options were given
   }
@@ -440,7 +453,7 @@ export abstract class BaseChainParser {
   }
 
   abstract parseMsg(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): ParsedMessage;
 
   public chainBlockStats(): ChainBlockStats {

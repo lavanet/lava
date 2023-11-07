@@ -9,6 +9,7 @@ import { ConsumerConsistency } from "./consumerConsistency";
 import {
   BaseChainParser,
   SendRelayOptions,
+  SendRelaysBatchOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
 import {
@@ -81,7 +82,9 @@ export class RPCConsumerServer {
     };
   }
 
-  async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
+  async sendRelay(
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
+  ) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
     const relayData = {
