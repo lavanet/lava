@@ -480,7 +480,7 @@ export class ConsumerSessionsWithProvider {
     cuNeededForSession: number,
     virtualEpoch: number
   ): MaxComputeUnitsExceededError | undefined {
-    if (this.usedComputeUnits + cuNeededForSession > this.maxComputeUnits * virtualEpoch) {
+    if (this.usedComputeUnits + cuNeededForSession > this.maxComputeUnits * (virtualEpoch + 1)) {
       Logger.warn(
         `MaxComputeUnitsExceededError: ${this.publicLavaAddress} cu: ${this.usedComputeUnits} max: ${this.maxComputeUnits * virtualEpoch}`
       );

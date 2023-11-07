@@ -98,7 +98,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -145,7 +146,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -197,7 +199,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -213,7 +216,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -251,7 +255,8 @@ describe("ConsumerSessionManager", () => {
             new Set(),
             SERVICED_BLOCK_NUMBER,
             "",
-            []
+            [],
+            0
           );
 
           if (consumerSessions instanceof Map) {
@@ -278,7 +283,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -300,7 +306,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -348,7 +355,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -409,7 +417,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -474,7 +483,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -525,7 +535,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -563,7 +574,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        0
       );
 
       expect(sessions).toBeInstanceOf(PairingListEmptyError);
@@ -583,7 +595,8 @@ describe("ConsumerSessionManager", () => {
             new Set(),
             SERVICED_BLOCK_NUMBER,
             addon,
-            []
+            [],
+            0
           );
           if (consumerSessions instanceof Error) {
             throw consumerSessions;
@@ -608,7 +621,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           addon,
-          []
+          [],
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -675,7 +689,8 @@ describe("ConsumerSessionManager", () => {
             new Set(),
             SERVICED_BLOCK_NUMBER,
             addon,
-            extensions
+            extensions,
+            0
           );
           if (consumerSessions instanceof Error) {
             throw consumerSessions;
@@ -700,7 +715,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           addon,
-          extensions
+          extensions,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
