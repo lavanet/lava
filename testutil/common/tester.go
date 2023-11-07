@@ -553,6 +553,15 @@ func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, bl
 	return ts.Keepers.Pairing.VerifyPairing(ts.GoCtx, msg)
 }
 
+// QueryPairingEffectivePolicy implements 'q pairing effective-policy'
+func (ts *Tester) QueryPairingEffectivePolicy(chainID, consumer string) (*pairingtypes.QueryEffectivePolicyResponse, error) {
+	msg := &pairingtypes.QueryEffectivePolicyRequest{
+		SpecID:   chainID,
+		Consumer: consumer,
+	}
+	return ts.Keepers.Pairing.EffectivePolicy(ts.GoCtx, msg)
+}
+
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
 func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{
