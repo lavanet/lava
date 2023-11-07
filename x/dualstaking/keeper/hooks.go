@@ -38,10 +38,11 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 }
 
 // create new delegation period record
+// add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
 	providers, err := h.k.GetDelegatorProviders(ctx, delAddr.String(), uint64(ctx.BlockHeight()))
 	_ = err
-
+	// TODO make this more efficient
 	sumProviderDelegations := sdk.ZeroInt()
 	for _, p := range providers {
 		delegations := h.k.GetAllProviderDelegatorDelegations(ctx, delAddr.String(), p, uint64(ctx.BlockHeight()))

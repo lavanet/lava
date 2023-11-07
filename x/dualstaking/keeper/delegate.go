@@ -538,6 +538,6 @@ func (k Keeper) UnbondUniform(ctx sdk.Context, delegator string, amount sdk.Coin
 	providers, _ = slices.Remove[string](providers, EMPTY_PROVIDER)
 	_ = providers
 	// we need to decide how to remove from the rest, with a fixed amount or by percentage
-
+	// [10 20 50 60 70] 25 -> [0 20 50 60 70] 25 + 15/4 -> [0 0 50 60 70] 25 + 15/4 + 8.75/3
 	return nil
 }
