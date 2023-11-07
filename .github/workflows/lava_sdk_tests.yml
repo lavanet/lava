@@ -3,27 +3,41 @@ name: Lava SDK Tests
 on: [pull_request]
 
 jobs:
-    main:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v3
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-            - name: Cache dependencies
-              uses: actions/cache@v3
-              with:
-                  path: ~/.yarn
-                  key: yarn-${{ hashFiles('yarn.lock') }}
-                  restore-keys: yarn-
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.yarn
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
 
-            - name: Install modules
-              run: yarn install
-              working-directory: ./ecosystem/lava-sdk
+      - uses: actions/setup-go@v3
+        with:
+          go-version: "1.20.5"
 
-            - name: ESLint
-              run: ./node_modules/.bin/eslint '**/*.ts'
-              working-directory: ./ecosystem/lava-sdk
+      - name: Run go mod tidy
+        run: go mod tidy
 
-            - name: Test
-              run: ./node_modules/.bin/jest ./src
-              working-directory: ./ecosystem/lava-sdk
+      - name: Install protoc executable
+        run: apt install -y protobuf-compiler
+
+      - name: Prepare proto files
+        run: GOPATH=/home/runner/go ./scripts/protoc_grpc_relay.sh
+        working-directory: ./ecosystem/lava-sdk
+
+      - name: Install modules
+        run: yarn install
+        working-directory: ./ecosystem/lava-sdk
+
+      - name: ESLint
+        run: ./node_modules/.bin/eslint '**/*.ts'
+        working-directory: ./ecosystem/lava-sdk
+
+      - name: Test
+        run: ./node_modules/.bin/jest ./src
+        working-directory: ./ecosystem/lava-sdk
