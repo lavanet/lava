@@ -12,8 +12,8 @@ import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collect
 import { JsonrpcMessage } from "./chainproxy/rpcInterfaceMessages/json_rpc_message";
 import { Parser } from "../parser/parser";
 import { ParsedMessage } from "./chain_message";
+import { JsonRPCVersion } from "./chainproxy/consts";
 
-const jsonrpcVersion = "2.0";
 export class JsonRpcChainParser extends BaseChainParser {
   constructor() {
     super();
@@ -45,7 +45,7 @@ export class JsonRpcChainParser extends BaseChainParser {
 
     const jsonrpcMessage = new JsonrpcMessage();
     jsonrpcMessage.initJsonrpcMessage(
-      jsonrpcVersion,
+      JsonRPCVersion,
       String(options.id ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)),
       options.method,
       options.params

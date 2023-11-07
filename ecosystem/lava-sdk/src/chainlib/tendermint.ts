@@ -12,9 +12,9 @@ import { TendermintrpcMessage } from "./chainproxy/rpcInterfaceMessages/tendermi
 import { Parser } from "../parser/parser";
 import { ParsedMessage } from "./chain_message";
 import { NOT_APPLICABLE } from "../common/common";
+import { JsonRPCVersion } from "./chainproxy/consts";
 
 const Method = ""; // in tendermint all types are empty (in spec)
-const jsonrpcVersion = "2.0";
 export class TendermintRpcChainParser extends BaseChainParser {
   constructor() {
     super();
@@ -46,7 +46,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
 
     const tendermintrpcMessage = new TendermintrpcMessage();
     tendermintrpcMessage.initJsonrpcMessage(
-      jsonrpcVersion,
+      JsonRPCVersion,
       String(options.id ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)),
       options.method,
       options.params
