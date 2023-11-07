@@ -1,4 +1,7 @@
-import { JsonrpcMessage } from "../chainlib/chainproxy/rpcInterfaceMessages/json_rpc_message";
+import {
+  JsonrpcBatchMessage,
+  JsonrpcMessage,
+} from "../chainlib/chainproxy/rpcInterfaceMessages/json_rpc_message";
 
 export function base64ToUint8Array(str: string): Uint8Array {
   const buffer = Buffer.from(str, "base64");
@@ -9,13 +12,17 @@ export function base64ToUint8Array(str: string): Uint8Array {
 export function generateRPCData(rpcMessage: JsonrpcMessage): string {
   const stringifyVersion = JSON.stringify(rpcMessage.version);
   const stringifyMethod = JSON.stringify(rpcMessage.method);
-  const stringifyParam = JSON.stringify(rpcMessage.params, (key, value) => {
+  const stringifyParam = JSON.stringify(rpcMessage.params, (_, value) => {
     if (typeof value === "bigint") {
       return value.toString();
     }
     return value;
   });
   return `{"jsonrpc": ${stringifyVersion}, "id": ${rpcMessage.id}, "method": ${stringifyMethod}, "params": ${stringifyParam}}`;
+}
+
+export function generateBatchRPCData(rpcMessage: JsonrpcBatchMessage): string {
+  return `[${rpcMessage.batch.map(generateRPCData).join(",")}]`;
 }
 
 export function parseLong(long: Long): number {
