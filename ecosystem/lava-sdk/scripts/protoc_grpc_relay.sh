@@ -48,4 +48,5 @@ protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
 echo "running fix_grpc_web_camel_case.py"
 python3 ./scripts/fix_grpc_web_camel_case.py
 
+mkdir -p ./bin/src
 cp -r $OUT_DIR ./bin/src/.
