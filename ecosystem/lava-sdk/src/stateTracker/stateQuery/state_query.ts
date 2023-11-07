@@ -4,6 +4,7 @@ import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 export interface StateQuery {
   fetchPairing(): Promise<[number, number]>;
   getPairing(chainID: string): PairingResponse | undefined;
+  getVirtualEpoch(): number;
   init(): Promise<void>;
 }
 

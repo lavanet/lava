@@ -72,6 +72,7 @@ export class LavaSDK {
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
   private providerOptimizerStrategy: ProviderOptimizerStrategy;
   private maxConcurrentProviders: number;
+  private stateTracker: StateTracker | undefined;
 
   /**
    * Create Lava-SDK instance
@@ -375,6 +376,7 @@ export class LavaSDK {
       }
     }
     await tracker.startTracking();
+    this.stateTracker = tracker;
   }
 
   private setupChainAssets(
@@ -505,7 +507,13 @@ export class LavaSDK {
         options?.chainId ?? JSON.stringify(this.rpcConsumerServerRouter.keys())
       );
     }
-    const relayResult = rpcConsumerServer.sendRelay(options);
+
+    let virtualEpoch = 0;
+    if (this.stateTracker) {
+      virtualEpoch = this.stateTracker.getVirtualEpoch()
+    }
+
+    const relayResult = rpcConsumerServer.sendRelay(options, virtualEpoch);
     return await relayResult.then((response) => {
       // // Decode response
       const reply = response.reply;

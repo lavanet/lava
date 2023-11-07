@@ -81,7 +81,7 @@ export class RPCConsumerServer {
     };
   }
 
-  async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
+  async sendRelay(options: SendRelayOptions | SendRestRelayOptions, virtualEpoch: number) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
     const relayData = {
@@ -111,7 +111,8 @@ export class RPCConsumerServer {
       const relayResult = await this.sendRelayToProvider(
         chainMessage,
         relayPrivateData,
-        unwantedProviders
+        unwantedProviders,
+        virtualEpoch
       );
       if (relayResult instanceof Array) {
         // relayResult can be an Array of errors from relaying to multiple providers
@@ -146,7 +147,8 @@ export class RPCConsumerServer {
   private async sendRelayToProvider(
     chainMessage: ParsedMessage,
     relayData: RelayPrivateData,
-    unwantedProviders: Set<string>
+    unwantedProviders: Set<string>,
+    virtualEpoch: number
   ): Promise<RelayResult | Array<RelayError> | Error> {
     if (chainMessage.getApi().getCategory()?.getSubscription() == true) {
       return new Error("subscription currently not supported");
@@ -170,7 +172,8 @@ export class RPCConsumerServer {
       unwantedProviders,
       LATEST_BLOCK,
       "",
-      []
+      [],
+      virtualEpoch
     );
     if (consumerSessionsMap instanceof Error) {
       return consumerSessionsMap;

@@ -216,7 +216,8 @@ export class ConsumerSessionManager {
     initUnwantedProviders: Set<string>,
     requestedBlock: number,
     addon: string,
-    extensions: string[]
+    extensions: string[],
+    virtualEpoch: number
   ): ConsumerSessionsMap | Error {
     const numberOfResets = this.validatePairingListNotEmpty(addon, extensions);
     const tempIgnoredProviders: IgnoredProviders = {
@@ -229,7 +230,8 @@ export class ConsumerSessionManager {
       cuNeededForSession,
       requestedBlock,
       addon,
-      extensions
+      extensions,
+      virtualEpoch
     );
     if (sessionWithProvidersMap instanceof Error) {
       return sessionWithProvidersMap;
@@ -355,7 +357,8 @@ export class ConsumerSessionManager {
         cuNeededForSession,
         requestedBlock,
         addon,
-        extensions
+        extensions,
+        virtualEpoch
       );
 
       if (sessionWithProvidersMap instanceof Error && sessions.size !== 0) {
@@ -555,7 +558,8 @@ export class ConsumerSessionManager {
     cuNeededForSession: number,
     requestedBlock: number,
     addon: string,
-    extensions: string[]
+    extensions: string[],
+    virtualEpoch: number
   ): SessionsWithProviderMap | Error {
     Logger.debug(
       `called getValidConsumerSessionsWithProvider ${Array.from(
@@ -618,7 +622,7 @@ export class ConsumerSessionManager {
         }
 
         const err =
-          consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession);
+          consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch);
         if (err) {
           ignoredProviders.providers.add(providerAddress);
           continue;

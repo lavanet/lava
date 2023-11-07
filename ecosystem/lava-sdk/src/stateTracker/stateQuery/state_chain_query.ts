@@ -37,6 +37,7 @@ export class StateChainQuery {
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
+  private virtualEpoch = 0;
   private latestEpoch: number | undefined;
 
   constructor(
@@ -168,15 +169,10 @@ export class StateChainQuery {
           }
         }
 
-        let maxCu = pairingResponse.getMaxCu();
-
-        // add additional CU for virtual epochs(if emergency mode is disabled, virtualEpoch == 0)
-        maxCu += maxCu * virtualEpoch;
-
         // Save pairing response for chainID
         this.pairing.set(chainID, {
           providers: providers,
-          maxCu: maxCu,
+          maxCu: pairingResponse.getMaxCu(),
           currentEpoch: currentEpoch,
           spec: spec,
         });
@@ -199,6 +195,8 @@ export class StateChainQuery {
         Logger.debug("Virtual epoch: " + virtualEpoch);
       }
 
+      this.virtualEpoch = virtualEpoch;
+
       Logger.debug("Fetching pairing ended");
 
       // Return timeLeftToNextPairing
@@ -206,6 +204,10 @@ export class StateChainQuery {
     } catch (err) {
       throw err;
     }
+  }
+
+  public getVirtualEpoch(): number {
+    return this.virtualEpoch;
   }
 
   // getPairing return pairing list for specific chainID
@@ -263,7 +265,7 @@ export class StateChainQuery {
         params: ["/lavanet.lava.pairing.Query/SdkPairing", hexData, "0", false],
       };
 
-      const response = await this.rpcConsumer.sendRelay(sendRelayOptions);
+      const response = await this.rpcConsumer.sendRelay(sendRelayOptions, this.virtualEpoch);
 
       const reply = response.reply;
 

@@ -77,6 +77,10 @@ export class StateTracker {
     Logger.debug("Pairing updater added");
   }
 
+  public getVirtualEpoch(): number {
+    return this.stateQuery.getVirtualEpoch();
+  }
+
   getPairingResponse(chainId: string): PairingResponse | undefined {
     return this.stateQuery.getPairing(chainId);
   }

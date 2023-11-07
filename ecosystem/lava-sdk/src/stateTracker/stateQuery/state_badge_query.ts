@@ -16,6 +16,7 @@ export class StateBadgeQuery {
   private walletAddress: string;
   private relayer: Relayer;
   private account: AccountData;
+  private virtualEpoch = 0;
 
   constructor(
     badgeManager: BadgeManager,
@@ -102,6 +103,8 @@ export class StateBadgeQuery {
       virtualEpoch = 0;
     }
 
+    this.virtualEpoch = virtualEpoch;
+
     Logger.debug("Fetching pairing ended");
 
     return [timeLeftToNextPairing, virtualEpoch];
@@ -109,6 +112,10 @@ export class StateBadgeQuery {
 
   public async init(): Promise<void> {
     return;
+  }
+
+  public getVirtualEpoch(): number {
+    return this.virtualEpoch;
   }
 
   // getPairing return pairing list for specific chainID
