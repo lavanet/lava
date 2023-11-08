@@ -136,6 +136,8 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+const startedTestStr = "started test "
+
 func TestChainTracker(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -153,7 +155,7 @@ func TestChainTracker(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			utils.LavaFormatInfo("started test " + tt.name)
+			utils.LavaFormatInfo(startedTestStr + tt.name)
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks, nil)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
@@ -299,7 +301,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test " + tt.name)
+			utils.LavaFormatInfo(startedTestStr + tt.name)
 			callbackCalledFork = false
 			callbackCalledNewLatest = false
 			for i := 0; i < int(tt.advancement); i++ {
@@ -539,7 +541,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test " + tt.name)
+			utils.LavaFormatInfo(startedTestStr + tt.name)
 			callbackCalledFork = false
 			for i := 0; i < int(tt.advancement); i++ {
 				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()

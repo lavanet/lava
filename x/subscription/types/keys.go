@@ -1,5 +1,7 @@
 package types
 
+import "strings"
+
 const (
 	// ModuleName defines the module name
 	ModuleName = "subscription"
@@ -21,4 +23,16 @@ const (
 
 	// prefix for the subscription fixation store
 	SubsTimerPrefix = "subs-ts"
+
+	// prefix for the CU tracker fixation store
+	CuTrackerFixationPrefix = "cu-tracker-fs"
 )
+
+func CuTrackerKey(sub string, provider string, chainID string) string {
+	return sub + " " + provider + " " + chainID
+}
+
+func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string) {
+	decodedKey := strings.Split(key, " ")
+	return decodedKey[0], decodedKey[1], decodedKey[2]
+}

@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
@@ -135,7 +136,7 @@ func TestDetection(t *testing.T) {
 			if tt.Valid {
 				events := ts.Ctx.EventManager().Events()
 				require.Nil(t, err)
-				require.Equal(t, events[len(events)-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
+				require.Equal(t, events[len(events)-1].Type, utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName)
 			}
 		})
 	}

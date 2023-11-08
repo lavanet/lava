@@ -5,4 +5,5 @@ const (
 	ExpireSubscriptionEventName = "expire_subscription_event"
 	AddProjectEventName         = "add_project_to_subscription_event"
 	DelProjectEventName         = "del_project_to_subscription_event"
+	AddTrackedCuEventName       = "add_tracked_cu_event"
 )
