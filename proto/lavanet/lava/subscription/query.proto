@@ -76,6 +76,7 @@ message ListInfoStruct {
   uint64 month_cu_left = 7; // remaining CU allowance this month
   string cluster = 8;
   uint64 duration_total = 9;
+  bool auto_renewal = 10;
 }
 
 // this line is used by starport scaffolding # 3
