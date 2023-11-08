@@ -298,8 +298,10 @@ export class ConsumerSessionManager {
           sessionEpoch = pairingEpoch;
         }
 
-        const err =
-          consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession);
+        const err = consumerSessionsWithProvider.addUsedComputeUnits(
+          cuNeededForSession,
+          virtualEpoch
+        );
         if (err) {
           Logger.debug(
             `consumerSessionWithProvider.addUsedComputeUnits error: ${err.message}`

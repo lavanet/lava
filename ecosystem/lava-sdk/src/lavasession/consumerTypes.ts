@@ -487,16 +487,20 @@ export class ConsumerSessionsWithProvider {
       Logger.warn(
         `MaxComputeUnitsExceededError: ${this.publicLavaAddress} cu: ${
           this.usedComputeUnits
-        } max: ${this.maxComputeUnits * virtualEpoch}`
+        } max: ${this.maxComputeUnits * (virtualEpoch + 1)}`
       );
       return new MaxComputeUnitsExceededError();
     }
   }
 
   public addUsedComputeUnits(
-    cu: number
+    cu: number,
+    virtualEpoch: number
   ): MaxComputeUnitsExceededError | undefined {
-    if (this.usedComputeUnits + cu > this.maxComputeUnits) {
+    if (
+      this.usedComputeUnits + cu >
+      this.maxComputeUnits * (virtualEpoch + 1)
+    ) {
       return new MaxComputeUnitsExceededError();
     }
 
