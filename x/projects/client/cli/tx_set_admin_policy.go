@@ -18,20 +18,28 @@ var _ = strconv.Itoa(0)
 
 func CmdSetPolicy() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set-policy [project-index] [policy-file-path]",
+		Use:   "set-policy project-index [policy-file-path]",
 		Short: "set policy to a project",
 		Long:  `The set-policy command allows a project admin to set a new policy to its project. The policy file is a YAML file (see cookbook/projects/example_policy.yml for reference). The new policy will be applied from the next epoch. To define a geolocation in the policy file, use the available geolocations: ` + planstypes.PrintGeolocations(),
 		Example: `required flags: --from <creator-address>
-		lavad tx project set-policy [project-index] [policy-file-path] --from <creator_address>`,
-		Args: cobra.ExactArgs(2),
+		lavad tx project set-policy [project-index] [policy-file-path] --from <creator_address>
+		lavad tx project set-policy [policy-file-path] --from <creator_address> (use this for the default admin policy)`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
+			var projectId string
+			var adminPolicyFilePath string
+			if len(args) == 2 {
+				projectId = args[0]
+				adminPolicyFilePath = args[1]
+			} else {
+				adminPolicyFilePath = args[0]
+				projectId = clientCtx.GetFromAddress().String() + "-admin"
+			}
 
-			projectId := args[0]
-			adminPolicyFilePath := args[1]
 			policy, err := planstypes.ParsePolicyFromYamlPath(adminPolicyFilePath)
 			if err != nil {
 				return err

@@ -172,7 +172,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		// try to save disabled endpoints
 		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, 1)
 	} else {
-		utils.LavaFormatInfo("[+] all endpoints up an running")
+		utils.LavaFormatInfo("[+] all endpoints up and running")
 	}
 	// tearing down
 	select {
@@ -223,7 +223,7 @@ func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession
 		activeEndpointsList := getActiveEndpoints(disabledEndpoints, disabledEndpointsAfterRetry)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 	} else {
-		utils.LavaFormatInfo("[+] all endpoints up an running")
+		utils.LavaFormatInfo("[+] all endpoints up and running")
 	}
 }
 
