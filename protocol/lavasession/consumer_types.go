@@ -63,6 +63,7 @@ type SingleConsumerSession struct {
 	Endpoint                    *Endpoint
 	BlockListed                 bool   // if session lost sync we blacklist it.
 	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
+	errosCount                  uint64
 }
 
 type DataReliabilitySession struct {
