@@ -20,6 +20,7 @@ message MsgBuy {
   string consumer = 2;
   string index = 3;
   uint64 duration = 4; // in months
+  bool auto_renewal = 6;
 }
 
 message MsgBuyResponse {

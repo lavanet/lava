@@ -58,6 +58,7 @@ func (k Keeper) CreateSubscription(
 	consumer string,
 	planIndex string,
 	duration uint64,
+	autoRenewal bool,
 ) error {
 	var err error
 
@@ -111,6 +112,7 @@ func (k Keeper) CreateSubscription(
 			PlanIndex:     planIndex,
 			PlanBlock:     plan.Block,
 			DurationTotal: 0,
+			AutoRenewal:   autoRenewal,
 		}
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
