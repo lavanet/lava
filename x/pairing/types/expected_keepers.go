@@ -80,7 +80,11 @@ type SubscriptionKeeper interface {
 	GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error)
 	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block, cuAmount uint64) (subscriptiontypes.Subscription, error)
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
+	GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string
+	GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, block uint64) (cu uint64, found bool, key string)
+	CalcTotalMonthlyReward(ctx sdk.Context, plan planstypes.Plan, trackedCu uint64, totalCuUsedBySub uint64) math.Int
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64) error
+	GetAllSubscriptionsIndices(ctx sdk.Context) []string
 }
 
 type PlanKeeper interface {
@@ -92,8 +96,8 @@ type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
 }
 
-type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string) (providerReward math.Int, err error)
+type DualstakingKeeper interface {
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error)
 }
 
 type FixationStoreKeeper interface {

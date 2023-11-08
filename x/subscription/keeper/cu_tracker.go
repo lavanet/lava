@@ -3,10 +3,12 @@ package keeper
 import (
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -71,7 +73,7 @@ type trackedCuInfo struct {
 	block     uint64
 }
 
-func (k Keeper) getSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
+func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
@@ -120,7 +122,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		)
 		return
 	}
-	trackedCuList, totalCuTracked := k.getSubTrackedCuInfo(ctx, sub, blockStr)
+	trackedCuList, totalCuTracked := k.GetSubTrackedCuInfo(ctx, sub, blockStr)
 
 	var block uint64
 	if len(trackedCuList) == 0 {
@@ -160,7 +162,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 		// TODO: deal with the reward's remainder (uint division...)
-		totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuTracked))
+		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, plan, trackedCu, totalCuTracked)
 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
@@ -174,7 +176,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
-		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName)
+		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName, false)
 		if err == epochstoragetypes.ErrProviderNotStaked || err == epochstoragetypes.ErrStakeStorageNotFound {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -203,4 +205,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			}, "Provider got monthly reward successfully")
 		}
 	}
+}
+
+func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, plan planstypes.Plan, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
+	// TODO: deal with the reward's remainder (uint division...)
+	// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+	if totalCuUsedBySub == 0 {
+		return math.ZeroInt()
+	}
+	totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
+	return totalMonthlyReward
 }
