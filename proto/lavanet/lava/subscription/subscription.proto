@@ -18,4 +18,5 @@ message Subscription {
   reserved 12;
   string cluster = 13;         // cluster key
   uint64 duration_total = 14;  // continous subscription usage
+  bool auto_renewal = 15; // automatic renewal when the subscription expires
 }
