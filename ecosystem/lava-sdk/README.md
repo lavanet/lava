@@ -13,7 +13,7 @@
 JavaScript/TypeScript SDK reference implementation designed for developers looking for access through the Lava Network. It can be added to your app/dapp and run in browsers to provide multi-chain peer-to-peer access to blockchain APIs.
 
 # Official Documentation
-https://docs.lavanet.xyz/access-sdk
+[https://docs.lavanet.xyz/access-sdk](https://docs.lavanet.xyz/access-sdk?utm_source=sdk-readme&utm_medium=npm%20/%20github)
 
 <!-- Roadmap -->
 # Roadmap
@@ -53,14 +53,18 @@ If lava latest release version is `v0.8.0` or any minor version such as v0.8.1 �
 
 ---
 
-### Prerequisites (Beta version)
-_SDK setup requires additional steps at the moment, but we're working on minimizing prerequisites as we progress through the roadmap._
+### Prerequisites
+During `lava-testnet-2`, there are a few additional steps to becoming operational with the SDK. To get started with LavaSDK, please create an account on the [Lava Gateway](https://gateway.lavanet.xyz?utm_source=sdk-readme&utm_medium=npm%20/%20github)
 
-1. Create a wallet on the Lava Testnet, have LAVA tokens
-1. Stake in the chain you want to access
-2. Stake in Lava chain
+Presently, you can use the SDK in two ways:
+1. Badges
+   This is the route recommended for frontend applications. Badges are used so that you don't have to expose your private keys in code. Every user is assigned a usable projectId with the creation of a project on our gateway. Simply navigate to the APIs you would like to use, click `Lava SDK`, and copy and paste the `badge` in your SDK initialization code to get started.
+2. Private Keys
+   This is the route recommended for backend applications. Select `settings` under your project and add your private key under `Project Keys`. Don't have a private key and need one? No worries, you can generate a Private Key right on the gateway for added ease of use. 
 
-Need help? We've got you covered 😻 Head over to our [Discord](https://discord.gg/5VcqgwMmkA) channel `#developers` and we'll provide testnet tokens and further support
+You'll be able to monitor usage, project manage, and put configurations in place from the Gateway all while continuing to use Lava's P2P network.
+
+Need help? We've got you covered 😻 Head over to our [Discord](https://discord.gg/5VcqgwMmkA) channel `#lava-sdk` and we'll provide further support!
 
 ### Yarn
 
