@@ -34,9 +34,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface"}
+const (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
+	DebugRelaysFlagName        = "debug-relays"
+	DebugProbesFlagName        = "debug-probes"
+)
+
+var (
+	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
+	DebugRelaysFlag        = false
 )
 
 type strategyValue struct {
@@ -438,6 +444,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
+	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
+	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	return cmdRPCConsumer
 }
 

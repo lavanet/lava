@@ -3,7 +3,7 @@
 if [ -n "$1" ]; then
     killall lavad lavap
     make install-all
-    lavad start 
+    lavad start | grep lava_
 else
     echo "dont use this script with vscode debugger"
     killall lavad lavap
