@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -54,4 +55,8 @@ type FixationStoreKeeper interface {
 
 type TimerStoreKeeper interface {
 	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
+}
+
+type DualStakingKeeper interface {
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string) (providerReward math.Int, err error)
 }

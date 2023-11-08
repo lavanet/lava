@@ -40,7 +40,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 		return nil, fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
 
-	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription(), uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, err
 	}

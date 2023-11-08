@@ -77,7 +77,7 @@ type ProjectsKeeper interface {
 }
 
 type SubscriptionKeeper interface {
-	GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error)
+	GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error)
 	ChargeComputeUnitsToSubscription(ctx sdk.Context, subscriptionOwner string, block, cuAmount uint64) (subscriptiontypes.Subscription, error)
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64) error
@@ -93,7 +93,7 @@ type DowntimeKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string) (providerReward math.Int, err error)
 }
 
 type FixationStoreKeeper interface {

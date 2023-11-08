@@ -209,6 +209,15 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		return
 	}
 
+	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
+	if err != nil {
+		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
+			utils.Attribute{Key: "block", Value: block},
+		)
+	} else {
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
+	}
+
 	if sub.DurationLeft == 0 {
 		// subscription duration has already reached zero before and should have
 		// been removed before. Extend duration by another month (without adding
@@ -268,9 +277,9 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	}
 }
 
-func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
+func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error) {
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
 		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
 		)

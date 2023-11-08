@@ -28,11 +28,13 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
+		dualstakingKeeper  types.DualStakingKeeper
 
 		subsFS fixationstore.FixationStore
 		subsTS timerstore.TimerStore
 
 		cuTrackerFS fixationstore.FixationStore // key: "<sub> <provider>", value: month aggregated CU
+		cuTrackerTS timerstore.TimerStore
 	}
 )
 
@@ -47,6 +49,7 @@ func NewKeeper(
 	epochstorageKeeper types.EpochstorageKeeper,
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
+	dualstakingKeeper types.DualStakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -69,6 +72,7 @@ func NewKeeper(
 		epochstorageKeeper: epochstorageKeeper,
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
+		dualstakingKeeper:  dualstakingKeeper,
 
 		subsFS:      fs,
 		cuTrackerFS: cuTracker,
@@ -80,6 +84,13 @@ func NewKeeper(
 
 	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
+
+	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
+		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
+	}
+
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
+		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper
 }
