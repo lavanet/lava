@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	MaxRelayRetries = 4
+	MaxRelayRetries = 6
 )
 
 var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
@@ -150,11 +150,17 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 	seenBlock := int64(0)
 	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
 	unwantedProviders := map[string]struct{}{}
+	timeouts := 0
 	for iter := 0; iter < count; iter++ {
-		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", "", &unwantedProviders)
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", "", &unwantedProviders, timeouts)
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "unwantedProviders", Value: unwantedProviders}}...)
-			unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+			if relayResult != nil && relayResult.ProviderAddress != "" {
+				unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+			}
+			if common.IsTimeout(err) {
+				timeouts++
+			}
 		} else {
 			unwantedProviders = map[string]struct{}{}
 			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderAddress}}...)
@@ -215,9 +221,10 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
 	retries := 0
+	timeouts := 0
 	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
-		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders)
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, timeouts)
 		if relayResult.ProviderAddress != "" {
 			if err != nil {
 				_, ok := blockOnSyncLoss[relayResult.ProviderAddress]
@@ -227,6 +234,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 					utils.LavaFormatWarning("Identified SyncLoss in provider, not removing it from list for another attempt", err, utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
 				} else {
 					unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+				}
+				if common.IsTimeout(err) {
+					timeouts++
 				}
 			}
 		}
@@ -305,6 +315,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	dappID string,
 	consumerIp string,
 	unwantedProviders *map[string]struct{},
+	timeouts int,
 ) (relayResult *common.RelayResult, errRet error) {
 	// get a session for the relay from the ConsumerSessionManager
 	// construct a relay message with lavaprotocol package, include QoS and jail providers
@@ -354,8 +365,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Make a channel for all providers to send responses
 	responses := make(chan *relayResponse, len(sessions))
 
-	// Set relay timout
-	relayTimeout := extraRelayTimeout + common.GetTimePerCu(chainMessage.GetApi().ComputeUnits) + common.AverageWorldLatency
+	// Set relay timout, increase it every time we fail a relay on timeout
+	relayTimeout := extraRelayTimeout + time.Duration(timeouts+1)*common.GetTimePerCu(chainMessage.GetApi().ComputeUnits) + common.AverageWorldLatency
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
@@ -672,7 +683,8 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 	relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders)
+	// TODO: give the same timeout the original provider got by setting the same retry
+	relayResultDataReliability, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, 0)
 	if err != nil {
 		errAttributes := []utils.Attribute{}
 		// failed to send to a provider
