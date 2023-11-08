@@ -317,6 +317,94 @@ func (m *MsgDelProjectResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgDelProjectResponse proto.InternalMessageInfo
 
+type MsgAutoRenewal struct {
+	Creator string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Enable  bool   `protobuf:"varint,2,opt,name=enable,proto3" json:"enable,omitempty"`
+}
+
+func (m *MsgAutoRenewal) Reset()         { *m = MsgAutoRenewal{} }
+func (m *MsgAutoRenewal) String() string { return proto.CompactTextString(m) }
+func (*MsgAutoRenewal) ProtoMessage()    {}
+func (*MsgAutoRenewal) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b1bb075a6865b817, []int{6}
+}
+func (m *MsgAutoRenewal) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgAutoRenewal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgAutoRenewal.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgAutoRenewal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAutoRenewal.Merge(m, src)
+}
+func (m *MsgAutoRenewal) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgAutoRenewal) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAutoRenewal.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgAutoRenewal proto.InternalMessageInfo
+
+func (m *MsgAutoRenewal) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *MsgAutoRenewal) GetEnable() bool {
+	if m != nil {
+		return m.Enable
+	}
+	return false
+}
+
+type MsgAutoRenewalResponse struct {
+}
+
+func (m *MsgAutoRenewalResponse) Reset()         { *m = MsgAutoRenewalResponse{} }
+func (m *MsgAutoRenewalResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgAutoRenewalResponse) ProtoMessage()    {}
+func (*MsgAutoRenewalResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b1bb075a6865b817, []int{7}
+}
+func (m *MsgAutoRenewalResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgAutoRenewalResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgAutoRenewalResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgAutoRenewalResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAutoRenewalResponse.Merge(m, src)
+}
+func (m *MsgAutoRenewalResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgAutoRenewalResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAutoRenewalResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgAutoRenewalResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgBuy)(nil), "lavanet.lava.subscription.MsgBuy")
 	proto.RegisterType((*MsgBuyResponse)(nil), "lavanet.lava.subscription.MsgBuyResponse")
@@ -324,6 +412,8 @@ func init() {
 	proto.RegisterType((*MsgAddProjectResponse)(nil), "lavanet.lava.subscription.MsgAddProjectResponse")
 	proto.RegisterType((*MsgDelProject)(nil), "lavanet.lava.subscription.MsgDelProject")
 	proto.RegisterType((*MsgDelProjectResponse)(nil), "lavanet.lava.subscription.MsgDelProjectResponse")
+	proto.RegisterType((*MsgAutoRenewal)(nil), "lavanet.lava.subscription.MsgAutoRenewal")
+	proto.RegisterType((*MsgAutoRenewalResponse)(nil), "lavanet.lava.subscription.MsgAutoRenewalResponse")
 }
 
 func init() {
@@ -331,34 +421,37 @@ func init() {
 }
 
 var fileDescriptor_b1bb075a6865b817 = []byte{
-	// 420 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xcf, 0xee, 0xd2, 0x40,
-	0x10, 0xee, 0xfe, 0x28, 0x15, 0x17, 0x34, 0x64, 0x83, 0xb1, 0xf6, 0x50, 0xa1, 0x5e, 0x6a, 0x62,
-	0xb6, 0x06, 0xcf, 0x1e, 0x24, 0xc4, 0x83, 0x86, 0xc4, 0xd4, 0x9b, 0x17, 0xb2, 0xb4, 0x9b, 0x52,
-	0x03, 0xdd, 0x66, 0x77, 0x8b, 0xf0, 0x16, 0x5e, 0x7d, 0x09, 0x9f, 0x83, 0x23, 0x47, 0x4f, 0xc6,
-	0xc0, 0x8b, 0x98, 0xfe, 0xa3, 0xad, 0x46, 0xea, 0x69, 0x67, 0x66, 0xbf, 0x6f, 0xe6, 0xdb, 0x6f,
-	0x33, 0xd0, 0xda, 0x90, 0x1d, 0x89, 0xa8, 0x74, 0xd2, 0xd3, 0x11, 0xc9, 0x4a, 0x78, 0x3c, 0x8c,
-	0x65, 0xc8, 0x22, 0x47, 0xee, 0x71, 0xcc, 0x99, 0x64, 0xe8, 0x49, 0x81, 0xc1, 0xe9, 0x89, 0xeb,
-	0x18, 0xe3, 0x59, 0x83, 0x1e, 0x73, 0xf6, 0x99, 0x7a, 0x52, 0x94, 0x41, 0xce, 0x37, 0x46, 0x01,
-	0x0b, 0x58, 0x16, 0x3a, 0x69, 0x94, 0x57, 0xad, 0x6f, 0x00, 0x6a, 0x0b, 0x11, 0xcc, 0x92, 0x03,
-	0xd2, 0xe1, 0x3d, 0x8f, 0x53, 0x22, 0x19, 0xd7, 0xc1, 0x18, 0xd8, 0xf7, 0xdd, 0x32, 0x45, 0x06,
-	0xec, 0x79, 0x2c, 0x12, 0xc9, 0x96, 0x72, 0xfd, 0x2e, 0xbb, 0xba, 0xe6, 0x68, 0x04, 0xbb, 0x61,
-	0xe4, 0xd3, 0xbd, 0xde, 0xc9, 0x2e, 0xf2, 0x24, 0x65, 0xf8, 0x09, 0x27, 0xa9, 0x3a, 0x5d, 0x1d,
-	0x03, 0x5b, 0x75, 0xaf, 0x39, 0x9a, 0xc0, 0x01, 0x49, 0x24, 0x5b, 0x72, 0x1a, 0xd1, 0x2f, 0x64,
-	0xa3, 0x6b, 0x63, 0x60, 0xf7, 0xdc, 0x7e, 0x5a, 0x73, 0xf3, 0xd2, 0x3b, 0xb5, 0xd7, 0x1d, 0x6a,
-	0xd6, 0x10, 0x3e, 0xcc, 0xa5, 0xb9, 0x54, 0xc4, 0x2c, 0x12, 0xd4, 0xda, 0xc1, 0x07, 0x0b, 0x11,
-	0xbc, 0xf1, 0xfd, 0x0f, 0xf9, 0xd3, 0x6e, 0x68, 0x7e, 0x0f, 0x07, 0xc5, 0xfb, 0x97, 0x3e, 0x91,
-	0x24, 0xd3, 0xdd, 0x9f, 0x5a, 0xb8, 0xe1, 0x62, 0x69, 0x15, 0x2e, 0xfa, 0xcd, 0x89, 0x24, 0x33,
-	0xf5, 0xf8, 0xf3, 0xa9, 0xe2, 0xf6, 0xe3, 0xaa, 0x64, 0x3d, 0x86, 0x8f, 0x1a, 0x73, 0xaf, 0x82,
-	0x5e, 0x67, 0x82, 0xe6, 0x74, 0xd3, 0x2e, 0x08, 0x41, 0x35, 0x22, 0x5b, 0x5a, 0x18, 0x98, 0xc5,
-	0x45, 0xdf, 0x8a, 0x5e, 0xf6, 0x9d, 0x7e, 0xbf, 0x83, 0x9d, 0x85, 0x08, 0xd0, 0x47, 0xd8, 0x49,
-	0xbf, 0x66, 0x82, 0xff, 0xf9, 0xf9, 0x38, 0xb7, 0xc8, 0x78, 0xde, 0x0a, 0x29, 0x9b, 0xa3, 0x35,
-	0x84, 0x35, 0x0b, 0xed, 0xdb, 0xc4, 0x0a, 0x69, 0xbc, 0xfc, 0x5f, 0x64, 0x7d, 0x52, 0xcd, 0x9b,
-	0x96, 0x49, 0x15, 0xb2, 0x6d, 0xd2, 0xdf, 0x86, 0xcd, 0xde, 0x1e, 0xcf, 0x26, 0x38, 0x9d, 0x4d,
-	0xf0, 0xeb, 0x6c, 0x82, 0xaf, 0x17, 0x53, 0x39, 0x5d, 0x4c, 0xe5, 0xc7, 0xc5, 0x54, 0x3e, 0xbd,
-	0x08, 0x42, 0xb9, 0x4e, 0x56, 0xd8, 0x63, 0x5b, 0xa7, 0xb1, 0x27, 0xfb, 0x3f, 0x16, 0xed, 0x10,
-	0x53, 0xb1, 0xd2, 0xb2, 0xb5, 0x78, 0xf5, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x86, 0x57, 0xfd, 0x27,
-	0x92, 0x03, 0x00, 0x00,
+	// 466 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0x8d, 0x89, 0x6b, 0xc2, 0xa4, 0xa0, 0x6a, 0x55, 0x8a, 0xf1, 0xc1, 0xa4, 0xe6, 0x12, 0x24,
+	0xb4, 0x86, 0x72, 0xe6, 0xd0, 0xa8, 0xe2, 0x00, 0x8a, 0x84, 0xcc, 0x8d, 0x4b, 0xb5, 0xb1, 0x57,
+	0x6e, 0x20, 0xd9, 0xb5, 0x76, 0xd7, 0x25, 0xfd, 0x0b, 0xae, 0x88, 0x1f, 0xea, 0xb1, 0x47, 0x4e,
+	0x08, 0x25, 0x3f, 0x82, 0xbc, 0x6b, 0xc7, 0x36, 0xa8, 0x71, 0x4f, 0x3b, 0x33, 0xfb, 0xe6, 0xcd,
+	0x9b, 0x19, 0xaf, 0x21, 0x58, 0x90, 0x4b, 0xc2, 0xa8, 0x0a, 0x8b, 0x33, 0x94, 0xf9, 0x4c, 0xc6,
+	0x62, 0x9e, 0xa9, 0x39, 0x67, 0xa1, 0x5a, 0xe1, 0x4c, 0x70, 0xc5, 0xd1, 0xd3, 0x12, 0x83, 0x8b,
+	0x13, 0x37, 0x31, 0xde, 0xf3, 0x56, 0x7a, 0x26, 0xf8, 0x17, 0x1a, 0x2b, 0x59, 0x19, 0x26, 0xdf,
+	0x3b, 0x4c, 0x79, 0xca, 0xb5, 0x19, 0x16, 0x96, 0x89, 0x06, 0x3f, 0x2c, 0x70, 0xa6, 0x32, 0x9d,
+	0xe4, 0x57, 0xc8, 0x85, 0xfb, 0xb1, 0xa0, 0x44, 0x71, 0xe1, 0x5a, 0x23, 0x6b, 0xfc, 0x20, 0xaa,
+	0x5c, 0xe4, 0xc1, 0x20, 0xe6, 0x4c, 0xe6, 0x4b, 0x2a, 0xdc, 0x7b, 0xfa, 0x6a, 0xeb, 0xa3, 0x43,
+	0xd8, 0x9b, 0xb3, 0x84, 0xae, 0xdc, 0xbe, 0xbe, 0x30, 0x4e, 0x91, 0x91, 0xe4, 0x82, 0x14, 0xea,
+	0x5c, 0x7b, 0x64, 0x8d, 0xed, 0x68, 0xeb, 0xa3, 0x63, 0xd8, 0x27, 0xb9, 0xe2, 0xe7, 0x82, 0x32,
+	0xfa, 0x8d, 0x2c, 0x5c, 0x67, 0x64, 0x8d, 0x07, 0xd1, 0xb0, 0x88, 0x45, 0x26, 0xf4, 0xde, 0x1e,
+	0xec, 0x1d, 0x38, 0xc1, 0x01, 0x3c, 0x32, 0xd2, 0x22, 0x2a, 0x33, 0xce, 0x24, 0x0d, 0x2e, 0xe1,
+	0xe1, 0x54, 0xa6, 0xa7, 0x49, 0xf2, 0xd1, 0xb4, 0xb6, 0x43, 0xf3, 0x07, 0xd8, 0x2f, 0xfb, 0x3f,
+	0x4f, 0x88, 0x22, 0x5a, 0xf7, 0xf0, 0x24, 0xc0, 0xad, 0x29, 0x56, 0xa3, 0xc2, 0x25, 0xdf, 0x19,
+	0x51, 0x64, 0x62, 0x5f, 0xff, 0x7e, 0xd6, 0x8b, 0x86, 0x59, 0x1d, 0x0a, 0x9e, 0xc0, 0xe3, 0x56,
+	0xdd, 0xad, 0xa0, 0xb7, 0x5a, 0xd0, 0x19, 0x5d, 0x74, 0x0b, 0x42, 0x60, 0x33, 0xb2, 0xa4, 0xe5,
+	0x00, 0xb5, 0x5d, 0xf2, 0xd6, 0xe9, 0x5b, 0xde, 0x89, 0x6e, 0xfd, 0xb4, 0x1e, 0xc9, 0x0e, 0xe2,
+	0x23, 0x70, 0x28, 0x23, 0xb3, 0x85, 0xa1, 0x1e, 0x44, 0xa5, 0x17, 0xb8, 0x70, 0xd4, 0xe6, 0xa8,
+	0xd8, 0x4f, 0x7e, 0xf6, 0xa1, 0x3f, 0x95, 0x29, 0xfa, 0x04, 0xfd, 0x62, 0xf1, 0xc7, 0xf8, 0xd6,
+	0x4f, 0x0b, 0x9b, 0x05, 0x78, 0x2f, 0x3a, 0x21, 0x15, 0x39, 0xba, 0x00, 0x68, 0x2c, 0x68, 0xbc,
+	0x3b, 0xb1, 0x46, 0x7a, 0xaf, 0xee, 0x8a, 0x6c, 0x56, 0x6a, 0x4c, 0xbe, 0xa3, 0x52, 0x8d, 0xec,
+	0xaa, 0xf4, 0xff, 0x3a, 0xd0, 0x57, 0x18, 0x36, 0x77, 0xd1, 0x31, 0x8d, 0x06, 0xd4, 0x7b, 0x7d,
+	0x67, 0x68, 0x55, 0x6c, 0xf2, 0xee, 0x7a, 0xed, 0x5b, 0x37, 0x6b, 0xdf, 0xfa, 0xb3, 0xf6, 0xad,
+	0xef, 0x1b, 0xbf, 0x77, 0xb3, 0xf1, 0x7b, 0xbf, 0x36, 0x7e, 0xef, 0xf3, 0xcb, 0x74, 0xae, 0x2e,
+	0xf2, 0x19, 0x8e, 0xf9, 0x32, 0x6c, 0x3d, 0xf9, 0xd5, 0x3f, 0xff, 0x8c, 0xab, 0x8c, 0xca, 0x99,
+	0xa3, 0x5f, 0xf8, 0x9b, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x28, 0x35, 0xcb, 0x2c, 0x5d, 0x04,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -376,6 +469,7 @@ type MsgClient interface {
 	Buy(ctx context.Context, in *MsgBuy, opts ...grpc.CallOption) (*MsgBuyResponse, error)
 	AddProject(ctx context.Context, in *MsgAddProject, opts ...grpc.CallOption) (*MsgAddProjectResponse, error)
 	DelProject(ctx context.Context, in *MsgDelProject, opts ...grpc.CallOption) (*MsgDelProjectResponse, error)
+	AutoRenewal(ctx context.Context, in *MsgAutoRenewal, opts ...grpc.CallOption) (*MsgAutoRenewalResponse, error)
 }
 
 type msgClient struct {
@@ -413,11 +507,21 @@ func (c *msgClient) DelProject(ctx context.Context, in *MsgDelProject, opts ...g
 	return out, nil
 }
 
+func (c *msgClient) AutoRenewal(ctx context.Context, in *MsgAutoRenewal, opts ...grpc.CallOption) (*MsgAutoRenewalResponse, error) {
+	out := new(MsgAutoRenewalResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.subscription.Msg/AutoRenewal", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	Buy(context.Context, *MsgBuy) (*MsgBuyResponse, error)
 	AddProject(context.Context, *MsgAddProject) (*MsgAddProjectResponse, error)
 	DelProject(context.Context, *MsgDelProject) (*MsgDelProjectResponse, error)
+	AutoRenewal(context.Context, *MsgAutoRenewal) (*MsgAutoRenewalResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -432,6 +536,9 @@ func (*UnimplementedMsgServer) AddProject(ctx context.Context, req *MsgAddProjec
 }
 func (*UnimplementedMsgServer) DelProject(ctx context.Context, req *MsgDelProject) (*MsgDelProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DelProject not implemented")
+}
+func (*UnimplementedMsgServer) AutoRenewal(ctx context.Context, req *MsgAutoRenewal) (*MsgAutoRenewalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AutoRenewal not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -492,6 +599,24 @@ func _Msg_DelProject_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_AutoRenewal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgAutoRenewal)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).AutoRenewal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.subscription.Msg/AutoRenewal",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).AutoRenewal(ctx, req.(*MsgAutoRenewal))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.subscription.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -507,6 +632,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DelProject",
 			Handler:    _Msg_DelProject_Handler,
+		},
+		{
+			MethodName: "AutoRenewal",
+			Handler:    _Msg_AutoRenewal_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -718,6 +847,69 @@ func (m *MsgDelProjectResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgAutoRenewal) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgAutoRenewal) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgAutoRenewal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Enable {
+		i--
+		if m.Enable {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgAutoRenewalResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgAutoRenewalResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgAutoRenewalResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -807,6 +999,31 @@ func (m *MsgDelProject) Size() (n int) {
 }
 
 func (m *MsgDelProjectResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgAutoRenewal) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Enable {
+		n += 2
+	}
+	return n
+}
+
+func (m *MsgAutoRenewalResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1362,6 +1579,158 @@ func (m *MsgDelProjectResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgDelProjectResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgAutoRenewal) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgAutoRenewal: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgAutoRenewal: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enable", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Enable = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgAutoRenewalResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgAutoRenewalResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgAutoRenewalResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
