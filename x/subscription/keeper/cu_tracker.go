@@ -12,6 +12,8 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
+const LIMIT_TOKEN_PER_CU = 1000
+
 // GetTrackedCu gets the tracked CU counter (with QoS influence) and the trackedCu entry's block
 func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, subBlock uint64) (cu uint64, found bool, key string) {
 	cuTrackerKey := types.CuTrackerKey(sub, provider, chainID)
@@ -141,6 +143,10 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			utils.Attribute{Key: "sub_consumer", Value: sub},
 		)
 		return
+	}
+
+	if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
+		plan.Price.Amount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
 
 	for _, trackedCuInfo := range trackedCuList {
