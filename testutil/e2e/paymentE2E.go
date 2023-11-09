@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"go/build"
+	"math"
 	"os"
 	"os/exec"
 	"time"
@@ -123,8 +124,25 @@ func (lt *lavaTest) getBalances(addresses []string) ([]sdk.Coin, error) {
 // in test time since pairing is pseudo-random)
 // with the monthly payment mechanism, we just wait and the providers get the rewards automatically
 func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
-	// wait for month+blocksToSave pass (debug_month = 2min, debug_epochsToSave = 5)
-	time.Sleep(time.Minute * 2)
+	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
+
+	// wait for month+blocksToSave pass (debug_month = 2min, debug_epochsToSave = 5) and query for expected payout
+	expectedPayoutArr := make([]uint64, len(providers))
+	for i := 0; i < 12; i++ {
+		for j := range providers {
+			payoutRequest := pairingTypes.QueryMonthlyPayoutRequest{Provider: providers[j]}
+			res, err := pairingQueryClient.MonthlyPayout(context.Background(), &payoutRequest)
+			if err != nil {
+				panic(err)
+			}
+
+			// keep the max amount
+			if expectedPayoutArr[j] < res.Amount {
+				expectedPayoutArr[j] = res.Amount
+			}
+		}
+		time.Sleep(time.Second * 10)
+	}
 
 	// get new balance and checks that at least one provider's balance was increased
 	newBalances, err := lt.getBalances(providers)
@@ -132,16 +150,23 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 		panic(err)
 	}
 
-	balanceIncreased := false
 	for i := range newBalances {
-		if !newBalances[i].IsLTE(startBalances[i]) {
-			balanceIncreased = true
+		payout := newBalances[i].Sub(startBalances[i]).Amount.Uint64()
+		if !withinRange(payout, expectedPayoutArr[i], 80) {
+			panic(utils.LavaFormatError("payment check failed", fmt.Errorf("provider did not get expected payment"),
+				utils.Attribute{Key: "provider", Value: providers[i]},
+				utils.Attribute{Key: "start_balance", Value: startBalances[i].String()},
+				utils.Attribute{Key: "expected_payout", Value: expectedPayoutArr[i]},
+				utils.Attribute{Key: "start_balance+expected_payout", Value: startBalances[i].AddAmount(sdk.NewIntFromUint64(expectedPayoutArr[i])).String()},
+				utils.Attribute{Key: "actual_balance", Value: newBalances[i]},
+			))
 		}
 	}
+}
 
-	if !balanceIncreased {
-		panic("all providers did not get rewards")
-	}
+func withinRange(value1, value2, percentage uint64) bool {
+	maxDifference := value1 * percentage / 100
+	return math.Abs(float64(value1)-float64(value2)) <= float64(maxDifference)
 }
 
 var (
