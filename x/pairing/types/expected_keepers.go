@@ -82,7 +82,7 @@ type SubscriptionKeeper interface {
 	GetSubscription(ctx sdk.Context, consumer string) (val subscriptiontypes.Subscription, found bool)
 	GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string
 	GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, block uint64) (cu uint64, found bool, key string)
-	CalcTotalMonthlyReward(ctx sdk.Context, plan planstypes.Plan, trackedCu uint64, totalCuUsedBySub uint64) math.Int
+	CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64) error
 	GetAllSubscriptionsIndices(ctx sdk.Context) []string
 }
