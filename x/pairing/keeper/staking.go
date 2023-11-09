@@ -81,43 +81,46 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		}
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
-		if amount.IsGTE(existingEntry.Stake) {
-			// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
-			existingEntry.Geolocation = geolocation
-			existingEntry.Endpoints = endpointsVerified
-			existingEntry.Moniker = moniker
-			existingEntry.DelegateCommission = delegationCommission
-			existingEntry.DelegateLimit = delegationLimit
+		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+		existingEntry.Geolocation = geolocation
+		existingEntry.Endpoints = endpointsVerified
+		existingEntry.Moniker = moniker
+		existingEntry.DelegateCommission = delegationCommission
+		existingEntry.DelegateLimit = delegationLimit
 
-			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 
-			// support modifying with the same stake or greater only
-			if !amount.Equal(existingEntry.Stake) {
-				// delegate the difference
-				amount = amount.Sub(existingEntry.Stake)
-				err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
-				if err != nil {
-					details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
-					return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
-						details...,
-					)
-				}
+		if amount.Amount.GT(existingEntry.Stake.Amount) {
+			// delegate the difference
+			diffAmount := amount.Sub(existingEntry.Stake)
+			err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, diffAmount)
+			if err != nil {
+				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
+				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+					details...,
+				)
 			}
-			// TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
-			// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
-			// must also change the unstaking to create a new entry entirely
-
-			detailsMap := map[string]string{}
-			for _, val := range details {
-				detailsMap[val.Key] = fmt.Sprint(val.Value)
+		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
+			// unbond the difference
+			diffAmount := existingEntry.Stake.Sub(amount)
+			err = k.dualStakingKeeper.Unbond(ctx, senderAddr.String(), senderAddr.String(), chainID, diffAmount, false)
+			if err != nil {
+				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
+				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+					details...,
+				)
 			}
-			utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake")
-			return nil
 		}
-		details = append(details, utils.Attribute{Key: "existingStake", Value: existingEntry.Stake.String()})
-		return utils.LavaFormatWarning("can't decrease stake for existing provider", fmt.Errorf("cant decrease stake"),
-			details...,
-		)
+		// TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
+		// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
+		// must also change the unstaking to create a new entry entirely
+
+		detailsMap := map[string]string{}
+		for _, val := range details {
+			detailsMap[val.Key] = fmt.Sprint(val.Value)
+		}
+		utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake")
+		return nil
 	}
 
 	// entry isn't staked so add him
@@ -130,7 +133,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		Stake:              sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
 		Address:            creator,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
@@ -146,7 +149,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 
 	err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
 	if err != nil {
-		utils.LavaFormatWarning("provider self delegation failed", err,
+		return utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,
 		)
 	}
