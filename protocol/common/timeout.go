@@ -5,6 +5,9 @@ import (
 	"errors"
 	"math"
 	"time"
+
+	"github.com/gogo/status"
+	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -43,4 +46,13 @@ func LowerContextTimeout(ctx context.Context, timeout time.Duration) (context.Co
 		return context.WithTimeout(ctx, timeout)
 	}
 	return context.WithCancel(ctx)
+}
+
+func IsTimeout(errArg error) bool {
+	if statusCode, ok := status.FromError(errArg); ok {
+		if statusCode.Code() == codes.DeadlineExceeded {
+			return true
+		}
+	}
+	return false
 }
