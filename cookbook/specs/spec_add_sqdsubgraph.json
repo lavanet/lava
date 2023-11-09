@@ -52,7 +52,27 @@
                         ],
                         "inheritance_apis": [],
                         "parse_directives": [],
-                        "verifications": []
+                        "verifications": [
+                            {
+                                "name": "health",
+                                "parse_directive": {
+                                    "function_template": "/",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "latest"
+                                        ],
+                                        "parser_func": "DEFAULT"
+                                    },
+                                    "api_name": "/subgraphs/name/health"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             }

@@ -211,7 +211,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
 	relayErrors := []error{}
-	blockOnSyncLoss := true
+	blockOnSyncLoss := map[string]struct{}{}
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
 	retries := 0
@@ -219,11 +219,15 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders)
 		if relayResult.ProviderAddress != "" {
-			if blockOnSyncLoss && lavasession.IsSessionSyncLoss(err) {
-				utils.LavaFormatDebug("Identified SyncLoss in provider, not removing it from list for another attempt", utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
-				blockOnSyncLoss = false // on the first sync loss no need to block the provider. give it another chance
-			} else {
-				unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+			if err != nil {
+				_, ok := blockOnSyncLoss[relayResult.ProviderAddress]
+				if !ok && lavasession.IsSessionSyncLoss(err) {
+					// allow this provider to be wantedProvider on a retry, if it didnt fail once on syncLoss
+					blockOnSyncLoss[relayResult.ProviderAddress] = struct{}{}
+					utils.LavaFormatWarning("Identified SyncLoss in provider, not removing it from list for another attempt", err, utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
+				} else {
+					unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+				}
 			}
 		}
 		if err != nil {
@@ -241,6 +245,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			continue
 		}
 		relayResults = append(relayResults, relayResult)
+		unwantedProviders[relayResult.ProviderAddress] = struct{}{}
 		// future relay requests and data reliability requests need to ask for the same specific block height to get consensus on the reply
 		// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
 		reqBlock, _ := chainMessage.RequestedBlock()
@@ -438,7 +443,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					}
 					time.Sleep(backOffDuration) // sleep before releasing this singleConsumerSession
 					// relay failed need to fail the session advancement
-					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
+					errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, origErr)
 					if errReport != nil {
 						utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: origErr.Error()})
 					}

@@ -17,101 +17,51 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
+	providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
+	if err != nil {
+		return nil, utils.LavaFormatError("invalid provider address", err,
+			utils.Attribute{Key: "provider", Value: req.Provider},
+		)
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	var amount uint64
 
-	// get all tracked CU entries
-	trackedCuInds := k.subscriptionKeeper.GetAllSubTrackedCuIndices(ctx, "")
+	subs := k.subscriptionKeeper.GetAllSubscriptionsIndices(ctx)
 
-	type totalUsedCuInfo struct {
-		totalUsedCu    uint64
-		relevant       bool // sub is relevant if the provider provided service for it
-		block          uint64
-		providerCuInfo map[string]uint64 // map[chainID]providerUsedCu
-	}
+	for _, sub := range subs {
+		trackedCuInds := k.subscriptionKeeper.GetAllSubTrackedCuIndices(ctx, subsciptiontypes.CuTrackerKey(sub, req.Provider, ""))
 
-	// get a map of sub+chainID to properties for reward calculation
-	totalUsedCuMap := map[string]totalUsedCuInfo{}
-	for _, ind := range trackedCuInds {
-		sub, provider, chainID := subsciptiontypes.DecodeCuTrackerKey(ind)
-		subObj, found := k.subscriptionKeeper.GetSubscription(ctx, sub)
-		if !found {
-			return nil, utils.LavaFormatError("cannot get tracked CU", fmt.Errorf("subscription not found"),
-				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chain_id", Value: chainID},
-			)
-		}
+		for _, trackCU := range trackedCuInds {
+			_, _, chainID := subsciptiontypes.DecodeCuTrackerKey(trackCU)
 
-		subBlock := subObj.Block
-		cu, found, _ := k.subscriptionKeeper.GetTrackedCu(ctx, sub, provider, chainID, subBlock)
-		if found {
-			// check if sub got service from provider (mark relevant and keep the provider's CU)
-			relevant := false
-			var providerCu uint64
-			if provider == req.Provider {
-				relevant = true
-				providerCu = cu
+			subObj, found := k.subscriptionKeeper.GetSubscription(ctx, sub)
+			if !found {
+				return nil, utils.LavaFormatError("cannot get tracked CU", fmt.Errorf("subscription not found"),
+					utils.Attribute{Key: "sub", Value: sub},
+					utils.Attribute{Key: "provider", Value: req.Provider},
+					utils.Attribute{Key: "chain_id", Value: chainID},
+				)
 			}
 
-			// count CU (we also count CU of sub that is not relevant because it might got service from many
-			// providers, and one of them might be the requested provider)
-			key := sub
-			if usedCuInfo, ok := totalUsedCuMap[key]; ok {
-				usedCuInfo.totalUsedCu += cu
-				usedCuInfo.relevant = relevant
-				usedCuInfo.block = subBlock
-				if providerCu != 0 {
-					providerCuInfoMap := usedCuInfo.providerCuInfo
-					providerCuInfoMap[chainID] = providerCu
-					usedCuInfo.providerCuInfo = providerCuInfoMap
-				}
-
-				totalUsedCuMap[key] = usedCuInfo
-			} else {
-				totalUsedCuMap[key] = totalUsedCuInfo{
-					totalUsedCu:    cu,
-					relevant:       relevant,
-					block:          subBlock,
-					providerCuInfo: map[string]uint64{},
-				}
-				if providerCu != 0 {
-					providerCuMap := map[string]uint64{chainID: providerCu}
-					info := totalUsedCuMap[key]
-					info.providerCuInfo = providerCuMap
-					totalUsedCuMap[key] = info
-				}
-			}
-		}
-	}
-
-	// calculate the provider's reward
-	for sub, usedCuInfo := range totalUsedCuMap {
-		if usedCuInfo.relevant {
-			plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, sub, usedCuInfo.block)
+			plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, sub, subObj.Block)
 			if err != nil {
 				return nil, err
 			}
 
-			for chainID, providerCu := range usedCuInfo.providerCuInfo {
-				// totalMonthlyReward = providerReward + totalDelegatorsReward
-				totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, plan, providerCu, usedCuInfo.totalUsedCu)
-
-				providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
-				if err != nil {
-					return nil, utils.LavaFormatError("invalid provider address", err,
-						utils.Attribute{Key: "provider", Value: req.Provider},
-					)
-				}
-
-				// calculate only the provider reward
-				providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, subsciptiontypes.ModuleName, true)
-				if err != nil {
-					return nil, err
-				}
-
-				amount += providerReward.Uint64()
+			providerCu, found, _ := k.subscriptionKeeper.GetTrackedCu(ctx, sub, req.Provider, chainID, subObj.Block)
+			if !found {
+				continue
 			}
+			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, plan, providerCu, subObj.MonthCuTotal-subObj.MonthCuLeft)
+
+			// calculate only the provider reward
+			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, subsciptiontypes.ModuleName, true)
+			if err != nil {
+				return nil, err
+			}
+
+			amount += providerReward.Uint64()
 		}
 	}
 
