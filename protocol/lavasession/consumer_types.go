@@ -63,6 +63,7 @@ type SingleConsumerSession struct {
 	Endpoint                    *Endpoint
 	BlockListed                 bool   // if session lost sync we blacklist it.
 	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
+	errosCount                  uint64
 }
 
 type DataReliabilitySession struct {
@@ -461,7 +462,10 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 				utils.Attribute{Key: "provider", Value: cs.Parent.PublicLavaAddress},
 			)
 		}
-	} // else, we don't increase the score at all so everyone will have the same score
+	} else {
+		// we prefer to give them a score of 1 when there is no other data, since otherwise we damage their payments
+		cs.QoSInfo.LastQoSReport.Sync = sdk.NewDec(1)
+	}
 }
 
 func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {

@@ -195,7 +195,8 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             }
@@ -227,7 +228,8 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -499,7 +501,8 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -695,7 +698,8 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             }

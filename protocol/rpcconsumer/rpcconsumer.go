@@ -34,9 +34,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	Yaml_config_properties     = []string{"network-address", "chain-id", "api-interface"}
+const (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
+	DebugRelaysFlagName        = "debug-relays"
+	DebugProbesFlagName        = "debug-probes"
+)
+
+var (
+	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
+	DebugRelaysFlag        = false
 )
 
 type strategyValue struct {
@@ -50,6 +56,7 @@ var strategyNames = []string{
 	"cost",
 	"privacy",
 	"accuracy",
+	"distributed",
 }
 
 var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.STRATEGY_BALANCED}
@@ -285,7 +292,8 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		Example: `required flags: --geolocation 1 --from alice
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
-rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
+rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>
+rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:7778" --geolocation 1 [--debug-relays] --log_level <debug|warn|...> --from <wallet> --chain-id <lava-chain> --strategy latency`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
@@ -421,6 +429,9 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
 			}
+			if strategyFlag.Strategy != provideroptimizer.STRATEGY_BALANCED {
+				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
+			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr, maxConcurrentProviders)
@@ -441,6 +452,8 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
+	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
+	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	return cmdRPCConsumer
 }
 

@@ -36,6 +36,8 @@ const (
 	debugLatency     = false
 )
 
+var RPCProviderStickynessHeaderName = "X-Node-Sticky"
+
 type RPCProviderServer struct {
 	cache                     *performance.Cache
 	chainRouter               chainlib.ChainRouter
@@ -624,7 +626,11 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// TODO: take latestBlock and lastSeenBlock and put the greater one of them
 		updatedChainMessage = chainMsg.UpdateLatestBlockInMessage(latestBlock, true)
 
-		modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, modifiedReqBlock)
+		modifiedReqBlock = lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
+		if modifiedReqBlock != request.RelayData.RequestBlock {
+			request.RelayData.RequestBlock = modifiedReqBlock
+			updatedChainMessage = true // meaning we can't bring a newer proof
+		}
 		// requestedBlockHash, finalizedBlockHashes = chaintracker.FindRequestedBlockHash(requestedHashes, request.RelayData.RequestBlock, toBlock, fromBlock, finalizedBlockHashes)
 		finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, blockDistanceToFinalization)
 		if !finalized && requestedBlockHash == nil && modifiedReqBlock != spectypes.NOT_APPLICABLE {
@@ -647,11 +653,17 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 	}
 	if err != nil || reply == nil {
-		// cache miss or invalid
+		// we need to send relay, cache miss or invalid
 		sendTime := time.Now()
 		if debugLatency {
 			utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
+		// add stickyness header
+		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickynessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetTokenFromGrpcContext(ctx))}})
+		if debugConsistency {
+			utils.LavaFormatDebug("adding stickyness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
+		}
+
 		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
@@ -704,6 +716,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.FinalizedBlocksHashes = jsonStr
 		reply.LatestBlock = proofBlock
 	}
+	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return nil, err

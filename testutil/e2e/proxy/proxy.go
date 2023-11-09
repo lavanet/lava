@@ -241,6 +241,8 @@ func idInstertedResponse(val string, replyMessage *rpcInterfaceMessages.JsonrpcM
 	return fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"id\":%s,\"result\":%s}", respId, string(resultJSON))
 }
 
+const dotsStr = " ::: "
+
 func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	host := p.host
 	mock := p.mock
@@ -256,7 +258,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 	// rawBodyS = first + sep + "1," + second
 
 	println()
-	println(" ::: "+p.port+" ::: "+p.id+" ::: INCOMING PROXY MSG :::", rawBodyS)
+	println(dotsStr+p.port+dotsStr+p.id+" ::: INCOMING PROXY MSG :::", rawBodyS)
 
 	var respmsg rpcclient.JsonrpcMessage
 	if err := json.NewDecoder(req.Body).Decode(&respmsg); err != nil {
@@ -283,7 +285,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 		rawBodySNoID, _ := json.Marshal(jStruct)
 		if val, ok := mock.requests[string(rawBodySNoID)]; ok && p.cache {
 			orderedJSON := idInstertedResponse(val, replyMessage)
-			println(" ::: "+p.port+" ::: "+p.id+" ::: Cached Response ::: ", orderedJSON)
+			println(dotsStr+p.port+dotsStr+p.id+" ::: Cached Response ::: ", orderedJSON)
 			cacheCount += 1
 
 			// Change Response
@@ -317,7 +319,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 					respBodyStr = string(respBody)
 					mock.requests[rawBodyS] = respBodyStr
 					realCount += 1
-					println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", respBodyStr)
+					println(dotsStr+p.port+dotsStr+p.id+" ::: Real Response ::: ", respBodyStr)
 				}
 
 				// Check if response is not good, if not - try again
@@ -341,7 +343,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 							status = proxyRes.StatusCode
 						}
 						realCount += 1
-						println(" ::: "+p.port+" ::: "+p.id+" ::: Real Response ::: ", string(respBody))
+						println(dotsStr+p.port+dotsStr+p.id+" ::: Real Response ::: ", string(respBody))
 
 						// TODO: Check if response is good, if not - try again
 						if strings.Contains(string(respBody), "error") || strings.Contains(string(respBody), "Error") {
@@ -358,7 +360,7 @@ func (p proxyProcess) LavaTestProxy(rw http.ResponseWriter, req *http.Request) {
 				if fakeResponse {
 					// respBody = []byte("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}")
 					respBody = []byte(fakeResult(respBodyStr, "0xe000000000000000000"))
-					println(" ::: "+p.port+" ::: "+p.id+" ::: Fake Response ::: ", string(respBody))
+					println(dotsStr+p.port+dotsStr+p.id+" ::: Fake Response ::: ", string(respBody))
 					fakeCount += 1
 				}
 				responsesChanged = true

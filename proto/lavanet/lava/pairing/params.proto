@@ -7,15 +7,9 @@ option go_package = "github.com/lavanet/lava/x/pairing/types";
 
 // Params defines the parameters for the module.
 message Params {
-  reserved 1,2,4,7,9;
+  reserved 1,2,3,4,7,9;
   option (gogoproto.goproto_stringer) = false;
   
-  
-  string mintCoinsPerCU = 3 [
-    (gogoproto.moretags) = "yaml:\"mint_coins_per_cu\"",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable)   = false
-    ];
   string fraudStakeSlashingFactor = 5 [
     (gogoproto.moretags) = "yaml:\"fraud_stake_slashing_factor\"",
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",

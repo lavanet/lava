@@ -64,6 +64,7 @@ func ParsePlansAddProposalJSON(proposalFile string) (ret PlansAddProposalJSON, e
 			ret.Proposal.Plans = append(ret.Proposal.Plans, plansAddProposal.Proposal.Plans...)
 			ret.Proposal.Description = ret.Proposal.Description + " " + plansAddProposal.Proposal.Description
 			ret.Proposal.Title = ret.Proposal.Title + " " + plansAddProposal.Proposal.Title
+			ret.Proposal.Modify = plansAddProposal.Proposal.Modify
 
 			proposalDeposit, err := sdk.ParseCoinNormalized(plansAddProposal.Deposit)
 			if err != nil {

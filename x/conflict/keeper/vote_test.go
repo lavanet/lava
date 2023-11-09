@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -365,7 +366,7 @@ func TestFullMajorityVote(t *testing.T) {
 
 	events := ts.Ctx.EventManager().Events()
 	LastEvent := events[len(events)-1]
-	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteResolvedEventName)
+	require.Equal(t, LastEvent.Type, utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName)
 }
 
 func TestFullStrongMajorityVote(t *testing.T) {
@@ -408,7 +409,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 
 	events := ts.Ctx.EventManager().Events()
 	LastEvent := events[len(events)-1]
-	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteResolvedEventName)
+	require.Equal(t, LastEvent.Type, utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName)
 }
 
 func TestNoVotersConflict(t *testing.T) {
@@ -423,7 +424,7 @@ func TestNoVotersConflict(t *testing.T) {
 
 	events := ts.Ctx.EventManager().Events()
 	LastEvent := events[len(events)-1]
-	require.Equal(t, LastEvent.Type, "lava_"+conflicttypes.ConflictVoteUnresolvedEventName)
+	require.Equal(t, LastEvent.Type, utils.EventPrefix+conflicttypes.ConflictVoteUnresolvedEventName)
 }
 
 func TestNoDecisionVote(t *testing.T) {
@@ -494,5 +495,5 @@ func TestNoDecisionVote(t *testing.T) {
 
 	events := ts.Ctx.EventManager().Events()
 	LastEvent := events[len(events)-1]
-	require.Equal(t, "lava_"+conflicttypes.ConflictVoteUnresolvedEventName, LastEvent.Type)
+	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteUnresolvedEventName, LastEvent.Type)
 }

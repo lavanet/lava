@@ -98,6 +98,8 @@ func createGRPCServer(serverStarted chan struct{}) error {
 	return nil
 }
 
+const providerStr = "provider"
+
 func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*ConsumerSessionsWithProvider {
 	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 0)
 	pairingEndpoints := make([]*Endpoint, 1)
@@ -120,7 +122,7 @@ func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*C
 		}
 
 		cswpList[uint64(p)] = &ConsumerSessionsWithProvider{
-			PublicLavaAddress: "provider" + providerPrefixAddress + strconv.Itoa(p),
+			PublicLavaAddress: providerStr + providerPrefixAddress + strconv.Itoa(p),
 			Endpoints:         endpoints,
 			Sessions:          map[int64]*SingleConsumerSession{},
 			MaxComputeUnits:   200,
@@ -585,7 +587,7 @@ func TestUpdateAllProviders(t *testing.T) {
 	require.Equal(t, len(csm.pairingAddresses), numberOfProviders)
 	require.Equal(t, csm.currentEpoch, uint64(firstEpochHeight)) // verify epoch
 	for p := 0; p < numberOfProviders; p++ {
-		require.Contains(t, csm.pairing, "provider"+strconv.Itoa(p)) // verify pairings
+		require.Contains(t, csm.pairing, providerStr+strconv.Itoa(p)) // verify pairings
 	}
 }
 
@@ -601,7 +603,7 @@ func TestUpdateAllProvidersWithSameEpoch(t *testing.T) {
 	require.Equal(t, len(csm.pairingAddresses), numberOfProviders)
 	require.Equal(t, csm.currentEpoch, uint64(firstEpochHeight)) // verify epoch
 	for p := 0; p < numberOfProviders; p++ {
-		require.Contains(t, csm.pairing, "provider"+strconv.Itoa(p)) // verify pairings
+		require.Contains(t, csm.pairing, providerStr+strconv.Itoa(p)) // verify pairings
 	}
 }
 

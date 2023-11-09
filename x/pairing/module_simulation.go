@@ -87,9 +87,6 @@ func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedPropo
 // func (am AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
 //	pairingParams := types.DefaultParams()
 //	return []simtypes.ParamChange{
-//		simulation.NewSimParamChange(types.ModuleName, string(types.KeyMintCoinsPerCU), func(r *rand.Rand) string {
-//			return string(types.Amino.MustMarshalJSON(pairingParams.MintCoinsPerCU))
-//		}),
 //		simulation.NewSimParamChange(types.ModuleName, string(types.KeyFraudStakeSlashingFactor), func(r *rand.Rand) string {
 //			return string(types.Amino.MustMarshalJSON(pairingParams.FraudStakeSlashingFactor))
 //		}),

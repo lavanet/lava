@@ -332,7 +332,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, metricsData, nil)
+			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
@@ -400,7 +400,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
 		}
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, metricsData, nil)
+
+		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, nil)
 		reply := relayResult.GetReply()
 
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
