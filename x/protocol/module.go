@@ -167,7 +167,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v9: %w", types.ModuleName, err))
 	}
+
+	if err := cfg.RegisterMigration(types.ModuleName, 9, migrator.MigrateVersion); err != nil {
+		// panic:ok: at start up, migration cannot proceed anyhow
+		panic(fmt.Errorf("%s: failed to register migration to v10: %w", types.ModuleName, err))
+	}
 }
+
+// ConsensusVersion implements ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 { return 10 }
 
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
@@ -189,9 +197,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	genState := ExportGenesis(ctx, am.keeper)
 	return cdc.MustMarshalJSON(genState)
 }
-
-// ConsensusVersion implements ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 9 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
