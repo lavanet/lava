@@ -24,7 +24,7 @@ type BadgeStateTracker struct {
 }
 
 func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, chainFetcher chaintracker.ChainFetcher, chainId string) (ret *BadgeStateTracker, err error) {
-	emergencyTracker, blockNotFoundCallback := statetracker.NewEmergencyTracker()
+	emergencyTracker, blockNotFoundCallback := statetracker.NewEmergencyTracker(nil)
 	txFactory := tx.Factory{}
 	txFactory = txFactory.WithChainID(chainId)
 	stateTrackerBase, err := statetracker.NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
@@ -35,6 +35,12 @@ func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, c
 	esq := statetracker.NewEpochStateQuery(sq)
 
 	pst := &BadgeStateTracker{StateTracker: stateTrackerBase, stateQuery: esq, EmergencyTracker: emergencyTracker}
+
+	pst.RegisterForEpochUpdates(ctx, emergencyTracker)
+	err = pst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
+	if err != nil {
+		utils.LavaFormatFatal("Error registering for downtime updates", err)
+	}
 	return pst, nil
 }
 

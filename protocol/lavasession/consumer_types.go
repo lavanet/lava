@@ -238,6 +238,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
 			utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu},
 			utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits * (virtualEpoch + 1)},
+			utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
 		)
 	}
 	return nil

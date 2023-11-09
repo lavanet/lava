@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"github.com/lavanet/lava/protocol/metrics"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -22,8 +23,8 @@ type ProviderStateTracker struct {
 	*EmergencyTracker
 }
 
-func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *ProviderStateTracker, err error) {
-	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker()
+func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ProviderMetricsManager) (ret *ProviderStateTracker, err error) {
+	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
@@ -38,7 +39,10 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		txSender:         txSender,
 		EmergencyTracker: emergencyTracker,
 	}
-	return pst, nil
+
+	pst.RegisterForEpochUpdates(ctx, emergencyTracker)
+	err = pst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
+	return pst, err
 }
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
@@ -148,8 +152,4 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 
 func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return pst.stateQuery.GetProtocolVersion(ctx)
-}
-
-func (pst *ProviderStateTracker) GetEmergencyTracker() *EmergencyTracker {
-	return pst.EmergencyTracker
 }

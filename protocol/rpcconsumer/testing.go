@@ -33,7 +33,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		cancel()
 	}()
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	stateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
+	stateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, nil)
 	if err != nil {
 		return err
 	}

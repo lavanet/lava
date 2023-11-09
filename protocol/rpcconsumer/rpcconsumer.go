@@ -81,7 +81,7 @@ type ConsumerStateTrackerInf interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
-	GetVirtualEpoch(epoch uint64) uint64
+	GetLatestVirtualEpoch() uint64
 }
 
 type RPCConsumer struct {
@@ -93,18 +93,18 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
+	if err != nil {
+		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
+	}
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, consumerMetricsManager)
 	if err != nil {
 		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
-
-	err = rpcc.consumerStateTracker.RegisterForDowntimeParamsUpdates(ctx, consumerStateTracker.EmergencyTracker)
-	if err != nil {
-		return utils.LavaFormatError("failed to register for downtime params updates", err)
-	}
 
 	lavaChainID := clientCtx.ChainID
 	keyName, err := sigs.GetKeyName(clientCtx)
@@ -139,11 +139,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
 	errCh := make(chan error)
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
-	if err != nil {
-		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
-	}
+
 	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + consumerAddr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})

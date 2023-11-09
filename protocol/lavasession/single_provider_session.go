@@ -222,6 +222,7 @@ func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU, maxCu, vi
 				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
 				utils.Attribute{Key: "currentCU", Value: currentCU},
 				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
+				utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
 			)
 		}
 		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
@@ -247,6 +248,7 @@ func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU, maxCu, virtual
 				utils.Attribute{Key: "usedCu", Value: usedCu},
 				utils.Attribute{Key: "currentCU", Value: currentCU},
 				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
+				utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
 			)
 		}
 		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again

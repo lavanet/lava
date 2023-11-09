@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"github.com/lavanet/lava/protocol/metrics"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -25,11 +26,11 @@ type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
 	ConsumerTxSenderInf
 	*StateTracker
-	*EmergencyTracker
+	EmergencyTracker ConsumerEmergencyModeInf
 }
 
-func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *ConsumerStateTracker, err error) {
-	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker()
+func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
+	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
@@ -44,7 +45,10 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		ConsumerTxSenderInf: txSender,
 		EmergencyTracker:    emergencyTracker,
 	}
-	return cst, nil
+
+	cst.RegisterForPairingUpdates(ctx, emergencyTracker)
+	err = cst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
+	return cst, err
 }
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
@@ -58,6 +62,19 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 	if err != nil {
 		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
+	}
+}
+
+func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable PairingUpdatable) {
+	pairingUpdater := NewPairingUpdater(cst.stateQuery)
+	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
+	pairingUpdater, ok := pairingUpdaterRaw.(*PairingUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
+	}
+	err := pairingUpdater.RegisterPairingUpdatable(ctx, &pairingUpdatable)
+	if err != nil {
+		utils.LavaFormatError("failed registering updatable for pairing updates", err)
 	}
 }
 
@@ -121,4 +138,8 @@ func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 
 func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return cst.stateQuery.GetProtocolVersion(ctx)
+}
+
+func (cst *ConsumerStateTracker) GetLatestVirtualEpoch() uint64 {
+	return cst.EmergencyTracker.GetLatestVirtualEpoch()
 }

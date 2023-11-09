@@ -68,7 +68,6 @@ type ProviderStateTrackerInf interface {
 	GetRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
-	GetEmergencyTracker() *statetracker.EmergencyTracker
 	GetVirtualEpoch(epoch uint64) uint64
 }
 
@@ -106,7 +105,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.shardID = shardID
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
+	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
 	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, rewardStoragePath, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.providerStateTracker.GetEmergencyTracker())
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
 	keyName, err := sigs.GetKeyName(clientCtx)
 	if err != nil {

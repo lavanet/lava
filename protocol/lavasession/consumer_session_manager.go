@@ -47,10 +47,6 @@ func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
 }
 
-func (csm *ConsumerSessionManager) GetCurrentEpoch() uint64 {
-	return csm.atomicReadCurrentEpoch()
-}
-
 func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList map[uint64]*ConsumerSessionsWithProvider) error {
 	pairingListLength := len(pairingList)
 	// TODO: we can block updating until some of the probing is done, this can prevent failed attempts on epoch change when we have no information on the providers,

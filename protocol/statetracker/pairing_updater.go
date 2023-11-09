@@ -13,11 +13,16 @@ const (
 	CallbackKeyForPairingUpdate = "pairing-update"
 )
 
+type PairingUpdatable interface {
+	UpdateEpoch(epoch uint64)
+}
+
 type PairingUpdater struct {
 	lock                       sync.RWMutex
 	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
+	pairingUpdatables          []*PairingUpdatable
 }
 
 func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
@@ -43,6 +48,19 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 		return nil
 	}
 	pu.consumerSessionManagersMap[chainID] = append(consumerSessionsManagersList, consumerSessionManager)
+	return nil
+}
+
+func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingUpdatable *PairingUpdatable) error {
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
+	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, "", -1)
+	if err != nil {
+		return err
+	}
+
+	(*pairingUpdatable).UpdateEpoch(epoch)
+	pu.pairingUpdatables = append(pu.pairingUpdatables, pairingUpdatable)
 	return nil
 }
 
@@ -77,6 +95,18 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 			}
 		}
 	}
+
+	// get latest epoch from cache
+	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, "", latestBlock)
+	if err != nil {
+		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
+		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
+	} else {
+		for _, updatable := range pu.pairingUpdatables {
+			(*updatable).UpdateEpoch(epoch)
+		}
+	}
+
 	nextBlockForUpdateMin := uint64(latestBlock) // in case the list is empty
 	for idx, blockToUpdate := range nextBlockForUpdateList {
 		if idx == 0 || blockToUpdate < nextBlockForUpdateMin {
