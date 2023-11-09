@@ -118,3 +118,23 @@ func (k Keeper) InitSubscriptions(ctx sdk.Context, gs fixationtypes.GenesisState
 func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
 	k.subsTS.Init(ctx, data)
 }
+
+// InitCuTrackerTimers imports CuTrackers timers data (from genesis)
+func (k Keeper) InitCuTrackerTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
+	k.cuTrackerTS.Init(ctx, data)
+}
+
+// ExportCuTrackerTimers exports CuTracker timers data (for genesis)
+func (k Keeper) ExportCuTrackerTimers(ctx sdk.Context) []fixationtypes.RawMessage {
+	return k.cuTrackerTS.Export(ctx)
+}
+
+// InitCuTrackers imports CuTracker data (from genesis)
+func (k Keeper) InitCuTrackers(ctx sdk.Context, gs fixationtypes.GenesisState) {
+	k.cuTrackerFS.Init(ctx, gs)
+}
+
+// ExportCuTrackers exports CuTrackers data (for genesis)
+func (k Keeper) ExportCuTrackers(ctx sdk.Context) fixationtypes.GenesisState {
+	return k.cuTrackerFS.Export(ctx)
+}
