@@ -799,7 +799,7 @@ func (lt *lavaTest) saveLogs() {
 		for _, errLine := range errorPrint {
 			fmt.Println("ERROR: ", errLine)
 		}
-		panic("Error found in logs " + strings.Join(errorFiles, ", "))
+		panic("Error found in logs on " + lt.logPath + strings.Join(errorFiles, ", "))
 	}
 }
 
@@ -1176,8 +1176,6 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("GRPC TEST OK")
 
 	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
-
-	// TODO: Add payment tests when subscription payment mechanism is implemented
 
 	lt.checkQoS()
 

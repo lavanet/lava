@@ -254,6 +254,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Plans.InitPlans(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptionsTimers(ctx, []types.RawMessage{})
+	ks.Subscription.InitCuTrackers(ctx, *fixationstore.DefaultGenesis())
+	ks.Subscription.InitCuTrackerTimers(ctx, []types.RawMessage{})
 	ks.Projects.InitDevelopers(ctx, *fixationstore.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *fixationstore.DefaultGenesis())
 
