@@ -133,6 +133,15 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
+					if !lavasession.AllowInsecureConnectionToProviders {
+						// lets try insecure see if this is the reason
+						lavasession.AllowInsecureConnectionToProviders = true
+						_, _, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+						lavasession.AllowInsecureConnectionToProviders = false
+						if err == nil {
+							return 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+						}
+					}
 					return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				defer conn.Close()
@@ -186,7 +195,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				}
 				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
 				if lvutil.IsVersionLessThan(parsedVer, targetVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
-					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
+					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String()+" Version:"+version+" should be: "+lavaVersion.ProviderTarget)
 					continue
 				}
 				utils.LavaFormatInfo("successfully verified provider endpoint", utils.LogAttr("version", version), utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
