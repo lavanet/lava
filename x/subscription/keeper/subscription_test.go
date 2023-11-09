@@ -736,6 +736,9 @@ func TestDurationTotal(t *testing.T) {
 	require.Equal(t, uint64(0), subRes.Sub.DurationTotal)
 }
 
+// TestSubAutoRenewal is a happy flow test for subscription auto-renewal
+// checks that the two methods for enabling auto renewal works
+// verifies that subs with auto-renewal enabled get renewed automatically
 func TestSubAutoRenewal(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(3, 0, 0) // 2 sub, 0 adm, 0 dev
@@ -782,4 +785,35 @@ func TestSubAutoRenewal(t *testing.T) {
 		_, found = ts.getSubscription(subAddr3)
 		require.False(t, found)
 	}
+}
+
+// TestSubRenewalFailHighPlanPrice checks that auto-renewal fails when the
+// original subscription's plan price increased by more than 5%
+func TestSubRenewalFailHighPlanPrice(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	_, subAddr1 := ts.Account("sub1")
+	plan := ts.Plan("free")
+
+	_, err := ts.TxSubscriptionBuy(subAddr1, subAddr1, plan.Index, 1, true)
+	require.Nil(t, err)
+	_, found := ts.getSubscription(subAddr1)
+	require.True(t, found)
+
+	// edit the subscription's plan (increase the price by 6% and change the policy (shouldn't matter))
+	plan.PlanPolicy.EpochCuLimit += 100
+	plan.Price.Amount = plan.Price.Amount.MulRaw(106).QuoRaw(100)
+
+	ts.AdvanceEpoch() // advance epoch so the new plan will be appended as a new entry
+	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan})
+	require.Nil(t, err)
+
+	// advance month to make the subscription expire
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// the auto-renewal should've failed since the plan price is too high
+	// so the subscription should not be found
+	_, found = ts.getSubscription(subAddr1)
+	require.False(t, found)
 }
