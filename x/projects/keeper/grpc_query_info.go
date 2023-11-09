@@ -27,7 +27,7 @@ func (k Keeper) Info(goCtx context.Context, req *types.QueryInfoRequest) (*types
 	}
 
 	pendingProject, err := k.GetProjectForBlock(ctx, req.Project, nextEpoch)
-	if project.Equal(pendingProject) || err != nil {
+	if err != nil || project.Equal(pendingProject) {
 		return &types.QueryInfoResponse{Project: &project}, nil
 	} else {
 		return &types.QueryInfoResponse{Project: &project, PendingProject: &pendingProject}, nil

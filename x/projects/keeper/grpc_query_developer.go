@@ -27,7 +27,7 @@ func (k Keeper) Developer(goCtx context.Context, req *types.QueryDeveloperReques
 	}
 
 	pendingProject, err := k.GetProjectForDeveloper(ctx, req.Developer, nextEpoch)
-	if project.Equal(pendingProject) || err != nil {
+	if err != nil || project.Equal(pendingProject) {
 		return &types.QueryDeveloperResponse{Project: &project}, nil
 	} else {
 		return &types.QueryDeveloperResponse{Project: &project, PendingProject: &pendingProject}, nil
