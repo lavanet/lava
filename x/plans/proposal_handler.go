@@ -31,7 +31,7 @@ func handlePlansAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddP
 	// add the plans to the plan storage
 	for _, planElem := range p.Plans {
 		logger := k.Logger(ctx)
-		err := k.AddPlan(ctx, planElem)
+		err := k.AddPlan(ctx, planElem, p.Modify)
 		if err != nil {
 			return utils.LavaFormatError("could not add new plan", err,
 				utils.Attribute{Key: "planIndex", Value: planElem.Index},

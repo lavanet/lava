@@ -23,6 +23,7 @@ type SingleProviderSession struct {
 	PairingEpoch       uint64
 	BadgeUserData      *ProviderSessionsEpochData
 	occupyingGuid      uint64 // used for tracking errors
+	errorsCount        uint64
 }
 
 // to be used only when locked, otherwise can return wrong values
@@ -290,7 +291,7 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, sps.BadgeUserData)
 	}
 	sps.LatestRelayCu = 0
-
+	sps.errorsCount += 1
 	return nil
 }
 

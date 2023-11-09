@@ -871,7 +871,7 @@ func TestPairingUniformDistribution(t *testing.T) {
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	// extend the subscription to accommodate many (pairing) epochs
-	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 5)
+	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1)
 	require.NoError(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
@@ -899,7 +899,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// extend the subscription to accommodate many (pairing) epochs
-	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10)
+	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1)
 	require.Nil(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }

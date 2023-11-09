@@ -8,5 +8,6 @@ import (
 
 // x/epochstorage module sentinel errors
 var (
-	ErrSample = sdkerrors.Register(ModuleName, 1100, "sample error")
+	ErrProviderNotStaked    = sdkerrors.Register(ModuleName, 1000, "provider not staked")
+	ErrStakeStorageNotFound = sdkerrors.Register(ModuleName, 1001, "stake storage not found")
 )
