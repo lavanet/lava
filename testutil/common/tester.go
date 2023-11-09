@@ -177,7 +177,7 @@ func (ts *Tester) AccountByAddr(addr string) (Account, string) {
 }
 
 func (ts *Tester) AddPlan(name string, plan planstypes.Plan) *Tester {
-	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
+	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan, false)
 	if err != nil {
 		panic("tester: falied to add plan: '" + plan.Index + "'")
 	}

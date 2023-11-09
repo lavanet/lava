@@ -10,23 +10,37 @@ import (
 )
 
 // AddPlan adds a new plan to the KVStore
-func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan) error {
+func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan, modify bool) error {
+	err := k.ValidatePlanFields(ctx, &planToAdd)
+	if err != nil {
+		return err
+	}
+
+	if modify {
+		var planFromStore types.Plan
+		_, _, _, found := k.plansFS.FindEntryDetailed(ctx, planToAdd.GetIndex(), uint64(ctx.BlockHeight()), &planFromStore)
+		if found {
+			err := k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
+			if err != nil {
+				return utils.LavaFormatError("failed adding plan to planFS", err,
+					utils.Attribute{Key: "planToAdd", Value: planToAdd},
+				)
+			}
+			return nil
+		}
+	}
+
 	// overwrite the planToAdd's block field with the current block height
 	planToAdd.Block = uint64(ctx.BlockHeight())
 
 	// TODO: verify the CU per epoch field
-
-	err := k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
+	err = k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
 	if err != nil {
 		return utils.LavaFormatError("failed adding plan to planFS", err,
 			utils.Attribute{Key: "planToAdd", Value: planToAdd},
 		)
 	}
 
-	err = k.ValidatePlanFields(ctx, &planToAdd)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
