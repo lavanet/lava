@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
+	subsciption "github.com/lavanet/lava/x/subscription/keeper"
 	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -53,7 +54,13 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 			if !found {
 				continue
 			}
-			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, plan, providerCu, subObj.MonthCuTotal-subObj.MonthCuLeft)
+			totalTokenAmount := plan.Price.Amount
+			totalCuTracked := subObj.MonthCuTotal - subObj.MonthCuLeft
+			if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU)) {
+				totalTokenAmount = sdk.NewIntFromUint64(subsciption.LIMIT_TOKEN_PER_CU * totalCuTracked)
+			}
+
+			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, totalTokenAmount, providerCu, subObj.MonthCuTotal-subObj.MonthCuLeft)
 
 			// calculate only the provider reward
 			providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, subsciptiontypes.ModuleName, true)
