@@ -16,22 +16,16 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan, modify bool) erro
 		return err
 	}
 
-	if modify {
-		var planFromStore types.Plan
-		_, _, _, found := k.plansFS.FindEntryDetailed(ctx, planToAdd.GetIndex(), uint64(ctx.BlockHeight()), &planFromStore)
-		if found {
-			err := k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
-			if err != nil {
-				return utils.LavaFormatError("failed adding plan to planFS", err,
-					utils.Attribute{Key: "planToAdd", Value: planToAdd},
-				)
-			}
-			return nil
-		}
-	}
-
 	// overwrite the planToAdd's block field with the current block height
 	planToAdd.Block = uint64(ctx.BlockHeight())
+
+	if modify {
+		var planFromStore types.Plan
+		block, _, _, found := k.plansFS.FindEntryDetailed(ctx, planToAdd.GetIndex(), uint64(ctx.BlockHeight()), &planFromStore)
+		if found {
+			planToAdd.Block = block
+		}
+	}
 
 	// TODO: verify the CU per epoch field
 	err = k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
