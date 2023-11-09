@@ -220,12 +220,14 @@ func TestRenewSubscription(t *testing.T) {
 	// edit the subscription's plan (allow more CU)
 	cuPerEpoch := plan.PlanPolicy.EpochCuLimit
 	plan.PlanPolicy.EpochCuLimit += 100
+	plan.Price.Amount = plan.Price.Amount.MulRaw(2)
 
 	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan})
 	require.Nil(t, err)
 
 	// try extending the subscription (we could extend with 1 more month,
-	// but since the subscription's plan changed, the extension should fail)
+	// but since the subscription's plan changed and its new price is increased
+	// by more than 5% , the extension should fail)
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.NotNil(t, err)
 	require.Equal(t, uint64(12), sub.DurationLeft)
@@ -734,6 +736,27 @@ func TestDurationTotal(t *testing.T) {
 	require.Equal(t, uint64(0), subRes.Sub.DurationTotal)
 }
 
-func TestSubAutoRenewal(t *testing.T) {
+// func TestSubAutoRenewal(t *testing.T) {
+// 	ts := newTester(t)
+// 	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
 
-}
+// 	plan := ts.Plan("free")
+// 	_, subAddr1 := ts.Account("sub1")
+// 	_, subAddr2 := ts.Account("sub2")
+
+// 	// buy two subscription with enabled auto-renewal in two different ways
+// 	// verify the auto-renewal flag is true
+// 	_, err := ts.TxSubscriptionBuy(subAddr1, subAddr1, plan.Index, 1, true)
+// 	require.Nil(t, err)
+// 	_, err = ts.TxSubscriptionBuy(subAddr2, subAddr2, plan.Index, 1, false)
+// 	require.Nil(t, err)
+// 	err = ts.TxSubscriptionAutoRenewal(subAddr2, true)
+// 	require.Nil(t, err)
+
+// 	sub1, found := ts.getSubscription(subAddr1)
+// 	require.True(t, found)
+// 	require.True(t, sub1.AutoRenewal)
+// 	sub2, found := ts.getSubscription(subAddr2)
+// 	require.True(t, found)
+// 	require.True(t, sub2.AutoRenewal)
+// }
