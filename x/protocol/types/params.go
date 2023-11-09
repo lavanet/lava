@@ -13,7 +13,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 
 const (
 	TARGET_VERSION = "0.27.0"
-	MIN_VERSION    = "0.26.0"
+	MIN_VERSION    = "0.26.1"
 )
 
 var (
