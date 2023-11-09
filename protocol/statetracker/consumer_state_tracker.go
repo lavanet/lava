@@ -26,7 +26,7 @@ type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
 	ConsumerTxSenderInf
 	*StateTracker
-	EmergencyTracker ConsumerEmergencyTrackerInf
+	ConsumerEmergencyTrackerInf
 }
 
 func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
@@ -40,10 +40,10 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		return nil, err
 	}
 	cst := &ConsumerStateTracker{
-		StateTracker:        stateTrackerBase,
-		stateQuery:          NewConsumerStateQuery(ctx, clientCtx),
-		ConsumerTxSenderInf: txSender,
-		EmergencyTracker:    emergencyTracker,
+		StateTracker:                stateTrackerBase,
+		stateQuery:                  NewConsumerStateQuery(ctx, clientCtx),
+		ConsumerTxSenderInf:         txSender,
+		ConsumerEmergencyTrackerInf: emergencyTracker,
 	}
 
 	cst.RegisterForPairingUpdates(ctx, emergencyTracker)
@@ -138,8 +138,4 @@ func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Co
 
 func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return cst.stateQuery.GetProtocolVersion(ctx)
-}
-
-func (cst *ConsumerStateTracker) GetLatestVirtualEpoch() uint64 {
-	return cst.EmergencyTracker.GetLatestVirtualEpoch()
 }

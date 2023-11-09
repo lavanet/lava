@@ -120,11 +120,6 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
-	err = rpcp.providerStateTracker.RegisterForDowntimeParamsUpdates(ctx, providerStateTracker.EmergencyTracker)
-	if err != nil {
-		return utils.LavaFormatError("failed to register for downtime params updates", err)
-	}
-
 	// single reward server
 	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
 	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, rewardStoragePath, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
