@@ -8,7 +8,7 @@ import (
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
-type ConsumerEmergencyModeInf interface {
+type ConsumerEmergencyTrackerInf interface {
 	GetLatestVirtualEpoch() uint64
 }
 

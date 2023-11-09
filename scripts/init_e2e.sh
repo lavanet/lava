@@ -18,7 +18,7 @@ sleep 6 # need to sleep because plan policies need the specs when setting chain 
 
 # Plans proposal
 wait_next_block
-lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/emergency-mode.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov deposit 2 100ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
@@ -54,6 +54,7 @@ lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2265,1" 1 -y --from ser
 lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx subscription buy "DefaultPlan" -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx subscription buy "DefaultPlan" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy "EmergencyModePlan" -y --from user5 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 user3addr=$(lavad keys show user3 -a)
 

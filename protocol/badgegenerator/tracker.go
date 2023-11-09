@@ -20,7 +20,7 @@ const AddBlockDelayForEpochUpdaterBadgeServer = 2
 type BadgeStateTracker struct {
 	stateQuery *statetracker.EpochStateQuery
 	*statetracker.StateTracker
-	*statetracker.EmergencyTracker
+	EmergencyTracker statetracker.ConsumerEmergencyTrackerInf
 }
 
 func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, chainFetcher chaintracker.ChainFetcher, chainId string) (ret *BadgeStateTracker, err error) {
@@ -38,10 +38,7 @@ func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, c
 
 	pst.RegisterForEpochUpdates(ctx, emergencyTracker)
 	err = pst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
-	if err != nil {
-		utils.LavaFormatFatal("Error registering for downtime updates", err)
-	}
-	return pst, nil
+	return pst, err
 }
 
 func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable) {

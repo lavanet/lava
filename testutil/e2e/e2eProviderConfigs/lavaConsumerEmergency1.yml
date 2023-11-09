@@ -1,0 +1,10 @@
+endpoints:
+  - chain-id: LAV1
+    api-interface: tendermintrpc
+    network-address: 127.0.0.1:3346
+  - chain-id: LAV1
+    api-interface: rest
+    network-address: 127.0.0.1:3347
+  - chain-id: LAV1
+    api-interface: grpc
+    network-address: 127.0.0.1:3348

@@ -26,7 +26,7 @@ type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
 	ConsumerTxSenderInf
 	*StateTracker
-	EmergencyTracker ConsumerEmergencyModeInf
+	EmergencyTracker ConsumerEmergencyTrackerInf
 }
 
 func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
