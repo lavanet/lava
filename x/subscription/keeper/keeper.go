@@ -28,9 +28,13 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
+		dualstakingKeeper  types.DualStakingKeeper
 
 		subsFS fixationstore.FixationStore
 		subsTS timerstore.TimerStore
+
+		cuTrackerFS fixationstore.FixationStore // key: "<sub> <provider>", value: month aggregated CU
+		cuTrackerTS timerstore.TimerStore
 	}
 )
 
@@ -45,6 +49,7 @@ func NewKeeper(
 	epochstorageKeeper types.EpochstorageKeeper,
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
+	dualstakingKeeper types.DualStakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -54,6 +59,7 @@ func NewKeeper(
 	}
 
 	fs := *fixationStoreKeeper.NewFixationStore(storeKey, types.SubsFixationPrefix)
+	cuTracker := *fixationStoreKeeper.NewFixationStore(storeKey, types.CuTrackerFixationPrefix)
 
 	keeper := &Keeper{
 		cdc:        cdc,
@@ -66,8 +72,10 @@ func NewKeeper(
 		epochstorageKeeper: epochstorageKeeper,
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
+		dualstakingKeeper:  dualstakingKeeper,
 
-		subsFS: fs,
+		subsFS:      fs,
+		cuTrackerFS: cuTracker,
 	}
 
 	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
@@ -76,6 +84,13 @@ func NewKeeper(
 
 	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
+
+	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
+		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
+	}
+
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
+		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper
 }
@@ -102,4 +117,24 @@ func (k Keeper) InitSubscriptions(ctx sdk.Context, gs fixationtypes.GenesisState
 // InitSubscriptions imports subscriptions timers data (from genesis)
 func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
 	k.subsTS.Init(ctx, data)
+}
+
+// InitCuTrackerTimers imports CuTrackers timers data (from genesis)
+func (k Keeper) InitCuTrackerTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
+	k.cuTrackerTS.Init(ctx, data)
+}
+
+// ExportCuTrackerTimers exports CuTracker timers data (for genesis)
+func (k Keeper) ExportCuTrackerTimers(ctx sdk.Context) []fixationtypes.RawMessage {
+	return k.cuTrackerTS.Export(ctx)
+}
+
+// InitCuTrackers imports CuTracker data (from genesis)
+func (k Keeper) InitCuTrackers(ctx sdk.Context, gs fixationtypes.GenesisState) {
+	k.cuTrackerFS.Init(ctx, gs)
+}
+
+// ExportCuTrackers exports CuTrackers data (for genesis)
+func (k Keeper) ExportCuTrackers(ctx sdk.Context) fixationtypes.GenesisState {
+	return k.cuTrackerFS.Export(ctx)
 }

@@ -24,6 +24,19 @@ func NextMonth(date time.Time) time.Time {
 	// day 28, which all months always have (at the cost of the user possibly
 	// losing 1 (and up to 3) days of subscription in the first month.
 
+	if utils.DebugPaymentE2E == "debug_payment_e2e" {
+		return time.Date(
+			date.Year(),
+			date.Month(),
+			date.Day(),
+			date.Hour(),
+			date.Minute()+2,
+			date.Second(),
+			0,
+			time.UTC,
+		)
+	}
+
 	dayOfMonth := date.Day()
 	if dayOfMonth > 28 {
 		dayOfMonth = 28
@@ -236,6 +249,15 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		return
 	}
 
+	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
+	if err != nil {
+		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
+			utils.Attribute{Key: "block", Value: block},
+		)
+	} else {
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
+	}
+
 	if sub.DurationLeft == 0 {
 		// subscription duration has already reached zero before and should have
 		// been removed before. Extend duration by another month (without adding
@@ -311,9 +333,9 @@ func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, bloc
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
 }
 
-func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string) (planstypes.Plan, error) {
+func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error) {
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
+	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
 		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: consumer},
 		)
@@ -378,10 +400,10 @@ func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string)
 	}
 }
 
-func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block, cuAmount uint64) error {
+func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer string, block, cuAmount uint64) (types.Subscription, error) {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
-		return utils.LavaFormatError("can't charge cu to subscription",
+		return sub, utils.LavaFormatError("can't charge cu to subscription",
 			fmt.Errorf("subscription not found"),
 			utils.Attribute{Key: "subscription", Value: consumer},
 			utils.Attribute{Key: "block", Value: block},
@@ -395,5 +417,5 @@ func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer strin
 	}
 
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
-	return nil
+	return sub, nil
 }

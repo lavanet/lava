@@ -19,7 +19,8 @@ func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types
 	var allSubsInfo []types.ListInfoStruct
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	subsIndices := k.subsFS.GetAllEntryIndices(ctx)
+	subsIndices := k.GetAllSubscriptionsIndices(ctx)
+
 	for _, consumer := range subsIndices {
 		var sub types.Subscription
 		if found := k.subsFS.FindEntry(ctx, consumer, uint64(ctx.BlockHeight()), &sub); !found {
@@ -47,4 +48,8 @@ func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types
 	}
 
 	return &types.QueryListResponse{SubsInfo: allSubsInfo}, nil
+}
+
+func (k Keeper) GetAllSubscriptionsIndices(ctx sdk.Context) []string {
+	return k.subsFS.GetAllEntryIndices(ctx)
 }

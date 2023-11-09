@@ -163,13 +163,15 @@ func (lt *lavaTest) listenCmdCommand(cmd *exec.Cmd, panicReason string, function
 	panic(panicReason)
 }
 
+const OKstr = " OK"
+
 func (lt *lavaTest) startLava(ctx context.Context) {
 	command := "./scripts/start_env_dev.sh"
 	logName := "00_StartLava"
 	funcName := "startLava"
 
 	lt.execCommand(ctx, funcName, logName, command, true)
-	utils.LavaFormatInfo(funcName + " OK")
+	utils.LavaFormatInfo(funcName + OKstr)
 }
 
 func (lt *lavaTest) checkLava(timeout time.Duration) {
@@ -196,7 +198,7 @@ func (lt *lavaTest) stakeLava(ctx context.Context) {
 	funcName := "stakeLava"
 
 	lt.execCommand(ctx, funcName, logName, command, true)
-	utils.LavaFormatInfo(funcName + " OK")
+	utils.LavaFormatInfo(funcName + OKstr)
 }
 
 func (lt *lavaTest) checkStakeLava(
@@ -319,7 +321,7 @@ func (lt *lavaTest) startJSONRPCProxy(ctx context.Context) {
 	funcName := "startJSONRPCProxy"
 
 	lt.execCommand(ctx, funcName, logName, command, false)
-	utils.LavaFormatInfo(funcName + " OK")
+	utils.LavaFormatInfo(funcName + OKstr)
 }
 
 func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
@@ -797,7 +799,7 @@ func (lt *lavaTest) saveLogs() {
 		for _, errLine := range errorPrint {
 			fmt.Println("ERROR: ", errLine)
 		}
-		panic("Error found in logs " + strings.Join(errorFiles, ", "))
+		panic("Error found in logs on " + lt.logPath + strings.Join(errorFiles, ", "))
 	}
 }
 
@@ -1174,8 +1176,6 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("GRPC TEST OK")
 
 	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
-
-	// TODO: Add payment tests when subscription payment mechanism is implemented
 
 	lt.checkQoS()
 

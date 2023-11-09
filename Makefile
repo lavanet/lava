@@ -210,6 +210,11 @@ ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
   ldflags += -X github.com/lavanet/lava/utils.ExtendedLogLevel=production
 endif
 
+ifeq (debug_payment_e2e,$(findstring debug_payment_e2e,$(LAVA_BUILD_OPTIONS)))
+  $(info Building With Debug Payment E2E Flag. Making a month 2 minutes)
+  ldflags += -X github.com/lavanet/lava/utils.DebugPaymentE2E=debug_payment_e2e
+endif
+
 ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))
   ldflags += -w -s
 endif
