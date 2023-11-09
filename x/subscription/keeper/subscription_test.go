@@ -736,27 +736,50 @@ func TestDurationTotal(t *testing.T) {
 	require.Equal(t, uint64(0), subRes.Sub.DurationTotal)
 }
 
-// func TestSubAutoRenewal(t *testing.T) {
-// 	ts := newTester(t)
-// 	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+func TestSubAutoRenewal(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(3, 0, 0) // 2 sub, 0 adm, 0 dev
 
-// 	plan := ts.Plan("free")
-// 	_, subAddr1 := ts.Account("sub1")
-// 	_, subAddr2 := ts.Account("sub2")
+	plan := ts.Plan("free")
+	_, subAddr1 := ts.Account("sub1")
+	_, subAddr2 := ts.Account("sub2")
+	_, subAddr3 := ts.Account("sub3")
 
-// 	// buy two subscription with enabled auto-renewal in two different ways
-// 	// verify the auto-renewal flag is true
-// 	_, err := ts.TxSubscriptionBuy(subAddr1, subAddr1, plan.Index, 1, true)
-// 	require.Nil(t, err)
-// 	_, err = ts.TxSubscriptionBuy(subAddr2, subAddr2, plan.Index, 1, false)
-// 	require.Nil(t, err)
-// 	err = ts.TxSubscriptionAutoRenewal(subAddr2, true)
-// 	require.Nil(t, err)
+	// buy two subscriptions with enabled auto-renewal in two different ways
+	// and one with disabled auto-renewal.
+	// verify the auto-renewal flag is true in the first two subs
+	_, err := ts.TxSubscriptionBuy(subAddr1, subAddr1, plan.Index, 1, true)
+	require.Nil(t, err)
+	_, err = ts.TxSubscriptionBuy(subAddr2, subAddr2, plan.Index, 1, false)
+	require.Nil(t, err)
+	err = ts.TxSubscriptionAutoRenewal(subAddr2, true)
+	require.Nil(t, err)
+	_, err = ts.TxSubscriptionBuy(subAddr3, subAddr3, plan.Index, 1, false)
+	require.Nil(t, err)
 
-// 	sub1, found := ts.getSubscription(subAddr1)
-// 	require.True(t, found)
-// 	require.True(t, sub1.AutoRenewal)
-// 	sub2, found := ts.getSubscription(subAddr2)
-// 	require.True(t, found)
-// 	require.True(t, sub2.AutoRenewal)
-// }
+	sub1, found := ts.getSubscription(subAddr1)
+	require.True(t, found)
+	require.True(t, sub1.AutoRenewal)
+	sub2, found := ts.getSubscription(subAddr2)
+	require.True(t, found)
+	require.True(t, sub2.AutoRenewal)
+	sub3, found := ts.getSubscription(subAddr3)
+	require.True(t, found)
+	require.False(t, sub3.AutoRenewal)
+
+	// advance a couple of months to expire and automatically
+	// extend all subscriptions. verify that sub1 and sub2 can
+	// still be found and their duration left is always 1
+	for i := 0; i < 5; i++ {
+		ts.AdvanceMonths(1).AdvanceEpoch()
+
+		newSub1, found := ts.getSubscription(subAddr1)
+		require.True(t, found)
+		require.Equal(t, uint64(1), newSub1.DurationLeft)
+		newSub2, found := ts.getSubscription(subAddr2)
+		require.True(t, found)
+		require.Equal(t, uint64(1), newSub2.DurationLeft)
+		_, found = ts.getSubscription(subAddr3)
+		require.False(t, found)
+	}
+}

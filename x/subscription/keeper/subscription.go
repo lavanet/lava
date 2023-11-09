@@ -285,6 +285,8 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		}
 	} else {
 		if sub.AutoRenewal {
+			// apply the DurationLeft decrease to 0 and buy an extra month
+			k.subsFS.ModifyEntry(ctx, sub.Consumer, sub.Block, &sub)
 			err := k.CreateSubscription(ctx, sub.Creator, sub.Consumer, sub.PlanIndex, 1, sub.AutoRenewal)
 			if err != nil {
 				utils.LavaFormatWarning("subscription auto renewal failed. removing subscription", err,
