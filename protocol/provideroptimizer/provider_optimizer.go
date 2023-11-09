@@ -23,7 +23,7 @@ const (
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
 	HALF_LIFE_TIME             = time.Hour
-	MAX_HALF_TIME              = 14 * 24 * time.Hour
+	MAX_HALF_TIME              = 3 * time.Hour
 	PROBE_UPDATE_WEIGHT        = 0.25
 	RELAY_UPDATE_WEIGHT        = 1
 	DEFAULT_EXPLORATION_CHANCE = 0.1
@@ -63,6 +63,7 @@ const (
 	STRATEGY_COST
 	STRATEGY_PRIVACY
 	STRATEGY_ACCURACY
+	STRATEGY_DISTRIBUTED
 )
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
@@ -121,6 +122,10 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	latencyScore := math.MaxFloat64        // smaller = better i.e less latency
 	syncScore := math.MaxFloat64           // smaller = better i.e less sync lag
 	numProviders := len(allAddresses)
+	if po.strategy == STRATEGY_DISTRIBUTED {
+		// distribute relays across more providers
+		perturbationPercentage *= 2
+	}
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
@@ -209,6 +214,8 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 		return true
 	case STRATEGY_COST:
 		explorationChance = COST_EXPLORATION_CHANCE
+	case STRATEGY_DISTRIBUTED:
+		explorationChance = DEFAULT_EXPLORATION_CHANCE * 0.25
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}

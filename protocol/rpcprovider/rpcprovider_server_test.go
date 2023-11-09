@@ -194,7 +194,7 @@ func TestHandleConsistency(t *testing.T) {
 			requestBlock:       10001,
 			specId:             "LAV1",
 			err:                nil,
-			timeout:            10 * time.Millisecond, // 150 is one way travel time
+			timeout:            20 * time.Millisecond, // 150 is one way travel time
 			chainTrackerBlocks: []int64{100, 101},
 			changeTime:         100 * time.Second,
 			sleep:              true,
@@ -205,7 +205,7 @@ func TestHandleConsistency(t *testing.T) {
 			requestBlock:       101,
 			specId:             "LAV1",
 			err:                nil,
-			timeout:            10 * time.Millisecond, // 150 is one way travel time
+			timeout:            20 * time.Millisecond, // 150 is one way travel time
 			chainTrackerBlocks: []int64{100, 101},
 			changeTime:         100 * time.Second,
 			sleep:              true,

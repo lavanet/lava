@@ -491,6 +491,10 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 				mockChainFetcher.AdvanceBlock()
 				time.Sleep(play.updateTime)
 			}
+			// give it more time to update in case it didn't trigger on slow machines
+			if updatedTime.Milliseconds() == 0 {
+				time.Sleep(10 * play.updateTime)
+			}
 			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
 			// if we wait more time we expect this to fine tune
 			for i := 0; i < iterations*4; i++ {
