@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -209,7 +212,9 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		SpecId:       csm.rpcEndpoint.ChainID,
 		ApiInterface: csm.rpcEndpoint.ApiInterface,
 	}
-	probeResp, err := client.Probe(connectCtx, probeReq)
+	var trailer metadata.MD
+	probeResp, err := client.Probe(connectCtx, probeReq, grpc.Trailer(&trailer))
+	versions := trailer.Get(common.VersionMetadataKey)
 	relayLatency := time.Since(relaySentTime)
 	if err != nil {
 		return 0, providerAddress, utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})
@@ -223,7 +228,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	}
 	// public lava address is a value that is not changing, so it's thread safe
 	if DebugProbes {
-		utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress})
+		utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress}, utils.LogAttr("version", strings.Join(versions, ",")))
 	}
 	return relayLatency, providerAddress, nil
 }

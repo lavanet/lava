@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
+	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -24,11 +25,14 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingcli "github.com/lavanet/lava/x/pairing/client/cli"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
+	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 func validatePortNumber(ipPort string) string {
@@ -108,18 +112,28 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 	goodChains := []string{}
 	badChains := []string{}
 	portValidation := []string{}
+	protocolQuerier := protocoltypes.NewQueryClient(clientCtx)
+	param, err := protocolQuerier.Params(ctx, &protocoltypes.QueryParamsRequest{})
+	if err != nil {
+		return err
+	}
+	lavaVersion := param.GetParams().Version
+	if err != nil {
+		utils.LavaFormatFatal("failed fetching protocol version from node", err)
+	}
+	targetVersion := lvutil.ParseToSemanticVersion(lavaVersion.ProviderTarget)
 	for _, providerEntry := range providerEntries {
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
 
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface string, addon string) (time.Duration, int64, error) {
+			checkOneProvider := func(apiInterface string, addon string) (time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
 				}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
-					return 0, 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				defer conn.Close()
 				relayerClient := *relayerClientPt
@@ -130,18 +144,20 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 					SpecId:       providerEntry.Chain,
 					ApiInterface: apiInterface,
 				}
-				probeResp, err := relayerClient.Probe(ctx, probeReq)
+				var trailer metadata.MD
+				probeResp, err := relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
 				if err != nil {
-					return 0, 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, utils.LavaFormatError("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
+				versions := strings.Join(trailer.Get(common.VersionMetadataKey), ",")
 				relayLatency := time.Since(relaySentTime)
 				if guid != probeResp.GetGuid() {
-					return 0, 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, versions, 0, utils.LavaFormatError("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 
 				// CORS check
 				if err := performCORSCheck(endpoint); err != nil {
-					return 0, 0, err
+					return 0, versions, 0, err
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{
@@ -150,26 +166,31 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				}
 				_, err = relayerClient.Relay(ctx, relayRequest)
 				if err == nil {
-					return 0, 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, utils.LavaFormatError("relay Without signature did not error, unexpected", nil, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 				code := status.Code(err)
 				if code != codes.Code(lavasession.EpochMismatchError.ABCICode()) {
-					return 0, 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, versions, 0, utils.LavaFormatError("relay returned unexpected error", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
-				return relayLatency, probeResp.GetLatestBlock(), nil
+				return relayLatency, versions, probeResp.GetLatestBlock(), nil
 			}
 			endpointServices := endpoint.GetSupportedServices()
 			if len(endpointServices) == 0 {
 				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			for _, endpointService := range endpointServices {
-				probeLatency, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
+				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
 				if err != nil {
 					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
 					continue
 				}
-				utils.LavaFormatInfo("successfully verified provider endpoint", utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
-				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String()+" latest block: 0x"+strconv.FormatInt(latestBlockFromProbe, 16))
+				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
+				if lvutil.IsVersionLessThan(parsedVer, targetVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
+					badChains = append(badChains, providerEntry.Chain+" "+endpointService.String())
+					continue
+				}
+				utils.LavaFormatInfo("successfully verified provider endpoint", utils.LogAttr("version", version), utils.Attribute{Key: "enspointService", Value: endpointService}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT}, utils.Attribute{Key: "probe latency", Value: probeLatency})
+				goodChains = append(goodChains, providerEntry.Chain+"-"+endpointService.String()+" version: "+version+" latest block: 0x"+strconv.FormatInt(latestBlockFromProbe, 16))
 			}
 		}
 	}
