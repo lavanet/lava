@@ -146,7 +146,6 @@ message QueryVerifyPairingResponse {
 
 message QueryGetUniquePaymentStorageClientProviderRequest {
 	  string index = 1;
-
 }
 
 message QueryGetUniquePaymentStorageClientProviderResponse {
@@ -233,6 +232,7 @@ message QueryEffectivePolicyRequest {
 
 message QueryEffectivePolicyResponse {
 	lavanet.lava.plans.Policy policy = 1;
+	lavanet.lava.plans.Policy pending_policy = 2;
 }
 
 // this line is used by starport scaffolding # 3
