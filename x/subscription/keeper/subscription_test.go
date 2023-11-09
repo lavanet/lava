@@ -153,7 +153,7 @@ func TestCreateSubscription(t *testing.T) {
 					PlanIndex: tt.index,
 				}
 
-				_, err := ts.TxSubscriptionBuy(sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration)
+				_, err := ts.TxSubscriptionBuy(sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration, false)
 				if tt.success {
 					require.Nil(t, err, tt.name)
 					_, found := ts.getSubscription(sub.Consumer)
@@ -173,7 +173,7 @@ func TestSubscriptionExpiration(t *testing.T) {
 	_, sub1Addr := ts.Account("sub1")
 	plan := ts.Plan("free")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 	_, found := ts.getSubscription(sub1Addr)
 	require.True(t, found)
@@ -193,7 +193,7 @@ func TestRenewSubscription(t *testing.T) {
 	_, sub1Addr := ts.Account("sub1")
 	plan := ts.Plan("free")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 6)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 6, false)
 	require.Nil(t, err)
 	_, found := ts.getSubscription(sub1Addr)
 	require.True(t, found)
@@ -205,11 +205,11 @@ func TestRenewSubscription(t *testing.T) {
 	require.Equal(t, uint64(3), sub.DurationLeft)
 
 	// with 3 months duration left, asking for 12 more should fail
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 12)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 12, false)
 	require.NotNil(t, err)
 
 	// but 9 additional month (even 10, the extra month extension below)
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 9)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 9, false)
 	require.Nil(t, err)
 	sub, found = ts.getSubscription(sub1Addr)
 	require.True(t, found)
@@ -226,7 +226,7 @@ func TestRenewSubscription(t *testing.T) {
 
 	// try extending the subscription (we could extend with 1 more month,
 	// but since the subscription's plan changed, the extension should fail)
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.NotNil(t, err)
 	require.Equal(t, uint64(12), sub.DurationLeft)
 	require.Equal(t, uint64(9), sub.DurationBought)
@@ -246,7 +246,7 @@ func TestRenewSubscription(t *testing.T) {
 	ts.AdvanceMonths(1).AdvanceEpoch()
 	_, found = ts.getSubscription(sub1Addr)
 	require.True(t, found)
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 10)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 10, false)
 	require.NotNil(t, err)
 }
 
@@ -257,7 +257,7 @@ func TestSubscriptionAdminProject(t *testing.T) {
 	_, sub1Addr := ts.Account("sub1")
 	plan := ts.Plan("free")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	// a newly created subscription is expected to have one default project,
@@ -275,7 +275,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	_, dev1Addr := ts.Account("dev1")
 	plan := ts.Plan("free")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 3)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 3, false)
 	require.Nil(t, err)
 
 	// add another project under the subcscription
@@ -407,7 +407,7 @@ func TestExpiryTime(t *testing.T) {
 			delta := now.Sub(ts.BlockTime())
 			ts.AdvanceBlock(delta)
 
-			_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, tt.months)
+			_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, tt.months, false)
 			require.Nil(t, err)
 
 			sub, found := ts.getSubscription(sub1Addr)
@@ -431,7 +431,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	coins := common.NewCoins(10000)
 	ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	block := ts.BlockHeight()
@@ -490,7 +490,7 @@ func TestPrice(t *testing.T) {
 			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, tt.duration)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, tt.duration, false)
 			require.Nil(t, err)
 
 			_, found := ts.getSubscription(sub1Addr)
@@ -514,7 +514,7 @@ func TestAddProjectToSubscription(t *testing.T) {
 	_, dev1Addr := ts.Account("dev1")
 	plan := ts.Plan("free")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, dev1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, dev1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	template := []struct {
@@ -563,9 +563,9 @@ func TestGetProjectsForSubscription(t *testing.T) {
 	plan := ts.Plan("free")
 
 	// buy two subscriptions
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
-	_, err = ts.TxSubscriptionBuy(sub2Addr, sub2Addr, plan.Index, 1)
+	_, err = ts.TxSubscriptionBuy(sub2Addr, sub2Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	// add two projects to the first subscription
@@ -607,7 +607,7 @@ func TestAddDelProjectForSubscription(t *testing.T) {
 	plan := ts.Plan("free")
 
 	// buy subscription and add project
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	projData := projectstypes.ProjectData{
@@ -643,7 +643,7 @@ func TestDelProjectEndSubscription(t *testing.T) {
 	plan := ts.Plan("free")
 
 	// buy subscription
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	// time of buy subscription
@@ -690,7 +690,7 @@ func TestDurationTotal(t *testing.T) {
 	plan := ts.Plan("free")
 
 	_, subAddr := ts.Account("sub1")
-	_, err := ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, months)
+	_, err := ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, months, false)
 	require.Nil(t, err)
 
 	for i := 0; i < months-1; i++ {
@@ -708,7 +708,7 @@ func TestDurationTotal(t *testing.T) {
 	durationSoFar := subRes.Sub.DurationTotal
 
 	extraMonths := 4
-	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths)
+	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths, false)
 	require.Nil(t, err)
 
 	for i := 0; i < extraMonths; i++ {
@@ -727,9 +727,13 @@ func TestDurationTotal(t *testing.T) {
 	require.Nil(t, err)
 	require.Nil(t, subRes.Sub)
 
-	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths)
+	_, err = ts.TxSubscriptionBuy(subAddr, subAddr, plan.Index, extraMonths, false)
 	require.Nil(t, err)
 	subRes, err = ts.QuerySubscriptionCurrent(subAddr)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), subRes.Sub.DurationTotal)
+}
+
+func TestSubAutoRenewal(t *testing.T) {
+
 }
