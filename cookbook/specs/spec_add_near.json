@@ -269,13 +269,13 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 100,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0,
+                                    "stateful": 1,
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0

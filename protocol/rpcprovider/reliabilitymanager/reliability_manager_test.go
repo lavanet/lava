@@ -92,7 +92,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		reply.LatestBlock = latestBlock
 		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(reply, relay, provider_address.String())
+		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
 		_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
@@ -125,7 +125,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		replyDR.LatestBlock = latestBlock
 		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(replyDR, relayDR, providerDR_address.String())
+		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
 		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
@@ -249,7 +249,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		reply.LatestBlock = latestBlock
 		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(reply, relay, provider_address.String())
+		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
 		_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		replyDR.LatestBlock = latestBlock
 		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(replyDR, relayDR, providerDR_address.String())
+		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
 		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
