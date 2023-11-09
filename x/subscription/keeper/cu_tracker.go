@@ -11,7 +11,7 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
-const LIMIT_TOKEN_PER_CU = 1000
+const LIMIT_TOKEN_PER_CU = 100
 
 // GetTrackedCu gets the tracked CU counter (with QoS influence) and the trackedCu entry's block
 func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, subBlock uint64) (cu uint64, found bool, key string) {
