@@ -51,4 +51,11 @@ func TestEmergencyTrackerVirtualEpoch(t *testing.T) {
 	emergencyTracker.UpdateEpoch(ThirdEpoch)
 	require.Equal(t, ZeroVirtualEpoch, emergencyTracker.GetLatestVirtualEpoch())
 	require.Equal(t, FirstVirtualEpoch, emergencyTracker.GetVirtualEpoch(SecondEpoch))
+
+	// test clear old virtual epoch
+	emergencyTracker.UpdateEpoch(ThirdEpoch + FirstEpoch)
+	require.Equal(t, FirstVirtualEpoch, emergencyTracker.GetVirtualEpoch(SecondEpoch))
+	emergencyTracker.UpdateEpoch(ThirdEpoch + SecondEpoch)
+	require.Equal(t, ZeroVirtualEpoch, emergencyTracker.GetVirtualEpoch(SecondEpoch))
+
 }

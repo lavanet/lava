@@ -22,6 +22,7 @@ type EmergencyTracker struct {
 	virtualEpochsMap map[uint64]uint64
 	latestEpoch      uint64
 	latestEpochTime  time.Time
+	epochsQueue      chan uint64
 	metrics          EmergencyTrackerMetrics
 }
 
@@ -53,12 +54,19 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 	cs.lock.Lock()
 	defer cs.lock.Unlock()
 
-	if epoch < cs.latestEpoch {
+	if epoch <= cs.latestEpoch {
 		return
 	}
 
 	cs.latestEpoch = epoch
 	cs.latestEpochTime = time.Now()
+
+	cs.epochsQueue <- epoch
+
+	for len(cs.epochsQueue) > 3 {
+		epochToDelete := <-cs.epochsQueue
+		delete(cs.virtualEpochsMap, epochToDelete)
+	}
 }
 
 func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
@@ -101,6 +109,7 @@ func NewEmergencyTracker(metrics EmergencyTrackerMetrics) (emergencyTracker *Eme
 	emergencyTracker = &EmergencyTracker{
 		virtualEpochsMap: map[uint64]uint64{},
 		latestEpoch:      0,
+		epochsQueue:      make(chan uint64, 100),
 		metrics:          metrics,
 	}
 
