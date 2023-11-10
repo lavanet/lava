@@ -235,6 +235,7 @@ func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() 
 func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
+	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
 			utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu},
@@ -249,6 +250,7 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
+	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return MaxComputeUnitsExceededError
 	}

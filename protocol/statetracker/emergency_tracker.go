@@ -8,6 +8,8 @@ import (
 	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
 )
 
+const maxEpochsToStore = 3
+
 type ConsumerEmergencyTrackerInf interface {
 	GetLatestVirtualEpoch() uint64
 }
@@ -63,7 +65,8 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 
 	cs.epochsQueue <- epoch
 
-	for len(cs.epochsQueue) > 3 {
+	// clear old epochs
+	for len(cs.epochsQueue) > maxEpochsToStore {
 		epochToDelete := <-cs.epochsQueue
 		delete(cs.virtualEpochsMap, epochToDelete)
 	}
@@ -72,6 +75,7 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
 	cs.lock.Lock()
 	defer cs.lock.Unlock()
+	// check if emergency mode has started
 	if time.Since(latestBlockTime) > cs.downtimeParams.DowntimeDuration {
 		epochDuration := cs.downtimeParams.EpochDuration.Milliseconds()
 		if epochDuration == 0 {
