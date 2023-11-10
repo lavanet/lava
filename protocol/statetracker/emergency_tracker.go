@@ -58,7 +58,7 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 	}
 
 	cs.latestEpoch = epoch
-	cs.latestEpochTime = time.Now().UTC()
+	cs.latestEpochTime = time.Now()
 }
 
 func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
@@ -89,7 +89,9 @@ func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
 				utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch},
 				utils.Attribute{Key: "epoch", Value: cs.latestEpoch},
 			)
-			cs.metrics.SetVirtualEpoch(virtualEpoch)
+			if cs.metrics != nil {
+				cs.metrics.SetVirtualEpoch(virtualEpoch)
+			}
 			cs.virtualEpochsMap[cs.latestEpoch] = virtualEpoch
 		}
 	}
