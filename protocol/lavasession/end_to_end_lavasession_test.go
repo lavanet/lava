@@ -61,7 +61,6 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 
 				err = psm.OnSessionFailure(sps, cs.Session.RelayNum-skippedRelays)
 				require.NoError(t, err)
-
 			} else {
 				successfulRelays++
 
@@ -86,7 +85,6 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 			require.Equal(t, cs.Session.RelayNum, successfulRelays+skippedRelays)
 			require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
 		}
-
 	}
 }
 
@@ -132,7 +130,6 @@ func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall+1)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
 	}
-
 }
 
 func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*ConsumerSessionManager, *ProviderSessionManager, context.Context) {
