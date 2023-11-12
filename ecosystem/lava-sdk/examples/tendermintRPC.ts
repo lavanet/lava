@@ -14,7 +14,7 @@ import { LavaSDK } from "../src/sdk/sdk";
 async function getLatestBlock(): Promise<Array<any>> {
   // Create dAccess for Cosmos Hub
   // Default rpcInterface for Cosmos Hub is tendermintRPC
-  const cosmosHub = await LavaSDK.create({
+  const lavaSDKInstance = await LavaSDK.create({
     // private key with an active subscription
     privateKey: "<lava consumer private key>",
 
@@ -31,7 +31,7 @@ async function getLatestBlock(): Promise<Array<any>> {
   const results = [];
 
   for (let i = 0; i < 10; i++) {
-    const info = await cosmosHub.sendRelay({
+    const info = await lavaSDKInstance.sendRelay({
       method: "abci_info",
       params: [],
     });
@@ -42,7 +42,7 @@ async function getLatestBlock(): Promise<Array<any>> {
     // Extract latest block number
     const latestBlockNumber = parsedInfo.last_block_height;
     // Fetch latest block
-    const latestBlock = await cosmosHub.sendRelay({
+    const latestBlock = await lavaSDKInstance.sendRelay({
       method: "block",
       params: [latestBlockNumber],
     });
@@ -52,10 +52,50 @@ async function getLatestBlock(): Promise<Array<any>> {
   return results;
 }
 
+async function getBatch(): Promise<Array<any>> {
+  // Create dAccess for Cosmos Hub
+  // Default rpcInterface for Cosmos Hub is tendermintRPC
+  const lavaSDKInstance = await LavaSDK.create({
+    // private key with an active subscription
+    privateKey: "<lava consumer private key>",
+
+    // chainID for Cosmos Hub
+    chainIds: "LAV1",
+
+    // geolocation 1 for North america - geolocation 2 for Europe providers
+    // default value is 1
+    geolocation: "2",
+  });
+
+  // Get abci_info
+
+  const results = [];
+
+  for (let i = 0; i < 10; i++) {
+    const info = await lavaSDKInstance.sendRelay({
+      relays: [
+        {
+          method: "abci_info",
+          params: [],
+        },
+        {
+          method: "status",
+          params: [],
+        },
+      ],
+    });
+    results.push(info);
+  }
+  return results;
+}
+
 (async function () {
   try {
-    const results = await getLatestBlock();
-    console.log("results:", results);
+    // const results = await getLatestBlock();
+    // console.log("results:", results);
+    console.log("sending batches");
+    const resultsBatch = await getBatch();
+    console.log("results Batch:", resultsBatch);
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);
