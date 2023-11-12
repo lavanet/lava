@@ -9,3 +9,17 @@ export function shuffleArray<T>(arr: T[]): T[] {
 
   return arr;
 }
+
+export function isStringArray(array: any): array is Array<string> {
+  if (!(array instanceof Array) || !Array.isArray(array)) {
+    return false;
+  }
+
+  for (const value of array) {
+    if (typeof value !== "string") {
+      return false;
+    }
+  }
+
+  return true;
+}

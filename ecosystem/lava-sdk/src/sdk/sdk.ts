@@ -32,6 +32,10 @@ import {
 } from "../providerOptimizer/providerOptimizer";
 import { AverageWorldLatency } from "../common/timeout";
 import { ConsumerConsistency } from "../rpcconsumer/consumerConsistency";
+import { isMapOfStringToStringArray } from "../util/maps";
+import { isStringArray } from "../util/arrays";
+import { isStringToArrayMap } from "../util/objects";
+import { StringToArrayMap } from "../common/common";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -43,6 +47,7 @@ export interface LavaSDKOptions {
   privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
   badge?: BadgeOptions; // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
   chainIds: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
+  apiInterfaces?: Array<string> | Map<string, Array<string>> | StringToArrayMap; // Optional: The API interfaces to use. If an Array is given, use it for all chains. If map is given, the key is chain ID and the value is the API interfaces
   pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
   network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
   geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
@@ -67,6 +72,7 @@ export class LavaSDK {
   private secure: boolean;
   private allowInsecureTransport: boolean;
   private chainIDRpcInterface: string[];
+  private apiInterfaces?: StringToArrayMap;
   private transport: any;
   private rpcConsumerServerRouter: Map<RelayReceiver, RPCConsumerServer>; // routing the right chainID and apiInterface to rpc server
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
@@ -89,6 +95,7 @@ export class LavaSDK {
       privateKey,
       badge,
       chainIds: chainIDRpcInterface,
+      apiInterfaces,
       pairingListConfig,
       network,
       geolocation,
@@ -116,6 +123,34 @@ export class LavaSDK {
     } else {
       this.chainIDRpcInterface = chainIDRpcInterface;
     }
+
+    if (apiInterfaces) {
+      const checkKeyHelper = (key: string) => {
+        if (!this.chainIDRpcInterface.includes(key)) {
+          throw Error(
+            `Parameter 'apiInterface' contains the key: ${key}, which does not appear in 'chainIDs'`
+          );
+        }
+      };
+
+      this.apiInterfaces = {};
+      if (isStringArray(apiInterfaces)) {
+        for (const chainId of this.chainIDRpcInterface) {
+          this.apiInterfaces[chainId] = apiInterfaces;
+        }
+      } else if (isStringToArrayMap(apiInterfaces)) {
+        Object.keys(apiInterfaces).forEach(checkKeyHelper);
+        this.apiInterfaces = apiInterfaces;
+      } else if (isMapOfStringToStringArray(apiInterfaces)) {
+        apiInterfaces.forEach((_, key) => checkKeyHelper(key));
+        this.apiInterfaces = Object.fromEntries(apiInterfaces);
+      } else {
+        throw Error(
+          "Parameter 'apiInterface' is not of type Array<string> or Map<string, Array<string>> or { [key: string]: Array<string> }"
+        );
+      }
+    }
+
     this.privKey = privateKey ? privateKey : "";
     this.walletAddress = "";
     this.badgeManager = new BadgeManager(badge);

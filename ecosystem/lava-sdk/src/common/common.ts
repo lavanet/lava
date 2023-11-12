@@ -28,3 +28,5 @@ export enum HttpMethod {
   OPTIONS = "OPTIONS",
   TRACE = "TRACE",
 }
+
+export type StringToArrayMap = { [key: string]: Array<string> };
