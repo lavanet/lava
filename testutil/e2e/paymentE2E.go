@@ -137,8 +137,8 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 			}
 
 			// keep the max amount
-			if expectedPayoutArr[j] < res.Amount {
-				expectedPayoutArr[j] = res.Amount
+			if expectedPayoutArr[j] < res.Total {
+				expectedPayoutArr[j] = res.Total
 			}
 		}
 		time.Sleep(time.Second * 10)
