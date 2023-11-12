@@ -1225,7 +1225,7 @@ func TestPendingProject(t *testing.T) {
 
 	_, sub := ts.Account("sub1")
 
-	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1)
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false)
 	require.Nil(t, err)
 
 	res, err := ts.QuerySubscriptionListProjects(sub)
