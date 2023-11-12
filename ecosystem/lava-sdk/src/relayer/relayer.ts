@@ -23,7 +23,6 @@ import transportAllowInsecure from "../util/browserAllowInsecure";
 import { SingleConsumerSession } from "../lavasession/consumerTypes";
 import SDKErrors from "../sdk/errors";
 import { byteArrayToString, encodeUtf8 } from "../util/common";
-import { Logger } from "../logger/logger";
 
 export interface RelayerOptions {
   privKey: string;
