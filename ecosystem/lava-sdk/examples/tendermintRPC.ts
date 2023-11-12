@@ -91,11 +91,11 @@ async function getBatch(): Promise<Array<any>> {
 
 (async function () {
   try {
-    // const results = await getLatestBlock();
-    // console.log("results:", results);
+    const results = await getLatestBlock();
+    console.log("results:", results);
     console.log("sending batches");
     const resultsBatch = await getBatch();
-    console.log("results Batch:", resultsBatch);
+    console.log("results Batch:", JSON.stringify(resultsBatch));
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);
