@@ -1055,11 +1055,6 @@ func DefaultGenesis() *types.GenesisState {
 }
 
 func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
-	// call timer-store's Init (with empty input) to trigger its setVersion() if needed;
-	// the timer-store data is stored in the same namespace/prefix as this fixation store
-	// so the loop below will restore its state too (and overwrite that Init).
-	fs.tstore.Init(ctx, nil)
-
 	// will be overwritten by below if genesis state exists
 	fs.setVersion(ctx, gs.Version)
 

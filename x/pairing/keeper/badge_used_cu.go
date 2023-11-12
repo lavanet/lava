@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	timertypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // SetBadgeUsedCu set a specific badgeUsedCu in the store from its index
@@ -85,11 +85,11 @@ func (k Keeper) BadgeUsedCuExpiry(ctx sdk.Context, badge types.Badge) uint64 {
 }
 
 // InitBadgeTimers imports badges timers data (from genesis)
-func (k Keeper) InitBadgeTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
-	k.badgeTimerStore.Init(ctx, data)
+func (k Keeper) InitBadgeTimers(ctx sdk.Context, gs timertypes.GenesisState) {
+	k.badgeTimerStore.Init(ctx, gs)
 }
 
 // ExportBadgesTimers exports badges timers data (for genesis)
-func (k Keeper) ExportBadgesTimers(ctx sdk.Context) []fixationtypes.RawMessage {
+func (k Keeper) ExportBadgesTimers(ctx sdk.Context) timertypes.GenesisState {
 	return k.badgeTimerStore.Export(ctx)
 }
