@@ -516,7 +516,7 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 }
 
 func (k Keeper) UnbondUniformDelegators(ctx sdk.Context, delegator string, amount sdk.Coin) error {
-	epoch, _, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+	epoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	providers, err := k.GetDelegatorProviders(ctx, delegator, epoch)
 	_ = err
 
@@ -583,12 +583,13 @@ func (k Keeper) UnbondUniformDelegators(ctx sdk.Context, delegator string, amoun
 
 // returns the difference between validators delegations and provider delegation (validators-providers)
 func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (sdk.Int, error) {
-	providers, err := k.GetDelegatorProviders(ctx, delAddr.String(), uint64(ctx.BlockHeight()))
+	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+	providers, err := k.GetDelegatorProviders(ctx, delAddr.String(), nextEpoch)
 	_ = err
 	// TODO make this more efficient
 	sumProviderDelegations := sdk.ZeroInt()
 	for _, p := range providers {
-		delegations := k.GetAllProviderDelegatorDelegations(ctx, delAddr.String(), p, uint64(ctx.BlockHeight()))
+		delegations := k.GetAllProviderDelegatorDelegations(ctx, delAddr.String(), p, nextEpoch)
 		for _, d := range delegations {
 			sumProviderDelegations = sumProviderDelegations.Add(d.Amount.Amount)
 		}
