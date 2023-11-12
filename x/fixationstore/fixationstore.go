@@ -1030,16 +1030,16 @@ func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
 
 	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
 		var entries types.GenesisEntries
+		entries.Index = index
 		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
-			utils.LavaFormatPanic("fixation export: unsanitized index", err)
+			utils.LavaFormatPanic("export genesis failed", err)
 		}
-		entries.Index = string(safeIndex)
 		entries.IsLive = fs.isEntryIndexLive(ctx, safeIndex)
 		blocks := fs.GetAllEntryVersions(ctx, index)
 		for _, block := range blocks {
 			entry := fs.getEntry(ctx, safeIndex, block)
-			entry.Index = types.DesanitizeIndex(entry.SafeIndex())
+			entry.Index = index
 			entries.Entries = append(entries.Entries, entry)
 		}
 		gs.Entries = append(gs.Entries, entries)
@@ -1063,16 +1063,17 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 	for _, entries := range gs.Entries {
 		safeIndex, err := types.SanitizeIndex(entries.Index)
 		if err != nil {
-			utils.LavaFormatPanic("unsafe fixation index in genesis file", err, utils.Attribute{Key: "Index", Value: entries.Index})
+			utils.LavaFormatPanic("cannot import genesis", err)
 		}
-
-		fs.setEntryIndex(ctx, safeIndex, entries.IsLive)
+		entries.Index = string(safeIndex)
+		fs.setEntryIndex(ctx, types.SafeIndex(entries.Index), entries.IsLive)
 
 		for _, entry := range entries.Entries {
-			_, err := types.SanitizeIndex(entry.Index)
+			safeIndex, err := types.SanitizeIndex(entry.Index)
 			if err != nil {
-				utils.LavaFormatPanic("unsafe fixation entry in genesis file", err, utils.Attribute{Key: "Index", Value: entry.Index})
+				utils.LavaFormatPanic("cannot import genesis", err)
 			}
+			entry.Index = string(safeIndex)
 			fs.setEntry(ctx, entry)
 		}
 	}

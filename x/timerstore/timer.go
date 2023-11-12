@@ -180,7 +180,7 @@ func (tstore *TimerStore) Init(ctx sdk.Context, gs timertypes.GenesisState) {
 	}
 
 	for _, blockEntry := range gs.BlockEntries {
-		tstore.addTimer(ctx, types.BlockTime, blockEntry.Value, []byte(blockEntry.Key), blockEntry.Data)
+		tstore.addTimer(ctx, types.BlockHeight, blockEntry.Value, []byte(blockEntry.Key), blockEntry.Data)
 	}
 }
 
