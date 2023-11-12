@@ -13,5 +13,7 @@ message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
   lavanet.lava.fixationstore.GenesisState subsFS = 2 [(gogoproto.nullable) = false];
   repeated lavanet.lava.fixationstore.RawMessage subsTS = 3 [(gogoproto.nullable) = false];
+  lavanet.lava.fixationstore.GenesisState cuTrackerFS = 4 [(gogoproto.nullable) = false];
+  repeated lavanet.lava.fixationstore.RawMessage cuTrackerTS = 5 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 } 

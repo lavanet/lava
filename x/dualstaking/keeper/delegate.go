@@ -210,7 +210,7 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 
 	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
 	if !exists {
-		return types.ErrProviderNotStaked
+		return epochstoragetypes.ErrProviderNotStaked
 	}
 
 	// sanity check

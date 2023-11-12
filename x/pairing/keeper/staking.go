@@ -93,7 +93,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		if amount.Amount.GT(existingEntry.Stake.Amount) {
 			// delegate the difference
 			diffAmount := amount.Sub(existingEntry.Stake)
-			err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, diffAmount)
+			err = k.dualstakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, diffAmount)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
 				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
@@ -103,7 +103,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
 			// unbond the difference
 			diffAmount := existingEntry.Stake.Sub(amount)
-			err = k.dualStakingKeeper.Unbond(ctx, senderAddr.String(), senderAddr.String(), chainID, diffAmount, false)
+			err = k.dualstakingKeeper.Unbond(ctx, senderAddr.String(), senderAddr.String(), chainID, diffAmount, false)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
 				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
@@ -147,7 +147,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, creator, chainID string, amount s
 
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 
-	err = k.dualStakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
+	err = k.dualstakingKeeper.Delegate(ctx, senderAddr.String(), senderAddr.String(), chainID, amount)
 	if err != nil {
 		return utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,

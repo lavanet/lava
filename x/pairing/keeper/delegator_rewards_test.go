@@ -65,8 +65,6 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			ts.setupForPayments(1, 1, 1)                   // 1 provider, 1 client, 1 providersToPair
 			ts.AddAccount(common.CONSUMER, 1, testBalance) // add delegator1
 			ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
-			err := ts.TxProposalChangeParam(types.ModuleName, string(types.KeyMintCoinsPerCU), "\"1\"")
-			require.Nil(t, err)
 
 			providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 			clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -88,7 +86,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			if amount1.IsZero() {
 				amount1.Amount = sdk.OneInt()
 			}
-			_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
+			_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
 			require.Nil(t, err)
 
 			amount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(tt.d2Amount*delegationAmount/100))
@@ -112,7 +110,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			require.Equal(t, 3, len(res.Delegations))
 
 			// calc useful consts
-			totalReward := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx).MulInt64(int64(relayCuSum))
+			totalReward := sdk.NewDec(int64(relayCuSum))
 
 			// send relay and check provider balance according to expected providerRewardPerc (done inside payAndVerifyBalance)
 			relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
@@ -151,6 +149,7 @@ var (
 
 func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs []string) types.MsgRelayPayment {
 	var relays []*types.RelaySession
+	epoch := int64(ts.EpochStart(ts.BlockHeight()))
 
 	// Create relay request. Change session ID each call to avoid double spending error
 	for i, chainID := range chainIDs {
@@ -160,7 +159,7 @@ func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs [
 			SessionId:   sessionID,
 			SpecId:      chainID,
 			CuSum:       relayCuSum,
-			Epoch:       int64(ts.BlockHeight()),
+			Epoch:       epoch,
 			RelayNum:    uint64(i),
 		}
 		sessionID += 1
@@ -214,31 +213,16 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 3, len(res.Delegations))
 
-	// check the provider's balance
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
-	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	expectedReward := mint.MulInt64(providerReward.Int64())
-
-	balance := ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
-	newBalance := ts.GetBalance(providerAcc.Addr)
-
-	require.Equal(t, expectedReward.TruncateInt64(), newBalance-balance)
 
 	// modify the stake entry to have a delegation limit lower than the total delegations
 	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 
-	providerReward, _ = ts.Keepers.Dualstaking.CalcRewards(stakeEntry, math.NewInt(int64(relayCuSum)))
-	expectedReward = mint.MulInt64(providerReward.Int64())
-
-	balance = ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
-	newBalance = ts.GetBalance(providerAcc.Addr)
-	require.Equal(t, expectedReward.TruncateInt64(), newBalance-balance)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 76)
 }
 
 func TestProviderRewardWithCommission(t *testing.T) {
@@ -281,14 +265,8 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.True(t, totalReward.Equal(providerReward))
 
 	// check that the expected reward equals to the provider's new balance minus old balance
-	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	expectedRewardForRelay := mint.MulInt64(providerReward.Int64())
-
-	balance := ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
-	newBalance := ts.GetBalance(providerAcc.Addr)
-	require.Equal(t, expectedRewardForRelay.TruncateInt64(), newBalance-balance)
 
 	// the delegator should get no rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
@@ -310,19 +288,16 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	// the expected reward for the provider with 0% commission is half of the total rewards
 	// (in this test specifically, effectiveDelegations = delegateTotal = providerStake)
-	balance = ts.GetBalance(providerAcc.Addr)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 50)
-	newBalance = ts.GetBalance(providerAcc.Addr)
-	require.Equal(t, expectedRewardForRelay.TruncateInt64()/2, newBalance-balance)
 
 	// the delegator should get the total rewards
 	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward = resRewards.Rewards[0]
-	expectedDRewardForRelay := mint.MulInt64(totalReward.Int64())
-	require.Equal(t, expectedDRewardForRelay.TruncateInt64()/2, dReward.Amount.Amount.Int64())
+	expectedDRewardForRelay := totalReward
+	require.Equal(t, expectedDRewardForRelay.Int64()/2, dReward.Amount.Amount.Int64())
 
 	// claim delegator rewards and verify balance
 	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
@@ -388,23 +363,28 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	relayPaymentMessage = sendRelay(ts, provider2, client1Acc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider2Acc.Addr, true, true, 50)
 
-	mintCuMultiplier := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	expectedReward := mintCuMultiplier.MulInt64(int64(relayCuSum / 2))
+	planPrice := ts.plan.Price.Amount.Int64()
 
-	// define tests
+	// expected rewards explanation:
+	// total_reward = plan_price * (cu_per_provider_per_chain / cu_used_in_sub)
+	// current situation:
+	// provider1: 100CU for "spec", 100CU for "spec1"; provider2: 100CU for spec
+	// tracked_cu_list = [[p1, spec, 100], [p2, spec, 100], [p1, spec1, 100]]
+	// recall that delegators get 50% of reward (hence dividing by 2)
+	// note that tracker CU is reset between payAndVerifyBalance calls so cu_used_in_sub is 100 on the third case
 	tests := []struct {
 		name            string
 		delegator       string
 		provider        string
 		chainID         string
-		expectedRewards math.LegacyDec
+		expectedRewards int64
 	}{
-		{"assigned provider+chainID", delegator1, provider1, ts.spec.Index, expectedReward},
-		{"assigned provider", delegator1, provider1, "", expectedReward.MulInt64(2)},
-		{"nothing assigned", delegator1, "", "", expectedReward.MulInt64(3)},
-		{"invalid delegator", delegator2, provider2, spec1.Index, sdk.ZeroDec()},
-		{"invalid provider", delegator1, provider3, ts.spec.Index, sdk.ZeroDec()},
-		{"invalid chain ID", delegator1, provider2, spec1.Index, sdk.ZeroDec()},
+		{"assigned provider+chainID", delegator1, provider1, ts.spec.Index, (planPrice * 100) / (200 * 2)},
+		{"assigned provider", delegator1, provider1, "", 2 * ((planPrice * 100) / (200 * 2))},
+		{"nothing assigned", delegator1, "", "", (2 * ((planPrice * 100) / (200 * 2))) + (planPrice*100)/(100*2)},
+		{"invalid delegator", delegator2, provider2, spec1.Index, 0},
+		{"invalid provider", delegator1, provider3, ts.spec.Index, 0},
+		{"invalid chain ID", delegator1, provider2, spec1.Index, 0},
 	}
 
 	for _, tt := range tests {
@@ -415,7 +395,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 			for _, reward := range res.Rewards {
 				delegatorReward += reward.Amount.Amount.Int64()
 			}
-			require.Equal(t, tt.expectedRewards.TruncateInt64(), delegatorReward)
+			require.Equal(t, tt.expectedRewards, delegatorReward)
 		})
 	}
 }

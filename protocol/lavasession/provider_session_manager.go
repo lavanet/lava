@@ -58,7 +58,7 @@ func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsum
 	if singleProviderSession.RelayNum+1 > relayNumber { // validate relay number here, but add only in PrepareSessionForUsage
 		// unlock the session since we are returning an error
 		defer singleProviderSession.lock.Unlock()
-		return nil, utils.LavaFormatError("singleProviderSession.RelayNum mismatch, session out of sync", SessionOutOfSyncError, utils.Attribute{Key: "singleProviderSession.RelayNum", Value: singleProviderSession.RelayNum + 1}, utils.Attribute{Key: "request.relayNumber", Value: relayNumber})
+		return nil, utils.LavaFormatError("singleProviderSession.RelayNum mismatch, session out of sync", SessionOutOfSyncError, utils.LogAttr("GUID", ctx), utils.LogAttr("errCount", singleProviderSession.errorsCount), utils.LogAttr("sessionID", singleProviderSession.SessionID), utils.Attribute{Key: "singleProviderSession.RelayNum", Value: singleProviderSession.RelayNum + 1}, utils.Attribute{Key: "request.relayNumber", Value: relayNumber})
 	}
 	// singleProviderSession is locked at this point.
 	return singleProviderSession, nil
@@ -82,7 +82,7 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, consumerAddre
 
 	badgeUserEpochData := getOrCreateBadgeUserEpochData(badge, providerSessionsWithConsumer)
 	singleProviderSession, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
-	if badgeUserEpochData != nil {
+	if badgeUserEpochData != nil && err == nil {
 		singleProviderSession.BadgeUserData = badgeUserEpochData
 	}
 	return singleProviderSession, err

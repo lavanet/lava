@@ -39,7 +39,7 @@ func (ts *tester) addClient(count int) {
 	start := len(ts.Accounts(common.CONSUMER))
 	for i := 0; i < count; i++ {
 		_, addr := ts.AddAccount(common.CONSUMER, start+i, testBalance)
-		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 1)
+		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 10)
 		if err != nil {
 			panic("addClient: failed to buy subscription: " + err.Error())
 		}
@@ -142,6 +142,9 @@ func (ts *tester) payAndVerifyBalance(
 	originalProjectUsedCu := proj.Project.UsedCu
 	originalSubCuLeft := sub.Sub.MonthCuLeft
 
+	plan, found := ts.Keepers.Plans.GetPlan(ts.Ctx, sub.Sub.PlanIndex)
+	require.True(ts.T, found)
+
 	// perform payment
 	_, err = ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
 	if !validPayment {
@@ -178,13 +181,6 @@ func (ts *tester) payAndVerifyBalance(
 
 	providerReward := (totalPaid * providerRewardPerc) / 100
 
-	// verify provider's balance
-	mint := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx)
-	want := mint.MulInt64(int64(providerReward))
-	expectedReward := balance + want.TruncateInt64()
-	actualReward := ts.GetBalance(providerAddr)
-	require.Equal(ts.T, expectedReward, actualReward)
-
 	// verify each project balance
 	// (project used-cu should increase and respective subscription cu-left should decrease)
 	proj, err = ts.QueryProjectDeveloper(clientAddr.String())
@@ -194,6 +190,20 @@ func (ts *tester) payAndVerifyBalance(
 	require.Nil(ts.T, err)
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
+
+	// advance month + blocksToSave + 1 to trigger the monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// verify provider's balance
+	planPrice := plan.Price.Amount
+	want := sdk.ZeroInt()
+	if totalCuUsed != 0 {
+		want = planPrice.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
+	}
+	expectedReward := balance + want.Int64()
+	actualReward := ts.GetBalance(providerAddr)
+	require.Equal(ts.T, expectedReward, actualReward)
 }
 
 // verifyRelayPayments verifies relay payments saved on-chain after getting payment
@@ -274,7 +284,7 @@ func (ts *tester) newRelaySession(
 		SessionId:   session,
 		SpecId:      ts.spec.Name,
 		CuSum:       cusum,
-		Epoch:       int64(epoch),
+		Epoch:       int64(ts.EpochStart(epoch)),
 		RelayNum:    relay,
 	}
 	return relaySession

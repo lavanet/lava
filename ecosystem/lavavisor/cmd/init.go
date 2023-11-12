@@ -36,7 +36,7 @@ func CreateLavaVisorInitCobraCommand() *cobra.Command {
 				return err
 			}
 			if autoStart {
-				return LavavisorStart(cmd)
+				return LavavisorWrap(cmd)
 			}
 			return nil
 		},
@@ -52,18 +52,19 @@ func CreateLavaVisorInitCobraCommand() *cobra.Command {
 
 func LavavisorInit(cmd *cobra.Command) error {
 	dir, _ := cmd.Flags().GetString("directory")
-	lavavisorFetcher := &processmanager.ProtocolBinaryFetcher{}
 
-	// Build path to ./lavavisor
-	err := lavavisorFetcher.SetupLavavisorDir(dir)
-	if err != nil {
-		return err
-	}
 	// check auto-download flag
 	autoDownload, err := cmd.Flags().GetBool("auto-download")
 	if err != nil {
 		return err
 	}
+	// Build path to ./lavavisor
+	lavavisorFetcher := &processmanager.ProtocolBinaryFetcher{AutoDownload: autoDownload}
+	err = lavavisorFetcher.SetupLavavisorDir(dir)
+	if err != nil {
+		return err
+	}
+
 	// initialize lavavisor state tracker
 	ctx := context.Background()
 	clientCtx, err := client.GetClientQueryContext(cmd)
@@ -83,21 +84,21 @@ func LavavisorInit(cmd *cobra.Command) error {
 	// fetch lavap version from consensus
 	protocolConsensusVersion, err := lavavisorStateTracker.GetProtocolVersion(ctx)
 	if err != nil {
-		return utils.LavaFormatError("Protocol version cannot be fetched from consensus", err)
+		return utils.LavaFormatError("[Lavavisor] Protocol version cannot be fetched from consensus", err)
 	}
-	utils.LavaFormatInfo("Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.Version.ProviderMin})
+	utils.LavaFormatInfo("[Lavavisor] Initializing the environment", utils.Attribute{Key: "Version", Value: protocolConsensusVersion.Version.ProviderMin})
 
 	// fetcher returns binaryPath (according to selected min or target version)
-	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(autoDownload, protocolConsensusVersion.Version)
+	binaryPath, err := lavavisorFetcher.FetchProtocolBinary(protocolConsensusVersion.Version)
 	if err != nil {
-		return utils.LavaFormatError("Protocol binary couldn't be fetched", nil)
+		return utils.LavaFormatError("[Lavavisor] Protocol binary couldn't be fetched", nil)
 	}
 
 	// linker
 	binaryLinker := processmanager.ProtocolBinaryLinker{Fetcher: lavavisorFetcher}
 	err = binaryLinker.CreateLink(binaryPath)
 	if err != nil {
-		return utils.LavaFormatError("Could'nt create link for the protocol binary", err)
+		return utils.LavaFormatError("[Lavavisor] Could'nt create link for the protocol binary", err)
 	}
 
 	return nil

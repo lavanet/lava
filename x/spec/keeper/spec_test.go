@@ -41,6 +41,8 @@ func (ts *tester) expandSpec(spec types.Spec) (types.Spec, error) {
 	return ts.Keepers.Spec.ExpandSpec(ts.Ctx, spec)
 }
 
+const ApiStr = "API-"
+
 // prepareMockApis returns a slice of mock ServiceApi for use in Spec
 func prepareMockApis(count int, apiDiff string) []*types.Api {
 	if count%2 != 0 {
@@ -50,7 +52,7 @@ func prepareMockApis(count int, apiDiff string) []*types.Api {
 
 	for i := 0; i < count/2; i++ {
 		api := &types.Api{
-			Name: "API-" + strconv.Itoa(i),
+			Name: ApiStr + strconv.Itoa(i),
 			BlockParsing: types.BlockParser{
 				DefaultValue: apiDiff,
 			},
@@ -60,7 +62,7 @@ func prepareMockApis(count int, apiDiff string) []*types.Api {
 		mockApis[i] = api
 
 		api = &types.Api{
-			Name:    "API-" + strconv.Itoa(i+count/2),
+			Name:    ApiStr + strconv.Itoa(i+count/2),
 			Enabled: false,
 			BlockParsing: types.BlockParser{
 				DefaultValue: apiDiff,
@@ -76,7 +78,7 @@ func prepareMockParsing(count int) []*types.ParseDirective {
 	mockParsing := make([]*types.ParseDirective, count)
 
 	for i := 0; i < count; i++ {
-		uniqueName := "API-" + strconv.Itoa(i)
+		uniqueName := ApiStr + strconv.Itoa(i)
 		api := &types.Api{
 			Name: uniqueName,
 		}

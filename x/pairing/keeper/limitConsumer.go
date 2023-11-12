@@ -15,7 +15,7 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relayCU, allowedCU
 		return 0, err
 	}
 
-	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription())
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription(), epoch)
 	if err != nil {
 		return 0, err
 	}

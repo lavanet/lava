@@ -685,14 +685,14 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 	return types.Entry{}, false
 }
 
-// FindEntry2 returns the entry by index and block without changing the refcount
-func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (uint64, bool) {
+// FindEntryDetailed returns the entry by index, whether it's deleted, and block without changing the refcount
+func (fs *FixationStore) FindEntryDetailed(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (entryBlock uint64, isDeleted bool, isLatest bool, found bool) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		utils.LavaFormatError("FindEntry failed (invalid index)", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
-		return 0, false
+		return 0, false, false, false
 	}
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
@@ -705,16 +705,16 @@ func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64,
 	// true in this case.
 
 	if !found || entry.IsDeletedBy(block) {
-		return 0, false
+		return 0, false, false, false
 	}
 
 	fs.cdc.MustUnmarshal(entry.GetData(), entryData)
-	return entry.Block, true
+	return entry.Block, entry.IsDeleted(ctx), entry.IsLatest, true
 }
 
 // FindEntry returns the entry by index and block without changing the refcount
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
-	_, found := fs.FindEntry2(ctx, index, block, entryData)
+	_, _, _, found := fs.FindEntryDetailed(ctx, index, block, entryData)
 	return found
 }
 

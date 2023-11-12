@@ -146,9 +146,10 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 	return nil
 }
 
-// CalcProviderRewardWithDelegations is the main function handling provider rewards with delegations
+// RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) (providerReward math.Int, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error) {
+	block := uint64(ctx.BlockHeight())
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
 		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
@@ -157,12 +158,7 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 	}
 	stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
 	if err != nil {
-		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
-			utils.Attribute{Key: "provider", Value: providerAddr},
-			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "epoch", Value: epoch},
-			utils.Attribute{Key: "totalRewards", Value: totalReward},
-		)
+		return math.ZeroInt(), err
 	}
 
 	delegations, err := k.GetProviderDelegators(ctx, providerAddr.String(), epoch)
@@ -175,13 +171,28 @@ func (k Keeper) CalcProviderRewardWithDelegations(ctx sdk.Context, providerAddr 
 
 	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward)
+	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward, calcOnly)
+	fullProviderReward := providerReward.Add(leftoverRewards)
 
-	return providerReward.Add(leftoverRewards), nil
+	if !calcOnly {
+		if fullProviderReward.GT(math.ZeroInt()) {
+			fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, fullProviderReward)}
+			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, providerAddr, fullProviderRewardCoins)
+			if err != nil {
+				// panic:ok: reward transfer should never fail
+				utils.LavaFormatPanic("critical: failed to send reward to provider", err,
+					utils.Attribute{Key: "provider", Value: providerAddr},
+					utils.Attribute{Key: "reward", Value: fullProviderRewardCoins},
+				)
+			}
+		}
+	}
+
+	return fullProviderReward, nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, delegatorsReward math.Int) (leftoverRewards math.Int) {
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, totalReward math.Int, delegatorsReward math.Int, calcOnly bool) (leftoverRewards math.Int) {
 	usedDelegatorRewards := math.ZeroInt() // the delegator rewards are calculated using int division, so there might be leftovers
 
 	for _, delegation := range delegations {
@@ -189,15 +200,18 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 		rewardMapKey := types.DelegationKey(delegation.Provider, delegation.Delegator, delegation.ChainID)
 
 		delegatorReward, found := k.GetDelegatorReward(ctx, rewardMapKey)
-		if !found {
-			delegatorReward.Provider = delegation.Provider
-			delegatorReward.Delegator = delegation.Delegator
-			delegatorReward.ChainId = delegation.ChainID
-			delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
-		} else {
-			delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
+		if !calcOnly {
+			if !found {
+				delegatorReward.Provider = delegation.Provider
+				delegatorReward.Delegator = delegation.Delegator
+				delegatorReward.ChainId = delegation.ChainID
+				delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
+			} else {
+				delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
+			}
+			k.SetDelegatorReward(ctx, delegatorReward)
 		}
-		k.SetDelegatorReward(ctx, delegatorReward)
+
 		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorRewardAmount)
 	}
 
