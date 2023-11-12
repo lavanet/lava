@@ -1218,3 +1218,44 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 		})
 	}
 }
+
+func TestPendingProject(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0)
+
+	_, sub := ts.Account("sub1")
+
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1)
+	require.Nil(t, err)
+
+	res, err := ts.QuerySubscriptionListProjects(sub)
+	require.Nil(t, err)
+	projectID := res.Projects[0]
+
+	adminPolicy := ts.Plan("free").PlanPolicy
+	_, err = ts.TxProjectSetPolicy(projectID, sub, adminPolicy)
+	require.Nil(t, err)
+
+	// we didn't advance an epoch yet so querying for the project should have a pending project
+	infRes, err := ts.QueryProjectInfo(projectID)
+	require.Nil(t, err)
+	require.NotNil(t, infRes.PendingProject)
+	pendingProjAdminPolicy := infRes.PendingProject.AdminPolicy
+	require.True(t, adminPolicy.Equal(pendingProjAdminPolicy))
+
+	devRes, err := ts.QueryProjectDeveloper(sub)
+	require.Nil(t, err)
+	require.NotNil(t, infRes.PendingProject)
+	pendingProjAdminPolicy = devRes.PendingProject.AdminPolicy
+	require.True(t, adminPolicy.Equal(pendingProjAdminPolicy))
+
+	// advance an epoch to apply the new project settings, there should be no pending projects
+	ts.AdvanceEpoch()
+	infRes, err = ts.QueryProjectInfo(projectID)
+	require.Nil(t, err)
+	require.Nil(t, infRes.PendingProject)
+
+	devRes, err = ts.QueryProjectDeveloper(sub)
+	require.Nil(t, err)
+	require.Nil(t, devRes.PendingProject)
+}

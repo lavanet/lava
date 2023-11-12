@@ -43,6 +43,7 @@ message QueryInfoRequest {
 
 message QueryInfoResponse {
   Project project = 1;
+  Project pending_project = 2;
 }
 
 message QueryDeveloperRequest {
@@ -51,6 +52,7 @@ message QueryDeveloperRequest {
 
 message QueryDeveloperResponse {
   Project project = 1;
+  Project pending_project = 2;
 }
 
 // this line is used by starport scaffolding # 3

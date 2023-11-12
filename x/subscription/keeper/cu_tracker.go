@@ -8,9 +8,10 @@ import (
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
+
+const LIMIT_TOKEN_PER_CU = 100
 
 // GetTrackedCu gets the tracked CU counter (with QoS influence) and the trackedCu entry's block
 func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, subBlock uint64) (cu uint64, found bool, key string) {
@@ -143,6 +144,11 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		return
 	}
 
+	totalTokenAmount := plan.Price.Amount
+	if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
+		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
+	}
+
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
 		provider := trackedCuInfo.provider
@@ -162,7 +168,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 		// TODO: deal with the reward's remainder (uint division...)
-		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, plan, trackedCu, totalCuTracked)
+
+		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
@@ -207,12 +214,12 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	}
 }
 
-func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, plan planstypes.Plan, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
+func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
 	// TODO: deal with the reward's remainder (uint division...)
 	// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 	if totalCuUsedBySub == 0 {
 		return math.ZeroInt()
 	}
-	totalMonthlyReward := plan.Price.Amount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
+	totalMonthlyReward := totalAmount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
 	return totalMonthlyReward
 }

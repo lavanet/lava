@@ -227,6 +227,11 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, timeouts)
 		if relayResult.ProviderAddress != "" {
 			if err != nil {
+				// add this provider to the erroring providers
+				if errorRelayResult.ProviderAddress != "" {
+					errorRelayResult.ProviderAddress += ","
+				}
+				errorRelayResult.ProviderAddress += relayResult.ProviderAddress
 				_, ok := blockOnSyncLoss[relayResult.ProviderAddress]
 				if !ok && lavasession.IsSessionSyncLoss(err) {
 					// allow this provider to be wantedProvider on a retry, if it didnt fail once on syncLoss
