@@ -128,7 +128,7 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 
 	// wait for month+blocksToSave pass (debug_month = 2min, debug_epochsToSave = 5) and query for expected payout
 	expectedPayoutArr := make([]uint64, len(providers))
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 24; i++ {
 		for j := range providers {
 			payoutRequest := pairingTypes.QueryMonthlyPayoutRequest{Provider: providers[j]}
 			res, err := pairingQueryClient.MonthlyPayout(context.Background(), &payoutRequest)
