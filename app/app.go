@@ -153,6 +153,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_26_0,
 	upgrades.Upgrade_0_26_1,
 	upgrades.Upgrade_0_26_2,
+	upgrades.Upgrade_0_27_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -456,22 +457,6 @@ func New(
 	)
 	projectsModule := projectsmodule.NewAppModule(appCodec, app.ProjectsKeeper)
 
-	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
-		appCodec,
-		keys[subscriptionmoduletypes.StoreKey],
-		keys[subscriptionmoduletypes.MemStoreKey],
-		app.GetSubspace(subscriptionmoduletypes.ModuleName),
-
-		app.BankKeeper,
-		app.AccountKeeper,
-		&app.EpochstorageKeeper,
-		app.ProjectsKeeper,
-		app.PlansKeeper,
-		app.FixationStoreKeeper,
-		app.TimerStoreKeeper,
-	)
-	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
-
 	app.DualstakingKeeper = *dualstakingmodulekeeper.NewKeeper(
 		appCodec,
 		keys[dualstakingmoduletypes.StoreKey],
@@ -486,6 +471,23 @@ func New(
 		app.TimerStoreKeeper,
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
+
+	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
+		appCodec,
+		keys[subscriptionmoduletypes.StoreKey],
+		keys[subscriptionmoduletypes.MemStoreKey],
+		app.GetSubspace(subscriptionmoduletypes.ModuleName),
+
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.EpochstorageKeeper,
+		app.ProjectsKeeper,
+		app.PlansKeeper,
+		app.DualstakingKeeper,
+		app.FixationStoreKeeper,
+		app.TimerStoreKeeper,
+	)
+	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// downtime module
 	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)

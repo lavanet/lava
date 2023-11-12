@@ -15,7 +15,6 @@ func TestGetParams(t *testing.T) {
 	k.SetParams(ctx, params)
 
 	require.EqualValues(t, params, k.GetParams(ctx))
-	require.EqualValues(t, params.MintCoinsPerCU, k.MintCoinsPerCU(ctx))
 	require.EqualValues(t, params.FraudStakeSlashingFactor, k.FraudStakeSlashingFactor(ctx))
 	require.EqualValues(t, params.FraudSlashingAmount, k.FraudSlashingAmount(ctx))
 	require.EqualValues(t, params.EpochBlocksOverlap, k.EpochBlocksOverlap(ctx))

@@ -25,15 +25,16 @@ import (
 )
 
 const (
-	FlagTimeout           = "timeout"
-	FlagValue             = "value"
-	FlagEventName         = "event"
-	FlagBreak             = "break"
-	FlagHasAttributeName  = "has-attribute"
-	FlagShowAttributeName = "show-attribute"
+	FlagTimeout                 = "timeout"
+	FlagValue                   = "value"
+	FlagEventName               = "event"
+	FlagBreak                   = "break"
+	FlagHasAttributeName        = "has-attribute"
+	FlagShowAttributeName       = "show-attribute"
+	FlagDisableInteractiveShell = "disable-interactive"
 )
 
-func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string, shouldBreak bool, hasAttributeName string, showAttributeName string) error {
+func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlock int64, eventName, value string, shouldBreak bool, hasAttributeName string, showAttributeName string, disableInteractive bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -85,7 +86,9 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 			case <-signalChan:
 				return nil
 			case <-ticker.C:
-				fmt.Printf("Current Block: %d\r", block)
+				if !disableInteractive {
+					fmt.Printf("Current Block: %d\r", block)
+				}
 			default:
 			}
 		}
@@ -269,6 +272,11 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			if err != nil {
 				utils.LavaFormatFatal("failed to fetch break flag", err)
 			}
+
+			disableInteractive, err := cmd.Flags().GetBool(FlagDisableInteractiveShell)
+			if err != nil {
+				utils.LavaFormatFatal("failed to fetch DisableInteractive flag", err)
+			}
 			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blocks})
 			utils.LoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
@@ -280,7 +288,7 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 			rand.InitRandomSeed()
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
-			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak, hasAttirbuteName, showAttirbuteName)
+			return eventsLookup(ctx, clientCtx, blocks, fromBlock, eventName, value, shouldBreak, hasAttirbuteName, showAttirbuteName, disableInteractive)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
@@ -293,5 +301,6 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 	cmdEvents.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdEvents.Flags().String(FlagHasAttributeName, "", "only show events containing specific attribute name")
 	cmdEvents.Flags().String(FlagShowAttributeName, "", "only show a specific attribute name, and no other attributes")
+	cmdEvents.Flags().Bool(FlagDisableInteractiveShell, false, "a flag to disable the shell printing interactive prints, used when scripting the command")
 	return cmdEvents
 }

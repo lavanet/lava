@@ -22,11 +22,13 @@ import (
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
@@ -908,6 +910,8 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
+	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
+	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
 }
 

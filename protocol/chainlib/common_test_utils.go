@@ -186,7 +186,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 	ts.Keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.Ctx), ts.Spec)
 
 	ts.Plan = testcommon.CreateMockPlan()
-	ts.Keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.Ctx), ts.Plan)
+	ts.Keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.Ctx), ts.Plan, false)
 
 	var stake int64 = 50000000000
 

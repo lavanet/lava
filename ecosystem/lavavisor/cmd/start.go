@@ -68,9 +68,9 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 	// Select most recent version set by init command (in the range of min-target version)
 	selectedVersion, _ := SelectMostRecentVersionFromDir(lavavisorPath, version.Version)
 	if err != nil {
-		utils.LavaFormatWarning("failed getting most recent version from .lavavisor dir", err)
+		utils.LavaFormatWarning("[Lavavisor] failed getting most recent version from .lavavisor dir", err)
 	} else {
-		utils.LavaFormatInfo("Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
+		utils.LavaFormatInfo("[Lavavisor] Version check OK in '.lavavisor' directory.", utils.Attribute{Key: "Selected Version", Value: selectedVersion})
 	}
 
 	// Initialize version monitor with selected most recent version
@@ -80,11 +80,11 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 
 	// check whether lavavisor already started the services when downloading the binaries or not.
 	if !versionMonitor.LaunchedServices {
-		utils.LavaFormatInfo("Version matched existing lavap directory using it to launch the services")
+		utils.LavaFormatInfo("[Lavavisor] Version matched existing lavap directory using it to launch the services")
 		// First reload the daemon.
 		err = processmanager.ReloadDaemon()
 		if err != nil {
-			utils.LavaFormatError("Failed reloading daemon", err)
+			utils.LavaFormatError("[Lavavisor] Failed reloading daemon", err)
 		}
 		// now start all services
 		var wg sync.WaitGroup
@@ -92,24 +92,24 @@ func (lv *LavaVisor) Start(ctx context.Context, txFactory tx.Factory, clientCtx 
 			wg.Add(1)
 			go func(process string) {
 				defer wg.Done() // Decrement the WaitGroup when done
-				utils.LavaFormatInfo("Starting process", utils.Attribute{Key: "Process", Value: process})
+				utils.LavaFormatInfo("[Lavavisor] Starting process", utils.Attribute{Key: "Process", Value: process})
 				err := processmanager.StartProcess(process)
 				if err != nil {
-					utils.LavaFormatError("Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
+					utils.LavaFormatError("[Lavavisor] Failed starting process", err, utils.Attribute{Key: "Process", Value: process})
 				}
 			}(process)
 		}
 		// Wait for all Goroutines to finish
 		wg.Wait()
-		utils.LavaFormatInfo("All services launched successfully")
+		utils.LavaFormatInfo("[Lavavisor] All services launched successfully")
 	}
 
 	// tear down
 	select {
 	case <-ctx.Done():
-		utils.LavaFormatInfo("Lavavisor ctx.Done")
+		utils.LavaFormatInfo("[Lavavisor] Lavavisor ctx.Done")
 	case <-signalChan:
-		utils.LavaFormatInfo("Lavavisor signalChan")
+		utils.LavaFormatInfo("[Lavavisor] Lavavisor signalChan")
 	}
 
 	return nil
@@ -164,19 +164,19 @@ func LavavisorStart(cmd *cobra.Command) error {
 	configPath := filepath.Join(lavavisorPath, "/config.yml")
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
-		return utils.LavaFormatError("failed to read config.yaml: %v", err)
+		return utils.LavaFormatError("[Lavavisor] failed to read config.yaml: %v", err)
 	}
 
 	var config Config
 	err = yaml.Unmarshal(configData, &config)
 	if err != nil {
-		return utils.LavaFormatError("failed to unmarshal config.yaml: %v", err)
+		return utils.LavaFormatError("[Lavavisor] failed to unmarshal config.yaml: %v", err)
 	}
 
 	// Iterate over the list of services and start them
 	lavavisorServicesDir := lavavisorPath + "/services/"
 	if _, err := os.Stat(lavavisorServicesDir); os.IsNotExist(err) {
-		return utils.LavaFormatError("directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
+		return utils.LavaFormatError("[Lavavisor] directory does not exist", nil, utils.Attribute{Key: "lavavisorServicesDir", Value: lavavisorServicesDir})
 	}
 
 	// Start lavavisor version monitor process

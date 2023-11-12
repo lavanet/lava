@@ -9,7 +9,7 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	projecttypes "github.com/lavanet/lava/x/projects/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	firstEpoch := ts.EpochStart()
 	epochsToSave := ts.EpochsToSave()
@@ -64,8 +64,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
-
+			ts.relayPaymentWithoutPay(relayPaymentMessage, tt.valid)
 			// Check the RPO exists (shouldn't exist after epochsToSave+1 passes)
 			ts.verifyRelayPayment(relaySession, tt.valid)
 		})
@@ -89,12 +88,13 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 			ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 			client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-			providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+			_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 			block := int64(ts.BlockHeight()) + tt.blockTime
 
 			relaySession := ts.newRelaySession(providerAddr, 0, cuSum, uint64(block), 0)
+			relaySession.Epoch = block
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
 			require.Nil(t, err)
@@ -104,7 +104,7 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
 	}
 }
@@ -200,7 +200,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
-	var totalCu uint64
+	var reward uint64
 	var relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
@@ -208,17 +208,18 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
 		require.Nil(t, err)
-		totalCu += relaySession.CuSum
+		reward += ts.plan.Price.Amount.Uint64()
 		relays = append(relays, relaySession)
 	}
 
 	balanceProviderBeforePayment := ts.GetBalance(provider1Acct.Addr)
 	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
 	require.Nil(t, err)
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Addr)
-	reward := ts.Keepers.Pairing.MintCoinsPerCU(ts.Ctx).MulInt64(int64(totalCu)).TruncateInt64()
 	// reward + before == after
-	require.Equal(t, balanceProviderAfterPayment, reward+balanceProviderBeforePayment)
+	require.Equal(t, balanceProviderAfterPayment, int64(reward)+balanceProviderBeforePayment)
 }
 
 // test protection from unstaking if the amount of previous serices*2 is greater than complaints
@@ -368,7 +369,7 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	epochsToSave := ts.EpochsToSave()
 	epochBlocks := ts.EpochBlocks()
@@ -401,8 +402,7 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
-
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
 	}
 }
@@ -429,7 +429,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 			ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 			client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-			providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+			_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
@@ -442,15 +442,14 @@ func TestRelayPaymentQoS(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
 			relaySession.QosReport = qos
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
-			relaySession.Sig = sig
 			require.Nil(t, err)
+			relaySession.Sig = sig
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
 			}
-
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
 	}
 }
@@ -492,13 +491,13 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	_, dev2Addr := ts.Account("dev2")
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-	projectData := projecttypes.ProjectData{
+	projectData := projectstypes.ProjectData{
 		Name:    "proj1",
 		Enabled: true,
-		ProjectKeys: []projecttypes.ProjectKey{
-			projecttypes.ProjectDeveloperKey(dev1Addr),
+		ProjectKeys: []projectstypes.ProjectKey{
+			projectstypes.ProjectDeveloperKey(dev1Addr),
 		},
 		Policy: &planstypes.Policy{
 			GeolocationProfile: int32(1),
@@ -511,8 +510,8 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	projectData.Name = "proj2"
-	projectData.ProjectKeys = []projecttypes.ProjectKey{
-		projecttypes.ProjectDeveloperKey(dev2Addr),
+	projectData.ProjectKeys = []projectstypes.ProjectKey{
+		projectstypes.ProjectDeveloperKey(dev2Addr),
 	}
 	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
 	require.Nil(t, err)
@@ -535,8 +534,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 		Creator: providerAddr,
 		Relays:  slices.Slice(relaySession),
 	}
-
-	ts.payAndVerifyBalance(relayPaymentMessage, dev1Acct.Addr, providerAcct.Addr, true, true, 100)
+	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
 	sub, err := ts.QuerySubscriptionCurrent(client1Addr)
 	require.Nil(t, err)
@@ -556,7 +554,7 @@ func TestBadgeValidation(t *testing.T) {
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
@@ -627,12 +625,7 @@ func TestBadgeValidation(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			validConsumer := true
-			if !tt.badgeSigner.Addr.Equals(client1Acct.Addr) {
-				validConsumer = false
-			}
-
-			ts.payAndVerifyBalance(relayPaymentMessage, tt.badgeSigner.Addr, providerAcct.Addr, validConsumer, tt.valid, 100)
+			ts.relayPaymentWithoutPay(relayPaymentMessage, tt.valid)
 		})
 	}
 }
@@ -691,13 +684,13 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 
 	epochStart := ts.EpochStart()
 
-	plan, err := ts.GetPlanFromSubscription(client1Addr)
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
@@ -739,7 +732,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.relayPaymentWithoutPay(relayPaymentMessage, tt.valid)
 
 			if tt.valid {
 				usedCuSoFar += tt.cuSum
@@ -768,7 +761,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 
 	epochStart := ts.EpochStart()
 
-	plan, err := ts.GetPlanFromSubscription(client1Addr)
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit
 
@@ -848,7 +841,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 
 	epochStart := ts.EpochStart()
 
-	plan, err := ts.GetPlanFromSubscription(client1Addr)
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
 	require.Nil(t, err)
 	badgeCuAllocation := plan.PlanPolicy.EpochCuLimit / 2
 
@@ -876,7 +869,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 			Creator: providers[i].Addr.String(),
 			Relays:  slices.Slice(relaySession),
 		}
-		ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providers[i].Addr, true, true, 100)
+		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
 		badgeUsedCuMapKey := types.BadgeUsedCuKey(badge.ProjectSig, providers[i].Addr.String())
 		badgeUsedCuMapEntry, found := ts.Keepers.Pairing.GetBadgeUsedCu(ts.Ctx, badgeUsedCuMapKey)

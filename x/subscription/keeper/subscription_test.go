@@ -310,7 +310,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 			ts.AdvanceEpoch()
 
 			// charge the subscription
-			err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
+			_, err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
 				ts.Ctx, tt.subscription, block1, tt.usedCuPerProject)
 			require.Nil(t, err)
 
@@ -439,7 +439,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	_, found := ts.getSubscription(sub1Addr)
 	require.True(t, found)
 
-	err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
+	_, err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
 		ts.Ctx, sub1Addr, block, 10)
 	require.Nil(t, err)
 
@@ -450,14 +450,14 @@ func TestSubscriptionExpire(t *testing.T) {
 	_, found = ts.getSubscription(sub1Addr)
 	require.False(t, found)
 
-	err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
+	_, err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
 		ts.Ctx, sub1Addr, block, 10)
 	require.Nil(t, err)
 
 	ts.AdvanceBlockUntilStale()
 
 	// subscription no longer charge-able for previous usage
-	err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
+	_, err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
 		ts.Ctx, sub1Addr, block, 10)
 	require.NotNil(t, err)
 }

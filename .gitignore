@@ -42,7 +42,6 @@ ecosystem/lava-sdk/node_modules/*
 ecosystem/lava-sdk/src/js/*
 ecosystem/lava-sdk/dist/main.js
 ecosystem/lava-sdk/thirdparty_protobufs/*
-ecosystem/lava-sdk/dist/*
 ecosystem/lava-sdk/.dccache
 ecosystem/lava-sdk/.idea
 ecosystem/lava-sdk/.vscode
@@ -58,6 +57,7 @@ ecosystem/lava-sdk/pairingList.json
 ecosystem/lava-sdk/proto
 ecosystem/lava-sdk/src/grpc_web_services
 ecosystem/lava-sdk/src/codec
+ecosystem/lava-sdk/proto/lavanet
 
 
 # Ignore the bin and dist folders and their content
@@ -85,9 +85,6 @@ ecosystem/lavajs/proto/cosmos
 ecosystem/lavajs/proto/gogoproto
 ecosystem/lavajs/proto/google
 ecosystem/lavajs/proto/tendermint
-
-testutil/e2e/sdk/tests/package-lock.json
-testutil/e2e/sdk/tests/package.json
 
 testutil/e2e/sdk/tests/package.json
 testutil/e2e/sdk/tests/package-lock.json

@@ -213,28 +213,17 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 	return stakeStorageList
 }
 
-// Function that punishes providers. Current punishment is unstake
+// Function that punishes providers. Current punishment is freeze
 func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, providerPaymentStorageKeyList []string, providerAddress, chainID string, complaintCU uint64, servicedCU uint64) error {
-	// Get provider's sdk.Account address
-	sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(providerAddress)
+	// freeze the unresponsive provider
+	err := k.FreezeProvider(ctx, providerAddress, []string{chainID}, "unresponsiveness")
 	if err != nil {
-		// if bad data was given, we cant parse it so we ignore it and continue this protects from spamming wrong information.
-		return utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: providerAddress})
+		utils.LavaFormatError("unable to freeze provider entry due to unresponsiveness", err,
+			utils.Attribute{Key: "provider", Value: providerAddress},
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
 	}
-
-	// Get provider's stake entry
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, sdkUnresponsiveProviderAddress)
-	if !entryExists {
-		// if provider is not staked, nothing to do.
-		return nil
-	}
-
-	// unstake the unresponsive provider
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID, "complaint_cu": strconv.FormatUint(complaintCU, 10), "serviced_cu": strconv.FormatUint(servicedCU, 10)}, "Unresponsive provider was unstaked from the chain due to unresponsiveness")
-	err = k.unsafeUnstakeProviderEntry(ctx, epoch, chainID, indexInStakeStorage, existingEntry)
-	if err != nil {
-		utils.LavaFormatError("unable to unstake provider entry (unsafe method)", err, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "indexInStakeStorage", Value: indexInStakeStorage}, {Key: "existingEntry", Value: existingEntry.GetStake()}}...)
-	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID, "complaint_cu": strconv.FormatUint(complaintCU, 10), "serviced_cu": strconv.FormatUint(servicedCU, 10)}, "Unresponsive provider was freezed due to unresponsiveness")
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)
 	k.resetComplainersCU(ctx, providerPaymentStorageKeyList)
@@ -256,23 +245,4 @@ func (k Keeper) resetComplainersCU(ctx sdk.Context, providerPaymentStorageIndexL
 		providerPaymentStorage.ComplainersTotalCu = 0
 		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
 	}
-}
-
-// Function that unstakes a provider (considered unsafe because it doesn't check that the provider is staked. It's ok since we check the provider is staked before we call it)
-func (k Keeper) unsafeUnstakeProviderEntry(ctx sdk.Context, epoch uint64, chainID string, indexInStakeStorage uint64, existingEntry epochstoragetypes.StakeEntry) error {
-	// Remove the provider's stake entry
-	err := k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
-	if err != nil {
-		return utils.LavaFormatWarning("tried to unstake unsafe but didnt find entry", err,
-			utils.Attribute{Key: "existingEntry", Value: fmt.Sprintf("%+v", existingEntry)},
-		)
-	}
-
-	// get unstakeHoldBlocks
-	unstakeHoldBlocks := k.epochStorageKeeper.UnstakeHoldBlocks(ctx, epoch)
-
-	// Appened the provider's stake entry to the unstake entry list
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
-
-	return nil
 }

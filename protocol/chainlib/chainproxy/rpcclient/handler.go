@@ -307,10 +307,11 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 // handleCallMsg executes a call message and returns the answer.
 func (h *handler) handleCallMsg(ctx *callProc, msg *JsonrpcMessage) *JsonrpcMessage {
 	start := time.Now()
+	servedStr := "Served "
 	switch {
 	case msg.isEthereumNotification(), msg.isTendermintNotification():
 		h.handleCall(ctx, msg)
-		h.log.Debug("Served "+msg.Method, "duration", time.Since(start))
+		h.log.Debug(servedStr+msg.Method, "duration", time.Since(start))
 		return nil
 	case msg.isCall():
 		resp := h.handleCall(ctx, msg)
@@ -321,9 +322,9 @@ func (h *handler) handleCallMsg(ctx *callProc, msg *JsonrpcMessage) *JsonrpcMess
 			if resp.Error.Data != nil {
 				ctx = append(ctx, "errdata", resp.Error.Data)
 			}
-			h.log.Warn("Served "+msg.Method, ctx...)
+			h.log.Warn(servedStr+msg.Method, ctx...)
 		} else {
-			h.log.Debug("Served "+msg.Method, ctx...)
+			h.log.Debug(servedStr+msg.Method, ctx...)
 		}
 		return resp
 	case msg.hasValidID():

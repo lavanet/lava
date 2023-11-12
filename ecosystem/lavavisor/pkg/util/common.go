@@ -17,7 +17,7 @@ func ExpandTilde(path string) (string, error) {
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", utils.LavaFormatError("cannot get user home directory", err)
+		return "", utils.LavaFormatError("[Lavavisor] cannot get user home directory", err)
 	}
 	return filepath.Join(home, path[1:]), nil
 }
@@ -25,12 +25,12 @@ func ExpandTilde(path string) (string, error) {
 func Copy(src, dest string) error {
 	input, err := os.ReadFile(src)
 	if err != nil {
-		return utils.LavaFormatError("couldn't read source file", err)
+		return utils.LavaFormatError("[Lavavisor] couldn't read source file", err)
 	}
 
 	err = os.WriteFile(dest, input, 0o755)
 	if err != nil {
-		return utils.LavaFormatError("couldn't write destination file", err)
+		return utils.LavaFormatError("[Lavavisor] couldn't write destination file", err)
 	}
 	return nil
 }
@@ -48,7 +48,7 @@ func Unzip(src string, dest string) ([]string, error) {
 		fpath := filepath.Join(dest, f.Name)
 
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return filenames, utils.LavaFormatError("illegal file path", nil)
+			return filenames, utils.LavaFormatError("[Lavavisor] illegal file path", nil)
 		}
 
 		filenames = append(filenames, fpath)
