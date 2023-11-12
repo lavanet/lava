@@ -23,10 +23,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
+	lavaslices "github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -514,31 +515,96 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 	return delegations
 }
 
-func (k Keeper) UnbondUniform(ctx sdk.Context, delegator string, amount sdk.Coin) error {
+func (k Keeper) UnbondUniformDelegators(ctx sdk.Context, delegator string, amount sdk.Coin) error {
 	epoch, _, _ := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
 	providers, err := k.GetDelegatorProviders(ctx, delegator, epoch)
 	_ = err
 
 	// first remove from the empty provider
-	if slices.Contains[string](providers, EMPTY_PROVIDER) {
+	if lavaslices.Contains[string](providers, EMPTY_PROVIDER) {
 		delegation, found := k.GetDelegation(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, epoch)
-		_ = found
-		if delegation.Amount.Amount.GTE(amount.Amount) {
-			// we have enough here, remove all from empty delegator and bail
-			err = k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, amount, false)
-			_ = err
-			return nil
-		} else {
-			// we dont have enough in the empty provider, remove everything and continue with the rest
-			err = k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
-			amount = amount.Sub(delegation.Amount)
+		if found {
+			if delegation.Amount.Amount.GTE(amount.Amount) {
+				// we have enough here, remove all from empty delegator and bail
+				return k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, amount, false)
+			} else {
+				// we dont have enough in the empty provider, remove everything and continue with the rest
+				err = k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
+				if err != nil {
+					return err
+				}
+				amount = amount.Sub(delegation.Amount)
+			}
 		}
-		_ = err
 	}
 
-	providers, _ = slices.Remove[string](providers, EMPTY_PROVIDER)
+	providers, _ = lavaslices.Remove[string](providers, EMPTY_PROVIDER)
 	_ = providers
-	// we need to decide how to remove from the rest, with a fixed amount or by percentage
+
+	var delegations []types.Delegation
+	for _, provider := range providers {
+		delegations = append(delegations, k.GetAllProviderDelegatorDelegations(ctx, delegator, provider, epoch)...)
+	}
+
+	slices.SortFunc(delegations, func(i, j types.Delegation) bool {
+		return i.Amount.IsLT(j.Amount)
+	})
+
+	delegationLen := int64(len(delegations))
+	amountToDeduct := amount.Amount.QuoRaw(delegationLen)
+	for _, delegation := range delegations {
+		delegationLen--
+		if delegation.Amount.Amount.LT(amountToDeduct) {
+			err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, delegation.Amount, false) // ?? is it false?
+			if err != nil {
+				return err
+			}
+			amountToDeduct = amountToDeduct.Add(amountToDeduct.Sub(delegation.Amount.Amount).QuoRaw(delegationLen))
+			amount = amount.Sub(delegation.Amount)
+		} else {
+			err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, sdk.NewCoin(delegation.Amount.Denom, amountToDeduct), false) // ?? is it false?
+			if err != nil {
+				return err
+			}
+			amount = amount.Sub(sdk.NewCoin(delegation.Amount.Denom, amountToDeduct))
+		}
+	}
+
+	if !amount.IsZero() { // we have leftovers, remove from the highest delegation
+		delegation := delegations[len(delegations)-1]
+		err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, sdk.NewCoin(delegation.Amount.Denom, amountToDeduct), false) // ?? is it false?
+		if err != nil {
+			return err
+		}
+	}
 	// [10 20 50 60 70] 25 -> [0 20 50 60 70] 25 + 15/4 -> [0 0 50 60 70] 25 + 15/4 + 8.75/3
 	return nil
+}
+
+// returns the difference between validators delegations and provider delegation (validators-providers)
+func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (sdk.Int, error) {
+	providers, err := k.GetDelegatorProviders(ctx, delAddr.String(), uint64(ctx.BlockHeight()))
+	_ = err
+	// TODO make this more efficient
+	sumProviderDelegations := sdk.ZeroInt()
+	for _, p := range providers {
+		delegations := k.GetAllProviderDelegatorDelegations(ctx, delAddr.String(), p, uint64(ctx.BlockHeight()))
+		for _, d := range delegations {
+			sumProviderDelegations = sumProviderDelegations.Add(d.Amount.Amount)
+		}
+	}
+
+	sumValidatorDelegations := sdk.ZeroInt()
+	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
+	for _, d := range delegations {
+		validatorAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
+		if err != nil {
+			panic(err) // shouldn't happen
+		}
+		v, found := k.stakingKeeper.GetValidator(ctx, validatorAddr)
+		_ = found
+		sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromShares(d.Shares).TruncateInt())
+	}
+
+	return sumValidatorDelegations.Sub(sumProviderDelegations), nil
 }

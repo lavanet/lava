@@ -3,6 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/lavanet/lava/utils"
 )
 
 // Wrapper struct
@@ -40,44 +41,39 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	providers, err := h.k.GetDelegatorProviders(ctx, delAddr.String(), uint64(ctx.BlockHeight()))
-	_ = err
-	// TODO make this more efficient
-	sumProviderDelegations := sdk.ZeroInt()
-	for _, p := range providers {
-		delegations := h.k.GetAllProviderDelegatorDelegations(ctx, delAddr.String(), p, uint64(ctx.BlockHeight()))
-		for _, d := range delegations {
-			sumProviderDelegations = sumProviderDelegations.Add(d.Amount.Amount)
-		}
+	diff, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
+	if err != nil {
+		return err
 	}
 
-	sumValidatorDelegations := sdk.ZeroInt()
-	delegations := h.k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
-	for _, d := range delegations {
-		validatorAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
-		if err != nil {
-			panic(err) // shouldn't happen
-		}
-		v, found := h.k.stakingKeeper.GetValidator(ctx, validatorAddr)
-		_ = found
-		sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromShares(d.Shares).TruncateInt())
-	}
-
-	if sumProviderDelegations.Equal(sumValidatorDelegations) {
+	if diff.IsZero() {
 		// do nothing, this is a redelegate
 		_ = ""
-	} else if sumProviderDelegations.LT(sumValidatorDelegations) {
+	} else if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
-		amount := sumValidatorDelegations.Sub(sumProviderDelegations)
-		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, sdk.NewCoin("ulava", amount))
-		_ = err
-	} else if sumProviderDelegations.GT(sumValidatorDelegations) {
+		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, sdk.NewCoin("ulava", diff))
+		if err != nil {
+			return err
+		}
+	} else if diff.IsNegative() {
 		// more provider delegation, unbond operation was done, unbond from providers
-		amount := sumProviderDelegations.Sub(sumValidatorDelegations)
-		err = h.k.UnbondUniform(ctx, delAddr.String(), sdk.NewCoin("ulava", amount))
-		_ = err
+		err = h.k.UnbondUniformDelegators(ctx, delAddr.String(), sdk.NewCoin("ulava", diff.MulRaw(-1)))
+		if err != nil {
+			return err
+		}
 	}
 
+	diff, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
+	if err != nil {
+		return err
+	}
+	// now it needs to be zero
+	if !diff.IsZero() {
+		return utils.LavaFormatError("validator and provider balances are not balanced", nil,
+			utils.Attribute{Key: "delegator", Value: delAddr.String()},
+			utils.Attribute{Key: "diff", Value: diff.String()},
+		)
+	}
 	return nil
 }
 
