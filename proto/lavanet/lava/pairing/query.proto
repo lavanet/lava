@@ -85,6 +85,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}";
 	}
 
+// Queries a list of EffectivePolicy items.
+	rpc MonthlyPayout(QueryMonthlyPayoutRequest) returns (QueryMonthlyPayoutResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/monthly_payout/{provider}";
+	}
+
 // this line is used by starport scaffolding # 2
 	// Queries a list of SdkPairing items.
 rpc SdkPairing (QueryGetPairingRequest) returns (QuerySdkPairingResponse) {
@@ -141,7 +146,6 @@ message QueryVerifyPairingResponse {
 
 message QueryGetUniquePaymentStorageClientProviderRequest {
 	  string index = 1;
-
 }
 
 message QueryGetUniquePaymentStorageClientProviderResponse {
@@ -228,6 +232,7 @@ message QueryEffectivePolicyRequest {
 
 message QueryEffectivePolicyResponse {
 	lavanet.lava.plans.Policy policy = 1;
+	lavanet.lava.plans.Policy pending_policy = 2;
 }
 
 // this line is used by starport scaffolding # 3
@@ -238,3 +243,10 @@ message QuerySdkPairingResponse {
   lavanet.lava.spec.Spec spec = 3; 
 }
 
+message QueryMonthlyPayoutRequest {
+	string provider = 1;
+  }
+  
+  message QueryMonthlyPayoutResponse {
+	  uint64 amount = 1;
+  }

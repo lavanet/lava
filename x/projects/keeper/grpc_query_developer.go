@@ -21,5 +21,15 @@ func (k Keeper) Developer(goCtx context.Context, req *types.QueryDeveloperReques
 		return nil, err
 	}
 
-	return &types.QueryDeveloperResponse{Project: &project}, nil
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return nil, err
+	}
+
+	pendingProject, err := k.GetProjectForDeveloper(ctx, req.Developer, nextEpoch)
+	if err != nil || project.Equal(pendingProject) {
+		return &types.QueryDeveloperResponse{Project: &project}, nil
+	} else {
+		return &types.QueryDeveloperResponse{Project: &project, PendingProject: &pendingProject}, nil
+	}
 }

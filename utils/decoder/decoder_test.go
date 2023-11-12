@@ -42,6 +42,8 @@ func comment(yaml string, from, count int) string {
 	return strings.Join(lines, "\n")
 }
 
+const keyStr = "key:\n"
+
 func TestDecode(t *testing.T) {
 	var result mockStruct
 
@@ -56,19 +58,19 @@ func TestDecode(t *testing.T) {
 	require.Error(t, err)
 
 	// decode good key
-	input = "key:\n" + mockDefaultYaml
+	input = keyStr + mockDefaultYaml
 	err = Decode(input, "key", &result, nil, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, mockDefault, result)
 
 	// decode nested key
-	input = "nested:\n" + "  key:\n" + indent(mockDefaultYaml)
+	input = "nested:\n" + "  " + keyStr + indent(mockDefaultYaml)
 	err = Decode(input, "nested.key", &result, nil, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, mockDefault, result)
 
 	// decode empty value
-	input = "key:\n"
+	input = keyStr
 	err = Decode(input, "key", &result, nil, nil, nil)
 	require.Error(t, err)
 
@@ -83,21 +85,21 @@ func TestDecodeMissing(t *testing.T) {
 	var unset []string
 
 	// decode nothing missing
-	input := "key:\n" + mockDefaultYaml
+	input := keyStr + mockDefaultYaml
 	err := Decode(input, "key", &result, nil, &unset, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(unset))
 	require.Equal(t, mockDefault, result)
 
 	// decode 1 missing field
-	input = "key:\n" + "  num: 1\n" + "  str: string\n"
+	input = keyStr + "  num: 1\n" + "  str: string\n"
 	err = Decode(input, "key", &result, nil, &unset, nil)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(unset))
 	require.Equal(t, "Bool", unset[0])
 
 	// decode 2 missing fields
-	input = "key:\n" + "  num: 1\n"
+	input = keyStr + "  num: 1\n"
 	err = Decode(input, "key", &result, nil, &unset, nil)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(unset))
@@ -108,7 +110,7 @@ func TestDecodeExtra(t *testing.T) {
 	var unused []string
 
 	// decode nothing extra
-	input := "key:\n" + mockDefaultYaml
+	input := keyStr + mockDefaultYaml
 	err := Decode(input, "key", &result, nil, nil, &unused)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(unused))
@@ -150,7 +152,7 @@ func TestDecodeArray(t *testing.T) {
     str: string
     bool: True
 `
-	input := "key:\n" + mock1yaml + mock2yaml
+	input := keyStr + mock1yaml + mock2yaml
 	err := Decode(input, "key", &results, nil, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, []mockStruct{mock1, mock2}, results)
@@ -164,7 +166,7 @@ func TestSetDefault(t *testing.T) {
 	require.NotEqual(t, mockDefault, result)
 
 	// decode 2 missing
-	input := "key:\n" + comment(mockDefaultYaml, 1, 2)
+	input := keyStr + comment(mockDefaultYaml, 1, 2)
 	err := Decode(input, "key", &result, nil, &unset, nil)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(unset))

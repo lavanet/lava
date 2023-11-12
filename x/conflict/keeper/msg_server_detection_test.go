@@ -5,7 +5,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -135,8 +137,47 @@ func TestDetection(t *testing.T) {
 			if tt.Valid {
 				events := ts.Ctx.EventManager().Events()
 				require.Nil(t, err)
-				require.Equal(t, events[len(events)-1].Type, "lava_"+conflicttypes.ConflictVoteDetectionEventName)
+				require.Equal(t, events[len(events)-1].Type, utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName)
 			}
 		})
 	}
+}
+
+// TestFrozenProviderDetection checks that frozen providers are not part of the voters in conflict detection
+func TestFrozenProviderDetection(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForConflict(4) // stake 4 providers
+
+	// freeze one of the providers
+	frozenProviderAcc := ts.providers[3]
+	frozenProvider := frozenProviderAcc.Addr.String()
+
+	_, err := ts.Servers.PairingServer.FreezeProvider(ts.GoCtx, &types.MsgFreezeProvider{
+		Creator:  frozenProvider,
+		ChainIds: []string{ts.spec.Index},
+		Reason:   "test",
+	})
+	require.Nil(t, err)
+	ts.AdvanceEpoch() // apply the freeze
+
+	// send a conflict detection TX
+	msg, _, _, err := common.CreateMsgDetectionTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
+	require.Nil(t, err)
+	_, err = ts.txConflictDetection(msg)
+	require.Nil(t, err)
+
+	// check voters list
+	conflictVotes := ts.Keepers.Conflict.GetAllConflictVote(ts.Ctx)
+	votes := conflictVotes[0].Votes
+
+	var votersList []string
+	for _, vote := range votes {
+		votersList = append(votersList, vote.Address)
+	}
+
+	// there should be one voter (there is only one that is not part of the conflict + not frozen)
+	require.NotEqual(t, 0, len(votersList))
+
+	// the frozen provider should not be part of the voters list
+	require.False(t, slices.Contains(votersList, frozenProvider))
 }

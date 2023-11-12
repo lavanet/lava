@@ -148,7 +148,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 func initLavaProtocolRootCmd(
 	rootCmd *cobra.Command,
 ) {
-	initSDKConfig()
+	InitSDKConfig()
 	rootCmd.AddCommand(
 		tmcli.NewCompletionCmd(rootCmd, true),
 	)
@@ -188,7 +188,7 @@ func initRootCmd(
 	encodingConfig appparams.EncodingConfig,
 ) {
 	// Set config
-	initSDKConfig()
+	InitSDKConfig()
 
 	gentxModule, ok := app.ModuleBasics[genutiltypes.ModuleName].(genutil.AppModuleBasic)
 	if !ok {
