@@ -622,7 +622,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 
 	// scripts/init_e2e.sh will:
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
-	// - produce 1 plan: "DefaultPlan"
+	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 
 	lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
@@ -1171,7 +1171,7 @@ func runProtocolE2E(timeout time.Duration) {
 
 	// scripts/init_e2e.sh will:
 	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
-	// - produce 1 plan: "DefaultPlan"
+	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 	// - produce 5 staked providers (for each of ETH1, LAV1)
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
