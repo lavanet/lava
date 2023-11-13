@@ -140,7 +140,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
     }
 
     // TODO: add extension parsing.
-    return new ParsedMessage(
+    return new BaseChainMessageContainer(
       api,
       latestRequestedBlock,
       batchMsg,

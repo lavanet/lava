@@ -144,7 +144,7 @@ export class JsonRpcChainParser extends BaseChainParser {
     }
 
     // TODO: add extension parsing.
-    return new ParsedMessage(
+    return new BaseChainMessageContainer(
       api,
       latestRequestedBlock,
       batchMsg,
@@ -214,18 +214,6 @@ export class JsonRpcChainParser extends BaseChainParser {
       }
     }
 
-<<<<<<< HEAD
     return [apiCont, apiCollection, requestedBlock, jsonrpcMessage];
-=======
-    // TODO: add extension parsing.
-
-    return new BaseChainMessageContainer(
-      apiCont.api,
-      requestedBlock,
-      jsonrpcMessage,
-      apiCollection,
-      generateRPCData(jsonrpcMessage)
-    );
->>>>>>> main
   }
 }
