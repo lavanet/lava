@@ -19,3 +19,7 @@ func IsHangingApi(chainMessage ChainMessage) bool {
 func GetComputeUnits(chainMessage ChainMessage) uint64 {
 	return chainMessage.GetApi().ComputeUnits
 }
+
+func GetStateful(chainMessage ChainMessage) uint32 {
+	return chainMessage.GetApi().Category.Stateful
+}
