@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: "latest"
+          node-version: "21"
 
       - name: Install protoc executable
         run: sudo apt update && sudo apt install -y protobuf-compiler
@@ -34,7 +34,7 @@ jobs:
         run: go mod tidy
 
       - name: Install modules
-        run: yarn install
+        run: yarn
         working-directory: ./ecosystem/lava-sdk
 
       - name: Prepare proto files
