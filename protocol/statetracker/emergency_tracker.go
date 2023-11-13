@@ -70,6 +70,9 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 		epochToDelete := <-cs.epochsQueue
 		delete(cs.virtualEpochsMap, epochToDelete)
 	}
+
+	// reset virtual epoch metrics counter
+	cs.setVirtualEpochMetrics(0)
 }
 
 func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
@@ -101,11 +104,16 @@ func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
 				utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch},
 				utils.Attribute{Key: "epoch", Value: cs.latestEpoch},
 			)
-			if cs.metrics != nil {
-				cs.metrics.SetVirtualEpoch(virtualEpoch)
-			}
+
+			cs.setVirtualEpochMetrics(virtualEpoch)
 			cs.virtualEpochsMap[cs.latestEpoch] = virtualEpoch
 		}
+	}
+}
+
+func (cs *EmergencyTracker) setVirtualEpochMetrics(virtualEpoch uint64) {
+	if cs.metrics != nil {
+		cs.metrics.SetVirtualEpoch(virtualEpoch)
 	}
 }
 
