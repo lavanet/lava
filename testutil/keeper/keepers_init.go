@@ -31,7 +31,6 @@ import (
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/fixationstore"
-	"github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -250,12 +249,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Dualstaking.InitDelegations(ctx, *fixationstore.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationstore.DefaultGenesis())
-	ks.Dualstaking.InitUnbondings(ctx, []types.RawMessage{})
+	ks.Dualstaking.InitUnbondings(ctx, *timerstore.DefaultGenesis())
 	ks.Plans.InitPlans(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationstore.DefaultGenesis())
-	ks.Subscription.InitSubscriptionsTimers(ctx, []types.RawMessage{})
+	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstore.DefaultGenesis())
 	ks.Subscription.InitCuTrackers(ctx, *fixationstore.DefaultGenesis())
-	ks.Subscription.InitCuTrackerTimers(ctx, []types.RawMessage{})
+	ks.Subscription.InitCuTrackerTimers(ctx, *timerstore.DefaultGenesis())
 	ks.Projects.InitDevelopers(ctx, *fixationstore.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *fixationstore.DefaultGenesis())
 

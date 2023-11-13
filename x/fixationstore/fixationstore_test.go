@@ -26,6 +26,7 @@ func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*Fixation
 		fixationKey := "mock_fix_" + strconv.Itoa(i)
 		ts := timerstore.NewTimerStore(mockStoreKey, cdc, fixationKey)
 		fs[i] = NewFixationStore(mockStoreKey, cdc, fixationKey, ts)
+		fs[i].Init(ctx, *DefaultGenesis())
 	}
 
 	return ctx, fs
@@ -52,7 +53,10 @@ type fixationTemplate struct {
 // helper to automate testing operations
 func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countObj, countVS int) {
 	ctx, fs := initCtxAndFixationStores(t, countVS)
+	runPlaybook(t, ctx, fs, playbook, countObj)
+}
 
+func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []fixationTemplate, countObj int) {
 	var coins []sdk.Coin
 	var dummy sdk.Coin
 
