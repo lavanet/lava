@@ -148,7 +148,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 	}
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock := int64(0)
-	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, nil)
+	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
 	unwantedProviders := map[string]struct{}{}
 	timeouts := 0
 	for iter := 0; iter < count; iter++ {
@@ -200,9 +200,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := rpccs.consumerServices[chainMessage.GetApiCollection().CollectionData.AddOn]; !ok {
+	if _, ok := rpccs.consumerServices[chainlib.GetAddon(chainMessage)]; !ok {
 		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
-			utils.Attribute{Key: "addon", Value: chainMessage.GetApiCollection().CollectionData.AddOn},
+			utils.Attribute{Key: "addon", Value: chainlib.GetAddon(chainMessage)},
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
@@ -214,7 +214,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainMessage.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMessage.GetExtensions()))
+	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
 	relayErrors := []error{}
 	blockOnSyncLoss := map[string]struct{}{}
@@ -334,7 +334,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 
-	isSubscription := chainMessage.GetApi().Category.Subscription
+	isSubscription := chainlib.IsSubscription(chainMessage)
 	if isSubscription {
 		// temporarily disable subscriptions
 		// TODO: fix subscription and disable this case.
@@ -347,7 +347,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Calculate extra RelayTimeout
 	extraRelayTimeout := time.Duration(0)
-	if chainMessage.GetApi().Category.HangingApi {
+	if chainlib.IsHangingApi(chainMessage) {
 		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
 	}
 
@@ -357,7 +357,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
 	}
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainMessage.GetApi().ComputeUnits, *unwantedProviders, reqBlock, chainMessage.GetApiCollection().CollectionData.AddOn, chainMessage.GetExtensions())
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage))
 	if err != nil {
 		return &common.RelayResult{ProviderAddress: ""}, err
 	}
@@ -371,7 +371,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	responses := make(chan *relayResponse, len(sessions))
 
 	// Set relay timout, increase it every time we fail a relay on timeout
-	relayTimeout := extraRelayTimeout + time.Duration(timeouts+1)*common.GetTimePerCu(chainMessage.GetApi().ComputeUnits) + common.AverageWorldLatency
+	relayTimeout := extraRelayTimeout + time.Duration(timeouts+1)*common.GetTimePerCu(chainlib.GetComputeUnits(chainMessage)) + common.AverageWorldLatency
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
@@ -496,7 +496,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainMessage.GetApi().ComputeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
+			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 			// set cache in a nonblocking call
 			go func() {
 				requestedBlock, _ := chainMessage.RequestedBlock()

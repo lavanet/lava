@@ -15,7 +15,6 @@ import {
   newBatchMessage,
 } from "./chainproxy/rpcInterfaceMessages/json_rpc_message";
 import { Parser } from "../parser/parser";
-import { ParsedMessage } from "./chain_message";
 import { JsonRPCVersion } from "./chainproxy/consts";
 import {
   Api,
@@ -27,6 +26,7 @@ import {
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { CombineSpecCategories } from "../util/apiCollection";
 import { compareRequestedBlockInBatch } from "./common";
+import { BaseChainMessageContainer } from "./chain_message";
 
 const SEP = "&";
 export class JsonRpcChainParser extends BaseChainParser {
@@ -36,7 +36,7 @@ export class JsonRpcChainParser extends BaseChainParser {
   }
   parseMsg(
     options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
-  ): ParsedMessage {
+  ): BaseChainMessageContainer {
     if (this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -53,7 +53,7 @@ export class JsonRpcChainParser extends BaseChainParser {
 
     // TODO: add extension parsing.
 
-    return new ParsedMessage(
+    return new BaseChainMessageContainer(
       apiCont.api,
       latestRequestedBlock,
       jsonrpcMessage,
@@ -214,6 +214,18 @@ export class JsonRpcChainParser extends BaseChainParser {
       }
     }
 
+<<<<<<< HEAD
     return [apiCont, apiCollection, requestedBlock, jsonrpcMessage];
+=======
+    // TODO: add extension parsing.
+
+    return new BaseChainMessageContainer(
+      apiCont.api,
+      requestedBlock,
+      jsonrpcMessage,
+      apiCollection,
+      generateRPCData(jsonrpcMessage)
+    );
+>>>>>>> main
   }
 }

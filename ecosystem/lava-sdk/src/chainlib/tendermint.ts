@@ -19,7 +19,7 @@ import {
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { TendermintrpcMessage } from "./chainproxy/rpcInterfaceMessages/tendermint_rpc_message";
 import { Parser } from "../parser/parser";
-import { ParsedMessage } from "./chain_message";
+import { BaseChainMessageContainer } from "./chain_message";
 import { NOT_APPLICABLE } from "../common/common";
 import { CombineSpecCategories } from "../util/apiCollection";
 import { compareRequestedBlockInBatch } from "./common";
@@ -35,7 +35,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
   }
   parseMsg(
     options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
-  ): ParsedMessage {
+  ): BaseChainMessageContainer {
     if (this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -51,7 +51,7 @@ export class TendermintRpcChainParser extends BaseChainParser {
       this.parseSingleMessage(options);
 
     // TODO: add extension parsing.
-    return new ParsedMessage(
+    return new BaseChainMessageContainer(
       apiCont.api,
       latestRequestedBlock,
       tendermintrpcMessage,

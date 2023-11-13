@@ -13,6 +13,13 @@ import {
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
 import {
+  // GetAddon,
+  IsSubscription,
+  IsHangingApi,
+  GetComputeUnits,
+  GetStateful,
+} from "../chainlib/chain_message_queries";
+import {
   constructRelayRequest,
   IsFinalizedBlock,
   newRelayData,
@@ -29,7 +36,7 @@ import SDKErrors from "../sdk/errors";
 import { AverageWorldLatency, getTimePerCu } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
-import { ParsedMessage } from "../chainlib/chain_message";
+import { BaseChainMessageContainer } from "../chainlib/chain_message";
 import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { promiseAny } from "../util/common";
 
@@ -147,33 +154,32 @@ export class RPCConsumerServer {
   }
 
   private async sendRelayToProvider(
-    chainMessage: ParsedMessage,
+    chainMessage: BaseChainMessageContainer,
     relayData: RelayPrivateData,
     unwantedProviders: Set<string>
   ): Promise<RelayResult | Array<RelayError> | Error> {
-    if (chainMessage.getApi().getCategory()?.getSubscription() == true) {
+    if (IsSubscription(chainMessage)) {
       return new Error("subscription currently not supported");
     }
     const chainID = this.rpcEndpoint.chainId;
     const lavaChainId = this.lavaChainId;
 
     let extraRelayTimeout = 0;
-    const isHangingapi =
-      chainMessage.getApi().getCategory()?.getHangingApi() == true;
-    if (isHangingapi) {
+    if (IsHangingApi(chainMessage)) {
       const { averageBlockTime } = this.chainParser.chainBlockStats();
       extraRelayTimeout = averageBlockTime;
     }
     const relayTimeout =
       extraRelayTimeout +
-      getTimePerCu(chainMessage.getApi().getComputeUnits()) +
+      getTimePerCu(GetComputeUnits(chainMessage)) +
       AverageWorldLatency;
     const consumerSessionsMap = this.consumerSessionManager.getSessions(
-      chainMessage.getApi().getComputeUnits(),
+      GetComputeUnits(chainMessage),
       unwantedProviders,
       LATEST_BLOCK,
       "",
-      []
+      [],
+      GetStateful(chainMessage)
     );
     if (consumerSessionsMap instanceof Error) {
       return consumerSessionsMap;
@@ -280,13 +286,13 @@ export class RPCConsumerServer {
           this.consumerSessionManager.onSessionDone(
             singleConsumerSession,
             latestBlock,
-            chainMessage.getApi().getComputeUnits(),
+            GetComputeUnits(chainMessage),
             relayResponse.latency,
             singleConsumerSession.calculateExpectedLatency(relayTimeout),
             expectedBlockHeight,
             numOfProviders,
             pairingAddressesLen,
-            isHangingapi
+            IsHangingApi(chainMessage)
           );
 
           trySetFinalRelayResult(relayResult);
@@ -320,7 +326,7 @@ export class RPCConsumerServer {
   protected async relayInner(
     singleConsumerSession: SingleConsumerSession,
     relayResult: RelayResult,
-    chainMessage: ParsedMessage,
+    chainMessage: BaseChainMessageContainer,
     relayTimeout: number
   ): Promise<RelayResponse> {
     const relayRequest = relayResult.request;

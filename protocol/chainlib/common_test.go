@@ -278,21 +278,21 @@ func TestExtractDappIDFromFiberContext(t *testing.T) {
 }
 
 func TestParsedMessage_GetServiceApi(t *testing.T) {
-	pm := parsedMessage{
+	pm := baseChainMessageContainer{
 		api: &spectypes.Api{},
 	}
 	assert.Equal(t, &spectypes.Api{}, pm.GetApi())
 }
 
 func TestParsedMessage_GetApiCollection(t *testing.T) {
-	pm := parsedMessage{
+	pm := baseChainMessageContainer{
 		apiCollection: &spectypes.ApiCollection{},
 	}
 	assert.Equal(t, &spectypes.ApiCollection{}, pm.GetApiCollection())
 }
 
 func TestParsedMessage_RequestedBlock(t *testing.T) {
-	pm := parsedMessage{
+	pm := baseChainMessageContainer{
 		latestRequestedBlock: 123,
 	}
 	requestedBlock, _ := pm.RequestedBlock()
@@ -302,7 +302,7 @@ func TestParsedMessage_RequestedBlock(t *testing.T) {
 func TestParsedMessage_GetRPCMessage(t *testing.T) {
 	rpcInput := &mockRPCInput{}
 
-	pm := parsedMessage{
+	pm := baseChainMessageContainer{
 		msg: rpcInput,
 	}
 	assert.Equal(t, rpcInput, pm.GetRPCMessage())

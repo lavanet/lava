@@ -5,6 +5,9 @@ export const PENDING_BLOCK = -4;
 export const SAFE_BLOCK = -5;
 export const FINALIZED_BLOCK = -6;
 
+export const CONSISTENCY_SELECT_ALLPROVIDERS = 1;
+export const NOSTATE = 0;
+
 export const BACKOFF_TIME_ON_FAILURE = 3000; // 3 seconds
 
 export const DEFAULT_PARSED_RESULT_INDEX = 0;
