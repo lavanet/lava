@@ -7,10 +7,11 @@ import (
 	"github.com/lavanet/lava/x/timerstore"
 )
 
-func NewKeeper(cdc codec.BinaryCodec, tsKeeper *timerstore.Keeper) *Keeper {
+func NewKeeper(cdc codec.BinaryCodec, tsKeeper *timerstore.Keeper, getStaleBlocks GetStaleBlocks) *Keeper {
 	return &Keeper{
-		cdc: cdc,
-		ts:  tsKeeper,
+		cdc:            cdc,
+		ts:             tsKeeper,
+		getStaleBlocks: getStaleBlocks,
 	}
 }
 
@@ -20,11 +21,12 @@ type Keeper struct {
 	fixationsStores []*FixationStore
 	ts              *timerstore.Keeper
 	cdc             codec.BinaryCodec
+	getStaleBlocks  GetStaleBlocks
 }
 
 func (k *Keeper) NewFixationStore(storeKey storetypes.StoreKey, prefix string) *FixationStore {
 	ts := k.ts.NewTimerStore(storeKey, prefix)
-	fs := NewFixationStore(storeKey, k.cdc, prefix, ts)
+	fs := NewFixationStore(storeKey, k.cdc, prefix, ts, k.getStaleBlocks)
 	k.fixationsStores = append(k.fixationsStores, fs)
 	return fs
 }

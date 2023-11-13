@@ -7,7 +7,6 @@ import (
 
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -679,7 +678,7 @@ func TestDelProjectEndSubscription(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlock(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 }
 
 // TestDurationTotal tests that the total duration of the subscription is updated correctly

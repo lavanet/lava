@@ -13,7 +13,6 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -704,11 +703,11 @@ func (ts *Tester) AdvanceEpoch(delta ...time.Duration) *Tester {
 }
 
 func (ts *Tester) AdvanceBlockUntilStale(delta ...time.Duration) *Tester {
-	return ts.AdvanceBlocks(types.STALE_ENTRY_TIME)
+	return ts.AdvanceBlocks(ts.BlocksToSave())
 }
 
 func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
-	block := ts.BlockHeight() + types.STALE_ENTRY_TIME
+	block := ts.BlockHeight() + ts.BlocksToSave()
 	for block > ts.BlockHeight() {
 		ts.AdvanceEpoch()
 	}
