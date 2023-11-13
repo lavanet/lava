@@ -10,7 +10,7 @@ import { Metadata } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { Logger } from "../logger/logger";
 import Long from "long";
-import { ParsedMessage } from "./chain_message";
+import { BaseChainMessageContainer } from "./chain_message";
 
 export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
@@ -441,7 +441,7 @@ export abstract class BaseChainParser {
 
   abstract parseMsg(
     options: SendRelayOptions | SendRestRelayOptions
-  ): ParsedMessage;
+  ): BaseChainMessageContainer;
 
   public chainBlockStats(): ChainBlockStats {
     const averageBlockTime = this.spec?.getAverageBlockTime();

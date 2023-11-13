@@ -18,6 +18,7 @@ import {
   ProviderOptimizerStrategy,
 } from "../providerOptimizer/providerOptimizer";
 import { AverageWorldLatency } from "../common/timeout";
+import { CONSISTENCY_SELECT_ALLPROVIDERS, NOSTATE } from "../common/common";
 
 const NUMBER_OF_PROVIDERS = 10;
 const NUMBER_OF_RESETS_TO_TEST = 10;
@@ -98,7 +99,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -145,7 +147,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -197,7 +200,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          NOSTATE
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -213,7 +217,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -251,7 +256,8 @@ describe("ConsumerSessionManager", () => {
             new Set(),
             SERVICED_BLOCK_NUMBER,
             "",
-            []
+            [],
+            NOSTATE
           );
 
           if (consumerSessions instanceof Map) {
@@ -278,7 +284,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          NOSTATE
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -300,7 +307,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -348,7 +356,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          NOSTATE
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -409,7 +418,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           "",
-          []
+          [],
+          NOSTATE
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -473,7 +483,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -524,7 +535,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -561,7 +573,8 @@ describe("ConsumerSessionManager", () => {
         new Set(),
         SERVICED_BLOCK_NUMBER,
         "",
-        []
+        [],
+        NOSTATE
       );
 
       expect(sessions).toBeInstanceOf(PairingListEmptyError);
@@ -581,7 +594,8 @@ describe("ConsumerSessionManager", () => {
             new Set(),
             SERVICED_BLOCK_NUMBER,
             addon,
-            []
+            [],
+            NOSTATE
           );
           if (consumerSessions instanceof Error) {
             throw consumerSessions;
@@ -606,7 +620,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           addon,
-          []
+          [],
+          NOSTATE
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -673,7 +688,8 @@ describe("ConsumerSessionManager", () => {
             new Set(),
             SERVICED_BLOCK_NUMBER,
             addon,
-            extensions
+            extensions,
+            NOSTATE
           );
           if (consumerSessions instanceof Error) {
             throw consumerSessions;
@@ -698,7 +714,8 @@ describe("ConsumerSessionManager", () => {
           new Set(),
           SERVICED_BLOCK_NUMBER,
           addon,
-          extensions
+          extensions,
+          NOSTATE
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -883,6 +900,53 @@ describe("ConsumerSessionManager", () => {
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.getEpochFromEpochTracker()).toEqual(NUMBER_OF_PROVIDERS / 2);
+    });
+  });
+  describe("statful", () => {
+    it("test pairing", async () => {
+      const cm = setupConsumerSessionManager();
+      const pairingList = createPairingList("", true);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
+      expect(cm.getCurrentEpoch()).toEqual(FIRST_EPOCH_HEIGHT);
+      let sessions = cm.getSessions(
+        CU_FOR_FIRST_REQUEST,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        CONSISTENCY_SELECT_ALLPROVIDERS
+      );
+      expect(sessions).not.toBeInstanceOf(Error);
+      if (!(sessions instanceof Error)) {
+        expect(sessions.size).toEqual(NUMBER_OF_PROVIDERS);
+      }
+      sessions = cm.getSessions(
+        CU_FOR_FIRST_REQUEST,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE
+      );
+      expect(sessions).not.toBeInstanceOf(Error);
+      if (!(sessions instanceof Error)) {
+        expect(sessions.size).not.toEqual(NUMBER_OF_PROVIDERS);
+      }
+      sessions = cm.getSessions(
+        CU_FOR_FIRST_REQUEST,
+        new Set(Array.from(cm.validAddresses)[0]),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        CONSISTENCY_SELECT_ALLPROVIDERS
+      );
+      expect(sessions).not.toBeInstanceOf(Error);
+      if (!(sessions instanceof Error)) {
+        expect(sessions.size).toEqual(NUMBER_OF_PROVIDERS - 1);
+      }
     });
   });
 });

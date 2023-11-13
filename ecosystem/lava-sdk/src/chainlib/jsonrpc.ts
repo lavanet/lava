@@ -11,7 +11,7 @@ import { HttpMethod, NOT_APPLICABLE } from "../common/common";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { JsonrpcMessage } from "./chainproxy/rpcInterfaceMessages/json_rpc_message";
 import { Parser } from "../parser/parser";
-import { ParsedMessage } from "./chain_message";
+import { BaseChainMessageContainer } from "./chain_message";
 
 const jsonrpcVersion = "2.0";
 export class JsonRpcChainParser extends BaseChainParser {
@@ -19,7 +19,9 @@ export class JsonRpcChainParser extends BaseChainParser {
     super();
     this.apiInterface = APIInterfaceJsonRPC;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ParsedMessage {
+  parseMsg(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): BaseChainMessageContainer {
     if (this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
@@ -86,7 +88,7 @@ export class JsonRpcChainParser extends BaseChainParser {
 
     // TODO: add extension parsing.
 
-    return new ParsedMessage(
+    return new BaseChainMessageContainer(
       apiCont.api,
       requestedBlock,
       jsonrpcMessage,
