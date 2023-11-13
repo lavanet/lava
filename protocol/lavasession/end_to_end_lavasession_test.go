@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,7 +33,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, NOSTATE) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE) // get a session
 	require.Nil(t, err)
 
 	for _, cs := range css {

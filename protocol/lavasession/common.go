@@ -35,8 +35,6 @@ const (
 	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
 	BLOCKING_PROBE_SLEEP_TIME                        = 1000 * time.Millisecond // maximum amount of time to sleep before triggering probe, to scatter probes uniformly across chains
 	BLOCKING_PROBE_TIMEOUT                           = time.Minute             // maximum time to wait for probe to complete before updating pairing
-	CONSISTENCY_SELECT_ALLPROVIDERS                  = 1
-	NOSTATE                                          = 0
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing

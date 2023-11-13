@@ -475,7 +475,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 		return
 	}
 	var providers []string
-	if stateful == CONSISTENCY_SELECT_ALLPROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
+	if stateful == common.CONSISTENCY_SELECT_ALLPROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
 		providers = GetAllProviders(validAddresses, ignoredProvidersList)
 	} else {
 		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
