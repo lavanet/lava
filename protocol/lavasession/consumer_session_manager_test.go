@@ -757,5 +757,4 @@ func TestPairingWithStateful(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, allProviders-1, len(css))
 	})
-
 }
