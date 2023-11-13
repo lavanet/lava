@@ -86,8 +86,8 @@ service Query {
 	}
 
 // Queries a list of EffectivePolicy items.
-	rpc MonthlyPayout(QueryMonthlyPayoutRequest) returns (QueryMonthlyPayoutResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/monthly_payout/{provider}";
+	rpc ProviderMonthlyPayout(QueryProviderMonthlyPayoutRequest) returns (QueryProviderMonthlyPayoutResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_monthly_payout/{provider}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -243,10 +243,10 @@ message QuerySdkPairingResponse {
   lavanet.lava.spec.Spec spec = 3; 
 }
 
-message QueryMonthlyPayoutRequest {
+message QueryProviderMonthlyPayoutRequest {
 	string provider = 1;
   }
   
-  message QueryMonthlyPayoutResponse {
+  message QueryProviderMonthlyPayoutResponse {
 	  uint64 amount = 1;
   }

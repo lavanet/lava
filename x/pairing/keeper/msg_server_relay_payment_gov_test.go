@@ -99,7 +99,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 
 	balance := ts.GetBalance(providerAcct.Addr)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 

@@ -566,12 +566,12 @@ func (ts *Tester) QueryPairingEffectivePolicy(chainID, consumer string) (*pairin
 	return ts.Keepers.Pairing.EffectivePolicy(ts.GoCtx, msg)
 }
 
-// QueryPairingMonthlyPayout implements 'q pairing monthly-payout'
-func (ts *Tester) QueryPairingMonthlyPayout(provider string) (*pairingtypes.QueryMonthlyPayoutResponse, error) {
-	msg := &pairingtypes.QueryMonthlyPayoutRequest{
+// QueryPairingProviderMonthlyPayout implements 'q pairing provider-monthly-payout'
+func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingtypes.QueryProviderMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QueryProviderMonthlyPayoutRequest{
 		Provider: provider,
 	}
-	return ts.Keepers.Pairing.MonthlyPayout(ts.GoCtx, msg)
+	return ts.Keepers.Pairing.ProviderMonthlyPayout(ts.GoCtx, msg)
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'

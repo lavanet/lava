@@ -247,7 +247,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 			balance1 := ts.GetBalance(provider1Acc.Addr)
 			balance2 := ts.GetBalance(provider2Acc.Addr)
 
-			// advance month + blocksToSave + 1 to trigger the monthly payment
+			// advance month + blocksToSave + 1 to trigger the provider monthly payment
 			ts.AdvanceMonths(1)
 			ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -309,7 +309,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -341,7 +341,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	balanceBeforePay := ts.GetBalance(providerAcc.Addr)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -349,9 +349,9 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	require.Equal(t, balanceBeforePay+originalPlanPrice, balance)
 }
 
-// TestMonthlyPayoutQuery tests the monthly-payout query
+// TestProviderMonthlyPayoutQuery tests the monthly-payout query
 // Scenario: the provider provided service on two chains and in one of them he has a delegator
-func TestMonthlyPayoutQuery(t *testing.T) {
+func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 
@@ -400,7 +400,7 @@ func TestMonthlyPayoutQuery(t *testing.T) {
 	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
 	// for planPrice=100, expected monthly payout is 50+33
 	expectedPayout := uint64(83)
-	res, err := ts.QueryPairingMonthlyPayout(provider)
+	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.Nil(t, err)
 	require.Equal(t, expectedPayout, res.Amount)
 
@@ -414,7 +414,7 @@ func TestMonthlyPayoutQuery(t *testing.T) {
 	require.Equal(t, expectedPayout, uint64(balance-oldBalance))
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
-	res, err = ts.QueryPairingMonthlyPayout(provider)
+	res, err = ts.QueryPairingProviderMonthlyPayout(provider)
 	require.Nil(t, err)
 	require.Equal(t, uint64(0), res.Amount)
 }
@@ -436,7 +436,7 @@ func TestFrozenProviderGetReward(t *testing.T) {
 	err := ts.Keepers.Pairing.FreezeProvider(ts.Ctx, provider, []string{ts.spec.Index}, "unresponsiveness")
 	require.Nil(t, err)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 

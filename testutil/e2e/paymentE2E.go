@@ -130,8 +130,8 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 	expectedPayoutArr := make([]uint64, len(providers))
 	for i := 0; i < 12; i++ {
 		for j := range providers {
-			payoutRequest := pairingTypes.QueryMonthlyPayoutRequest{Provider: providers[j]}
-			res, err := pairingQueryClient.MonthlyPayout(context.Background(), &payoutRequest)
+			payoutRequest := pairingTypes.QueryProviderMonthlyPayoutRequest{Provider: providers[j]}
+			res, err := pairingQueryClient.ProviderMonthlyPayout(context.Background(), &payoutRequest)
 			if err != nil {
 				panic(err)
 			}
