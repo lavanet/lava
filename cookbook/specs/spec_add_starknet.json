@@ -436,7 +436,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging" : true
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -455,7 +455,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging" : true
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -474,7 +474,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging" : true
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
