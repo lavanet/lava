@@ -6,7 +6,7 @@ import {
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { HttpMethod, NOT_APPLICABLE } from "../common/common";
+import { DUMMY_URL, HttpMethod, NOT_APPLICABLE } from "../common/common";
 import { Parser } from "../parser/parser";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { RestMessage } from "./chainproxy/rpcInterfaceMessages/rest_message";
@@ -24,10 +24,13 @@ export class RestChainParser extends BaseChainParser {
       );
     }
 
+    const parsedUrl = new URL(options.url, DUMMY_URL);
+
     const [apiCont, found] = this.matchSpecApiByName(
-      options.url,
+      parsedUrl.pathname,
       options.connectionType
     );
+
     if (!found || !apiCont) {
       throw Logger.fatal("Rest api not supported", options.url);
     }
