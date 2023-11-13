@@ -127,3 +127,14 @@ func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 	}
 	return tlsConfig
 }
+
+func GetAllProviders(allAddresses []string, ignoredProviders map[string]struct{}) (returnedProviders []string) {
+	for _, providerAddress := range allAddresses {
+		if _, ok := ignoredProviders[providerAddress]; ok {
+			// ignored provider, skip it
+			continue
+		}
+		returnedProviders = append(returnedProviders, providerAddress)
+	}
+	return returnedProviders
+}

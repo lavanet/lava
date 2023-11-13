@@ -10,6 +10,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/protocol/common"
 	metrics "github.com/lavanet/lava/protocol/metrics"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -313,7 +314,7 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string, extensions []*spectypes.Extension) (
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
 	extensionNames := common.GetExtensionNames(extensions)
@@ -332,7 +333,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	}
 
 	// Get a valid consumerSessionsWithProvider
-	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames)
+	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +448,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		}
 
 		// If we do not have enough fetch more
-		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames)
+		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful)
 
 		// If error exists but we have sessions, return them
 		if err != nil && len(sessions) != 0 {
@@ -462,7 +463,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 }
 
 // Get a valid provider address.
-func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string) (addresses []string, err error) {
+func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
 	ignoredProvidersListLength := len(ignoredProvidersList)
 	validAddresses := csm.getValidAddresses(addon, extensions)
@@ -471,14 +472,22 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	if totalValidLength <= 0 {
 		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		err = PairingListEmptyError
-		return
+		return addresses, err
 	}
-	providers := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+	var providers []string
+	if stateful == common.CONSISTENCY_SELECT_ALLPROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
+		providers = GetAllProviders(validAddresses, ignoredProvidersList)
+	} else {
+		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+	}
 	if debug {
-		utils.LavaFormatDebug("choosing provider",
+		utils.LavaFormatDebug("choosing providers",
 			utils.Attribute{Key: "validAddresses", Value: validAddresses},
 			utils.Attribute{Key: "ignoredProvidersList", Value: ignoredProvidersList},
 			utils.Attribute{Key: "chosenProviders", Value: providers},
+			utils.Attribute{Key: "addon", Value: addon},
+			utils.Attribute{Key: "extensions", Value: extensions},
+			utils.Attribute{Key: "stateful", Value: stateful},
 		)
 	}
 
@@ -486,13 +495,13 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	if len(providers) == 0 || providers[0] == "" {
 		utils.LavaFormatDebug("No providers returned by the optimizer", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList})
 		err = PairingListEmptyError
-		return
+		return addresses, err
 	}
 
 	return providers, nil
 }
 
-func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string) (sessionWithProviderMap SessionWithProviderMap, err error) {
+func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 	if debug {
@@ -506,7 +515,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	}
 
 	// Fetch provider addresses
-	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions)
+	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful)
 	if err != nil {
 		utils.LavaFormatError("could not get a provider addresses", err)
 		return nil, err
@@ -555,7 +564,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 		}
 
 		// If we do not have enough fetch more
-		providerAddresses, err = csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions)
+		providerAddresses, err = csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful)
 
 		// If error exists but we have providers, return them
 		if err != nil && len(sessionWithProviderMap) != 0 {
