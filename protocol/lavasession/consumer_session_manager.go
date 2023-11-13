@@ -10,6 +10,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/protocol/common"
 	metrics "github.com/lavanet/lava/protocol/metrics"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -474,16 +475,19 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 		return
 	}
 	var providers []string
-	if stateful == CONSISTENCY_SELECT_ALLPROVIDERS {
+	if stateful == CONSISTENCY_SELECT_ALLPROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
 		providers = GetAllProviders(validAddresses, ignoredProvidersList)
 	} else {
 		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
 	}
 	if debug {
-		utils.LavaFormatDebug("choosing provider",
+		utils.LavaFormatDebug("choosing providers",
 			utils.Attribute{Key: "validAddresses", Value: validAddresses},
 			utils.Attribute{Key: "ignoredProvidersList", Value: ignoredProvidersList},
 			utils.Attribute{Key: "chosenProviders", Value: providers},
+			utils.Attribute{Key: "addon", Value: addon},
+			utils.Attribute{Key: "extensions", Value: extensions},
+			utils.Attribute{Key: "stateful", Value: stateful},
 		)
 	}
 
