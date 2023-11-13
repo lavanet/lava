@@ -399,10 +399,19 @@ func TestMonthlyPayoutQuery(t *testing.T) {
 
 	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
 	// for planPrice=100, expected monthly payout is 50+33
-	expectedPayout := uint64(83)
+	expectedTotalPayout := uint64(83)
+	expectedPayouts := []types.Payout{
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 50},
+	}
 	res, err := ts.QueryPairingMonthlyPayout(provider)
 	require.Nil(t, err)
-	require.Equal(t, expectedPayout, res.Amount)
+	require.Equal(t, expectedTotalPayout, res.Total)
+	details := []types.Payout{}
+	for _, p := range res.Details {
+		details = append(details, *p)
+	}
+	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
 
 	// advance month + blocksToSave + 1 to trigger the monthly payment
 	oldBalance := ts.GetBalance(providerAcct.Addr)
@@ -411,12 +420,13 @@ func TestMonthlyPayoutQuery(t *testing.T) {
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	balance := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, expectedPayout, uint64(balance-oldBalance))
+	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
 	res, err = ts.QueryPairingMonthlyPayout(provider)
 	require.Nil(t, err)
-	require.Equal(t, uint64(0), res.Amount)
+	require.Equal(t, uint64(0), res.Total)
+	require.Nil(t, res.Details)
 }
 
 // TestFrozenProviderGetReward checks that frozen providers still get rewards.
