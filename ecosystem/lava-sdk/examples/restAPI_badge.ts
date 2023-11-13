@@ -11,8 +11,11 @@ async function getLatestBlockAndValidators(): Promise<[string, string]> {
   // Default rpcInterface for Lava Network is tendermintRPC
   // If you want to use rest it needs to be explicitly defined
   const lavaSDKInstance = await LavaSDK.create({
-    // private key with an active subscription
-    privateKey: "<lava consumer private key>",
+    // badge data of an active badge server
+    badge: {
+      badgeServerAddress: "<badge server address>",
+      projectId: "<badge project id>",
+    },
 
     // chainID for Cosmos Hub
     chainIds: "LAV1",
