@@ -4,6 +4,8 @@ package lavanet.lava.fixationstore;
 option go_package = "github.com/lavanet/lava/x/fixationstore/types";
 import "gogoproto/gogo.proto"; 
 
+import "lavanet/lava/timerstore/timer.proto";
+
 message Entry {
     string index = 1; // unique entry index (i.e. list key)
     uint64 block = 2; // block when the entry was created
@@ -15,18 +17,13 @@ message Entry {
 }
 
 message GenesisEntries {
-    string index = 2;
-    bool is_live = 3;
-    repeated Entry entries = 4 [(gogoproto.nullable) = false];
+    string index = 1;
+    bool is_live = 2;
+    repeated Entry entries = 3 [(gogoproto.nullable) = false];
 }
 
 message GenesisState {
     uint64 version = 1;
     repeated GenesisEntries entries = 2 [(gogoproto.nullable) = false];
-    repeated RawMessage timerstore = 3[(gogoproto.nullable) = false];
-}
-
-message RawMessage {
-    bytes key = 1;
-    bytes value = 2;
+    lavanet.lava.timerstore.GenesisState timerstore = 3[(gogoproto.nullable) = false];
 }

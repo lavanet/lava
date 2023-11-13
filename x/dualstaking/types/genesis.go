@@ -4,7 +4,7 @@ import (
 	fmt "fmt"
 
 	"github.com/lavanet/lava/x/fixationstore"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
+	"github.com/lavanet/lava/x/timerstore"
 )
 
 // DefaultIndex is the default global index
@@ -18,7 +18,7 @@ func DefaultGenesis() *GenesisState {
 		DelegatorRewardList: []DelegatorReward{},
 		DelegationsFS:       *fixationstore.DefaultGenesis(),
 		DelegatorsFS:        *fixationstore.DefaultGenesis(),
-		UnbondingsTS:        []fixationtypes.RawMessage{},
+		UnbondingsTS:        *timerstore.DefaultGenesis(),
 	}
 }
 

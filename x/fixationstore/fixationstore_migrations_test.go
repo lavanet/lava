@@ -132,6 +132,8 @@ func countWithPrefix(store *prefix.Store, prefix string) int {
 
 	count := 0
 	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		fmt.Printf("key: %v\n", string(key))
 		count += 1
 	}
 	return count
@@ -188,9 +190,9 @@ func TestMigrate2to3(t *testing.T) {
 	}
 
 	// verify entry count before migration
-	// (add 2 to account for fixation version and the timer version)
+	// (add 4 to account for fixation version, timer version, timer next height, timer next time)
 	store_V2 := prefix.NewStore(ctx.KVStore(fs.storeKey), []byte{})
-	require.Equal(t, 2+numHeads+numEntries, countWithPrefix(&store_V2, ""))
+	require.Equal(t, 4+numHeads+numEntries, countWithPrefix(&store_V2, ""))
 	require.Equal(t, numHeads+numEntries, countWithPrefix(&store_V2, "Entry"))
 
 	// mock fixation version to be 3
@@ -207,10 +209,10 @@ func TestMigrate2to3(t *testing.T) {
 	require.Equal(t, uint64(3), fs.getVersion(ctx))
 
 	// verify entry count before migration
-	// (add 2 to account for fixation version and the timer version)
+	// (add 4 to account for fixation version, timer version, timer next height, timer next time)
 	store_V3 := prefix.NewStore(ctx.KVStore(fs.storeKey), []byte{})
-	require.Equal(t, 2+numHeads+numEntries, countWithPrefix(&store_V3, ""))
-	require.Equal(t, 2+numHeads+numEntries, countWithPrefix(&store_V3, mockPrefix))
+	require.Equal(t, 4+numHeads+numEntries, countWithPrefix(&store_V3, ""))
+	require.Equal(t, 4+numHeads+numEntries, countWithPrefix(&store_V3, mockPrefix))
 
 	// verify entries after migration
 	for _, tt := range templates {
