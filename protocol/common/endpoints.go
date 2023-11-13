@@ -19,6 +19,7 @@ const (
 	URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH        = "?"
 	URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS = "&"
 	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
+	PROVIDER_ADDRESS_HEADER_NAME                    = "Lava-Provider-Address"
 )
 
 type NodeUrl struct {
@@ -195,6 +196,13 @@ func (rr *RelayResult) GetStatusCode() int {
 		return 0
 	}
 	return rr.StatusCode
+}
+
+func (rr *RelayResult) GetProvider() string {
+	if rr == nil {
+		return ""
+	}
+	return rr.ProviderAddress
 }
 
 func GetIpFromGrpcContext(ctx context.Context) string {

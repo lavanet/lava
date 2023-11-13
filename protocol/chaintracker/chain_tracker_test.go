@@ -136,6 +136,8 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+const startedTestStr = "started test "
+
 func TestChainTracker(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -153,7 +155,7 @@ func TestChainTracker(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			utils.LavaFormatInfo("started test " + tt.name)
+			utils.LavaFormatInfo(startedTestStr + tt.name)
 			mockChainFetcher := NewMockChainFetcher(1000, tt.mockBlocks, nil)
 			currentLatestBlockInMock := mockChainFetcher.AdvanceBlock()
 
@@ -299,7 +301,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test " + tt.name)
+			utils.LavaFormatInfo(startedTestStr + tt.name)
 			callbackCalledFork = false
 			callbackCalledNewLatest = false
 			for i := 0; i < int(tt.advancement); i++ {
@@ -489,6 +491,10 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 				mockChainFetcher.AdvanceBlock()
 				time.Sleep(play.updateTime)
 			}
+			// give it more time to update in case it didn't trigger on slow machines
+			if updatedTime.Milliseconds() == 0 {
+				time.Sleep(10 * play.updateTime)
+			}
 			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
 			// if we wait more time we expect this to fine tune
 			for i := 0; i < iterations*4; i++ {
@@ -539,7 +545,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	require.NoError(t, err)
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
-			utils.LavaFormatInfo("started test " + tt.name)
+			utils.LavaFormatInfo(startedTestStr + tt.name)
 			callbackCalledFork = false
 			for i := 0; i < int(tt.advancement); i++ {
 				currentLatestBlockInMock = mockChainFetcher.AdvanceBlock()

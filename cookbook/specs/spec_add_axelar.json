@@ -664,6 +664,150 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/axelarnet/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/evm/v1beta1/params/{chain}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/multisig/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/nexus/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/snapshot/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/tss/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/vote/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/v1beta1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -704,7 +848,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -723,7 +867,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -742,7 +886,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -761,7 +905,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -780,7 +924,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -799,7 +943,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -818,7 +962,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -837,7 +981,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -856,7 +1000,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -875,7 +1019,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -894,7 +1038,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -913,7 +1057,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -932,7 +1076,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -951,7 +1095,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -970,7 +1114,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -989,7 +1133,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1008,7 +1152,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1027,7 +1171,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1046,7 +1190,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1065,7 +1209,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1084,7 +1228,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1103,7 +1247,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1122,7 +1266,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1141,7 +1285,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1160,7 +1304,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1179,7 +1323,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1198,7 +1342,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1217,7 +1361,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1236,7 +1380,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1255,7 +1399,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1274,7 +1418,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1293,7 +1437,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1312,7 +1456,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1331,7 +1475,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1350,7 +1494,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1369,7 +1513,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1388,7 +1532,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1407,7 +1551,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1426,7 +1570,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1445,7 +1589,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1464,7 +1608,64 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging": true
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/deregister_controller",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/register_controller",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/axelar/permission/update_governance_key",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             }
@@ -1557,6 +1758,24 @@
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/Chains",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "axelar.evm.v1beta1.QueryService/Command",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1701,24 +1920,6 @@
                             },
                             {
                                 "name": "axelar.evm.v1beta1.QueryService/TokenInfo",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "axelar.evm.v1beta1.QueryService/Command",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1934,6 +2135,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "axelar.nexus.v1beta1.QueryService/Message",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "axelar.nexus.v1beta1.QueryService/RecipientAddress",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -1989,24 +2208,6 @@
                             },
                             {
                                 "name": "axelar.nexus.v1beta1.QueryService/TransfersForChain",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "axelar.nexus.v1beta1.QueryService/Message",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"

@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 	go StartTestServerWithOriginHeader()
 	go StartTestServerWithXGrpcWeb()
 	go StartTestServerWithAllHeaders()
-
+	time.Sleep(10 * time.Millisecond) // allow the servers to finish starting
 	code := m.Run()
 
 	os.Exit(code)
