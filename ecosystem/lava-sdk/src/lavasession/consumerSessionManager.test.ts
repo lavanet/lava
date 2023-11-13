@@ -937,7 +937,7 @@ describe("ConsumerSessionManager", () => {
       }
       sessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
-        new Set(Array.from(cm.validAddresses)[0]),
+        new Set([Array.from(cm.validAddresses)[0]]),
         SERVICED_BLOCK_NUMBER,
         "",
         [],
