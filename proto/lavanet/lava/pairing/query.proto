@@ -246,7 +246,14 @@ message QuerySdkPairingResponse {
 message QueryMonthlyPayoutRequest {
 	string provider = 1;
   }
-  
-  message QueryMonthlyPayoutResponse {
-	  uint64 amount = 1;
-  }
+
+message Payout {
+	string subscription = 1;
+	string chain_id = 2;
+	uint64 amount = 3;
+}
+
+message QueryMonthlyPayoutResponse {
+	uint64 total = 1;
+	repeated Payout details = 2;
+}
