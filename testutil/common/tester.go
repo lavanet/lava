@@ -574,6 +574,14 @@ func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingty
 	return ts.Keepers.Pairing.ProviderMonthlyPayout(ts.GoCtx, msg)
 }
 
+// QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'
+func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairingtypes.QuerySubscriptionMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QuerySubscriptionMonthlyPayoutRequest{
+		Consumer: consumer,
+	}
+	return ts.Keepers.Pairing.SubscriptionMonthlyPayout(ts.GoCtx, msg)
+}
+
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
 func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{

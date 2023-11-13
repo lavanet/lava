@@ -355,7 +355,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 
-	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 	// stake the provider on an additional chain and apply pairing (advance epoch)
 	spec1 := ts.spec
@@ -403,6 +403,32 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.Nil(t, err)
 	require.Equal(t, expectedPayout, res.Amount)
+
+	// check the expected subscrription payout
+	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
+	require.Nil(t, err)
+	require.Equal(t, uint64(100), subRes.Total) // total reward = plan price
+	expectedSubPayouts := []types.ChainIDPayout{
+		{
+			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
+				{Provider: provider, Amount: 50},
+			},
+		},
+		{
+			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
+				{Provider: provider, Amount: 50},
+			},
+		},
+	}
+	require.Equal(t, 2, len(subRes.Details))
+	for _, payout := range subRes.Details {
+		if payout.ChainId == expectedSubPayouts[0].ChainId || payout.ChainId == expectedSubPayouts[1].ChainId {
+			if payout.Payouts[0].Provider == expectedSubPayouts[0].Payouts[0].Provider && payout.Payouts[0].Amount == expectedSubPayouts[0].Payouts[0].Amount {
+				break
+			}
+		}
+		require.FailNow(t, "sub expected payout don't match with query output")
+	}
 
 	// advance month + blocksToSave + 1 to trigger the monthly payment
 	oldBalance := ts.GetBalance(providerAcct.Addr)
