@@ -34,6 +34,7 @@ export class JsonRpcChainParser extends BaseChainParser {
     super();
     this.apiInterface = APIInterfaceJsonRPC;
   }
+
   parseMsg(
     options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): BaseChainMessageContainer {
@@ -153,7 +154,7 @@ export class JsonRpcChainParser extends BaseChainParser {
     );
   }
 
-  parseSingleMessage(
+  private parseSingleMessage(
     options: SendRelayOptions
   ): [ApiContainer, ApiCollection, number, JsonrpcMessage] {
     const apiCont = this.getSupportedApi(options.method, HttpMethod.POST);
