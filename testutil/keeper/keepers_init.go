@@ -17,9 +17,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -64,7 +68,7 @@ type Keepers struct {
 	FixationStoreKeeper *fixationstore.Keeper
 	AccountKeeper       mockAccountKeeper
 	BankKeeper          mockBankKeeper
-	StakingKeeper       mockStakingKeeper
+	StakingKeeper       stakingkeeper.Keeper
 	Spec                speckeeper.Keeper
 	Epochstorage        epochstoragekeeper.Keeper
 	Dualstaking         dualstakingkeeper.Keeper
@@ -106,6 +110,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
+
+	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	stateStore.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
 
 	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
 	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
@@ -199,8 +206,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.TimerStoreKeeper = timerstore.NewKeeper(cdc)
 	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc, ks.TimerStoreKeeper)
 	ks.AccountKeeper = mockAccountKeeper{}
-	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
-	ks.StakingKeeper = mockStakingKeeper{}
+	ks.BankKeeper = mockBankKeeper{}
+	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	// TODO YAROM
