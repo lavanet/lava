@@ -525,6 +525,7 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 	httpNodeUrl   common.NodeUrl
 	httpConnector *chainproxy.Connector
+	httpClient    *http.Client
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -582,11 +583,12 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		// return an error if the channel is not nil
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil)
 	}
-
-	// create a new http client with a timeout set by the getTimePerCu function
-	httpClient := http.Client{
-		Timeout: common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits),
+	if cp.httpClient == nil {
+		cp.httpClient = &http.Client{
+			Timeout: 5 * time.Minute, // we are doing a timeout by request
+		}
 	}
+	httpClient := cp.httpClient
 
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
