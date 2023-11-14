@@ -1,5 +1,10 @@
 import { encodeUtf8 } from "../../../util/common";
-import { JsonrpcMessage, parseJsonRPCMsg } from "./json_rpc_message";
+import {
+  JsonrpcBatchMessage,
+  JsonrpcMessage,
+  newBatchMessage,
+  parseJsonRPCMsg,
+} from "./json_rpc_message";
 
 describe("JsonrpcMessage", () => {
   it("should get Params", () => {
@@ -85,6 +90,46 @@ describe("ParseJsonRPCBatch", () => {
       const msg = msgs[index];
       expect(msg.version).toBe("2.0");
       expect(msg.method).toBe(methods[index]);
+    }
+  });
+});
+
+describe("JsonRPCBatchMessageInit", () => {
+  it("should create valid batch message", () => {
+    const generateJsonRpcMsg = (params: any) => {
+      const jsonRpcMsg = new JsonrpcMessage();
+      jsonRpcMsg.initJsonrpcMessage("2.0", "6", "test", params);
+      return jsonRpcMsg;
+    };
+
+    const generateJsonRpcBatchMsg = (jsonRpcMessage: JsonrpcMessage) => {
+      const jsonRpcBatchMsg = new JsonrpcBatchMessage();
+      jsonRpcBatchMsg.batch = [jsonRpcMessage];
+      return jsonRpcBatchMsg;
+    };
+
+    const validJsonRpcMsg = [
+      generateJsonRpcMsg({ key: "value" }),
+      generateJsonRpcMsg([{ key: "value" }]),
+      generateJsonRpcMsg([]),
+      generateJsonRpcMsg(undefined),
+      generateJsonRpcMsg(null),
+    ];
+
+    const invalidJsonRpcMsgs = [
+      generateJsonRpcMsg("params"),
+      generateJsonRpcMsg(66),
+    ];
+
+    for (const jsonRpcMsg of validJsonRpcMsg) {
+      const batch = newBatchMessage([jsonRpcMsg]);
+      expect(batch).toBeInstanceOf(JsonrpcBatchMessage);
+      expect(batch).toStrictEqual(generateJsonRpcBatchMsg(jsonRpcMsg));
+    }
+
+    for (const jsonRpcMsg of invalidJsonRpcMsgs) {
+      const batch = newBatchMessage([jsonRpcMsg]);
+      expect(batch).toBeInstanceOf(Error);
     }
   });
 });
