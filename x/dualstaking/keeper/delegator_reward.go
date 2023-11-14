@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
@@ -166,6 +167,14 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		return math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 
+	// make sure this is post boost when rewards pool is introduced
+	contributorAddress, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
+	if contributorPart > 0 {
+		contributorReward := totalReward.MulRaw(int64(contributorPart * spectypes.ContributorPrecision)).QuoRaw(spectypes.ContributorPrecision)
+		totalReward = totalReward.Sub(contributorReward)
+		k.PayContributor(ctx, contributorAddress, contributorReward, chainID)
+	}
+
 	relevantDelegations := slices.Filter(delegations,
 		func(d types.Delegation) bool { return d.ChainID == chainID })
 
@@ -216,4 +225,15 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 	}
 
 	return delegatorsReward.Sub(usedDelegatorRewards)
+}
+
+func (k Keeper) PayContributor(ctx sdk.Context, contributorAddress sdk.AccAddress, contributorReward math.Int, specId string) {
+	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, contributorReward)}
+	k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
+	details := map[string]string{
+		"address":     contributorAddress.String(),
+		"rewardCoins": rewardCoins.String(),
+		"specId":      specId,
+	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributor rewards given")
 }

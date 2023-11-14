@@ -22,7 +22,7 @@ message Spec {
   int64 allowed_block_lag_for_qos_sync = 10;
   uint64 block_last_updated = 11;
   cosmos.base.v1beta1.Coin min_stake_provider = 12[(gogoproto.nullable) = false];
-  cosmos.base.v1beta1.Coin min_stake_client = 13[(gogoproto.nullable) = false];
+  reserved 13;
   
   enum ProvidersTypes {
     dynamic = 0;
@@ -32,4 +32,6 @@ message Spec {
   ProvidersTypes providers_types = 14;
   repeated string imports = 15;
   repeated ApiCollection api_collections = 16;
+  string contributor =17;
+  float contributor_percentage=18;
 }

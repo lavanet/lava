@@ -314,3 +314,19 @@ func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock
 	}
 	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.BlockDistanceForFinalizedData)
 }
+
+func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contributor sdk.AccAddress, percentage float32) {
+	spec, found := k.GetSpec(ctx, chainId)
+	if !found {
+		return nil, 0
+	}
+	if spec.Contributor == "" || spec.ContributorPercentage == 0 {
+		return nil, 0
+	}
+	contributorAddr, err := sdk.AccAddressFromBech32(spec.Contributor)
+	if err != nil {
+		utils.LavaFormatError("invalid contributor address", err)
+		return nil, 0
+	}
+	return contributorAddr, spec.ContributorPercentage
+}

@@ -114,10 +114,7 @@ The following example is an OUTDATED spec proposal of Optimism mainnet and testn
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
+
                 "apis": [
                     {
                         "name": "eth_getBlockRange",
