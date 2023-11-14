@@ -27,7 +27,7 @@ type mockEntry1to2 struct {
 }
 
 func mockGetStaleBlock(ctx sdk.Context) uint64 {
-	return 1500
+	return 1440
 }
 
 func TestMigrate1to2(t *testing.T) {

@@ -412,7 +412,7 @@ func New(
 	app.TimerStoreKeeper = timerstore.NewKeeper(appCodec)
 
 	// fixation store keeper
-	app.FixationStoreKeeper = fixationstore.NewKeeper(appCodec, app.TimerStoreKeeper, app.EpochstorageKeeper.EpochsToSaveRaw)
+	app.FixationStoreKeeper = fixationstore.NewKeeper(appCodec, app.TimerStoreKeeper, app.EpochstorageKeeper.BlocksToSaveRaw)
 
 	// Initialize SpecKeeper prior to govRouter (order is critical)
 	app.SpecKeeper = *specmodulekeeper.NewKeeper(
