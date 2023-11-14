@@ -9,6 +9,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -34,6 +35,7 @@ type ProviderOptimizer interface {
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
 	GetExcellenceQoSReportForProvider(string) *pairingtypes.QualityOfServiceReport
+	Strategy() provideroptimizer.Strategy
 }
 
 type ignoredProviders struct {

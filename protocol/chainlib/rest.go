@@ -123,8 +123,8 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	return nodeMsg, nil
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  serviceApi,
 		apiCollection:        apiCollection,
 		msg:                  restMessage,
@@ -277,7 +277,9 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
-
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -327,10 +329,12 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
-
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -375,6 +379,7 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 
 type RestChainProxy struct {
 	BaseChainProxy
+	httpClient *http.Client
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -394,9 +399,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
-	httpClient := http.Client{
-		Timeout: common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits),
+	if rcp.httpClient == nil {
+		rcp.httpClient = &http.Client{
+			Timeout: 5 * time.Minute, // we are doing a timeout by request
+		}
 	}
+	httpClient := rcp.httpClient
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
@@ -410,7 +418,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
-	url := rcp.NodeUrl.Url + nodeMessage.Path
+	urlPath := rcp.NodeUrl.Url + nodeMessage.Path
 
 	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -421,7 +429,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(urlPath), msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}

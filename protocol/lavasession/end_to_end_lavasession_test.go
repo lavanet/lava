@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +28,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 	successfulRelays++
 
 	for i := 0; i < len(consumerVirtualEpochs); i++ {
-		css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, consumerVirtualEpochs[i]) // get a session
+		css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, common.NOSTATE, consumerVirtualEpochs[i]) // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css {
@@ -91,7 +92,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 	csm, psm, ctx := prepareSessionsWithFirstRelay(t, maxCuForVirtualEpoch)
 
-	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, virtualEpoch) // get a session
+	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, common.NOSTATE, virtualEpoch) // get a session
 	require.Nil(t, err)
 
 	for _, cs := range css {
@@ -156,7 +157,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
 	require.Nil(t, err)
 
 	for _, cs := range css {

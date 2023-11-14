@@ -483,3 +483,7 @@ func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {
 	integerNum := int64(math.Round(floatNum * math.Pow(10, float64(precision))))
 	return sdk.NewDecWithPrec(integerNum, precision)
 }
+
+func (po *ProviderOptimizer) Strategy() Strategy {
+	return po.strategy
+}

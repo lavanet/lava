@@ -557,12 +557,29 @@ func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, bl
 	return ts.Keepers.Pairing.VerifyPairing(ts.GoCtx, msg)
 }
 
-// QueryPairingMonthlyPayout implements 'q pairing verfy-pairing'
-func (ts *Tester) QueryPairingMonthlyPayout(provider string) (*pairingtypes.QueryMonthlyPayoutResponse, error) {
-	msg := &pairingtypes.QueryMonthlyPayoutRequest{
+// QueryPairingEffectivePolicy implements 'q pairing effective-policy'
+func (ts *Tester) QueryPairingEffectivePolicy(chainID, consumer string) (*pairingtypes.QueryEffectivePolicyResponse, error) {
+	msg := &pairingtypes.QueryEffectivePolicyRequest{
+		SpecID:   chainID,
+		Consumer: consumer,
+	}
+	return ts.Keepers.Pairing.EffectivePolicy(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderMonthlyPayout implements 'q pairing provider-monthly-payout'
+func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingtypes.QueryProviderMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QueryProviderMonthlyPayoutRequest{
 		Provider: provider,
 	}
-	return ts.Keepers.Pairing.MonthlyPayout(ts.GoCtx, msg)
+	return ts.Keepers.Pairing.ProviderMonthlyPayout(ts.GoCtx, msg)
+}
+
+// QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'
+func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairingtypes.QuerySubscriptionMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QuerySubscriptionMonthlyPayoutRequest{
+		Consumer: consumer,
+	}
+	return ts.Keepers.Pairing.SubscriptionMonthlyPayout(ts.GoCtx, msg)
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
