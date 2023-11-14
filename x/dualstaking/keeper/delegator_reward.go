@@ -172,7 +172,9 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	if contributorPart > 0 {
 		contributorReward := totalReward.MulRaw(int64(contributorPart * spectypes.ContributorPrecision)).QuoRaw(spectypes.ContributorPrecision)
 		totalReward = totalReward.Sub(contributorReward)
-		k.PayContributor(ctx, contributorAddress, contributorReward, chainID)
+		if !calcOnly {
+			k.PayContributor(ctx, contributorAddress, contributorReward, chainID)
+		}
 	}
 
 	relevantDelegations := slices.Filter(delegations,

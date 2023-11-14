@@ -47,7 +47,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 	}
 
-	if spec.ContributorPercentage > 0.8 || spec.ContributorPercentage < 1.0/ContributorPrecision {
+	if spec.ContributorPercentage > 0.8 || (spec.ContributorPercentage < 1.0/ContributorPrecision && spec.ContributorPercentage != 0) {
 		return details, fmt.Errorf("spec contributor percentage must be in the range [%f - 0.8]", 1.0/ContributorPrecision)
 	}
 

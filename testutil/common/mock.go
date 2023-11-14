@@ -16,7 +16,6 @@ func CreateMockSpec() spectypes.Spec {
 	spec.ReliabilityThreshold = 4294967295
 	spec.BlockDistanceForFinalizedData = 0
 	spec.DataReliabilityEnabled = true
-	spec.MinStakeClient = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(100))
 	spec.MinStakeProvider = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1000))
 	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: "stub", Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
 	spec.BlockDistanceForFinalizedData = 0
