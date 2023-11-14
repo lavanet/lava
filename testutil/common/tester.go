@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -510,6 +511,12 @@ func (ts *Tester) QuerySubscriptionListProjects(subkey string) (*subscriptiontyp
 	return ts.Keepers.Subscription.ListProjects(ts.GoCtx, msg)
 }
 
+// QuerySubscriptionNextToMonthExpiry: implement 'q subscription next-to-month-expiry'
+func (ts *Tester) QuerySubscriptionNextToMonthExpiry() (*subscriptiontypes.QueryNextToMonthExpiryResponse, error) {
+	msg := &subscriptiontypes.QueryNextToMonthExpiryRequest{}
+	return ts.Keepers.Subscription.NextToMonthExpiry(ts.GoCtx, msg)
+}
+
 // QueryProjectInfo implements 'q project info'
 func (ts *Tester) QueryProjectInfo(projectID string) (*projectstypes.QueryInfoResponse, error) {
 	msg := &projectstypes.QueryInfoRequest{Project: projectID}
@@ -721,6 +728,7 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
 		next = subscriptionkeeper.NextMonth(next)
+		fmt.Printf("next: %v\n", next.Unix())
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
 			delta -= 5 * time.Second
