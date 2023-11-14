@@ -9,33 +9,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: "0"
+
       - uses: actions/setup-go@v3
         with:
           go-version: 1.20.5
-
-      # Setup Paths
-      - name: home
-        run: pwd && ls -l
-      - name: ls usr
-        run: ls -l /home/runner/work/lava/lava
-      - name: cp lava
-        run: cp -r ~/work/lava/lava ~/go/lava
-      - name: export PATH
-        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
-      # - name: export
-      #   run: export PATH=$PATH:/go/lava
-      - name: export GOPATH
-        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-      - name: export LAVA
-        run: export LAVA=/home/runner/work/lava/lava
-      - name: go env
-        run: go env
-      - name: pwd
-        run: pwd
-      - name: tree
-        run: tree
-      - name: ls -l
-        run: ls -l
 
       ######################################################
       ### Run Lava Protocol E2E Tests
@@ -124,30 +101,6 @@ jobs:
         with:
           go-version: "1.20.5"
 
-      # Setup Paths
-      - name: home
-        run: pwd && ls -l
-      - name: ls usr
-        run: ls -l /home/runner/work/lava/lava
-      - name: cp lava
-        run: cp -r ~/work/lava/lava ~/go/lava
-      - name: export PATH
-        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
-      # - name: export
-      #   run: export PATH=$PATH:/go/lava
-      - name: export GOPATH
-        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-      - name: export LAVA
-        run: export LAVA=/home/runner/work/lava/lava
-      - name: go env
-        run: go env
-      - name: pwd
-        run: pwd
-      - name: tree
-        run: tree
-      - name: ls -l
-        run: ls -l
-
       # Install Node.js
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
@@ -187,9 +140,8 @@ jobs:
         run: yarn; yarn e2e-setup
         working-directory: ./ecosystem/lavajs
 
-      # - name: Setup test environment
-      #   run: yarn add --save-dev @types/node
-      #   working-directory: ./testutil/e2e/sdk/tests
+      - name: Setup test environment
+        run: yarn add --dev @types/node
 
       ######################################################
       ### Run Lava SDK E2E Tests
@@ -267,30 +219,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.20.5
-
-      # Setup Paths
-      - name: home
-        run: pwd && ls -l
-      - name: ls usr
-        run: ls -l /home/runner/work/lava/lava
-      - name: cp lava
-        run: cp -r ~/work/lava/lava ~/go/lava
-      - name: export PATH
-        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
-      # - name: export
-      #   run: export PATH=$PATH:/go/lava
-      - name: export GOPATH
-        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-      - name: export LAVA
-        run: export LAVA=/home/runner/work/lava/lava
-      - name: go env
-        run: go env
-      - name: pwd
-        run: pwd
-      - name: tree
-        run: tree
-      - name: ls -l
-        run: ls -l
 
       ######################################################
       ### Run Lava Protocol Payment E2E Tests
