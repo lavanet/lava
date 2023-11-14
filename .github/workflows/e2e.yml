@@ -141,7 +141,7 @@ jobs:
         working-directory: ./ecosystem/lavajs
 
       - name: Setup test environment
-        run: yarn add --dev @types/node
+        run: npm init --yes; npm install --save-dev @types/node
 
       ######################################################
       ### Run Lava SDK E2E Tests
