@@ -134,12 +134,6 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("Error initiating state tracker", err)
 	}
-	stateTracker.RegisterForEpochUpdates(ctx, server)
-	stateTracker.RegisterForEpochUpdates(ctx, stateTracker.EmergencyTracker)
-	err = stateTracker.RegisterForDowntimeParamsUpdates(ctx, stateTracker.EmergencyTracker)
-	if err != nil {
-		utils.LavaFormatFatal("Error failed to register for downtime params updates", err)
-	}
 	// setting stateTracker in server so we can register for spec updates.
 	server.InitializeStateTracker(stateTracker)
 

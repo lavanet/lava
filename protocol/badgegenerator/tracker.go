@@ -48,6 +48,17 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, AddBlockDelayForEpochUpdaterBadgeServer)
 }
 
+func (st *BadgeStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+	// register for spec updates sets spec and updates when a spec has been modified
+	specUpdater := statetracker.NewSpecUpdater(endpoint.ChainID, st.stateQuery, st.EventTracker)
+	specUpdaterRaw := st.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater, ok := specUpdaterRaw.(*statetracker.SpecUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
+	}
+	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
+}
+
 func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error {
 	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
 	downtimeParamsUpdater := statetracker.NewDowntimeParamsUpdater(st.stateQuery, st.EventTracker)
@@ -58,15 +69,4 @@ func (st *BadgeStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Contex
 	}
 
 	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
-}
-
-func (st *BadgeStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
-	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := statetracker.NewSpecUpdater(endpoint.ChainID, st.stateQuery, st.EventTracker)
-	specUpdaterRaw := st.StateTracker.RegisterForUpdates(ctx, specUpdater)
-	specUpdater, ok := specUpdaterRaw.(*statetracker.SpecUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
-	}
-	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
