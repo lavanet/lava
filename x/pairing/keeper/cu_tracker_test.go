@@ -467,7 +467,8 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	spec1.Index = spec1Name
 	spec1.Name = spec1Name
 	contributorAccount, contributorAddress := ts.AddAccount("contributor", 0, 0)
-	spec1.Contributor = []string{contributorAddress}
+	contributorAccount2, contributorAddress2 := ts.AddAccount("contributor2", 0, 0)
+	spec1.Contributor = []string{contributorAddress, contributorAddress2}
 	spec1.ContributorPercentage = 0.5 // half the rewards
 	ts.AddSpec(spec1Name, spec1)
 	err := ts.StakeProvider(provider, spec1, testStake)
@@ -506,11 +507,11 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 
 	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
 	// for planPrice=100, expected monthly payout is 50 (spec1 with contributor) + 33 (normal spec no contributor)
-	expectedContributorPay := uint64(25) // half the plan payment for spec1
-	expectedTotalPayout := uint64(83) - expectedContributorPay
+	expectedContributorPay := uint64(12) // half the plan payment for spec1:25 then divided between contributors half half rounded down
+	expectedTotalPayout := uint64(83) - expectedContributorPay*2
 	expectedPayouts := []types.SubscriptionPayout{
 		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 25}, // 50 - 25 for contributor
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26}, // 50 - 26 for contributors (each contributor gets 12)
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.Nil(t, err)
@@ -557,6 +558,9 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
 
 	balance = ts.GetBalance(contributorAccount.Addr)
+	require.Equal(t, expectedContributorPay, uint64(balance))
+
+	balance = ts.GetBalance(contributorAccount2.Addr)
 	require.Equal(t, expectedContributorPay, uint64(balance))
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider

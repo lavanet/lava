@@ -172,7 +172,10 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
 	if contributorPart > 0 {
+		contributorsNum := int64(len(contributorAddresses))
 		contributorReward := totalReward.MulRaw(int64(contributorPart * spectypes.ContributorPrecision)).QuoRaw(spectypes.ContributorPrecision)
+		// make sure to round it down for the integers division
+		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
 		totalReward = totalReward.Sub(contributorReward)
 		if !calcOnly {
 			err = k.PayContributors(ctx, contributorAddresses, contributorReward, chainID)
@@ -243,7 +246,6 @@ func (k Keeper) PayContributors(ctx sdk.Context, contributorAddresses []sdk.AccA
 	rewardPerContributor := contributorReward.QuoRaw(int64(len(contributorAddresses)))
 	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, rewardPerContributor)}
 	details := map[string]string{
-
 		"rewardCoins": rewardCoins.String(),
 		"specId":      specId,
 	}
@@ -256,6 +258,11 @@ func (k Keeper) PayContributors(ctx sdk.Context, contributorAddresses []sdk.AccA
 		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
 		k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributor rewards given")
+	}
+	if leftRewards.GT(math.ZeroInt()) {
+		utils.LavaFormatError("leftover rewards", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
+		// we don;t want to bail on this
+		return nil
 	}
 	return nil
 }
