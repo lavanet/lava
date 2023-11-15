@@ -80,8 +80,8 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
-	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry)
+func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegations []types.Delegation) (providerReward math.Int, delegatorsReward math.Int) {
+	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
 	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
 	rawDelegatorsReward := totalReward.Mul(effectiveDelegations).Quo(effectiveStake)
@@ -94,8 +94,13 @@ func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward
 // CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
 // effectiveDelegations = min(totalDelegations, delegateLimit)
 // effectiveStake = effectiveDelegations + providerStake
-func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int) {
-	effectiveDelegationsInt64 := math.Min(stakeEntry.DelegateTotal.Amount.Int64(), stakeEntry.DelegateLimit.Amount.Int64())
+func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry, delegations []types.Delegation) (effectiveDelegations math.Int, effectiveStake math.Int) {
+	var totalDelegations int64
+	for _, d := range delegations {
+		totalDelegations += d.Amount.Amount.Int64()
+	}
+
+	effectiveDelegationsInt64 := math.Min(totalDelegations, stakeEntry.DelegateLimit.Amount.Int64())
 	effectiveDelegations = math.NewInt(effectiveDelegationsInt64)
 	return effectiveDelegations, effectiveDelegations.Add(stakeEntry.Stake.Amount)
 }
@@ -148,7 +153,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool) (providerReward math.Int, err error) {
 	block := uint64(ctx.BlockHeight())
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
@@ -167,14 +172,16 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	}
 
 	relevantDelegations := slices.Filter(delegations,
-		func(d types.Delegation) bool { return d.ChainID == chainID })
+		func(d types.Delegation) bool {
+			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix())
+		})
 
-	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
+	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward, relevantDelegations)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward, calcOnly)
+	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards)
 
-	if !calcOnly {
+	if !calcOnlyProvider {
 		if fullProviderReward.GT(math.ZeroInt()) {
 			fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, fullProviderReward)}
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, providerAddr, fullProviderRewardCoins)

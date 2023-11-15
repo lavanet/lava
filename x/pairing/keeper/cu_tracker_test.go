@@ -380,6 +380,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
+	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
 
 	// send two relay payments in spec and spec1
 	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
