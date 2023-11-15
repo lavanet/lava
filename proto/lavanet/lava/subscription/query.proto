@@ -88,7 +88,6 @@ message QueryNextToMonthExpiryRequest {
 message TimerExpiryInfo {
   string consumer = 1;
   uint64 month_expiry = 2; // upcoming expiry (of current month) in unix time
-  uint64 time_left = 3; // time left in seconds (calculated with month_expiry-current_time)
 }
 
 message QueryNextToMonthExpiryResponse {

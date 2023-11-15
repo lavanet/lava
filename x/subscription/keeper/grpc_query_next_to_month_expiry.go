@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
@@ -23,21 +22,18 @@ func (k Keeper) NextToMonthExpiry(goCtx context.Context, req *types.QueryNextToM
 		return &types.QueryNextToMonthExpiryResponse{}, nil
 	}
 
-	currentTime := uint64(time.Now().Unix())
-
 	subs := []types.TimerExpiryInfo{}
 	for i := range subAddrs {
 		addr := string(subAddrs[i])
-		subs = append(subs, createTimerInfo(addr, expiries[i], currentTime))
+		subs = append(subs, createTimerInfo(addr, expiries[i]))
 	}
 
 	return &types.QueryNextToMonthExpiryResponse{Subscriptions: subs}, nil
 }
 
-func createTimerInfo(sub string, expiry uint64, currentTime uint64) types.TimerExpiryInfo {
+func createTimerInfo(sub string, expiry uint64) types.TimerExpiryInfo {
 	return types.TimerExpiryInfo{
 		Consumer:    sub,
 		MonthExpiry: expiry,
-		TimeLeft:    expiry - currentTime,
 	}
 }
