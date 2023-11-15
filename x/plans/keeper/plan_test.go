@@ -266,6 +266,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	ts.Keepers.Plans.PutPlan(ts.Ctx, plans[1].Index, plans[1].Block)
 
 	ts.AdvanceEpochUntilStale()
+	ts.AdvanceBlock()
 
 	// check that the old plans were removed
 	_, found = ts.FindPlan(plans[0].Index, plans[0].Block)
@@ -320,6 +321,7 @@ func TestAddAndDelete(t *testing.T) {
 
 	// advance epoch until the plan becomes stale
 	ts.AdvanceEpochUntilStale()
+	ts.AdvanceBlock()
 
 	_, found = ts.FindPlan(index, block1)
 	require.False(t, found)

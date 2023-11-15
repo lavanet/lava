@@ -707,7 +707,7 @@ func (ts *Tester) AdvanceBlockUntilStale(delta ...time.Duration) *Tester {
 }
 
 func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
-	block := ts.BlockHeight() + ts.BlocksToSave() + 1
+	block := ts.BlockHeight() + ts.BlocksToSave()
 	for block > ts.BlockHeight() {
 		ts.AdvanceEpoch()
 	}
