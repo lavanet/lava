@@ -2077,25 +2077,6 @@
                         },
                         "apis": [
                             {
-                                "name": "/txs",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 1,
-                                    "hanging_api": true
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
                                 "name": "/cosmos/tx/v1beta1/decode",
                                 "block_parsing": {
                                     "parser_arg": [

@@ -107,7 +107,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// check that there are two delegators
 			res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 			require.Nil(t, err)
-			require.Equal(t, 2, len(res.Delegations))
+			require.Equal(t, 3, len(res.Delegations))
 
 			// calc useful consts
 			totalReward := sdk.NewDec(int64(relayCuSum))
@@ -211,7 +211,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 2, len(res.Delegations))
+	require.Equal(t, 3, len(res.Delegations))
 
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
@@ -256,7 +256,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
+	require.Equal(t, 2, len(res.Delegations))
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	totalReward := math.NewInt(int64(relayCuSum))
