@@ -1,5 +1,5 @@
 package types
 
 const (
-	MODULE_NAME string = "common"
+	MODULE_NAME string = "fixationstore"
 )
