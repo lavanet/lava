@@ -170,7 +170,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
 		}
 	}
-	var nodeMsg *parsedMessage
+	var nodeMsg *baseChainMessageContainer
 	if len(msgs) == 1 {
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &msgs[0], apiCollection)
 	} else {
@@ -183,12 +183,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	return nodeMsg, nil
 }
 
-func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
+func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
 	}
-	nodeMsg := &parsedMessage{
+	nodeMsg := &baseChainMessageContainer{
 		api:                    serviceApi,
 		apiCollection:          apiCollection,
 		latestRequestedBlock:   requestedBlock,
@@ -198,8 +198,8 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 	return nodeMsg, err
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  serviceApi,
 		apiCollection:        apiCollection,
 		latestRequestedBlock: requestedBlock,
@@ -404,7 +404,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, nil)
 		reply := relayResult.GetReply()
-
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response

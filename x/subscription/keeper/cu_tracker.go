@@ -166,7 +166,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 		// TODO: deal with the reward's remainder (uint division...)
 
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)

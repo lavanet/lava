@@ -1,0 +1,19 @@
+syntax = "proto3";
+package lavanet.lava.timerstore;
+
+option go_package = "github.com/lavanet/lava/x/timerstore/types";
+import "gogoproto/gogo.proto"; 
+
+message GenesisState {
+    uint64 version = 1;
+    uint64 next_block_height = 2;
+    uint64 next_block_time = 3;
+    repeated GenesisTimerEntry time_entries = 4 [(gogoproto.nullable) = false];
+    repeated GenesisTimerEntry block_entries = 5 [(gogoproto.nullable) = false];
+}
+
+message GenesisTimerEntry {
+    string key = 1; // user defined key
+    uint64 value = 2; // block height/timestamp
+    bytes data = 3; // user defined data
+}

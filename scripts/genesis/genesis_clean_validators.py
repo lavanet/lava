@@ -6,7 +6,8 @@ genesis_org = 'genesis_specs.json'
 genesis = 'genesis.json'
 
 distributionModule = "lava@1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8l8newj"
-bondedPool = "lava@1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3dr7276"
+bondedPool    = "lava@1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3dr7276"
+notbondedpool = "lava@1tygms3xhhs3yv487phx3dw4a95jn7t7lerzmgw"
 
 # Load the JSON file
 with open(path + genesis_org, 'r') as file:
@@ -30,11 +31,15 @@ data['app_state']["ibc"]["client_genesis"]["clients"] = []
 data['app_state']["ibc"]["client_genesis"]["clients_consensus"] = []
 data['app_state']["ibc"]["client_genesis"]["clients_metadata"] = []
 
+data['app_state']["ibc"]["connection_genesis"]["connections"] = []
+
 data["app_state"]["gov"]["proposals"] = []
 data["validators"] = []
 data["app_state"]["staking"]["last_validator_powers"] = "0"
 data["app_state"]["staking"]["validators"] = []
 data["app_state"]["staking"]["delegations"] = []
+data["app_state"]["staking"]["redelegations"] = []
+data["app_state"]["staking"]["unbonding_delegations"] = []
 data["app_state"]["staking"]["last_validator_powers"] = []
 
 data["app_state"]["distribution"]["delegator_starting_infos"] = []
@@ -61,11 +66,10 @@ for bankAdd in data["app_state"]["bank"]["balances"]:
         
 
 for bankAdd in data["app_state"]["bank"]["balances"]:
-        if bankAdd["address"] == bondedPool:
+        if bankAdd["address"] == bondedPool or bankAdd["address"] == notbondedpool:
             bankAdd["coins"] = []
-            break
+            
 
 # Save the changes back to the JSON file
 with open(path + genesis, 'w') as file:
     json.dump(data, file, indent=4)
-

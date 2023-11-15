@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayoutRequest) (*types.QueryMonthlyPayoutResponse, error) {
+func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryProviderMonthlyPayoutRequest) (*types.QueryProviderMonthlyPayoutResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -26,10 +26,11 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var amount uint64
+	var total uint64
 
 	subs := k.subscriptionKeeper.GetAllSubscriptionsIndices(ctx)
 
+	var details []*types.SubscriptionPayout
 	for _, sub := range subs {
 		trackedCuInds := k.subscriptionKeeper.GetAllSubTrackedCuIndices(ctx, subsciptiontypes.CuTrackerKey(sub, req.Provider, ""))
 
@@ -68,9 +69,14 @@ func (k Keeper) MonthlyPayout(goCtx context.Context, req *types.QueryMonthlyPayo
 				return nil, err
 			}
 
-			amount += providerReward.Uint64()
+			details = append(details, &types.SubscriptionPayout{
+				Subscription: sub,
+				ChainId:      chainID,
+				Amount:       providerReward.Uint64(),
+			})
+			total += providerReward.Uint64()
 		}
 	}
 
-	return &types.QueryMonthlyPayoutResponse{Amount: amount}, nil
+	return &types.QueryProviderMonthlyPayoutResponse{Total: total, Details: details}, nil
 }
