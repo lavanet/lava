@@ -32,6 +32,6 @@ message Spec {
   ProvidersTypes providers_types = 14;
   repeated string imports = 15;
   repeated ApiCollection api_collections = 16;
-  string contributor =17;
+  repeated string contributor =17;
   float contributor_percentage=18;
 }

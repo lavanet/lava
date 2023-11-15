@@ -42,7 +42,7 @@ type EpochstorageKeeper interface {
 
 type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (active bool, found bool, providerType spectypes.Spec_ProvidersTypes)
-	GetContributorReward(ctx sdk.Context, chainId string) (contributor sdk.AccAddress, percentage float32)
+	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage float32)
 }
 
 type StakingKeeper interface {

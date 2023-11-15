@@ -40,10 +40,12 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	if spec.ReliabilityThreshold == 0 {
 		return details, fmt.Errorf("ReliabilityThreshold can't be zero")
 	}
-	if spec.Contributor != "" {
-		_, err := sdk.AccAddressFromBech32(spec.Contributor)
-		if err != nil {
-			return details, fmt.Errorf("spec contributor is not a valid account address %s", spec.Contributor)
+	if len(spec.Contributor) > 0 {
+		for _, contributorAddr := range spec.Contributor {
+			_, err := sdk.AccAddressFromBech32(contributorAddr)
+			if err != nil {
+				return details, fmt.Errorf("spec contributor is not a valid account address %s in list: %s", contributorAddr, strings.Join(spec.Contributor, ","))
+			}
 		}
 	}
 

@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"strconv"
+
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -168,12 +170,15 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	}
 
 	// make sure this is post boost when rewards pool is introduced
-	contributorAddress, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
+	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
 	if contributorPart > 0 {
 		contributorReward := totalReward.MulRaw(int64(contributorPart * spectypes.ContributorPrecision)).QuoRaw(spectypes.ContributorPrecision)
 		totalReward = totalReward.Sub(contributorReward)
 		if !calcOnly {
-			k.PayContributor(ctx, contributorAddress, contributorReward, chainID)
+			err = k.PayContributors(ctx, contributorAddresses, contributorReward, chainID)
+			if err != nil {
+				return math.ZeroInt(), err
+			}
 		}
 	}
 
@@ -229,13 +234,28 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 	return delegatorsReward.Sub(usedDelegatorRewards)
 }
 
-func (k Keeper) PayContributor(ctx sdk.Context, contributorAddress sdk.AccAddress, contributorReward math.Int, specId string) {
-	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, contributorReward)}
-	k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
+func (k Keeper) PayContributors(ctx sdk.Context, contributorAddresses []sdk.AccAddress, contributorReward math.Int, specId string) error {
+	if len(contributorAddresses) == 0 {
+		// do not return this error since we don;t want to bail
+		utils.LavaFormatError("contributor addresses for pay are empty", nil)
+		return nil
+	}
+	rewardPerContributor := contributorReward.QuoRaw(int64(len(contributorAddresses)))
+	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, rewardPerContributor)}
 	details := map[string]string{
-		"address":     contributorAddress.String(),
+
 		"rewardCoins": rewardCoins.String(),
 		"specId":      specId,
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributor rewards given")
+	leftRewards := contributorReward
+	for i, contributorAddress := range contributorAddresses {
+		details["address."+strconv.Itoa(i)] = contributorAddress.String()
+		if leftRewards.LT(rewardCoins.AmountOf(epochstoragetypes.TokenDenom)) {
+			return utils.LavaFormatError("trying to pay contributors more than their allowed amount", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
+		}
+		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
+		k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributor rewards given")
+	}
+	return nil
 }
