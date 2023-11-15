@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -71,18 +70,6 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) {
 	// this pops all the entries that had their deadline pass
 	k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
-}
-
-func (k Keeper) refundUnstakingProvider(ctx sdk.Context, addr sdk.AccAddress, neededAmount sdk.Coin) error {
-	moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
-	if moduleBalance.IsLT(neededAmount) {
-		return fmt.Errorf("insufficient balance to unstake %s (current balance: %s)", neededAmount, moduleBalance)
-	}
-	err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{neededAmount})
-	if err != nil {
-		return fmt.Errorf("failed to send coins from module to %s: %w", addr, err)
-	}
-	return nil
 }
 
 // NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
