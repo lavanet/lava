@@ -145,13 +145,13 @@ describe("ConsumerSessionManager", () => {
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
 
       let consumerSessions = cm.getSessions(
-          MAX_CU_FOR_VIRTUAL_EPOCH,
-          new Set(),
-          SERVICED_BLOCK_NUMBER,
-          "",
-          [],
-          NOSTATE,
-          0
+        MAX_CU_FOR_VIRTUAL_EPOCH,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -161,40 +161,40 @@ describe("ConsumerSessionManager", () => {
       for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
-            MAX_CU_FOR_VIRTUAL_EPOCH
+          MAX_CU_FOR_VIRTUAL_EPOCH
         );
         cm.onSessionDone(
-            consumerSession.session,
-            SERVICED_BLOCK_NUMBER,
-            MAX_CU_FOR_VIRTUAL_EPOCH,
-            0,
-            consumerSession.session.calculateExpectedLatency(2),
-            SERVICED_BLOCK_NUMBER - 1,
-            NUMBER_OF_PROVIDERS,
-            NUMBER_OF_PROVIDERS,
-            false
+          consumerSession.session,
+          SERVICED_BLOCK_NUMBER,
+          MAX_CU_FOR_VIRTUAL_EPOCH,
+          0,
+          consumerSession.session.calculateExpectedLatency(2),
+          SERVICED_BLOCK_NUMBER - 1,
+          NUMBER_OF_PROVIDERS,
+          NUMBER_OF_PROVIDERS,
+          false
         );
         expect(consumerSession.session.cuSum).toEqual(MAX_CU_FOR_VIRTUAL_EPOCH);
         expect(consumerSession.session.latestRelayCu).toEqual(
-            LATEST_RELAY_CU_AFTER_DONE
+          LATEST_RELAY_CU_AFTER_DONE
         );
         expect(consumerSession.session.relayNum).toEqual(
-            RELAY_NUMBER_AFTER_FIRST_CALL
+          RELAY_NUMBER_AFTER_FIRST_CALL
         );
         expect(consumerSession.session.latestBlock).toEqual(
-            SERVICED_BLOCK_NUMBER
+          SERVICED_BLOCK_NUMBER
         );
       }
 
       //increase virtual epoch
       consumerSessions = cm.getSessions(
-          MAX_CU_FOR_VIRTUAL_EPOCH,
-          new Set(),
-          SERVICED_BLOCK_NUMBER,
-          "",
-          [],
-          NOSTATE,
-          FIRST_VIRTUAL_EPOCH
+        MAX_CU_FOR_VIRTUAL_EPOCH,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        FIRST_VIRTUAL_EPOCH
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -204,30 +204,30 @@ describe("ConsumerSessionManager", () => {
       for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
-            MAX_CU_FOR_VIRTUAL_EPOCH
+          MAX_CU_FOR_VIRTUAL_EPOCH
         );
         cm.onSessionDone(
-            consumerSession.session,
-            SERVICED_BLOCK_NUMBER,
-            MAX_CU_FOR_VIRTUAL_EPOCH,
-            0,
-            consumerSession.session.calculateExpectedLatency(2),
-            SERVICED_BLOCK_NUMBER - 1,
-            NUMBER_OF_PROVIDERS,
-            NUMBER_OF_PROVIDERS,
-            false
+          consumerSession.session,
+          SERVICED_BLOCK_NUMBER,
+          MAX_CU_FOR_VIRTUAL_EPOCH,
+          0,
+          consumerSession.session.calculateExpectedLatency(2),
+          SERVICED_BLOCK_NUMBER - 1,
+          NUMBER_OF_PROVIDERS,
+          NUMBER_OF_PROVIDERS,
+          false
         );
         expect(consumerSession.session.cuSum).toEqual(
-            MAX_CU_FOR_VIRTUAL_EPOCH * (FIRST_VIRTUAL_EPOCH + 1)
+          MAX_CU_FOR_VIRTUAL_EPOCH * (FIRST_VIRTUAL_EPOCH + 1)
         );
         expect(consumerSession.session.latestRelayCu).toEqual(
-            LATEST_RELAY_CU_AFTER_DONE
+          LATEST_RELAY_CU_AFTER_DONE
         );
         expect(consumerSession.session.relayNum).toEqual(
-            RELAY_NUMBER_AFTER_FIRST_CALL + 1
+          RELAY_NUMBER_AFTER_FIRST_CALL + 1
         );
         expect(consumerSession.session.latestBlock).toEqual(
-            SERVICED_BLOCK_NUMBER
+          SERVICED_BLOCK_NUMBER
         );
       }
     });
@@ -238,13 +238,13 @@ describe("ConsumerSessionManager", () => {
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
 
       let consumerSessions = cm.getSessions(
-          MAX_CU_FOR_VIRTUAL_EPOCH,
-          new Set(),
-          SERVICED_BLOCK_NUMBER,
-          "",
-          [],
-          NOSTATE,
-          0
+        MAX_CU_FOR_VIRTUAL_EPOCH,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -254,40 +254,40 @@ describe("ConsumerSessionManager", () => {
       for (const consumerSession of consumerSessions.values()) {
         expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
         expect(consumerSession.session.latestRelayCu).toEqual(
-            MAX_CU_FOR_VIRTUAL_EPOCH
+          MAX_CU_FOR_VIRTUAL_EPOCH
         );
         cm.onSessionDone(
-            consumerSession.session,
-            SERVICED_BLOCK_NUMBER,
-            MAX_CU_FOR_VIRTUAL_EPOCH,
-            0,
-            consumerSession.session.calculateExpectedLatency(2),
-            SERVICED_BLOCK_NUMBER - 1,
-            NUMBER_OF_PROVIDERS,
-            NUMBER_OF_PROVIDERS,
-            false
+          consumerSession.session,
+          SERVICED_BLOCK_NUMBER,
+          MAX_CU_FOR_VIRTUAL_EPOCH,
+          0,
+          consumerSession.session.calculateExpectedLatency(2),
+          SERVICED_BLOCK_NUMBER - 1,
+          NUMBER_OF_PROVIDERS,
+          NUMBER_OF_PROVIDERS,
+          false
         );
         expect(consumerSession.session.cuSum).toEqual(MAX_CU_FOR_VIRTUAL_EPOCH);
         expect(consumerSession.session.latestRelayCu).toEqual(
-            LATEST_RELAY_CU_AFTER_DONE
+          LATEST_RELAY_CU_AFTER_DONE
         );
         expect(consumerSession.session.relayNum).toEqual(
-            RELAY_NUMBER_AFTER_FIRST_CALL
+          RELAY_NUMBER_AFTER_FIRST_CALL
         );
         expect(consumerSession.session.latestBlock).toEqual(
-            SERVICED_BLOCK_NUMBER
+          SERVICED_BLOCK_NUMBER
         );
       }
 
       //increase virtual epoch with more cu than allowed
       consumerSessions = cm.getSessions(
-          MAX_CU_FOR_VIRTUAL_EPOCH * (FIRST_VIRTUAL_EPOCH + 1) + 10,
-          new Set(),
-          SERVICED_BLOCK_NUMBER,
-          "",
-          [],
-          NOSTATE,
-          FIRST_VIRTUAL_EPOCH
+        MAX_CU_FOR_VIRTUAL_EPOCH * (FIRST_VIRTUAL_EPOCH + 1) + 10,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        FIRST_VIRTUAL_EPOCH
       );
       expect(consumerSessions).toBeInstanceOf(Error);
     });
