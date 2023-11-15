@@ -20,7 +20,7 @@ func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal)
 	}
 
 	sub.AutoRenewal = msg.Enable
-	err := k.subsFS.AppendEntry(ctx, msg.Creator, uint64(ctx.BlockHeight()), &sub)
+	err := k.subsFS.AppendEntry(ctx, msg.Creator, sub.Block, &sub)
 	if err != nil {
 		return nil, utils.LavaFormatError("could not change auto-renewal of subscription", err,
 			utils.Attribute{Key: "sub_consumer", Value: msg.Creator},
