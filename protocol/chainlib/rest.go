@@ -123,8 +123,8 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	return nodeMsg, nil
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  serviceApi,
 		apiCollection:        apiCollection,
 		msg:                  restMessage,
@@ -251,18 +251,18 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
-	app.Post("/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 
 		msgSeed := apil.logger.GetMessageSeed()
-		query := "?" + string(c.Request().URI().QueryString())
-		path := "/" + c.Params("*")
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := "/" + fiberCtx.Params("*")
 
-		metadataValues := c.GetReqHeaders()
+		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -270,14 +270,16 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
-		dappID := extractDappIDFromFiberContext(c)
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
-		requestBody := string(c.Body())
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, analytics, restHeaders)
+		requestBody := string(fiberCtx.Body())
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
-
+		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -287,78 +289,80 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 			// Set status to internal error\
 			if relayResult.GetStatusCode() != 0 {
-				c.Status(relayResult.StatusCode)
+				fiberCtx.Status(relayResult.StatusCode)
 			} else {
-				c.Status(fiber.StatusInternalServerError)
+				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(c, reply.GetMetadata(), response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
-			c.Status(relayResult.StatusCode)
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Catch the others
-	app.Use("/*", func(c *fiber.Ctx) error {
+	app.Use("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("rest-http")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
 
-		query := "?" + string(c.Request().URI().QueryString())
-		path := "/" + c.Params("*")
-		dappID := extractDappIDFromFiberContext(c)
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := "/" + fiberCtx.Params("*")
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 
-		metadataValues := c.GetReqHeaders()
+		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
-
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", c.Method(), dappID, analytics, restHeaders)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(analytics, err, c.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("http in/out", true, c.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("http in/out", true, fiberCtx.Method(), path, "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
-				c.Status(relayResult.StatusCode)
+				fiberCtx.Status(relayResult.StatusCode)
 			} else {
-				c.Status(fiber.StatusInternalServerError)
+				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(c, reply.GetMetadata(), response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		if relayResult.GetStatusCode() != 0 {
-			c.Status(relayResult.StatusCode)
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
-		return addHeadersAndSendString(c, reply.GetMetadata(), string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
 	})
 
 	// Go
@@ -375,6 +379,7 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 
 type RestChainProxy struct {
 	BaseChainProxy
+	httpClient *http.Client
 }
 
 func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -394,9 +399,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
-	httpClient := http.Client{
-		Timeout: common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits),
+	if rcp.httpClient == nil {
+		rcp.httpClient = &http.Client{
+			Timeout: 5 * time.Minute, // we are doing a timeout by request
+		}
 	}
+	httpClient := rcp.httpClient
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
@@ -410,7 +418,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	}
 
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
-	url := rcp.NodeUrl.Url + nodeMessage.Path
+	urlPath := rcp.NodeUrl.Url + nodeMessage.Path
 
 	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
 	// check if this API is hanging (waiting for block confirmation)
@@ -421,7 +429,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(url), msgBuffer)
+	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(urlPath), msgBuffer)
 	if err != nil {
 		return nil, "", nil, err
 	}

@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
+	pairingfilters "github.com/lavanet/lava/x/pairing/keeper/filters"
 	"golang.org/x/exp/slices"
 )
 
@@ -146,9 +147,12 @@ func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID strin
 		return make([]string, 0)
 	}
 
+	freezeFilter := pairingfilters.FrozenProvidersFilter{}
+	frozenProviders := freezeFilter.Filter(ctx, *entries, epoch) // bool array -> true == not frozen
+
 	voters := make([]string, 0)
-	for _, entry := range *entries {
-		if !slices.Contains(exemptions, entry.Address) {
+	for i, entry := range *entries {
+		if !slices.Contains(exemptions, entry.Address) && frozenProviders[i] {
 			voters = append(voters, entry.Address)
 		}
 	}

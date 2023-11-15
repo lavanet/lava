@@ -685,14 +685,14 @@ func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex 
 	return types.Entry{}, false
 }
 
-// FindEntry2 returns the entry by index and block without changing the refcount
-func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (uint64, bool) {
+// FindEntryDetailed returns the entry by index, whether it's deleted, and block without changing the refcount
+func (fs *FixationStore) FindEntryDetailed(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) (entryBlock uint64, isDeleted bool, isLatest bool, found bool) {
 	safeIndex, err := types.SanitizeIndex(index)
 	if err != nil {
 		utils.LavaFormatError("FindEntry failed (invalid index)", err,
 			utils.Attribute{Key: "index", Value: index},
 		)
-		return 0, false
+		return 0, false, false, false
 	}
 
 	entry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block)
@@ -705,16 +705,16 @@ func (fs *FixationStore) FindEntry2(ctx sdk.Context, index string, block uint64,
 	// true in this case.
 
 	if !found || entry.IsDeletedBy(block) {
-		return 0, false
+		return 0, false, false, false
 	}
 
 	fs.cdc.MustUnmarshal(entry.GetData(), entryData)
-	return entry.Block, true
+	return entry.Block, entry.IsDeleted(ctx), entry.IsLatest, true
 }
 
 // FindEntry returns the entry by index and block without changing the refcount
 func (fs *FixationStore) FindEntry(ctx sdk.Context, index string, block uint64, entryData codec.ProtoMarshaler) bool {
-	_, found := fs.FindEntry2(ctx, index, block, entryData)
+	_, _, _, found := fs.FindEntryDetailed(ctx, index, block, entryData)
 	return found
 }
 
@@ -1030,15 +1030,17 @@ func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
 
 	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
 		var entries types.GenesisEntries
+		entries.Index = index
 		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
-			utils.LavaFormatPanic("fixation export: unsanitized index", err)
+			utils.LavaFormatPanic("export genesis failed", err)
 		}
-
 		entries.IsLive = fs.isEntryIndexLive(ctx, safeIndex)
 		blocks := fs.GetAllEntryVersions(ctx, index)
 		for _, block := range blocks {
-			entries.Entries = append(entries.Entries, fs.getEntry(ctx, safeIndex, block))
+			entry := fs.getEntry(ctx, safeIndex, block)
+			entry.Index = index
+			entries.Entries = append(entries.Entries, entry)
 		}
 		gs.Entries = append(gs.Entries, entries)
 	}
@@ -1055,27 +1057,23 @@ func DefaultGenesis() *types.GenesisState {
 }
 
 func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
-	// call timer-store's Init (with empty input) to trigger its setVersion() if needed;
-	// the timer-store data is stored in the same namespace/prefix as this fixation store
-	// so the loop below will restore its state too (and overwrite that Init).
-	fs.tstore.Init(ctx, nil)
-
 	// will be overwritten by below if genesis state exists
 	fs.setVersion(ctx, gs.Version)
 
 	for _, entries := range gs.Entries {
 		safeIndex, err := types.SanitizeIndex(entries.Index)
 		if err != nil {
-			utils.LavaFormatPanic("unsafe fixation index in genesis file", err, utils.Attribute{Key: "Index", Value: entries.Index})
+			utils.LavaFormatPanic("cannot import genesis", err)
 		}
-
-		fs.setEntryIndex(ctx, safeIndex, entries.IsLive)
+		entries.Index = string(safeIndex)
+		fs.setEntryIndex(ctx, types.SafeIndex(entries.Index), entries.IsLive)
 
 		for _, entry := range entries.Entries {
-			_, err := types.SanitizeIndex(entry.Index)
+			safeIndex, err := types.SanitizeIndex(entry.Index)
 			if err != nil {
-				utils.LavaFormatPanic("unsafe fixation entry in genesis file", err, utils.Attribute{Key: "Index", Value: entry.Index})
+				utils.LavaFormatPanic("cannot import genesis", err)
 			}
+			entry.Index = string(safeIndex)
 			fs.setEntry(ctx, entry)
 		}
 	}

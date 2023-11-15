@@ -10,6 +10,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/fixationstore/types"
+	timertypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // TimerStore manages timers to efficiently support future timeouts. Timeouts
@@ -125,31 +126,61 @@ func NewTimerStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix s
 	return &tstore
 }
 
-func (tstore *TimerStore) Export(ctx sdk.Context) []types.RawMessage {
-	store := prefix.NewStore(
-		ctx.KVStore(tstore.storeKey),
-		types.KeyPrefix(tstore.prefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-	defer iterator.Close()
-
-	data := []types.RawMessage{}
-	for ; iterator.Valid(); iterator.Next() {
-		data = append(data, types.RawMessage{Key: iterator.Key(), Value: iterator.Value()})
+func DefaultGenesis() *timertypes.GenesisState {
+	return &timertypes.GenesisState{
+		Version:         TimerVersion(),
+		NextBlockHeight: math.MaxUint64,
+		NextBlockTime:   math.MaxUint64,
 	}
-
-	return data
 }
 
-func (tstore *TimerStore) Init(ctx sdk.Context, data []types.RawMessage) {
-	// will be overwritten by below if genesis state exists
-	tstore.setVersion(ctx, TimerVersion())
+func (tstore *TimerStore) Export(ctx sdk.Context) (gs timertypes.GenesisState) {
+	gs.Version = tstore.getVersion(ctx)
+	gs.NextBlockHeight = tstore.getNextTimeoutBlockHeight(ctx)
+	gs.NextBlockTime = tstore.getNextTimeoutBlockTime(ctx)
 
-	store := prefix.NewStore(
-		ctx.KVStore(tstore.storeKey),
-		types.KeyPrefix(tstore.prefix))
+	// get all time timers (measured in block time)
+	store := tstore.getStoreTimer(ctx, types.BlockTime)
 
-	for _, data := range data {
-		store.Set(data.Key, data.Value)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	for ; iterator.Valid(); iterator.Next() {
+		value, key := types.DecodeBlockAndKey(iterator.Key())
+		gs.TimeEntries = append(gs.TimeEntries, timertypes.GenesisTimerEntry{
+			Key:   string(key),
+			Value: value,
+			Data:  iterator.Value(),
+		})
+	}
+	iterator.Close()
+
+	// get all block timers (measured in block height)
+	store = tstore.getStoreTimer(ctx, types.BlockHeight)
+
+	iterator = sdk.KVStorePrefixIterator(store, []byte{})
+	for ; iterator.Valid(); iterator.Next() {
+		value, key := types.DecodeBlockAndKey(iterator.Key())
+		gs.BlockEntries = append(gs.BlockEntries, timertypes.GenesisTimerEntry{
+			Key:   string(key),
+			Value: value,
+			Data:  iterator.Value(),
+		})
+	}
+	iterator.Close()
+
+	return gs
+}
+
+func (tstore *TimerStore) Init(ctx sdk.Context, gs timertypes.GenesisState) {
+	tstore.setVersion(ctx, gs.Version)
+	tstore.setNextTimeout(ctx, types.BlockHeight, gs.NextBlockHeight)
+	tstore.setNextTimeout(ctx, types.BlockTime, gs.NextBlockTime)
+
+	for _, timeEntry := range gs.TimeEntries {
+		tstore.addTimer(ctx, types.BlockTime, timeEntry.Value, []byte(timeEntry.Key), timeEntry.Data)
+	}
+
+	for _, blockEntry := range gs.BlockEntries {
+		tstore.addTimer(ctx, types.BlockHeight, blockEntry.Value, []byte(blockEntry.Key), blockEntry.Data)
 	}
 }
 
@@ -162,7 +193,7 @@ func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
 	// the version would remain uninitialized - and we force-write the current version as
 	// the new key is not found in the store yet.
 	if b == nil {
-		tstore.Init(ctx, nil)
+		tstore.setVersion(ctx, TimerVersion())
 		b = store.Get(types.KeyPrefix(types.TimerVersionKey))
 	}
 	return types.DecodeKey(b)

@@ -25,15 +25,18 @@ func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientC
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed getting status", err)
+		return nil, utils.LavaFormatError("[Lavavisor] failed getting status", err)
 	}
 	if txFactory.ChainID() != status.NodeInfo.Network {
-		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
+		return nil, utils.LavaFormatError("[Lavavisor] Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
 	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 		ChainID: "LAV1",
 	})
+	if err != nil {
+		utils.LavaFormatFatal("blockchain missing LAV1 spec, cant initialize lavavisor", err)
+	}
 	for i := 0; i < statetracker.BlockResultRetry && err != nil; i++ {
 		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 			ChainID: "LAV1",
@@ -83,12 +86,12 @@ func (vu *LavaVisorVersionUpdater) Update() {
 	// fetch updated version from consensus
 	version, err := vu.VersionStateQuery.GetProtocolVersion(context.Background())
 	if err != nil {
-		utils.LavaFormatError("could not get version from node, its possible the node is down", err)
+		utils.LavaFormatError("[Lavavisor] could not get version from node, its possible the node is down", err)
 		return
 	}
 	vu.LastKnownVersion = version
 	err = vu.ValidateProtocolVersion(vu.LastKnownVersion)
 	if err != nil {
-		utils.LavaFormatError("Validate Protocol Version Error", err)
+		utils.LavaFormatError("[Lavavisor] Validate Protocol Version Error", err)
 	}
 }

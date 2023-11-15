@@ -6,12 +6,10 @@ import (
 	"strconv"
 	"time"
 
-	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -199,18 +197,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		coinsPerCu := k.Keeper.MintCoinsPerCU(ctx)
-		reward := coinsPerCu.MulInt64(int64(rewardedCU))
-		if reward.IsZero() {
-			continue
-		}
-
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
+		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
 		details["rewardedCU"] = strconv.FormatUint(relay.CuSum, 10)
 
 		if relay.QosReport != nil {
@@ -226,9 +218,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details["QoSSync"] = relay.QosReport.Sync.String()
 			details["QoSScore"] = QoS.String()
 
-			reward = reward.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
-			rewardCoins = sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.TruncateInt()}}
-			details["rewardedCU"] = strconv.FormatInt(reward.Quo(coinsPerCu).TruncateInt64(), 10)
+			rewardedCUDec = rewardedCUDec.Mul(QoS.Mul(k.QoSWeight(ctx)).Add(sdk.OneDec().Sub(k.QoSWeight(ctx)))) // reward*QOSScore*QOSWeight + reward*(1-QOSWeight) = reward*(QOSScore*QOSWeight + (1-QOSWeight))
 		}
 
 		if relay.QosExcellenceReport != nil {
@@ -241,32 +231,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
-		details["Mint"] = details["BasePay"]
-
-		// Mint to module
-		if !rewardCoins.AmountOf(epochstoragetypes.TokenDenom).IsZero() {
-			err = k.Keeper.bankKeeper.MintCoins(ctx, types.ModuleName, rewardCoins)
-			if err != nil {
-				// panic:ok: mint coins should never fail
-				utils.LavaFormatPanic("critical: failed to mint coins to reward provider", err,
-					utils.Attribute{Key: "provider", Value: providerAddr},
-					utils.Attribute{Key: "reward", Value: rewardCoins},
-				)
-			}
-
-			err = k.distributeRewards(ctx, providerAddr, relay.SpecId, uint64(relay.Epoch), reward.TruncateInt())
-			if err != nil {
-				return nil, utils.LavaFormatError("could not distribute rewards for provider and delegators", err)
-			}
-		}
-
+		details["Mint"] = "0ulava"
 		details["relayNumber"] = strconv.FormatUint(relay.RelayNum, 10)
+		details["rewardedCU"] = strconv.FormatUint(rewardedCU, 10)
 		// differentiate between different relays by providing the index in the keys
 		successDetails := appendRelayPaymentDetailsToEvent(details, uint64(relayIdx))
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
-		err = k.chargeComputeUnitsToProjectAndSubscription(ctx, clientAddr, relay)
+		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
+		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
@@ -277,6 +251,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
 	}
+
 	latestBlockReports := map[string]string{
 		"provider": msg.GetCreator(),
 	}
@@ -351,7 +326,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 	return nil
 }
 
-func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession) error {
+func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession, cuAfterQos uint64) error {
 	epoch := uint64(relay.Epoch)
 
 	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
@@ -364,9 +339,14 @@ func (k Keeper) chargeComputeUnitsToProjectAndSubscription(ctx sdk.Context, clie
 		return fmt.Errorf("failed to add CU to the project")
 	}
 
-	err = k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), epoch, relay.CuSum)
+	sub, err := k.subscriptionKeeper.ChargeComputeUnitsToSubscription(ctx, project.GetSubscription(), epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the subscription")
+	}
+
+	err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, sub.Block)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -379,31 +359,4 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 		to[key+"."+sessionIDStr] = value
 	}
 	return to
-}
-
-// distributeRewards is the main function for reward distribution for providers and delegators
-func (k Keeper) distributeRewards(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, block uint64, totalReward math.Int) error {
-	providerReward, err := k.dualStakingKeeper.CalcProviderRewardWithDelegations(ctx, providerAddr, chainID, block, totalReward)
-	if err != nil {
-		return utils.LavaFormatError(types.ProviderRewardError.Error(), err,
-			utils.Attribute{Key: "provider", Value: providerAddr.String()},
-			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "block", Value: block},
-			utils.Attribute{Key: "totalReward", Value: totalReward},
-		)
-	}
-
-	if providerReward.GT(math.ZeroInt()) {
-		providerRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, providerReward)}
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, providerAddr, providerRewardCoins)
-		if err != nil {
-			// panic:ok: reward transfer should never fail
-			utils.LavaFormatPanic("critical: failed to send reward to provider", err,
-				utils.Attribute{Key: "provider", Value: providerAddr},
-				utils.Attribute{Key: "reward", Value: providerRewardCoins},
-			)
-		}
-	}
-
-	return nil
 }

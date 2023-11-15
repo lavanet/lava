@@ -202,7 +202,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		}
 	}
 
-	var nodeMsg *parsedMessage
+	var nodeMsg *baseChainMessageContainer
 	if len(msgs) == 1 {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
@@ -221,12 +221,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	return nodeMsg, nil
 }
 
-func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*parsedMessage, error) {
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
 	}
-	nodeMsg := &parsedMessage{
+	nodeMsg := &baseChainMessageContainer{
 		api:                    serviceApi,
 		apiCollection:          apiCollection,
 		latestRequestedBlock:   requestedBlock,
@@ -236,8 +236,8 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 	return nodeMsg, err
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  serviceApi,
 		apiCollection:        apiCollection,
 		latestRequestedBlock: requestedBlock,
@@ -337,7 +337,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		}
 		return fiber.ErrUpgradeRequired
 	})
-	webSocketCallback := websocket.New(func(c *websocket.Conn) {
+	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
 		var (
 			mt  int
 			msg []byte
@@ -346,13 +346,13 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		msgSeed := apil.logger.GetMessageSeed()
 		startTime := time.Now()
 		for {
-			if mt, msg, err = c.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+			if mt, msg, err = websocketConn.ReadMessage(); err != nil {
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 				break
 			}
-			dappID, ok := c.Locals("dappId").(string)
+			dappID, ok := websocketConn.Locals("dappId").(string)
 			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -361,12 +361,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, metricsData, nil)
+			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, websocketConn.RemoteAddr().String(), metricsData, nil)
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
-			go apil.logger.AddMetricForWebSocket(metricsData, err, c)
+			go apil.logger.AddMetricForWebSocket(metricsData, err, websocketConn)
 			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 				continue
 			}
 			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
@@ -374,36 +374,36 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 				var reply pairingtypes.RelayReply
 				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 					continue
 				}
 
-				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+				if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 					continue
 				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
+				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 				for {
 					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 						break
 					}
 
 					// If portal cant write to the client
-					if err = c.WriteMessage(mt, reply.Data); err != nil {
+					if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
 						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 						// break
 					}
-					apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
+					apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 				}
 			} else {
-				if err = c.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(c, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
+				if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
+					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 					continue
 				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", c.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
+				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 			}
 		}
 	})
@@ -411,89 +411,93 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	app.Get("/ws", websocketCallbackWithDappID)
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
-	app.Post("/*", func(c *fiber.Ctx) error {
+	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 		msgSeed := apil.logger.GetMessageSeed()
-		dappID := extractDappIDFromFiberContext(c)
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 
-		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: c.Body()}, utils.Attribute{Key: "dappID", Value: dappID})
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(c.Body()), "", dappID, metricsData, nil)
+		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: fiberCtx.Body()}, utils.Attribute{Key: "dappID", Value: dappID})
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, nil)
 		reply := relayResult.GetReply()
-
-		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
+		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", c.Request().URI().String(), string(c.Body()), errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
-				c.Status(relayResult.StatusCode)
+				fiberCtx.Status(relayResult.StatusCode)
 			} else {
-				c.Status(fiber.StatusInternalServerError)
+				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
 			// Construct json response
-			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, c.Body())
+			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, fiberCtx.Body())
 
 			// Return error json response
-			return c.SendString(response)
+			return fiberCtx.SendString(response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", c.Request().URI().String(), string(c.Body()), string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
-			c.Status(relayResult.StatusCode)
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return c.SendString(string(reply.Data))
+		return fiberCtx.SendString(string(reply.Data))
 	})
 
-	app.Get("/*", func(c *fiber.Ctx) error {
+	app.Get("/*", func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
+		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 
 		endTx := apil.logger.LogStartTransaction("tendermint-WebSocket")
 		defer endTx()
 		startTime := time.Now()
-		query := "?" + string(c.Request().URI().QueryString())
-		path := c.Params("*")
-		dappID := extractDappIDFromFiberContext(c)
+		query := "?" + string(fiberCtx.Request().URI().QueryString())
+		path := fiberCtx.Params("*")
+		dappID := extractDappIDFromFiberContext(fiberCtx)
 		msgSeed := apil.logger.GetMessageSeed()
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("urirpc in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: path}, utils.Attribute{Key: "dappID", Value: dappID})
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, metricsData, nil)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, nil)
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, c.GetReqHeaders())
-
+		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		if relayResult.GetProvider() != "" {
+			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
+		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", c.Request().URI().String(), "", errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "GET", fiberCtx.Request().URI().String(), "", errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
-				c.Status(relayResult.StatusCode)
+				fiberCtx.Status(relayResult.StatusCode)
 			} else {
-				c.Status(fiber.StatusInternalServerError)
+				fiberCtx.Status(fiber.StatusInternalServerError)
 			}
 
-			if string(c.Body()) != "" {
+			if string(fiberCtx.Body()) != "" {
 				errMasking = addAttributeToError("recommendation", "For jsonRPC use POST", errMasking)
 			}
 
@@ -501,15 +505,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return c.SendString(response)
+			return fiberCtx.SendString(response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", c.Request().URI().String(), "", string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
-			c.Status(relayResult.StatusCode)
+			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return c.SendString(string(reply.Data))
+		return fiberCtx.SendString(string(reply.Data))
 	})
 	//
 	// Go
@@ -521,6 +525,7 @@ type tendermintRpcChainProxy struct {
 	JrpcChainProxy
 	httpNodeUrl   common.NodeUrl
 	httpConnector *chainproxy.Connector
+	httpClient    *http.Client
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -578,11 +583,12 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		// return an error if the channel is not nil
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil)
 	}
-
-	// create a new http client with a timeout set by the getTimePerCu function
-	httpClient := http.Client{
-		Timeout: common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits),
+	if cp.httpClient == nil {
+		cp.httpClient = &http.Client{
+			Timeout: 5 * time.Minute, // we are doing a timeout by request
+		}
 	}
+	httpClient := cp.httpClient
 
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path

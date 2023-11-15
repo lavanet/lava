@@ -12,7 +12,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 )
 
@@ -154,22 +153,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
-				tmpArg := strings.Fields(args[2])
-				argEndpoints := map[int32]epochstoragetypes.Endpoint{}
-				for _, endpointStr := range tmpArg {
-					splitted := strings.Split(endpointStr, ",")
-					if len(splitted) != 2 {
-						return nil, fmt.Errorf("invalid argument format in endpoints, must be: HOST:PORT,geolocation HOST:PORT,geolocation, received: %s", endpointStr)
-					}
-					geoloc, err := strconv.ParseInt(splitted[1], 10, 64)
-					if err != nil {
-						return nil, fmt.Errorf("invalid argument format in endpoints, geolocation must be a number")
-					}
-					geolocInt32 := int32(geoloc)
-					endpoint := epochstoragetypes.Endpoint{IPPORT: splitted[0], Geolocation: geolocInt32}
-					argEndpoints[geolocInt32] = endpoint
-				}
-				argGeolocation, err := cast.ToInt32E(args[3])
+
+				allEndpoints, argGeolocation, err := HandleEndpointsAndGeolocationArgs(strings.Fields(args[2]), args[3])
 				if err != nil {
 					return nil, err
 				}
@@ -177,13 +162,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 				for _, chainID := range chainIDs {
 					if chainID == "" {
 						continue
-					}
-					allEndpoints := []epochstoragetypes.Endpoint{}
-					for geoloc, endpointForGeoloc := range argEndpoints {
-						endpoints := []epochstoragetypes.Endpoint{
-							{IPPORT: endpointForGeoloc.IPPORT, Geolocation: geoloc},
-						}
-						allEndpoints = append(allEndpoints, endpoints...)
 					}
 
 					msg := types.NewMsgStakeProvider(

@@ -19,7 +19,7 @@ func init() {
 }
 
 func NewPlansAddProposal(title, description string, plans []Plan) *PlansAddProposal {
-	return &PlansAddProposal{title, description, plans}
+	return &PlansAddProposal{title, description, plans, false}
 }
 
 // GetTitle returns the title of a proposal.

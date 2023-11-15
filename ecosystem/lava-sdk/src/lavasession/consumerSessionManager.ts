@@ -7,6 +7,8 @@ import {
   SessionsWithProviderMap,
   SingleConsumerSession,
 } from "./consumerTypes";
+
+import { ProviderOptimizerStrategy } from "../providerOptimizer/providerOptimizer";
 import { newRouterKey } from "./routerKey";
 import {
   AddressIndexWasNotFoundError,
@@ -20,6 +22,7 @@ import {
   SessionIsAlreadyBlockListedError,
 } from "./errors";
 import {
+  GetAllProviders,
   MAX_CONSECUTIVE_CONNECTION_ATTEMPTS,
   MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION,
   RELAY_NUMBER_INCREMENT,
@@ -39,6 +42,7 @@ import {
   ProbeReply,
   ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { CONSISTENCY_SELECT_ALLPROVIDERS } from "../common/common";
 
 export class ConsumerSessionManager {
   private rpcEndpoint: RPCEndpoint;
@@ -217,6 +221,7 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[],
+    stateful: number,
     virtualEpoch: number
   ): ConsumerSessionsMap | Error {
     const numberOfResets = this.validatePairingListNotEmpty(addon, extensions);
@@ -231,6 +236,7 @@ export class ConsumerSessionManager {
       requestedBlock,
       addon,
       extensions,
+      stateful,
       virtualEpoch
     );
     if (sessionWithProvidersMap instanceof Error) {
@@ -360,6 +366,7 @@ export class ConsumerSessionManager {
         requestedBlock,
         addon,
         extensions,
+        stateful,
         virtualEpoch
       );
 
@@ -561,6 +568,7 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[],
+    stateful: number,
     virtualEpoch: number
   ): SessionsWithProviderMap | Error {
     Logger.debug(
@@ -588,7 +596,8 @@ export class ConsumerSessionManager {
       cuNeededForSession,
       requestedBlock,
       addon,
-      extensions
+      extensions,
+      stateful
     );
 
     if (providerAddresses instanceof Error) {
@@ -649,7 +658,8 @@ export class ConsumerSessionManager {
         cuNeededForSession,
         requestedBlock,
         addon,
-        extensions
+        extensions,
+        stateful
       );
 
       if (
@@ -706,7 +716,8 @@ export class ConsumerSessionManager {
     cu: number,
     requestedBlock: number,
     addon: string,
-    extensions: string[]
+    extensions: string[],
+    stateful: number
   ): string[] | Error {
     const ignoredProvidersLength = ignoredProviderList.size;
     const validAddresses = this.getValidAddresses(addon, extensions);
@@ -719,14 +730,21 @@ export class ConsumerSessionManager {
       );
       return new PairingListEmptyError();
     }
-
-    const providers = this.providerOptimizer.chooseProvider(
-      validAddresses,
-      ignoredProviderList,
-      cu,
-      requestedBlock,
-      0
-    );
+    let providers: string[];
+    if (
+      stateful == CONSISTENCY_SELECT_ALLPROVIDERS &&
+      this.providerOptimizer.getStrategy() != ProviderOptimizerStrategy.Cost
+    ) {
+      providers = GetAllProviders(validAddresses, ignoredProviderList);
+    } else {
+      providers = this.providerOptimizer.chooseProvider(
+        validAddresses,
+        ignoredProviderList,
+        cu,
+        requestedBlock,
+        0
+      );
+    }
 
     Logger.debug(
       `choosing provider ${JSON.stringify({

@@ -25,6 +25,7 @@ import {
   QualityOfServiceReport,
   ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { ProviderOptimizerStrategy } from "../providerOptimizer/providerOptimizer";
 
 export interface SessionInfo {
   session: SingleConsumerSession;
@@ -62,6 +63,8 @@ export interface ProviderOptimizer {
   getExcellenceQoSReportForProvider(
     providerAddress: string
   ): QualityOfServiceReport | undefined;
+
+  getStrategy(): ProviderOptimizerStrategy;
 }
 
 export interface QoSReport {

@@ -18,10 +18,11 @@ import (
 // Provider reward formula: reward = reward*(QOSScore*QOSWeight + (1-QOSWeight))
 func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	ts.setupForPayments(2, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, goodProviderAddr := ts.GetAccount(common.PROVIDER, 1)
 
 	// Create badQos: to see the effect of changing QosWeight, the provider need to
 	// provide bad service (here, his score is 0%)
@@ -29,6 +30,11 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 		Latency:      sdk.ZeroDec(),
 		Availability: sdk.ZeroDec(),
 		Sync:         sdk.ZeroDec(),
+	}
+	goodQoS := &pairingtypes.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.OneDec(),
 	}
 
 	// Simulate QosWeight to be 0.5 - the default value at the time of this writing
@@ -61,41 +67,48 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts.AdvanceEpoch()
 	epochQosWeightSeventyPercent := ts.EpochStart()
 
-	tests := []struct {
-		name      string
-		epoch     uint64
-		qosWeight sdk.Dec
-		valid     bool
-	}{
-		// payment collected for an epoch with QosWeight = 0.7
-		{"PaymentSeventyPercentQosEpoch", epochQosWeightSeventyPercent, sdk.NewDecWithPrec(7, 1), true},
-		// payment collected for an epoch with QosWeight = 0.5, provider judged by QosWeight = 0.7
-		{"PaymentFiftyPercentQosEpoch", epochQosWeightFiftyPercent, sdk.NewDecWithPrec(5, 1), false},
+	// send a relay with the good provider
+	relaySessionGood := ts.newRelaySession(goodProviderAddr, 0, 100, epochQosWeightSeventyPercent, 0)
+	relaySessionGood.QosReport = goodQoS
+	sigGood, err := sigs.Sign(client1Acct.SK, *relaySessionGood)
+	require.Nil(t, err)
+	relaySessionGood.Sig = sigGood
+	ts.relayPaymentWithoutPay(pairingtypes.MsgRelayPayment{
+		Creator: goodProviderAddr,
+		Relays:  []*pairingtypes.RelaySession{relaySessionGood},
+	}, true)
+
+	epochs := []uint64{epochQosWeightFiftyPercent, epochQosWeightSeventyPercent}
+	var relays []*pairingtypes.RelaySession
+	for i, epoch := range epochs {
+		relaySession := ts.newRelaySession(providerAddr, uint64(i), 100, epoch, 0)
+		relaySession.QosReport = badQoS
+
+		sig, err := sigs.Sign(client1Acct.SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(t, err)
+
+		relays = append(relays, relaySession)
 	}
 
-	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
-
-	for ti, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create relay request dated to the test's epoch. Change session ID each iteration
-			// to avoid double spending error (provider claims twice for same transaction)
-			relaySession := ts.newRelaySession(providerAddr, uint64(ti), cuSum, tt.epoch, 0)
-			relaySession.QosReport = badQoS
-
-			// Sign and send the payment requests for block 0 tx
-			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
-			relaySession.Sig = sig
-			require.Nil(t, err)
-
-			payment := pairingtypes.MsgRelayPayment{
-				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
-			}
-
-			// Add the relay request to the Relays array (for relayPaymentMessage())
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
-		})
+	relayPayment := pairingtypes.MsgRelayPayment{
+		Creator: providerAddr,
+		Relays:  relays,
 	}
+	ts.relayPaymentWithoutPay(relayPayment, true)
+
+	balance := ts.GetBalance(providerAcct.Addr)
+
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	newBalance := ts.GetBalance(providerAcct.Addr)
+
+	// check that the provider's balance is increased by planPrice * 60 / 160 (both relay with QosWeight=0.7)
+	// and not by planPrice * (30 + 50) / 160 (reward with QosWeight=0.7 and reward with QosWeight=0.5)
+	expectedReward := ts.plan.Price.Amount.Int64() * 60 / 160
+	require.Equal(t, expectedReward, newBalance-balance)
 }
 
 // Test that if the EpochBlocks param decreases the provider can claim reward after the new
@@ -384,7 +397,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// make sure EpochBlocks default value is 20, and EpochsToSave is 10
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
@@ -455,7 +468,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
 	}
 }
@@ -529,7 +542,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 		client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
-		providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+		_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 		epochBlocks := ts.EpochBlocks()
 		epochsToSave := ts.EpochsToSave()
@@ -561,14 +574,14 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 			Relays:  slices.Slice(relaySession),
 		}
 
-		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
+		ts.relayPaymentWithoutPay(payment, true)
 
 		// Advance epoch and verify the relay payment objects
 		ts.AdvanceEpoch()
 		ts.verifyRelayPayment(relaySession, true)
 
 		// try to get payment again - should fail work because of double spend
-		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
+		ts.relayPaymentWithoutPay(payment, false)
 
 		// Advance enough epochs so the chain will forget the relay payment object. Note that
 		// we already advanced one epoch since epochAfterEpochBlocksChanged.
@@ -578,6 +591,15 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		// try to get payment again - should fail (relay payment object should not exist and if
 		// it exists, the code shouldn't allow double spending)
-		ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
+		ts.relayPaymentWithoutPay(payment, false)
 	}
+}
+
+func (ts tester) relayPaymentWithoutPay(relayPayment pairingtypes.MsgRelayPayment, validPayment bool) {
+	_, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
+	if !validPayment {
+		require.NotNil(ts.T, err)
+		return
+	}
+	require.Nil(ts.T, err)
 }

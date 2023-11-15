@@ -15,6 +15,7 @@ message PlansAddProposal {
   string title = 1 [(gogoproto.jsontag) = "title"]; 
   string description = 2 [(gogoproto.jsontag) = "description"]; 
   repeated Plan plans = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "plans"]; 
+  bool modify = 4 [(gogoproto.jsontag) = "modify"]; 
 }
 
 message PlansDelProposal {

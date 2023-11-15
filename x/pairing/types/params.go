@@ -11,11 +11,6 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 var (
-	KeyMintCoinsPerCU             = []byte("MintCoinsPerCU")
-	DefaultMintCoinsPerCU sdk.Dec = sdk.NewDecWithPrec(1, 1) // 0.1
-)
-
-var (
 	KeyFraudStakeSlashingFactor = []byte("FraudStakeSlashingFactor")
 	// TODO: Determine the default value
 	DefaultFraudStakeSlashingFactor sdk.Dec = sdk.NewDecWithPrec(0, 0) // 0
@@ -65,7 +60,6 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(
-	mintCoinsPerCU sdk.Dec,
 	fraudStakeSlashingFactor sdk.Dec,
 	fraudSlashingAmount uint64,
 	epochBlocksOverlap uint64,
@@ -76,7 +70,6 @@ func NewParams(
 	recommendedEpochNumToCollectPayment uint64,
 ) Params {
 	return Params{
-		MintCoinsPerCU:                      mintCoinsPerCU,
 		FraudStakeSlashingFactor:            fraudStakeSlashingFactor,
 		FraudSlashingAmount:                 fraudSlashingAmount,
 		EpochBlocksOverlap:                  epochBlocksOverlap,
@@ -91,7 +84,6 @@ func NewParams(
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
-		DefaultMintCoinsPerCU,
 		DefaultFraudStakeSlashingFactor,
 		DefaultFraudSlashingAmount,
 		DefaultEpochBlocksOverlap,
@@ -106,7 +98,6 @@ func DefaultParams() Params {
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyMintCoinsPerCU, &p.MintCoinsPerCU, validateMintCoinsPerCU),
 		paramtypes.NewParamSetPair(KeyFraudStakeSlashingFactor, &p.FraudStakeSlashingFactor, validateFraudStakeSlashingFactor),
 		paramtypes.NewParamSetPair(KeyFraudSlashingAmount, &p.FraudSlashingAmount, validateFraudSlashingAmount),
 		paramtypes.NewParamSetPair(KeyEpochBlocksOverlap, &p.EpochBlocksOverlap, validateEpochBlocksOverlap),
@@ -120,10 +111,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 
 // Validate validates the set of params
 func (p Params) Validate() error {
-	if err := validateMintCoinsPerCU(p.MintCoinsPerCU); err != nil {
-		return err
-	}
-
 	if err := validateFraudStakeSlashingFactor(p.FraudStakeSlashingFactor); err != nil {
 		return err
 	}
@@ -156,19 +143,6 @@ func (p Params) Validate() error {
 func (p Params) String() string {
 	out, _ := yaml.Marshal(p)
 	return string(out)
-}
-
-// validateMintCoinsPerCU validates the MintCoinsPerCU param
-func validateMintCoinsPerCU(v interface{}) error {
-	mintCoinsPerCU, ok := v.(sdk.Dec)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	// TODO implement validation
-	_ = mintCoinsPerCU
-
-	return nil
 }
 
 // validateBurnCoinsPerCU validates the BurnCoinsPerCU param

@@ -183,8 +183,8 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	return nodeMsg, nil
 }
 
-func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *parsedMessage {
-	nodeMsg := &parsedMessage{
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+	nodeMsg := &baseChainMessageContainer{
 		api:                  api,
 		msg:                  grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
 		latestRequestedBlock: requestedBlock,
@@ -289,7 +289,8 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
-		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, metricsData, grpcHeaders)
+		consumerIp := common.GetIpFromGrpcContext(ctx)
+		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
 		relayReply := relayResult.GetReply()
 		go apil.logger.AddMetricForGrpc(metricsData, err, &metadataValues)
 
@@ -303,10 +304,17 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}
 		unMarshalingError := json.Unmarshal(relayReply.Data, nodeError)
-		if unMarshalingError == nil {
-			return nil, convertRelayMetaDataToMDMetaData(relayReply.Metadata), status.Error(codes.Code(nodeError.ErrorCode), nodeError.ErrorMessage)
+		metadataToReply := relayReply.Metadata
+		if relayResult.GetProvider() != "" {
+			metadataToReply = append(metadataToReply, pairingtypes.Metadata{
+				Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
+				Value: relayResult.GetProvider(),
+			})
 		}
-		return relayReply.Data, convertRelayMetaDataToMDMetaData(relayReply.Metadata), nil
+		if unMarshalingError == nil {
+			return nil, convertRelayMetaDataToMDMetaData(metadataToReply), status.Error(codes.Code(nodeError.ErrorCode), nodeError.ErrorMessage)
+		}
+		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
 	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback)

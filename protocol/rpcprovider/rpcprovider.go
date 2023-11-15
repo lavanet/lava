@@ -41,8 +41,9 @@ const (
 	ChainTrackerDefaultMemory  = 100
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
 
-	ShardIDFlagName      = "shard-id"
-	DefaultShardID  uint = 0
+	ShardIDFlagName           = "shard-id"
+	StickynessHeaderName      = "sticky-header"
+	DefaultShardID       uint = 0
 )
 
 var (
@@ -171,7 +172,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		// try to save disabled endpoints
 		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, 1)
 	} else {
-		utils.LavaFormatInfo("[+] all endpoints up an running")
+		utils.LavaFormatInfo("[+] all endpoints up and running")
 	}
 	// tearing down
 	select {
@@ -222,7 +223,7 @@ func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession
 		activeEndpointsList := getActiveEndpoints(disabledEndpoints, disabledEndpointsAfterRetry)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 	} else {
-		utils.LavaFormatInfo("[+] all endpoints up an running")
+		utils.LavaFormatInfo("[+] all endpoints up and running")
 	}
 }
 
@@ -542,6 +543,10 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			for _, endpoint := range rpcProviderEndpoints {
 				utils.LavaFormatDebug("endpoint description", utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
+			stickynessHeaderName := viper.GetString(StickynessHeaderName)
+			if stickynessHeaderName != "" {
+				RPCProviderStickynessHeaderName = stickynessHeaderName
+			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
 			rewardTTL := viper.GetDuration(rewardserver.RewardTTLFlagName)
@@ -572,6 +577,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint(ShardIDFlagName, DefaultShardID, "shard id")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotThresholdFlagName, rewardserver.DefaultRewardsSnapshotThreshold, "the number of rewards to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
+	cmdRPCProvider.Flags().String(StickynessHeaderName, RPCProviderStickynessHeaderName, "the name of the header to be attacked to requests for stickyness by consumer, used for consistency")
 
 	return cmdRPCProvider
 }
