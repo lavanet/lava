@@ -5,8 +5,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/subscription/types"
-	timertypes "github.com/lavanet/lava/x/timerstore/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,29 +18,26 @@ func (k Keeper) NextToMonthExpiry(goCtx context.Context, req *types.QueryNextToM
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	gs := k.subsTS.Export(ctx)
-	if len(gs.TimeEntries) == 0 {
+	subAddrs, expiries := k.subsTS.GetFrontTimers(ctx, fixationtypes.BlockTime)
+	if len(subAddrs) == 0 {
 		return &types.QueryNextToMonthExpiryResponse{}, nil
 	}
 
 	currentTime := uint64(time.Now().Unix())
-	firstTimer := getTimerInfo(gs.TimeEntries[0], currentTime)
 
 	subs := []types.TimerExpiryInfo{}
-	for _, timer := range gs.TimeEntries {
-		if firstTimer.MonthExpiry < timer.Value {
-			break
-		}
-		subs = append(subs, getTimerInfo(timer, currentTime))
+	for i := range subAddrs {
+		addr := string(subAddrs[i])
+		subs = append(subs, createTimerInfo(addr, expiries[i], currentTime))
 	}
 
 	return &types.QueryNextToMonthExpiryResponse{Subscriptions: subs}, nil
 }
 
-func getTimerInfo(timer timertypes.GenesisTimerEntry, currentTime uint64) types.TimerExpiryInfo {
+func createTimerInfo(sub string, expiry uint64, currentTime uint64) types.TimerExpiryInfo {
 	return types.TimerExpiryInfo{
-		Consumer:    timer.Key,
-		MonthExpiry: timer.Value,
-		TimeLeft:    timer.Value - currentTime,
+		Consumer:    sub,
+		MonthExpiry: expiry,
+		TimeLeft:    expiry - currentTime,
 	}
 }
