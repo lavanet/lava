@@ -22,7 +22,7 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 	for _, chainID := range chains {
 		storage, found := m.keeper.epochStorageKeeper.GetStakeStorageCurrent(ctx, chainID)
 		if found {
-			for _, entry := range storage.StakeEntries {
+			for i, entry := range storage.StakeEntries {
 				// first return the providers all their coins
 				addr, err := sdk.AccAddressFromBech32(entry.Address)
 				if err != nil {
@@ -38,8 +38,12 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 					return fmt.Errorf("failed to send coins from module to %s: %w", addr, err)
 				}
 
-				// create self delegation
-				err = m.keeper.dualstakingKeeper.Delegate(ctx, entry.Address, entry.Address, chainID, entry.Stake)
+				// create self delegation, this will increase the stake entry, we need to fix that by reseting the stake before delegating
+				stake := entry.Stake
+				entry.Stake.Amount = sdk.ZeroInt()
+				m.keeper.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry, uint64(i))
+
+				err = m.keeper.dualstakingKeeper.Delegate(ctx, entry.Address, entry.Address, chainID, stake)
 				if err != nil {
 					return err
 				}
