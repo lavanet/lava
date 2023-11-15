@@ -98,7 +98,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	}
 
 	// update the stake entry
-	err = k.increaseStakeEntryDelegation(ctx, provider, chainID, amount)
+	err = k.increaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 // decreaseDelegation decreases the delegation of a delegator to a provider for a
 // given chain. It updates the fixation stores for both delegations and delegators,
 // and updates the (epochstorage) stake-entry.
-func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64) error {
+func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, nextEpoch uint64, unstake bool) error {
 	// get, update and append the delegation entry
 	var delegationEntry types.Delegation
 	index := types.DelegationKey(provider, delegator, chainID)
@@ -191,7 +191,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if err := k.decreaseStakeEntryDelegation(ctx, provider, chainID, amount); err != nil {
+	if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount, unstake); err != nil {
 		return err
 	}
 
@@ -199,7 +199,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 }
 
 // increaseStakeEntryDelegation increases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
@@ -221,7 +221,11 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID 
 		)
 	}
 
-	stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
+	if delegator == provider {
+		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
+	} else {
+		stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
+	}
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
 
@@ -229,7 +233,7 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, provider, chainID 
 }
 
 // decreaseStakeEntryDelegation decreases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		// panic:ok: this call was alreadys successful by the caller
@@ -251,9 +255,19 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, provider, chainID 
 		)
 	}
 
-	stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
-	if err != nil {
-		return fmt.Errorf("invalid or insufficient funds: %w", err)
+	if delegator == provider {
+		stakeEntry.Stake, err = stakeEntry.Stake.SafeSub(amount)
+		if err != nil {
+			return fmt.Errorf("invalid or insufficient funds: %w", err)
+		}
+		if !unstake && stakeEntry.Stake.IsLT(k.getMinStake(ctx, chainID)) {
+			return fmt.Errorf("provider self unbond to less than min stake")
+		}
+	} else {
+		stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
+		if err != nil {
+			return fmt.Errorf("invalid or insufficient funds: %w", err)
+		}
 	}
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
@@ -351,7 +365,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		return nil
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch)
+	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -380,7 +394,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 // before released and transferred back to the delegator. The rewards from the
 // provider will be updated accordingly (or terminate) from the next epoch.
 // (effective on next epoch)
-func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
 	nextEpoch, err := k.getNextEpoch(ctx)
 	if err != nil {
 		return err
@@ -404,7 +418,7 @@ func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		return nil
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)
+	err = k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch, unstake)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -541,7 +555,6 @@ func (k Keeper) finalizeUnbonding(ctx sdk.Context, key []byte, data []byte) {
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RefundedEventName, details, "Refunded")
 }
 
-// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
 func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !found {
@@ -561,6 +574,18 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	}
 
 	// NOT REACHED
+}
+
+func (k Keeper) getMinStake(ctx sdk.Context, chainID string) sdk.Coin {
+	spec, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found {
+		utils.LavaFormatError("critical: failed to get spec for chainID",
+			fmt.Errorf("unknown chainID"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
+	}
+
+	return spec.MinStakeProvider
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to

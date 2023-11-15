@@ -98,6 +98,7 @@ trace lavad q subscription params >/dev/null
 trace lavad q subscription list >/dev/null
 trace lavad q subscription current $(lavad keys show alice -a)-admin >/dev/null
 trace lavad q subscription list-projects $(lavad keys show alice -a) >/dev/null
+trace lavad q subscription next-to-month-expiry >/dev/null
 
 sleep_until_next_epoch >/dev/null
 

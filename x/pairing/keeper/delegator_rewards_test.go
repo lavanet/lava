@@ -110,7 +110,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// check that there are two delegators
 			res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 			require.Nil(t, err)
-			require.Equal(t, 2, len(res.Delegations))
+			require.Equal(t, 3, len(res.Delegations))
 
 			// calc useful consts
 			totalReward := sdk.NewDec(int64(relayCuSum))
@@ -214,7 +214,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 2, len(res.Delegations))
+	require.Equal(t, 3, len(res.Delegations))
 
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
@@ -259,7 +259,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
+	require.Equal(t, 2, len(res.Delegations))
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
@@ -435,8 +435,12 @@ func TestDelegationTimestamp(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
-	require.Equal(t, currentTimeAfterMonth, res.Delegations[0].Timestamp)
+	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
+	for _, d := range res.Delegations {
+		if d.Delegator == delegator {
+			require.Equal(t, currentTimeAfterMonth, d.Timestamp)
+		}
+	}
 
 	// advance time and delegate again to verify that the timestamp hasn't changed
 	ts.AdvanceMonths(1)
@@ -447,9 +451,13 @@ func TestDelegationTimestamp(t *testing.T) {
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
-	require.Equal(t, currentTimeAfterMonth, res.Delegations[0].Timestamp)
-	require.True(t, res.Delegations[0].Amount.IsEqual(expectedDelegation))
+	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
+	for _, d := range res.Delegations {
+		if d.Delegator == delegator {
+			require.Equal(t, currentTimeAfterMonth, res.Delegations[0].Timestamp)
+			require.True(t, res.Delegations[0].Amount.IsEqual(expectedDelegation))
+		}
+	}
 }
 
 // TestDelegationFirstMonthPairing checks that a delegation is applied in the
@@ -478,7 +486,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
+	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	require.Equal(t, res.Delegations[0].Timestamp, nowPlusMonthTime)
 
 	// check that even though a month hasn't passed, the effective stake of the provider is
@@ -517,7 +525,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
+	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	require.Equal(t, res.Delegations[0].Timestamp, nowPlusMonthTime)
 
 	// to trigger the payment's code, we need to advance a month+blocksToSave. If we do that,
@@ -570,7 +578,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
-	require.Equal(t, 1, len(res.Delegations))
+	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	require.Equal(t, res.Delegations[0].Timestamp, nowPlusMonthTime)
 
 	// advance a month a redelegate some of the funds to the second provider

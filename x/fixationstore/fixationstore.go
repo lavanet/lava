@@ -440,14 +440,14 @@ func (fs *FixationStore) updateFutureEntry(ctx sdk.Context, safeIndex types.Safe
 	}
 
 	latestEntry, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, block-1)
-	if found {
+	if found && latestEntry.IsLatest {
 		// previous latest entry should never have its DeleteAt set for this block:
 		// if our AppendEntry happened before some DelEntry, we would get marked for
 		// delete with DeleteAt (and not the previous latest entry); if the DelEntry
 		// happened first, then upon our AppendEntry() we would inherit the DeleteAt
 		// from the previous latest entry.
 
-		if latestEntry.HasDeleteAt() {
+		if latestEntry.IsDeletedBy(block) {
 			// panic:ok: internal state mismatch, unknown outcome if we proceed
 			utils.LavaFormatPanic("fixation: future entry callback invalid state",
 				fmt.Errorf("previous latest entry marked delete at %d", latestEntry.DeleteAt),
