@@ -7,7 +7,6 @@ import (
 
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -681,7 +680,7 @@ func TestDelProjectEndSubscription(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlock(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 }
 
 // TestDurationTotal tests that the total duration of the subscription is updated correctly
@@ -816,4 +815,62 @@ func TestSubRenewalFailHighPlanPrice(t *testing.T) {
 	// so the subscription should not be found
 	_, found = ts.getSubscription(subAddr1)
 	require.False(t, found)
+}
+
+// TestNextToMonthExpiryQuery checks that the NextToMonthExpiry query works as intended
+// scenario - buy 3 subs: 2 at the same time, and one a little after. The query should return the two subs
+// then, expire those and expect to get the last one from the query
+func TestNextToMonthExpiryQuery(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(3, 0, 0) // 1 sub, 0 adm, 0 dev
+	months := 1
+	plan := ts.Plan("free")
+
+	_, sub1 := ts.Account("sub1")
+	_, sub2 := ts.Account("sub2")
+	_, sub3 := ts.Account("sub3")
+
+	// buy 3 subs - 2 at the same time and one a second later
+	_, err := ts.TxSubscriptionBuy(sub1, sub1, plan.Index, months, false)
+	require.Nil(t, err)
+	_, err = ts.TxSubscriptionBuy(sub2, sub2, plan.Index, months, false)
+	require.Nil(t, err)
+	sub1Obj, found := ts.getSubscription(sub1)
+	require.True(t, found)
+
+	ts.AdvanceBlock(time.Second)
+	_, err = ts.TxSubscriptionBuy(sub3, sub3, plan.Index, months, false)
+	require.Nil(t, err)
+	sub3Obj, found := ts.getSubscription(sub3)
+	require.True(t, found)
+	require.Equal(t, sub3Obj.MonthExpiryTime, sub1Obj.MonthExpiryTime+1) // sub3 should expire one second after sub1
+
+	// query - expect subs 1 and 2 in the output
+	res, err := ts.QuerySubscriptionNextToMonthExpiry()
+	require.Nil(t, err)
+	require.Equal(t, 2, len(res.Subscriptions))
+
+	for _, sub := range res.Subscriptions {
+		if sub.Consumer != sub1 && sub.Consumer != sub2 {
+			require.Fail(t, "resulting subscription are not sub1 or sub2")
+		}
+		require.Equal(t, sub1Obj.MonthExpiryTime, sub.MonthExpiry)
+	}
+
+	// advance month minus 4 seconds
+	ts.AdvanceMonths(1).AdvanceBlock(4 * time.Second)
+	ts.AdvanceBlock(time.Second) // separate so advanceMonth would trigger
+
+	// query - expect sub 3 in the output
+	res, err = ts.QuerySubscriptionNextToMonthExpiry()
+	require.Nil(t, err)
+	require.Equal(t, 1, len(res.Subscriptions))
+	require.Equal(t, sub3, res.Subscriptions[0].Consumer)
+	require.Equal(t, sub3Obj.MonthExpiryTime, res.Subscriptions[0].MonthExpiry)
+
+	// advance another second to expire sub3. Expect empty output from the query
+	ts.AdvanceBlock(time.Second)
+	res, err = ts.QuerySubscriptionNextToMonthExpiry()
+	require.Nil(t, err)
+	require.Equal(t, 0, len(res.Subscriptions))
 }

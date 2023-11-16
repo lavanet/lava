@@ -98,6 +98,7 @@ trace lavad q subscription params >/dev/null
 trace lavad q subscription list >/dev/null
 trace lavad q subscription current $(lavad keys show alice -a)-admin >/dev/null
 trace lavad q subscription list-projects $(lavad keys show alice -a) >/dev/null
+trace lavad q subscription next-to-month-expiry >/dev/null
 
 sleep_until_next_epoch >/dev/null
 
@@ -147,7 +148,8 @@ trace lavad q pairing list-provider-payment-storage >/dev/null
 trace lavad q pairing list-unique-payment-storage-client-provider >/dev/null
 trace lavad q pairing providers STRK >/dev/null
 trace lavad q pairing sdk-pairing STRK $(lavad keys show alice -a) >/dev/null
-trace lavad q pairing monthly-payout $(lavad keys show servicer1 -a) >/dev/null
+trace lavad q pairing provider-monthly-payout $(lavad keys show servicer1 -a) >/dev/null
+trace lavad q pairing subscription-monthly-payout $(lavad keys show user1 -a) >/dev/null
 # trace lavad q pairing show-epoch-payments >/dev/null
 # trace lavad q pairing show-provider-payment-storage >/dev/null
 # trace lavad q pairing show-unique-payment-storage-client-provider >/dev/null

@@ -3,7 +3,7 @@ package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
 import "lavanet/lava/projects/params.proto";
-import "lavanet/lava/fixationstore/fixationEntry.proto";
+import "lavanet/lava/fixationstore/fixation.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/x/projects/types";

@@ -85,9 +85,14 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/effective_policy/{consumer}/{specID}";
 	}
 
-// Queries a list of EffectivePolicy items.
-	rpc MonthlyPayout(QueryMonthlyPayoutRequest) returns (QueryMonthlyPayoutResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/monthly_payout/{provider}";
+// Queries the expected monthly payout of a specific provider
+	rpc ProviderMonthlyPayout(QueryProviderMonthlyPayoutRequest) returns (QueryProviderMonthlyPayoutResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_monthly_payout/{provider}";
+	}
+
+// Queries the expected monthly payout of a specific subscription
+	rpc SubscriptionMonthlyPayout(QuerySubscriptionMonthlyPayoutRequest) returns (QuerySubscriptionMonthlyPayoutResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/subscription_monthly_payout/{consumer}";
 	}
 
 // this line is used by starport scaffolding # 2
@@ -243,10 +248,36 @@ message QuerySdkPairingResponse {
   lavanet.lava.spec.Spec spec = 3; 
 }
 
-message QueryMonthlyPayoutRequest {
+message QueryProviderMonthlyPayoutRequest {
 	string provider = 1;
   }
   
-  message QueryMonthlyPayoutResponse {
-	  uint64 amount = 1;
-  }
+message SubscriptionPayout {
+	string subscription = 1;
+	string chain_id = 2;
+	uint64 amount = 3;
+}
+
+message QueryProviderMonthlyPayoutResponse {
+	uint64 total = 1;
+	repeated SubscriptionPayout details = 2;
+}
+
+message ProviderPayout {
+	string provider = 1;
+	uint64 amount = 2;
+}
+
+message ChainIDPayout {
+	string chain_id = 1;
+	repeated ProviderPayout payouts = 2;
+}
+
+message QuerySubscriptionMonthlyPayoutRequest {
+	string consumer = 1;
+}
+  
+message QuerySubscriptionMonthlyPayoutResponse {
+	uint64 total = 1;
+	repeated ChainIDPayout details = 2;
+}

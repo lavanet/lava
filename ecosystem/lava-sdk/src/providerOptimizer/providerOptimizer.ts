@@ -80,6 +80,10 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     this.wantedNumProvidersInConcurrency = wantedNumProvidersInConcurrency;
   }
 
+  public getStrategy(): ProviderOptimizerStrategy {
+    return this.strategy;
+  }
+
   public appendProbeRelayData(
     providerAddress: string,
     latency: number,

@@ -14,33 +14,32 @@ type updatableRPCInput interface {
 	AppendHeader(metadata []pairingtypes.Metadata)
 }
 
-type parsedMessage struct {
+type baseChainMessageContainer struct {
 	api                    *spectypes.Api
 	latestRequestedBlock   int64
 	earliestRequestedBlock int64
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
 	extensions             []*spectypes.Extension
-	disabledErrorHandling  bool
 }
 
-func (pm *parsedMessage) DisableErrorHandling() {
+func (pm *baseChainMessageContainer) DisableErrorHandling() {
 	pm.msg.DisableErrorHandling()
 }
 
-func (pm parsedMessage) AppendHeader(metadata []pairingtypes.Metadata) {
+func (pm baseChainMessageContainer) AppendHeader(metadata []pairingtypes.Metadata) {
 	pm.msg.AppendHeader(metadata)
 }
 
-func (pm parsedMessage) GetApi() *spectypes.Api {
+func (pm baseChainMessageContainer) GetApi() *spectypes.Api {
 	return pm.api
 }
 
-func (pm parsedMessage) GetApiCollection() *spectypes.ApiCollection {
+func (pm baseChainMessageContainer) GetApiCollection() *spectypes.ApiCollection {
 	return pm.apiCollection
 }
 
-func (pm parsedMessage) RequestedBlock() (latest int64, earliest int64) {
+func (pm baseChainMessageContainer) RequestedBlock() (latest int64, earliest int64) {
 	if pm.earliestRequestedBlock == 0 {
 		// earliest is optional and not set here
 		return pm.latestRequestedBlock, pm.latestRequestedBlock
@@ -48,11 +47,11 @@ func (pm parsedMessage) RequestedBlock() (latest int64, earliest int64) {
 	return pm.latestRequestedBlock, pm.earliestRequestedBlock
 }
 
-func (pm parsedMessage) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
+func (pm baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
 	return pm.msg
 }
 
-func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
+func (pm *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
 	requestedBlock, _ := pm.RequestedBlock()
 	if latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {
 		return false
@@ -65,11 +64,11 @@ func (pm *parsedMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyCon
 	return false
 }
 
-func (pm *parsedMessage) GetExtensions() []*spectypes.Extension {
+func (pm *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
 	return pm.extensions
 }
 
-func (pm *parsedMessage) SetExtension(extension *spectypes.Extension) {
+func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
 	if len(pm.extensions) > 0 {
 		for _, ext := range pm.extensions {
 			if ext.Name == extension.Name {
@@ -84,7 +83,7 @@ func (pm *parsedMessage) SetExtension(extension *spectypes.Extension) {
 	pm.updateCUForApi(extension)
 }
 
-func (pm *parsedMessage) updateCUForApi(extension *spectypes.Extension) {
+func (pm *baseChainMessageContainer) updateCUForApi(extension *spectypes.Extension) {
 	copyApi := *pm.api // we can't modify this because it points to an object inside the chainParser
 	copyApi.ComputeUnits = uint64(math.Floor(float64(extension.GetCuMultiplier()) * float64(copyApi.ComputeUnits)))
 	pm.api = &copyApi

@@ -191,7 +191,7 @@ func (ts *tester) payAndVerifyBalance(
 	require.NotNil(ts.T, sub.Sub)
 	require.Equal(ts.T, originalSubCuLeft-totalCuUsed, sub.Sub.MonthCuLeft)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 

@@ -20,7 +20,7 @@ export interface UpdatableRPCInput extends GenericMessage {
   appendHeader(metadata: Metadata[]): void;
 }
 
-export class ParsedMessage {
+export class BaseChainMessageContainer {
   private api: Api;
   private requestedBlock: number;
   private msg: UpdatableRPCInput;

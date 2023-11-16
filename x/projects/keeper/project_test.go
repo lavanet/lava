@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -895,7 +894,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlocks(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 
 	// part (2): delete project then keys
 
@@ -929,7 +928,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlocks(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 }
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {

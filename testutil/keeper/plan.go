@@ -55,14 +55,16 @@ func PlanKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"SpecParams",
 	)
 
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
-		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
+		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
-		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc)),
+		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
