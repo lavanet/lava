@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
@@ -473,7 +474,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	contributorAccount, contributorAddress := ts.AddAccount("contributor", 0, 0)
 	contributorAccount2, contributorAddress2 := ts.AddAccount("contributor2", 0, 0)
 	spec1.Contributor = []string{contributorAddress, contributorAddress2}
-	spec1.ContributorPercentage = 0.5 // half the rewards
+	spec1.ContributorPercentage = math.LegacyNewDecWithPrec(5, 1) // half the rewards
 	ts.AddSpec(spec1Name, spec1)
 	err := ts.StakeProvider(provider, spec1, testStake)
 	require.Nil(t, err)

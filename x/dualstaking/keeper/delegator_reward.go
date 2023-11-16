@@ -10,7 +10,6 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionstypes "github.com/lavanet/lava/x/subscription/types"
 )
@@ -179,7 +178,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
 		totalReward = totalReward.Sub(contributorReward)
 		if !calcOnly {
-			err = k.PayContributors(ctx, contributorAddresses, contributorReward, chainID)
+			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
 				return math.ZeroInt(), err
 			}
@@ -238,7 +237,7 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 	return delegatorsReward.Sub(usedDelegatorRewards)
 }
 
-func (k Keeper) PayContributors(ctx sdk.Context, contributorAddresses []sdk.AccAddress, contributorReward math.Int, specId string) error {
+func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributorAddresses []sdk.AccAddress, contributorReward math.Int, specId string) error {
 	if len(contributorAddresses) == 0 {
 		// do not return this error since we don;t want to bail
 		utils.LavaFormatError("contributor addresses for pay are empty", nil)
@@ -257,7 +256,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, contributorAddresses []sdk.AccA
 			return utils.LavaFormatError("trying to pay contributors more than their allowed amount", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		}
 		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
-		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
+		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, contributorAddress, rewardCoins)
 		if err != nil {
 			return err
 		}
