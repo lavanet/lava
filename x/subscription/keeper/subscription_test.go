@@ -805,7 +805,7 @@ func TestSubRenewalFailHighPlanPrice(t *testing.T) {
 	plan.Price.Amount = plan.Price.Amount.MulRaw(106).QuoRaw(100)
 
 	ts.AdvanceEpoch() // advance epoch so the new plan will be appended as a new entry
-	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan})
+	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
 	require.Nil(t, err)
 
 	// advance month to make the subscription expire
