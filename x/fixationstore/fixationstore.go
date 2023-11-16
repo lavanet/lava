@@ -801,7 +801,7 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 
 		entry.StaleAt = block + fs.getStaleBlocks(ctx)
 		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
-		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt+1, key, []byte{})
+		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
 
 	fs.setEntry(ctx, entry)

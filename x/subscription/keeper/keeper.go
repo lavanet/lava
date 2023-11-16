@@ -59,6 +59,9 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	fs := *fixationStoreKeeper.NewFixationStore(storeKey, types.SubsFixationPrefix)
+	cuTracker := *fixationStoreKeeper.NewFixationStore(storeKey, types.CuTrackerFixationPrefix)
+
 	keeper := &Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
@@ -71,25 +74,24 @@ func NewKeeper(
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
+
+		subsFS:      fs,
+		cuTrackerFS: cuTracker,
 	}
 
 	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
 		keeper.advanceMonth(ctx, subkey)
 	}
 
+	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
+		WithCallbackByBlockTime(subsTimerCallback)
+
 	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
 		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
 	}
 
-	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
-		WithCallbackByBlockTime(subsTimerCallback)
-
 	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
 		WithCallbackByBlockHeight(cuTrackerCallback)
-
-	keeper.cuTrackerFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.CuTrackerFixationPrefix)
-
-	keeper.subsFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.SubsFixationPrefix)
 
 	return keeper
 }

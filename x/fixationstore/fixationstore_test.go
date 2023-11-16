@@ -448,7 +448,7 @@ func TestDelThenAddEntry(t *testing.T) {
 		{op: "getvers", name: "to check 6 versions", count: 6},
 		// aadvance to trigger stales
 		{op: "block", name: "advance to block3", count: block3 - block2 - 50},
-		{op: "block", name: "advance until stale", count: int64(mockGetStaleBlock(sdk.Context{}) + 1)},
+		{op: "block", name: "advance until stale", count: int64(mockGetStaleBlock(sdk.Context{}))},
 		{op: "getvers", name: "to check 1 version", count: 1},
 	}
 
@@ -507,7 +507,7 @@ func TestDelEntrySameFuture(t *testing.T) {
 		{op: "block", name: "advance to block1", count: block1 - block0},
 		// now entry #2 is latest, and deleted
 		{op: "get", name: "entry #1 should fail", fail: true},
-		{op: "block", name: "advance until entry #1 stale", count: int64(mockGetStaleBlock(sdk.Context{}) + 1)},
+		{op: "block", name: "advance until entry #1 stale", count: int64(mockGetStaleBlock(sdk.Context{}))},
 		{op: "getvers", name: "to check 1 version", count: 0},
 	}
 
@@ -616,10 +616,10 @@ func TestRemoveStaleEntries(t *testing.T) {
 	block3 := block2 + int64(10)
 	block4 := block3 + int64(10)
 	block5 := int64(100)
-	block6 := block5 + int64(mockGetStaleBlock(sdk.Context{})) + 1
-	block7 := block6 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 1
-	block8 := block7 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 2
-	block9 := block8 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 3
+	block6 := block5 + int64(mockGetStaleBlock(sdk.Context{}))
+	block7 := block6 + int64(mockGetStaleBlock(sdk.Context{}))/2
+	block8 := block7 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 1
+	block9 := block8 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 2
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
@@ -675,7 +675,7 @@ func TestIllegalPutLatestEntry(t *testing.T) {
 func TestRemoveLastEntry(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{})) + 1
+	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{}))
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},

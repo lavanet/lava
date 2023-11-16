@@ -46,7 +46,7 @@ func (entry Entry) SafeIndex() SafeIndex {
 // has passed its stale_at time (more than STALE_ENTRY_TIME since deletion).
 func (entry Entry) IsStaleBy(block uint64) bool {
 	if entry.GetRefcount() == 0 {
-		if entry.StaleAt < block {
+		if entry.StaleAt <= block {
 			return true
 		}
 	}
