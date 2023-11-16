@@ -522,9 +522,6 @@ export class LavaSDK {
         const jsonResponse = JSON.parse(decodedResponse);
         // Return response
         return jsonResponse;
-      })
-      .catch((err) => {
-        console.log(err);
       });
   }
 
