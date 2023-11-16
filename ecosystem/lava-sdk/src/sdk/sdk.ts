@@ -509,20 +509,19 @@ export class LavaSDK {
       );
     }
     const relayResult = rpcConsumerServer.sendRelay(options);
-    return await relayResult
-      .then((response) => {
-        // // Decode response
-        const reply = response.reply;
-        if (reply == undefined) {
-          throw new Error("empty reply");
-        }
-        const dec = new TextDecoder();
-        const decodedResponse = dec.decode(reply.getData_asU8());
-        // Parse response
-        const jsonResponse = JSON.parse(decodedResponse);
-        // Return response
-        return jsonResponse;
-      });
+    return await relayResult.then((response) => {
+      // // Decode response
+      const reply = response.reply;
+      if (reply == undefined) {
+        throw new Error("empty reply");
+      }
+      const dec = new TextDecoder();
+      const decodedResponse = dec.decode(reply.getData_asU8());
+      // Parse response
+      const jsonResponse = JSON.parse(decodedResponse);
+      // Return response
+      return jsonResponse;
+    });
   }
 
   protected getRouterKey(chainId: string, apiInterface: string): RelayReceiver {
