@@ -94,6 +94,10 @@ type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
 
+type KeeperEndBlocker interface {
+	EndBlock(ctx sdk.Context)
+}
+
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	seed := time.Now().Unix()
 	// seed = 1695297312 // uncomment this to debug a specific scenario
@@ -317,6 +321,8 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 
+	EndBlock(unwrapedCtx, ks)
+
 	block := uint64(unwrapedCtx.BlockHeight() + 1)
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
 
@@ -399,6 +405,22 @@ func NewBlock(ctx sdk.Context, ks *Keepers) {
 
 		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
 			beginBlocker.BeginBlock(ctx)
+		}
+	}
+}
+
+// Make sure you save the new context
+func EndBlock(ctx sdk.Context, ks *Keepers) {
+	// get the value and type of the Keepers struct
+	keepersType := reflect.TypeOf(*ks)
+	keepersValue := reflect.ValueOf(*ks)
+
+	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
+	for i := 0; i < keepersType.NumField(); i++ {
+		fieldValue := keepersValue.Field(i)
+
+		if endBlocker, ok := fieldValue.Interface().(KeeperEndBlocker); ok {
+			endBlocker.EndBlock(ctx)
 		}
 	}
 }

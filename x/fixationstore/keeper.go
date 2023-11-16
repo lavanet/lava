@@ -25,7 +25,7 @@ type Keeper struct {
 }
 
 func (k *Keeper) NewFixationStore(storeKey storetypes.StoreKey, prefix string) *FixationStore {
-	ts := k.ts.NewTimerStore(storeKey, prefix)
+	ts := k.ts.NewTimerStoreBeginBlock(storeKey, prefix)
 	fs := NewFixationStore(storeKey, k.cdc, prefix, ts, k.getStaleBlocks)
 	k.fixationsStores = append(k.fixationsStores, fs)
 	return fs

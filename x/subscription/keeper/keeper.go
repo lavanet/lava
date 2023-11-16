@@ -83,14 +83,14 @@ func NewKeeper(
 		keeper.advanceMonth(ctx, subkey)
 	}
 
-	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
+	keeper.subsTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
 
 	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
 		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
 	}
 
-	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.CuTrackerTimerPrefix).
 		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper

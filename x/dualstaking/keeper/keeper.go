@@ -78,7 +78,7 @@ func NewKeeper(
 		keeper.finalizeUnbonding(ctx, key, data)
 	}
 
-	unbondingTS := *timerStoreKeeper.NewTimerStore(storeKey, types.UnbondingPrefix).
+	unbondingTS := *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.UnbondingPrefix).
 		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS

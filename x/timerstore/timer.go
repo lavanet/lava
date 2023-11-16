@@ -60,7 +60,7 @@ import (
 //     }
 //
 //     // create TimerStore with a block-height callback
-//     tstore := timerstore.NewTimerStore(ctx).
+//     tstore := timerstore.NewTimerStoreBeginBlock(ctx).
 //         WithCallbackByBlockHeight(callback)
 //
 //     ...
