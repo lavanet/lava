@@ -64,12 +64,46 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	require.NotNil(t, sps)
 
 	// prepare session for usage
-	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, 0)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
 	require.Equal(t, relayCu, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, relayCu)
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
+	require.Equal(t, sps.PairingEpoch, epoch1)
+	return psm, sps
+}
+
+func prepareSessionForVirtualEpochTests(t *testing.T, ctx context.Context) (*ProviderSessionManager, *SingleProviderSession) {
+	// initialize the struct
+	psm := initProviderSessionManager()
+
+	// get session for the first time
+	sps, err := psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, nil)
+
+	// validate expected results
+	require.Empty(t, psm.sessionsWithAllConsumers)
+	require.Nil(t, sps)
+	require.Error(t, err)
+	require.True(t, ConsumerNotRegisteredYet.Is(err))
+
+	// expect session to be missing, so we need to register it for the first time
+	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCuForVirtualEpoch, pairedProviders, projectId, nil)
+
+	// validate session was added
+	require.NotEmpty(t, psm.sessionsWithAllConsumers)
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+
+	// prepare session for usage and use all available cu = (virtualEpoch+1)*maxCuForVirtualEpoch
+	err = sps.PrepareSessionForUsage(ctx, (virtualEpoch+1)*maxCuForVirtualEpoch, (virtualEpoch+1)*maxCuForVirtualEpoch, 0, virtualEpoch)
+
+	// validate session was prepared successfully
+	require.Nil(t, err)
+	require.Equal(t, (virtualEpoch+1)*maxCuForVirtualEpoch, sps.LatestRelayCu)
+	require.Equal(t, sps.CuSum, (virtualEpoch+1)*maxCuForVirtualEpoch)
 	require.Equal(t, sps.SessionID, sessionId)
 	require.Equal(t, sps.RelayNum, relayNumberBeforeUse)
 	require.Equal(t, sps.PairingEpoch, epoch1)
@@ -114,7 +148,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 
 func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleProviderSession) {
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0)
+	err := sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, 0)
 
 	// validate session was prepared successfully
 	require.Nil(t, err)
@@ -181,7 +215,7 @@ func TestMissingCu(t *testing.T) {
 	// (relayCu * number of requests {2}) !=
 	for i := 0; i < 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-		err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu*uint64(i+1), 0.07)
+		err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu*uint64(i+1), 0.07, 0)
 		require.Nil(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+1)
 		require.Nil(t, err)
@@ -198,7 +232,7 @@ func TestMissingCuFailureOnThreshold(t *testing.T) {
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.01)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.01, 0)
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
 }
 
@@ -212,13 +246,13 @@ func TestMissingMultipleMissingAttempts(t *testing.T) {
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-	err = sps.PrepareSessionForUsage(ctx, 1, relayCu, 0.5)
+	err = sps.PrepareSessionForUsage(ctx, 1, relayCu, 0.5, 0)
 	require.Nil(t, err)
 	err = psm.OnSessionDone(sps, relayNumber+1)
 	require.Nil(t, err)
 	for i := 0; i < 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
-		err = sps.PrepareSessionForUsage(ctx, 1, relayCu*uint64(i+1), 0.5)
+		err = sps.PrepareSessionForUsage(ctx, 1, relayCu*uint64(i+1), 0.5, 0)
 		require.Nil(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+2)
 		require.Nil(t, err)
@@ -349,7 +383,7 @@ func TestPSMPrepareTwice(t *testing.T) {
 	_, sps := prepareSession(t, context.Background())
 
 	// prepare session for usage
-	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0)
+	err := sps.PrepareSessionForUsage(context.Background(), relayCu, relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
 }
@@ -436,10 +470,70 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
-	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0)
+	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
 	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
+}
+
+func TestHappyFlowPSMVirtualEpoch(t *testing.T) {
+	// init test
+	psm, sps := prepareSessionForVirtualEpochTests(t, context.Background())
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+
+	// validate session done data
+	require.Nil(t, err)
+	require.Equal(t, sps.LatestRelayCu, uint64(0))
+	require.Equal(t, sps.CuSum, (virtualEpoch+1)*maxCuForVirtualEpoch)
+	require.Equal(t, sps.SessionID, sessionId)
+	require.Equal(t, sps.RelayNum, relayNumber)
+	require.Equal(t, sps.PairingEpoch, epoch1)
+}
+
+func TestPSMVirtualEpochUpdateCuMaxCuReached(t *testing.T) {
+	ctx := context.Background()
+	// init test
+	psm, sps := prepareSessionForVirtualEpochTests(t, ctx)
+
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+	require.Nil(t, err)
+	// Update the session CU to reach the limit of the cu allowed
+	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, (virtualEpoch+1)*maxCuForVirtualEpoch)
+	require.Nil(t, err)
+	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, (virtualEpoch+1)*maxCuForVirtualEpoch)
+
+	// get another session, this time sps is not nil as the session ID is already registered
+	sps, err = psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
+	require.Nil(t, err)
+	require.NotNil(t, sps)
+
+	// prepare session with max cu overflow. expect an error
+	// as virtual epoch = 1, cu limit = (virtualEpoch+1)*maxCuForVirtualEpoch
+	err = sps.PrepareSessionForUsage(ctx, relayCu, (virtualEpoch+1)*maxCuForVirtualEpoch+relayCu, 0, virtualEpoch)
+	require.Error(t, err)
+	sps.lock.Unlock()
+	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
+}
+
+func TestVirtualEpochMissingCu(t *testing.T) {
+	ctx := context.Background()
+	psm, sps := prepareSessionForVirtualEpochTests(t, ctx)
+	// on session done successfully
+	err := psm.OnSessionDone(sps, relayNumber)
+	// validate session done data
+	require.Nil(t, err)
+	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
+
+	for i := 1; i <= 10; i++ {
+		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
+		err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, maxCuForVirtualEpoch*(virtualEpoch+uint64(i)+1), 0.07, virtualEpoch+uint64(i))
+		require.Nil(t, err)
+		err = psm.OnSessionDone(sps, relayNumber+uint64(i))
+		require.Nil(t, err)
+	}
 }
 
 func TestPSMCUMisMatch(t *testing.T) {
@@ -456,7 +550,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 	require.NotNil(t, sps)
 
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
-	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0)
+	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
 	require.True(t, ProviderConsumerCuMisMatch.Is(err))
@@ -751,7 +845,7 @@ func TestPSMUsageSync(t *testing.T) {
 					switch choice {
 					case 0:
 						cuToUse := uint64(rand.Intn(10)) + 1
-						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU, 0, 0)
 						require.NoError(t, err)
 						sessionStoreTest.inUse = true
 						sessionStoreTest.history = append(sessionStoreTest.history, ",PrepareForUsage")
@@ -761,7 +855,7 @@ func TestPSMUsageSync(t *testing.T) {
 						if cuToUse+sessionStoreTest.currentCU <= uint64(cuMissing) {
 							cuToUse += 1
 						}
-						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0)
+						err = sessionStoreTest.session.PrepareSessionForUsage(ctx, cuToUse, cuToUse+sessionStoreTest.currentCU-uint64(cuMissing), 0, 0)
 						require.Error(t, err)
 						sessionStoreTest.session.lock.Unlock()
 						sessionStoreTest.history = append(sessionStoreTest.history, ",ErrCUPrepareForUsage")

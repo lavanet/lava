@@ -114,7 +114,7 @@ func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayReq
 }
 
 // if this errors out the caller needs to unlock the session, this is not implemented inside because code between getting the session and this needs the same behavior
-func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec, relayRequestTotalCU uint64, allowedThreshold float64) error {
+func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec, relayRequestTotalCU uint64, allowedThreshold float64, virtualEpoch uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
@@ -173,7 +173,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	cuToAdd := relayRequestTotalCU - sps.CuSum // how much consumer thinks he needs to pay - our current state
 
 	// this must happen first, as we also validate and add the used cu to parent here
-	err = sps.validateAndAddUsedCU(cuToAdd, maxCu)
+	err = sps.validateAndAddUsedCU(cuToAdd, maxCu, virtualEpoch)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 	// Update badgeUsedCu in ProviderSessionsWithConsumer
 	if sps.IsBadgeSession() {
 		maxCuBadge := atomicReadBadgeMaxComputeUnits(sps.BadgeUserData)
-		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, sps.BadgeUserData)
+		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, virtualEpoch, sps.BadgeUserData)
 		if err != nil {
 			sps.lock.Unlock() // unlock on error
 			return err
@@ -215,14 +215,16 @@ func (sps *SingleProviderSession) DisbandSession() error {
 	return nil
 }
 
-func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU, maxCu uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
+func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU, maxCu, virtualEpoch uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
 	for {
 		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
-		if badgeUsedCu+currentCU > maxCu {
+		// add additional CU for virtual epochs
+		if badgeUsedCu+currentCU > maxCu*(virtualEpoch+1) {
 			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
 				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
 				utils.Attribute{Key: "currentCU", Value: currentCU},
-				utils.Attribute{Key: "maxCu", Value: maxCu},
+				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
+				utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
 			)
 		}
 		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
@@ -240,14 +242,16 @@ func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, ba
 	}
 }
 
-func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU, maxCu uint64) error {
+func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU, maxCu, virtualEpoch uint64) error {
 	for {
 		usedCu := sps.userSessionsParent.atomicReadUsedComputeUnits() // check used cu now
-		if usedCu+currentCU > maxCu {
+		// add additional CU for virtual epochs
+		if usedCu+currentCU > maxCu*(virtualEpoch+1) {
 			return utils.LavaFormatError("Maximum cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
 				utils.Attribute{Key: "usedCu", Value: usedCu},
 				utils.Attribute{Key: "currentCU", Value: currentCU},
-				utils.Attribute{Key: "maxCu", Value: maxCu},
+				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
+				utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
 			)
 		}
 		// compare usedCu + current cu vs usedCu, if swap succeeds, return otherwise try again

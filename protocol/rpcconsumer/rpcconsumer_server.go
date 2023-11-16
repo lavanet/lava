@@ -52,6 +52,7 @@ type RPCConsumerServer struct {
 type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
+	GetLatestVirtualEpoch() uint64
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -360,7 +361,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
 	}
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage))
+	// consumerEmergencyTracker always use latest virtual epoch
+	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		return &common.RelayResult{ProviderAddress: ""}, err
 	}

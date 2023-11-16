@@ -15,14 +15,13 @@ import (
 
 	rand "github.com/lavanet/lava/utils/rand"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils/slices"
-
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -53,9 +52,10 @@ type ChainTracker struct {
 	blocksToSave            uint64       // how many finalized blocks to keep
 	latestBlockNum          int64
 	blockQueueMu            sync.RWMutex
-	blocksQueue             []BlockStore        // holds all past hashes up until latest block
-	forkCallback            func(int64)         // a function to be called when a fork is detected
-	newLatestCallback       func(int64, string) // a function to be called when a new block is detected
+	blocksQueue             []BlockStore                    // holds all past hashes up until latest block
+	forkCallback            func(int64)                     // a function to be called when a fork is detected
+	newLatestCallback       func(int64, string)             // a function to be called when a new block is detected
+	oldBlockCallback        func(latestBlockTime time.Time) // a function to be called when an old block is detected
 	consistencyCallback     func(oldBlock int64, block int64)
 	serverBlockMemory       uint64
 	endpoint                lavasession.RPCProviderEndpoint
@@ -63,6 +63,7 @@ type ChainTracker struct {
 	blockCheckpoint         uint64 // last time checkpoint was met
 	timer                   *time.Timer
 	latestChangeTime        time.Time
+	startupTime             time.Time
 	blockEventsGap          []time.Duration
 	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
 	pmetrics                *metrics.ProviderMetricsManager
@@ -283,10 +284,20 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 	return newLatestBlock > cs.GetAtomicLatestBlockNum()
 }
 
-// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any
+// this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any.
+// if a new block or fork is not found, check the emergency mode
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
+		type wrappedError interface {
+			Unwrap() error
+		}
+		if wrapErr, ok := err.(wrappedError); ok {
+			// Check if the unwrapped error is a *net.OpError
+			if _, ok := wrapErr.Unwrap().(net.Error); ok {
+				cs.notUpdated()
+			}
+		}
 		cs.pmetrics.SetLatestBlockFetchError(cs.endpoint.ChainID)
 		return err
 	}
@@ -327,9 +338,20 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		if cs.consistencyCallback != nil {
 			cs.consistencyCallback(prev_latest, newLatestBlock)
 		}
+	} else if cs.oldBlockCallback != nil {
+		// if new block is not found we should check emergency mode
+		cs.notUpdated()
 	}
 
 	return err
+}
+
+func (cs *ChainTracker) notUpdated() {
+	latestBlockTime := cs.latestChangeTime
+	if cs.latestChangeTime.IsZero() {
+		latestBlockTime = cs.startupTime
+	}
+	cs.oldBlockCallback(latestBlockTime)
 }
 
 // this function starts the fetching timer periodically checking by polling if updates are necessary
@@ -550,7 +572,22 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
-	chainTracker = &ChainTracker{consistencyCallback: config.ConsistencyCallback, forkCallback: config.ForkCallback, newLatestCallback: config.NewLatestCallback, blocksToSave: config.BlocksToSave, chainFetcher: chainFetcher, latestBlockNum: 0, serverBlockMemory: config.ServerBlockMemory, blockCheckpointDistance: config.BlocksCheckpointDistance, blockEventsGap: []time.Duration{}, blockTimeUpdatables: map[blockTimeUpdatable]struct{}{}, pmetrics: config.Pmetrics}
+
+	chainTracker = &ChainTracker{
+		consistencyCallback:     config.ConsistencyCallback,
+		forkCallback:            config.ForkCallback,
+		newLatestCallback:       config.NewLatestCallback,
+		oldBlockCallback:        config.OldBlockCallback,
+		blocksToSave:            config.BlocksToSave,
+		chainFetcher:            chainFetcher,
+		latestBlockNum:          0,
+		serverBlockMemory:       config.ServerBlockMemory,
+		blockCheckpointDistance: config.BlocksCheckpointDistance,
+		blockEventsGap:          []time.Duration{},
+		blockTimeUpdatables:     map[blockTimeUpdatable]struct{}{},
+		startupTime:             time.Now(),
+		pmetrics:                config.Pmetrics,
+	}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
@@ -561,5 +598,5 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	}
 
 	err = chainTracker.serve(ctx, config.ServerAddress)
-	return
+	return chainTracker, err
 }

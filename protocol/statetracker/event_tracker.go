@@ -114,6 +114,25 @@ func (et *EventTracker) getLatestVersionEvents(latestBlock int64) (updated bool,
 	return false, nil
 }
 
+func (et *EventTracker) getLatestDowntimeParamsUpdateEvents(latestBlock int64) (updated bool, err error) {
+	// check DowntimeParams change proposal results
+	et.lock.RLock()
+	defer et.lock.RUnlock()
+	if et.latestUpdatedBlock != latestBlock {
+		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
+	}
+	for _, event := range et.blockResults.EndBlockEvents {
+		if event.Type == utils.EventPrefix+"param_change" {
+			for _, attribute := range event.Attributes {
+				if attribute.Key == "param" && (attribute.Value == "DowntimeDuration" || attribute.Value == "EpochDuration") {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
 func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bool, err error) {
 	// SpecModifyEventName
 	et.lock.RLock()
