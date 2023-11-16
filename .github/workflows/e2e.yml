@@ -107,34 +107,16 @@ jobs:
         with:
           node-version: "21"
 
-      # Setup Paths
-      - name: export PATH
-        run: export PATH=$PATH:~/go:~/go/bin:$(go env GOPATH)/bin
-      - name: export GOPATH
-        run: export GOPATH=~/go
-
-      # install ts-node
-      - name: Install yarn ts-node protoc-gen-ts
-        run: npm install -g ts-node yarn protoc-gen-ts
-
-      - name: Install protoc executable
-        run: sudo apt update && sudo apt install -y protobuf-compiler
-
-      - name: Run go mod tidy
-        run: go mod tidy
-
-      # Install dependencies and build
-      - name: Install dependencies
-        run: yarn
-        working-directory: ./ecosystem/lava-sdk
-
-      - name: Prepare proto files
-        run: GOPATH=~/go ./scripts/protoc_grpc_relay.sh
+      - name: Init the SDK
+        run: GOPATH=~/go ./scripts/init_sdk.sh
         working-directory: ./ecosystem/lava-sdk
 
       - name: Build
         run: yarn build
         working-directory: ./ecosystem/lava-sdk
+
+      - name: Install ts-node
+        run: npm install -g ts-node
 
       - name: Install telescope dependencies
         run: yarn; yarn e2e-setup
