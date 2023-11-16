@@ -90,7 +90,7 @@ func NewKeeper(
 		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
 	}
 
-	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.CuTrackerTimerPrefix).
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.CuTrackerTimerPrefix).
 		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper

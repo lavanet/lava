@@ -55,6 +55,7 @@ type FixationStoreKeeper interface {
 
 type TimerStoreKeeper interface {
 	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
+	NewTimerStoreEndBlock(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
 }
 
 type DualStakingKeeper interface {
