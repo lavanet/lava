@@ -172,9 +172,9 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
-	if contributorPart > 0 {
+	if contributorPart.GT(math.LegacyZeroDec()) {
 		contributorsNum := int64(len(contributorAddresses))
-		contributorReward := totalReward.MulRaw(int64(contributorPart * spectypes.ContributorPrecision)).QuoRaw(spectypes.ContributorPrecision)
+		contributorReward := totalReward.MulRaw(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt64()).QuoRaw(spectypes.ContributorPrecision)
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
 		totalReward = totalReward.Sub(contributorReward)
@@ -257,9 +257,12 @@ func (k Keeper) PayContributors(ctx sdk.Context, contributorAddresses []sdk.AccA
 			return utils.LavaFormatError("trying to pay contributors more than their allowed amount", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		}
 		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
-		k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributor rewards given")
+		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, contributorAddress, rewardCoins)
+		if err != nil {
+			return err
+		}
 	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributors rewards given")
 	if leftRewards.GT(math.ZeroInt()) {
 		utils.LavaFormatError("leftover rewards", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		// we don;t want to bail on this

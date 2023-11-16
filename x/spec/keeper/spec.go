@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -316,19 +317,20 @@ func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock
 }
 
 // returns the reward per contributor
-func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage float32) {
+func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec) {
 	spec, found := k.GetSpec(ctx, chainId)
 	if !found {
-		return nil, 0
+		return nil, math.LegacyZeroDec()
 	}
-	if len(spec.Contributor) == 0 || spec.ContributorPercentage == 0 {
-		return nil, 0
+	if len(spec.Contributor) == 0 || spec.ContributorPercentage.IsZero() {
+		return nil, math.LegacyZeroDec()
 	}
 	for _, contributorAddrSt := range spec.Contributor {
 		contributorAddr, err := sdk.AccAddressFromBech32(contributorAddrSt)
 		if err != nil {
+			// this should never happen as it's verified
 			utils.LavaFormatError("invalid contributor address", err)
-			return nil, 0
+			return nil, math.LegacyZeroDec()
 		}
 		contributors = append(contributors, contributorAddr)
 	}

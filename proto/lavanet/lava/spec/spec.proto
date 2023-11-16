@@ -33,5 +33,8 @@ message Spec {
   repeated string imports = 15;
   repeated ApiCollection api_collections = 16;
   repeated string contributor =17;
-  float contributor_percentage=18;
+  string contributor_percentage=18 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+    ];
 }

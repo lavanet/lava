@@ -7,13 +7,15 @@ import (
 	"strings"
 	"unicode"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const (
-	minCU                = 1
-	ContributorPrecision = 100000
+	minCU                        = 1
+	ContributorPrecision         = 100000
+	maxContributorsPercentageStr = "0.8"
 )
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
@@ -49,8 +51,8 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 	}
 
-	if spec.ContributorPercentage > 0.8 || (spec.ContributorPercentage < 1.0/ContributorPrecision && spec.ContributorPercentage != 0) {
-		return details, fmt.Errorf("spec contributor percentage must be in the range [%f - 0.8]", 1.0/ContributorPrecision)
+	if spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyNewDecWithPrec(1, ContributorPrecision)) && !spec.ContributorPercentage.IsZero()) {
+		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyNewDecWithPrec(1, ContributorPrecision).String(), maxContributorsPercentageStr)
 	}
 
 	if spec.BlocksInFinalizationProof == 0 {
