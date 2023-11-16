@@ -51,8 +51,8 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 	}
 
-	if spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyNewDecWithPrec(1, ContributorPrecision)) && !spec.ContributorPercentage.IsZero()) {
-		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyNewDecWithPrec(1, ContributorPrecision).String(), maxContributorsPercentageStr)
+	if spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64))) && !spec.ContributorPercentage.IsZero()) {
+		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64)).String(), maxContributorsPercentageStr)
 	}
 
 	if spec.BlocksInFinalizationProof == 0 {
