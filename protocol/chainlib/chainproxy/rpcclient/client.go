@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/lavanet/lava/utils"
 )
 
 var (
@@ -390,7 +391,11 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, stri
 		msgs[i] = msg
 		op.ids[i] = msg.ID
 	}
-
+	timeToSend := time.Duration(0)
+	deadline, ok := ctx.Deadline()
+	if ok {
+		timeToSend = time.Until(deadline)
+	}
 	var err error
 	if c.isHTTP {
 		err = c.sendBatchHTTP(ctx, op, msgs, strict)
@@ -399,7 +404,8 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, stri
 	}
 
 	// Wait for all responses to come back.
-	for n := 0; n < len(b) && err == nil; n++ {
+	n := 0
+	for ; n < len(b) && err == nil; n++ {
 		var resp *JsonrpcMessage
 		resp, err = op.wait(ctx, c)
 		if err != nil {
@@ -408,13 +414,29 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElemWithId, stri
 		// Find the element corresponding to this response.
 		// The element is guaranteed to be present because dispatch
 		// only sends valid IDs to our channel.
-		byOrder := byID[string(resp.ID)]
+		byOrder, found := byID[string(resp.ID)]
+		if !found {
+			utils.LavaFormatError("invalid ID returned", nil, utils.LogAttr("id", string(resp.ID)))
+		}
 		elem := &b[byOrder]
 		if resp.Error != nil {
 			elem.Error = resp.Error
 			continue
 		}
 		elem.Error = json.Unmarshal(resp.Result, elem.Result)
+	}
+	// when timing out, return extra data on partial ids support
+	if err != nil && n > 0 && n < len(b) {
+		validIds := []json.RawMessage{}
+		missingIds := []json.RawMessage{}
+		for _, elem := range b {
+			if elem.Error == nil && elem.Result == nil {
+				missingIds = append(missingIds, elem.ID)
+			} else {
+				validIds = append(validIds, elem.ID)
+			}
+		}
+		return utils.LavaFormatError("partial batches response", err, utils.LogAttr("timeToProcess", timeToSend), utils.LogAttr("supported", n), utils.LogAttr("valid_ids", validIds), utils.LogAttr("missing_ids", missingIds))
 	}
 	return err
 }

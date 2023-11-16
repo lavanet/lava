@@ -69,16 +69,19 @@ json_content+='  ]
 # Write the JSON content to a file named "output.json"
 echo "$json_content" > pairingList.json
 
-echo "Done." 
+
+GEOLOCATION=2
 
 cp examples/jsonRPC.ts examples/jsonRPC_test.ts
-cp examples/restAPI.ts examples/restAPI_test.ts
+cp examples/restAPI.ts examples/restAPI_test.tsZ
 cp examples/tendermintRPC.ts examples/tendermintRPC_test.ts
 
-sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    logLevel: "debug",\n\n    allowInsecureTransport: true,/g' examples/jsonRPC_test.ts
-sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    logLevel: "debug",\n\n    allowInsecureTransport: true,/g' examples/restAPI_test.ts
-sed -i 's/geolocation: "2",/geolocation: "1",\n\n    pairingListConfig: "pairingList.json",\n\n    lavaChainId: "lava",\n\n    logLevel: "debug",\n\n    allowInsecureTransport: true,/g' examples/tendermintRPC_test.ts
+sed -i "s|geolocation:.*|geolocation: \"$GEOLOCATION\",\n\n    pairingListConfig: \"pairingList.json\",\n\n    lavaChainId: \"lava\",\n\n    logLevel: \"debug\",\n\n    allowInsecureTransport: true,|g" examples/jsonRPC_test.ts
+sed -i "s|geolocation:.*|geolocation: \"$GEOLOCATION\",\n\n    pairingListConfig: \"pairingList.json\",\n\n    lavaChainId: \"lava\",\n\n    logLevel: \"debug\",\n\n    allowInsecureTransport: true,|g" examples/restAPI_test.ts
+sed -i "s|geolocation:.*|geolocation: \"$GEOLOCATION\",\n\n    pairingListConfig: \"pairingList.json\",\n\n    lavaChainId: \"lava\",\n\n    logLevel: \"debug\",\n\n    allowInsecureTransport: true,|g" examples/tendermintRPC_test.ts
 
-sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/jsonRPC_test.ts
-sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/restAPI_test.ts
-sed -i 's/privateKey: "<lava consumer private key>",/privateKey:\n      "'"$privateKey"'",/g' examples/tendermintRPC_test.ts
+sed -i "s|privateKey:.*|privateKey:\n      \"$privateKey\",|g" examples/jsonRPC_test.ts
+sed -i "s|privateKey:.*|privateKey:\n      \"$privateKey\",|g" examples/restAPI_test.ts
+sed -i "s|privateKey:.*|privateKey:\n      \"$privateKey\",|g" examples/tendermintRPC_test.ts
+
+echo "Done."

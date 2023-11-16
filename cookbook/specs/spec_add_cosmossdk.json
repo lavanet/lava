@@ -830,7 +830,8 @@
                                 "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "height"
+                                        "height",
+                                        "="
                                     ],
                                     "parser_func": "PARSE_DICTIONARY"
                                 },

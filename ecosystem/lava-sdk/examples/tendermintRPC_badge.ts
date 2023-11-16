@@ -2,7 +2,7 @@
 import { LavaSDK } from "../src/sdk/sdk";
 
 /*
-  Demonstrates how to use LavaSDK to send tendermintRPC calls to the Cosmos Hub.
+  Demonstrates how to use LavaSDK to send tendermintRPC calls to the Lava Network.
 
   You can find a list with all supported chains (https://github.com/lavanet/lava-sdk/blob/main/supportedChains.json)
   
@@ -26,6 +26,7 @@ async function getLatestBlock(): Promise<Array<any>> {
 
   // Extract latest block number
   const latestBlockNumber = parsedInfo.last_block_height;
+
   // Fetch latest block
   return await lavaSDKInstance.sendRelay({
     method: "block",
@@ -34,7 +35,7 @@ async function getLatestBlock(): Promise<Array<any>> {
 }
 
 async function getBatch(): Promise<Array<any>> {
-  // Get abci_info
+  // Get abci_info and status
   return await lavaSDKInstance.sendRelay({
     relays: [
       {
@@ -51,13 +52,16 @@ async function getBatch(): Promise<Array<any>> {
 
 (async function () {
   try {
-    // Create dAccess for Cosmos Hub
-    // Default rpcInterface for Cosmos Hub is tendermintRPC
+    // Create dAccess for Lava Network
+    // Default rpcInterface for Lava Network is tendermintRPC
     lavaSDKInstance = await LavaSDK.create({
-      // private key with an active subscription
-      privateKey: "<lava consumer private key>",
+      // badge data of an active badge server
+      badge: {
+        badgeServerAddress: "<lava badge server url>",
+        projectId: "<badge project id>",
+      },
 
-      // chainID for Cosmos Hub
+      // chainID for Lava Network
       chainIds: "LAV1",
 
       // geolocation 1 for North america - geolocation 2 for Europe providers
