@@ -11,6 +11,11 @@ service Query {
   rpc AllIndices(QueryAllIndicesRequest) returns (QueryAllIndicesResponse) {
     option (google.api.http).get = "/lavanet/lava/fixationstore/all_indices/{store_key}/{prefix}";
   }
+
+  // Queries for all store keys.
+  rpc StoreKeys(QueryStoreKeysRequest) returns (QueryStoreKeysResponse) {
+    option (google.api.http).get = "/lavanet/lava/fixationstore/store_keys";
+  }
 }
 
 message QueryAllIndicesRequest {
@@ -20,4 +25,16 @@ message QueryAllIndicesRequest {
 
 message QueryAllIndicesResponse {
   repeated string indices = 1;
+}
+
+message QueryStoreKeysRequest {
+}
+
+message StoreKeyAndPrefix {
+  string store_key = 1;
+  string prefix = 2;
+}
+
+message QueryStoreKeysResponse {
+  repeated StoreKeyAndPrefix keys = 1 [(gogoproto.nullable) = false];
 }
