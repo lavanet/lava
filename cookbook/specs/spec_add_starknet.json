@@ -554,15 +554,15 @@
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "status"
+                                            "parent_hash"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "starknet_chainId"
+                                    "api_name": "starknet_getBlockWithTxs"
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "PENDING"
+                                        "expected_value": "*"
                                     }
                                 ]
                             }
