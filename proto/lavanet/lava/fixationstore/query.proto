@@ -1,0 +1,23 @@
+syntax = "proto3";
+package lavanet.lava.fixationstore;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+option go_package = "github.com/lavanet/lava/x/fixationstore/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Queries a fixation store for all its indices.
+  rpc AllIndices(QueryAllIndicesRequest) returns (QueryAllIndicesResponse) {
+    option (google.api.http).get = "/lavanet/lava/fixationstore/all_indices/{store_key}/{prefix}";
+  }
+}
+
+message QueryAllIndicesRequest {
+  string store_key = 1;
+  string prefix = 2;
+}
+
+message QueryAllIndicesResponse {
+  repeated string indices = 1;
+}

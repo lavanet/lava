@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 )
 
 // DefaultIndex is the default capability global index
@@ -12,7 +12,7 @@ func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:  DefaultParams(),
-		PlansFS: *fixationstore.DefaultGenesis(),
+		PlansFS: *fixationtypes.DefaultGenesis(),
 	}
 }
 
