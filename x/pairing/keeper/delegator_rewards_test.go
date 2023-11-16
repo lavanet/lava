@@ -454,8 +454,8 @@ func TestDelegationTimestamp(t *testing.T) {
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator {
-			require.Equal(t, currentTimeAfterMonth, res.Delegations[0].Timestamp)
-			require.True(t, res.Delegations[0].Amount.IsEqual(expectedDelegation))
+			require.Equal(t, currentTimeAfterMonth, d.Timestamp)
+			require.True(t, d.Amount.IsEqual(expectedDelegation))
 		}
 	}
 }
@@ -487,7 +487,11 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
-	require.Equal(t, res.Delegations[0].Timestamp, nowPlusMonthTime)
+	for _, d := range res.Delegations {
+		if d.Delegator == delegator {
+			require.Equal(t, nowPlusMonthTime, d.Timestamp)
+		}
+	}
 
 	// check that even though a month hasn't passed, the effective stake of the provider is
 	// 2*testStake (testStake from provider and testStake from delegator)
@@ -526,7 +530,11 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
-	require.Equal(t, res.Delegations[0].Timestamp, nowPlusMonthTime)
+	for _, d := range res.Delegations {
+		if d.Delegator == delegator {
+			require.Equal(t, nowPlusMonthTime, d.Timestamp)
+		}
+	}
 
 	// to trigger the payment's code, we need to advance a month+blocksToSave. If we do that,
 	// the delegation will already mature enough to be part of the reward process. To go around
@@ -579,7 +587,11 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
-	require.Equal(t, res.Delegations[0].Timestamp, nowPlusMonthTime)
+	for _, d := range res.Delegations {
+		if d.Delegator == delegator {
+			require.Equal(t, nowPlusMonthTime, d.Timestamp)
+		}
+	}
 
 	// advance a month a redelegate some of the funds to the second provider
 	ts.AdvanceMonths(1)
