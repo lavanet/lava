@@ -39,7 +39,7 @@ func (ts *tester) addClient(count int) {
 	start := len(ts.Accounts(common.CONSUMER))
 	for i := 0; i < count; i++ {
 		_, addr := ts.AddAccount(common.CONSUMER, start+i, testBalance)
-		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 10)
+		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 1, false)
 		if err != nil {
 			panic("addClient: failed to buy subscription: " + err.Error())
 		}

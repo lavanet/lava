@@ -361,12 +361,13 @@ func (ts *Tester) TxDualstakingClaimRewards(
 }
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
-func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
+func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int, autoRenewal bool) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
-		Creator:  creator,
-		Consumer: consumer,
-		Index:    plan,
-		Duration: uint64(months),
+		Creator:     creator,
+		Consumer:    consumer,
+		Index:       plan,
+		Duration:    uint64(months),
+		AutoRenewal: autoRenewal,
 	}
 	return ts.Servers.SubscriptionServer.Buy(ts.GoCtx, msg)
 }
@@ -381,13 +382,23 @@ func (ts *Tester) TxSubscriptionAddProject(creator string, pd projectstypes.Proj
 	return err
 }
 
-// TxSubscriptionAddProject: implement 'tx subscription del-project'
+// TxSubscriptionDelProject: implement 'tx subscription del-project'
 func (ts *Tester) TxSubscriptionDelProject(creator, projectID string) error {
 	msg := &subscriptiontypes.MsgDelProject{
 		Creator: creator,
 		Name:    projectID,
 	}
 	_, err := ts.Servers.SubscriptionServer.DelProject(ts.GoCtx, msg)
+	return err
+}
+
+// TxSubscriptionAutoRenewal: implement 'tx subscription auto-renewal'
+func (ts *Tester) TxSubscriptionAutoRenewal(creator string, enable bool) error {
+	msg := &subscriptiontypes.MsgAutoRenewal{
+		Creator: creator,
+		Enable:  enable,
+	}
+	_, err := ts.Servers.SubscriptionServer.AutoRenewal(ts.GoCtx, msg)
 	return err
 }
 
