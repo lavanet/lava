@@ -107,5 +107,5 @@ type FixationStoreKeeper interface {
 }
 
 type TimerStoreKeeper interface {
-	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
+	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
 }

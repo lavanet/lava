@@ -166,11 +166,14 @@ import (
 // Note also that DelEntry() discards all future entries on or beyond the DeletedAt
 // block (and owing to the previous rule, none will be added until deletes occurs).
 
+type GetStaleBlocks func(sdk.Context) uint64
+
 type FixationStore struct {
-	storeKey storetypes.StoreKey
-	cdc      codec.BinaryCodec
-	prefix   string
-	tstore   timerstore.TimerStore
+	storeKey       storetypes.StoreKey
+	cdc            codec.BinaryCodec
+	prefix         string
+	tstore         timerstore.TimerStore
+	getStaleBlocks GetStaleBlocks
 }
 
 var fixationVersion uint64 = 5
@@ -795,7 +798,8 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 
 		// non-future entries must pass "stale period"; setup a timer for that
 		// (the computation never overflows because ctx.BlockHeight is int64)
-		entry.StaleAt = block + uint64(types.STALE_ENTRY_TIME)
+
+		entry.StaleAt = block + fs.getStaleBlocks(ctx)
 		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
@@ -1082,7 +1086,7 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 }
 
 // NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *timerstore.TimerStore) *FixationStore {
+func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *timerstore.TimerStore, getStaleBlocks GetStaleBlocks) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
 	callback := func(ctx sdk.Context, key, data []byte) {
@@ -1091,7 +1095,7 @@ func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefi
 	tstore.WithCallbackByBlockHeight(callback)
 
 	fs.tstore = *tstore
-
+	fs.getStaleBlocks = getStaleBlocks
 	return &fs
 }
 

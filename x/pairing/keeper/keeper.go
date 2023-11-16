@@ -90,7 +90,7 @@ func NewKeeper(
 	badgeTimerCallback := func(ctx sdk.Context, badgeKey, _ []byte) {
 		keeper.RemoveBadgeUsedCu(ctx, badgeKey)
 	}
-	badgeTimerStore := timerStoreKeeper.NewTimerStore(storeKey, types.BadgeTimerStorePrefix).
+	badgeTimerStore := timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.BadgeTimerStorePrefix).
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 

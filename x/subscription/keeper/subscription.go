@@ -228,7 +228,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			utils.Attribute{Key: "block", Value: block},
 		)
 	} else {
-		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave-1, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
 	}
 
 	if sub.DurationLeft == 0 {

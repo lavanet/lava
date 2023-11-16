@@ -26,13 +26,17 @@ type mockEntry1to2 struct {
 	after  uint64
 }
 
+func mockGetStaleBlock(ctx sdk.Context) uint64 {
+	return 1500
+}
+
 func TestMigrate1to2(t *testing.T) {
 	var err error
 
 	ctx, cdc := initCtx(t)
 
 	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
-	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts)
+	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts, mockGetStaleBlock)
 	fs.Init(ctx, types.GenesisState{Version: 1})
 
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
@@ -145,7 +149,7 @@ func TestMigrate2to3(t *testing.T) {
 	ctx, cdc := initCtx(t)
 
 	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
-	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts)
+	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts, mockGetStaleBlock)
 	fs.Init(ctx, types.GenesisState{Version: 2})
 
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
