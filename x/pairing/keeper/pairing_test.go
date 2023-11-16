@@ -1000,7 +1000,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	}
 
 	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 	require.Nil(t, err)
 
 	freeAcct, freeAddr := ts.GetAccount(common.CONSUMER, 0)
@@ -1195,7 +1195,7 @@ func TestDuplicateProviders(t *testing.T) {
 
 	_, basicAddr := ts.GetAccount(common.CONSUMER, 0)
 
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{basicPlan})
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{basicPlan}, false)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
@@ -1243,7 +1243,7 @@ func TestNoRequiredGeo(t *testing.T) {
 
 	_, freeAddr := ts.GetAccount(common.CONSUMER, 0)
 
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{freePlan})
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{freePlan}, false)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()

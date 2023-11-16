@@ -1043,7 +1043,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
-			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan})
+			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
 			if tt.planPolicyValid {
 				require.Nil(t, err)
 			} else {
@@ -1132,7 +1132,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	}
 
 	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
-	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans)
+	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans, false)
 	require.Nil(t, err)
 
 	freeUser := common.CreateNewAccount(_ctx, *keepers, 10000)
