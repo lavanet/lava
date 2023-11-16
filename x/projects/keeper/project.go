@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 )
@@ -251,7 +250,7 @@ func (k Keeper) DelKeysFromProject(ctx sdk.Context, projectID, adminKey string, 
 // ChargeComputUnitsToProject charges use of CU to the project at a given block.
 // Propgage the charge to subsequent versions (blocks) within the same snapshot.
 func (k Keeper) ChargeComputeUnitsToProject(ctx sdk.Context, project types.Project, blockHeight, cu uint64) (err error) {
-	blocks := k.projectsFS.GetEntryVersionsRange(ctx, project.Index, blockHeight, uint64(fixationtypes.STALE_ENTRY_TIME))
+	blocks := k.projectsFS.GetEntryVersionsRange(ctx, project.Index, blockHeight, k.epochstorageKeeper.BlocksToSaveRaw(ctx))
 
 	for _, block := range blocks {
 		var proj types.Project

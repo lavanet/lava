@@ -470,9 +470,18 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
-		err = PairingListEmptyError
-		return addresses, err
+		// check all ignored are actually valid addresses
+		ignoredProvidersListLength = 0
+		for _, address := range validAddresses {
+			if _, ok := ignoredProvidersList[address]; ok {
+				ignoredProvidersListLength++
+			}
+		}
+		if validAddressesLength-ignoredProvidersListLength <= 0 {
+			utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+			err = PairingListEmptyError
+			return addresses, err
+		}
 	}
 	var providers []string
 	if stateful == common.CONSISTENCY_SELECT_ALLPROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {

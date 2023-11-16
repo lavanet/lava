@@ -12,12 +12,13 @@ const TypeMsgBuy = "buy"
 
 var _ sdk.Msg = &MsgBuy{}
 
-func NewMsgBuy(creator, consumer, index string, duration uint64) *MsgBuy {
+func NewMsgBuy(creator, consumer, index string, duration uint64, autoRenewal bool) *MsgBuy {
 	return &MsgBuy{
-		Creator:  creator,
-		Consumer: consumer,
-		Index:    index,
-		Duration: duration,
+		Creator:     creator,
+		Consumer:    consumer,
+		Index:       index,
+		Duration:    duration,
+		AutoRenewal: autoRenewal,
 	}
 }
 

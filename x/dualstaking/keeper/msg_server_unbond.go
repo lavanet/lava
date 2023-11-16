@@ -17,6 +17,7 @@ func (k msgServer) Unbond(goCtx context.Context, msg *types.MsgUnbond) (*types.M
 		msg.Provider,
 		msg.ChainID,
 		msg.Amount,
+		false,
 	)
 
 	if err == nil {

@@ -110,7 +110,7 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 			}
 			// if refcount still zero, make sure StaleAt is set
 			if entry.Refcount == 0 && entry.StaleAt == math.MaxUint64 {
-				entry.StaleAt = ctxBlock + uint64(types.STALE_ENTRY_TIME)
+				entry.StaleAt = ctxBlock + fs.getStaleBlocks(ctx)
 			}
 			fs.setEntry(ctx, entry)
 			// if StaleAt is set, then start corresponding timer

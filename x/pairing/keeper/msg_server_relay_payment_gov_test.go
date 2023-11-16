@@ -253,8 +253,10 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
-	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	client1Acct, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 	epochBlocks := ts.EpochBlocks()
 	epochsToSave := ts.EpochsToSave()

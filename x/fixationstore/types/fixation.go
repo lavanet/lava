@@ -37,7 +37,7 @@ func AssertSanitizedIndex(safeIndex SafeIndex, prefix string) {
 	}
 }
 
-// SafeIndex returns the entry's index
+// SafeIndex returns the entry's index.
 func (entry Entry) SafeIndex() SafeIndex {
 	return SafeIndex(entry.Index)
 }

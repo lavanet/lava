@@ -11,26 +11,12 @@ import { LavaSDK } from "../src/sdk/sdk";
   But not rpc calls with named parameters
   {"jsonrpc": "2.0", "method": "subtract", "params": {"subtrahend": 23, "minuend": 42}, "id": 3}
 */
+
+let lavaSDKInstance: LavaSDK;
+
 async function getLatestBlock(): Promise<string> {
-  // Create dAccess for Ethereum Mainnet
-  // Default rpcInterface for Ethereum Mainnet is jsonRPC
-  const ethereum = await LavaSDK.create({
-    // badge data of an active badge server
-    badge: {
-      badgeServerAddress: "<badge server address>",
-      projectId: "<badge project id>",
-    },
-
-    // chainID for Ethereum mainnet
-    chainIds: "ETH1",
-
-    // geolocation 1 for North america - geolocation 2 for Europe providers
-    // default value is 1
-    geolocation: "2",
-  });
-
   // Get latest block number
-  const blockNumberResponse = await ethereum.sendRelay({
+  const blockNumberResponse = await lavaSDKInstance.sendRelay({
     method: "eth_blockNumber",
     params: [],
   });
@@ -42,7 +28,7 @@ async function getLatestBlock(): Promise<string> {
   const latestBlockNumber = parsedResponse.result;
 
   // Get latest block
-  const latestBlock = await ethereum.sendRelay({
+  const latestBlock = await lavaSDKInstance.sendRelay({
     method: "eth_getBlockByNumber",
     params: [latestBlockNumber, true],
   });
@@ -50,10 +36,50 @@ async function getLatestBlock(): Promise<string> {
   return latestBlock;
 }
 
+async function getBatch(): Promise<Array<any>> {
+  // Get abci_info and status
+  return await lavaSDKInstance.sendRelay({
+    relays: [
+      {
+        method: "abci_info",
+        params: [],
+      },
+      {
+        method: "status",
+        params: [],
+      },
+    ],
+  });
+}
+
 (async function () {
   try {
+    // Create dAccess for Ethereum Mainnet
+    // Default rpcInterface for Ethereum Mainnet is jsonRPC
+    lavaSDKInstance = await LavaSDK.create({
+      // badge data of an active badge server
+      badge: {
+        badgeServerAddress: "<badge server address>",
+        projectId: "<badge project id>",
+      },
+
+      // chainID for Ethereum mainnet
+      chainIds: "ETH1",
+
+      // geolocation 1 for North america - geolocation 2 for Europe providers
+      // default value is 1
+      geolocation: "<geolocation goes here>",
+    });
+
+    console.log("Sending single request:");
     const latestBlock = await getLatestBlock();
     console.log("Latest block:", latestBlock);
+
+    console.log("\n");
+
+    console.log("Sending batch request:");
+    const batchResponse = await getBatch();
+    console.log("Batch response:", JSON.stringify(batchResponse, null, 2));
     process.exit(0);
   } catch (error) {
     console.error("Error getting latest block:", error);
