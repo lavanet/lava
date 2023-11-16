@@ -289,6 +289,15 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
 	newLatestBlock, err := cs.fetchLatestBlockNum(ctx)
 	if err != nil {
+		type wrappedError interface {
+			Unwrap() error
+		}
+		if wrapErr, ok := err.(wrappedError); ok {
+			// Check if the unwrapped error is a *net.OpError
+			if _, ok := wrapErr.Unwrap().(net.Error); ok {
+				cs.notUpdated()
+			}
+		}
 		cs.pmetrics.SetLatestBlockFetchError(cs.endpoint.ChainID)
 		return err
 	}
@@ -330,15 +339,19 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			cs.consistencyCallback(prev_latest, newLatestBlock)
 		}
 	} else if cs.oldBlockCallback != nil {
-		latestBlockTime := cs.latestChangeTime
-		if cs.latestChangeTime.IsZero() {
-			latestBlockTime = cs.startupTime
-		}
 		// if new block is not found we should check emergency mode
-		cs.oldBlockCallback(latestBlockTime)
+		cs.notUpdated()
 	}
 
 	return err
+}
+
+func (cs *ChainTracker) notUpdated() {
+	latestBlockTime := cs.latestChangeTime
+	if cs.latestChangeTime.IsZero() {
+		latestBlockTime = cs.startupTime
+	}
+	cs.oldBlockCallback(latestBlockTime)
 }
 
 // this function starts the fetching timer periodically checking by polling if updates are necessary

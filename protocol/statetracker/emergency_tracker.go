@@ -60,6 +60,11 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 		return
 	}
 
+	emergencyWasActive := false
+	virtualEpoch, ok := cs.virtualEpochsMap[cs.latestEpoch]
+	if ok && virtualEpoch > 0 {
+		emergencyWasActive = true
+	}
 	cs.latestEpoch = epoch
 	cs.latestEpochTime = time.Now()
 
@@ -70,7 +75,11 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 		epochToDelete := <-cs.epochsQueue
 		delete(cs.virtualEpochsMap, epochToDelete)
 	}
-
+	if emergencyWasActive {
+		utils.LavaFormatInfo("Emergency Tracker: emergency mode disabled, by new epoch",
+			utils.Attribute{Key: "epoch", Value: epoch},
+		)
+	}
 	// reset virtual epoch metrics counter
 	cs.setVirtualEpochMetrics(0)
 }
@@ -100,7 +109,7 @@ func (cs *EmergencyTracker) blockNotFound(latestBlockTime time.Time) {
 		}
 		// check if the new virtual epoch has started
 		if virtualEpoch > 0 && cs.virtualEpochsMap[cs.latestEpoch] != virtualEpoch {
-			utils.LavaFormatDebug("Emergency Tracker: emergency mode enabled",
+			utils.LavaFormatInfo("Emergency Tracker: emergency mode enabled",
 				utils.Attribute{Key: "virtual_epoch", Value: virtualEpoch},
 				utils.Attribute{Key: "epoch", Value: cs.latestEpoch},
 			)
