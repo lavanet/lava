@@ -11,6 +11,7 @@ service Msg {
   rpc Buy(MsgBuy) returns (MsgBuyResponse);
   rpc AddProject(MsgAddProject) returns (MsgAddProjectResponse);
   rpc DelProject(MsgDelProject) returns (MsgDelProjectResponse);
+  rpc AutoRenewal(MsgAutoRenewal) returns (MsgAutoRenewalResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -20,6 +21,7 @@ message MsgBuy {
   string consumer = 2;
   string index = 3;
   uint64 duration = 4; // in months
+  bool auto_renewal = 6;
 }
 
 message MsgBuyResponse {
@@ -39,6 +41,14 @@ message MsgDelProject {
 }
 
 message MsgDelProjectResponse {
+}
+
+message MsgAutoRenewal {
+  string creator = 1;
+  bool enable = 2;
+}
+
+message MsgAutoRenewalResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

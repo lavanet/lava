@@ -43,6 +43,7 @@ type EpochstorageKeeper interface {
 type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (active bool, found bool, providerType spectypes.Spec_ProvidersTypes)
 	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage float32)
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 }
 
 type StakingKeeper interface {
@@ -54,5 +55,5 @@ type FixationStoreKeeper interface {
 }
 
 type TimerStoreKeeper interface {
-	NewTimerStore(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
+	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
 }

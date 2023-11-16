@@ -12,6 +12,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptionstypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
@@ -132,7 +133,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 		// not minting new coins because they're minted when the provider
 		// asked for payment (and the delegator reward map was updated)
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, delegatorAcc, rewardCoins)
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, subscriptionstypes.ModuleName, delegatorAcc, rewardCoins)
 		if err != nil {
 			// panic:ok: reward transfer should never fail
 			utils.LavaFormatPanic("critical: failed to send reward to delegator for provider", err,
@@ -186,7 +187,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	}
 
 	relevantDelegations := slices.Filter(delegations,
-		func(d types.Delegation) bool { return d.ChainID == chainID })
+		func(d types.Delegation) bool { return d.ChainID == chainID && d.Delegator != d.Provider })
 
 	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
 
