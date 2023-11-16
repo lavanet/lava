@@ -285,7 +285,7 @@ func (ts *Tester) TxProposalChangeParam(module, paramKey, paramVal string) error
 }
 
 func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {
-	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 }
 
 func (ts *Tester) TxProposalDelPlans(indices ...string) error {

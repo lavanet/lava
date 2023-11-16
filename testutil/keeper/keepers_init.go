@@ -274,8 +274,9 @@ func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subsp
 	return
 }
 
-func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan, modify bool) error {
 	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
+	proposal.Modify = modify
 	err := proposal.ValidateBasic()
 	if err != nil {
 		return err

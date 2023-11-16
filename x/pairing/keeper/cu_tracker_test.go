@@ -332,7 +332,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	newPlan := ts.plan
 	newPlan.Price.Amount = ts.plan.Price.Amount.MulRaw(2)
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{newPlan})
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{newPlan}, false)
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
 
