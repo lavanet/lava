@@ -31,7 +31,7 @@ func (k mockAccountKeeper) SetModuleAccount(sdk.Context, types.ModuleAccountI) {
 }
 
 // mock bank keeper
-var balance map[string]sdk.Coins
+var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
 
 type mockBankKeeper struct{}
 

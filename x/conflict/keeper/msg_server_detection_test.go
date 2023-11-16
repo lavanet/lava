@@ -20,8 +20,8 @@ const ProvidersCount = 5
 
 type tester struct {
 	common.Tester
-	consumer  common.Account
-	providers []common.Account
+	consumer  sigs.Account
+	providers []sigs.Account
 	plan      plantypes.Plan
 	spec      spectypes.Spec
 }
@@ -68,9 +68,9 @@ func TestDetection(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		Creator        common.Account
-		Provider0      common.Account
-		Provider1      common.Account
+		Creator        sigs.Account
+		Provider0      sigs.Account
+		Provider1      sigs.Account
 		ConnectionType string
 		ApiUrl         string
 		BlockHeight    int64

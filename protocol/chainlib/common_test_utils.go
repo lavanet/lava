@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/utils/sigs"
 
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -157,10 +158,10 @@ type TestStruct struct {
 	Ctx       context.Context
 	Keepers   *keepertest.Keepers
 	Servers   *keepertest.Servers
-	Providers []testcommon.Account
+	Providers []sigs.Account
 	Spec      spectypes.Spec
 	Plan      plantypes.Plan
-	Consumer  testcommon.Account
+	Consumer  sigs.Account
 }
 
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {

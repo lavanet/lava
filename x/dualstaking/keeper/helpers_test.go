@@ -76,6 +76,13 @@ func (ts *tester) addProviders(count int) error {
 	return nil
 }
 
+func (ts *tester) addValidators(count int) {
+	start := len(ts.Accounts(common.VALIDATOR))
+	for i := 0; i < count; i++ {
+		_, _ = ts.AddAccount(common.VALIDATOR, start+i, testBalance)
+	}
+}
+
 // getStakeEntry find the stake entry of a given provider + chainID
 func (ts *tester) getStakeEntry(provider sdk.AccAddress, chainID string) epochstoragetypes.StakeEntry {
 	epoch := ts.EpochStart()

@@ -457,11 +457,13 @@ func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch u
 }
 
 func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]types.Delegation, error) {
-	_, err := sdk.AccAddressFromBech32(provider)
-	if err != nil {
-		return nil, utils.LavaFormatWarning("cannot get provider's delegators", err,
-			utils.Attribute{Key: "provider", Value: provider},
-		)
+	if provider != EMPTY_PROVIDER {
+		_, err := sdk.AccAddressFromBech32(provider)
+		if err != nil {
+			return nil, utils.LavaFormatWarning("cannot get provider's delegators", err,
+				utils.Attribute{Key: "provider", Value: provider},
+			)
+		}
 	}
 
 	var delegations []types.Delegation

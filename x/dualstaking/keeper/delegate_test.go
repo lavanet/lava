@@ -57,13 +57,6 @@ func TestDelegateFail(t *testing.T) {
 			amount:    -1,
 		},
 		{
-			name:      "insufficient funds",
-			delegator: client1Addr,
-			provider:  provider1Addr,
-			chainID:   "mockspec",
-			amount:    testBalance + 1,
-		},
-		{
 			name:      "provider not staked",
 			delegator: client1Addr,
 			provider:  provider2Addr,

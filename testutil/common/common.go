@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
@@ -17,20 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type Account struct {
-	SK   *btcSecp256k1.PrivateKey
-	Addr sdk.AccAddress
-}
-
-func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc Account) {
-	acc.SK, acc.Addr = sigs.GenerateDeterministicFloatingKey(testkeeper.Randomizer)
+func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc sigs.Account) {
+	acc = sigs.GenerateDeterministicFloatingKey(testkeeper.Randomizer)
 	testkeeper.Randomizer.Inc()
 	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
 	return
 }
 
-func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, spec spectypes.Spec, stake int64) {
+func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc sigs.Account, spec spectypes.Spec, stake int64) {
 	endpoints := []epochstoragetypes.Endpoint{}
 	for _, collection := range spec.ApiCollections {
 		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{collection.CollectionData.ApiInterface}, Geolocation: 1})
@@ -39,7 +33,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 	require.Nil(t, err)
 }
 
-func BuySubscription(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc Account, plan string) {
+func BuySubscription(t *testing.T, ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc sigs.Account, plan string) {
 	servers.SubscriptionServer.Buy(ctx, &subscriptiontypes.MsgBuy{Creator: acc.Addr.String(), Consumer: acc.Addr.String(), Index: plan, Duration: 1})
 }
 
@@ -70,7 +64,7 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 	return relaySession
 }
 
-func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
+func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
 	msg := &conflicttypes.MsgDetection{}
 	msg.Creator = consumer.Addr.String()
 	// request 0

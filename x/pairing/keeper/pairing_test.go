@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
@@ -1020,7 +1021,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 
 	templates := []struct {
 		name         string
-		dev          common.Account
+		dev          sigs.Account
 		planPolicy   planstypes.Policy
 		changePolicy bool
 		newGeo       int32

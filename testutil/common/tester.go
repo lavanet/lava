@@ -9,7 +9,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -20,6 +22,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/stretchr/testify/require"
 )
 
 type Tester struct {
@@ -30,7 +33,7 @@ type Tester struct {
 	Servers *testkeeper.Servers
 	Keepers *testkeeper.Keepers
 
-	accounts map[string]Account
+	accounts map[string]sigs.Account
 	plans    map[string]planstypes.Plan
 	policies map[string]planstypes.Policy
 	projects map[string]projectstypes.ProjectData
@@ -38,8 +41,9 @@ type Tester struct {
 }
 
 const (
-	PROVIDER string = "provider"
-	CONSUMER string = "consumer"
+	PROVIDER  string = "provider"
+	CONSUMER  string = "consumer"
+	VALIDATOR string = "validator"
 )
 
 func NewTester(t *testing.T) *Tester {
@@ -64,7 +68,7 @@ func NewTesterRaw(t *testing.T) *Tester {
 		Servers: servers,
 		Keepers: keepers,
 
-		accounts: make(map[string]Account),
+		accounts: make(map[string]sigs.Account),
 		plans:    make(map[string]planstypes.Plan),
 		policies: make(map[string]planstypes.Policy),
 		projects: make(map[string]projectstypes.ProjectData),
@@ -95,18 +99,18 @@ func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {
 	return ts
 }
 
-func (ts *Tester) AddAccount(kind string, idx int, balance int64) (Account, string) {
+func (ts *Tester) AddAccount(kind string, idx int, balance int64) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
 	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
 	return ts.Account(name)
 }
 
-func (ts *Tester) GetAccount(kind string, idx int) (Account, string) {
+func (ts *Tester) GetAccount(kind string, idx int) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
 	return ts.Account(name)
 }
 
-func (ts *Tester) Account(name string) (Account, string) {
+func (ts *Tester) Account(name string) (sigs.Account, string) {
 	account, ok := ts.accounts[name]
 	if !ok {
 		panic("tester: unknown account name: '" + name + "'")
@@ -114,7 +118,7 @@ func (ts *Tester) Account(name string) (Account, string) {
 	return account, account.Addr.String()
 }
 
-func (ts *Tester) Accounts(name string) []Account {
+func (ts *Tester) Accounts(name string) []sigs.Account {
 	var names []string
 	for k := range ts.accounts {
 		if strings.HasPrefix(k, name) {
@@ -122,7 +126,7 @@ func (ts *Tester) Accounts(name string) []Account {
 		}
 	}
 	sort.Strings(names)
-	var accounts []Account
+	var accounts []sigs.Account
 	for _, k := range names {
 		accounts = append(accounts, ts.accounts[k])
 	}
@@ -167,7 +171,7 @@ func (ts *Tester) StakeProviderExtra(
 	return err
 }
 
-func (ts *Tester) AccountByAddr(addr string) (Account, string) {
+func (ts *Tester) AccountByAddr(addr string) (sigs.Account, string) {
 	for _, account := range ts.accounts {
 		if account.Addr.String() == addr {
 			return account, addr
@@ -492,6 +496,51 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 		ChainIds: slices.Slice(chainID),
 	}
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
+}
+
+// TxCreateValidator: implement 'tx staking createvalidator'
+func (ts *Tester) TxCreateValidator(validator sigs.Account, amount sdk.Int) (*stakingtypes.MsgCreateValidatorResponse, error) {
+	msg, err := stakingtypes.NewMsgCreateValidator(
+		sdk.ValAddress(validator.Addr),
+		validator.PubKey,
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
+		sdk.ZeroInt(),
+	)
+	require.Nil(ts.T, err)
+	return ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
+}
+
+// TxDelegateValidator: implement 'tx staking delegate'
+func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount sdk.Int) (*stakingtypes.MsgDelegateResponse, error) {
+	msg := stakingtypes.NewMsgDelegate(
+		delegator.Addr,
+		sdk.ValAddress(validator.Addr),
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+	)
+	return ts.Servers.StakingServer.Delegate(ts.GoCtx, msg)
+}
+
+// TxReDelegateValidator: implement 'tx staking redelegate'
+func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator sigs.Account, amount sdk.Int) (*stakingtypes.MsgBeginRedelegateResponse, error) {
+	msg := stakingtypes.NewMsgBeginRedelegate(
+		delegator.Addr,
+		sdk.ValAddress(fromValidator.Addr),
+		sdk.ValAddress(toValidator.Addr),
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+	)
+	return ts.Servers.StakingServer.BeginRedelegate(ts.GoCtx, msg)
+}
+
+// TxUnbondValidator: implement 'tx staking undond'
+func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount sdk.Int) (*stakingtypes.MsgUndelegateResponse, error) {
+	msg := stakingtypes.NewMsgUndelegate(
+		delegator.Addr,
+		sdk.ValAddress(validator.Addr),
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+	)
+	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
 }
 
 // QuerySubscriptionCurrent: implement 'q subscription current'
