@@ -18,7 +18,7 @@ pairing=$(lavad q pairing providers LAV1)
 addresses=$(echo "$pairing" | grep 'iPPORT:' | awk '{print $2}' | sort -u)
 public_addresses=$(echo "$pairing" | grep 'address:' | awk '{print $3}')
 
-GEOLOCATION=1
+GEOLOCATION=2
 
 # Associative array to store the JSON structure
 declare -A json_data

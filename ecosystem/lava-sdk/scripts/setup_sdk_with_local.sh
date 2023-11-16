@@ -70,7 +70,7 @@ json_content+='  ]
 echo "$json_content" > pairingList.json
 
 
-GEOLOCATION=1
+GEOLOCATION=2
 
 cp examples/jsonRPC.ts examples/jsonRPC_test.ts
 cp examples/restAPI.ts examples/restAPI_test.tsZ
