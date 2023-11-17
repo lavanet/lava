@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -95,4 +96,62 @@ func TestReDelegateToValidator(t *testing.T) {
 	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
 	require.Nil(t, err)
 	require.Equal(t, providersRes, providersRes1)
+}
+
+// test that redelegating to a validator does not affect the delegator state
+func TestReDelegateToProvider(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(1)
+	ts.addProviders(1)
+	ts.addClients(1)
+
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(10000)
+	_, err := ts.TxCreateValidator(validator, amount)
+	require.Nil(t, err)
+
+	provider, _ := ts.GetAccount(common.PROVIDER, 0)
+	err = ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	delegator, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegator, validator, amount)
+	require.Nil(t, err)
+
+	epoch := ts.EpochStart()
+	entry, err := ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider.Addr, epoch)
+	require.Nil(t, err)
+	require.Equal(t, amount, entry.Stake.Amount)
+
+	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
+	require.Nil(t, err)
+	require.Equal(t, 1, len(providersRes.Delegations))
+	require.Equal(t, dualstakingkeeper.EMPTY_PROVIDER, providersRes.Delegations[0].Provider)
+
+	ts.AdvanceEpoch()
+
+	_, err = ts.TxDualstakingRedelegate(delegator.Addr.String(),
+		dualstakingkeeper.EMPTY_PROVIDER,
+		provider.Addr.String(),
+		dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
+		entry.Chain,
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount))
+
+	require.Nil(t, err)
+
+	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), false)
+	require.Nil(t, err)
+	require.Equal(t, providersRes, providersRes1)
+
+	providersRes1, err = ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
+	require.Nil(t, err)
+	require.Equal(t, provider.Addr.String(), providersRes1.Delegations[0].Provider)
+
+	ts.AdvanceEpoch()
+	epoch = ts.EpochStart()
+	entry, err = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider.Addr, epoch)
+	require.Nil(t, err)
+	require.Equal(t, amount.MulRaw(2), entry.Stake.Amount)
 }
