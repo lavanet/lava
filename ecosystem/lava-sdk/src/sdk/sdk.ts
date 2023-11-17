@@ -19,6 +19,7 @@ import {
   APIInterfaceRest,
   APIInterfaceTendermintRPC,
   SendRelayOptions,
+  SendRelaysBatchOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
 import { JsonRpcChainParser } from "../chainlib/jsonrpc";
@@ -409,7 +410,7 @@ export class LavaSDK {
   }
 
   getRpcConsumerServer(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): RPCConsumerServer | Error {
     const routerMap = this.rpcConsumerServerRouter;
     const chainID = options.chainId;
@@ -496,7 +497,9 @@ export class LavaSDK {
   }
 
   // the inner async function throws on relay error
-  public async sendRelay(options: SendRelayOptions | SendRestRelayOptions) {
+  public async sendRelay(
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
+  ) {
     const rpcConsumerServer = this.getRpcConsumerServer(options);
     if (rpcConsumerServer instanceof Error) {
       throw Logger.fatal(
@@ -534,7 +537,7 @@ export class LavaSDK {
   }
 
   protected isRest(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): options is SendRestRelayOptions {
     return "connectionType" in options; // how to check which options were given
   }

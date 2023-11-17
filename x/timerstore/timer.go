@@ -60,7 +60,7 @@ import (
 //     }
 //
 //     // create TimerStore with a block-height callback
-//     tstore := timerstore.NewTimerStore(ctx).
+//     tstore := timerstore.NewTimerStoreBeginBlock(ctx).
 //         WithCallbackByBlockHeight(callback)
 //
 //     ...
@@ -381,6 +381,27 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 		tstore.delTimer(ctx, which, value, key)
 		tstore.callbacks[which](ctx, key, data)
 	}
+}
+
+func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which types.TimerType) ([][]byte, []uint64) {
+	store := tstore.getStoreTimer(ctx, which)
+	nextTimeoutValue := tstore.getNextTimeout(ctx, which)
+
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+	defer iterator.Close()
+
+	var values []uint64
+	var keys [][]byte
+	for ; iterator.Valid(); iterator.Next() {
+		value, key := types.DecodeBlockAndKey(iterator.Key())
+		if value > nextTimeoutValue {
+			break
+		}
+		values = append(values, value)
+		keys = append(keys, key)
+	}
+
+	return keys, values
 }
 
 // Tick advances the timer by a block. It should be called at the beginning of each block.

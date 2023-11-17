@@ -56,6 +56,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 
 	tsKeeper := timerstore.NewKeeper(cdc)
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 
 	k := keeper.NewKeeper(
 		cdc,
@@ -64,9 +65,9 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 		&mockBankKeeper{},
 		&mockAccountKeeper{},
-		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
+		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
-		fixationstore.NewKeeper(cdc, tsKeeper),
+		fixationstore.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw),
 		tsKeeper,
 	)
 

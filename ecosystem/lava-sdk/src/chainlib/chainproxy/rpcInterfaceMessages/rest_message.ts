@@ -1,3 +1,4 @@
+import { DUMMY_URL } from "../../../common/common";
 import { Parser } from "../../../parser/parser";
 import { RPCInput } from "../../../parser/rpcInput";
 import { BaseMessage } from "../common";
@@ -16,13 +17,9 @@ export class RestMessage extends BaseMessage implements RPCInput {
   // GetParams will be deprecated after we remove old client
   // Currently needed because of parser.RPCInput interface
   getParams(): any {
-    let parsedMethod: string;
-    const idx = this.path.indexOf("?");
-    if (idx === -1) {
-      parsedMethod = this.path;
-    } else {
-      parsedMethod = this.path.substring(0, idx);
-    }
+    const urlObj = new URL(this.path, DUMMY_URL);
+    const parsedMethod = urlObj.pathname;
+    const queryParams = urlObj.searchParams;
 
     const objectSpec = this.specPath.split("/");
     const objectPath = parsedMethod.split("/");
@@ -37,21 +34,11 @@ export class RestMessage extends BaseMessage implements RPCInput {
         }
       }
     }
-    if (idx > -1) {
-      const queryParams = this.path.substring(idx);
-      if (queryParams != undefined && queryParams.length > 0) {
-        const queryParamsList = queryParams.split("&");
-        for (const queryParamNameValue of queryParamsList) {
-          const queryParamNameValueSplitted = queryParamNameValue.split("=");
-          if (queryParamNameValueSplitted.length !== 2) {
-            continue;
-          }
-          const queryParamName = queryParamNameValueSplitted[0];
-          const queryParamValue = queryParamNameValueSplitted[1];
-          parameters.set(queryParamName, queryParamValue);
-        }
-      }
-    }
+
+    queryParams.forEach((value, key) => {
+      parameters[key] = value;
+    });
+
     if (Object.keys(parameters).length === 0) {
       return null;
     }

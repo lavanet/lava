@@ -14,7 +14,7 @@ func TestGenesis(t *testing.T) {
 
 	// run playbook this will fill up the fixation store
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME + 1
+	block1 := block0 + int64(fs.getStaleBlocks(ctx)) + 1
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
@@ -27,7 +27,7 @@ func TestGenesis(t *testing.T) {
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "has", name: "entry #1 (not stale yet)", count: block0},
 		{op: "find", name: "entry #1 (not stale yet)", count: block0},
-		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: int64(fs.getStaleBlocks(ctx)) + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		{op: "has", name: "entry #1 (now stale/gone)", count: block0, fail: true},
 		{op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true},

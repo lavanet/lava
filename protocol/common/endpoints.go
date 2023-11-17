@@ -20,6 +20,7 @@ const (
 	URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS = "&"
 	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
 	PROVIDER_ADDRESS_HEADER_NAME                    = "Lava-Provider-Address"
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME           = "Lava-Providers-Block"
 )
 
 type NodeUrl struct {

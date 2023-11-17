@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -51,6 +52,7 @@ type RPCConsumerServer struct {
 type ConsumerTxSender interface {
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
+	GetLatestVirtualEpoch() uint64
 }
 
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
@@ -195,6 +197,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// compares the result with other providers if defined so
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
+
+	// remove lava directive headers
+	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
 	relaySentTime := time.Now()
 	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getLatestBlock())
 	if err != nil {
@@ -206,8 +211,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
 		)
 	}
-	// Unmarshal request
-	unwantedProviders := map[string]struct{}{}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, consumerIp)
@@ -222,6 +225,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	errorRelayResult := &common.RelayResult{} // returned on error
 	retries := 0
 	timeouts := 0
+	unwantedProviders := rpccs.GetInitialUnwantedProviders(directiveHeaders)
 	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, timeouts)
@@ -357,7 +361,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
 	}
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage))
+	// consumerEmergencyTracker always use latest virtual epoch
+	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		return &common.RelayResult{ProviderAddress: ""}, err
 	}
@@ -711,4 +717,30 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		}
 	}
 	return nil
+}
+
+func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Metadata) ([]pairingtypes.Metadata, map[string]string) {
+	metadataRet := []pairingtypes.Metadata{}
+	headerDirectives := map[string]string{}
+	for _, metaElement := range metadata {
+		switch metaElement.Name {
+		case common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME, strings.ToLower(common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME):
+			headerDirectives[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME] = metaElement.Value
+		default:
+			metadataRet = append(metadataRet, metaElement)
+		}
+	}
+	return metadataRet, headerDirectives
+}
+
+func (rpccs *RPCConsumerServer) GetInitialUnwantedProviders(directiveHeaders map[string]string) map[string]struct{} {
+	unwantedProviders := map[string]struct{}{}
+	blockedProviders, ok := directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
+	if ok {
+		providerAddressesToBlock := strings.Split(blockedProviders, ",")
+		for _, providerAddress := range providerAddressesToBlock {
+			unwantedProviders[providerAddress] = struct{}{}
+		}
+	}
+	return unwantedProviders
 }

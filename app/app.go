@@ -408,12 +408,6 @@ func New(
 		appCodec, keys[ibcexported.StoreKey], app.GetSubspace(ibcexported.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
 	)
 
-	// timerstore keeper
-	app.TimerStoreKeeper = timerstore.NewKeeper(appCodec)
-
-	// fixation store keeper
-	app.FixationStoreKeeper = fixationstore.NewKeeper(appCodec, app.TimerStoreKeeper)
-
 	// Initialize SpecKeeper prior to govRouter (order is critical)
 	app.SpecKeeper = *specmodulekeeper.NewKeeper(
 		appCodec,
@@ -434,6 +428,12 @@ func New(
 		app.SpecKeeper,
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// timerstore keeper
+	app.TimerStoreKeeper = timerstore.NewKeeper(appCodec)
+
+	// fixation store keeper
+	app.FixationStoreKeeper = fixationstore.NewKeeper(appCodec, app.TimerStoreKeeper, app.EpochstorageKeeper.BlocksToSaveRaw)
 
 	// Initialize PlansKeeper prior to govRouter (order is critical)
 	app.PlansKeeper = *plansmodulekeeper.NewKeeper(

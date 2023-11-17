@@ -9,6 +9,7 @@ import { ConsumerConsistency } from "./consumerConsistency";
 import {
   BaseChainParser,
   SendRelayOptions,
+  SendRelaysBatchOptions,
   SendRestRelayOptions,
 } from "../chainlib/base_chain_parser";
 import {
@@ -89,7 +90,7 @@ export class RPCConsumerServer {
   }
 
   async sendRelay(
-    options: SendRelayOptions | SendRestRelayOptions,
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions,
     virtualEpoch: number
   ) {
     const chainMessage = this.chainParser.parseMsg(options);
