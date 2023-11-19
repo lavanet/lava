@@ -1,8 +1,30 @@
 #!/bin/bash
 
+# Flag variable
+use_sudo=false
+
+# Parse arguments
+while getopts ":s" opt; do
+  case $opt in
+    s)
+      use_sudo=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+
 __lava_root_dir=$(realpath $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../../..)
 __scripts_dir=$__lava_root_dir/scripts
 source $__scripts_dir/useful_commands.sh
+
+if [ "$use_sudo" = true ]; then
+    SUDO=sudo
+else
+    SUDO=''
+fi
 
 # Check for GOTPATH
 if [[ -z "$GOPATH" ]]; then
@@ -20,8 +42,8 @@ fi
 if ! command_exists npm; then
     # Try to install npm using apt
     echo ">>> Installing npm using apt..."
-    sudo apt update
-    sudo apt install -y npm
+    $SUDO apt-get update
+    $SUDO apt-get install -y npm
     if ! command_exists npm; then
         echo ">>> Failed to install npm. Exiting..."
         exit 1
@@ -49,17 +71,18 @@ if command_exists yarn; then
     echo ">>> All packages have been successfully installed."
 fi
 
-# Run go mod tidy in lava root dir 
-cd __lava_root_dir
+# Run go mod tidy in lava root dir
+curr_dir=$(pwd)
+cd $__lava_root_dir
 go mod tidy
-cd -
+cd $curr_dir
 
 # Install the protobuf compiler if needed
 if ! command_exists protoc; then
     # Try to install protoc using apt
     echo ">>> Installing protoc using apt..."
-    sudo apt update
-    sudo apt install -y protobuf-compiler
+    $SUDO apt-get update
+    $SUDO apt-get install -y protobuf-compiler
     if ! command_exists protoc; then
         echo ">>> Failed to install protobuf-compiler. Exiting..."
         exit 1
