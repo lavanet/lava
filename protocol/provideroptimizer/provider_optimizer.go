@@ -83,7 +83,7 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 		if latency > 0 {
 			baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)/2
 			if isHangingApi {
-				baseLatency += po.averageBlockTime // hanging apis take longer
+				baseLatency += po.averageBlockTime / 2 // hanging apis take longer
 			}
 			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
 		}
@@ -257,7 +257,7 @@ func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) floa
 
 func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu uint64, requestedBlock int64) float64 {
 	baseLatency := po.baseWorldLatency + common.BaseTimePerCU(cu)/2 // divide by two because the returned time is for timeout not for average
-	timeoutDuration := common.GetTimePerCu(cu)
+	timeoutDuration := common.GetTimePerCu(cu) + common.AverageWorldLatency
 	var historicalLatency time.Duration
 	if providerData.Latency.Denom == 0 {
 		historicalLatency = baseLatency
