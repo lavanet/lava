@@ -176,6 +176,7 @@ trace lavad q dualstaking provider-delegators $(lavad keys show alice -a)>/dev/n
 echo "Testing fixationstore q commands"
 trace lavad q fixationstore all-indices subscription subs-fs >/dev/null
 trace lavad q fixationstore store-keys >/dev/null
+trace lavad q fixationstore versions subscription subs-fs $(lavad keys show alice -a) >/dev/null
 
 echo "Testing events command"
 trace lavad test events 30 10 --event lava_relay_payment --from alice --timeout 1s >/dev/null

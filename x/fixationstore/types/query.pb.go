@@ -257,12 +257,118 @@ func (m *QueryStoreKeysResponse) GetKeys() []StoreKeyAndPrefix {
 	return nil
 }
 
+type QueryVersionsRequest struct {
+	StoreKey string `protobuf:"bytes,1,opt,name=store_key,json=storeKey,proto3" json:"store_key,omitempty"`
+	Prefix   string `protobuf:"bytes,2,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Key      string `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (m *QueryVersionsRequest) Reset()         { *m = QueryVersionsRequest{} }
+func (m *QueryVersionsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryVersionsRequest) ProtoMessage()    {}
+func (*QueryVersionsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_300bcc00a24e7b21, []int{5}
+}
+func (m *QueryVersionsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryVersionsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryVersionsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryVersionsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryVersionsRequest.Merge(m, src)
+}
+func (m *QueryVersionsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryVersionsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryVersionsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryVersionsRequest proto.InternalMessageInfo
+
+func (m *QueryVersionsRequest) GetStoreKey() string {
+	if m != nil {
+		return m.StoreKey
+	}
+	return ""
+}
+
+func (m *QueryVersionsRequest) GetPrefix() string {
+	if m != nil {
+		return m.Prefix
+	}
+	return ""
+}
+
+func (m *QueryVersionsRequest) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+type QueryVersionsResponse struct {
+	Blocks []uint64 `protobuf:"varint,1,rep,packed,name=blocks,proto3" json:"blocks,omitempty"`
+}
+
+func (m *QueryVersionsResponse) Reset()         { *m = QueryVersionsResponse{} }
+func (m *QueryVersionsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryVersionsResponse) ProtoMessage()    {}
+func (*QueryVersionsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_300bcc00a24e7b21, []int{6}
+}
+func (m *QueryVersionsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryVersionsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryVersionsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryVersionsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryVersionsResponse.Merge(m, src)
+}
+func (m *QueryVersionsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryVersionsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryVersionsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryVersionsResponse proto.InternalMessageInfo
+
+func (m *QueryVersionsResponse) GetBlocks() []uint64 {
+	if m != nil {
+		return m.Blocks
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryAllIndicesRequest)(nil), "lavanet.lava.fixationstore.QueryAllIndicesRequest")
 	proto.RegisterType((*QueryAllIndicesResponse)(nil), "lavanet.lava.fixationstore.QueryAllIndicesResponse")
 	proto.RegisterType((*QueryStoreKeysRequest)(nil), "lavanet.lava.fixationstore.QueryStoreKeysRequest")
 	proto.RegisterType((*StoreKeyAndPrefix)(nil), "lavanet.lava.fixationstore.StoreKeyAndPrefix")
 	proto.RegisterType((*QueryStoreKeysResponse)(nil), "lavanet.lava.fixationstore.QueryStoreKeysResponse")
+	proto.RegisterType((*QueryVersionsRequest)(nil), "lavanet.lava.fixationstore.QueryVersionsRequest")
+	proto.RegisterType((*QueryVersionsResponse)(nil), "lavanet.lava.fixationstore.QueryVersionsResponse")
 }
 
 func init() {
@@ -270,7 +376,7 @@ func init() {
 }
 
 var fileDescriptor_300bcc00a24e7b21 = []byte{
-	// 406 bytes of a gzipped FileDescriptorProto
+	// 494 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0xcb, 0x49, 0x2c, 0x4b,
 	0xcc, 0x4b, 0x2d, 0xd1, 0x07, 0xd1, 0xfa, 0x69, 0x99, 0x15, 0x89, 0x25, 0x99, 0xf9, 0x79, 0xc5,
 	0x25, 0xf9, 0x45, 0xa9, 0xfa, 0x85, 0xa5, 0xa9, 0x45, 0x95, 0x7a, 0x05, 0x45, 0xf9, 0x25, 0xf9,
@@ -286,17 +392,22 @@ var fileDescriptor_300bcc00a24e7b21 = []byte{
 	0x61, 0x4e, 0x50, 0xf2, 0xe0, 0x12, 0x84, 0x89, 0x39, 0xe6, 0xa5, 0x04, 0x80, 0xad, 0x20, 0xcf,
 	0x5d, 0x89, 0x50, 0x6f, 0x22, 0x59, 0x01, 0x75, 0x96, 0x3b, 0x17, 0x4b, 0x76, 0x6a, 0x25, 0xc4,
 	0x4d, 0xdc, 0x46, 0xba, 0x7a, 0xb8, 0xc3, 0x57, 0x0f, 0xc3, 0x2d, 0x4e, 0x2c, 0x27, 0xee, 0xc9,
-	0x33, 0x04, 0x81, 0x0d, 0x30, 0x7a, 0xc5, 0xc4, 0xc5, 0x0a, 0xb6, 0x43, 0x68, 0x37, 0x23, 0x17,
-	0x17, 0x22, 0x00, 0x84, 0x8c, 0xf0, 0x99, 0x89, 0x3d, 0xf0, 0xa5, 0x8c, 0x49, 0xd2, 0x03, 0xf1,
-	0x8a, 0x92, 0x4b, 0xd3, 0xe5, 0x27, 0x93, 0x99, 0xec, 0x84, 0x6c, 0xf4, 0xf1, 0x24, 0xa6, 0xc4,
-	0x9c, 0x9c, 0x78, 0x68, 0xc0, 0xeb, 0x57, 0xc3, 0x03, 0xb2, 0x56, 0xbf, 0x1a, 0x12, 0x52, 0xb5,
-	0x42, 0x8b, 0x18, 0xb9, 0x38, 0xe1, 0xc1, 0x24, 0x64, 0x48, 0xd0, 0x21, 0xe8, 0xb1, 0x26, 0x65,
-	0x44, 0x8a, 0x16, 0xa8, 0xd3, 0xf5, 0xc0, 0x4e, 0xd7, 0x10, 0x52, 0xc3, 0xe7, 0x74, 0xb8, 0x6b,
-	0x8b, 0x9d, 0xdc, 0x4f, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6,
-	0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a, 0x37, 0x3d,
-	0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x17, 0xd5, 0xac, 0x0a, 0x34, 0xd3, 0x4a, 0x2a,
-	0x0b, 0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xd9, 0xc0, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x30, 0x26,
-	0x16, 0x33, 0x80, 0x03, 0x00, 0x00,
+	0x33, 0x04, 0x81, 0x0d, 0x50, 0x8a, 0xe5, 0x12, 0x01, 0x5b, 0x11, 0x96, 0x5a, 0x54, 0x0c, 0xd2,
+	0x42, 0x49, 0x38, 0x0a, 0x09, 0x70, 0x31, 0x83, 0x94, 0x33, 0x83, 0x05, 0x41, 0x4c, 0x25, 0x7d,
+	0x68, 0x20, 0x21, 0x8c, 0x87, 0x7a, 0x40, 0x8c, 0x8b, 0x2d, 0x29, 0x27, 0x3f, 0x39, 0x1b, 0xe2,
+	0x05, 0x96, 0x20, 0x28, 0xcf, 0x68, 0x29, 0x0b, 0x17, 0x2b, 0x58, 0x87, 0xd0, 0x6e, 0x46, 0x2e,
+	0x2e, 0x44, 0x84, 0x08, 0x19, 0xe1, 0xf3, 0x23, 0xf6, 0xc4, 0x20, 0x65, 0x4c, 0x92, 0x1e, 0x88,
+	0xcb, 0x94, 0x5c, 0x9a, 0x2e, 0x3f, 0x99, 0xcc, 0x64, 0x27, 0x64, 0xa3, 0x8f, 0x27, 0x71, 0x27,
+	0xe6, 0xe4, 0xc4, 0x43, 0x13, 0x82, 0x7e, 0x35, 0x3c, 0xa0, 0x6a, 0xf5, 0xab, 0x21, 0x21, 0x51,
+	0x2b, 0xb4, 0x88, 0x91, 0x8b, 0x13, 0x1e, 0x6d, 0x42, 0x86, 0x04, 0x1d, 0x82, 0x9e, 0x8a, 0xa4,
+	0x8c, 0x48, 0xd1, 0x02, 0x75, 0xba, 0x1e, 0xd8, 0xe9, 0x1a, 0x42, 0x6a, 0xf8, 0x9c, 0x0e, 0x77,
+	0x6d, 0xb1, 0xd0, 0x0e, 0x46, 0x2e, 0x0e, 0x58, 0xcc, 0x08, 0x19, 0x10, 0xb4, 0x10, 0x2d, 0x8d,
+	0x48, 0x19, 0x92, 0xa0, 0x03, 0xea, 0x42, 0x77, 0xb0, 0x0b, 0x1d, 0x85, 0xec, 0xf1, 0xb9, 0xb0,
+	0x0c, 0xaa, 0x0b, 0x6b, 0xc8, 0xea, 0x57, 0x83, 0xb8, 0x4e, 0xee, 0x27, 0x1e, 0xc9, 0x31, 0x5e,
+	0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb, 0x31,
+	0xdc, 0x78, 0x2c, 0xc7, 0x10, 0xa5, 0x9b, 0x9e, 0x59, 0x92, 0x51, 0x9a, 0xa4, 0x97, 0x9c, 0x9f,
+	0x8b, 0x6a, 0x49, 0x05, 0x9a, 0x35, 0x25, 0x95, 0x05, 0xa9, 0xc5, 0x49, 0x6c, 0xe0, 0x12, 0xc5,
+	0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x78, 0x4c, 0xca, 0x2a, 0xcb, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -315,6 +426,8 @@ type QueryClient interface {
 	AllIndices(ctx context.Context, in *QueryAllIndicesRequest, opts ...grpc.CallOption) (*QueryAllIndicesResponse, error)
 	// Queries for all store keys.
 	StoreKeys(ctx context.Context, in *QueryStoreKeysRequest, opts ...grpc.CallOption) (*QueryStoreKeysResponse, error)
+	// Queries for all versions of a specific entry (versions = different blocks).
+	Versions(ctx context.Context, in *QueryVersionsRequest, opts ...grpc.CallOption) (*QueryVersionsResponse, error)
 }
 
 type queryClient struct {
@@ -343,12 +456,23 @@ func (c *queryClient) StoreKeys(ctx context.Context, in *QueryStoreKeysRequest, 
 	return out, nil
 }
 
+func (c *queryClient) Versions(ctx context.Context, in *QueryVersionsRequest, opts ...grpc.CallOption) (*QueryVersionsResponse, error) {
+	out := new(QueryVersionsResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.fixationstore.Query/Versions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Queries a fixation store for all its indices.
 	AllIndices(context.Context, *QueryAllIndicesRequest) (*QueryAllIndicesResponse, error)
 	// Queries for all store keys.
 	StoreKeys(context.Context, *QueryStoreKeysRequest) (*QueryStoreKeysResponse, error)
+	// Queries for all versions of a specific entry (versions = different blocks).
+	Versions(context.Context, *QueryVersionsRequest) (*QueryVersionsResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -360,6 +484,9 @@ func (*UnimplementedQueryServer) AllIndices(ctx context.Context, req *QueryAllIn
 }
 func (*UnimplementedQueryServer) StoreKeys(ctx context.Context, req *QueryStoreKeysRequest) (*QueryStoreKeysResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StoreKeys not implemented")
+}
+func (*UnimplementedQueryServer) Versions(ctx context.Context, req *QueryVersionsRequest) (*QueryVersionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Versions not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -402,6 +529,24 @@ func _Query_StoreKeys_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_Versions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryVersionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).Versions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.fixationstore.Query/Versions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).Versions(ctx, req.(*QueryVersionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.fixationstore.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -413,6 +558,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StoreKeys",
 			Handler:    _Query_StoreKeys_Handler,
+		},
+		{
+			MethodName: "Versions",
+			Handler:    _Query_Versions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -585,6 +734,91 @@ func (m *QueryStoreKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryVersionsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryVersionsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryVersionsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Prefix) > 0 {
+		i -= len(m.Prefix)
+		copy(dAtA[i:], m.Prefix)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Prefix)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.StoreKey) > 0 {
+		i -= len(m.StoreKey)
+		copy(dAtA[i:], m.StoreKey)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.StoreKey)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryVersionsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryVersionsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryVersionsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Blocks) > 0 {
+		dAtA2 := make([]byte, len(m.Blocks)*10)
+		var j1 int
+		for _, num := range m.Blocks {
+			for num >= 1<<7 {
+				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j1++
+			}
+			dAtA2[j1] = uint8(num)
+			j1++
+		}
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
+		i = encodeVarintQuery(dAtA, i, uint64(j1))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -665,6 +899,43 @@ func (m *QueryStoreKeysResponse) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovQuery(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *QueryVersionsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.StoreKey)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.Prefix)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryVersionsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Blocks) > 0 {
+		l = 0
+		for _, e := range m.Blocks {
+			l += sovQuery(uint64(e))
+		}
+		n += 1 + sovQuery(uint64(l)) + l
 	}
 	return n
 }
@@ -1098,6 +1369,278 @@ func (m *QueryStoreKeysResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryVersionsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryVersionsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryVersionsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StoreKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StoreKey = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Prefix", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Prefix = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryVersionsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryVersionsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryVersionsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowQuery
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Blocks = append(m.Blocks, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowQuery
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthQuery
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthQuery
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Blocks) == 0 {
+					m.Blocks = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowQuery
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Blocks = append(m.Blocks, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field Blocks", wireType)
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

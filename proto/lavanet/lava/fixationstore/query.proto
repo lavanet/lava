@@ -16,6 +16,11 @@ service Query {
   rpc StoreKeys(QueryStoreKeysRequest) returns (QueryStoreKeysResponse) {
     option (google.api.http).get = "/lavanet/lava/fixationstore/store_keys";
   }
+
+  // Queries for all versions of a specific entry (versions = different blocks).
+  rpc Versions(QueryVersionsRequest) returns (QueryVersionsResponse) {
+    option (google.api.http).get = "/lavanet/lava/fixationstore/versions/{store_key}/{prefix}/{key}";
+  }
 }
 
 message QueryAllIndicesRequest {
@@ -37,4 +42,14 @@ message StoreKeyAndPrefix {
 
 message QueryStoreKeysResponse {
   repeated StoreKeyAndPrefix keys = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryVersionsRequest {
+  string store_key = 1;
+  string prefix = 2;
+  string key = 3;
+}
+
+message QueryVersionsResponse {
+  repeated uint64 blocks = 1;
 }
