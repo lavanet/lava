@@ -35,7 +35,8 @@ import (
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -65,7 +66,7 @@ var Randomizer *sigs.ZeroReader
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
 	TimerStoreKeeper    *timerstore.Keeper
-	FixationStoreKeeper *fixationstore.Keeper
+	FixationStoreKeeper *fixationkeeper.Keeper
 	AccountKeeper       mockAccountKeeper
 	BankKeeper          mockBankKeeper
 	StakingKeeper       stakingkeeper.Keeper
@@ -215,7 +216,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
-	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
+	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
@@ -270,15 +271,15 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
-	ks.Dualstaking.InitDelegations(ctx, *fixationstore.DefaultGenesis())
-	ks.Dualstaking.InitDelegators(ctx, *fixationstore.DefaultGenesis())
-	ks.Plans.InitPlans(ctx, *fixationstore.DefaultGenesis())
-	ks.Subscription.InitSubscriptions(ctx, *fixationstore.DefaultGenesis())
+	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
+	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
+	ks.Plans.InitPlans(ctx, *fixationtypes.DefaultGenesis())
+	ks.Subscription.InitSubscriptions(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstore.DefaultGenesis())
-	ks.Subscription.InitCuTrackers(ctx, *fixationstore.DefaultGenesis())
+	ks.Subscription.InitCuTrackers(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitCuTrackerTimers(ctx, *timerstore.DefaultGenesis())
-	ks.Projects.InitDevelopers(ctx, *fixationstore.DefaultGenesis())
-	ks.Projects.InitProjects(ctx, *fixationstore.DefaultGenesis())
+	ks.Projects.InitDevelopers(ctx, *fixationtypes.DefaultGenesis())
+	ks.Projects.InitProjects(ctx, *fixationtypes.DefaultGenesis())
 
 	NewBlock(ctx, &ks)
 	ctx = ctx.WithBlockTime(time.Now())

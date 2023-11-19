@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -103,7 +103,7 @@ type DualstakingKeeper interface {
 }
 
 type FixationStoreKeeper interface {
-	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstore.FixationStore
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstoretypes.FixationStore
 }
 
 type TimerStoreKeeper interface {

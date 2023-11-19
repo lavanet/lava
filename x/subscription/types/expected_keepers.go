@@ -5,7 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/timerstore"
@@ -50,7 +50,7 @@ type PlansKeeper interface {
 }
 
 type FixationStoreKeeper interface {
-	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstore.FixationStore
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationtypes.FixationStore
 }
 
 type TimerStoreKeeper interface {

@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	"github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/plans/types"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -64,7 +64,7 @@ func PlanKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
-		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
+		fixationkeeper.NewKeeper(cdc, timerstore.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

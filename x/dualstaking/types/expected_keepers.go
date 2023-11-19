@@ -9,7 +9,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/lavanet/lava/x/timerstore"
 )
@@ -57,7 +57,7 @@ type StakingKeeper interface {
 }
 
 type FixationStoreKeeper interface {
-	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstore.FixationStore
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstoretypes.FixationStore
 }
 
 type TimerStoreKeeper interface {
