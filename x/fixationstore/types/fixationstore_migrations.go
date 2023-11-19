@@ -1,4 +1,4 @@
-package fixationstore
+package types
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/fixationstore/types"
 )
 
 func (fs *FixationStore) prefixForErrors(from uint64) string {
@@ -68,8 +67,8 @@ func (fs *FixationStore) MigrateVersionAndPrefix(ctx sdk.Context, oldPrefix stri
 
 // doMigratePrefix replaces objects prefix from `oldPrefix` to `newPrefix`
 func (fs *FixationStore) doMigratePrefix(ctx sdk.Context, oldPrefix, newPrefix string) {
-	store_V1 := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(oldPrefix))
-	store_V2 := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(newPrefix))
+	store_V1 := prefix.NewStore(ctx.KVStore(fs.storeKey), KeyPrefix(oldPrefix))
+	store_V2 := prefix.NewStore(ctx.KVStore(fs.storeKey), KeyPrefix(newPrefix))
 
 	iterator := sdk.KVStorePrefixIterator(store_V1, []byte{})
 	defer iterator.Close()
@@ -89,7 +88,7 @@ func fixationMigrate1to2(ctx sdk.Context, fs *FixationStore) error {
 
 	indices := fs.GetAllEntryIndices(ctx)
 	for _, index := range indices {
-		safeIndex, err := types.SanitizeIndex(index)
+		safeIndex, err := SanitizeIndex(index)
 		if err != nil {
 			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
 		}
@@ -134,12 +133,12 @@ func fixationMigrate2to3(ctx sdk.Context, fs *FixationStore) error {
 
 	// copy EntryIndex
 	v1 := strings.Repeat(V2_EntryIndexPrefix+fs.prefix, 2)
-	v2 := fs.prefix + types.EntryIndexPrefix
+	v2 := fs.prefix + EntryIndexPrefix
 	fs.doMigratePrefix(ctx, v1, v2)
 
 	// copy Entry
 	v1 = V2_EntryPrefix + fs.prefix
-	v2 = fs.prefix + types.EntryPrefix
+	v2 = fs.prefix + EntryPrefix
 	fs.doMigratePrefix(ctx, v1, v2)
 
 	return nil
@@ -166,7 +165,7 @@ func fixationMigrate3to4(ctx sdk.Context, fs *FixationStore) error {
 	for _, index := range indices {
 		utils.LavaFormatDebug("  entry", utils.Attribute{Key: "index", Value: index})
 
-		safeIndex, err := types.SanitizeIndex(index)
+		safeIndex, err := SanitizeIndex(index)
 		if err != nil {
 			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
 		}
@@ -213,7 +212,7 @@ func fixationMigrate4to5(ctx sdk.Context, fs *FixationStore) error {
 	for _, index := range indices {
 		utils.LavaFormatDebug("  entry", utils.Attribute{Key: "index", Value: index})
 
-		safeIndex, err := types.SanitizeIndex(index)
+		safeIndex, err := SanitizeIndex(index)
 		if err != nil {
 			return fmt.Errorf("%s: failed to sanitize index: %s", fs.prefixForErrors(1), index)
 		}

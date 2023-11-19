@@ -1,21 +1,20 @@
-package fixationstore
+package types
 
 import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGenesis(t *testing.T) {
-	ctx, fs := initCtxAndFixationStore(t)
+	ctx, fs := InitCtxAndFixationStore(t)
 
 	// run playbook this will fill up the fixation store
 	block0 := int64(10)
 	block1 := block0 + int64(fs.getStaleBlocks(ctx)) + 1
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
 		{op: "has", name: "entry #1", count: block0, coin: 0},
@@ -43,13 +42,13 @@ func TestGenesis(t *testing.T) {
 
 	store1 := prefix.NewStore(
 		ctx.KVStore(fs.storeKey),
-		types.KeyPrefix(fs.prefix))
+		KeyPrefix(fs.prefix))
 	iterator1 := sdk.KVStorePrefixIterator(store1, []byte{})
 	defer iterator1.Close()
 
 	store2 := prefix.NewStore(
 		emptyCtx.KVStore(fs.storeKey),
-		types.KeyPrefix(fs.prefix))
+		KeyPrefix(fs.prefix))
 	iterator2 := sdk.KVStorePrefixIterator(store2, []byte{})
 	defer iterator2.Close()
 
