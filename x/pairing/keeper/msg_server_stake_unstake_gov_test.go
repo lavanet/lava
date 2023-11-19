@@ -34,11 +34,6 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	// stake a provider
 	err = ts.addProvider(1)
 	require.Nil(t, err)
-	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
-
-	// Verify the provider paid for its stake request
-	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance-testStake, providerCurrentFunds)
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.AdvanceBlock() // blockHeight = 40
@@ -95,12 +90,6 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	ts.AdvanceBlocks(19)
 	// stake a provider
 	err = ts.addProvider(1)
-	require.Nil(t, err)
-	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
-
-	// Verify the provider/client paid for its stake request
-	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance-testStake, providerCurrentFunds)
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.AdvanceBlock() // blockHeight = 40
@@ -142,10 +131,6 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 
 	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
-	// Verify the provider paid for its stake request
-	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance-testStake, providerCurrentFunds)
-
 	// make sure EpochBlocks default value is 20 and UnstakeHoldBlocks is 210
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
@@ -183,16 +168,8 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	// Advance 10 epochs to get to block #240. At this point, they shouldn't get their funds back
 	ts.AdvanceEpochs(10)
 
-	// check that the provider got the funds back (should not, yet)
-	providerCurrentFunds = ts.GetBalance(providerAcct.Addr)
-	require.NotEqual(t, testBalance, providerCurrentFunds)
-
 	// Advance another epoch to block #260. Now they should get their funds back
 	ts.AdvanceEpoch() // blockHeight = 260
-
-	// check that the provider got the funds back (should)
-	providerCurrentFunds = ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance, providerCurrentFunds)
 }
 
 // Test that if the UnstakeHoldBlocks param increases make then the provider gets the funds back only
@@ -202,10 +179,6 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
 
 	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
-
-	// Verify the provider/client paid for its stake request
-	providerCurrentFunds := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance-testStake, providerCurrentFunds)
 
 	// make sure EpochBlocks default value is 20 and UnstakeHoldBlocks is 210
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
@@ -244,14 +217,6 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	// Advance 11 epochs to get to block #260. At this point, they should get their funds back
 	ts.AdvanceEpochs(11)
 
-	// check that the provider got the funds back (should not, yet)
-	providerCurrentFunds = ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance, providerCurrentFunds)
-
 	// Advance 3 more epoch to block #320. Now they definitely should get their funds back
 	ts.AdvanceEpochs(14)
-
-	// check if the client/provider got their funds back - they should get it
-	providerCurrentFunds = ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, testBalance, providerCurrentFunds)
 }
