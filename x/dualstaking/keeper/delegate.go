@@ -343,20 +343,20 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		return nil
 	}
 
-	err := k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
-	if err != nil {
-		return utils.LavaFormatWarning("failed to decrease delegation", err,
-			utils.Attribute{Key: "delegator", Value: delegator},
-			utils.Attribute{Key: "provider", Value: from},
-			utils.Attribute{Key: "amount", Value: amount.String()},
-		)
-	}
-
-	err = k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
+	err := k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to increase delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: to},
+			utils.Attribute{Key: "amount", Value: amount.String()},
+		)
+	}
+
+	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
+	if err != nil {
+		return utils.LavaFormatWarning("failed to decrease delegation", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: from},
 			utils.Attribute{Key: "amount", Value: amount.String()},
 		)
 	}

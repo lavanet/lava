@@ -150,8 +150,10 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.Equal(t, provider.Addr.String(), providersRes1.Delegations[0].Provider)
 
 	ts.AdvanceEpoch()
+
 	epoch = ts.EpochStart()
 	entry, err = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider.Addr, epoch)
 	require.Nil(t, err)
-	require.Equal(t, amount.MulRaw(2), entry.Stake.Amount)
+	require.Equal(t, amount, entry.DelegateTotal.Amount)
+	require.Equal(t, amount, entry.Stake.Amount)
 }
