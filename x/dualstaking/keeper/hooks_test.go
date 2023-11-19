@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
@@ -156,4 +157,83 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, amount, entry.DelegateTotal.Amount)
 	require.Equal(t, amount, entry.Stake.Amount)
+}
+
+// TestUnbondUniformProviders checks that the uniform unbond of providers (that is triggered by a validator unbond)
+// works as expected. The test case is as follows:
+// [10 20 50 60 70] 25 -> [0 20 50 60 70] 25 + 15/4 -> [0 0 50 60 70] 25 + 15/4 + 8.75/3
+// Explanation: assume 5 providers each with different delegations (10, 20, and so on). The validator
+// unbonds 25*5 tokens. In this case, each provider should have its delegation decreased by 25 tokens.
+// Not all providers have delegations with 25+ token, so we decrease their whole delegation and take the
+// remainder from other providers uniformly
+func TestUnbondUniformProviders(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(1)
+	ts.addProviders(5)
+	ts.addClients(1)
+
+	// create validator and providers
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(10000)
+	_, err := ts.TxCreateValidator(validator, amount)
+	require.Nil(t, err)
+
+	for i := 0; i < 5; i++ {
+		provider, _ := ts.GetAccount(common.PROVIDER, i)
+		err = ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+		require.Nil(t, err)
+	}
+
+	ts.AdvanceEpoch()
+
+	// delegate to validator (automatically delegates to empty provider)
+	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegatorAcc, validator, sdk.NewInt(210))
+	require.Nil(t, err)
+
+	// redelegate from empty provider to all providers with fixed amounts
+	redelegateAmts := []math.Int{
+		sdk.NewInt(10),
+		sdk.NewInt(20),
+		sdk.NewInt(50),
+		sdk.NewInt(60),
+		sdk.NewInt(70),
+	}
+	var providers []string
+	for i := 0; i < 5; i++ {
+		_, provider := ts.GetAccount(common.PROVIDER, i)
+		providers = append(providers, provider)
+		_, err = ts.TxDualstakingRedelegate(delegatorAcc.Addr.String(),
+			dualstakingkeeper.EMPTY_PROVIDER,
+			provider,
+			dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
+			ts.spec.Index,
+			sdk.NewCoin(epochstoragetypes.TokenDenom, redelegateAmts[i]))
+		require.Nil(t, err)
+	}
+
+	// unbond 25*5 tokens from validator
+	_, err = ts.TxUnbondValidator(delegatorAcc, validator, sdk.NewInt(25*5))
+	require.Nil(t, err)
+
+	res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
+	require.Nil(t, err)
+	for _, d := range res.Delegations {
+		switch d.Provider {
+		case providers[0]:
+			require.True(t, d.Amount.Amount.IsZero())
+		case providers[1]:
+			require.True(t, d.Amount.Amount.IsZero())
+		case providers[2]:
+			require.Equal(t, int64(20), d.Amount.Amount.Int64())
+		case providers[3]:
+			require.Equal(t, int64(30), d.Amount.Amount)
+		case providers[4]:
+			require.Equal(t, int64(35), d.Amount.Amount) // highest delegation is decreased by uniform amount + remainder
+		}
+	}
+
+	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	require.Nil(t, err)
+	require.True(t, diff.IsZero())
 }

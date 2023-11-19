@@ -575,12 +575,12 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 
 	if !amount.IsZero() { // we have leftovers, remove from the highest delegation
 		delegation := delegations[len(delegations)-1]
-		err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, sdk.NewCoin(delegation.Amount.Denom, amountToDeduct), false) // ?? is it false?
+		err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, amount, false) // ?? is it false?
 		if err != nil {
 			return err
 		}
 	}
-	// [10 20 50 60 70] 25 -> [0 20 50 60 70] 25 + 15/4 -> [0 0 50 60 70] 25 + 15/4 + 8.75/3
+
 	return nil
 }
 
