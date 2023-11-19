@@ -518,7 +518,7 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 	return delegations
 }
 
-func (k Keeper) UnbondUniformDelegators(ctx sdk.Context, delegator string, amount sdk.Coin) error {
+func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount sdk.Coin) error {
 	epoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	providers, err := k.GetDelegatorProviders(ctx, delegator, epoch)
 	_ = err

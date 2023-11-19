@@ -57,7 +57,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		}
 	} else if diff.IsNegative() {
 		// more provider delegation, unbond operation was done, unbond from providers
-		err = h.k.UnbondUniformDelegators(ctx, delAddr.String(), sdk.NewCoin("ulava", diff.MulRaw(-1)))
+		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin("ulava", diff.MulRaw(-1)))
 		if err != nil {
 			return err
 		}
