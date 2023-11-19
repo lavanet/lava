@@ -88,17 +88,6 @@ message ScalarDescriptor {
     // encoding standards and simple and clear. Currently only string and
     // bytes fields are supported for scalars.
     repeated ScalarType field_type = 3;
-
-    // legacy_amino_encoding is an optional string to describe the encoding
-    // format used by Amino. The field type is chosen to be a string so that
-    // the value can either be:
-    // - a machine-readable string, such as "base64", "bech32" or "utf8",
-    // - or a human-readable string, for instance a short specification of how
-    // a big integer would be encoded using Amino.
-    //
-    // If left empty, then the Amino encoding is expected to be the same as the
-    // Protobuf one.
-    string legacy_amino_encoding = 4;
 }
 
 enum ScalarType {
