@@ -10,3 +10,4 @@ testutil/debugging/
 .git/
 .idea/
 .vscode/
+.storage/
