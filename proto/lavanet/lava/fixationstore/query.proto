@@ -5,6 +5,8 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 option go_package = "github.com/lavanet/lava/x/fixationstore/types";
 
+import "lavanet/lava/fixationstore/fixation.proto";
+
 // Query defines the gRPC querier service.
 service Query {
   // Queries a fixation store for all its indices.
@@ -20,6 +22,11 @@ service Query {
   // Queries for all versions of a specific entry (versions = different blocks).
   rpc Versions(QueryVersionsRequest) returns (QueryVersionsResponse) {
     option (google.api.http).get = "/lavanet/lava/fixationstore/versions/{store_key}/{prefix}/{key}";
+  }
+
+  // Queries for a specific entry with detailed information.
+  rpc Entry(QueryEntryRequest) returns (QueryEntryResponse) {
+    option (google.api.http).get = "/lavanet/lava/fixationstore/Entry/{store_key}/{prefix}/{key}/{block}";
   }
 }
 
@@ -52,4 +59,18 @@ message QueryVersionsRequest {
 
 message QueryVersionsResponse {
   repeated uint64 blocks = 1;
+}
+
+message QueryEntryRequest {
+  string store_key = 1;
+  string prefix = 2;
+  string key = 3;
+  uint64 block = 4;
+  bool hide_data = 5;
+  bool string_data = 6;
+}
+
+message QueryEntryResponse {
+  lavanet.lava.fixationstore.Entry entry = 1;
+  string string_data = 2; // optional: entry data as a string
 }

@@ -647,6 +647,27 @@ func (fs *FixationStore) ModifyEntry(ctx sdk.Context, index string, block uint64
 	fs.setEntry(ctx, entry)
 }
 
+// FindRawEntry returns the raw entry by index and block (even deleted or stale entries)
+func (fs *FixationStore) FindRawEntry(ctx sdk.Context, index string, block uint64) (Entry, error) {
+	safeIndex, err := SanitizeIndex(index)
+	if err != nil {
+		return Entry{}, err
+	}
+
+	store := fs.getEntryStore(ctx, safeIndex)
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		var entry Entry
+		fs.cdc.MustUnmarshal(iterator.Value(), &entry)
+		if entry.Block <= block {
+			return entry, nil
+		}
+	}
+
+	return Entry{}, fmt.Errorf("FindRawEntry: entry not found")
+}
+
 // getUnmarshaledEntryForBlock gets an entry version for an index that has
 // nearest-no-later block version for the given block arg.
 func (fs *FixationStore) getUnmarshaledEntryForBlock(ctx sdk.Context, safeIndex SafeIndex, block uint64) (Entry, bool) {
