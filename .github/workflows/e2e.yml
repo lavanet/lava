@@ -108,7 +108,7 @@ jobs:
           node-version: "21"
 
       - name: Init the SDK
-        run: GOPATH=~/go ./scripts/init_sdk.sh
+        run: GOPATH=~/go ./scripts/init_sdk.sh -s
         working-directory: ./ecosystem/lava-sdk
 
       - name: Build

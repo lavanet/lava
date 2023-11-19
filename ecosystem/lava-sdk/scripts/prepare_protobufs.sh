@@ -2,6 +2,13 @@
 
 function prepare() {
     echo "🔹make sure to run 'go mod tidy' from the lava repo before trying to run this file"
+    
+    use_sudo=$1
+    if [ "$use_sudo" = true ]; then
+        SUDO=sudo
+    else
+        SUDO=''
+    fi
 
     file_path="../../go.mod"
     expected_lines=(
@@ -73,20 +80,20 @@ function prepare() {
         exit 1
     fi
 
-    sudo rm -rf ./proto
+    $SUDO rm -rf ./proto
 
     mkdir -p proto/cosmos/cosmos-sdk/google/api
 
-    sudo rm -rf ./proto/cosmos/cosmos-sdk/cosmos; cp -r $specific_dir/proto/cosmos ./proto/cosmos/cosmos-sdk
-    sudo rm -rf ./proto/cosmos/cosmos-sdk/amino; cp -r $specific_dir/proto/amino ./proto/cosmos/cosmos-sdk
-    sudo rm -rf ./proto/cosmos/cosmos-sdk/tendermint; cp -r $specific_dir/proto/tendermint ./proto/cosmos/cosmos-sdk
-    sudo rm -rf ./proto/cosmos/cosmos-sdk/gogoproto; cp -r $gogodir/gogoproto ./proto/cosmos/cosmos-sdk
-    sudo rm -rf ./proto/cosmos/cosmos-sdk/google; cp -r $gogodir/protobuf/google ./proto/cosmos/cosmos-sdk
-    sudo rm -rf ./proto/cosmos/cosmos-sdk/cosmos_proto; cp -r $cosmosprotosdir/proto/cosmos_proto ./proto/cosmos/cosmos-sdk
-    sudo cp -r $googledir/google/api ./proto/cosmos/cosmos-sdk/google
+    $SUDO rm -rf ./proto/cosmos/cosmos-sdk/cosmos; cp -r $specific_dir/proto/cosmos ./proto/cosmos/cosmos-sdk
+    $SUDO rm -rf ./proto/cosmos/cosmos-sdk/amino; cp -r $specific_dir/proto/amino ./proto/cosmos/cosmos-sdk
+    $SUDO rm -rf ./proto/cosmos/cosmos-sdk/tendermint; cp -r $specific_dir/proto/tendermint ./proto/cosmos/cosmos-sdk
+    $SUDO rm -rf ./proto/cosmos/cosmos-sdk/gogoproto; cp -r $gogodir/gogoproto ./proto/cosmos/cosmos-sdk
+    $SUDO rm -rf ./proto/cosmos/cosmos-sdk/google; cp -r $gogodir/protobuf/google ./proto/cosmos/cosmos-sdk
+    $SUDO rm -rf ./proto/cosmos/cosmos-sdk/cosmos_proto; cp -r $cosmosprotosdir/proto/cosmos_proto ./proto/cosmos/cosmos-sdk
+    $SUDO cp -r $googledir/google/api ./proto/cosmos/cosmos-sdk/google
 
     cp -r ../../proto/lavanet ./proto
 
     group=$(groups $(whoami) | cut -d' ' -f1)
-    sudo chown -R $(whoami):$group ./proto
+    $SUDO chown -R $(whoami):$group ./proto
 }
