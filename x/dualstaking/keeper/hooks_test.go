@@ -230,6 +230,8 @@ func TestUnbondUniformProviders(t *testing.T) {
 			require.Equal(t, int64(30), d.Amount.Amount)
 		case providers[4]:
 			require.Equal(t, int64(35), d.Amount.Amount) // highest delegation is decreased by uniform amount + remainder
+		default:
+			require.FailNow(t, "unexpected provider in delegations")
 		}
 	}
 
