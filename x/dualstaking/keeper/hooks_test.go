@@ -6,6 +6,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
@@ -236,6 +237,102 @@ func TestUnbondUniformProviders(t *testing.T) {
 	}
 
 	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	require.Nil(t, err)
+	require.True(t, diff.IsZero())
+}
+
+// TestValidatorSlash checks that after a validator gets slashed, the delegators' providers
+// get slashed as expected (by an equal amount to preserve the validators-providers delegation balance)
+func TestValidatorSlash(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(2)
+	ts.addProviders(5)
+	ts.addClients(1)
+	amount := sdk.NewIntFromUint64(10000)
+
+	// create validators and providers
+	var validators []sigs.Account
+	for i := 0; i < 2; i++ {
+		validator, _ := ts.GetAccount(common.VALIDATOR, i)
+		_, err := ts.TxCreateValidator(validator, amount)
+		require.Nil(t, err)
+		validators = append(validators, validator)
+	}
+
+	for i := 0; i < 5; i++ {
+		provider, _ := ts.GetAccount(common.PROVIDER, i)
+		err := ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+		require.Nil(t, err)
+	}
+
+	ts.AdvanceEpoch()
+
+	// delegate to validators (automatically delegates to empty provider)
+	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
+	_, err := ts.TxDelegateValidator(delegatorAcc, validators[0], sdk.NewInt(200))
+	require.Nil(t, err)
+	_, err = ts.TxDelegateValidator(delegatorAcc, validators[1], sdk.NewInt(10))
+	require.Nil(t, err)
+
+	// redelegate from empty provider to all providers with fixed amounts
+	redelegateAmts := []math.Int{
+		sdk.NewInt(10),
+		sdk.NewInt(20),
+		sdk.NewInt(50),
+		sdk.NewInt(60),
+		sdk.NewInt(70),
+	}
+	var providers []string
+	for i := 0; i < 5; i++ {
+		_, provider := ts.GetAccount(common.PROVIDER, i)
+		providers = append(providers, provider)
+		_, err = ts.TxDualstakingRedelegate(delegatorAcc.Addr.String(),
+			dualstakingkeeper.EMPTY_PROVIDER,
+			provider,
+			dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
+			ts.spec.Index,
+			sdk.NewCoin(epochstoragetypes.TokenDenom, redelegateAmts[i]))
+		require.Nil(t, err)
+	}
+
+	// sanity check: redelegate from val2 to val1 and check delegations balance
+	_, err = ts.TxReDelegateValidator(delegatorAcc, validators[1], validators[0], sdk.NewInt(10))
+	require.Nil(t, err)
+	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	require.Nil(t, err)
+	require.True(t, diff.IsZero())
+
+	// sanity check: unbond some of val1's funds and check delegations balance
+	_, err = ts.TxUnbondValidator(delegatorAcc, validators[0], sdk.NewInt(10))
+	require.Nil(t, err)
+	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	require.Nil(t, err)
+	require.True(t, diff.IsZero())
+
+	// slash 24*5 tokens from the validator and check balance
+	valConsAddr := sdk.GetConsAddress(validators[0].ConsKey.PubKey())
+	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, sdk.NewDecWithPrec(6, 1), 1, ts.Ctx.BlockHeight()) // fraction = 120/200 = 0.6
+
+	res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
+	require.Nil(t, err)
+	for _, d := range res.Delegations {
+		switch d.Provider {
+		case providers[0]:
+			require.True(t, d.Amount.Amount.IsZero())
+		case providers[1]:
+			require.True(t, d.Amount.Amount.IsZero())
+		case providers[2]:
+			require.Equal(t, int64(21), d.Amount.Amount.Int64())
+		case providers[3]:
+			require.Equal(t, int64(31), d.Amount.Amount)
+		case providers[4]:
+			require.Equal(t, int64(38), d.Amount.Amount) // highest delegation is decreased by uniform amount + remainder
+		default:
+			require.FailNow(t, "unexpected provider in delegations")
+		}
+	}
+
+	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.Nil(t, err)
 	require.True(t, diff.IsZero())
 }
