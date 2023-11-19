@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -481,9 +482,8 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			if tt.valid {
 				require.Nil(t, err)
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
-				require.Equal(t, gjson.Number, result.Type)
-				extractedID := result.Int()
-				require.Equal(t, changedID, extractedID)
+				extractedID := result.Raw
+				require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)
 			} else {
 				require.Error(t, err)
 			}

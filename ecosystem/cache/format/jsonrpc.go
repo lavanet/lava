@@ -85,7 +85,14 @@ func FormatterForRelayRequestAndResponseJsonRPC() (inputFormatter func([]byte) [
 
 func getExtractedIdAndModifyInputForJson(inpData []byte) (modifiedInp []byte, extractedID interface{}, err error) {
 	result := gjson.GetBytes(inpData, IDFieldName)
-	extractedID = result.Value()
+	switch result.Type {
+	case gjson.Number:
+		extractedID = result.Int()
+	case gjson.String:
+		extractedID = result.Raw
+	default:
+		extractedID = result.Value()
+	}
 	modifiedInp, err = sjson.SetBytes(inpData, IDFieldName, DefaultIDValue)
 	if err != nil {
 		return inpData, extractedID, utils.LavaFormatWarning("failed to set id in json", nil, utils.Attribute{Key: "jsonData", Value: inpData}, utils.LogAttr("extractedID", extractedID))

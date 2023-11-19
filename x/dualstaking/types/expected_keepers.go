@@ -3,11 +3,12 @@ package types
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/lavanet/lava/x/timerstore"
 )
@@ -42,6 +43,7 @@ type EpochstorageKeeper interface {
 
 type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (active bool, found bool, providerType spectypes.Spec_ProvidersTypes)
+	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 }
 
@@ -50,7 +52,7 @@ type StakingKeeper interface {
 }
 
 type FixationStoreKeeper interface {
-	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstore.FixationStore
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstoretypes.FixationStore
 }
 
 type TimerStoreKeeper interface {

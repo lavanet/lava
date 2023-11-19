@@ -4,7 +4,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 )
 
 type EpochStorageKeeper interface {
@@ -17,5 +17,5 @@ type SpecKeeper interface {
 }
 
 type FixationStoreKeeper interface {
-	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstore.FixationStore
+	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstoretypes.FixationStore
 }
