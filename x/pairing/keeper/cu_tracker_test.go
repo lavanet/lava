@@ -474,7 +474,8 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	contributorAccount, contributorAddress := ts.AddAccount("contributor", 0, 0)
 	contributorAccount2, contributorAddress2 := ts.AddAccount("contributor2", 0, 0)
 	spec1.Contributor = []string{contributorAddress, contributorAddress2}
-	spec1.ContributorPercentage = math.LegacyNewDecWithPrec(5, 1) // half the rewards
+	percentage := math.LegacyNewDecWithPrec(5, 1) // half the rewards
+	spec1.ContributorPercentage = &percentage
 	ts.AddSpec(spec1Name, spec1)
 	err := ts.StakeProvider(provider, spec1, testStake)
 	require.Nil(t, err)

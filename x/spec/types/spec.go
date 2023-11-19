@@ -51,7 +51,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 	}
 
-	if spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64))) && !spec.ContributorPercentage.IsZero()) {
+	if spec.ContributorPercentage != nil && (spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64))))) {
 		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64)).String(), maxContributorsPercentageStr)
 	}
 

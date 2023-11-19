@@ -322,7 +322,7 @@ func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contribut
 	if !found {
 		return nil, math.LegacyZeroDec()
 	}
-	if len(spec.Contributor) == 0 || spec.ContributorPercentage.IsZero() {
+	if spec.ContributorPercentage == nil || len(spec.Contributor) == 0 {
 		return nil, math.LegacyZeroDec()
 	}
 	for _, contributorAddrSt := range spec.Contributor {
@@ -334,5 +334,5 @@ func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contribut
 		}
 		contributors = append(contributors, contributorAddr)
 	}
-	return contributors, spec.ContributorPercentage
+	return contributors, *spec.ContributorPercentage
 }
