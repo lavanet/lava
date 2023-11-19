@@ -21,31 +21,6 @@ var (
 	EntryIndexDead = []byte{2}
 )
 
-// TimerStore
-
-type TimerType int
-
-const (
-	BlockHeight TimerType = iota
-	BlockTime
-)
-
-const (
-	TimerVersionKey = "Timer_Version"
-	NextTimerPrefix = "Timer_Next_"
-	TimerPrefix     = "Timer_Value_"
-)
-
-var NextTimerKey = []string{
-	"NextBlock", // for BlockHeight
-	"NextDate",  // for BlockTime
-}
-
-var TimerTypePrefix = []string{
-	"Block_", // for BlockHeight
-	"Time_",  // for BlockTime
-}
-
 // Common encoder/decode
 
 func EncodeBlockAndKey(block uint64, key []byte) []byte {

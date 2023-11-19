@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/lavanet/lava/x/fixationstore"
 
 	"github.com/cometbft/cometbft/libs/log"
 
@@ -23,7 +22,7 @@ type (
 		epochstorageKeeper types.EpochStorageKeeper
 		specKeeper         types.SpecKeeper
 
-		plansFS fixationstore.FixationStore
+		plansFS fixationtypes.FixationStore
 	}
 )
 

@@ -1,4 +1,4 @@
-package fixationstore
+package types
 
 const (
 	ModuleName = "fixationstore"

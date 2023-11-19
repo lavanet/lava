@@ -15,7 +15,7 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/keeper"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
@@ -67,7 +67,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		&mockAccountKeeper{},
 		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
-		fixationstore.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw),
+		fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw),
 		tsKeeper,
 	)
 
