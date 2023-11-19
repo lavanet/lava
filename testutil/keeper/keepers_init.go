@@ -23,6 +23,8 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils/sigs"
@@ -82,6 +84,7 @@ type Keepers struct {
 	ParamsKeeper        paramskeeper.Keeper
 	BlockStore          MockBlockStore
 	Downtime            downtimekeeper.Keeper
+	SlashingKeeper      slashingkeeper.Keeper
 }
 
 type Servers struct {
@@ -95,6 +98,7 @@ type Servers struct {
 	SubscriptionServer subscriptiontypes.MsgServer
 	DualstakingServer  dualstakingtypes.MsgServer
 	PlansServer        planstypes.MsgServer
+	SlashingServer     slashingtypes.MsgServer
 }
 
 type KeeperBeginBlocker interface {
@@ -117,9 +121,13 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	registry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
+	legacyCdc := codec.NewLegacyAmino()
 
 	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
 	stateStore.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
+
+	slashingStoreKey := sdk.NewKVStoreKey(slashingtypes.StoreKey)
+	stateStore.MountStoreWithDB(slashingStoreKey, storetypes.StoreTypeIAVL, db)
 
 	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
 	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
@@ -214,6 +222,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, slashingStoreKey, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
@@ -234,6 +243,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stakingparams := stakingtypes.DefaultParams()
 	stakingparams.BondDenom = epochstoragetypes.TokenDenom
 	ks.StakingKeeper.SetParams(ctx, stakingparams)
+	slashingParams := slashingtypes.DefaultParams()
+	ks.SlashingKeeper.SetParams(ctx, slashingParams)
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
@@ -266,6 +277,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
 	ss.DualstakingServer = dualstakingkeeper.NewMsgServerImpl(ks.Dualstaking)
 	ss.StakingServer = stakingkeeper.NewMsgServerImpl(&ks.StakingKeeper)
+	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
