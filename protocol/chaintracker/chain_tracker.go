@@ -424,7 +424,7 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 	}
 	newTickerDuration := exponentialBackoff(newPollingTime, fetchFails)
 	if PollingMultiplier > 1 {
-		newTickerDuration = newTickerDuration / time.Duration(PollingMultiplier)
+		newTickerDuration /= time.Duration(PollingMultiplier)
 	}
 	if debug {
 		utils.LavaFormatDebug("state tracker ticker set", utils.Attribute{Key: "timeSinceLastUpdate", Value: timeSinceLastUpdate}, utils.Attribute{Key: "time", Value: time.Now()}, utils.Attribute{Key: "newTickerDuration", Value: newTickerDuration})
