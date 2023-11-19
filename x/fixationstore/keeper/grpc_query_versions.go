@@ -15,13 +15,21 @@ func (k *Keeper) Versions(goCtx context.Context, req *types.QueryVersionsRequest
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	var blocks []uint64
+	var entries []types.Entry
 	for _, store := range k.fixationsStores {
 		if store.GetStoreKey().Name() == req.StoreKey && store.GetStorePrefix() == req.Prefix {
-			blocks = store.GetAllEntryVersions(ctx, req.Key)
+			blocks := store.GetAllEntryVersions(ctx, req.Key)
+			for _, block := range blocks {
+				entry, err := store.FindRawEntry(ctx, req.Key, block)
+				if err != nil {
+					return nil, err
+				}
+				entry.Index = req.Key // desanitize index so it will be printable
+				entries = append(entries, entry)
+			}
 			break
 		}
 	}
 
-	return &types.QueryVersionsResponse{Blocks: blocks}, nil
+	return &types.QueryVersionsResponse{Entries: entries}, nil
 }

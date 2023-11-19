@@ -58,7 +58,7 @@ message QueryVersionsRequest {
 }
 
 message QueryVersionsResponse {
-  repeated uint64 blocks = 1;
+  repeated lavanet.lava.fixationstore.Entry entries = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryEntryRequest {
