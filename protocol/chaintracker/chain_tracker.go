@@ -38,9 +38,7 @@ const (
 	PollingMultiplierFlagName     = "polling-multiplier"
 )
 
-var (
-	PollingMultiplier = uint64(1)
-)
+var PollingMultiplier = uint64(1)
 
 type ChainFetcher interface {
 	FetchLatestBlockNum(ctx context.Context) (int64, error)
