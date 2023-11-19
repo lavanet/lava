@@ -7,4 +7,5 @@ const (
 	RefundedEventName          = "refund_to_delegator"
 	ClaimRewardsEventName      = "delegator_claim_rewards"
 	ContributorRewardEventName = "contributor_rewards"
+	ValidatorSlashEventName    = "validator_slash"
 )
