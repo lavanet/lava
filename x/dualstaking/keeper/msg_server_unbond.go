@@ -52,6 +52,12 @@ func (k msgServer) Unbond(goCtx context.Context, msg *types.MsgUnbond) (*types.M
 		return nil, err
 	}
 
+	// in case the the whole delegation was removed staking dont call the hook. we call it here instead to make sure
+	err = k.Hooks().AfterDelegationModified(ctx, delegatorAddress, addr)
+	if err != nil {
+		return nil, err
+	}
+
 	if err == nil {
 		logger := k.Keeper.Logger(ctx)
 		details := map[string]string{

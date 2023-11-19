@@ -35,6 +35,13 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 		)
 	}
 
+	if err := validateCoins(msg.Amount); err != nil {
+		return nil, err
+	} else if msg.Amount.IsZero() {
+		return nil, sdkerrors.Wrapf(
+			sdkerrors.ErrInvalidRequest, "invalid coin amount: got 0")
+	}
+
 	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, msg.Amount.Amount, stakingtypes.Unbonded, validator, true)
 	if err != nil {
 		return nil, err
