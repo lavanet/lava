@@ -27,7 +27,9 @@ OUT_DIR="./src/grpc_web_services"
 
 mkdir -p "$OUT_DIR"
 
-protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
+protoc \
+    --plugin="protoc-gen-js=./node_modules/.bin/protoc-gen-js" \
+    --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     --js_out="import_style=commonjs,binary:$OUT_DIR" \
     --ts_out="service=grpc-web:$OUT_DIR" \
     --proto_path="$COSMOS_PROTO_DIR" \

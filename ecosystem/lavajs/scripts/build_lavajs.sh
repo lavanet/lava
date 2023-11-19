@@ -19,7 +19,7 @@ while getopts ":s" opt; do
 done
 
 # preparing the env
-prepare
+prepare $use_sudo
 
 echo "cloning lavanet proto directory to ./proto/lavanet"
 rm -rf ./proto/lavanet
