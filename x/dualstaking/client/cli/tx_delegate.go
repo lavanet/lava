@@ -15,13 +15,14 @@ var _ = strconv.Itoa(0)
 
 func CmdDelegate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delegate [provider] [chain-id] [amount]",
-		Short: "delegate to a provider",
-		Args:  cobra.ExactArgs(3),
+		Use:   "delegate [validator] [provider] [chain-id] [amount]",
+		Short: "delegate to a validator and provider",
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argProvider := args[0]
-			argChainID := args[1]
-			argAmount, err := sdk.ParseCoinNormalized(args[2])
+			argvalidator := args[0]
+			argProvider := args[1]
+			argChainID := args[2]
+			argAmount, err := sdk.ParseCoinNormalized(args[3])
 			if err != nil {
 				return err
 			}
@@ -33,6 +34,7 @@ func CmdDelegate() *cobra.Command {
 
 			msg := types.NewMsgDelegate(
 				clientCtx.GetFromAddress().String(),
+				argvalidator,
 				argProvider,
 				argChainID,
 				argAmount,

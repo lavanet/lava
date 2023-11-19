@@ -4,6 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -11,10 +13,39 @@ import (
 func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.Keeper.Delegate(
+	valAddr, valErr := sdk.ValAddressFromBech32(msg.Validator)
+	if valErr != nil {
+		return nil, valErr
+	}
+
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
+	delegatorAddress, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, err
+	}
+
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	if msg.Amount.Denom != bondDenom {
+		return nil, sdkerrors.Wrapf(
+			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Amount.Denom, bondDenom,
+		)
+	}
+
+	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, msg.Amount.Amount, stakingtypes.Unbonded, validator, true)
+	if err != nil {
+		return nil, err
+	}
+
+	err = k.Keeper.Redelegate(
 		ctx,
 		msg.Creator,
+		EMPTY_PROVIDER,
 		msg.Provider,
+		EMPTY_PROVIDER_CHAINID,
 		msg.ChainID,
 		msg.Amount,
 	)

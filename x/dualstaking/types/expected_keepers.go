@@ -54,6 +54,8 @@ type StakingKeeper interface {
 	UnbondingTime(ctx sdk.Context) time.Duration
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	BondDenom(ctx sdk.Context) string
+	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
 }
 
 type FixationStoreKeeper interface {
