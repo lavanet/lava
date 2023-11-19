@@ -1,4 +1,4 @@
-package fixationstore
+package types
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +36,7 @@ func TestMigrate1to2(t *testing.T) {
 
 	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts, mockGetStaleBlock)
-	fs.Init(ctx, types.GenesisState{Version: 1})
+	fs.Init(ctx, GenesisState{Version: 1})
 
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
 
@@ -71,7 +70,7 @@ func TestMigrate1to2(t *testing.T) {
 	// verify entries before migration
 	for _, tt := range templates {
 		what := fmt.Sprintf("before: index: %s, block: %d, count: %d", tt.index, tt.block, tt.count)
-		safeIndex, err := types.SanitizeIndex(tt.index)
+		safeIndex, err := SanitizeIndex(tt.index)
 		require.Nil(t, err, what)
 		entry := fs.getEntry(ctx, safeIndex, tt.block)
 		if tt.head {
@@ -95,7 +94,7 @@ func TestMigrate1to2(t *testing.T) {
 	// verify entries after migration
 	for _, tt := range templates {
 		what := fmt.Sprintf("after: index: %s, block: %d, count: %d", tt.index, tt.block, tt.count)
-		safeIndex, err := types.SanitizeIndex(tt.index)
+		safeIndex, err := SanitizeIndex(tt.index)
 		require.Nil(t, err, what)
 		entry := fs.getEntry(ctx, safeIndex, tt.block)
 		require.Equal(t, tt.after, entry.Refcount, what)
@@ -114,24 +113,24 @@ type mockEntry2to3 struct {
 }
 
 // V2_setEntryIndex stores an Entry index in the store
-func (fs FixationStore) V2_setEntryIndex(ctx sdk.Context, safeIndex types.SafeIndex) {
-	storePrefix := types.EntryIndexPrefix + fs.prefix
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(storePrefix))
+func (fs FixationStore) V2_setEntryIndex(ctx sdk.Context, safeIndex SafeIndex) {
+	storePrefix := EntryIndexPrefix + fs.prefix
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), KeyPrefix(storePrefix))
 	appendedValue := []byte(safeIndex) // convert the index value to a byte array
-	store.Set(types.KeyPrefix(storePrefix+string(safeIndex)), appendedValue)
+	store.Set(KeyPrefix(storePrefix+string(safeIndex)), appendedValue)
 }
 
 // V2_setEntry modifies an existing entry in the store
-func (fs *FixationStore) V2_setEntry(ctx sdk.Context, entry types.Entry) {
-	storePrefix := types.EntryPrefix + fs.prefix + entry.Index
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), types.KeyPrefix(storePrefix))
-	byteKey := types.EncodeKey(entry.Block)
+func (fs *FixationStore) V2_setEntry(ctx sdk.Context, entry Entry) {
+	storePrefix := EntryPrefix + fs.prefix + entry.Index
+	store := prefix.NewStore(ctx.KVStore(fs.storeKey), KeyPrefix(storePrefix))
+	byteKey := EncodeKey(entry.Block)
 	marshaledEntry := fs.cdc.MustMarshal(&entry)
 	store.Set(byteKey, marshaledEntry)
 }
 
 func countWithPrefix(store *prefix.Store, prefix string) int {
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefix(prefix))
+	iterator := sdk.KVStorePrefixIterator(store, KeyPrefix(prefix))
 	defer iterator.Close()
 
 	count := 0
@@ -150,7 +149,7 @@ func TestMigrate2to3(t *testing.T) {
 
 	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts, mockGetStaleBlock)
-	fs.Init(ctx, types.GenesisState{Version: 2})
+	fs.Init(ctx, GenesisState{Version: 2})
 
 	coin := sdk.Coin{Denom: "utest", Amount: sdk.NewInt(1)}
 
@@ -176,13 +175,13 @@ func TestMigrate2to3(t *testing.T) {
 	numEntries, numHeads := 0, 0
 	for _, tt := range templates {
 		what := fmt.Sprintf("before: index: %s, block: %d", tt.index, tt.block)
-		safeIndex, err := types.SanitizeIndex(tt.index)
+		safeIndex, err := SanitizeIndex(tt.index)
 		require.Nil(t, err, what)
 		if tt.head {
 			fs.V2_setEntryIndex(ctx, safeIndex)
 			numHeads += 1
 		}
-		entry := types.Entry{
+		entry := Entry{
 			Index:    string(safeIndex),
 			Block:    tt.block,
 			StaleAt:  math.MaxUint64,
@@ -221,7 +220,7 @@ func TestMigrate2to3(t *testing.T) {
 	// verify entries after migration
 	for _, tt := range templates {
 		what := fmt.Sprintf("after: index: %s, block: %d", tt.index, tt.block)
-		safeIndex, err := types.SanitizeIndex(tt.index)
+		safeIndex, err := SanitizeIndex(tt.index)
 		require.Nil(t, err, what)
 		_, found := fs.getUnmarshaledEntryForBlock(ctx, safeIndex, tt.block)
 		require.True(t, found, what)

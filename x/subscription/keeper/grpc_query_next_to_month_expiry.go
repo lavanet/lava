@@ -4,8 +4,8 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/subscription/types"
+	timertypes "github.com/lavanet/lava/x/timerstore/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,7 +17,7 @@ func (k Keeper) NextToMonthExpiry(goCtx context.Context, req *types.QueryNextToM
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	subAddrs, expiries := k.subsTS.GetFrontTimers(ctx, fixationtypes.BlockTime)
+	subAddrs, expiries := k.subsTS.GetFrontTimers(ctx, timertypes.BlockTime)
 	if len(subAddrs) == 0 {
 		return &types.QueryNextToMonthExpiryResponse{}, nil
 	}

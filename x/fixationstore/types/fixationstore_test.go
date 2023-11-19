@@ -1,4 +1,4 @@
-package fixationstore
+package types
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*FixationStore) {
+func InitCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*FixationStore) {
 	ctx, cdc := initCtx(t)
 
 	fs := make([]*FixationStore, count)
@@ -31,12 +31,12 @@ func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*Fixation
 	return ctx, fs
 }
 
-func initCtxAndFixationStore(t *testing.T) (sdk.Context, *FixationStore) {
-	ctx, fs := initCtxAndFixationStores(t, 1)
+func InitCtxAndFixationStore(t *testing.T) (sdk.Context, *FixationStore) {
+	ctx, fs := InitCtxAndFixationStores(t, 1)
 	return ctx, fs[0]
 }
 
-type fixationTemplate struct {
+type FixationTemplate struct {
 	op    string // op-code
 	name  string // description
 	index string // entry index (name)
@@ -50,12 +50,12 @@ type fixationTemplate struct {
 }
 
 // helper to automate testing operations
-func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countObj, countVS int) {
-	ctx, fs := initCtxAndFixationStores(t, countVS)
+func testWithFixationTemplate(t *testing.T, playbook []FixationTemplate, countObj, countVS int) {
+	ctx, fs := InitCtxAndFixationStores(t, countVS)
 	runPlaybook(t, ctx, fs, playbook, countObj)
 }
 
-func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []fixationTemplate, countObj int) {
+func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []FixationTemplate, countObj int) {
 	var coins []sdk.Coin
 	var dummy sdk.Coin
 
@@ -149,7 +149,7 @@ func TestEntryInvalidIndex(t *testing.T) {
 	invalid := "index" + string('\001')
 	unknown := "unknown"
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "with invalid index (fail)", index: invalid, fail: true},
 		{op: "find", name: "with invalid index (fail)", index: invalid, fail: true},
 		{op: "get", name: "with invalid index (fail)", index: invalid, fail: true},
@@ -165,7 +165,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
 		{op: "has", name: "entry #1", count: block0, coin: 0},
@@ -195,7 +195,7 @@ func TestFixationEntryAppendFuture(t *testing.T) {
 	block2 := int64(300)
 	block3 := int64(400)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
 		{op: "append", name: "entry #4", count: -block3, coin: 3},
@@ -221,7 +221,7 @@ func TestFixationRetroactiveAppend(t *testing.T) {
 	block2 := int64(300)
 	block3 := int64(400)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "block", name: "advance to block0", count: block3},
 		{op: "append", name: "entry #1 retroactive", count: block0, coin: 0},
 		{op: "get", name: "get entry #1", coin: 0},
@@ -240,7 +240,7 @@ func TestFixationRetroactiveAppend(t *testing.T) {
 func TestAdditionOfTwoEntriesWithSameIndexInSameBlock(t *testing.T) {
 	block0 := int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block0, coin: 1},
 		{op: "getall", name: "to check exactly one index", count: 1},
@@ -255,7 +255,7 @@ func TestEntryVersions(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "find", name: "entry #1", count: block0, coin: 0},
@@ -271,7 +271,7 @@ func TestEntryStale(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10) + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "get", name: "refcount entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
@@ -303,7 +303,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
 		{op: "append", name: "entry #1 (store #2)", store: 1, count: block1, coin: 1},
 		{op: "getall", name: "for exactly one index (store #1)", store: 0, count: 1},
@@ -328,7 +328,7 @@ func TestGetAndPutEntry(t *testing.T) {
 	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "get", name: "refcount entry #1", coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
@@ -349,7 +349,7 @@ func TestDoublePutEntry(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
 		{op: "append", name: "entry #1 version 1", count: block1, coin: 0},
 		// entry #1 with block zero now has refcount = zero
@@ -363,7 +363,7 @@ func TestPutFutureEntry(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
 		{op: "append", name: "entry #1 version 1 (future)", count: -block1, coin: 0},
 		{op: "getvers", name: "to check 2 versions", count: 2},
@@ -381,7 +381,7 @@ func TestDelEntry(t *testing.T) {
 	block2 := block1 + 10
 	block3 := block2 + 10
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
 		{op: "get", name: "entry #1", coin: 0},
 		{op: "append", name: "entry #1 version 1", count: block1, coin: 1},
@@ -424,7 +424,7 @@ func TestDelThenAddEntry(t *testing.T) {
 	block2 := int64(300)
 	block3 := int64(400)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
 		{op: "del", name: "between entry #2 and entry #3 ", count: block2 + 50},
@@ -461,7 +461,7 @@ func TestDelEntryWithFuture(t *testing.T) {
 	block2 := int64(300)
 	block3 := int64(2000)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #3", count: -block2, coin: 2},
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
@@ -497,7 +497,7 @@ func TestDelEntrySameFuture(t *testing.T) {
 	block0 := int64(100)
 	block1 := int64(200)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: -block1, coin: 1},
 		{op: "getvers", name: "to check 2 versions", count: 2},
@@ -519,7 +519,7 @@ func TestDelEntryFutureNoPrevious(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 version 0 (future)", count: -block0, coin: 0},
 		{op: "append", name: "entry #1 version 1 (future)", count: -block1, coin: 1},
 		{op: "append", name: "entry #1 version 2 (future)", count: -block2, coin: 2},
@@ -540,7 +540,7 @@ func TestDeleletdStaleStays(t *testing.T) {
 	block3 := block2 + 10
 	block4 := block3 + 10
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
 		{op: "get", name: "entry #1", coin: 0},
 		{op: "append", name: "entry #1 version 1", count: block1, coin: 1},
@@ -565,14 +565,14 @@ func TestExactEntryMethods(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
 		{op: "append", name: "entry #1 version 1", count: block1, coin: 0},
 	}
 
 	testWithFixationTemplate(t, playbook, 1, 1)
 
-	playbooks := [][]fixationTemplate{
+	playbooks := [][]FixationTemplate{
 		{{op: "read", name: "with invalid index (fail)", index: invalid}},
 		{{op: "modify", name: "with invalid index (fail)", index: invalid}},
 		{{op: "put", name: "with invalid index (fail)", index: invalid}},
@@ -596,7 +596,7 @@ func TestDeleteTwoEntries(t *testing.T) {
 	block2 := block1 + int64(10)
 	block3 := block2 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
@@ -621,7 +621,7 @@ func TestRemoveStaleEntries(t *testing.T) {
 	block8 := block7 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 1
 	block9 := block8 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 2
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "get", name: "refcount entry #1", coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
@@ -657,7 +657,7 @@ func TestIllegalPutLatestEntry(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "block", name: "advance a bit", count: block1 - block0},
 		{op: "getvers", name: "to check 1 versions left", count: 1},
@@ -677,7 +677,7 @@ func TestRemoveLastEntry(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{}))
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "block", name: "advance a bit", count: block1 - block0},
 		{op: "del", name: "refcount entry #1"},
@@ -697,7 +697,7 @@ func TestEntriesSort(t *testing.T) {
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
 		{op: "append", name: "entry #2", count: block1, coin: 1},
 		{op: "append", name: "entry #3", count: block2, coin: 2},
@@ -713,7 +713,7 @@ func TestEntriesSort(t *testing.T) {
 func TestGetAllEntries(t *testing.T) {
 	block0 := int64(10)
 
-	playbook := []fixationTemplate{
+	playbook := []FixationTemplate{
 		{op: "append", name: "entry #1", index: "prefix1_a", count: block0, coin: 0},
 		{op: "append", name: "entry #1", index: "prefix1_b", count: block0, coin: 1},
 		{op: "append", name: "entry #1", index: "prefix1_c", count: block0, coin: 2},

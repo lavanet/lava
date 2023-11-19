@@ -16,8 +16,8 @@
     "mjs"
   ],
   "scripts": {
-    "e2e-setup": "./scripts/build_lavajs.sh",
-    "init": "./scripts/build_lavajs.sh",
+    "e2e-setup": "./scripts/build_lavajs.sh -s",
+    "init": "./scripts/build_lavajs.sh -s",
     "clean:mjs": "rimraf mjs",
     "clean:dist": "rimraf dist",
     "clean": "npm run clean:mjs && npm run clean:dist",

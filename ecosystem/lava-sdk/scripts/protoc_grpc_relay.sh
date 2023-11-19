@@ -1,7 +1,24 @@
 #!/bin/bash
 source ./scripts/prepare_protobufs.sh
+
+# Flag variable
+use_sudo=false
+
+# Parse arguments
+while getopts ":s" opt; do
+  case $opt in
+    s)
+      use_sudo=true
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+
 # preparing the env
-prepare
+prepare $use_sudo
 
 ROOT_PROTO_DIR="./proto/cosmos/cosmos-sdk"
 COSMOS_PROTO_DIR="$ROOT_PROTO_DIR"
@@ -10,7 +27,9 @@ OUT_DIR="./src/grpc_web_services"
 
 mkdir -p "$OUT_DIR"
 
-protoc --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
+protoc \
+    --plugin="protoc-gen-js=./node_modules/.bin/protoc-gen-js" \
+    --plugin="protoc-gen-ts=./node_modules/.bin/protoc-gen-ts" \
     --js_out="import_style=commonjs,binary:$OUT_DIR" \
     --ts_out="service=grpc-web:$OUT_DIR" \
     --proto_path="$COSMOS_PROTO_DIR" \

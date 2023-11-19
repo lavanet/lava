@@ -24,21 +24,8 @@ jobs:
         with:
           node-version: "21"
 
-      - name: Install protoc executable
-        run: sudo apt update && sudo apt install -y protobuf-compiler
-
-      - name: Install yarn and protoc-gen-ts
-        run: npm install -g yarn protoc-gen-ts
-
-      - name: Run go mod tidy
-        run: go mod tidy
-
-      - name: Install modules
-        run: yarn
-        working-directory: ./ecosystem/lava-sdk
-
-      - name: Prepare proto files
-        run: GOPATH=~/go ./scripts/protoc_grpc_relay.sh
+      - name: Init the SDK
+        run: GOPATH=~/go ./scripts/init_sdk.sh -s
         working-directory: ./ecosystem/lava-sdk
 
       - name: ESLint
