@@ -107,4 +107,8 @@ else
 fi
 
 # Run the gRPC generation script
-./scripts/protoc_grpc_relay.sh
+if [ "$use_sudo" = true ]; then
+    ./scripts/protoc_grpc_relay.sh -s
+else
+    ./scripts/protoc_grpc_relay.sh
+fi
