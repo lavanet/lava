@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 )
 
 // this line is used by starport scaffolding # genesis/types/import
@@ -14,8 +14,8 @@ func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:      DefaultParams(),
-		ProjectsFS:  *fixationstore.DefaultGenesis(),
-		DeveloperFS: *fixationstore.DefaultGenesis(),
+		ProjectsFS:  *fixationtypes.DefaultGenesis(),
+		DeveloperFS: *fixationtypes.DefaultGenesis(),
 	}
 }
 

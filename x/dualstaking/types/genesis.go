@@ -3,7 +3,7 @@ package types
 import (
 	fmt "fmt"
 
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
 )
 
@@ -16,8 +16,8 @@ func DefaultGenesis() *GenesisState {
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:              DefaultParams(),
 		DelegatorRewardList: []DelegatorReward{},
-		DelegationsFS:       *fixationstore.DefaultGenesis(),
-		DelegatorsFS:        *fixationstore.DefaultGenesis(),
+		DelegationsFS:       *fixationstoretypes.DefaultGenesis(),
+		DelegatorsFS:        *fixationstoretypes.DefaultGenesis(),
 		UnbondingsTS:        *timerstore.DefaultGenesis(),
 	}
 }

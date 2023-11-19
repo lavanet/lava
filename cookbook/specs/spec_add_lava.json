@@ -21,11 +21,6 @@
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
-                "providers_types": 1,
                 "api_collections": [
                     {
                         "enabled": true,
@@ -436,7 +431,9 @@
                                 "name": "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block","=","3"
+                                        "block",
+                                        "=",
+                                        "3"
                                     ],
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
                                 },
