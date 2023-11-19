@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -201,7 +200,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	projectData := types.ProjectData{
@@ -895,7 +894,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlocks(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 
 	// part (2): delete project then keys
 
@@ -929,7 +928,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlocks(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 }
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
@@ -1044,14 +1043,14 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
-			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan})
+			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
 			if tt.planPolicyValid {
 				require.Nil(t, err)
 			} else {
 				require.NotNil(t, err)
 			}
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 			require.Nil(t, err)
 
 			res, err := ts.QuerySubscriptionListProjects(sub1Addr)
@@ -1133,7 +1132,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	}
 
 	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
-	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans)
+	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans, false)
 	require.Nil(t, err)
 
 	freeUser := common.CreateNewAccount(_ctx, *keepers, 10000)
@@ -1217,4 +1216,45 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPendingProject(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0)
+
+	_, sub := ts.Account("sub1")
+
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false)
+	require.Nil(t, err)
+
+	res, err := ts.QuerySubscriptionListProjects(sub)
+	require.Nil(t, err)
+	projectID := res.Projects[0]
+
+	adminPolicy := ts.Plan("free").PlanPolicy
+	_, err = ts.TxProjectSetPolicy(projectID, sub, adminPolicy)
+	require.Nil(t, err)
+
+	// we didn't advance an epoch yet so querying for the project should have a pending project
+	infRes, err := ts.QueryProjectInfo(projectID)
+	require.Nil(t, err)
+	require.NotNil(t, infRes.PendingProject)
+	pendingProjAdminPolicy := infRes.PendingProject.AdminPolicy
+	require.True(t, adminPolicy.Equal(pendingProjAdminPolicy))
+
+	devRes, err := ts.QueryProjectDeveloper(sub)
+	require.Nil(t, err)
+	require.NotNil(t, infRes.PendingProject)
+	pendingProjAdminPolicy = devRes.PendingProject.AdminPolicy
+	require.True(t, adminPolicy.Equal(pendingProjAdminPolicy))
+
+	// advance an epoch to apply the new project settings, there should be no pending projects
+	ts.AdvanceEpoch()
+	infRes, err = ts.QueryProjectInfo(projectID)
+	require.Nil(t, err)
+	require.Nil(t, infRes.PendingProject)
+
+	devRes, err = ts.QueryProjectDeveloper(sub)
+	require.Nil(t, err)
+	require.Nil(t, devRes.PendingProject)
 }

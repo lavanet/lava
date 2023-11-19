@@ -6,14 +6,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescription string) error {
 	logger := k.Logger(ctx)
-
 	// TODO: validate chainID basic validation
 
 	// we can unstake disabled specs, but not missing ones
@@ -30,13 +28,24 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 		)
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+	existingEntry, entryExists, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
 			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "spec", Value: chainID},
 		)
 	}
+
+	err = k.dualstakingKeeper.Unbond(ctx, existingEntry.GetAddress(), existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake, true)
+	if err != nil {
+		return utils.LavaFormatWarning("can't unbond seld delegation", err,
+			utils.Attribute{Key: "address", Value: existingEntry.Address},
+			utils.Attribute{Key: "spec", Value: chainID},
+		)
+	}
+
+	// index might have changed in the unbond
+	existingEntry, _, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
 	if err != nil {
 		return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,
@@ -60,70 +69,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) {
 	// this pops all the entries that had their deadline pass
-	unstakingEntriesToCredit := k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
-
-	if unstakingEntriesToCredit != nil {
-		k.creditUnstakingEntries(ctx, unstakingEntriesToCredit) // true for providers
-	}
-}
-
-func (k Keeper) refundUnstakingProvider(ctx sdk.Context, addr sdk.AccAddress, neededAmount sdk.Coin) error {
-	moduleBalance := k.bankKeeper.GetBalance(ctx, k.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
-	if moduleBalance.IsLT(neededAmount) {
-		return fmt.Errorf("insufficient balance to unstake %s (current balance: %s)", neededAmount, moduleBalance)
-	}
-	err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{neededAmount})
-	if err != nil {
-		return fmt.Errorf("failed to send coins from module to %s: %w", addr, err)
-	}
-	return nil
-}
-
-func (k Keeper) creditUnstakingEntries(ctx sdk.Context, entriesToUnstake []epochstoragetypes.StakeEntry) {
-	logger := k.Logger(ctx)
-
-	for _, unstakingEntry := range entriesToUnstake {
-		details := map[string]string{
-			"spec":     unstakingEntry.Chain,
-			"provider": unstakingEntry.Address,
-			"stake":    unstakingEntry.Stake.String(),
-		}
-
-		if unstakingEntry.StakeAppliedBlock <= uint64(ctx.BlockHeight()) {
-			receiverAddr, err := sdk.AccAddressFromBech32(unstakingEntry.Address)
-			if err != nil {
-				// this should not happen; to avoid panic we simply skip this one (thus
-				// freeze the situation so it can be investigated and orderly resolved).
-				utils.LavaFormatError("critical: failed to get unstaking provider address", err,
-					utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-					utils.Attribute{Key: "provider", Value: unstakingEntry.Address},
-				)
-				continue
-			}
-			if unstakingEntry.Stake.Amount.GT(sdk.ZeroInt()) {
-				// transfer stake money to the stake entry account
-				err := k.refundUnstakingProvider(ctx, receiverAddr, unstakingEntry.Stake)
-				if err != nil {
-					// we should always be able to redund a provider that decides to unstake;
-					// but to avoid panic, just emit a critical error and proceed
-					utils.LavaFormatError("critical: failed to refund staked provider", err,
-						utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-						utils.Attribute{Key: "provider", Value: receiverAddr},
-						utils.Attribute{Key: "stake", Value: unstakingEntry.Stake},
-					)
-				} else {
-					utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, "Unstaking Providers Commit")
-				}
-			}
-		} else {
-			// found an entry that isn't handled now, but later because its stakeAppliedBlock isnt current block
-			utils.LavaFormatWarning("trying to unstake while its stakeAppliedBlock wasn't reached", fmt.Errorf("unstake failed"),
-				utils.Attribute{Key: "spec", Value: unstakingEntry.Chain},
-				utils.Attribute{Key: "provider", Value: unstakingEntry.Address},
-				utils.Attribute{Key: "stake", Value: unstakingEntry.Stake.String()},
-			)
-		}
-	}
+	k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 }
 
 // NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.

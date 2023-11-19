@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
@@ -25,10 +26,12 @@ type ConsumerStateTracker struct {
 	stateQuery *ConsumerStateQuery
 	ConsumerTxSenderInf
 	*StateTracker
+	ConsumerEmergencyTrackerInf
 }
 
-func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *ConsumerStateTracker, err error) {
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher)
+func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
+	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +39,16 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	cst := &ConsumerStateTracker{StateTracker: stateTrackerBase, stateQuery: NewConsumerStateQuery(ctx, clientCtx), ConsumerTxSenderInf: txSender}
-	return cst, nil
+	cst := &ConsumerStateTracker{
+		StateTracker:                stateTrackerBase,
+		stateQuery:                  NewConsumerStateQuery(ctx, clientCtx),
+		ConsumerTxSenderInf:         txSender,
+		ConsumerEmergencyTrackerInf: emergencyTracker,
+	}
+
+	cst.RegisterForPairingUpdates(ctx, emergencyTracker)
+	err = cst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
+	return cst, err
 }
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
@@ -51,6 +62,19 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 	if err != nil {
 		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
+	}
+}
+
+func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable PairingUpdatable) {
+	pairingUpdater := NewPairingUpdater(cst.stateQuery)
+	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
+	pairingUpdater, ok := pairingUpdaterRaw.(*PairingUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: pairingUpdaterRaw})
+	}
+	err := pairingUpdater.RegisterPairingUpdatable(ctx, &pairingUpdatable)
+	if err != nil {
+		utils.LavaFormatError("failed registering updatable for pairing updates", err)
 	}
 }
 
@@ -98,6 +122,18 @@ func (cst *ConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, 
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
 	}
 	versionUpdater.RegisterVersionUpdatable()
+}
+
+func (cst *ConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
+	downtimeParamsUpdater := NewDowntimeParamsUpdater(cst.stateQuery, cst.EventTracker)
+	downtimeParamsUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (cst *ConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {

@@ -444,8 +444,8 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
-	// add 1 months to the subscription
-	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 1)
+	// add 10 months to the subscription
+	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10, false)
 	require.Nil(t, err)
 
 	totalCuLimit := ts.plan.PlanPolicy.TotalCuLimit

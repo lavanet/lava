@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/x/fixationstore"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
+	timertypes "github.com/lavanet/lava/x/timerstore/types"
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -77,7 +78,7 @@ func NewKeeper(
 		keeper.finalizeUnbonding(ctx, key, data)
 	}
 
-	unbondingTS := *timerStoreKeeper.NewTimerStore(storeKey, types.UnbondingPrefix).
+	unbondingTS := *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.UnbondingPrefix).
 		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS
@@ -98,7 +99,7 @@ func (k Keeper) ExportDelegators(ctx sdk.Context) fixationtypes.GenesisState {
 }
 
 // ExportUnbondings exports dualstaking unbonding timers data (for genesis)
-func (k Keeper) ExportUnbondings(ctx sdk.Context) []fixationtypes.RawMessage {
+func (k Keeper) ExportUnbondings(ctx sdk.Context) timertypes.GenesisState {
 	return k.unbondingTS.Export(ctx)
 }
 
@@ -113,8 +114,8 @@ func (k Keeper) InitDelegators(ctx sdk.Context, data fixationtypes.GenesisState)
 }
 
 // InitUnbondings imports subscriptions timers data (from genesis)
-func (k Keeper) InitUnbondings(ctx sdk.Context, data []fixationtypes.RawMessage) {
-	k.unbondingTS.Init(ctx, data)
+func (k Keeper) InitUnbondings(ctx sdk.Context, gs timertypes.GenesisState) {
+	k.unbondingTS.Init(ctx, gs)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

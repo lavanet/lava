@@ -9,14 +9,16 @@
 </div>
 
 <b>Access Web3 APIs, the Lava way 🌋</b>
-    
+
 JavaScript/TypeScript SDK reference implementation designed for developers looking for access through the Lava Network. It can be added to your app/dapp and run in browsers to provide multi-chain peer-to-peer access to blockchain APIs.
 
 # Official Documentation
 [https://docs.lavanet.xyz/access-sdk](https://docs.lavanet.xyz/access-sdk?utm_source=sdk-readme&utm_medium=npm%20/%20github)
 
 <!-- Roadmap -->
+
 # Roadmap
+
 Roadmap highlights:
 
 1. ~Send Relays per Lava Pairing~ ✅
@@ -42,13 +44,15 @@ could be found here: https://github.com/lavanet/lava-sdk-providers
 # Installation
 
 ### Important Version Control
- * Please check the current Lava node version before installing the lava-sdk. 
-  
- * Make sure you are using the `"Latest"` tag. You can check the latest releases here: https://github.com/lavanet/lava/releases 
 
- * lava-sdk releases can be found here: https://github.com/lavanet/lava-sdk/releases or in the npm official site: https://www.npmjs.com/package/@lavanet/lava-sdk
+- Please check the current Lava node version before installing the lava-sdk.
+
+- Make sure you are using the `"Latest"` tag. You can check the latest releases here: https://github.com/lavanet/lava/releases
+
+- lava-sdk releases can be found here: https://github.com/lavanet/lava-sdk/releases or in the npm official site: https://www.npmjs.com/package/@lavanet/lava-sdk
 
 ### For Example
+
 If lava latest release version is `v0.8.0` or any minor version such as v0.8.1 ➡️ sdk version will be `v0.8.0`
 
 ---
@@ -75,9 +79,10 @@ yarn add @lavanet/lava-sdk
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
+
 # Usage
 
-A single instance of the SDK establishes a connection with a specific blockchain network using a single RPC interface. _Need multiple chains or use multiple RPC interfaces? Create multiple instances._ 
+A single instance of the SDK establishes a connection with a specific blockchain network using a single RPC interface. _Need multiple chains or use multiple RPC interfaces? Create multiple instances._
 
 To use the SDK, you will first need to initialize it.
 
@@ -102,7 +107,8 @@ const badgeOptions: BadgeOptions = {
     authentication: authValue, // string (Optional)
 };
 ```
-Lava SDK options: 
+
+Lava SDK options:
 
 - `badge` parameter specifies the public URL of the badge server and the ID of the project you want to connect to. If you enable the badge, you should remove the `privateKey`
 
@@ -134,7 +140,6 @@ Badge options:
 
 - `authentication` is an optional parameter that specifies any additional authentication requirements
 
-
 ### Private keys vs Badge server
 
 In the LavaSDK, users have the option to authenticate using either a private key or a badge server. Both methods have their advantages and specific use cases. Let's dive into the details of each:
@@ -149,7 +154,7 @@ However, it's crucial to note that using a private key directly, especially in a
 
 The Badge server is a dedicated Go service that clients can initiate. It acts as an intermediary between the LavaSDK and the Lava Network, ensuring that no secrets or private keys are stored directly within the SDK. Instead, all sensitive information is securely held on the Badge server, with the LavaSDK only communicating with this server.
 
-The primary advantage of using the Badge server is the enhanced security it offers. Additionally, the Badge server pre-updates some information like pairing list for current epoch, allowing the LavaSDK to fetch data more rapidly by merely pinging the server. This results in faster and more efficient operations. 
+The primary advantage of using the Badge server is the enhanced security it offers. Additionally, the Badge server pre-updates some information like pairing list for current epoch, allowing the LavaSDK to fetch data more rapidly by merely pinging the server. This results in faster and more efficient operations.
 
 However, there are some challenges to consider. Users need to bootstrap and maintain the Badge server, which might require additional resources and expertise. For those interested in exploring the Badge server without setting up their own, we have deployed a Lava Test Badge server. You can access and experiment with it through our gateway application at [Lava Gateway](https://accounts.lavanet.xyz/)
 
@@ -160,7 +165,8 @@ For detailed instructions on how to start the Badge server, refer to our [docume
 ### Examples:
 
 # Badge full flow example:
-```typescript 
+
+```typescript
 async function getLatestBlock(): Promise<string> {
   // Create dAccess for Ethereum Mainnet
   // Default rpcInterface for Ethereum Mainnet is jsonRPC
@@ -187,56 +193,60 @@ async function getLatestBlock(): Promise<string> {
 ```
 
 # Private Key flow example:
-```typescript 
+
+```typescript
 const cosmosHub = await LavaSDK.create({
-    // private key with an active subscription
-    privateKey: "<lava consumer private key>",
+  // private key with an active subscription
+  privateKey: "<lava consumer private key>",
 
-    // chainID for Cosmos Hub
-    chainIds: "COS5",
+  // chainID for Cosmos Hub
+  chainIds: "COS5",
 
-    // geolocation 1 for North america - geolocation 2 for Europe providers
-    // default value is 1
-    geolocation: "2",
+  // geolocation 1 for North america - geolocation 2 for Europe providers
+  // default value is 1
+  geolocation: "2",
+});
+
+// Get abci_info
+
+const results = [];
+
+for (let i = 0; i < 10; i++) {
+  const info = await cosmosHub.sendRelay({
+    method: "abci_info",
+    params: [],
   });
 
-  // Get abci_info
+  // Parse and extract response
+  const parsedInfo = info.result.response;
 
-  const results = [];
-
-  for (let i = 0; i < 10; i++) {
-    const info = await cosmosHub.sendRelay({
-      method: "abci_info",
-      params: [],
-    });
-
-    // Parse and extract response
-    const parsedInfo = info.result.response;
-
-    // Extract latest block number
-    const latestBlockNumber = parsedInfo.last_block_height;
-    // Fetch latest block
-    const latestBlock = await cosmosHub.sendRelay({
-      method: "block",
-      params: [latestBlockNumber],
-    });
-    results.push(latestBlock);
-    console.log("Latest block:", latestBlock);
-  }
+  // Extract latest block number
+  const latestBlockNumber = parsedInfo.last_block_height;
+  // Fetch latest block
+  const latestBlock = await cosmosHub.sendRelay({
+    method: "block",
+    params: [latestBlockNumber],
+  });
+  results.push(latestBlock);
+  console.log("Latest block:", latestBlock);
+}
 ```
 
 ### TendermintRPC / JSON-RPC interface:
+
 ```typescript
-  const blockResponse = await lavaSDK.sendRelay({
-    method: "block",
-    params: ["5"],
-  });
+const blockResponse = await lavaSDK.sendRelay({
+  method: "block",
+  params: ["5"],
+});
 ```
+
 Here, `method` is the RPC method and `params` is an array of strings representing parameters for the method.
 
 You can find more examples for tendermintRPC sendRelay calls [TendermintRPC examples](https://github.com/lavanet/lava-sdk/blob/main/examples/tendermintRPC.ts)
 
 ### Rest API interface:
+
 ```typescript
 const data = await lavaSDK.sendRelay({
   method: "GET",
@@ -247,6 +257,7 @@ const data = await lavaSDK.sendRelay({
   },
 });
 ```
+
 In this case, `method` is the HTTP method (either GET or POST), `url` is the REST endpoint, and `data` is the query data.
 
 You can find more examples for rest sendRelay calls [Rest examples](https://github.com/lavanet/lava-sdk/blob/main/examples/restAPI.ts)
@@ -254,18 +265,23 @@ You can find more examples for rest sendRelay calls [Rest examples](https://gith
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Troubleshooting -->
+
 # Troubleshooting
 
 ### <b> Webpack >= 5 </b>
+
 If you are using `create-react-app` version 5 or higher, or `Angular` version 11 or higher, you may encounter build issues. This is because these versions use `webpack version 5`, which does not include Node.js polyfills.
 
 #### <b> Create-react-app solution </b>
 
 1. Install react-app-rewired and the missing modules:
+
 ```bash
 yarn add --dev react-app-rewired crypto-browserify stream-browserify browserify-zlib assert stream-http https-browserify os-browserify url buffer process net tls bufferutil utf-8-validate path-browserify
 ```
+
 2. Create `config-overrides.js` in the root of your project folder, and append the following lines:
+
 ```javascript
 const webpack = require("webpack");
 
@@ -306,6 +322,7 @@ module.exports = function override(config) {
 ```
 
 3. In the `package.json` change the script for start, test, build and eject:
+
 ```JSON
 "scripts": {
     "start": "react-app-rewired start",
@@ -314,10 +331,10 @@ module.exports = function override(config) {
     "eject": "react-scripts eject"
 },
 ```
+
 #### <b> Angular solution (TBD)</b>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
@@ -326,9 +343,9 @@ module.exports = function override(config) {
 [![Apache 2 License][license-shield]]([license-url])
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [contributors-shield]: https://img.shields.io/github/contributors/lavanet/lava-sdk.svg?style=for-the-badge
 [contributors-url]: https://github.com/lavanet/lava-sdk/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/lavanet/lava-sdk.svg?style=for-the-badge
@@ -342,19 +359,20 @@ module.exports = function override(config) {
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/company/lava-network/
 
+# Contribution
 
-# Contribution FAQ
+To get started, all you need to do is run
 
-Q: how to compile the protobufs?
-A: 
 ```bash
-sudo apt install -y protobuf-compiler
+GOPATH=<go_path> ./scripts/init_sdk.sh
 ```
-cd go/.../lava/ecosystem/lava-sdk
 
-If you've made changes to the protobufs directory run: 
+\* Replace the <go_path> with the Go path on your machine
+
+And to build, run
+
 ```bash
-./scripts/protoc.sh 
+yarn build
 ```
 If you've made changes to relay.proto specifically run:
 ```bash

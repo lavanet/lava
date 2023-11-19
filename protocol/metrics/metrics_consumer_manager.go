@@ -20,6 +20,7 @@ type ConsumerMetricsManager struct {
 	qosExcellenceMetric        *prometheus.GaugeVec
 	LatestBlockMetric          *prometheus.GaugeVec
 	LatestProviderRelay        *prometheus.GaugeVec
+	virtualEpochMetric         *prometheus.GaugeVec
 	lock                       sync.Mutex
 	providerRelays             map[string]uint64
 }
@@ -74,6 +75,10 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Name: "lava_consumer_latest_provider_relay_time",
 		Help: "The latest time we sent a relay to provider",
 	}, []string{"spec", "provider_address", "apiInterface"})
+	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "virtual_epoch",
+		Help: "The current virtual epoch measured",
+	}, []string{"spec"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -84,6 +89,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(qosExcellenceMetric)
 	prometheus.MustRegister(latestBlockMetric)
 	prometheus.MustRegister(latestProviderRelay)
+	prometheus.MustRegister(virtualEpochMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -100,6 +106,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		LatestBlockMetric:          latestBlockMetric,
 		LatestProviderRelay:        latestProviderRelay,
 		providerRelays:             map[string]uint64{},
+		virtualEpochMetric:         virtualEpochMetric,
 	}
 }
 
@@ -171,6 +178,13 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	setMetricsForQos(qosExcellence, pme.qosExcellenceMetric, "") // it's one for all of them
 
 	pme.LatestBlockMetric.WithLabelValues(chainId, providerAddress, apiInterface).Set(float64(latestBlock))
+}
+
+func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
+	if pme == nil {
+		return
+	}
+	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
 }
 
 func (pme *ConsumerMetricsManager) ResetQOSMetrics() {

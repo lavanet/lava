@@ -14,6 +14,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/subscription/types"
+	timertypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 type (
@@ -82,14 +83,14 @@ func NewKeeper(
 		keeper.advanceMonth(ctx, subkey)
 	}
 
-	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
+	keeper.subsTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
 
 	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
 		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
 	}
 
-	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.CuTrackerTimerPrefix).
 		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper
@@ -105,7 +106,7 @@ func (k Keeper) ExportSubscriptions(ctx sdk.Context) fixationtypes.GenesisState 
 }
 
 // ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
-func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) []fixationtypes.RawMessage {
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) timertypes.GenesisState {
 	return k.subsTS.Export(ctx)
 }
 
@@ -115,6 +116,26 @@ func (k Keeper) InitSubscriptions(ctx sdk.Context, gs fixationtypes.GenesisState
 }
 
 // InitSubscriptions imports subscriptions timers data (from genesis)
-func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data []fixationtypes.RawMessage) {
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data timertypes.GenesisState) {
 	k.subsTS.Init(ctx, data)
+}
+
+// InitCuTrackerTimers imports CuTrackers timers data (from genesis)
+func (k Keeper) InitCuTrackerTimers(ctx sdk.Context, data timertypes.GenesisState) {
+	k.cuTrackerTS.Init(ctx, data)
+}
+
+// ExportCuTrackerTimers exports CuTracker timers data (for genesis)
+func (k Keeper) ExportCuTrackerTimers(ctx sdk.Context) timertypes.GenesisState {
+	return k.cuTrackerTS.Export(ctx)
+}
+
+// InitCuTrackers imports CuTracker data (from genesis)
+func (k Keeper) InitCuTrackers(ctx sdk.Context, gs fixationtypes.GenesisState) {
+	k.cuTrackerFS.Init(ctx, gs)
+}
+
+// ExportCuTrackers exports CuTrackers data (for genesis)
+func (k Keeper) ExportCuTrackers(ctx sdk.Context) fixationtypes.GenesisState {
+	return k.cuTrackerFS.Export(ctx)
 }

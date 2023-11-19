@@ -11,13 +11,18 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
+const (
+	TARGET_VERSION = "0.27.2"
+	MIN_VERSION    = "0.26.1"
+)
+
 var (
 	KeyVersion     = []byte("Version")
 	DefaultVersion = Version{
-		ProviderTarget: "0.26.3",
-		ProviderMin:    "0.25.2",
-		ConsumerTarget: "0.26.3",
-		ConsumerMin:    "0.25.2",
+		ProviderTarget: TARGET_VERSION,
+		ProviderMin:    MIN_VERSION,
+		ConsumerTarget: TARGET_VERSION,
+		ConsumerMin:    MIN_VERSION,
 	}
 )
 

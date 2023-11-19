@@ -25,6 +25,8 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
+	ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false) // extend by a month so the sub won't expire
+
 	res, err := ts.QuerySubscriptionCurrent(client1Addr)
 	require.Nil(t, err)
 	sub := res.Sub
@@ -112,7 +114,7 @@ func TestTrackedCuWithExpiredSubscription(t *testing.T) {
 	ts.AddPlan(ts.plan.Index, ts.plan)
 
 	clientAcct, clientAddr := ts.AddAccount(common.CONSUMER, 0, testBalance)
-	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1, false)
 	require.Nil(t, err)
 
 	err = ts.addProvider(1)
@@ -171,9 +173,11 @@ func TestTrackedCuWithQos(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 2) // 2 providers, 1 client, providers-to-pair=2
 
-	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
+	client1Acct, client := ts.GetAccount(common.CONSUMER, 0)
 	provider1Acc, provider1 := ts.GetAccount(common.PROVIDER, 0)
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1)
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 	badQoS := &types.QualityOfServiceReport{
 		Latency:      sdk.ZeroDec(),
@@ -247,7 +251,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 			balance1 := ts.GetBalance(provider1Acc.Addr)
 			balance2 := ts.GetBalance(provider2Acc.Addr)
 
-			// advance month + blocksToSave + 1 to trigger the monthly payment
+			// advance month + blocksToSave + 1 to trigger the provider monthly payment
 			ts.AdvanceMonths(1)
 			ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -309,7 +313,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -332,7 +336,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	newPlan := ts.plan
 	newPlan.Price.Amount = ts.plan.Price.Amount.MulRaw(2)
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{newPlan})
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{newPlan}, false)
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
 
@@ -341,7 +345,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	balanceBeforePay := ts.GetBalance(providerAcc.Addr)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -349,13 +353,13 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	require.Equal(t, balanceBeforePay+originalPlanPrice, balance)
 }
 
-// TestMonthlyPayoutQuery tests the monthly-payout query
+// TestProviderMonthlyPayoutQuery tests the monthly-payout query
 // Scenario: the provider provided service on two chains and in one of them he has a delegator
-func TestMonthlyPayoutQuery(t *testing.T) {
+func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
 
-	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 	// stake the provider on an additional chain and apply pairing (advance epoch)
 	spec1 := ts.spec
@@ -399,10 +403,45 @@ func TestMonthlyPayoutQuery(t *testing.T) {
 
 	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
 	// for planPrice=100, expected monthly payout is 50+33
-	expectedPayout := uint64(83)
-	res, err := ts.QueryPairingMonthlyPayout(provider)
+	expectedTotalPayout := uint64(83)
+	expectedPayouts := []types.SubscriptionPayout{
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 50},
+	}
+	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.Nil(t, err)
-	require.Equal(t, expectedPayout, res.Amount)
+	require.Equal(t, expectedTotalPayout, res.Total)
+	details := []types.SubscriptionPayout{}
+	for _, p := range res.Details {
+		details = append(details, *p)
+	}
+	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
+
+	// check the expected subscrription payout
+	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
+	require.Nil(t, err)
+	require.Equal(t, uint64(100), subRes.Total) // total reward = plan price
+	expectedSubPayouts := []types.ChainIDPayout{
+		{
+			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
+				{Provider: provider, Amount: 50},
+			},
+		},
+		{
+			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
+				{Provider: provider, Amount: 50},
+			},
+		},
+	}
+	require.Equal(t, 2, len(subRes.Details))
+	for _, payout := range subRes.Details {
+		if payout.ChainId == expectedSubPayouts[0].ChainId || payout.ChainId == expectedSubPayouts[1].ChainId {
+			if payout.Payouts[0].Provider == expectedSubPayouts[0].Payouts[0].Provider && payout.Payouts[0].Amount == expectedSubPayouts[0].Payouts[0].Amount {
+				break
+			}
+		}
+		require.FailNow(t, "sub expected payout don't match with query output")
+	}
 
 	// advance month + blocksToSave + 1 to trigger the monthly payment
 	oldBalance := ts.GetBalance(providerAcct.Addr)
@@ -411,12 +450,13 @@ func TestMonthlyPayoutQuery(t *testing.T) {
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	balance := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, expectedPayout, uint64(balance-oldBalance))
+	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
-	res, err = ts.QueryPairingMonthlyPayout(provider)
+	res, err = ts.QueryPairingProviderMonthlyPayout(provider)
 	require.Nil(t, err)
-	require.Equal(t, uint64(0), res.Amount)
+	require.Equal(t, uint64(0), res.Total)
+	require.Nil(t, res.Details)
 }
 
 // TestFrozenProviderGetReward checks that frozen providers still get rewards.
@@ -436,7 +476,7 @@ func TestFrozenProviderGetReward(t *testing.T) {
 	err := ts.Keepers.Pairing.FreezeProvider(ts.Ctx, provider, []string{ts.spec.Index}, "unresponsiveness")
 	require.Nil(t, err)
 
-	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
@@ -453,6 +493,8 @@ func TestTrackedCuDeletion(t *testing.T) {
 
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 	// send relay to track CU
 	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})

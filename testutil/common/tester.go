@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -177,7 +177,7 @@ func (ts *Tester) AccountByAddr(addr string) (Account, string) {
 }
 
 func (ts *Tester) AddPlan(name string, plan planstypes.Plan) *Tester {
-	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan)
+	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan, false)
 	if err != nil {
 		panic("tester: falied to add plan: '" + plan.Index + "'")
 	}
@@ -285,7 +285,7 @@ func (ts *Tester) TxProposalChangeParam(module, paramKey, paramVal string) error
 }
 
 func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {
-	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 }
 
 func (ts *Tester) TxProposalDelPlans(indices ...string) error {
@@ -361,12 +361,13 @@ func (ts *Tester) TxDualstakingClaimRewards(
 }
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
-func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
+func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int, autoRenewal bool) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
-		Creator:  creator,
-		Consumer: consumer,
-		Index:    plan,
-		Duration: uint64(months),
+		Creator:     creator,
+		Consumer:    consumer,
+		Index:       plan,
+		Duration:    uint64(months),
+		AutoRenewal: autoRenewal,
 	}
 	return ts.Servers.SubscriptionServer.Buy(ts.GoCtx, msg)
 }
@@ -381,13 +382,23 @@ func (ts *Tester) TxSubscriptionAddProject(creator string, pd projectstypes.Proj
 	return err
 }
 
-// TxSubscriptionAddProject: implement 'tx subscription del-project'
+// TxSubscriptionDelProject: implement 'tx subscription del-project'
 func (ts *Tester) TxSubscriptionDelProject(creator, projectID string) error {
 	msg := &subscriptiontypes.MsgDelProject{
 		Creator: creator,
 		Name:    projectID,
 	}
 	_, err := ts.Servers.SubscriptionServer.DelProject(ts.GoCtx, msg)
+	return err
+}
+
+// TxSubscriptionAutoRenewal: implement 'tx subscription auto-renewal'
+func (ts *Tester) TxSubscriptionAutoRenewal(creator string, enable bool) error {
+	msg := &subscriptiontypes.MsgAutoRenewal{
+		Creator: creator,
+		Enable:  enable,
+	}
+	_, err := ts.Servers.SubscriptionServer.AutoRenewal(ts.GoCtx, msg)
 	return err
 }
 
@@ -510,6 +521,12 @@ func (ts *Tester) QuerySubscriptionListProjects(subkey string) (*subscriptiontyp
 	return ts.Keepers.Subscription.ListProjects(ts.GoCtx, msg)
 }
 
+// QuerySubscriptionNextToMonthExpiry: implement 'q subscription next-to-month-expiry'
+func (ts *Tester) QuerySubscriptionNextToMonthExpiry() (*subscriptiontypes.QueryNextToMonthExpiryResponse, error) {
+	msg := &subscriptiontypes.QueryNextToMonthExpiryRequest{}
+	return ts.Keepers.Subscription.NextToMonthExpiry(ts.GoCtx, msg)
+}
+
 // QueryProjectInfo implements 'q project info'
 func (ts *Tester) QueryProjectInfo(projectID string) (*projectstypes.QueryInfoResponse, error) {
 	msg := &projectstypes.QueryInfoRequest{Project: projectID}
@@ -557,12 +574,29 @@ func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, bl
 	return ts.Keepers.Pairing.VerifyPairing(ts.GoCtx, msg)
 }
 
-// QueryPairingMonthlyPayout implements 'q pairing verfy-pairing'
-func (ts *Tester) QueryPairingMonthlyPayout(provider string) (*pairingtypes.QueryMonthlyPayoutResponse, error) {
-	msg := &pairingtypes.QueryMonthlyPayoutRequest{
+// QueryPairingEffectivePolicy implements 'q pairing effective-policy'
+func (ts *Tester) QueryPairingEffectivePolicy(chainID, consumer string) (*pairingtypes.QueryEffectivePolicyResponse, error) {
+	msg := &pairingtypes.QueryEffectivePolicyRequest{
+		SpecID:   chainID,
+		Consumer: consumer,
+	}
+	return ts.Keepers.Pairing.EffectivePolicy(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderMonthlyPayout implements 'q pairing provider-monthly-payout'
+func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingtypes.QueryProviderMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QueryProviderMonthlyPayoutRequest{
 		Provider: provider,
 	}
-	return ts.Keepers.Pairing.MonthlyPayout(ts.GoCtx, msg)
+	return ts.Keepers.Pairing.ProviderMonthlyPayout(ts.GoCtx, msg)
+}
+
+// QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'
+func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairingtypes.QuerySubscriptionMonthlyPayoutResponse, error) {
+	msg := &pairingtypes.QuerySubscriptionMonthlyPayoutRequest{
+		Consumer: consumer,
+	}
+	return ts.Keepers.Pairing.SubscriptionMonthlyPayout(ts.GoCtx, msg)
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
@@ -687,11 +721,11 @@ func (ts *Tester) AdvanceEpoch(delta ...time.Duration) *Tester {
 }
 
 func (ts *Tester) AdvanceBlockUntilStale(delta ...time.Duration) *Tester {
-	return ts.AdvanceBlocks(types.STALE_ENTRY_TIME)
+	return ts.AdvanceBlocks(ts.BlocksToSave())
 }
 
 func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
-	block := ts.BlockHeight() + types.STALE_ENTRY_TIME
+	block := ts.BlockHeight() + ts.BlocksToSave()
 	for block > ts.BlockHeight() {
 		ts.AdvanceEpoch()
 	}
@@ -704,6 +738,7 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
 		next = subscriptionkeeper.NextMonth(next)
+		fmt.Printf("next: %v\n", next.Unix())
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
 			delta -= 5 * time.Second

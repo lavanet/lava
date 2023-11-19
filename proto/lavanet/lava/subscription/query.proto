@@ -31,6 +31,10 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/subscription/list";
 	}
 
+  // Queries the subscription with the closest month expiry
+	rpc NextToMonthExpiry(QueryNextToMonthExpiryRequest) returns (QueryNextToMonthExpiryResponse) {
+		option (google.api.http).get = "/lavanet/lava/subscription/next_to_month_expiry";
+	}
 // this line is used by starport scaffolding # 2
 }
 
@@ -76,6 +80,19 @@ message ListInfoStruct {
   uint64 month_cu_left = 7; // remaining CU allowance this month
   string cluster = 8;
   uint64 duration_total = 9;
+  bool auto_renewal = 10;
+}
+
+message QueryNextToMonthExpiryRequest {
+}
+
+message TimerExpiryInfo {
+  string consumer = 1;
+  uint64 month_expiry = 2; // upcoming expiry (of current month) in unix time
+}
+
+message QueryNextToMonthExpiryResponse {
+  repeated TimerExpiryInfo subscriptions = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

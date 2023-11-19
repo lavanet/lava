@@ -47,7 +47,7 @@ func (ts *tester) setupForConflict(providersCount int) *tester {
 	ts.spec = ts.Spec("mock")
 
 	consumer, consumerAddr := ts.AddAccount("consumer", 0, balance)
-	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, ts.plan.Index, 1)
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, ts.plan.Index, 1, false)
 	require.Nil(ts.T, err)
 	ts.consumer = consumer
 

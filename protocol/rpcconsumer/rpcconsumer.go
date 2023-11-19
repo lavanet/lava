@@ -56,6 +56,7 @@ var strategyNames = []string{
 	"cost",
 	"privacy",
 	"accuracy",
+	"distributed",
 }
 
 var strategyFlag strategyValue = strategyValue{Strategy: provideroptimizer.STRATEGY_BALANCED}
@@ -83,9 +84,11 @@ type ConsumerStateTrackerInf interface {
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
+	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
 	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
+	GetLatestVirtualEpoch() uint64
 }
 
 type RPCConsumer struct {
@@ -97,9 +100,14 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
+	if err != nil {
+		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
+	}
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, consumerMetricsManager)
 	if err != nil {
 		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
@@ -138,11 +146,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	parallelJobs := len(rpcEndpoints)
 	wg.Add(parallelJobs)
 	errCh := make(chan error)
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
-	if err != nil {
-		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
-	}
+
 	consumerStateTracker.RegisterForUpdates(ctx, statetracker.NewMetricsUpdater(consumerMetricsManager))
 	utils.LavaFormatInfo("RPCConsumer pubkey: " + consumerAddr.String())
 	utils.LavaFormatInfo("RPCConsumer setting up endpoints", utils.Attribute{Key: "length", Value: strconv.Itoa(parallelJobs)})
@@ -288,7 +292,8 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		Example: `required flags: --geolocation 1 --from alice
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
-rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
+rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>
+rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:7778" --geolocation 1 [--debug-relays] --log_level <debug|warn|...> --from <wallet> --chain-id <lava-chain> --strategy latency`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra
 			if err := cobra.RangeArgs(0, 1)(cmd, args); err == nil {
@@ -423,6 +428,9 @@ rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>`,
 				} else {
 					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
 				}
+			}
+			if strategyFlag.Strategy != provideroptimizer.STRATEGY_BALANCED {
+				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)

@@ -6,28 +6,33 @@ import {
   HeadersPassSend,
 } from "../chainlib/base_chain_parser";
 import { Logger } from "../logger/logger";
-import { HttpMethod, NOT_APPLICABLE } from "../common/common";
+import { DUMMY_URL, HttpMethod, NOT_APPLICABLE } from "../common/common";
 import { Parser } from "../parser/parser";
 import { FUNCTION_TAG } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { RestMessage } from "./chainproxy/rpcInterfaceMessages/rest_message";
-import { ParsedMessage } from "./chain_message";
+import { BaseChainMessageContainer } from "./chain_message";
 import { encodeUtf8 } from "../util/common";
 export class RestChainParser extends BaseChainParser {
   constructor() {
     super();
     this.apiInterface = APIInterfaceRest;
   }
-  parseMsg(options: SendRelayOptions | SendRestRelayOptions): ParsedMessage {
+  parseMsg(
+    options: SendRelayOptions | SendRestRelayOptions
+  ): BaseChainMessageContainer {
     if (!this.isRest(options)) {
       throw Logger.fatal(
         "Wrong relay options provided, expected SendRestRelayOptions got SendRelayOptions"
       );
     }
 
+    const parsedUrl = new URL(options.url, DUMMY_URL);
+
     const [apiCont, found] = this.matchSpecApiByName(
-      options.url,
+      parsedUrl.pathname,
       options.connectionType
     );
+
     if (!found || !apiCont) {
       throw Logger.fatal("Rest api not supported", options.url);
     }
@@ -116,7 +121,7 @@ export class RestChainParser extends BaseChainParser {
 
     // TODO: add extension parsing.
 
-    return new ParsedMessage(
+    return new BaseChainMessageContainer(
       apiCont.api,
       requestedBlock,
       restMessage,

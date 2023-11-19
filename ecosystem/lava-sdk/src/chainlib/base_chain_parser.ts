@@ -10,7 +10,7 @@ import { Metadata } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { Logger } from "../logger/logger";
 import Long from "long";
-import { ParsedMessage } from "./chain_message";
+import { BaseChainMessageContainer } from "./chain_message";
 
 export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
@@ -27,6 +27,19 @@ export interface SendRelayOptions {
   id?: number | string; // Optional: The ID of the relay. If not specified, it is set to a random number.
   chainId?: string; // Optional: The chain id to send the request to, if only one chain is initialized it will be chosen by default
   metadata?: Metadata[]; // Optional: Headers to be sent with the request.
+  apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
+}
+
+export interface SingleRelayOptions {
+  method: string; // Required: The RPC method to be called
+  params: Array<any> | Record<string, any>; // Required: An array of parameters to be passed to the RPC method
+  id?: number | string; // Optional: The ID of the relay. If not specified, it is set to a random number.
+  metadata?: Metadata[]; // Optional: Headers to be sent with the request.
+}
+
+export interface SendRelaysBatchOptions {
+  relays: Array<SingleRelayOptions>; // Required: The relays to send
+  chainId?: string; // Optional: The chain id to send the request to, if only one chain is initialized it will be chosen by default
   apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
 }
 
@@ -70,7 +83,7 @@ export function CollectionKeyToString(key: CollectionKey): CollectionKeyString {
   return `'{"addon":"${key.addon}","internalPath":"${key.internalPath}","connectionType":"${key.connectionType}"}'`;
 }
 
-interface ApiContainer {
+export interface ApiContainer {
   api: Api;
   collectionKey: CollectionKey;
   apiKey: ApiKey;
@@ -341,7 +354,7 @@ export abstract class BaseChainParser {
   }
 
   protected isRest(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): options is SendRestRelayOptions {
     return "connectionType" in options; // how to check which options were given
   }
@@ -440,8 +453,8 @@ export abstract class BaseChainParser {
   }
 
   abstract parseMsg(
-    options: SendRelayOptions | SendRestRelayOptions
-  ): ParsedMessage;
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
+  ): BaseChainMessageContainer;
 
   public chainBlockStats(): ChainBlockStats {
     const averageBlockTime = this.spec?.getAverageBlockTime();

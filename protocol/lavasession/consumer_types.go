@@ -9,6 +9,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -34,6 +35,7 @@ type ProviderOptimizer interface {
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64)
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
 	GetExcellenceQoSReportForProvider(string) *pairingtypes.QualityOfServiceReport
+	Strategy() provideroptimizer.Strategy
 }
 
 type ignoredProviders struct {
@@ -232,20 +234,26 @@ func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() 
 }
 
 // Validate the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64) error {
+func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
-		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError, utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu}, utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits})
+	// add additional CU for virtual epochs
+	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
+		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
+			utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu},
+			utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits * (virtualEpoch + 1)},
+			utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
+		)
 	}
 	return nil
 }
 
 // Validate and add the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu uint64) error {
+func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
-	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits {
+	// add additional CU for virtual epochs
+	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return MaxComputeUnitsExceededError
 	}
 	cswp.UsedComputeUnits += cu

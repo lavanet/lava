@@ -31,6 +31,7 @@ type ProviderMetricsManager struct {
 	fetchBlockFailedMetric      *prometheus.CounterVec
 	fetchLatestSuccessMetric    *prometheus.CounterVec
 	fetchBlockSuccessMetric     *prometheus.CounterVec
+	virtualEpochMetric          *prometheus.GaugeVec
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -101,7 +102,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "lava_provider_fetch_block_success",
 		Help: "The total number of get specific block queries that succeeded by chainfetcher",
 	}, []string{"spec"})
-
+	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "virtual_epoch",
+		Help: "The current virtual epoch measured",
+	}, []string{"spec"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -115,6 +119,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(fetchBlockFailedMetric)
 	prometheus.MustRegister(fetchLatestSuccessMetric)
 	prometheus.MustRegister(fetchBlockSuccessMetric)
+	prometheus.MustRegister(virtualEpochMetric)
 
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
@@ -135,6 +140,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		fetchBlockFailedMetric:      fetchBlockFailedMetric,
 		fetchLatestSuccessMetric:    fetchLatestSuccessMetric,
 		fetchBlockSuccessMetric:     fetchBlockSuccessMetric,
+		virtualEpochMetric:          virtualEpochMetric,
 	}
 }
 
@@ -239,4 +245,11 @@ func (pme *ProviderMetricsManager) SetSpecificBlockFetchSuccess(specID string) {
 		return
 	}
 	pme.fetchBlockSuccessMetric.WithLabelValues(specID).Add(1)
+}
+
+func (pme *ProviderMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
+	if pme == nil {
+		return
+	}
+	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
 }

@@ -13,6 +13,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgBuy{}, "subscription/Buy", nil)
 	cdc.RegisterConcrete(&MsgAddProject{}, "subscription/AddProject", nil)
 	cdc.RegisterConcrete(&MsgDelProject{}, "subscription/DelProject", nil)
+	cdc.RegisterConcrete(&MsgAutoRenewal{}, "subscription/AutoRenewal", nil)
 	// this line is used by starport scaffolding # 2
 }
 
@@ -25,6 +26,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgDelProject{},
+	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgAutoRenewal{},
 	)
 	// this line is used by starport scaffolding # 3
 
