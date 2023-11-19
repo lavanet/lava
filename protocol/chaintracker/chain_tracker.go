@@ -35,6 +35,11 @@ const (
 	GoodStabilityThreshold        = 0.3
 	PollingUpdateLength           = 10
 	MostFrequentPollingMultiplier = 16
+	PollingMultiplierFlagName     = "polling-multiplier"
+)
+
+var (
+	PollingMultiplier = uint64(1)
 )
 
 type ChainFetcher interface {
@@ -420,6 +425,9 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 		newPollingTime = tickerBaseTime / MostFrequentPollingMultiplier
 	}
 	newTickerDuration := exponentialBackoff(newPollingTime, fetchFails)
+	if PollingMultiplier > 1 {
+		newTickerDuration = newTickerDuration / time.Duration(PollingMultiplier)
+	}
 	if debug {
 		utils.LavaFormatDebug("state tracker ticker set", utils.Attribute{Key: "timeSinceLastUpdate", Value: timeSinceLastUpdate}, utils.Attribute{Key: "time", Value: time.Now()}, utils.Attribute{Key: "newTickerDuration", Value: newTickerDuration})
 	}
