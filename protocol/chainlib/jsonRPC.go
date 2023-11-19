@@ -328,7 +328,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
-			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+			guid := utils.GenerateUniqueIdentifier()
+			ctx = utils.WithUniqueIdentifier(ctx, guid)
+			msgSeed = strconv.FormatUint(guid, 10)
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
@@ -336,7 +338,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
-
 			if err != nil {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 				continue
@@ -346,6 +347,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 				var reply pairingtypes.RelayReply
 				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
 				if err != nil {
+
 					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 					continue
 				}
@@ -390,19 +392,22 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		startTime := time.Now()
 		endTx := apil.logger.LogStartTransaction("jsonRpc-http post")
 		defer endTx()
-		msgSeed := apil.logger.GetMessageSeed()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		guid := utils.GenerateUniqueIdentifier()
+		ctx = utils.WithUniqueIdentifier(ctx, guid)
+		msgSeed := strconv.FormatUint(guid, 10)
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: fiberCtx.Body()}, utils.Attribute{Key: "dappID", Value: dappID})
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
 		}
 
 		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, nil)
+		metadataValues := fiberCtx.GetReqHeaders()
+		headers := convertToMetadataMap(metadataValues)
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
 		reply := relayResult.GetReply()
 		if relayResult.GetProvider() != "" {
 			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -279,8 +280,9 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
-		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-		msgSeed := apil.logger.GetMessageSeed()
+		guid := utils.GenerateUniqueIdentifier()
+		ctx = utils.WithUniqueIdentifier(ctx, guid)
+		msgSeed := strconv.FormatUint(guid, 10)
 		metadataValues, _ := metadata.FromIncomingContext(ctx)
 		startTime := time.Now()
 		// Extract dappID from grpc header

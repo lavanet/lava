@@ -67,6 +67,7 @@ message Api {
   uint64 extra_compute_units = 4;
   SpecCategory category = 6 [(gogoproto.nullable) = false];
   BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
+  uint64 timeout_ms = 8;
 }
 
 message ParseDirective {

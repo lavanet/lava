@@ -26,7 +26,10 @@ func BaseTimePerCU(cu uint64) time.Duration {
 }
 
 func GetTimePerCu(cu uint64) time.Duration {
-	return LocalNodeTimePerCu(cu) + MinimumTimePerRelayDelay
+	if LocalNodeTimePerCu(cu) < MinimumTimePerRelayDelay {
+		return MinimumTimePerRelayDelay
+	}
+	return LocalNodeTimePerCu(cu)
 }
 
 func ContextOutOfTime(ctx context.Context) bool {

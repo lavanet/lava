@@ -59,7 +59,8 @@ func ConnectgRPCClient(ctx context.Context, address string, allowInsecure bool) 
 		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
 	}
 	credentials := credentials.NewTLS(&tlsConf)
-	return grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+	return conn, err
 }
 
 func GenerateSelfSignedCertificate() (tls.Certificate, error) {

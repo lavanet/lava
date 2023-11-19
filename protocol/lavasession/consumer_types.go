@@ -278,8 +278,22 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	if err != nil {
 		return nil, nil, err
 	}
-	/*defer conn.Close()*/
-
+	ch := make(chan bool)
+	go func() {
+		for {
+			// Check if the connection state is not Connecting
+			if conn.GetState() == connectivity.Ready {
+				ch <- true
+				return
+			}
+			// Add some delay to avoid busy-waiting
+			time.Sleep(20 * time.Millisecond)
+		}
+	}()
+	select {
+	case <-connectCtx.Done():
+	case <-ch:
+	}
 	c := pairingtypes.NewRelayerClient(conn)
 	return &c, conn, nil
 }
@@ -349,7 +363,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {
-				if endpoint.Client != nil && endpoint.connection.GetState() != connectivity.Shutdown {
+				if endpoint.Client != nil && endpoint.connection != nil && endpoint.connection.GetState() != connectivity.Shutdown && endpoint.connection.GetState() != connectivity.Idle {
 					return true
 				}
 				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
@@ -370,18 +384,25 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				endpoint.connection = conn
 				return true
 			}
+			endpointState := connectivity.Idle
+			if endpoint.connection != nil {
+				endpointState = endpoint.connection.GetState()
+			}
 			if endpoint.Client == nil {
 				connected_ := connectEndpoint(cswp, ctx, endpoint)
 				if !connected_ {
 					continue
 				}
-			} else if endpoint.connection.GetState() == connectivity.Shutdown {
+			} else if endpointState == connectivity.Shutdown || endpointState == connectivity.Idle {
 				// connection was shut down, so we need to create a new one
 				endpoint.connection.Close()
 				connected_ := connectEndpoint(cswp, ctx, endpoint)
 				if !connected_ {
 					continue
 				}
+			} else if endpointState == connectivity.TransientFailure || endpointState == connectivity.Connecting {
+				// can't use this one right now, but we could in the future
+				continue
 			}
 			cswp.Endpoints[idx] = endpoint
 			return true, endpoint, false
