@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
@@ -510,7 +511,7 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 }
 
 // TxCreateValidator: implement 'tx staking createvalidator'
-func (ts *Tester) TxCreateValidator(validator sigs.Account, amount sdk.Int) (*stakingtypes.MsgCreateValidatorResponse, error) {
+func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) (*stakingtypes.MsgCreateValidatorResponse, error) {
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(validator.Addr),
 		validator.PubKey,
@@ -524,7 +525,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount sdk.Int) (*st
 }
 
 // TxDelegateValidator: implement 'tx staking delegate'
-func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount sdk.Int) (*stakingtypes.MsgDelegateResponse, error) {
+func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount math.Int) (*stakingtypes.MsgDelegateResponse, error) {
 	msg := stakingtypes.NewMsgDelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
@@ -534,7 +535,7 @@ func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount 
 }
 
 // TxReDelegateValidator: implement 'tx staking redelegate'
-func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator sigs.Account, amount sdk.Int) (*stakingtypes.MsgBeginRedelegateResponse, error) {
+func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator sigs.Account, amount math.Int) (*stakingtypes.MsgBeginRedelegateResponse, error) {
 	msg := stakingtypes.NewMsgBeginRedelegate(
 		delegator.Addr,
 		sdk.ValAddress(fromValidator.Addr),
@@ -545,7 +546,7 @@ func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator si
 }
 
 // TxUnbondValidator: implement 'tx staking undond'
-func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount sdk.Int) (*stakingtypes.MsgUndelegateResponse, error) {
+func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount math.Int) (*stakingtypes.MsgUndelegateResponse, error) {
 	msg := stakingtypes.NewMsgUndelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),

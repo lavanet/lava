@@ -90,6 +90,7 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	ts.AdvanceBlocks(19)
 	// stake a provider
 	err = ts.addProvider(1)
+	require.Nil(t, err)
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.AdvanceBlock() // blockHeight = 40

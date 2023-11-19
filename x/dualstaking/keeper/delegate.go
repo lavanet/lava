@@ -20,6 +20,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
@@ -584,7 +585,7 @@ func (k Keeper) UnbondUniformDelegators(ctx sdk.Context, delegator string, amoun
 }
 
 // returns the difference between validators delegations and provider delegation (validators-providers)
-func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (sdk.Int, error) {
+func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (math.Int, error) {
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	providers, err := k.GetDelegatorProviders(ctx, delAddr.String(), nextEpoch)
 	_ = err
