@@ -19,6 +19,7 @@ func (k *Keeper) Versions(goCtx context.Context, req *types.QueryVersionsRequest
 	for _, store := range k.fixationsStores {
 		if store.GetStoreKey().Name() == req.StoreKey && store.GetStorePrefix() == req.Prefix {
 			blocks = store.GetAllEntryVersions(ctx, req.Key)
+			break
 		}
 	}
 

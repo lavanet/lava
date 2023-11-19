@@ -19,6 +19,7 @@ func (k *Keeper) AllIndices(goCtx context.Context, req *types.QueryAllIndicesReq
 	for _, store := range k.fixationsStores {
 		if store.GetStoreKey().Name() == req.StoreKey && store.GetStorePrefix() == req.Prefix {
 			indices = store.GetAllEntryIndices(ctx)
+			break
 		}
 	}
 
