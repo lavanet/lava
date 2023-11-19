@@ -538,8 +538,8 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       const time = -1 * INITIAL_DATA_STALENESS * hourInMillis;
       data = {
         availability: new ScoreStore(0.99, 1, now() + time),
-        latency: new ScoreStore(2, 1, now() + time),
-        sync: new ScoreStore(2, 1, now() + time),
+        latency: new ScoreStore(1, 1, now() + time),
+        sync: new ScoreStore(1, 1, now() + time),
         syncBlock: 0,
       };
     }

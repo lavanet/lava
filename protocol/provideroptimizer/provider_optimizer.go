@@ -340,8 +340,8 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	} else {
 		providerData = ProviderData{
 			Availability: score.NewScoreStore(0.99, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
-			Latency:      score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (twice the time)
-			Sync:         score.NewScoreStore(2, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (twice the time)
+			Latency:      score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
+			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (encourage exploration)
 			SyncBlock:    0,
 		}
 	}
