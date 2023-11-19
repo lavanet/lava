@@ -20,10 +20,6 @@
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -830,7 +826,8 @@
                                 "name": "/cosmos/base/tendermint/v1beta1/validatorsets/{height}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "height"
+                                        "height",
+                                        "="
                                     ],
                                     "parser_func": "PARSE_DICTIONARY"
                                 },
@@ -2090,7 +2087,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -2108,7 +2105,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -2126,7 +2123,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -2144,7 +2141,7 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -2162,7 +2159,7 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0,
+                                    "stateful": 1,
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0
@@ -2170,7 +2167,29 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": []
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "simulate",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/tx/v1beta1/simulate",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "code"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/cosmos/tx/v1beta1/simulate"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "3"
+                                    }
+                                ]
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -3439,7 +3458,7 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0,
+                                    "stateful": 1,
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0
@@ -3874,7 +3893,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -3892,7 +3911,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -3910,7 +3929,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0,
+                                    "stateful": 1,
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0
@@ -3929,7 +3948,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0,
+                                    "stateful": 1,
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0

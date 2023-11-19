@@ -17,10 +17,6 @@
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -177,7 +173,7 @@
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -435,7 +431,8 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -453,7 +450,8 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -471,7 +469,8 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api" : true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -551,15 +550,15 @@
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "status"
+                                            "parent_hash"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "starknet_chainId"
+                                    "api_name": "starknet_getBlockWithTxs"
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "PENDING"
+                                        "expected_value": "*"
                                     }
                                 ]
                             }
@@ -583,10 +582,6 @@
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {

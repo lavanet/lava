@@ -9,6 +9,7 @@ import (
 type EpochStorageKeeper interface {
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
+	BlocksToSaveRaw(ctx sdk.Context) (res uint64)
 }
 
 type FixationStoreKeeper interface {

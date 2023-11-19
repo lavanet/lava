@@ -7,3 +7,20 @@ export const PERCENTILE_TO_CALCULATE_LATENCY = 0.9;
 export const MIN_PROVIDERS_FOR_SYNC = 0.6;
 export const DEFAULT_DECIMAL_PRECISION = 18; // same default precision as golang cosmos sdk decimal
 export const MAX_CONSECUTIVE_CONNECTION_ATTEMPTS = 5;
+
+export function GetAllProviders(
+  allAddresses: Set<string>,
+  ignoredProviders: Set<string>
+): Array<string> {
+  const returnedProviders: string[] = [];
+
+  for (const providerAddress of allAddresses) {
+    if (ignoredProviders.has(providerAddress)) {
+      // ignored provider, skip it
+      continue;
+    }
+    returnedProviders.push(providerAddress);
+  }
+
+  return returnedProviders;
+}

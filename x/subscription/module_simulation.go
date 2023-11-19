@@ -37,6 +37,10 @@ const (
 	// TODO: Determine the simulation weight value
 	defaultWeightMsgDelProject int = 100
 
+	opWeightMsgAutoRenewal = "op_weight_msg_auto_renewal"
+	// TODO: Determine the simulation weight value
+	defaultWeightMsgAutoRenewal int = 100
+
 	// this line is used by starport scaffolding # simapp/module/const
 )
 
@@ -96,6 +100,17 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 	operations = append(operations, simulation.NewWeightedOperation(
 		weightMsgDelProject,
 		subscriptionsimulation.SimulateMsgDelProject(am.accountKeeper, am.bankKeeper, am.keeper),
+	))
+
+	var weightMsgAutoRenewal int
+	simState.AppParams.GetOrGenerate(simState.Cdc, opWeightMsgAutoRenewal, &weightMsgAutoRenewal, nil,
+		func(_ *rand.Rand) {
+			weightMsgAutoRenewal = defaultWeightMsgAutoRenewal
+		},
+	)
+	operations = append(operations, simulation.NewWeightedOperation(
+		weightMsgAutoRenewal,
+		subscriptionsimulation.SimulateMsgAutoRenewal(am.accountKeeper, am.bankKeeper, am.keeper),
 	))
 
 	// this line is used by starport scaffolding # simapp/module/operation

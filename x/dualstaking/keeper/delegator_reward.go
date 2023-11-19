@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"strconv"
+
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -8,7 +10,8 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptionstypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
@@ -129,7 +132,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 		// not minting new coins because they're minted when the provider
 		// asked for payment (and the delegator reward map was updated)
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, pairingtypes.ModuleName, delegatorAcc, rewardCoins)
+		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, subscriptionstypes.ModuleName, delegatorAcc, rewardCoins)
 		if err != nil {
 			// panic:ok: reward transfer should never fail
 			utils.LavaFormatPanic("critical: failed to send reward to delegator for provider", err,
@@ -164,6 +167,22 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	delegations, err := k.GetProviderDelegators(ctx, providerAddr.String(), epoch)
 	if err != nil {
 		return math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
+	}
+
+	// make sure this is post boost when rewards pool is introduced
+	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
+	if contributorPart.GT(math.LegacyZeroDec()) {
+		contributorsNum := int64(len(contributorAddresses))
+		contributorReward := totalReward.MulRaw(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt64()).QuoRaw(spectypes.ContributorPrecision)
+		// make sure to round it down for the integers division
+		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
+		totalReward = totalReward.Sub(contributorReward)
+		if !calcOnly {
+			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
+			if err != nil {
+				return math.ZeroInt(), err
+			}
+		}
 	}
 
 	relevantDelegations := slices.Filter(delegations,
@@ -216,4 +235,37 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 	}
 
 	return delegatorsReward.Sub(usedDelegatorRewards)
+}
+
+func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributorAddresses []sdk.AccAddress, contributorReward math.Int, specId string) error {
+	if len(contributorAddresses) == 0 {
+		// do not return this error since we don;t want to bail
+		utils.LavaFormatError("contributor addresses for pay are empty", nil)
+		return nil
+	}
+	rewardPerContributor := contributorReward.QuoRaw(int64(len(contributorAddresses)))
+	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, rewardPerContributor)}
+	details := map[string]string{
+		"rewardCoins": rewardCoins.String(),
+		"specId":      specId,
+	}
+	leftRewards := contributorReward
+	for i, contributorAddress := range contributorAddresses {
+		details["address."+strconv.Itoa(i)] = contributorAddress.String()
+		if leftRewards.LT(rewardCoins.AmountOf(epochstoragetypes.TokenDenom)) {
+			return utils.LavaFormatError("trying to pay contributors more than their allowed amount", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
+		}
+		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
+		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, contributorAddress, rewardCoins)
+		if err != nil {
+			return err
+		}
+	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributors rewards given")
+	if leftRewards.GT(math.ZeroInt()) {
+		utils.LavaFormatError("leftover rewards", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
+		// we don;t want to bail on this
+		return nil
+	}
+	return nil
 }

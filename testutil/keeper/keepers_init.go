@@ -36,7 +36,6 @@ import (
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/fixationstore"
-	"github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/pairing"
 	pairingkeeper "github.com/lavanet/lava/x/pairing/keeper"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -99,6 +98,10 @@ type Servers struct {
 
 type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
+}
+
+type KeeperEndBlocker interface {
+	EndBlock(ctx sdk.Context)
 }
 
 func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
@@ -207,12 +210,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks := Keepers{}
 	ks.TimerStoreKeeper = timerstore.NewKeeper(cdc)
-	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc, ks.TimerStoreKeeper)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
+	ks.FixationStoreKeeper = fixationstore.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
@@ -271,9 +274,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Dualstaking.InitDelegators(ctx, *fixationstore.DefaultGenesis())
 	ks.Plans.InitPlans(ctx, *fixationstore.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationstore.DefaultGenesis())
-	ks.Subscription.InitSubscriptionsTimers(ctx, []types.RawMessage{})
+	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstore.DefaultGenesis())
 	ks.Subscription.InitCuTrackers(ctx, *fixationstore.DefaultGenesis())
-	ks.Subscription.InitCuTrackerTimers(ctx, []types.RawMessage{})
+	ks.Subscription.InitCuTrackerTimers(ctx, *timerstore.DefaultGenesis())
 	ks.Projects.InitDevelopers(ctx, *fixationstore.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *fixationstore.DefaultGenesis())
 
@@ -289,8 +292,9 @@ func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subsp
 	return
 }
 
-func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan) error {
+func SimulatePlansAddProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, plansToPropose []planstypes.Plan, modify bool) error {
 	proposal := planstypes.NewPlansAddProposal("mockProposal", "mockProposal plans add for testing", plansToPropose)
+	proposal.Modify = modify
 	err := proposal.ValidateBasic()
 	if err != nil {
 		return err
@@ -335,6 +339,8 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 
 func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
+
+	EndBlock(unwrapedCtx, ks)
 
 	block := uint64(unwrapedCtx.BlockHeight() + 1)
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
@@ -418,6 +424,22 @@ func NewBlock(ctx sdk.Context, ks *Keepers) {
 
 		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
 			beginBlocker.BeginBlock(ctx)
+		}
+	}
+}
+
+// Make sure you save the new context
+func EndBlock(ctx sdk.Context, ks *Keepers) {
+	// get the value and type of the Keepers struct
+	keepersType := reflect.TypeOf(*ks)
+	keepersValue := reflect.ValueOf(*ks)
+
+	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
+	for i := 0; i < keepersType.NumField(); i++ {
+		fieldValue := keepersValue.Field(i)
+
+		if endBlocker, ok := fieldValue.Interface().(KeeperEndBlocker); ok {
+			endBlocker.EndBlock(ctx)
 		}
 	}
 }

@@ -277,7 +277,7 @@ func (h *handler) handleSubscriptionResultTendermint(msg *JsonrpcMessage) {
 func (h *handler) handleResponse(msg *JsonrpcMessage) {
 	op := h.respWait[string(msg.ID)]
 	if op == nil {
-		h.log.Debug("Unsolicited RPC response", "reqid", idForLog{msg.ID})
+		utils.LavaFormatWarning("Unsolicited RPC response", nil, utils.LogAttr("req-id", idForLog{msg.ID}.String()))
 		return
 	}
 	delete(h.respWait, string(msg.ID))

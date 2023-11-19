@@ -166,11 +166,14 @@ import (
 // Note also that DelEntry() discards all future entries on or beyond the DeletedAt
 // block (and owing to the previous rule, none will be added until deletes occurs).
 
+type GetStaleBlocks func(sdk.Context) uint64
+
 type FixationStore struct {
-	storeKey storetypes.StoreKey
-	cdc      codec.BinaryCodec
-	prefix   string
-	tstore   timerstore.TimerStore
+	storeKey       storetypes.StoreKey
+	cdc            codec.BinaryCodec
+	prefix         string
+	tstore         timerstore.TimerStore
+	getStaleBlocks GetStaleBlocks
 }
 
 var fixationVersion uint64 = 5
@@ -795,7 +798,8 @@ func (fs *FixationStore) putEntry(ctx sdk.Context, entry types.Entry) {
 
 		// non-future entries must pass "stale period"; setup a timer for that
 		// (the computation never overflows because ctx.BlockHeight is int64)
-		entry.StaleAt = block + uint64(types.STALE_ENTRY_TIME)
+
+		entry.StaleAt = block + fs.getStaleBlocks(ctx)
 		key := encodeForTimer(entry.SafeIndex(), entry.Block, timerStaleEntry)
 		fs.tstore.AddTimerByBlockHeight(ctx, entry.StaleAt, key, []byte{})
 	}
@@ -1030,15 +1034,17 @@ func (fs *FixationStore) Export(ctx sdk.Context) types.GenesisState {
 
 	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
 		var entries types.GenesisEntries
+		entries.Index = index
 		safeIndex, err := types.SanitizeIndex(index)
 		if err != nil {
-			utils.LavaFormatPanic("fixation export: unsanitized index", err)
+			utils.LavaFormatPanic("export genesis failed", err)
 		}
-
 		entries.IsLive = fs.isEntryIndexLive(ctx, safeIndex)
 		blocks := fs.GetAllEntryVersions(ctx, index)
 		for _, block := range blocks {
-			entries.Entries = append(entries.Entries, fs.getEntry(ctx, safeIndex, block))
+			entry := fs.getEntry(ctx, safeIndex, block)
+			entry.Index = index
+			entries.Entries = append(entries.Entries, entry)
 		}
 		gs.Entries = append(gs.Entries, entries)
 	}
@@ -1055,27 +1061,23 @@ func DefaultGenesis() *types.GenesisState {
 }
 
 func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
-	// call timer-store's Init (with empty input) to trigger its setVersion() if needed;
-	// the timer-store data is stored in the same namespace/prefix as this fixation store
-	// so the loop below will restore its state too (and overwrite that Init).
-	fs.tstore.Init(ctx, nil)
-
 	// will be overwritten by below if genesis state exists
 	fs.setVersion(ctx, gs.Version)
 
 	for _, entries := range gs.Entries {
 		safeIndex, err := types.SanitizeIndex(entries.Index)
 		if err != nil {
-			utils.LavaFormatPanic("unsafe fixation index in genesis file", err, utils.Attribute{Key: "Index", Value: entries.Index})
+			utils.LavaFormatPanic("cannot import genesis", err)
 		}
-
-		fs.setEntryIndex(ctx, safeIndex, entries.IsLive)
+		entries.Index = string(safeIndex)
+		fs.setEntryIndex(ctx, types.SafeIndex(entries.Index), entries.IsLive)
 
 		for _, entry := range entries.Entries {
-			_, err := types.SanitizeIndex(entry.Index)
+			safeIndex, err := types.SanitizeIndex(entry.Index)
 			if err != nil {
-				utils.LavaFormatPanic("unsafe fixation entry in genesis file", err, utils.Attribute{Key: "Index", Value: entry.Index})
+				utils.LavaFormatPanic("cannot import genesis", err)
 			}
+			entry.Index = string(safeIndex)
 			fs.setEntry(ctx, entry)
 		}
 	}
@@ -1084,7 +1086,7 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs types.GenesisState) {
 }
 
 // NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *timerstore.TimerStore) *FixationStore {
+func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *timerstore.TimerStore, getStaleBlocks GetStaleBlocks) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
 	callback := func(ctx sdk.Context, key, data []byte) {
@@ -1093,7 +1095,7 @@ func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefi
 	tstore.WithCallbackByBlockHeight(callback)
 
 	fs.tstore = *tstore
-
+	fs.getStaleBlocks = getStaleBlocks
 	return &fs
 }
 

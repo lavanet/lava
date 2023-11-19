@@ -192,7 +192,7 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	return val.Parsing, &val.ApiCollection.CollectionData, ok
 }
 
-func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *parsedMessage, latestBlock uint64) {
+func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, latestBlock uint64) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 	bcp.extensionParser.ExtensionParsing(addon, parsedMessageArg, latestBlock)

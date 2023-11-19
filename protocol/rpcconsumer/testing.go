@@ -32,18 +32,18 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	stateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher)
-	if err != nil {
-		return err
-	}
+	stateQuery := statetracker.NewConsumerStateQuery(ctx, clientCtx)
 	for _, rpcProviderEndpoint := range rpcEndpoints {
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
 			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
 			if err != nil {
 				utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
-			stateTracker.RegisterForSpecUpdates(ctx, chainParser, lavasession.RPCEndpoint{ChainID: rpcProviderEndpoint.ChainID, ApiInterface: rpcProviderEndpoint.ApiInterface})
+			specResponse, err := stateQuery.GetSpec(ctx, rpcProviderEndpoint.ChainID)
+			if err != nil {
+				return err
+			}
+			chainParser.SetSpec(*specResponse)
 			chainProxy, err := chainlib.GetChainRouter(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})

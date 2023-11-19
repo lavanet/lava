@@ -10,7 +10,6 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -202,7 +201,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 	require.Nil(t, err)
 
 	projectData := types.ProjectData{
@@ -896,7 +895,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlocks(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 
 	// part (2): delete project then keys
 
@@ -930,7 +929,7 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NotNil(t, err)
 
 	// should not panic
-	ts.AdvanceBlocks(2 * fixationtypes.STALE_ENTRY_TIME)
+	ts.AdvanceBlocks(2 * ts.BlocksToSave())
 }
 
 func TestAddDevKeyToDifferentProjectsInSameBlock(t *testing.T) {
@@ -1045,14 +1044,14 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			plan.PlanPolicy.SelectedProvidersMode = tt.planMode
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
-			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan})
+			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
 			if tt.planPolicyValid {
 				require.Nil(t, err)
 			} else {
 				require.NotNil(t, err)
 			}
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
 			require.Nil(t, err)
 
 			res, err := ts.QuerySubscriptionListProjects(sub1Addr)
@@ -1134,7 +1133,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	}
 
 	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
-	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans)
+	err := testkeeper.SimulatePlansAddProposal(ctx, keepers.Plans, plans, false)
 	require.Nil(t, err)
 
 	freeUser := common.CreateNewAccount(_ctx, *keepers, 10000)
@@ -1226,7 +1225,7 @@ func TestPendingProject(t *testing.T) {
 
 	_, sub := ts.Account("sub1")
 
-	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1)
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false)
 	require.Nil(t, err)
 
 	res, err := ts.QuerySubscriptionListProjects(sub)

@@ -17,10 +17,6 @@
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -743,13 +739,14 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 290,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -767,7 +764,8 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -1351,10 +1349,6 @@
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {

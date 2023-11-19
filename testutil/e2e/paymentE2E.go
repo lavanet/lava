@@ -128,17 +128,17 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 
 	// wait for month+blocksToSave pass (debug_month = 2min, debug_epochsToSave = 5) and query for expected payout
 	expectedPayoutArr := make([]uint64, len(providers))
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 24; i++ {
 		for j := range providers {
-			payoutRequest := pairingTypes.QueryMonthlyPayoutRequest{Provider: providers[j]}
-			res, err := pairingQueryClient.MonthlyPayout(context.Background(), &payoutRequest)
+			payoutRequest := pairingTypes.QueryProviderMonthlyPayoutRequest{Provider: providers[j]}
+			res, err := pairingQueryClient.ProviderMonthlyPayout(context.Background(), &payoutRequest)
 			if err != nil {
 				panic(err)
 			}
 
 			// keep the max amount
-			if expectedPayoutArr[j] < res.Amount {
-				expectedPayoutArr[j] = res.Amount
+			if expectedPayoutArr[j] < res.Total {
+				expectedPayoutArr[j] = res.Total
 			}
 		}
 		time.Sleep(time.Second * 10)
@@ -151,8 +151,10 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 	}
 
 	for i := range newBalances {
-		payout := newBalances[i].Sub(startBalances[i]).Amount.Uint64()
-		if !withinRange(payout, expectedPayoutArr[i], 80) {
+		newAmount := newBalances[i].Amount
+		startAmount := startBalances[i].Amount
+		payout := newAmount.Sub(startAmount)
+		if payout.IsNegative() || !withinRange(payout.Uint64(), expectedPayoutArr[i], 80) {
 			panic(utils.LavaFormatError("payment check failed", fmt.Errorf("provider did not get expected payment"),
 				utils.Attribute{Key: "provider", Value: providers[i]},
 				utils.Attribute{Key: "start_balance", Value: startBalances[i].String()},

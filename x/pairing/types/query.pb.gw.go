@@ -813,8 +813,8 @@ func local_request_Query_EffectivePolicy_0(ctx context.Context, marshaler runtim
 
 }
 
-func request_Query_MonthlyPayout_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryMonthlyPayoutRequest
+func request_Query_ProviderMonthlyPayout_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryProviderMonthlyPayoutRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -835,13 +835,13 @@ func request_Query_MonthlyPayout_0(ctx context.Context, marshaler runtime.Marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider", err)
 	}
 
-	msg, err := client.MonthlyPayout(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ProviderMonthlyPayout(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Query_MonthlyPayout_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryMonthlyPayoutRequest
+func local_request_Query_ProviderMonthlyPayout_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryProviderMonthlyPayoutRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -862,7 +862,61 @@ func local_request_Query_MonthlyPayout_0(ctx context.Context, marshaler runtime.
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "provider", err)
 	}
 
-	msg, err := server.MonthlyPayout(ctx, &protoReq)
+	msg, err := server.ProviderMonthlyPayout(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_Query_SubscriptionMonthlyPayout_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QuerySubscriptionMonthlyPayoutRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer")
+	}
+
+	protoReq.Consumer, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer", err)
+	}
+
+	msg, err := client.SubscriptionMonthlyPayout(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_Query_SubscriptionMonthlyPayout_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QuerySubscriptionMonthlyPayoutRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["consumer"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "consumer")
+	}
+
+	protoReq.Consumer, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "consumer", err)
+	}
+
+	msg, err := server.SubscriptionMonthlyPayout(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1208,7 +1262,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 	})
 
-	mux.Handle("GET", pattern_Query_MonthlyPayout_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_ProviderMonthlyPayout_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -1219,7 +1273,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Query_MonthlyPayout_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Query_ProviderMonthlyPayout_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1227,7 +1281,30 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			return
 		}
 
-		forward_Query_MonthlyPayout_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_ProviderMonthlyPayout_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Query_SubscriptionMonthlyPayout_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_Query_SubscriptionMonthlyPayout_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Query_SubscriptionMonthlyPayout_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1555,7 +1632,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
-	mux.Handle("GET", pattern_Query_MonthlyPayout_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_ProviderMonthlyPayout_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1564,14 +1641,34 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Query_MonthlyPayout_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Query_ProviderMonthlyPayout_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Query_MonthlyPayout_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_ProviderMonthlyPayout_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_Query_SubscriptionMonthlyPayout_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_Query_SubscriptionMonthlyPayout_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_Query_SubscriptionMonthlyPayout_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1625,7 +1722,9 @@ var (
 
 	pattern_Query_EffectivePolicy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5}, []string{"lavanet", "lava", "pairing", "effective_policy", "consumer", "specID"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_MonthlyPayout_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "monthly_payout", "provider"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_ProviderMonthlyPayout_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "provider_monthly_payout", "provider"}, "", runtime.AssumeColonVerbOpt(false)))
+
+	pattern_Query_SubscriptionMonthlyPayout_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"lavanet", "lava", "pairing", "subscription_monthly_payout", "consumer"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_SdkPairing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"lavanet", "lava", "pairing", "sdk_pairing"}, "", runtime.AssumeColonVerbOpt(false)))
 )
@@ -1657,7 +1756,9 @@ var (
 
 	forward_Query_EffectivePolicy_0 = runtime.ForwardResponseMessage
 
-	forward_Query_MonthlyPayout_0 = runtime.ForwardResponseMessage
+	forward_Query_ProviderMonthlyPayout_0 = runtime.ForwardResponseMessage
+
+	forward_Query_SubscriptionMonthlyPayout_0 = runtime.ForwardResponseMessage
 
 	forward_Query_SdkPairing_0 = runtime.ForwardResponseMessage
 )

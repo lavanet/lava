@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +24,8 @@ func initCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*Fixation
 	for i := 0; i < count; i++ {
 		fixationKey := "mock_fix_" + strconv.Itoa(i)
 		ts := timerstore.NewTimerStore(mockStoreKey, cdc, fixationKey)
-		fs[i] = NewFixationStore(mockStoreKey, cdc, fixationKey, ts)
+		fs[i] = NewFixationStore(mockStoreKey, cdc, fixationKey, ts, mockGetStaleBlock)
+		fs[i].Init(ctx, *DefaultGenesis())
 	}
 
 	return ctx, fs
@@ -52,7 +52,10 @@ type fixationTemplate struct {
 // helper to automate testing operations
 func testWithFixationTemplate(t *testing.T, playbook []fixationTemplate, countObj, countVS int) {
 	ctx, fs := initCtxAndFixationStores(t, countVS)
+	runPlaybook(t, ctx, fs, playbook, countObj)
+}
 
+func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []fixationTemplate, countObj int) {
 	var coins []sdk.Coin
 	var dummy sdk.Coin
 
@@ -160,7 +163,7 @@ func TestEntryInvalidIndex(t *testing.T) {
 // Test addition and auto-removal of a fixation entry
 func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME + 1
+	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
@@ -174,7 +177,7 @@ func TestFixationEntryAdditionAndRemoval(t *testing.T) {
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "has", name: "entry #1 (not stale yet)", count: block0},
 		{op: "find", name: "entry #1 (not stale yet)", count: block0},
-		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: int64(mockGetStaleBlock(sdk.Context{})) + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		{op: "has", name: "entry #1 (now stale/gone)", count: block0, fail: true},
 		{op: "find", name: "entry #1 (now stale/gone)", count: block0, fail: true},
@@ -266,7 +269,7 @@ func TestEntryVersions(t *testing.T) {
 func TestEntryStale(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + int64(10) + types.STALE_ENTRY_TIME + 1
+	block2 := block1 + int64(10) + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
@@ -279,7 +282,7 @@ func TestEntryStale(t *testing.T) {
 		{op: "has", name: "entry #2", count: block1, coin: 1},
 		{op: "find", name: "entry #1", count: block0 + 1, coin: 0},
 		{op: "find", name: "entry #2", count: block1 + 1, coin: 1},
-		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: int64(mockGetStaleBlock(sdk.Context{})) + 1},
 		// entry #2 now stale and therefore should not be visible
 		{op: "find", name: "entry #2", count: block1 + 1, fail: true},
 		// but should still be positive for HasEntry()
@@ -298,7 +301,7 @@ func TestEntryStale(t *testing.T) {
 func TestDifferentFixationKeys(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + types.STALE_ENTRY_TIME + 1
+	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
@@ -310,7 +313,7 @@ func TestDifferentFixationKeys(t *testing.T) {
 		{op: "append", name: "entry #3 (store #1)", store: 0, count: block2, coin: 2},
 		// entry #1 not deleted because not enough time with refcount = zero
 		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, coin: 0},
-		{op: "block", name: "add STALE_ENTRY_TIME+1", count: types.STALE_ENTRY_TIME + 1},
+		{op: "block", name: "add STALE_ENTRY_TIME+1", count: int64(mockGetStaleBlock(sdk.Context{})) + 1},
 		// entry #1 now deleted because blocks advanced by STALE_ENTRY_TIME+1
 		// entry #2 in store#2 remains unaffected
 		{op: "find", name: "entry #1 (store #1)", store: 0, count: block0, fail: true},
@@ -322,8 +325,8 @@ func TestDifferentFixationKeys(t *testing.T) {
 
 func TestGetAndPutEntry(t *testing.T) {
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME + 1
-	block2 := block1 + types.STALE_ENTRY_TIME + 1
+	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
+	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
@@ -344,7 +347,7 @@ func TestGetAndPutEntry(t *testing.T) {
 
 func TestDoublePutEntry(t *testing.T) {
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME + 1
+	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
@@ -445,7 +448,7 @@ func TestDelThenAddEntry(t *testing.T) {
 		{op: "getvers", name: "to check 6 versions", count: 6},
 		// aadvance to trigger stales
 		{op: "block", name: "advance to block3", count: block3 - block2 - 50},
-		{op: "block", name: "advance until stale", count: types.STALE_ENTRY_TIME},
+		{op: "block", name: "advance until stale", count: int64(mockGetStaleBlock(sdk.Context{}))},
 		{op: "getvers", name: "to check 1 version", count: 1},
 	}
 
@@ -476,7 +479,7 @@ func TestDelEntryWithFuture(t *testing.T) {
 		// now entry #2 is deleted
 		{op: "get", name: "entry #2", fail: true},
 		{op: "getvers", name: "to check 2 versions", count: 2},
-		{op: "block", name: "advance until entry #1 stale", count: types.STALE_ENTRY_TIME - 50},
+		{op: "block", name: "advance until entry #1 stale", count: int64(mockGetStaleBlock(sdk.Context{})) - 50},
 		{op: "block", name: "+1", count: 1},
 		{op: "getvers", name: "to check 2 version", count: 1},
 		{op: "block", name: "advance until entry #2 stale", count: block2 - block1},
@@ -504,7 +507,7 @@ func TestDelEntrySameFuture(t *testing.T) {
 		{op: "block", name: "advance to block1", count: block1 - block0},
 		// now entry #2 is latest, and deleted
 		{op: "get", name: "entry #1 should fail", fail: true},
-		{op: "block", name: "advance until entry #1 stale", count: types.STALE_ENTRY_TIME},
+		{op: "block", name: "advance until entry #1 stale", count: int64(mockGetStaleBlock(sdk.Context{}))},
 		{op: "getvers", name: "to check 1 version", count: 0},
 	}
 
@@ -548,7 +551,7 @@ func TestDeleletdStaleStays(t *testing.T) {
 		{op: "block", name: "add block4-block3", count: block4 - block3},
 		{op: "getvers", name: "to check 4 versions left", count: 4},
 		// entry #1 version 1,2,3 become stale, version 2 will be gone
-		{op: "block", name: "add STALE_ENTRY_TIME", count: types.STALE_ENTRY_TIME},
+		{op: "block", name: "add STALE_ENTRY_TIME", count: int64(mockGetStaleBlock(sdk.Context{}))},
 		{op: "getvers", name: "to check 3 versions left", count: 3},
 	}
 
@@ -560,7 +563,7 @@ func TestExactEntryMethods(t *testing.T) {
 	unknown := "unknown"
 
 	block0 := int64(10)
-	block1 := block0 + types.STALE_ENTRY_TIME + 1
+	block1 := block0 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1 version 0", count: block0, coin: 0},
@@ -591,7 +594,7 @@ func TestDeleteTwoEntries(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
 	block2 := block1 + int64(10)
-	block3 := block2 + types.STALE_ENTRY_TIME + 1
+	block3 := block2 + int64(mockGetStaleBlock(sdk.Context{})) + 1
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
@@ -613,10 +616,10 @@ func TestRemoveStaleEntries(t *testing.T) {
 	block3 := block2 + int64(10)
 	block4 := block3 + int64(10)
 	block5 := int64(100)
-	block6 := block5 + types.STALE_ENTRY_TIME
-	block7 := block6 + types.STALE_ENTRY_TIME/2
-	block8 := block7 + types.STALE_ENTRY_TIME/2 + 1
-	block9 := block8 + types.STALE_ENTRY_TIME/2 + 2
+	block6 := block5 + int64(mockGetStaleBlock(sdk.Context{}))
+	block7 := block6 + int64(mockGetStaleBlock(sdk.Context{}))/2
+	block8 := block7 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 1
+	block9 := block8 + int64(mockGetStaleBlock(sdk.Context{}))/2 + 2
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},
@@ -672,7 +675,7 @@ func TestIllegalPutLatestEntry(t *testing.T) {
 func TestRemoveLastEntry(t *testing.T) {
 	block0 := int64(10)
 	block1 := block0 + int64(10)
-	block2 := block1 + types.STALE_ENTRY_TIME
+	block2 := block1 + int64(mockGetStaleBlock(sdk.Context{}))
 
 	playbook := []fixationTemplate{
 		{op: "append", name: "entry #1", count: block0, coin: 0},

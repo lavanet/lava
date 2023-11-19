@@ -47,13 +47,14 @@ func ProjectsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"EpochStorageParams",
 	)
 
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
-		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
-		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc)),
+		epochstorageKeeper,
+		fixationstore.NewKeeper(cdc, timerstore.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

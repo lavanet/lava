@@ -22,11 +22,13 @@ import (
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
+	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 )
@@ -69,6 +71,7 @@ type StateTrackerInf interface {
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
+	GetVirtualEpoch(epoch uint64) uint64
 }
 
 func (rpcps *RPCProviderServer) ServeRPCRequests(
@@ -210,7 +213,8 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, nil, err
 	}
 	relayCU := chainMessage.GetApi().ComputeUnits
-	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold)
+	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
+	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold, virtualEpoch)
 	if err != nil {
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.
@@ -801,7 +805,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
 	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
-		return latestBlock, requestedHashes, 0, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return latestBlock, requestedHashes, 0, utils.LavaFormatWarning("Requested a block that is too new", lavaprotocol.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
 	if !ok {
@@ -809,7 +813,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock
 		deadline = time.Now().Add(500 * time.Millisecond)
 	}
 	// we are waiting for the state tracker to catch up with the requested block
-	utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
+	utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
 	sleepTime := time.Until(deadline) / 2 // sleep up to half the timeout so we actually have time to do the relay
 	sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
 	getLatestBlock := func() bool {
@@ -826,7 +830,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, seenBlock
 	}
 	if requestBlock > latestBlock && seenBlock > latestBlock {
 		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
-		return 0, nil, sleptTime, utils.LavaFormatWarning("rquested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return 0, nil, sleptTime, utils.LavaFormatWarning("rquested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
 	}
 	if debugConsistency {
 		utils.LavaFormatDebug("consistency sleep done", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "sleptTime", Value: sleptTime})
@@ -908,6 +912,8 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
+	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
+	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
 }
 
