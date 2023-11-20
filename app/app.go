@@ -156,6 +156,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_26_1,
 	upgrades.Upgrade_0_26_2,
 	upgrades.Upgrade_0_27_0,
+	upgrades.Upgrade_vtest,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -222,17 +223,19 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:         nil,
-		distrtypes.ModuleName:              nil,
-		minttypes.ModuleName:               {authtypes.Minter},
-		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                {authtypes.Burner},
-		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
-		epochstoragemoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		subscriptionmoduletypes.ModuleName: {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:      {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		conflictmoduletypes.ModuleName:     {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		authtypes.FeeCollectorName:               nil,
+		distrtypes.ModuleName:                    nil,
+		minttypes.ModuleName:                     {authtypes.Minter},
+		stakingtypes.BondedPoolName:              {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                      {authtypes.Burner},
+		ibctransfertypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
+		epochstoragemoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking}, // TODO: remove
+		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking}, // TODO: remove
+		pairingmoduletypes.ModuleName:            {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		conflictmoduletypes.ModuleName:           {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )

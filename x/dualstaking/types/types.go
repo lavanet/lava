@@ -9,3 +9,8 @@ const (
 	ContributorRewardEventName = "contributor_rewards"
 	ValidatorSlashEventName    = "validator_slash"
 )
+
+const (
+	NotBondedPoolName = "not_bonded_dualstaking_pool"
+	BondedPoolName    = "bonded_dualstaking_pool"
+)
