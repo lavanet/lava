@@ -6,7 +6,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/sigs"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
@@ -250,14 +249,10 @@ func TestValidatorSlash(t *testing.T) {
 	ts.addClients(1)
 	amount := sdk.NewIntFromUint64(10000)
 
-	// create validators and providers
-	var validators []sigs.Account
-	for i := 0; i < 2; i++ {
-		validator, _ := ts.GetAccount(common.VALIDATOR, i)
-		_, err := ts.TxCreateValidator(validator, amount)
-		require.Nil(t, err)
-		validators = append(validators, validator)
-	}
+	// create validator and providers
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	_, err := ts.TxCreateValidator(validator, amount)
+	require.Nil(t, err)
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
@@ -267,18 +262,16 @@ func TestValidatorSlash(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	// delegate to validators (automatically delegates to empty provider)
+	// delegate to validator (automatically delegates to empty provider)
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
-	_, err := ts.TxDelegateValidator(delegatorAcc, validators[0], sdk.NewInt(200))
-	require.Nil(t, err)
-	_, err = ts.TxDelegateValidator(delegatorAcc, validators[1], sdk.NewInt(10))
+	_, err = ts.TxDelegateValidator(delegatorAcc, validator, sdk.NewInt(250))
 	require.Nil(t, err)
 
 	// redelegate from empty provider to all providers with fixed amounts
 	redelegateAmts := []math.Int{
-		sdk.NewInt(10),
-		sdk.NewInt(20),
-		sdk.NewInt(50),
+		sdk.NewInt(15),
+		sdk.NewInt(15),
+		sdk.NewInt(55),
 		sdk.NewInt(60),
 		sdk.NewInt(70),
 	}
@@ -295,22 +288,22 @@ func TestValidatorSlash(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	// sanity check: redelegate from val2 to val1 and check delegations balance
-	_, err = ts.TxReDelegateValidator(delegatorAcc, validators[1], validators[0], sdk.NewInt(10))
+	// sanity check: redelegate from provider0 to provider1 and check delegations balance
+	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], ts.spec.Index, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(5)))
 	require.Nil(t, err)
 	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.Nil(t, err)
 	require.True(t, diff.IsZero())
 
-	// sanity check: unbond some of val1's funds and check delegations balance
-	_, err = ts.TxUnbondValidator(delegatorAcc, validators[0], sdk.NewInt(10))
+	// sanity check: unbond some of provider2's funds and check delegations balance
+	_, err = ts.TxDualstakingUnbond(delegator, providers[2], ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(5)))
 	require.Nil(t, err)
 	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.Nil(t, err)
 	require.True(t, diff.IsZero())
 
 	// slash 24*5 tokens from the validator and check balance
-	valConsAddr := sdk.GetConsAddress(validators[0].ConsKey.PubKey())
+	valConsAddr := sdk.GetConsAddress(validator.ConsKey.PubKey())
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, sdk.NewDecWithPrec(6, 1), 1, ts.Ctx.BlockHeight()) // fraction = 120/200 = 0.6
 
 	res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
