@@ -3,7 +3,11 @@ import { ProviderOptimizer as ProviderOptimizerInterface } from "../lavasession/
 import { Logger } from "../logger/logger";
 import random from "random";
 import gammainc from "@stdlib/math-base-special-gammainc";
-import { baseTimePerCU, getTimePerCu } from "../common/timeout";
+import {
+  AverageWorldLatency,
+  baseTimePerCU,
+  getTimePerCu,
+} from "../common/timeout";
 import BigNumber from "bignumber.js";
 import { hourInMillis, millisToSeconds, now } from "../util/time";
 import { ScoreStore } from "../util/score/decayScore";
@@ -162,7 +166,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       if (latency > 0) {
         let baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
         if (isHangingApi) {
-          baseLatency += this.averageBlockTime;
+          baseLatency += this.averageBlockTime / 2;
         }
         providerData = this.updateProbeEntryLatency(
           providerData,
@@ -440,7 +444,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     requestedBlock: number
   ): number {
     const baseLatency = this.baseWorldLatency + baseTimePerCU(cu) / 2;
-    const timeoutDuration = getTimePerCu(cu);
+    const timeoutDuration = AverageWorldLatency + getTimePerCu(cu);
 
     let historicalLatency = 0;
     if (providerData.latency.denom === 0) {
@@ -534,8 +538,8 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
       const time = -1 * INITIAL_DATA_STALENESS * hourInMillis;
       data = {
         availability: new ScoreStore(0.99, 1, now() + time),
-        latency: new ScoreStore(2, 1, now() + time),
-        sync: new ScoreStore(2, 1, now() + time),
+        latency: new ScoreStore(1, 1, now() + time),
+        sync: new ScoreStore(1, 1, now() + time),
         syncBlock: 0,
       };
     }

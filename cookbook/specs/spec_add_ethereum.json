@@ -205,7 +205,8 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "timeout_ms":1000
                             },
                             {
                                 "name": "eth_getBalance",

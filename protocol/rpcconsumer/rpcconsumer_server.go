@@ -205,6 +205,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return nil, err
 	}
+	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
 	if _, ok := rpccs.consumerServices[chainlib.GetAddon(chainMessage)]; !ok {
 		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
 			utils.Attribute{Key: "addon", Value: chainlib.GetAddon(chainMessage)},
@@ -349,12 +350,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	chainID := rpccs.listenEndpoint.ChainID
 	lavaChainID := rpccs.lavaChainID
 
-	// Calculate extra RelayTimeout
-	extraRelayTimeout := time.Duration(0)
-	if chainlib.IsHangingApi(chainMessage) {
-		_, extraRelayTimeout, _, _ = rpccs.chainParser.ChainBlockStats()
-	}
-
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := chainMessage.RequestedBlock()
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
@@ -376,9 +371,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Make a channel for all providers to send responses
 	responses := make(chan *relayResponse, len(sessions))
 
-	// Set relay timout, increase it every time we fail a relay on timeout
-	relayTimeout := extraRelayTimeout + time.Duration(timeouts+1)*common.GetTimePerCu(chainlib.GetComputeUnits(chainMessage)) + common.AverageWorldLatency
-
+	relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser, timeouts)
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
@@ -723,9 +716,12 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 	metadataRet := []pairingtypes.Metadata{}
 	headerDirectives := map[string]string{}
 	for _, metaElement := range metadata {
-		switch metaElement.Name {
-		case common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME, strings.ToLower(common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME):
-			headerDirectives[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME] = metaElement.Value
+		name := strings.ToLower(metaElement.Name)
+		switch name {
+		case common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME:
+			headerDirectives[name] = metaElement.Value
+		case common.RELAY_TIMEOUT_HEADER_NAME:
+			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
 		}
@@ -743,4 +739,15 @@ func (rpccs *RPCConsumerServer) GetInitialUnwantedProviders(directiveHeaders map
 		}
 	}
 	return unwantedProviders
+}
+
+func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage chainlib.ChainMessage, directiveHeaders map[string]string) {
+	timeoutStr, ok := directiveHeaders[common.RELAY_TIMEOUT_HEADER_NAME]
+	if ok {
+		timeout, err := time.ParseDuration(timeoutStr)
+		if err == nil {
+			// set an override timeout
+			chainMessage.TimeoutOverride(timeout)
+		}
+	}
 }
