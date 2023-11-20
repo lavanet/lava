@@ -30,6 +30,7 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 				if err != nil {
 					return err
 				}
+				fmt.Printf("entry.Address: %v\n", entry.Address)
 
 				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
 				if moduleBalance.IsLT(entry.Stake) {
@@ -75,9 +76,10 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
 	highestVal := validatorsByPower[0]
 
+	list := []dualstakingtypes.Delegation{}
 	for _, ind := range delegationsInds {
 		var d dualstakingtypes.Delegation
-		found := m.keeper.delegationFS.FindEntry(ctx, ind, nextEpoch, &d)
+		block, _, _, found := m.keeper.delegationFS.FindEntryDetailed(ctx, ind, nextEpoch, &d)
 		if !found {
 			continue
 		}
@@ -85,17 +87,24 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 		if d.Delegator == d.Provider {
 			continue
 		}
+		list = append(list, d)
+		fmt.Printf("d.Delegator: %v\n", d.Delegator)
+		amountTest := d.Amount
+		d.Amount = sdk.NewCoin("ulava", sdk.ZeroInt())
+		m.keeper.delegationFS.ModifyEntry(ctx, ind, block, &d)
 
 		delegatorAddr, err := sdk.AccAddressFromBech32(d.Delegator)
 		if err != nil {
 			return err
 		}
-		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, dualstakingtypes.BondedPoolName, delegatorAddr, sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, d.Amount.Amount)})
+		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, dualstakingtypes.BondedPoolName, delegatorAddr, sdk.Coins{amountTest})
 		if err != nil {
 			return err
 		}
+	}
 
-		err = m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
+	for _, d := range list {
+		err := m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
 		if err != nil {
 			return err
 		}
