@@ -10,7 +10,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescription string) error {
+func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unstakeDescription string) error {
 	logger := k.Logger(ctx)
 	// TODO: validate chainID basic validation
 
@@ -36,7 +36,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, chainID, creator, unstakeDescripti
 		)
 	}
 
-	err = k.dualstakingKeeper.Unbond(ctx, existingEntry.GetAddress(), existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake, true)
+	err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator, existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake, true)
 	if err != nil {
 		return utils.LavaFormatWarning("can't unbond seld delegation", err,
 			utils.Attribute{Key: "address", Value: existingEntry.Address},

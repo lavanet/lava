@@ -135,6 +135,10 @@ func (ts *Tester) Accounts(name string) []sigs.Account {
 	return accounts
 }
 
+func (ts *Tester) AccountsMap() map[string]sigs.Account {
+	return ts.accounts
+}
+
 func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
 	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
 }

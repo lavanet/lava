@@ -102,3 +102,12 @@ func (ts *tester) getStakeEntry(provider sdk.AccAddress, chainID string) epochst
 
 	return *stakeEntry
 }
+
+func (ts *tester) verifyDelegatorsBalance() {
+	accounts := ts.AccountsMap()
+	for key, account := range accounts {
+		diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, account.Addr)
+		require.Nil(ts.T, err)
+		require.True(ts.T, diff.IsZero(), "delegator balance is not 0", key)
+	}
+}

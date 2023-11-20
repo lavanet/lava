@@ -28,6 +28,7 @@ message MsgStakeProvider {
   string moniker = 6;
   cosmos.base.v1beta1.Coin delegate_limit = 7 [(gogoproto.nullable) = false];
   uint64 delegate_commission = 8; // delegation commission (precentage 0-100)
+  string validator = 9;
 }
 
 message MsgStakeProviderResponse {
@@ -36,6 +37,7 @@ message MsgStakeProviderResponse {
 message MsgUnstakeProvider {
   string creator = 1;
   string chainID = 2;
+  string validator = 3;
 }
 
 message MsgUnstakeProviderResponse {

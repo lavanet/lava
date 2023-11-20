@@ -180,7 +180,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 						utils.LavaFormatWarning("slashing failed at vote conflict", err)
 					}
 
-					err = k.pairingKeeper.UnstakeEntry(ctx, conflictVote.ChainID, vote.Address, types.UnstakeDescriptionFraudVote)
+					err = k.pairingKeeper.FreezeProvider(ctx, vote.Address, []string{conflictVote.ChainID}, types.UnstakeDescriptionFraudVote)
 					if err != nil {
 						utils.LavaFormatWarning("unstaking fraud voter failed", err)
 						continue
