@@ -123,6 +123,8 @@ func TestDelegate(t *testing.T) {
 	delegated = delegated.Add(amount).Add(amount) // two delegations
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+
+	ts.verifyDelegatorsBalance()
 }
 
 func TestRedelegateFail(t *testing.T) {
@@ -288,6 +290,8 @@ func TestRedelegate(t *testing.T) {
 	delegated2 = delegated2.Add(amount)
 	stakeEntry2 = ts.getStakeEntry(provider2Acct.Addr, ts.spec.Name)
 	require.True(t, delegated2.IsEqual(stakeEntry2.DelegateTotal))
+
+	ts.verifyDelegatorsBalance()
 }
 
 func TestUnbondFail(t *testing.T) {
@@ -440,6 +444,8 @@ func TestUnbond(t *testing.T) {
 	// advance another half the blocks for the unbond hold-period
 	ts.AdvanceBlocks(105)
 	// not-blablacoins will have been returned to their delegator by now
+
+	ts.verifyDelegatorsBalance()
 }
 
 func TestBondUnbondBond(t *testing.T) {
@@ -483,4 +489,6 @@ func TestBondUnbondBond(t *testing.T) {
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
+
+	ts.verifyDelegatorsBalance()
 }
