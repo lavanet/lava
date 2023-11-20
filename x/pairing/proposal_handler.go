@@ -50,7 +50,8 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 				}, ","))
 			}
 
-			err = k.UnstakeEntry(ctx, stakeEntry.Chain, stakeEntry.Address, "unstaked via gov proposal")
+			// TODO yarom
+			err = k.UnstakeEntry(ctx, "TODO", stakeEntry.Chain, stakeEntry.Address, "unstaked via gov proposal")
 			if err != nil {
 				providersFailedUnstaking = append(providersFailedUnstaking, strings.Join([]string{
 					stakeEntry.Address,

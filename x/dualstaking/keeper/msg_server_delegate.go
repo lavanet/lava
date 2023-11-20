@@ -13,61 +13,66 @@ import (
 
 func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	return &types.MsgDelegateResponse{}, k.Keeper.DelegateFull(ctx, msg.Creator, msg.Validator, msg.Provider, msg.ChainID, msg.Amount)
+}
 
-	valAddr, valErr := sdk.ValAddressFromBech32(msg.Validator)
+// DelegateFull uses staking module for to delegate with hooks
+func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error {
+	valAddr, valErr := sdk.ValAddressFromBech32(validator)
 	if valErr != nil {
-		return nil, valErr
+		return valErr
 	}
 
-	validator, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	validatorType, found := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if !found {
-		return nil, stakingtypes.ErrNoValidatorFound
+		return stakingtypes.ErrNoValidatorFound
 	}
 
-	delegatorAddress, err := sdk.AccAddressFromBech32(msg.Creator)
+	delegatorAddress, err := sdk.AccAddressFromBech32(delegator)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	if msg.Amount.Denom != bondDenom {
-		return nil, sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Amount.Denom, bondDenom,
+	if amount.Denom != bondDenom {
+		return sdkerror.Wrapf(
+			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", amount.Denom, bondDenom,
 		)
 	}
 
-	if err := validateCoins(msg.Amount); err != nil {
-		return nil, err
-	} else if msg.Amount.IsZero() {
-		return nil, sdkerror.Wrapf(
+	if err := validateCoins(amount); err != nil {
+		return err
+	} else if amount.IsZero() {
+		return sdkerror.Wrapf(
 			sdkerrors.ErrInvalidRequest, "invalid coin amount: got 0")
 	}
 
-	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, msg.Amount.Amount, stakingtypes.Unbonded, validator, true)
+	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, amount.Amount, stakingtypes.Unbonded, validatorType, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = k.Keeper.Redelegate(
+	err = k.Redelegate(
 		ctx,
-		msg.Creator,
+		delegator,
 		EMPTY_PROVIDER,
-		msg.Provider,
+		provider,
 		EMPTY_PROVIDER_CHAINID,
-		msg.ChainID,
-		msg.Amount,
+		chainID,
+		amount,
+		false,
 	)
 
 	if err == nil {
-		logger := k.Keeper.Logger(ctx)
+		logger := k.Logger(ctx)
 		details := map[string]string{
-			"delegator": msg.Creator,
-			"provider":  msg.Provider,
-			"chainID":   msg.ChainID,
-			"amount":    msg.Amount.String(),
+			"delegator": delegator,
+			"provider":  provider,
+			"chainID":   chainID,
+			"amount":    amount.String(),
 		}
 		utils.LogLavaEvent(ctx, logger, types.DelegateEventName, details, "Delegate")
 	}
 
-	return &types.MsgDelegateResponse{}, err
+	return err
 }

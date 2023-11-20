@@ -313,7 +313,7 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 // Redelegate lets a delegator transfer its delegation between providers, but
 // without the funds being subject to unstakeHoldBlocks witholding period.
 // (effective on next epoch)
-func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
+func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin, unstake bool) error {
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
@@ -353,7 +353,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		)
 	}
 
-	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, false)
+	err = k.decreaseDelegation(ctx, delegator, from, fromChainID, amount, nextEpoch, unstake)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to decrease delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
