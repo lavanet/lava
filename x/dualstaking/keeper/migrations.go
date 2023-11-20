@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -96,7 +95,7 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 			return err
 		}
 
-		_, err = m.keeper.stakingKeeper.Delegate(ctx, delegatorAddr, d.Amount.Amount, stakingtypes.Unbonded, highestVal, true)
+		err = m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
 		if err != nil {
 			return err
 		}
