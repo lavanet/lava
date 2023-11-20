@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -43,6 +44,15 @@ func (ts *tester) addClient(count int) {
 		if err != nil {
 			panic("addClient: failed to buy subscription: " + err.Error())
 		}
+	}
+}
+
+func (ts *tester) addValidators(count int) {
+	start := len(ts.Accounts(common.VALIDATOR))
+	for i := 0; i < count; i++ {
+		acc, _ := ts.AddAccount(common.VALIDATOR, start+i, testBalance)
+		_, err := ts.TxCreateValidator(acc, math.NewInt(testBalance))
+		require.Nil(ts.T, err)
 	}
 }
 
@@ -87,6 +97,7 @@ func (ts *tester) addProviderExtra(
 // setupForPayments creates staked providers and clients with subscriptions. They can be accessed
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
+	ts.addValidators(1)
 	if providersToPair > 0 {
 		// will overwrite the default "free" plan
 		ts.plan.PlanPolicy.MaxProvidersToPair = uint64(providersToPair)

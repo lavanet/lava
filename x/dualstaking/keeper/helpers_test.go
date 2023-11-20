@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -34,6 +35,11 @@ func newTester(t *testing.T) *tester {
 }
 
 func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount, unstakingCount int) *tester {
+	ts.addValidators(1)
+	val, _ := ts.GetAccount(common.VALIDATOR, 0)
+	_, err := ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
+	require.Nil(ts.T, err)
+
 	ts.addClients(delegatorCount)
 
 	ts.addProviders(stakedCount)

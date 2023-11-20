@@ -330,7 +330,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		}
 	}
 
-	if to != EMPTY_PROVIDER_CHAINID {
+	if to != EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(to); err != nil {
 			return utils.LavaFormatWarning("invalid to-provider address", err,
 				utils.Attribute{Key: "to_provider", Value: to},

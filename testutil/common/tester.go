@@ -309,11 +309,30 @@ func (ts *Tester) TxDualstakingDelegate(
 	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
+	validator, _ := ts.GetAccount(VALIDATOR, 0)
+	return ts.TxDualstakingDelegateValidator(
+		creator,
+		sdk.ValAddress(validator.Addr).String(),
+		provider,
+		chainID,
+		amount,
+	)
+}
+
+// TxDualstakingDelegate: implement 'tx dualstaking delegate'
+func (ts *Tester) TxDualstakingDelegateValidator(
+	creator string,
+	validator string,
+	provider string,
+	chainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgDelegateResponse, error) {
 	msg := &dualstakingtypes.MsgDelegate{
-		Creator:  creator,
-		Provider: provider,
-		ChainID:  chainID,
-		Amount:   amount,
+		Creator:   creator,
+		Validator: validator,
+		Provider:  provider,
+		ChainID:   chainID,
+		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Delegate(ts.GoCtx, msg)
 }
@@ -345,11 +364,30 @@ func (ts *Tester) TxDualstakingUnbond(
 	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
+	validator, _ := ts.GetAccount(VALIDATOR, 0)
+	return ts.TxDualstakingUnbondValidator(
+		creator,
+		sdk.ValAddress(validator.Addr).String(),
+		provider,
+		chainID,
+		amount,
+	)
+}
+
+// TxDualstakingUnbond: implement 'tx dualstaking unbond'
+func (ts *Tester) TxDualstakingUnbondValidator(
+	creator string,
+	validator string,
+	provider string,
+	chainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgUnbondResponse, error) {
 	msg := &dualstakingtypes.MsgUnbond{
-		Creator:  creator,
-		Provider: provider,
-		ChainID:  chainID,
-		Amount:   amount,
+		Creator:   creator,
+		Validator: validator,
+		Provider:  provider,
+		ChainID:   chainID,
+		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
 }
