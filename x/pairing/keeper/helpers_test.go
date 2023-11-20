@@ -28,6 +28,8 @@ const (
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 
+	ts.addValidators(1)
+
 	ts.plan = ts.AddPlan("free", common.CreateMockPlan()).Plan("free")
 	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
 

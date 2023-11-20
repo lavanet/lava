@@ -38,7 +38,7 @@ func CmdStakeProvider() *cobra.Command {
 		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc,archive,trace" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 
-		Args: cobra.ExactArgs(4),
+		Args: cobra.RangeArgs(4, 5),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
@@ -75,8 +75,16 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			var validator string
+			if len(args) == 5 {
+				validator = args[4]
+			} else {
+				validator = getValidator(clientCtx.GetFromAddress().String())
+			}
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
+				validator,
 				argChainID,
 				argAmount,
 				argEndpoints,
@@ -158,6 +166,12 @@ func CmdBulkStakeProvider() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
+				var validator string
+				if len(args) == 5 {
+					validator = args[4]
+				} else {
+					validator = getValidator(clientCtx.GetFromAddress().String())
+				}
 
 				for _, chainID := range chainIDs {
 					if chainID == "" {
@@ -166,6 +180,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 
 					msg := types.NewMsgStakeProvider(
 						clientCtx.GetFromAddress().String(),
+						validator,
 						chainID,
 						argAmount,
 						allEndpoints,
@@ -261,4 +276,8 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 		}
 	}
 	return endp, endpointsGeoloc, nil
+}
+
+func getValidator(provider string) string {
+	return "TODO"
 }

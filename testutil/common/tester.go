@@ -501,8 +501,10 @@ func (ts *Tester) TxPairingStakeProvider(
 	geoloc int32,
 	moniker string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
+	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
 		Creator:            addr,
+		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
 		Geolocation:        geoloc,
@@ -519,9 +521,11 @@ func (ts *Tester) TxPairingUnstakeProvider(
 	addr string,
 	chainID string,
 ) (*pairingtypes.MsgUnstakeProviderResponse, error) {
+	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgUnstakeProvider{
-		Creator: addr,
-		ChainID: chainID,
+		Validator: sdk.ValAddress(val.Addr).String(),
+		Creator:   addr,
+		ChainID:   chainID,
 	}
 	return ts.Servers.PairingServer.UnstakeProvider(ts.GoCtx, msg)
 }

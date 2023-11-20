@@ -14,7 +14,7 @@ func (k msgServer) StakeProvider(goCtx context.Context, msg *types.MsgStakeProvi
 		return &types.MsgStakeProviderResponse{}, err
 	}
 	// stakes a new provider entry
-	err := k.Keeper.StakeNewEntry(ctx, msg.Creator, msg.Validator, msg.ChainID, msg.Amount, msg.Endpoints, msg.Geolocation, msg.Moniker, msg.DelegateLimit, msg.DelegateCommission)
+	err := k.Keeper.StakeNewEntry(ctx, msg.Validator, msg.Creator, msg.ChainID, msg.Amount, msg.Endpoints, msg.Geolocation, msg.Moniker, msg.DelegateLimit, msg.DelegateCommission)
 
 	return &types.MsgStakeProviderResponse{}, err
 }

@@ -34,7 +34,7 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 
 			// Note: using the same "ts" means each provider added gets a new index ("it")
 			err := ts.addProviderMoniker(1, tt.moniker)
-			require.Equal(t, tt.validStake, err == nil)
+			require.Equal(t, tt.validStake, err == nil, err)
 			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
 
 			ts.AdvanceEpoch()

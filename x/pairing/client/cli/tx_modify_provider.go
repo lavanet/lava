@@ -170,6 +170,7 @@ func CmdModifyProvider() *cobra.Command {
 			// modify fields
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
+				"TODO yarom",
 				argChainID,
 				providerEntry.Stake,
 				providerEntry.Endpoints,
