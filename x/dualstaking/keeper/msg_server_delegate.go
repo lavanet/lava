@@ -3,8 +3,9 @@ package keeper
 import (
 	"context"
 
-	sdkerrors "cosmossdk.io/errors"
+	sdkerror "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
@@ -30,7 +31,7 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	if msg.Amount.Denom != bondDenom {
-		return nil, sdkerrors.Wrapf(
+		return nil, sdkerror.Wrapf(
 			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Amount.Denom, bondDenom,
 		)
 	}
@@ -38,7 +39,7 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 	if err := validateCoins(msg.Amount); err != nil {
 		return nil, err
 	} else if msg.Amount.IsZero() {
-		return nil, sdkerrors.Wrapf(
+		return nil, sdkerror.Wrapf(
 			sdkerrors.ErrInvalidRequest, "invalid coin amount: got 0")
 	}
 
