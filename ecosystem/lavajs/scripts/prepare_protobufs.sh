@@ -3,6 +3,14 @@
 function prepare() {
     echo "🔹make sure to run 'go mod tidy' from the lava repo before trying to run this file"
 
+    use_sudo=$1
+    if [ "$use_sudo" = true ]; then
+        SUDO=sudo
+    else
+        SUDO=''
+    fi
+
+
     file_path="../../go.mod"
     expected_lines=(
         "github.com/gogo/googleapis v1.4.1 // indirect"
@@ -68,14 +76,14 @@ function prepare() {
         exit 1
     fi
 
-    sudo rm -rf ./proto/cosmos; cp -r $specific_dir/proto/cosmos ./proto
-    sudo rm -rf ./proto/amino; cp -r $specific_dir/proto/amino ./proto
-    sudo rm -rf ./proto/tendermint; cp -r $specific_dir/proto/tendermint ./proto
-    sudo rm -rf ./proto/gogoproto; cp -r $gogodir/gogoproto ./proto
-    sudo rm -rf ./proto/google; cp -r $gogodir/protobuf/google ./proto
-    sudo mkdir ./proto/google/api
-    sudo cp -r $googledir/google/api/annotations.proto ./proto/google/api/.
-    sudo cp -r $googledir/google/api/http.proto ./proto/google/api/.
+    $SUDO rm -rf ./proto/cosmos; cp -r $specific_dir/proto/cosmos ./proto
+    $SUDO rm -rf ./proto/amino; cp -r $specific_dir/proto/amino ./proto
+    $SUDO rm -rf ./proto/tendermint; cp -r $specific_dir/proto/tendermint ./proto
+    $SUDO rm -rf ./proto/gogoproto; cp -r $gogodir/gogoproto ./proto
+    $SUDO rm -rf ./proto/google; cp -r $gogodir/protobuf/google ./proto
+    $SUDO mkdir ./proto/google/api
+    $SUDO cp -r $googledir/google/api/annotations.proto ./proto/google/api/.
+    $SUDO cp -r $googledir/google/api/http.proto ./proto/google/api/.
 
-    sudo chown -R $(whoami):$(whoami) ./proto
+    $SUDO chown -R $(whoami):$(whoami) ./proto
 }

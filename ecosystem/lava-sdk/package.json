@@ -65,6 +65,7 @@
     "lru-cache": "^10.0.1",
     "prettier": "^2.8.0",
     "protobufjs": "^7.1.2",
+    "protoc-gen-js": "^3.21.2",
     "random": "3.0.4",
     "rxjs": "^7.5.7",
     "seedrandom": "^3.0.5",
