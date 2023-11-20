@@ -244,7 +244,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 // get slashed as expected (by an equal amount to preserve the validators-providers delegation balance)
 func TestValidatorSlash(t *testing.T) {
 	ts := newTester(t)
-	ts.addValidators(2)
+	ts.addValidators(1)
 	ts.addProviders(5)
 	ts.addClients(1)
 	amount := sdk.NewIntFromUint64(10000)
@@ -326,6 +326,41 @@ func TestValidatorSlash(t *testing.T) {
 	}
 
 	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	require.Nil(t, err)
+	require.True(t, diff.IsZero())
+}
+
+// TestCancelUnbond checks that the providers-validators delegations balance is preserved when
+// a delegator (to a validator) cancels its unbond request
+func TestCancelUnbond(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(1)
+	ts.addClients(1)
+	amount := sdk.NewIntFromUint64(10000)
+
+	// create validator and providers
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	_, err := ts.TxCreateValidator(validator, amount)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	// delegate to validator (automatically delegates to empty provider)
+	delegator, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegator, validator, sdk.NewInt(250))
+	require.Nil(t, err)
+
+	// unbond and advance blocks
+	_, err = ts.TxUnbondValidator(delegator, validator, sdk.NewInt(100))
+	require.Nil(t, err)
+	unbondBlock := ts.Ctx.BlockHeight()
+	ts.AdvanceEpoch()
+
+	// cancel the unbond TX and check for balances
+	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(50)))
+	require.Nil(t, err)
+
+	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)
 	require.Nil(t, err)
 	require.True(t, diff.IsZero())
 }

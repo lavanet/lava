@@ -594,6 +594,17 @@ func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount ma
 	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
 }
 
+// TxUnbondValidator: implement 'tx staking undond'
+func (ts *Tester) TxCancelUnbondValidator(delegator, validator sigs.Account, block int64, amount sdk.Coin) (*stakingtypes.MsgCancelUnbondingDelegationResponse, error) {
+	msg := stakingtypes.NewMsgCancelUnbondingDelegation(
+		delegator.Addr,
+		sdk.ValAddress(validator.Addr),
+		block,
+		amount,
+	)
+	return ts.Servers.StakingServer.CancelUnbondingDelegation(ts.GoCtx, msg)
+}
+
 // QuerySubscriptionCurrent: implement 'q subscription current'
 func (ts *Tester) QuerySubscriptionCurrent(subkey string) (*subscriptiontypes.QueryCurrentResponse, error) {
 	msg := &subscriptiontypes.QueryCurrentRequest{
