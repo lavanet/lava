@@ -41,11 +41,11 @@ async function getBatch(): Promise<Array<any>> {
   return await lavaSDKInstance.sendRelay({
     relays: [
       {
-        method: "abci_info",
+        method: "eth_blockNumber",
         params: [],
       },
       {
-        method: "status",
+        method: "eth_accounts",
         params: [],
       },
     ],

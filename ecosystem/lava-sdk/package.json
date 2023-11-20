@@ -1,6 +1,6 @@
 {
   "name": "@lavanet/lava-sdk",
-  "version": "0.25.6",
+  "version": "0.27.3",
   "description": "An SDK for interacting with Lava provider",
   "main": "./bin/src/sdk/sdk.js",
   "author": "Lava Protocol Inc",
@@ -87,7 +87,22 @@
     "Web3",
     "APIs",
     "Lava",
-    "SDK"
+    "SDK",
+    "RPC",
+    "Decentralized",
+    "Blockchain",
+    "Data",
+    "Relay",
+    "Dapp",
+    "Serverless",
+    "Protocol",
+    "JsonRPC",
+    "Tendermint",
+    "Rest",
+    "Free",
+    "Token",
+    "Modular",
+    "Multichain"
   ],
   "bugs": {
     "url": "https://github.com/lavanet/lava-sdk/issues"
