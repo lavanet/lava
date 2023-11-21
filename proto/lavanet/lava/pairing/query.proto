@@ -248,7 +248,6 @@ message QuerySdkPairingResponse {
   uint64 max_cu = 2;
   lavanet.lava.spec.Spec spec = 3;
   lavanet.lava.downtime.v1.Params downtime_params = 4;
-  int64 latest_block_time = 5;
 }
 
 message QueryProviderMonthlyPayoutRequest {

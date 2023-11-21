@@ -42,7 +42,7 @@ export class PairingUpdater {
   }
 
   // update updates pairing list on every consumer session manager
-  public async update(virtualEpoch: number) {
+  public async update() {
     Logger.debug("Start updating consumer session managers");
 
     // Get all chainIDs from the map
@@ -79,11 +79,7 @@ export class PairingUpdater {
       // Update each consumer session manager with matching pairing list
       for (const consumerSessionManager of consumerSessionManagerList) {
         promiseArray.push(
-          this.updateConsumerSessionManager(
-            pairing,
-            consumerSessionManager,
-            virtualEpoch
-          )
+          this.updateConsumerSessionManager(pairing, consumerSessionManager)
         );
       }
       await Promise.allSettled(promiseArray);
@@ -93,8 +89,7 @@ export class PairingUpdater {
   // updateConsummerSessionManager filters pairing list and update consuemr session manager
   private async updateConsumerSessionManager(
     pairing: PairingResponse | undefined,
-    consumerSessionManager: ConsumerSessionManager,
-    virtualEpoch: number
+    consumerSessionManager: ConsumerSessionManager
   ): Promise<void> {
     // If pairing undefined return + error
     if (pairing == undefined) {
@@ -111,8 +106,7 @@ export class PairingUpdater {
     // Update specific consumer session manager
     await consumerSessionManager.updateAllProviders(
       pairing.currentEpoch,
-      pairingListForThisCSM,
-      virtualEpoch
+      pairingListForThisCSM
     );
 
     return;

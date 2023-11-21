@@ -17,6 +17,7 @@ export class StateBadgeQuery {
   private relayer: Relayer;
   private account: AccountData;
   private virtualEpoch = 0;
+  private currentEpoch: number | undefined;
 
   constructor(
     badgeManager: BadgeManager,
@@ -41,7 +42,7 @@ export class StateBadgeQuery {
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
-  public async fetchPairing(): Promise<[number, number]> {
+  public async fetchPairing(): Promise<number> {
     Logger.debug("Fetching pairing started");
 
     let timeLeftToNextPairing;
@@ -84,13 +85,17 @@ export class StateBadgeQuery {
       // Generate StakeEntry
       const stakeEntry = pairingResponse.getProvidersList();
 
+      const currentEpoch = pairingResponse.getCurrentEpoch();
+
       // Save pairing response for chainID
       this.pairing.set(chainID, {
         providers: stakeEntry,
         maxCu: badge.getCuAllocation(),
-        currentEpoch: pairingResponse.getCurrentEpoch(),
+        currentEpoch: currentEpoch,
         spec: specResponse,
       });
+
+      this.currentEpoch = currentEpoch;
     }
 
     // If timeLeftToNextPairing undefined return an error
@@ -107,7 +112,7 @@ export class StateBadgeQuery {
 
     Logger.debug("Fetching pairing ended");
 
-    return [timeLeftToNextPairing, virtualEpoch];
+    return timeLeftToNextPairing;
   }
 
   public async init(): Promise<void> {
@@ -116,6 +121,10 @@ export class StateBadgeQuery {
 
   public getVirtualEpoch(): number {
     return this.virtualEpoch;
+  }
+
+  public getCurrentEpoch(): number | undefined {
+    return this.currentEpoch;
   }
 
   // getPairing return pairing list for specific chainID

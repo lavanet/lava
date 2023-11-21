@@ -11,6 +11,10 @@ import { PairingUpdater } from "./updaters/pairing_updater";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 import { RPCConsumerServer } from "../rpcconsumer/rpcconsumer_server";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
+import {
+  EmergencyTracker,
+  EmergencyTrackerInf,
+} from "./updaters/emergency_tracker";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 // we are adding 10% to the epoch passing time so we dont race providers updates.
@@ -26,7 +30,7 @@ export class StateTracker {
   private updaters: Map<string, Updater>;
   private stateQuery: StateQuery;
   private timeTillNextEpoch = 0;
-  private virtualEpoch = 0;
+  private emergencyTracker: EmergencyTracker;
 
   // Constructor for State Tracker
   constructor(
@@ -68,17 +72,21 @@ export class StateTracker {
       );
     }
 
+    // Create Emergency Tracker
+    this.emergencyTracker = new EmergencyTracker(this.stateQuery);
+
     // Create Pairing Updater
     const pairingUpdater = new PairingUpdater(this.stateQuery, config);
 
     // Register all updaters
     this.registerForUpdates(pairingUpdater, "pairingUpdater");
+    this.registerForUpdates(this.emergencyTracker, "emergencyTracker");
 
     Logger.debug("Pairing updater added");
   }
 
-  public getVirtualEpoch(): number {
-    return this.stateQuery.getVirtualEpoch();
+  public getEmergencyTracker(): EmergencyTrackerInf {
+    return this.emergencyTracker;
   }
 
   getPairingResponse(chainId: string): PairingResponse | undefined {
@@ -94,18 +102,17 @@ export class StateTracker {
     // Run all updaters
     // Only for chain query
     if (this.stateQuery instanceof StateChainQuery) {
-      await this.update(0);
+      await this.update();
     }
 
     // Fetch Pairing
-    [this.timeTillNextEpoch, this.virtualEpoch] =
-      await this.stateQuery.fetchPairing();
+    this.timeTillNextEpoch = await this.stateQuery.fetchPairing();
   }
 
   async startTracking() {
     Logger.debug("State Tracker started");
     // update all consumer session managers with the provider lists after initialization.
-    await this.update(0);
+    await this.update();
     // Set up a timer to call this method again when the next epoch begins
     setTimeout(
       () => this.executeUpdateOnNewEpoch(),
@@ -119,14 +126,13 @@ export class StateTracker {
       Logger.debug("New epoch started, fetching pairing list");
 
       // Fetching all the info including the time_till_next_epoch
-      const [timeTillNextEpoch, virtualEpoch] =
-        await this.stateQuery.fetchPairing();
+      const timeTillNextEpoch = await this.stateQuery.fetchPairing();
 
       Logger.debug(
         "Pairing list fetched, started new epoch in: " + timeTillNextEpoch
       );
 
-      await this.update(virtualEpoch);
+      await this.update();
 
       // Set up a timer to call this method again when the next epoch begins
       setTimeout(
@@ -159,11 +165,11 @@ export class StateTracker {
     pairingUpdater.registerPairing(consumerSessionManager);
   }
 
-  private async update(virtualEpoch: number) {
+  private async update() {
     // Call update method on all registered updaters
     const promiseArray = [];
     for (const updater of this.updaters.values()) {
-      promiseArray.push(updater.update(virtualEpoch));
+      promiseArray.push(updater.update());
     }
     await Promise.allSettled(promiseArray);
   }

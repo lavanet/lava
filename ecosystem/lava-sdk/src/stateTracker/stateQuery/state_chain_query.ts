@@ -21,6 +21,7 @@ import { SendRelayOptions } from "../../chainlib/base_chain_parser";
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
+import { Params as DowntimeParams } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
   stakeEntry: StakeEntry[];
@@ -37,8 +38,8 @@ export class StateChainQuery {
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
-  private virtualEpoch = 0;
-  private latestEpoch: number | undefined;
+  private currentEpoch: number | undefined;
+  private downtimeParams: DowntimeParams | undefined;
 
   constructor(
     pairingListConfig: string,
@@ -77,14 +78,13 @@ export class StateChainQuery {
   }
 
   // fetchPairing fetches pairing for all chainIDs we support
-  public async fetchPairing(): Promise<[number, number]> {
+  public async fetchPairing(): Promise<number> {
     try {
       Logger.debug("Fetching pairing started");
       // Save time till next epoch
       let timeLeftToNextPairing;
       let currentEpoch;
       let downtimeParams;
-      let virtualEpoch = 0;
 
       const lavaPairing = this.getPairing("LAV1");
 
@@ -136,39 +136,6 @@ export class StateChainQuery {
           );
         }
 
-        // check if epoch has not changed
-        if (
-          this.latestEpoch == currentEpoch &&
-          virtualEpoch == 0 &&
-          downtimeParams != undefined
-        ) {
-          const lastBlockTime = pairingResponse.getLatestBlockTime();
-          const downtimeDuration = downtimeParams.getDowntimeDuration();
-          const epochDuration = downtimeParams.getEpochDuration();
-
-          if (
-            lastBlockTime != undefined &&
-            downtimeDuration != undefined &&
-            epochDuration != undefined
-          ) {
-            const delay = Date.now() - lastBlockTime;
-
-            // check if emergency mode is enabled
-            if (delay > downtimeDuration.getSeconds() * 1000) {
-              // calculate current virtual epoch
-              virtualEpoch = Math.ceil(
-                (delay - pairing.getTimeLeftToNextPairing()) /
-                  (epochDuration.getSeconds() * 1000)
-              );
-
-              // should check in case delay < TimeLeftToNextPairing
-              if (virtualEpoch < 0) {
-                virtualEpoch = 0;
-              }
-            }
-          }
-        }
-
         // Save pairing response for chainID
         this.pairing.set(chainID, {
           providers: providers,
@@ -183,31 +150,24 @@ export class StateChainQuery {
         throw StateTrackerErrors.errTimeTillNextEpochMissing;
       }
 
-      this.latestEpoch = currentEpoch;
-
-      // in case of emergency mode, timeLeftToNextPairing is equal to epochDuration from downtimeParams
-      if (virtualEpoch != 0 && downtimeParams != undefined) {
-        const epochDuration = downtimeParams.getEpochDuration();
-        if (epochDuration != undefined) {
-          timeLeftToNextPairing = epochDuration.getSeconds();
-        }
-
-        Logger.debug("Virtual epoch: " + virtualEpoch);
-      }
-
-      this.virtualEpoch = virtualEpoch;
+      this.currentEpoch = currentEpoch;
+      this.downtimeParams = downtimeParams;
 
       Logger.debug("Fetching pairing ended");
 
       // Return timeLeftToNextPairing
-      return [timeLeftToNextPairing, virtualEpoch];
+      return timeLeftToNextPairing;
     } catch (err) {
       throw err;
     }
   }
 
-  public getVirtualEpoch(): number {
-    return this.virtualEpoch;
+  public getCurrentEpoch(): number | undefined {
+    return this.currentEpoch;
+  }
+
+  public getDowntimeParams(): DowntimeParams | undefined {
+    return this.downtimeParams;
   }
 
   // getPairing return pairing list for specific chainID
@@ -265,10 +225,7 @@ export class StateChainQuery {
         params: ["/lavanet.lava.pairing.Query/SdkPairing", hexData, "0", false],
       };
 
-      const response = await this.rpcConsumer.sendRelay(
-        sendRelayOptions,
-        this.virtualEpoch
-      );
+      const response = await this.rpcConsumer.sendRelay(sendRelayOptions);
 
       const reply = response.reply;
 

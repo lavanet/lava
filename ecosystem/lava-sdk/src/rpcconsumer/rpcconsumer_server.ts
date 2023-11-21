@@ -39,6 +39,7 @@ import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 import { BaseChainMessageContainer } from "../chainlib/chain_message";
 import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { promiseAny } from "../util/common";
+import { EmergencyTrackerInf } from "../stateTracker/updaters/emergency_tracker";
 
 const MaxRelayRetries = 4;
 
@@ -52,6 +53,7 @@ export class RPCConsumerServer {
   private consumerAddress: string;
   private finalizationConsensus: FinalizationConsensus;
   private consumerConsistency: ConsumerConsistency;
+  private emergencyTracker: EmergencyTrackerInf | undefined;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
@@ -82,6 +84,10 @@ export class RPCConsumerServer {
     this.chainParser = chainParser;
   }
 
+  public setEmergencyTracker(emergencyTracker: EmergencyTrackerInf) {
+    this.emergencyTracker = emergencyTracker;
+  }
+
   public supportedChainAndApiInterface(): SupportedChainAndApiInterface {
     return {
       specId: this.rpcEndpoint.chainId,
@@ -90,8 +96,7 @@ export class RPCConsumerServer {
   }
 
   async sendRelay(
-    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions,
-    virtualEpoch: number
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ) {
     const chainMessage = this.chainParser.parseMsg(options);
     const unwantedProviders = new Set<string>();
@@ -122,8 +127,7 @@ export class RPCConsumerServer {
       const relayResult = await this.sendRelayToProvider(
         chainMessage,
         relayPrivateData,
-        unwantedProviders,
-        virtualEpoch
+        unwantedProviders
       );
       if (relayResult instanceof Array) {
         // relayResult can be an Array of errors from relaying to multiple providers
@@ -158,8 +162,7 @@ export class RPCConsumerServer {
   private async sendRelayToProvider(
     chainMessage: BaseChainMessageContainer,
     relayData: RelayPrivateData,
-    unwantedProviders: Set<string>,
-    virtualEpoch: number
+    unwantedProviders: Set<string>
   ): Promise<RelayResult | Array<RelayError> | Error> {
     if (IsSubscription(chainMessage)) {
       return new Error("subscription currently not supported");
@@ -176,6 +179,12 @@ export class RPCConsumerServer {
       extraRelayTimeout +
       getTimePerCu(GetComputeUnits(chainMessage)) +
       AverageWorldLatency;
+
+    let virtualEpoch = 0;
+    if (this.emergencyTracker) {
+      virtualEpoch = this.emergencyTracker.getVirtualEpoch();
+    }
+
     const consumerSessionsMap = this.consumerSessionManager.getSessions(
       GetComputeUnits(chainMessage),
       unwantedProviders,

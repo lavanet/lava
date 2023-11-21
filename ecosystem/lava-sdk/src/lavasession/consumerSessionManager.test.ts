@@ -94,7 +94,7 @@ describe("ConsumerSessionManager", () => {
     it("happy flow", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -142,7 +142,7 @@ describe("ConsumerSessionManager", () => {
     it("virtual epoch increase maxCu", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       let consumerSessions = cm.getSessions(
         MAX_CU_FOR_VIRTUAL_EPOCH,
@@ -235,7 +235,7 @@ describe("ConsumerSessionManager", () => {
     it("virtual epoch exceeding maxCu with failure", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       let consumerSessions = cm.getSessions(
         MAX_CU_FOR_VIRTUAL_EPOCH,
@@ -295,7 +295,7 @@ describe("ConsumerSessionManager", () => {
     it("tests pairing reset", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       cm.validAddresses = new Set();
 
       const consumerSessions = cm.getSessions(
@@ -345,7 +345,7 @@ describe("ConsumerSessionManager", () => {
     it("test pairing reset with failures", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       while (true) {
         if (cm.validAddresses.size === 0) {
@@ -397,7 +397,7 @@ describe("ConsumerSessionManager", () => {
     it("tests pairing reset with multiple failures", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       // let numberOfResets = 0;
       for (
@@ -508,7 +508,7 @@ describe("ConsumerSessionManager", () => {
     it("tests success and failure of session with update pairings in the middle", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const sessionList: { cs: SingleConsumerSession; epoch: number }[] = [];
       const sessionListData: { relayNum: number; cuSum: number }[] = [];
@@ -599,8 +599,7 @@ describe("ConsumerSessionManager", () => {
 
       await cm.updateAllProviders(
         SECOND_EPOCH_HEIGHT,
-        createPairingList("test2", true),
-        0
+        createPairingList("test2", true)
       );
 
       for (
@@ -641,7 +640,7 @@ describe("ConsumerSessionManager", () => {
     it("tests session failure and get reported providers", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -694,7 +693,7 @@ describe("ConsumerSessionManager", () => {
     it("tests session failure epoch mismatch", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const consumerSessions = cm.getSessions(
         CU_FOR_FIRST_REQUEST,
@@ -717,8 +716,7 @@ describe("ConsumerSessionManager", () => {
 
         const error = await cm.updateAllProviders(
           FIRST_EPOCH_HEIGHT,
-          pairingList,
-          0
+          pairingList
         );
         if (error) {
           cm.onSessionFailure(
@@ -732,7 +730,7 @@ describe("ConsumerSessionManager", () => {
     it("tests all providers endpoints disabled", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", false);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
 
@@ -753,7 +751,7 @@ describe("ConsumerSessionManager", () => {
       test.each(["", "addon"])(`addon: %s`, async (addon) => {
         const cm = setupConsumerSessionManager();
         const pairingList = createPairingList("", true);
-        await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+        await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, [])).not.toEqual(0);
 
         const initialProvidersLength = cm.getValidAddresses(addon, []).size;
@@ -846,7 +844,7 @@ describe("ConsumerSessionManager", () => {
       test.each(extensionOptions)(`$name`, async ({ addon, extensions }) => {
         const cm = setupConsumerSessionManager();
         const pairingList = createPairingList("", true);
-        await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+        await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
         expect(cm.getValidAddresses(addon, extensions)).not.toEqual(0);
 
         const initialProvidersLength = cm.getValidAddresses(
@@ -915,7 +913,7 @@ describe("ConsumerSessionManager", () => {
     it("updates providers", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);
@@ -929,13 +927,9 @@ describe("ConsumerSessionManager", () => {
     it("updates all providers with same epoch", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
-      const err = await cm.updateAllProviders(
-        FIRST_EPOCH_HEIGHT,
-        pairingList,
-        0
-      );
+      const err = await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
       expect(err?.message).toEqual(
         "Trying to update provider list for older epoch"
       );
@@ -974,7 +968,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager(relayer);
       // @ts-expect-error - we are spying on a private method
       jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1); // this makes it not sleep
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       await sleep(TIMEOUT_BETWEEN_PROBES * ALLOWED_PROBE_RETRIES);
 
@@ -1014,7 +1008,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager(relayer, optimizer);
       // @ts-expect-error - we are spying on a private method
       jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.validAddresses).toContain(pairingList[1].publicLavaAddress);
 
@@ -1051,7 +1045,7 @@ describe("ConsumerSessionManager", () => {
       const cm = setupConsumerSessionManager(relayer, optimizer);
       // @ts-expect-error - we are spying on a private method
       jest.spyOn(cm, "timeoutBetweenProbes").mockImplementation(() => 1);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.validAddresses).toContain(pairingList[1].publicLavaAddress);
 
@@ -1074,7 +1068,7 @@ describe("ConsumerSessionManager", () => {
 
       const cm = setupConsumerSessionManager(relayer);
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.getEpochFromEpochTracker()).toEqual(NUMBER_OF_PROVIDERS / 2);
     });
@@ -1083,7 +1077,7 @@ describe("ConsumerSessionManager", () => {
     it("test pairing", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
-      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList, 0);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);
       expect(cm.getPairingAddressesLength()).toEqual(NUMBER_OF_PROVIDERS);

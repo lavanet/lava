@@ -2,9 +2,9 @@ import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/st
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 
 export interface StateQuery {
-  fetchPairing(): Promise<[number, number]>;
+  fetchPairing(): Promise<number>;
   getPairing(chainID: string): PairingResponse | undefined;
-  getVirtualEpoch(): number;
+  getCurrentEpoch(): number | undefined;
   init(): Promise<void>;
 }
 
