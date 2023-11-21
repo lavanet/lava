@@ -13,6 +13,8 @@ import (
 	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -432,7 +434,7 @@ func New(
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// timerstore keeper
-	app.TimerStoreKeeper = timerstore.NewKeeper(appCodec)
+	app.TimerStoreKeeper = timerstorekeeper.NewKeeper(appCodec)
 
 	// fixation store keeper
 	app.FixationStoreKeeper = fixationkeeper.NewKeeper(appCodec, app.TimerStoreKeeper, app.EpochstorageKeeper.BlocksToSaveRaw)
@@ -644,7 +646,7 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
-		timerstore.ModuleName,
+		timerstoretypes.ModuleName,
 		fixationtypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
@@ -702,7 +704,7 @@ func New(
 		paramstypes.ModuleName,
 		downtimemoduletypes.ModuleName, // downtime has no end block but module manager requires it.
 		fixationtypes.ModuleName,       // fixation store has no end block but module manager requires it.
-		timerstore.ModuleName,          // timer store has no end block but module manager requires it.
+		timerstoretypes.ModuleName,     // timer store has no end block but module manager requires it.
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -738,7 +740,7 @@ func New(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		fixationtypes.ModuleName,       // fixation store has no init genesis but module manager requires it.
-		timerstore.ModuleName,          // timer store has no init genesis but module manager requires it.
+		timerstoretypes.ModuleName,     // timer store has no init genesis but module manager requires it.
 		conflictmoduletypes.ModuleName, // NOTICE: the last module to initgenesis needs to push fixation in epoch storage
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)

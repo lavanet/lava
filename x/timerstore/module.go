@@ -8,6 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +26,7 @@ const (
 type AppModuleBasic struct{}
 
 func (a AppModuleBasic) Name() string {
-	return ModuleName
+	return timerstoretypes.ModuleName
 }
 
 func (a AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
@@ -39,7 +41,7 @@ func (a AppModuleBasic) GetQueryCmd() *cobra.Command { return nil }
 
 // ---- AppModule
 
-func NewAppModule(k *Keeper) AppModule {
+func NewAppModule(k *timerstorekeeper.Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		k:              k,
@@ -49,7 +51,7 @@ func NewAppModule(k *Keeper) AppModule {
 type AppModule struct {
 	AppModuleBasic
 
-	k *Keeper
+	k *timerstorekeeper.Keeper
 }
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }

@@ -16,7 +16,7 @@ import (
 	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,7 +47,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"EpochStorageParams",
 	)
 
-	tsKeeper := timerstore.NewKeeper(cdc)
+	tsKeeper := timerstorekeeper.NewKeeper(cdc)
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 	k := keeper.NewKeeper(
 		cdc,

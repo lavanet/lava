@@ -1,4 +1,4 @@
-package timerstore
+package types
 
 const (
 	ModuleName = "timerstore"

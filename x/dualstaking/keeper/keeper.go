@@ -9,8 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
-	"github.com/lavanet/lava/x/timerstore"
-	timertypes "github.com/lavanet/lava/x/timerstore/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -29,7 +28,7 @@ type (
 
 		delegationFS fixationtypes.FixationStore // map proviers/chainID -> delegations
 		delegatorFS  fixationtypes.FixationStore // map delegators -> providers
-		unbondingTS  timerstore.TimerStore       // track unbonding timeouts
+		unbondingTS  timerstoretypes.TimerStore  // track unbonding timeouts
 	}
 )
 
@@ -98,7 +97,7 @@ func (k Keeper) ExportDelegators(ctx sdk.Context) fixationtypes.GenesisState {
 }
 
 // ExportUnbondings exports dualstaking unbonding timers data (for genesis)
-func (k Keeper) ExportUnbondings(ctx sdk.Context) timertypes.GenesisState {
+func (k Keeper) ExportUnbondings(ctx sdk.Context) timerstoretypes.GenesisState {
 	return k.unbondingTS.Export(ctx)
 }
 
@@ -113,7 +112,7 @@ func (k Keeper) InitDelegators(ctx sdk.Context, data fixationtypes.GenesisState)
 }
 
 // InitUnbondings imports subscriptions timers data (from genesis)
-func (k Keeper) InitUnbondings(ctx sdk.Context, gs timertypes.GenesisState) {
+func (k Keeper) InitUnbondings(ctx sdk.Context, gs timerstoretypes.GenesisState) {
 	k.unbondingTS.Init(ctx, gs)
 }
 

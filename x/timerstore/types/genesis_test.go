@@ -1,11 +1,10 @@
-package timerstore
+package types
 
 import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,13 +21,13 @@ func TestGenesis(t *testing.T) {
 
 	store1 := prefix.NewStore(
 		ctx.KVStore(ts.storeKey),
-		types.KeyPrefix(ts.prefix))
+		KeyPrefix(ts.prefix))
 	iterator1 := sdk.KVStorePrefixIterator(store1, []byte{})
 	defer iterator1.Close()
 
 	store2 := prefix.NewStore(
 		emptyCtx.KVStore(ts.storeKey),
-		types.KeyPrefix(ts.prefix))
+		KeyPrefix(ts.prefix))
 	iterator2 := sdk.KVStorePrefixIterator(store2, []byte{})
 	defer iterator2.Close()
 

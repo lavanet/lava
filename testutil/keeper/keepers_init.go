@@ -47,7 +47,8 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,7 +61,7 @@ var Randomizer *sigs.ZeroReader
 
 // NOTE: the order of the keeper fields must follow that of calling app.mm.SetOrderBeginBlockers() in app/app.go
 type Keepers struct {
-	TimerStoreKeeper    *timerstore.Keeper
+	TimerStoreKeeper    *timerstorekeeper.Keeper
 	FixationStoreKeeper *fixationkeeper.Keeper
 	AccountKeeper       mockAccountKeeper
 	BankKeeper          mockBankKeeper
@@ -200,7 +201,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	downtimeParamsSubspace, _ := paramsKeeper.GetSubspace(downtimemoduletypes.ModuleName)
 
 	ks := Keepers{}
-	ks.TimerStoreKeeper = timerstore.NewKeeper(cdc)
+	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
 	ks.StakingKeeper = mockStakingKeeper{}
@@ -254,12 +255,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
-	ks.Dualstaking.InitUnbondings(ctx, *timerstore.DefaultGenesis())
+	ks.Dualstaking.InitUnbondings(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Plans.InitPlans(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationtypes.DefaultGenesis())
-	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstore.DefaultGenesis())
+	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Subscription.InitCuTrackers(ctx, *fixationtypes.DefaultGenesis())
-	ks.Subscription.InitCuTrackerTimers(ctx, *timerstore.DefaultGenesis())
+	ks.Subscription.InitCuTrackerTimers(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Projects.InitDevelopers(ctx, *fixationtypes.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *fixationtypes.DefaultGenesis())
 

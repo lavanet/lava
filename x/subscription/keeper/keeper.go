@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/cometbft/cometbft/libs/log"
 
@@ -13,7 +12,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/subscription/types"
-	timertypes "github.com/lavanet/lava/x/timerstore/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 type (
@@ -31,10 +30,10 @@ type (
 		dualstakingKeeper  types.DualStakingKeeper
 
 		subsFS fixationtypes.FixationStore
-		subsTS timerstore.TimerStore
+		subsTS timerstoretypes.TimerStore
 
 		cuTrackerFS fixationtypes.FixationStore // key: "<sub> <provider>", value: month aggregated CU
-		cuTrackerTS timerstore.TimerStore
+		cuTrackerTS timerstoretypes.TimerStore
 	}
 )
 
@@ -105,7 +104,7 @@ func (k Keeper) ExportSubscriptions(ctx sdk.Context) fixationtypes.GenesisState 
 }
 
 // ExportSubscriptionsTimers exports subscriptions timers data (for genesis)
-func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) timertypes.GenesisState {
+func (k Keeper) ExportSubscriptionsTimers(ctx sdk.Context) timerstoretypes.GenesisState {
 	return k.subsTS.Export(ctx)
 }
 
@@ -115,17 +114,17 @@ func (k Keeper) InitSubscriptions(ctx sdk.Context, gs fixationtypes.GenesisState
 }
 
 // InitSubscriptions imports subscriptions timers data (from genesis)
-func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data timertypes.GenesisState) {
+func (k Keeper) InitSubscriptionsTimers(ctx sdk.Context, data timerstoretypes.GenesisState) {
 	k.subsTS.Init(ctx, data)
 }
 
 // InitCuTrackerTimers imports CuTrackers timers data (from genesis)
-func (k Keeper) InitCuTrackerTimers(ctx sdk.Context, data timertypes.GenesisState) {
+func (k Keeper) InitCuTrackerTimers(ctx sdk.Context, data timerstoretypes.GenesisState) {
 	k.cuTrackerTS.Init(ctx, data)
 }
 
 // ExportCuTrackerTimers exports CuTracker timers data (for genesis)
-func (k Keeper) ExportCuTrackerTimers(ctx sdk.Context) timertypes.GenesisState {
+func (k Keeper) ExportCuTrackerTimers(ctx sdk.Context) timerstoretypes.GenesisState {
 	return k.cuTrackerTS.Export(ctx)
 }
 
