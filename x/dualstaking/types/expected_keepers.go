@@ -40,6 +40,7 @@ type EpochstorageKeeper interface {
 	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
+	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
 
 	// Methods imported from epochstorage should be defined here
 }
@@ -48,16 +49,20 @@ type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (active bool, found bool, providerType spectypes.Spec_ProvidersTypes)
 	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
+	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }
 
 type StakingKeeper interface {
 	UnbondingTime(ctx sdk.Context) time.Duration
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	GetValidatorDelegations(ctx sdk.Context, valAddr sdk.ValAddress) (delegations []stakingtypes.Delegation)
 	BondDenom(ctx sdk.Context) string
 	ValidateUnbondAmount(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (shares sdk.Dec, err error)
 	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (time.Time, error)
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
+	GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator
+	GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 }
 
 type FixationStoreKeeper interface {
