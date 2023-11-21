@@ -217,7 +217,7 @@ export class SingleConsumerSession {
       this.qoSInfo.lastQoSReport.setSync(sync.toFixed());
 
       if (BigNumber(1).gt(sync)) {
-        Logger.info(
+        Logger.debug(
           `QoS sync report 
             sync: ${this.qoSInfo.lastQoSReport.getSync()},
             blockDiff: ${blockHeightDiff},
@@ -421,7 +421,7 @@ export class ConsumerSessionsWithProvider {
     const session = new SingleConsumerSession(randomSessionId, this, endpoint);
     const lockError = session.tryLock();
     if (lockError) {
-      Logger.warn("Failed to lock session", lockError);
+      Logger.error("Failed to lock session", lockError);
       return {
         error: lockError,
       };
