@@ -1,9 +1,13 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 // Wrapper struct
@@ -51,13 +55,14 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		_ = ""
 	} else if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
-		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, sdk.NewCoin("ulava", diff))
+		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID,
+			sdk.NewCoin(epochstoragetypes.TokenDenom, diff))
 		if err != nil {
 			return err
 		}
 	} else if diff.IsNegative() {
 		// more provider delegation, unbond operation was done, unbond from providers
-		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin("ulava", diff.MulRaw(-1)))
+		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, diff.MulRaw(-1)))
 		if err != nil {
 			return err
 		}
@@ -77,8 +82,33 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 	return nil
 }
 
-// record the slash event
+// BeforeValidatorSlashed hook unbonds funds from providers so the providers-validators delegations balance will preserve
 func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, fraction sdk.Dec) error {
+	val, found := h.k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		return utils.LavaFormatError("slash hook failed", fmt.Errorf("validator not found"),
+			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
+		)
+	}
+	slashAmount := sdk.NewDecFromInt(val.Tokens).Mul(fraction)
+
+	delegations := h.k.stakingKeeper.GetValidatorDelegations(ctx, valAddr)
+	for _, d := range delegations {
+		err := h.k.UnbondUniformProviders(ctx, d.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, slashAmount.TruncateInt()))
+		if err != nil {
+			return utils.LavaFormatError("slash hook failed", err,
+				utils.Attribute{Key: "validator_address", Value: valAddr.String()},
+				utils.Attribute{Key: "delegator_address", Value: d.String()},
+				utils.Attribute{Key: "slash_amount", Value: slashAmount.String()},
+			)
+		}
+	}
+
+	details := make(map[string]string)
+	details["validator_address"] = valAddr.String()
+	details["slash_fraction"] = fraction.String()
+
+	utils.LogLavaEvent(ctx, h.k.Logger(ctx), types.ValidatorSlashEventName, details, "Validator slash hook event")
 	return nil
 }
 
