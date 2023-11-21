@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils"
@@ -28,6 +29,9 @@ type tester struct {
 
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
+	val, _ := ts.AddAccount(common.VALIDATOR, 0, 1000000)
+	_, err := ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(10000)))
+	require.Nil(t, err)
 
 	ts.AddPlan("free", common.CreateMockPlan())
 	ts.AddSpec("mock", common.CreateMockSpec())
