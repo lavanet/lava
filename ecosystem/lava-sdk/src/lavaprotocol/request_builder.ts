@@ -139,7 +139,7 @@ function constructRelaySession(
       newQualityOfServiceReport.setSync(serializeToDec(lastQos.getSync()));
     }
   } catch (err) {
-    Logger.warn("failed serializing QoS ", err);
+    Logger.warn("Failed serializing QoS ", err);
     newQualityOfServiceReport = undefined;
   }
   const lastQosExcellence =

@@ -267,7 +267,10 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		defer cancel() // incase there's a problem make sure to cancel the connection
-
+		guid, found := utils.GetUniqueIdentifier(ctx)
+		if found {
+			msgSeed = strconv.FormatUint(guid, 10)
+		}
 		// TODO: handle contentType, in case its not application/json currently we set it to application/json in the Send() method
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
@@ -327,6 +330,10 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		restHeaders := convertToMetadataMap(metadataValues)
 		ctx, cancel := context.WithCancel(context.Background())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
+		guid, found := utils.GetUniqueIdentifier(ctx)
+		if found {
+			msgSeed = strconv.FormatUint(guid, 10)
+		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)

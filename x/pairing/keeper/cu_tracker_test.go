@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
@@ -451,6 +452,122 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	balance := ts.GetBalance(providerAcct.Addr)
 	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
+
+	// verify that the monthly payout query return 0 after the payment was transferred to the provider
+	res, err = ts.QueryPairingProviderMonthlyPayout(provider)
+	require.Nil(t, err)
+	require.Equal(t, uint64(0), res.Total)
+	require.Nil(t, res.Details)
+}
+
+func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
+
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
+	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+	// stake the provider on an additional chain and apply pairing (advance epoch)
+	spec1 := ts.spec
+	spec1Name := "spec1"
+	spec1.Index = spec1Name
+	spec1.Name = spec1Name
+	contributorAccount, contributorAddress := ts.AddAccount("contributor", 0, 0)
+	contributorAccount2, contributorAddress2 := ts.AddAccount("contributor2", 0, 0)
+	spec1.Contributor = []string{contributorAddress, contributorAddress2}
+	percentage := math.LegacyNewDecWithPrec(5, 1) // half the rewards
+	spec1.ContributorPercentage = &percentage
+	ts.AddSpec(spec1Name, spec1)
+	err := ts.StakeProvider(provider, spec1, testStake)
+	require.Nil(t, err)
+	ts.AdvanceEpoch()
+
+	// change the provider's delegation limit and commission
+	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.True(t, found)
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
+	stakeEntry.DelegateCommission = 0
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.AdvanceEpoch()
+
+	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
+	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
+	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	require.Nil(t, err)
+	ts.AdvanceEpoch()
+
+	// send two relay payments in spec and spec1
+	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
+	relaySession2 := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
+	relaySession2.SpecId = spec1Name
+	sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+	require.Nil(t, err)
+	relaySession.Sig = sig
+	sig, err = sigs.Sign(clientAcc.SK, *relaySession2)
+	require.Nil(t, err)
+	relaySession2.Sig = sig
+	relayPaymentMessage := types.MsgRelayPayment{
+		Creator: provider,
+		Relays:  slices.Slice(relaySession, relaySession2),
+	}
+	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
+
+	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
+	// for planPrice=100, expected monthly payout is 50 (spec1 with contributor) + 33 (normal spec no contributor)
+	expectedContributorPay := uint64(12) // half the plan payment for spec1:25 then divided between contributors half half rounded down
+	expectedTotalPayout := uint64(83) - expectedContributorPay*2
+	expectedPayouts := []types.SubscriptionPayout{
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26}, // 50 - 26 for contributors (each contributor gets 12)
+	}
+	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
+	require.Nil(t, err)
+	require.Equal(t, expectedTotalPayout, res.Total)
+	details := []types.SubscriptionPayout{}
+	for _, p := range res.Details {
+		details = append(details, *p)
+	}
+	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
+
+	// check the expected subscrription payout
+	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
+	require.Nil(t, err)
+	require.Equal(t, uint64(100), subRes.Total) // total reward = plan price
+	expectedSubPayouts := []types.ChainIDPayout{
+		{
+			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
+				{Provider: provider, Amount: 50},
+			},
+		},
+		{
+			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
+				{Provider: provider, Amount: 50},
+			},
+		},
+	}
+	require.Equal(t, 2, len(subRes.Details))
+	for _, payout := range subRes.Details {
+		if payout.ChainId == expectedSubPayouts[0].ChainId || payout.ChainId == expectedSubPayouts[1].ChainId {
+			if payout.Payouts[0].Provider == expectedSubPayouts[0].Payouts[0].Provider && payout.Payouts[0].Amount == expectedSubPayouts[0].Payouts[0].Amount {
+				break
+			}
+		}
+		require.FailNow(t, "sub expected payout don't match with query output")
+	}
+
+	// advance month + blocksToSave + 1 to trigger the monthly payment
+	oldBalance := ts.GetBalance(providerAcct.Addr)
+
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	balance := ts.GetBalance(providerAcct.Addr)
+	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
+
+	balance = ts.GetBalance(contributorAccount.Addr)
+	require.Equal(t, expectedContributorPay, uint64(balance))
+
+	balance = ts.GetBalance(contributorAccount2.Addr)
+	require.Equal(t, expectedContributorPay, uint64(balance))
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
 	res, err = ts.QueryPairingProviderMonthlyPayout(provider)

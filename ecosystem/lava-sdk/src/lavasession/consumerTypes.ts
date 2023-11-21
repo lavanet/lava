@@ -182,7 +182,7 @@ export class SingleConsumerSession {
       calculateAvailabilityScore(this.qoSInfo);
     this.qoSInfo.lastQoSReport?.setAvailability(scaledAvailabilityScore);
     if (BigNumber(1).gt(this.qoSInfo.lastQoSReport.getAvailability())) {
-      Logger.debug(
+      Logger.info(
         `QoS availability report ${JSON.stringify({
           availability: this.qoSInfo.lastQoSReport.getAvailability(),
           downPercent: downtimePercentage,
@@ -396,7 +396,7 @@ export class ConsumerSessionsWithProvider {
           numberOfBlockedSessions++;
           const unlockError = session.tryUnlock();
           if (unlockError) {
-            Logger.error("failed to unlock session", unlockError);
+            Logger.warn("Failed to unlock session", unlockError);
             return {
               error: unlockError,
             };
@@ -421,7 +421,7 @@ export class ConsumerSessionsWithProvider {
     const session = new SingleConsumerSession(randomSessionId, this, endpoint);
     const lockError = session.tryLock();
     if (lockError) {
-      Logger.error("failed to lock session", lockError);
+      Logger.error("Failed to lock session", lockError);
       return {
         error: lockError,
       };
@@ -461,8 +461,8 @@ export class ConsumerSessionsWithProvider {
       }
     }
 
-    Logger.error(
-      `purging provider after all endpoints are disabled ${JSON.stringify({
+    Logger.debug(
+      `Purging provider after all endpoints are disabled ${JSON.stringify({
         providerEndpoints: this.endpoints,
         providerAddress: this.publicLavaAddress,
       })}`

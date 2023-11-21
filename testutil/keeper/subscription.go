@@ -14,7 +14,7 @@ import (
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/subscription/keeper"
@@ -65,7 +65,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 	tsKeeper := timerstore.NewKeeper(cdc)
-	fsKeeper := fixationstore.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw)
+	fsKeeper := fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw)
 
 	k := keeper.NewKeeper(
 		cdc,

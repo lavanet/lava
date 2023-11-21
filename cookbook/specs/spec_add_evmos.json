@@ -21,10 +21,6 @@
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -1590,10 +1586,6 @@
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {

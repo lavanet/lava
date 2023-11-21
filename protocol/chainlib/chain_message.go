@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"math"
+	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -21,6 +22,14 @@ type baseChainMessageContainer struct {
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
 	extensions             []*spectypes.Extension
+	timeoutOverride        time.Duration
+}
+
+func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) time.Duration {
+	if len(override) > 0 {
+		pm.timeoutOverride = override[0]
+	}
+	return pm.timeoutOverride
 }
 
 func (pm *baseChainMessageContainer) DisableErrorHandling() {

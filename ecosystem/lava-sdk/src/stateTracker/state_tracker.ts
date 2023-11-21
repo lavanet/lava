@@ -140,7 +140,7 @@ export class StateTracker {
         timeTillNextEpoch * DEFAULT_TIME_BACKOFF // we are adding 10% to the timeout to make sure we don't race providers
       );
     } catch (error) {
-      Logger.error("An error occurred during pairing processing:", error);
+      Logger.warn("An error occurred during pairing processing:", error);
 
       Logger.debug("Retry fetching pairing list in: " + DEFAULT_RETRY_INTERVAL);
 

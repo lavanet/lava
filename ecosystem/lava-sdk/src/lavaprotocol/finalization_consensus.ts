@@ -310,7 +310,7 @@ export class FinalizationConsensus {
         this.latestBlock > 0
       ) {
         Logger.error(
-          "uncontinous jump in finalization data, latestBlock",
+          "Uncontinuous jump in finalization data, latestBlock",
           this.latestBlock,
           "providersMedianOfLatestBlock",
           providersMedianOfLatestBlock

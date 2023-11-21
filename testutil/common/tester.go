@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -625,6 +626,44 @@ func (ts *Tester) QueryDualstakingDelegatorRewards(delegator string, provider st
 		ChainId:   chainID,
 	}
 	return ts.Keepers.Dualstaking.DelegatorRewards(ts.GoCtx, msg)
+}
+
+// QueryFixationAllIndices implements 'q fixationstore all-indices'
+func (ts *Tester) QueryFixationAllIndices(storeKey string, prefix string) (*fixationstoretypes.QueryAllIndicesResponse, error) {
+	msg := &fixationstoretypes.QueryAllIndicesRequest{
+		StoreKey: storeKey,
+		Prefix:   prefix,
+	}
+	return ts.Keepers.FixationStoreKeeper.AllIndices(ts.GoCtx, msg)
+}
+
+// QueryStoreKeys implements 'q fixationstore store-keys'
+func (ts *Tester) QueryStoreKeys() (*fixationstoretypes.QueryStoreKeysResponse, error) {
+	msg := &fixationstoretypes.QueryStoreKeysRequest{}
+	return ts.Keepers.FixationStoreKeeper.StoreKeys(ts.GoCtx, msg)
+}
+
+// QueryFixationVersions implements 'q fixationstore versions'
+func (ts *Tester) QueryFixationVersions(storeKey string, prefix string, key string) (*fixationstoretypes.QueryVersionsResponse, error) {
+	msg := &fixationstoretypes.QueryVersionsRequest{
+		StoreKey: storeKey,
+		Prefix:   prefix,
+		Key:      key,
+	}
+	return ts.Keepers.FixationStoreKeeper.Versions(ts.GoCtx, msg)
+}
+
+// QueryFixationEntry implements 'q fixationstore entry'
+func (ts *Tester) QueryFixationEntry(storeKey string, prefix string, key string, block uint64, hideData bool, stringData bool) (*fixationstoretypes.QueryEntryResponse, error) {
+	msg := &fixationstoretypes.QueryEntryRequest{
+		StoreKey:   storeKey,
+		Prefix:     prefix,
+		Key:        key,
+		Block:      block,
+		HideData:   hideData,
+		StringData: stringData,
+	}
+	return ts.Keepers.FixationStoreKeeper.Entry(ts.GoCtx, msg)
 }
 
 // block/epoch helpers
