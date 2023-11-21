@@ -14,9 +14,6 @@ import (
 func TestStakeProviderWithMoniker(t *testing.T) {
 	ts := newTester(t)
 
-	epochDetails := *epochstoragetypes.DefaultGenesis().EpochDetails
-	ts.Keepers.Epochstorage.SetEpochDetails(ts.Ctx, epochDetails)
-
 	tests := []struct {
 		name         string
 		moniker      string
@@ -56,8 +53,6 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	ts := newTester(t)
 
-	epochDetails := *epochstoragetypes.DefaultGenesis().EpochDetails
-	ts.Keepers.Epochstorage.SetEpochDetails(ts.Ctx, epochDetails)
 	ts.AdvanceEpoch()
 
 	moniker := "exampleMoniker"
@@ -267,9 +262,6 @@ func getExtensions(names ...string) []*spectypes.Extension {
 
 func TestStakeEndpoints(t *testing.T) {
 	ts := newTester(t)
-
-	epochDetails := *epochstoragetypes.DefaultGenesis().EpochDetails
-	ts.Keepers.Epochstorage.SetEpochDetails(ts.Ctx, epochDetails)
 
 	apiCollections := []*spectypes.ApiCollection{
 		{

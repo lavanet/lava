@@ -274,9 +274,11 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 // Delegate lets a delegator delegate an amount of coins to a provider.
 // (effective on next epoch)
 func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
-	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
-
-	_, err := sdk.AccAddressFromBech32(delegator)
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return err
+	}
+	_, err = sdk.AccAddressFromBech32(delegator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid delegator address", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
@@ -314,7 +316,10 @@ func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, a
 // without the funds being subject to unstakeHoldBlocks witholding period.
 // (effective on next epoch)
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin, unstake bool) error {
-	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return err
+	}
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
 		return utils.LavaFormatWarning("invalid delegator address", err,
@@ -344,7 +349,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		return nil
 	}
 
-	err := k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
+	err = k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
 	if err != nil {
 		return utils.LavaFormatWarning("failed to increase delegation", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
