@@ -503,6 +503,7 @@ func New(
 		app.PlansKeeper,
 		app.DowntimeKeeper,
 		app.DualstakingKeeper,
+		app.StakingKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 	)
