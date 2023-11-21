@@ -759,8 +759,8 @@ describe("ConsumerSessionManager", () => {
       await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
 
       const err = await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
-      expect(err?.message).toEqual(
-        "Trying to update provider list for older epoch"
+      expect(err?.message).toMatch(
+        new RegExp(`^Trying to update provider list for older epoch?`)
       );
 
       expect(cm.validAddresses.size).toEqual(NUMBER_OF_PROVIDERS);

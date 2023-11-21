@@ -163,10 +163,10 @@ export abstract class BaseChainParser {
     };
     const apiCont = this.serverApis.get(ApiKeyToString(apiKey));
     if (!apiCont) {
-      throw Logger.fatal("api not supported", name, connectionType);
+      throw Logger.fatal("API not supported", name, connectionType);
     }
     if (!apiCont.api.getEnabled()) {
-      throw Logger.fatal("api is disabled in spec", name, connectionType);
+      throw Logger.fatal("API is disabled in spec", name, connectionType);
     }
     return apiCont;
   }
@@ -176,11 +176,11 @@ export abstract class BaseChainParser {
     const collection = this.apiCollections.get(key);
 
     if (!collection) {
-      throw Logger.fatal("Api not supported", collectionKey);
+      throw Logger.fatal("API not supported", collectionKey);
     }
 
     if (!collection.getEnabled()) {
-      throw Logger.fatal("Api disabled in spec", collectionKey);
+      throw Logger.fatal("API disabled in spec", collectionKey);
     }
     return collection;
   }
@@ -459,11 +459,11 @@ export abstract class BaseChainParser {
   public chainBlockStats(): ChainBlockStats {
     const averageBlockTime = this.spec?.getAverageBlockTime();
     if (!averageBlockTime) {
-      throw Logger.fatal("no average block time in spec", this.spec);
+      throw Logger.fatal("No average block time in spec", this.spec);
     }
     const allowedLag = this.spec?.getAllowedBlockLagForQosSync();
     if (!allowedLag) {
-      throw Logger.fatal("no allowed lag in spec", this.spec);
+      throw Logger.fatal("No allowed lag in spec", this.spec);
     }
 
     const blockDistanceForFinalizedData =
@@ -471,13 +471,13 @@ export abstract class BaseChainParser {
 
     if (blockDistanceForFinalizedData == undefined) {
       throw Logger.fatal(
-        "no block distance for finalized data in spec",
+        "No block distance for finalized data in spec",
         this.spec
       );
     }
     const blocksInFinalizationProof = this.spec?.getBlocksInFinalizationProof();
     if (blocksInFinalizationProof == undefined) {
-      throw Logger.fatal("no block in finalization proof in spec", this.spec);
+      throw Logger.fatal("No block in finalization proof in spec", this.spec);
     }
     return {
       allowedBlockLagForQosSync: allowedLag,

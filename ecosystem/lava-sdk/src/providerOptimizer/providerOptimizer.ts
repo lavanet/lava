@@ -117,7 +117,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     }
 
     this.providersStorage.set(providerAddress, providerData);
-    Logger.debug("probe update", providerAddress, latency, success);
+    Logger.debug("Probe update", providerAddress, latency, success);
   }
 
   public appendRelayData(
@@ -200,7 +200,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     this.providersStorage.set(providerAddress, providerData);
     this.updateRelayTime(providerAddress, sampleTime);
     Logger.debug(
-      "relay update",
+      "Relay update",
       syncBlock,
       cu,
       providerAddress,
@@ -284,7 +284,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     }
 
     Logger.debug(
-      "returned providers",
+      "Returned providers from chooseProviders(): ",
       JSON.stringify({
         providers: returnedProviders.join(","),
         cu,
@@ -478,7 +478,7 @@ export class ProviderOptimizer implements ProviderOptimizerInterface {
     const costSuccess = historicalLatencySeconds;
 
     // Logger.debug(
-    //   "latency calculation breakdown",
+    //   "Latency calculation breakdown",
     //   JSON.stringify({
     //     probabilityBlockError,
     //     costBlockError,

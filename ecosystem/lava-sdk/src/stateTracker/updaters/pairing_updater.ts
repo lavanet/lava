@@ -191,10 +191,10 @@ export class PairingUpdater {
       Logger.debug("No relevant providers found");
     }
     Logger.debug(
-      "providers initialized",
-      "our geo",
+      "Providers initialized",
+      "our geolocation",
       JSON.stringify(pairingForSameGeolocation),
-      "other geo",
+      "other geolocation",
       JSON.stringify(pairingFromDifferentGeolocation)
     );
     // Return providers list [pairingForSameGeolocation,pairingFromDifferentGeolocation]

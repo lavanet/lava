@@ -77,7 +77,7 @@ export class BadgeManager {
           this.authentication,
           (err: ServiceError | null, result: GenerateBadgeResponse | null) => {
             if (err != null) {
-              Logger.error("failed fetching badge", err);
+              Logger.error("Failed fetching badge", err);
               reject(err);
             }
 
