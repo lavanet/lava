@@ -16,11 +16,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -162,15 +164,29 @@ type TestStruct struct {
 	Spec      spectypes.Spec
 	Plan      plantypes.Plan
 	Consumer  sigs.Account
+	Validator sigs.Account
 }
 
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
 	rand.InitRandomSeed()
 	ts := TestStruct{}
 	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
+
 	// init keepers state
 	var balance int64 = 100000000000
 
+	ts.Validator = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
+	msg, err := stakingtypes.NewMsgCreateValidator(
+		sdk.ValAddress(ts.Validator.Addr),
+		ts.Validator.PubKey,
+		sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(balance))),
+		stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
+		sdk.ZeroInt(),
+	)
+	require.Nil(t, err)
+	_, err = ts.Servers.StakingServer.CreateValidator(ts.Ctx, msg)
+	require.Nil(t, err)
 	// setup consumer
 	ts.Consumer = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
 
@@ -196,7 +212,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 
 	// stake providers
 	for _, provider := range ts.Providers {
-		testcommon.StakeAccount(t, ts.Ctx, *ts.Keepers, *ts.Servers, provider, ts.Spec, stake)
+		testcommon.StakeAccount(t, ts.Ctx, *ts.Keepers, *ts.Servers, provider, ts.Spec, stake, ts.Validator)
 	}
 
 	// advance for the staking to be valid
