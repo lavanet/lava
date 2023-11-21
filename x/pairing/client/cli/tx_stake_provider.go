@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -79,7 +81,7 @@ func CmdStakeProvider() *cobra.Command {
 			if len(args) == 5 {
 				validator = args[4]
 			} else {
-				validator = getValidator(clientCtx.GetFromAddress().String())
+				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			}
 
 			msg := types.NewMsgStakeProvider(
@@ -170,7 +172,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 				if len(args) == 5 {
 					validator = args[4]
 				} else {
-					validator = getValidator(clientCtx.GetFromAddress().String())
+					validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 				}
 
 				for _, chainID := range chainIDs {
@@ -278,6 +280,23 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 	return endp, endpointsGeoloc, nil
 }
 
-func getValidator(provider string) string {
-	return "TODO"
+func getValidator(clientCtx client.Context, provider string) string {
+	q := stakingtypes.NewQueryClient(clientCtx)
+	ctx := context.Background()
+	resD, err := q.DelegatorValidators(ctx, &stakingtypes.QueryDelegatorValidatorsRequest{DelegatorAddr: provider})
+	if err == nil && len(resD.Validators) > 0 {
+		return resD.Validators[0].OperatorAddress
+	}
+
+	resV, err := q.Validators(ctx, &stakingtypes.QueryValidatorsRequest{})
+	if err != nil {
+		panic("failed to fetch list of validators")
+	}
+	validatorBiggest := resV.Validators[0]
+	for _, validator := range resV.Validators {
+		if validator.Tokens.GT(validatorBiggest.Tokens) {
+			validatorBiggest = validator
+		}
+	}
+	return validatorBiggest.OperatorAddress
 }
