@@ -150,7 +150,7 @@ export class RPCConsumerServer {
         errors.push(relayResult);
       } else {
         if (errors.length > 0) {
-          Logger.warn("relay succeeded but had some errors", ...errors);
+          Logger.warn("Relay succeeded but had some errors", ...errors);
         }
         const latestBlock = relayResult.reply?.getLatestBlock();
         if (latestBlock) {
@@ -237,7 +237,7 @@ export class RPCConsumerServer {
         reportedProviders
       );
 
-      Logger.debug(`sending relay to provider ${providerPublicAddress}`);
+      Logger.info(`Sending relay to provider ${providerPublicAddress}`);
 
       const promise = this.relayInner(
         singleConsumerSession,
@@ -255,7 +255,7 @@ export class RPCConsumerServer {
                 relayResponse.err
               );
               if (err instanceof Error) {
-                Logger.error("failed on session failure %s", err);
+                Logger.error("Failed on session failure %s", err);
               }
             };
             if (relayResponse.backoff) {

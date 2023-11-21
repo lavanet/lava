@@ -2,6 +2,7 @@ import {
   JsonrpcBatchMessage,
   JsonrpcMessage,
 } from "../chainlib/chainproxy/rpcInterfaceMessages/json_rpc_message";
+import { Logger } from "../logger/logger";
 
 export function base64ToUint8Array(str: string): Uint8Array {
   const buffer = Buffer.from(str, "base64");
@@ -35,19 +36,9 @@ export function parseLong(long: Long): number {
   const low = Number(long.low);
   const parsedNumber = (high << 32) + low;
   if (high > 0) {
-    console.log("MAYBE AN ISSUE", high);
+    Logger.warn("Potential dev issue here", high);
   }
   return parsedNumber;
-}
-
-export function debugPrint(
-  debugMode: boolean,
-  message?: any,
-  ...optionalParams: any[]
-) {
-  if (debugMode) {
-    console.log(message, ...optionalParams);
-  }
 }
 
 export function generateRandomInt(): number {

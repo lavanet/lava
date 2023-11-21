@@ -104,7 +104,7 @@ export class LavaSDK {
     }
 
     // Set log level
-    Logger.SetLogLevel(options.logLevel);
+    Logger.SetLogLevel(options.logLevel ?? "error");
 
     // Init attributes
     this.secure = options.secure !== undefined ? options.secure : true;
