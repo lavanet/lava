@@ -32,7 +32,6 @@ type BankKeeper interface {
 }
 
 type EpochstorageKeeper interface {
-	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
 	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
