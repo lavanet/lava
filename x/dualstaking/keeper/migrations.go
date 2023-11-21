@@ -18,19 +18,25 @@ func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
 }
 
-// MigrateVersion1To2 implements store migration: Create a self delegation for all providers
-func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
+// ConvertProviderStakeToSelfDelegation does:
+// 1. zero out each provider stake and return their money
+// 2. use that same money to make the providers self delegate
+func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
+	// get highest staked validator
+	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	highestVal := validatorsByPower[0]
+
+	// loop over all providers
 	chains := m.keeper.specKeeper.GetAllChainIDs(ctx)
 	for _, chainID := range chains {
 		storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
 		if found {
 			for i, entry := range storage.StakeEntries {
-				// first return the providers all their coins
+				// return the providers all their coins
 				addr, err := sdk.AccAddressFromBech32(entry.Address)
 				if err != nil {
 					return err
 				}
-
 				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
 				if moduleBalance.IsLT(entry.Stake) {
 					return fmt.Errorf("insufficient balance to unstake %s (current balance: %s)", entry.Stake, moduleBalance)
@@ -44,8 +50,7 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 				stake := entry.Stake
 				entry.Stake.Amount = sdk.ZeroInt()
 				m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry, uint64(i))
-
-				err = m.keeper.Delegate(ctx, entry.Address, entry.Address, chainID, stake)
+				err = m.keeper.DelegateFull(ctx, entry.Address, highestVal.OperatorAddress, entry.Address, chainID, stake)
 				if err != nil {
 					return err
 				}
@@ -56,8 +61,11 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 	return nil
 }
 
-// MigrateVersion2To3 implements store migration: Make providers-validators delegations balance
-func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
+// HandleProviderDelegators does:
+// 1. merge the deprecated bonded and not-bonded pool funds
+// 2. return the providers' delegators money back from the merged pool
+// 3. use the same money to delegate to both the original delegation's provider and highest staked validator
+func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 	delegationsInds := m.keeper.delegationFS.GetAllEntryIndices(ctx)
 	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
@@ -112,7 +120,13 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 		}
 	}
 
-	// *** Handle validator delegators - stake to empty provider ***
+	return nil
+}
+
+// HandleValidatorsDelegators does:
+// 1. get each validator's delegators
+// 2. delegate the amount of their delegation to the empty provider (using the AfterDelegationModified hook)
+func (m Migrator) HandleValidatorsDelegators(ctx sdk.Context) error {
 	// get all validators
 	validators := m.keeper.stakingKeeper.GetAllValidators(ctx)
 
@@ -124,21 +138,85 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
 
-			// verify the delegator is in balance
-			diff, err := m.keeper.VerifyDelegatorBalance(ctx, d.GetDelegatorAddr())
+	return nil
+}
+
+// VerifyDelegationsBalance gets all delegators (from both providers and validators)
+// and verifies that each delegator has the same amount of delegations in both the provider
+// and validator sides
+func (m Migrator) VerifyDelegationsBalance(ctx sdk.Context) error {
+	delegationsInds := m.keeper.delegationFS.GetAllEntryIndices(ctx)
+	validators := m.keeper.stakingKeeper.GetAllValidators(ctx)
+	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+
+	// get all the providers' delegators
+	var delegators []sdk.AccAddress
+	for _, ind := range delegationsInds {
+		var d dualstakingtypes.Delegation
+		found := m.keeper.delegationFS.FindEntry(ctx, ind, nextEpoch, &d)
+		if !found {
+			continue
+		}
+		delegatorAddr, err := sdk.AccAddressFromBech32(d.Delegator)
+		if err != nil {
+			return err
+		}
+		delegators = append(delegators, delegatorAddr)
+	}
+
+	// get all the validators' delegators
+	for _, v := range validators {
+		delegations := m.keeper.stakingKeeper.GetValidatorDelegations(ctx, v.GetOperator())
+		for _, d := range delegations {
+			delegatorAddr, err := sdk.AccAddressFromBech32(d.DelegatorAddress)
 			if err != nil {
 				return err
 			}
-
-			if !diff.IsZero() {
-				return utils.LavaFormatError("delegations balance migration failed", fmt.Errorf("delegator not balanced"),
-					utils.Attribute{Key: "delegator", Value: d.DelegatorAddress},
-					utils.Attribute{Key: "validator", Value: v.OperatorAddress},
-					utils.Attribute{Key: "diff", Value: diff.String()},
-				)
-			}
+			delegators = append(delegators, delegatorAddr)
 		}
+	}
+
+	// verify delegations balance for each delegator
+	for _, d := range delegators {
+		diff, err := m.keeper.VerifyDelegatorBalance(ctx, d)
+		if err != nil {
+			return err
+		}
+
+		if !diff.IsZero() {
+			return utils.LavaFormatError("delegations balance migration failed", fmt.Errorf("delegator not balanced"),
+				utils.Attribute{Key: "delegator", Value: d.String()},
+				utils.Attribute{Key: "diff", Value: diff.String()},
+			)
+		}
+	}
+
+	return nil
+}
+
+// MigrateVersion1To2 implements store migration: Create a self delegation for all providers
+func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
+	return m.ConvertProviderStakeToSelfDelegation(ctx)
+}
+
+// MigrateVersion2To3 implements store migration: Make providers-validators delegations balance
+func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
+	err := m.HandleProviderDelegators(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = m.HandleValidatorsDelegators(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = m.VerifyDelegationsBalance(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil
