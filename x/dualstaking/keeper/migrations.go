@@ -30,7 +30,6 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 				if err != nil {
 					return err
 				}
-				fmt.Printf("entry.Address: %v\n", entry.Address)
 
 				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
 				if moduleBalance.IsLT(entry.Stake) {
@@ -72,12 +71,10 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 		}
 	}
 
-	// get highest staked validator and delegate to it
-	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
-	highestVal := validatorsByPower[0]
-
-	list := []dualstakingtypes.Delegation{}
+	// give money back to delegators from the bonded pool
+	originalDelegations := []dualstakingtypes.Delegation{}
 	for _, ind := range delegationsInds {
+		// find the delegation and keep its original form
 		var d dualstakingtypes.Delegation
 		block, _, _, found := m.keeper.delegationFS.FindEntryDetailed(ctx, ind, nextEpoch, &d)
 		if !found {
@@ -87,23 +84,28 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 		if d.Delegator == d.Provider {
 			continue
 		}
-		list = append(list, d)
-		fmt.Printf("d.Delegator: %v\n", d.Delegator)
-		amountTest := d.Amount
-		d.Amount = sdk.NewCoin("ulava", sdk.ZeroInt())
+		originalDelegations = append(originalDelegations, d)
+		originalAmount := d.Amount
+
+		// zero the delegation amount in the fixation store
+		d.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
 		m.keeper.delegationFS.ModifyEntry(ctx, ind, block, &d)
 
+		// give money back from the bonded pool
 		delegatorAddr, err := sdk.AccAddressFromBech32(d.Delegator)
 		if err != nil {
 			return err
 		}
-		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, dualstakingtypes.BondedPoolName, delegatorAddr, sdk.Coins{amountTest})
+		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, dualstakingtypes.BondedPoolName, delegatorAddr, sdk.Coins{originalAmount})
 		if err != nil {
 			return err
 		}
 	}
 
-	for _, d := range list {
+	// get highest staked validator and delegate to it
+	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	highestVal := validatorsByPower[0]
+	for _, d := range originalDelegations {
 		err := m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
 		if err != nil {
 			return err
