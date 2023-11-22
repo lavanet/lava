@@ -18,7 +18,7 @@ async function main() {
     });
 
     // Fetch chain id
-    for (let i = 0; i < 20; i++) { // send relays synchronously
+    for (let i = 0; i < 26; i++) { // send relays synchronously
         try {
             const result = await lavaSDKTendermint.sendRelay({
                 method: "status",

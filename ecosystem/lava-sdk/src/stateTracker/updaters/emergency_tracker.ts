@@ -2,6 +2,7 @@ import { StateQuery } from "../stateQuery/state_query";
 import { Params as DowntimeParams } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 import { Logger } from "../../logger/logger";
 import { StateBadgeQuery } from "../stateQuery/state_badge_query";
+import { StateChainQuery } from "../stateQuery/state_chain_query";
 
 export interface EmergencyTrackerInf {
   getVirtualEpoch(): number;
@@ -22,6 +23,7 @@ export class EmergencyTracker {
   }
 
   public async update() {
+    Logger.debug("Start updating emergency tracker");
     const latestEpoch = this.stateQuery.getCurrentEpoch();
     if (latestEpoch == undefined || latestEpoch <= this.latestEpoch) {
       return;
@@ -35,6 +37,14 @@ export class EmergencyTracker {
     // receive virtual epoch directly from badge query
     if (this.stateQuery instanceof StateBadgeQuery) {
       return (this.stateQuery as StateBadgeQuery).getVirtualEpoch();
+    }
+
+    const downtimeParams = (
+      this.stateQuery as StateChainQuery
+    ).getDowntimeParams();
+
+    if (downtimeParams) {
+      this.downtimeParams = downtimeParams;
     }
 
     if (this.downtimeParams == undefined) {
@@ -55,7 +65,9 @@ export class EmergencyTracker {
 
     // division without rounding up to skip normal epoch,
     // if time since latestEpochTime > epochDuration => virtual epoch has started
-    const virtualEpoch = delay / (epochDuration.getSeconds() * 1000);
+    const virtualEpoch = Math.trunc(
+      delay / (epochDuration.getSeconds() * 1000)
+    );
     return virtualEpoch;
   }
 }

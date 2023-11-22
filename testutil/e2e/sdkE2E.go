@@ -165,7 +165,7 @@ func runSDKE2E(timeout time.Duration) {
 	lt.checkLava(timeout)
 	utils.LavaFormatInfo("Starting Lava OK")
 
-	var epochDuration int64 = 30 * 1.2
+	var epochDuration int64 = 20 * 1.2
 	signalChannel := make(chan bool)
 	latestBlockTime := lt.getLatestBlockTime()
 
