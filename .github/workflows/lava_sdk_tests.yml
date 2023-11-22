@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: "21"
+          node-version: "21.2.0"
 
       - name: Init the SDK
         run: GOPATH=~/go ./scripts/init_sdk.sh -s
