@@ -38,7 +38,7 @@ const (
 	debugLatency     = false
 )
 
-var RPCProviderStickynessHeaderName = "X-Node-Sticky"
+var RPCProviderStickinessHeaderName = "X-Node-Sticky"
 
 type RPCProviderServer struct {
 	cache                     *performance.Cache
@@ -660,10 +660,10 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if debugLatency {
 			utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
-		// add stickyness header
-		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickynessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetTokenFromGrpcContext(ctx))}})
+		// add stickiness header
+		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickinessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetTokenFromGrpcContext(ctx))}})
 		if debugConsistency {
-			utils.LavaFormatDebug("adding stickyness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
+			utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
 		}
 
 		reply, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
