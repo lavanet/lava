@@ -593,7 +593,7 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 	// now unbond all
 	for i := range delegations {
 		key := delegationKey{provider: delegations[i].Provider, chainID: delegations[i].ChainID}
-		err := k.unbond(ctx, delegator, delegations[i].Delegator, delegations[i].ChainID, unbondAmount[key], false) // ?? is it false?
+		err := k.unbond(ctx, delegator, delegations[i].Provider, delegations[i].ChainID, unbondAmount[key], false) // ?? is it false?
 		if err != nil {
 			return err
 		}
