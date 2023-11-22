@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/x/timerstore/client/cli"
 	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	"github.com/lavanet/lava/x/timerstore/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +27,7 @@ const (
 type AppModuleBasic struct{}
 
 func (a AppModuleBasic) Name() string {
-	return timerstoretypes.ModuleName
+	return types.ModuleName
 }
 
 func (a AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
