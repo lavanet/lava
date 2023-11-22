@@ -43,7 +43,6 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 						utils.Attribute{Key: "Unstake", Value: entry.Stake},
 						utils.Attribute{Key: "ModuleBalance", Value: moduleBalance},
 					)
-
 				}
 				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{entry.Stake})
 				if err != nil {
