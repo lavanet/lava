@@ -59,7 +59,7 @@ func ByteSliceToASCIIStr(input []byte, placeholder rune) string {
 	var result bytes.Buffer
 
 	for _, b := range input {
-		if b >= 32 && b <= 126 {
+		if b >= ASCII_MIN && b <= ASCII_MAX {
 			// If the byte is within the ASCII printable range, add it to the result.
 			result.WriteByte(b)
 		} else {
