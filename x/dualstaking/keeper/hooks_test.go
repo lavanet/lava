@@ -216,20 +216,17 @@ func TestUnbondUniformProviders(t *testing.T) {
 	_, err = ts.TxUnbondValidator(delegatorAcc, validator, sdk.NewInt(25*5))
 	require.Nil(t, err)
 
-	res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
+	res, err := ts.QueryDualstakingDelegatorProviders(delegator, true)
+	require.Len(t, res.Delegations, 3)
 	require.Nil(t, err)
 	for _, d := range res.Delegations {
 		switch d.Provider {
-		case providers[0]:
-			require.True(t, d.Amount.Amount.IsZero())
-		case providers[1]:
-			require.True(t, d.Amount.Amount.IsZero())
 		case providers[2]:
-			require.Equal(t, int64(20), d.Amount.Amount.Int64())
+			require.Equal(t, int64(19), d.Amount.Amount.Int64())
 		case providers[3]:
-			require.Equal(t, int64(30), d.Amount.Amount)
+			require.Equal(t, int64(28), d.Amount.Amount.Int64())
 		case providers[4]:
-			require.Equal(t, int64(35), d.Amount.Amount) // highest delegation is decreased by uniform amount + remainder
+			require.Equal(t, int64(38), d.Amount.Amount.Int64()) // highest delegation is decreased by uniform amount + remainder
 		default:
 			require.FailNow(t, "unexpected provider in delegations")
 		}

@@ -521,7 +521,9 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount sdk.Coin) error {
 	epoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	providers, err := k.GetDelegatorProviders(ctx, delegator, epoch)
-	_ = err
+	if err != nil {
+		return err
+	}
 
 	// first remove from the empty provider
 	if lavaslices.Contains[string](providers, EMPTY_PROVIDER) {
@@ -542,7 +544,6 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 	}
 
 	providers, _ = lavaslices.Remove[string](providers, EMPTY_PROVIDER)
-	_ = providers
 
 	var delegations []types.Delegation
 	for _, provider := range providers {
@@ -553,29 +554,47 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		return i.Amount.IsLT(j.Amount)
 	})
 
-	delegationLen := int64(len(delegations))
-	amountToDeduct := amount.Amount.QuoRaw(delegationLen)
-	for _, delegation := range delegations {
-		delegationLen--
-		if delegation.Amount.Amount.LT(amountToDeduct) {
-			err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, delegation.Amount, false) // ?? is it false?
-			if err != nil {
-				return err
-			}
-			amountToDeduct = amountToDeduct.Add(amountToDeduct.Sub(delegation.Amount.Amount).QuoRaw(delegationLen))
-			amount = amount.Sub(delegation.Amount)
+	type delegationKey struct {
+		provider string
+		chainID  string
+	}
+	unbondAmount := map[delegationKey]sdk.Coin{}
+	unbondAmountKeys := []delegationKey{} // this is for later use, this way we can loop on all keys deterministicly
+
+	// first round of deduction
+	for i := range delegations {
+		key := delegationKey{provider: delegations[i].Provider, chainID: delegations[i].ChainID}
+		unbondAmountKeys = append(unbondAmountKeys, key)
+		amountToDeduct := amount.Amount.QuoRaw(int64(len(delegations) - i))
+		if delegations[i].Amount.Amount.LT(amountToDeduct) {
+			unbondAmount[key] = delegations[i].Amount
+			amount = amount.Sub(delegations[i].Amount)
 		} else {
-			err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, sdk.NewCoin(delegation.Amount.Denom, amountToDeduct), false) // ?? is it false?
-			if err != nil {
-				return err
-			}
-			amount = amount.Sub(sdk.NewCoin(delegation.Amount.Denom, amountToDeduct))
+			coinToDeduct := sdk.NewCoin(delegations[i].Amount.Denom, amountToDeduct)
+			unbondAmount[key] = coinToDeduct
+			amount = amount.Sub(coinToDeduct)
+			delegations[i].Amount = delegations[i].Amount.Sub(coinToDeduct)
 		}
 	}
 
-	if !amount.IsZero() { // we have leftovers, remove from the highest delegation
-		delegation := delegations[len(delegations)-1]
-		err := k.Unbond(ctx, delegation.Delegator, delegation.Provider, delegation.ChainID, amount, false) // ?? is it false?
+	// we have leftovers, remove it ununiformaly
+	for i := range delegations {
+		if amount.IsZero() {
+			break
+		}
+		key := delegationKey{provider: delegations[i].Provider, chainID: delegations[i].ChainID}
+		if delegations[i].Amount.Amount.LT(amount.Amount) {
+			unbondAmount[key].Add(delegations[i].Amount)
+			amount = amount.Sub(delegations[i].Amount)
+		} else {
+			unbondAmount[key].Add(amount)
+			amount = amount.Sub(amount)
+		}
+	}
+
+	// now unbond all
+	for _, delegationKey := range unbondAmountKeys {
+		err := k.Unbond(ctx, delegator, delegationKey.provider, delegationKey.chainID, unbondAmount[delegationKey], false) // ?? is it false?
 		if err != nil {
 			return err
 		}
@@ -588,8 +607,10 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (math.Int, error) {
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	providers, err := k.GetDelegatorProviders(ctx, delAddr.String(), nextEpoch)
-	_ = err
-	// TODO make this more efficient
+	if err != nil {
+		return math.ZeroInt(), err
+	}
+
 	sumProviderDelegations := sdk.ZeroInt()
 	for _, p := range providers {
 		delegations := k.GetAllProviderDelegatorDelegations(ctx, delAddr.String(), p, nextEpoch)

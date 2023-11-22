@@ -50,10 +50,8 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		return err
 	}
 
-	if diff.IsZero() {
-		// do nothing, this is a redelegate
-		_ = ""
-	} else if diff.IsPositive() {
+	// if diff is zero, do nothing, this is a redelegate
+	if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
 		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID,
 			sdk.NewCoin(epochstoragetypes.TokenDenom, diff))
@@ -62,7 +60,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		}
 	} else if diff.IsNegative() {
 		// more provider delegation, unbond operation was done, unbond from providers
-		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, diff.MulRaw(-1)))
+		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, diff.Neg()))
 		if err != nil {
 			return err
 		}

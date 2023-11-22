@@ -229,12 +229,9 @@ var (
 		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:                      {authtypes.Burner},
 		ibctransfertypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
-		epochstoragemoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking}, // TODO: remove
-		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking}, // TODO: remove
-		pairingmoduletypes.ModuleName:            {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		conflictmoduletypes.ModuleName:           {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
