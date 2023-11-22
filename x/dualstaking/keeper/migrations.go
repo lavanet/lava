@@ -39,11 +39,17 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 				}
 				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
 				if moduleBalance.IsLT(entry.Stake) {
-					return fmt.Errorf("insufficient balance to unstake %s (current balance: %s)", entry.Stake, moduleBalance)
+					utils.LavaFormatError("insufficient balance to unstake", nil,
+						utils.Attribute{Key: "Unstake", Value: entry.Stake},
+						utils.Attribute{Key: "ModuleBalance", Value: moduleBalance},
+					)
+
 				}
 				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{entry.Stake})
 				if err != nil {
-					return fmt.Errorf("failed to send coins from module to %s: %w", addr, err)
+					utils.LavaFormatError("failed to send coins from module to account", err,
+						utils.Attribute{Key: "Account", Value: addr},
+					)
 				}
 
 				// create self delegation, this will increase the stake entry, we need to fix that by reseting the stake before delegating

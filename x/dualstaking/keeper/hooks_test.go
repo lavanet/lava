@@ -348,8 +348,10 @@ func TestCancelUnbond(t *testing.T) {
 	require.Nil(t, err)
 
 	// unbond and advance blocks
-	_, err = ts.TxUnbondValidator(delegator, validator, sdk.NewInt(100))
+	_, err = ts.TxUnbondValidator(delegator, validator, sdk.NewInt(250))
 	require.Nil(t, err)
+	ts.verifyDelegatorsBalance()
+
 	unbondBlock := ts.Ctx.BlockHeight()
 	ts.AdvanceEpoch()
 

@@ -271,9 +271,9 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 	return nil
 }
 
-// Delegate lets a delegator delegate an amount of coins to a provider.
+// delegate lets a delegator delegate an amount of coins to a provider.
 // (effective on next epoch)
-func (k Keeper) Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	_, err := sdk.AccAddressFromBech32(delegator)
@@ -368,12 +368,12 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 	return nil
 }
 
-// Unbond lets a delegator get its delegated coins back from a provider. The
+// unbond lets a delegator get its delegated coins back from a provider. The
 // delegation ends immediately, but coins are held for unstakeHoldBlocks period
 // before released and transferred back to the delegator. The rewards from the
 // provider will be updated accordingly (or terminate) from the next epoch.
 // (effective on next epoch)
-func (k Keeper) Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
+func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error {
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
@@ -531,10 +531,10 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		if found {
 			if delegation.Amount.Amount.GTE(amount.Amount) {
 				// we have enough here, remove all from empty delegator and bail
-				return k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, amount, false)
+				return k.unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, amount, false)
 			} else {
 				// we dont have enough in the empty provider, remove everything and continue with the rest
-				err = k.Unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
+				err = k.unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
 				if err != nil {
 					return err
 				}
@@ -559,12 +559,10 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		chainID  string
 	}
 	unbondAmount := map[delegationKey]sdk.Coin{}
-	unbondAmountKeys := []delegationKey{} // this is for later use, this way we can loop on all keys deterministicly
 
 	// first round of deduction
 	for i := range delegations {
 		key := delegationKey{provider: delegations[i].Provider, chainID: delegations[i].ChainID}
-		unbondAmountKeys = append(unbondAmountKeys, key)
 		amountToDeduct := amount.Amount.QuoRaw(int64(len(delegations) - i))
 		if delegations[i].Amount.Amount.LT(amountToDeduct) {
 			unbondAmount[key] = delegations[i].Amount
@@ -593,8 +591,9 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 	}
 
 	// now unbond all
-	for _, delegationKey := range unbondAmountKeys {
-		err := k.Unbond(ctx, delegator, delegationKey.provider, delegationKey.chainID, unbondAmount[delegationKey], false) // ?? is it false?
+	for i := range delegations {
+		key := delegationKey{provider: delegations[i].Provider, chainID: delegations[i].ChainID}
+		err := k.unbond(ctx, delegator, delegations[i].Delegator, delegations[i].ChainID, unbondAmount[key], false) // ?? is it false?
 		if err != nil {
 			return err
 		}
@@ -623,8 +622,9 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
 	for _, d := range delegations {
 		v, found := k.stakingKeeper.GetValidator(ctx, d.GetValidatorAddr())
-		_ = found
-		sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromShares(d.Shares).TruncateInt())
+		if found {
+			sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromShares(d.Shares).TruncateInt())
+		}
 	}
 
 	return sumValidatorDelegations.Sub(sumProviderDelegations), nil

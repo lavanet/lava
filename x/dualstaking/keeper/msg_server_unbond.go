@@ -17,6 +17,10 @@ func (k msgServer) Unbond(goCtx context.Context, msg *types.MsgUnbond) (*types.M
 
 // UnbondFul uses staking module for to unbond with hooks
 func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error {
+	// 1.redelegate from the provider to the empty validator
+	// 2.calls staking module to unbond from the validator
+	// 3.calls the hooks to than unbond from the empty provider
+
 	err := k.Redelegate(
 		ctx,
 		delegator,

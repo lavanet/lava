@@ -115,7 +115,9 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 
 	for _, delegation := range delegations {
 		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
-		_ = found
+		if !found {
+			continue
+		}
 		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
 		if totalAmount.LT(amount) {
 			amount = totalAmount

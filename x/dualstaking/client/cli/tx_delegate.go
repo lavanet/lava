@@ -17,7 +17,7 @@ var _ = strconv.Itoa(0)
 
 func CmdDelegate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delegate [validator] [provider] [chain-id] [amount]",
+		Use:   "delegate [validator] provider chain-id amount",
 		Short: "delegate to a validator and provider",
 		Args:  cobra.RangeArgs(3, 4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -67,8 +67,18 @@ func getValidator(clientCtx client.Context) string {
 	q := stakingtypes.NewQueryClient(clientCtx)
 	ctx := context.Background()
 	resD, err := q.DelegatorValidators(ctx, &stakingtypes.QueryDelegatorValidatorsRequest{DelegatorAddr: provider})
+
 	if err == nil && len(resD.Validators) > 0 {
-		return resD.Validators[0].OperatorAddress
+		validatorBiggest := resD.Validators[0]
+		for _, validator := range resD.Validators {
+			if sdk.AccAddress(validator.OperatorAddress).String() == provider {
+				return validator.OperatorAddress
+			}
+			if validator.Tokens.GT(validatorBiggest.Tokens) {
+				validatorBiggest = validator
+			}
+		}
+		return validatorBiggest.OperatorAddress
 	}
 
 	resV, err := q.Validators(ctx, &stakingtypes.QueryValidatorsRequest{})
@@ -77,6 +87,9 @@ func getValidator(clientCtx client.Context) string {
 	}
 	validatorBiggest := resV.Validators[0]
 	for _, validator := range resV.Validators {
+		if sdk.AccAddress(validator.OperatorAddress).String() == provider {
+			return validator.OperatorAddress
+		}
 		if validator.Tokens.GT(validatorBiggest.Tokens) {
 			validatorBiggest = validator
 		}

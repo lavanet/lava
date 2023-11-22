@@ -53,7 +53,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 	// if diff is zero, do nothing, this is a redelegate
 	if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
-		err = h.k.Delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID,
+		err = h.k.delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID,
 			sdk.NewCoin(epochstoragetypes.TokenDenom, diff))
 		if err != nil {
 			return err
@@ -122,7 +122,25 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 	return nil
 }
 
-func (h Hooks) BeforeDelegationRemoved(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
+func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	delegation, found := h.k.stakingKeeper.GetDelegation(ctx, delAddr, valAddr)
+	if !found {
+		return fmt.Errorf("could not find delegation for dualstaking hook")
+	}
+	validator, err := h.k.stakingKeeper.GetDelegatorValidator(ctx, delAddr, valAddr)
+	if err != nil {
+		return nil
+	}
+	amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
+	err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, amount))
+	if err != nil {
+		return utils.LavaFormatError("delegation removed hook failed", err,
+			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
+			utils.Attribute{Key: "delegator_address", Value: delAddr.String()},
+			utils.Attribute{Key: "amount", Value: amount.String()},
+		)
+	}
+
 	return nil
 }
 
