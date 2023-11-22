@@ -34,3 +34,27 @@ func TestStringValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestByteSliceToASCIIStr(t *testing.T) {
+	allChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ[]{}()!@#$%^&*'\"`~,."
+	tests := []struct {
+		input          string
+		placeholder    rune
+		expectedOutput string
+	}{
+		{
+			"\x00\x12" + allChars + "\x88\x00",
+			'@',
+			"@@" + allChars + "@@",
+		},
+		{
+			allChars,
+			'@',
+			allChars,
+		},
+	}
+
+	for _, test := range tests {
+		require.Equal(t, test.expectedOutput, ByteSliceToASCIIStr([]byte(test.input), test.placeholder))
+	}
+}
