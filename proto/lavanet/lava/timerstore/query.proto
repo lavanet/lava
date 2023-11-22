@@ -1,0 +1,60 @@
+syntax = "proto3";
+package lavanet.lava.timerstore;
+
+option go_package = "github.com/lavanet/lava/x/timerstore/types";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+import "lavanet/lava/timerstore/timer.proto";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Queries a timer store for all its timers.
+  rpc AllTimers(QueryAllTimersRequest) returns (QueryAllTimersResponse) {
+    option (google.api.http).get = "/lavanet/lava/timerstore/all_timers/{store_key}/{prefix}";
+  }
+
+  // Queries for all store keys.
+  rpc StoreKeys(QueryStoreKeysRequest) returns (QueryStoreKeysResponse) {
+    option (google.api.http).get = "/lavanet/lava/timerstore/store_keys";
+  }
+
+  // Queries for next timeout of a timer.
+  rpc Next(QueryNextRequest) returns (QueryNextResponse) {
+    option (google.api.http).get = "/lavanet/lava/timerstore/next/{store_key}/{prefix}";
+  }
+}
+
+message QueryAllTimersRequest {
+  string store_key = 1;
+  string prefix = 2;
+}
+
+message QueryAllTimersResponse {
+  string blockTimeTimers = 1;
+  string blockHeightTimers = 2;
+  string tick = 3;
+}
+
+message QueryStoreKeysRequest {
+}
+
+message StoreKeyAndPrefix {
+  string store_key = 1;
+  string prefix = 2;
+}
+
+message QueryStoreKeysResponse {
+  repeated StoreKeyAndPrefix keys = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryNextRequest {
+  string store_key = 1;
+  string prefix = 2;
+}
+
+message QueryNextResponse {
+  uint64 nextBlockHeight = 1;
+  string nextBlockTime = 2;
+  string tick = 3;
+}

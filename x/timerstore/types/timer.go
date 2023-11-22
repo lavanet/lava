@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 )
 
 // TimerStore manages timers to efficiently support future timeouts. Timeouts
@@ -105,6 +106,10 @@ import (
 // TimerCallback defined the callback handler function
 type TimerCallback func(ctx sdk.Context, key, data []byte)
 
+const (
+	NonASCIICharPlaceholder = '$'
+)
+
 // TimerStore represents a timer store to manager timers and timeouts
 type TimerStore struct {
 	storeKey  storetypes.StoreKey
@@ -132,10 +137,18 @@ func DefaultGenesis() *GenesisState {
 	}
 }
 
+func (tstore *TimerStore) GetStoreKey() storetypes.StoreKey {
+	return tstore.storeKey
+}
+
+func (fs *TimerStore) GetStorePrefix() string {
+	return fs.prefix
+}
+
 func (tstore *TimerStore) Export(ctx sdk.Context) (gs GenesisState) {
 	gs.Version = tstore.getVersion(ctx)
-	gs.NextBlockHeight = tstore.getNextTimeoutBlockHeight(ctx)
-	gs.NextBlockTime = tstore.getNextTimeoutBlockTime(ctx)
+	gs.NextBlockHeight = tstore.GetNextTimeoutBlockHeight(ctx)
+	gs.NextBlockTime = tstore.GetNextTimeoutBlockTime(ctx)
 
 	// get all time timers (measured in block time)
 	store := tstore.getStoreTimer(ctx, BlockTime)
@@ -239,11 +252,11 @@ func (tstore *TimerStore) getNextTimeout(ctx sdk.Context, which TimerType) uint6
 	return DecodeKey(b)
 }
 
-func (tstore *TimerStore) getNextTimeoutBlockHeight(ctx sdk.Context) uint64 {
+func (tstore *TimerStore) GetNextTimeoutBlockHeight(ctx sdk.Context) uint64 {
 	return tstore.getNextTimeout(ctx, BlockHeight)
 }
 
-func (tstore *TimerStore) getNextTimeoutBlockTime(ctx sdk.Context) uint64 {
+func (tstore *TimerStore) GetNextTimeoutBlockTime(ctx sdk.Context) uint64 {
 	return tstore.getNextTimeout(ctx, BlockTime)
 }
 
@@ -333,11 +346,22 @@ func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which TimerType) string
 	var b strings.Builder
 
 	for ; iterator.Valid(); iterator.Next() {
-		value, key := DecodeBlockAndKey(iterator.Key())
-		b.WriteString(fmt.Sprintf("block %d key %v data %v\n", value, key, iterator.Value()))
+		b.WriteString(tstore.formatTimerInfo(iterator.Key(), iterator.Value(), which))
 	}
 
 	return b.String()
+}
+
+func (tstore *TimerStore) formatTimerInfo(key, value []byte, which TimerType) string {
+	decodedValue, decodedKey := DecodeBlockAndKey(key)
+	formattedKey := commontypes.ByteSliceToASCIIStr(decodedKey, NonASCIICharPlaceholder)
+
+	if which == BlockTime {
+		blockTime := commontypes.ConvertUnixTimestampToString(decodedValue)
+		return fmt.Sprintf("block time: %s\nkey: %s\ndata: %v\n", blockTime, formattedKey, value)
+	}
+
+	return fmt.Sprintf("block height: %d\nkey: %s\ndata: %v\n", decodedValue, formattedKey, value)
 }
 
 func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which TimerType) (uint64, []byte, []byte) {

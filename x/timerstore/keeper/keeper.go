@@ -7,6 +7,11 @@ import (
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
+const (
+	BeginBlock = "BeginBlock"
+	EndBlock   = "EndBlock"
+)
+
 func NewKeeper(cdc codec.BinaryCodec) *Keeper {
 	return &Keeper{
 		cdc: cdc,
