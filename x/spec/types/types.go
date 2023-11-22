@@ -97,6 +97,26 @@ func (s *Header_HeaderType) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// allows unmarshaling header Verification Severity
+func (s Verification_VerificationSeverity) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(Verification_VerificationSeverity_name[int32(s)])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshals a quoted json string to the enum value
+func (s *Verification_VerificationSeverity) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*s = Verification_VerificationSeverity(Verification_VerificationSeverity_value[j])
+	return nil
+}
+
 func IsFinalizedBlock(requestedBlock, latestBlock int64, finalizationCriteria uint32) bool {
 	switch requestedBlock {
 	case NOT_APPLICABLE:

@@ -31,6 +31,12 @@ message Verification {
   string name =1;
   ParseDirective parse_directive =2;
   repeated ParseValue values=3;
+
+  enum VerificationSeverity {
+    Fail = 0;
+    Warning = 1;
+  }
+  VerificationSeverity severity = 4;
 }
 
 message ParseValue {
