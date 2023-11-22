@@ -1521,7 +1521,7 @@
                                     },
                                     {
                                         "extension": "archive",
-                                        "latest_distance": 300000
+                                        "latest_distance": 1000000
                                     }
                                 ]
                             }
