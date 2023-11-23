@@ -42,7 +42,7 @@ const (
 	DEFAULT_ALLOWED_MISSING_CU = 0.2
 
 	ShardIDFlagName           = "shard-id"
-	StickynessHeaderName      = "sticky-header"
+	StickinessHeaderName      = "sticky-header"
 	DefaultShardID       uint = 0
 )
 
@@ -545,9 +545,9 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			for _, endpoint := range rpcProviderEndpoints {
 				utils.LavaFormatDebug("endpoint description", utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
-			stickynessHeaderName := viper.GetString(StickynessHeaderName)
-			if stickynessHeaderName != "" {
-				RPCProviderStickynessHeaderName = stickynessHeaderName
+			stickinessHeaderName := viper.GetString(StickinessHeaderName)
+			if stickinessHeaderName != "" {
+				RPCProviderStickinessHeaderName = stickinessHeaderName
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			rewardStoragePath := viper.GetString(rewardserver.RewardServerStorageFlagName)
@@ -579,7 +579,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint(ShardIDFlagName, DefaultShardID, "shard id")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotThresholdFlagName, rewardserver.DefaultRewardsSnapshotThreshold, "the number of rewards to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
-	cmdRPCProvider.Flags().String(StickynessHeaderName, RPCProviderStickynessHeaderName, "the name of the header to be attacked to requests for stickyness by consumer, used for consistency")
+	cmdRPCProvider.Flags().String(StickinessHeaderName, RPCProviderStickinessHeaderName, "the name of the header to be attacked to requests for stickiness by consumer, used for consistency")
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
 	return cmdRPCProvider
 }
