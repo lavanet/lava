@@ -336,9 +336,7 @@ func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, bloc
 func (k Keeper) GetPlanFromSubscription(ctx sdk.Context, consumer string, block uint64) (planstypes.Plan, error) {
 	var sub types.Subscription
 	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
-		return planstypes.Plan{}, utils.LavaFormatWarning("can't find subscription with consumer address", legacyerrors.ErrKeyNotFound,
-			utils.Attribute{Key: "consumer", Value: consumer},
-		)
+		return planstypes.Plan{}, fmt.Errorf("can't find subscription with consumer address: %s", consumer)
 	}
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
