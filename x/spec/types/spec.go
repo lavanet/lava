@@ -143,7 +143,7 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 		collectionDataList = append(collectionDataList, key)
 	}
 	// sort the slice so the order is deterministic
-	sort.Slice(collectionDataList, func(i, j int) bool {
+	sort.SliceStable(collectionDataList, func(i, j int) bool {
 		return collectionDataList[i].String() < collectionDataList[j].String()
 	})
 

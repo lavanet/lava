@@ -146,6 +146,7 @@ export class PairingUpdater {
           networkAddress: endpoint.getIpport(),
           enabled: true,
           connectionRefusals: 0,
+          geolocation: endpoint.getGeolocation(),
         };
 
         if (endpoint.getGeolocation() == Number(this.config.geolocation)) {

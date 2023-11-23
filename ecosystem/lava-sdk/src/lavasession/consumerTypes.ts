@@ -26,7 +26,7 @@ import {
   ReportedProvider,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import { ProviderOptimizerStrategy } from "../providerOptimizer/providerOptimizer";
-
+import { Geolocation } from "./geolocation";
 export interface SessionInfo {
   session: SingleConsumerSession;
   epoch: number;
@@ -124,6 +124,7 @@ export class SingleConsumerSession {
     connectionRefusals: 0,
     addons: new Set<string>(),
     extensions: new Set<string>(),
+    geolocation: 0,
   };
   public blockListed = false;
   public consecutiveNumberOfFailures = 0;
@@ -254,19 +255,20 @@ export interface Endpoint {
   connectionRefusals: number;
   addons: Set<string>;
   extensions: Set<string>;
+  geolocation: Geolocation;
 }
 
 export class RPCEndpoint {
   public networkAddress = "";
   public chainId = "";
   public apiInterface = "";
-  public geolocation = "1";
+  public geolocation: Geolocation = 1;
 
   public constructor(
     address: string,
     chainId: string,
     apiInterface: string,
-    geolocation: string
+    geolocation: Geolocation
   ) {
     this.networkAddress = address;
     this.chainId = chainId;

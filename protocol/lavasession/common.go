@@ -8,11 +8,14 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
+	"slices"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/pairing/keeper/scores"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -138,4 +141,19 @@ func GetAllProviders(allAddresses []string, ignoredProviders map[string]struct{}
 		returnedProviders = append(returnedProviders, providerAddress)
 	}
 	return returnedProviders
+}
+
+func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geolocation) {
+	latencyToGeo := func(a, b planstypes.Geolocation) uint64 {
+		_, latency := scores.CalcGeoLatency(a, []planstypes.Geolocation{b})
+		return latency
+	}
+
+	// sort the endpoints by geolocation relevance:
+	lessFunc := func(a *Endpoint, b *Endpoint) int {
+		latencyA := int(latencyToGeo(a.Geolocation, currentGeo))
+		latencyB := int(latencyToGeo(b.Geolocation, currentGeo))
+		return latencyA - latencyB
+	}
+	slices.SortStableFunc(pairingEndpoints, lessFunc)
 }
