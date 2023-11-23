@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -20,6 +21,7 @@ type SpecGetter interface {
 type SpecUpdatable interface {
 	SetSpec(spectypes.Spec)
 	Active() bool
+	GetUniqueName() string
 }
 
 type SpecUpdater struct {
@@ -48,10 +50,16 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 	if su.chainId != endpoint.ChainID {
 		return utils.LavaFormatError("panic level error Trying to register spec for wrong chain id stored in spec_updater", nil, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "stored_spec", Value: su.chainId})
 	}
-	existingSpecUpdatable, found := su.specUpdatables[endpoint.Key()]
+
+	updatableUniqueName := (*specUpdatable).GetUniqueName()
+	key := strings.Join([]string{updatableUniqueName, endpoint.Key()}, "_")
+	existingSpecUpdatable, found := su.specUpdatables[key]
 	if found {
 		if (*existingSpecUpdatable).Active() {
-			return utils.LavaFormatError("panic level error Trying to register to spec updates on already registered chain + API interfcae", nil, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "specUpdatable", Value: existingSpecUpdatable})
+			return utils.LavaFormatError("panic level error Trying to register to spec updates on already registered updatable unique name + chain + API interface", nil,
+				utils.Attribute{Key: "updatableUniqueName", Value: updatableUniqueName},
+				utils.Attribute{Key: "endpoint", Value: endpoint},
+				utils.Attribute{Key: "specUpdatable", Value: existingSpecUpdatable})
 		}
 	}
 
