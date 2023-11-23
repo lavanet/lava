@@ -11,7 +11,6 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/desertbit/timer"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -86,7 +85,7 @@ type RewardServer struct {
 	rewardStoragePath              string
 	rewardsSnapshotThreshold       uint64
 	rewardsSnapshotTimeoutDuration time.Duration
-	rewardsSnapshotTimer           *timer.Timer
+	rewardsSnapshotTimer           *time.Timer
 	rewardsSnapshotThresholdCh     chan struct{}
 	failedRewardsPaymentRequests   map[uint64]*RelaySessionsToRetryAttempts // key is SessionId
 	chainTrackerSpecsInf           ChainTrackerSpecsInf
@@ -407,7 +406,7 @@ func NewRewardServer(rewardsTxSender RewardsTxSender, providerMetrics *metrics.P
 	rws.rewardStoragePath = rewardStoragePath
 	rws.rewardsSnapshotThreshold = uint64(rewardsSnapshotThreshold)
 	rws.rewardsSnapshotTimeoutDuration = time.Duration(rewardsSnapshotTimeoutSec) * time.Second
-	rws.rewardsSnapshotTimer = timer.NewTimer(rws.rewardsSnapshotTimeoutDuration)
+	rws.rewardsSnapshotTimer = time.NewTimer(rws.rewardsSnapshotTimeoutDuration)
 	rws.rewardsSnapshotThresholdCh = make(chan struct{})
 	rws.failedRewardsPaymentRequests = make(map[uint64]*RelaySessionsToRetryAttempts)
 	rws.chainTrackerSpecsInf = chainTrackerSpecsInf
