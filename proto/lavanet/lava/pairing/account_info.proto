@@ -1,0 +1,22 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "lavanet/lava/epochstorage/stake_entry.proto";
+import "lavanet/lava/dualstaking/delegate.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+import "lavanet/lava/subscription/subscription.proto";
+import "lavanet/lava/projects/project.proto";
+
+message QueryAccountInfoResponse {
+	repeated lavanet.lava.epochstorage.StakeEntry provider = 1 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry frozen = 2 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry unstaked = 4 [(gogoproto.nullable) = false];
+	lavanet.lava.subscription.Subscription subscription = 5 [(gogoproto.nullable) = true];
+	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
+	repeated cosmos.staking.v1beta1.DelegationResponse delegations_validators = 7 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.dualstaking.Delegation delegations_providers = 8 [(gogoproto.nullable) = false];
+}

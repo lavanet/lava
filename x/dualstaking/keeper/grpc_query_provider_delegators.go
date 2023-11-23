@@ -18,10 +18,7 @@ func (k Keeper) ProviderDelegators(goCtx context.Context, req *types.QueryProvid
 
 	epoch := uint64(ctx.BlockHeight())
 	if req.WithPending {
-		epoch, err = k.getNextEpoch(ctx)
-		if err != nil {
-			return nil, err
-		}
+		epoch = k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	}
 
 	delegations, err := k.GetProviderDelegators(ctx, req.Provider, epoch)

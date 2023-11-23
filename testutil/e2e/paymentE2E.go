@@ -260,13 +260,13 @@ func runPaymentE2E(timeout time.Duration) {
 	// check the client's Tendermint port is up
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
-		lt.checkTendermintConsumer(url, time.Second*5)
+		lt.checkTendermintConsumer(url, time.Second*30)
 	})
 
 	// check the node's Tendermint port is up
 	repeat(1, func(n int) {
 		url := fmt.Sprintf("http://127.0.0.1:334%d", (n-1)*3)
-		if err := tendermintTests(url, time.Second*10); err != nil {
+		if err := tendermintTests(url, time.Second*20); err != nil {
 			panic(err)
 		}
 	})

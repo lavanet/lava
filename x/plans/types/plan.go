@@ -57,7 +57,7 @@ func (p Plan) ValidatePlan() error {
 	return nil
 }
 
-// PriceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type sdk.Int)
+// PriceDecodeHookFunc helps the decoder to correctly unmarshal the price field's amount (type math.Int)
 func PriceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 	if t == reflect.TypeOf(sdk.NewInt(0)) {
 		amountStr, ok := data.(string)
@@ -65,10 +65,10 @@ func PriceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (inte
 			return nil, fmt.Errorf("unexpected data type for amount field")
 		}
 
-		// Convert the string amount to an sdk.Int
+		// Convert the string amount to an math.Int
 		amount, ok := new(big.Int).SetString(amountStr, 10)
 		if !ok {
-			return nil, fmt.Errorf("failed to convert amount to sdk.Int")
+			return nil, fmt.Errorf("failed to convert amount to math.Int")
 		}
 		return sdk.NewIntFromBigInt(amount), nil
 	}
