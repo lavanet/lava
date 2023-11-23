@@ -57,6 +57,7 @@ protoc \
     "$COSMOS_PROTO_DIR/cosmos/base/query/v1beta1/pagination.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/v1beta1/coin.proto" \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
+    "$COSMOS_PROTO_DIR//cosmos/staking/v1beta1/staking.proto" \
     "$COSMOS_PROTO_DIR/amino/amino.proto" \
 
 # mv ./src/proto/test ./src/pairing/.
