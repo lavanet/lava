@@ -51,7 +51,9 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 	}
 
 	// if diff is zero, do nothing, this is a redelegate
-	if diff.IsPositive() {
+	if diff.IsZero() {
+		return nil
+	} else if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
 		err = h.k.delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID,
 			sdk.NewCoin(epochstoragetypes.TokenDenom, diff))
