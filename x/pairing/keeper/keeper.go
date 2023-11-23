@@ -33,6 +33,7 @@ type (
 		providerQosFS      fixationtypes.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
+		stakingKeeper      types.StakingKeeper
 	}
 )
 
@@ -61,6 +62,7 @@ func NewKeeper(
 	planKeeper types.PlanKeeper,
 	downtimeKeeper types.DowntimeKeeper,
 	dualstakingKeeper types.DualstakingKeeper,
+	stakingKeeper types.StakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -83,6 +85,7 @@ func NewKeeper(
 		planKeeper:         planKeeper,
 		downtimeKeeper:     downtimeKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
+		stakingKeeper:      stakingKeeper,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)

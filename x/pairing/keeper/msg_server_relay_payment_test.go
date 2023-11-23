@@ -583,8 +583,8 @@ func TestBadgeValidation(t *testing.T) {
 	tests := []struct {
 		name         string
 		badgeAddress sdk.AccAddress // badge user (in happy flow)
-		relaySigner  common.Account // badge user (in happy flow)
-		badgeSigner  common.Account // badge granter, i.e. project developer (in happy flow)
+		relaySigner  sigs.Account   // badge user (in happy flow)
+		badgeSigner  sigs.Account   // badge granter, i.e. project developer (in happy flow)
 		epoch        uint64
 		lavaChainID  string
 		valid        bool

@@ -8,6 +8,7 @@ import "lavanet/lava/pairing/params.proto";
 import "lavanet/lava/pairing/epoch_payments.proto";
 import "lavanet/lava/spec/spec.proto";
 
+
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/plans/policy.proto";
 import "lavanet/lava/pairing/provider_payment_storage.proto";
@@ -221,15 +222,7 @@ message QueryStaticProvidersListResponse {
 	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAccountInfoResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry provider = 1 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry frozen = 2 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry consumer = 3 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry unstaked = 4 [(gogoproto.nullable) = false];
-	lavanet.lava.subscription.Subscription subscription = 5 [(gogoproto.nullable) = true];
-	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
 
-}
 message QueryEffectivePolicyRequest {
   string consumer = 1;
   string specID = 2;

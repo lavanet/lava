@@ -17,6 +17,7 @@ service Msg {
 
 message MsgDelegate {
   string creator = 1;
+  string validator = 5;
   string provider = 2;
   string chainID = 3;
   cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
@@ -39,6 +40,7 @@ message MsgRedelegateResponse {
 
 message MsgUnbond {
   string creator = 1;
+  string validator = 5;
   string provider = 2;
   string chainID = 3;
   cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
