@@ -7,7 +7,7 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/pairing/params.proto";
 import "lavanet/lava/pairing/epoch_payments.proto";
 import "lavanet/lava/spec/spec.proto";
-import "cosmos/staking/v1beta1/staking.proto";
+
 
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/plans/policy.proto";
@@ -15,7 +15,6 @@ import "lavanet/lava/pairing/provider_payment_storage.proto";
 import "lavanet/lava/pairing/unique_payment_storage_client_provider.proto";
 import "lavanet/lava/epochstorage/stake_entry.proto";
 import "lavanet/lava/subscription/subscription.proto";
-import "lavanet/lava/dualstaking/delegate.proto";
 import "lavanet/lava/projects/project.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
@@ -223,16 +222,7 @@ message QueryStaticProvidersListResponse {
 	repeated lavanet.lava.epochstorage.StakeEntry providers = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryAccountInfoResponse {
-	repeated lavanet.lava.epochstorage.StakeEntry provider = 1 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry frozen = 2 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.epochstorage.StakeEntry unstaked = 4 [(gogoproto.nullable) = false];
-	lavanet.lava.subscription.Subscription subscription = 5 [(gogoproto.nullable) = true];
-	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
-	repeated cosmos.staking.v1beta1.DelegationResponse delegations_validators = 7 [(gogoproto.nullable) = false];
-	repeated lavanet.lava.dualstaking.Delegation delegations_providers = 8 [(gogoproto.nullable) = false];
 
-}
 message QueryEffectivePolicyRequest {
   string consumer = 1;
   string specID = 2;

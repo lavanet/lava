@@ -52,17 +52,11 @@ protoc \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
-    "$COSMOS_PROTO_DIR/google/protobuf/duration.proto" \
-    "$COSMOS_PROTO_DIR/google/protobuf/any.proto" \
-    "$COSMOS_PROTO_DIR/google/protobuf/timestamp.proto" \
     "$COSMOS_PROTO_DIR/google/api/annotations.proto" \
     "$COSMOS_PROTO_DIR/google/api/http.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/query/v1beta1/pagination.proto" \
-    "$COSMOS_PROTO_DIR/tendermint/types/types.proto" \
-    "$COSMOS_PROTO_DIR/tendermint/abci/types.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/v1beta1/coin.proto" \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
-    "$COSMOS_PROTO_DIR/cosmos/staking/v1beta1/staking.proto" \
     "$COSMOS_PROTO_DIR/amino/amino.proto" \
 
 # mv ./src/proto/test ./src/pairing/.
