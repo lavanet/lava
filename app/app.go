@@ -234,6 +234,7 @@ var (
 		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+		pairingmoduletypes.ModuleName:            {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
