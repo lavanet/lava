@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -119,4 +120,15 @@ func (k Keeper) InitUnbondings(ctx sdk.Context, gs timertypes.GenesisState) {
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, index string, block uint64, timestamp int64) error {
+	var d types.Delegation
+	entryBlock, _, _, found := k.delegationFS.FindEntryDetailed(ctx, index, block, &d)
+	if !found {
+		return fmt.Errorf("cannot change delegation timestamp: delegation not found. index: %s, block: %s", index, strconv.FormatUint(block, 10))
+	}
+	d.Timestamp = timestamp
+	k.delegationFS.ModifyEntry(ctx, index, entryBlock, &d)
+	return nil
 }

@@ -279,6 +279,11 @@ func (ts *Tester) VotePeriod() uint64 {
 	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
 }
 
+func (ts *Tester) ChangeDelegationTimestamp(provider, delegator, chainID string, block uint64, timestamp int64) error {
+	index := dualstakingtypes.DelegationKey(provider, delegator, chainID)
+	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, index, block, timestamp)
+}
+
 // proposals, transactions, queries
 
 func (ts *Tester) TxProposalChangeParam(module, paramKey, paramVal string) error {
@@ -725,6 +730,10 @@ func (ts *Tester) GetNextEpoch() uint64 {
 		panic("GetNextEpoch: failed to fetch: " + err.Error())
 	}
 	return epoch
+}
+
+func (ts *Tester) GetNextMonth(from time.Time) int64 {
+	return subscriptionkeeper.NextMonth(from).UTC().Unix()
 }
 
 func (ts *Tester) AdvanceToBlock(block uint64) {
