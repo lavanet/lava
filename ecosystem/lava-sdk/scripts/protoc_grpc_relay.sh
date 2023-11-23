@@ -59,6 +59,7 @@ protoc \
     "$COSMOS_PROTO_DIR/cosmos_proto/cosmos.proto" \
     "$COSMOS_PROTO_DIR//cosmos/staking/v1beta1/staking.proto" \
     "$COSMOS_PROTO_DIR/amino/amino.proto" \
+    "$COSMOS_PROTO_DIR/cosmos/staking/v1beta1/query.proto" \
 
 # mv ./src/proto/test ./src/pairing/.
 # rm -rf ./src/proto
