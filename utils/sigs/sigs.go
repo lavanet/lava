@@ -20,12 +20,22 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	tendermintcrypto "github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 )
+
+type Account struct {
+	sk      cryptotypes.PrivKey
+	SK      *btcSecp256k1.PrivateKey
+	PubKey  cryptotypes.PubKey
+	Addr    sdk.AccAddress
+	ConsKey cryptotypes.PrivKey
+}
 
 type Signable interface {
 	// GetSignature gets the object's signature
@@ -78,13 +88,13 @@ func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	// Recover public key from signature
 	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgData)
 	if err != nil {
-		return nil, utils.LavaFormatError("RecoverCompact", err,
+		return secp256k1.PubKey{}, utils.LavaFormatError("RecoverCompact", err,
 			utils.Attribute{Key: "sigLen", Value: len(sig)},
 		)
 	}
 	pk := recPub.SerializeCompressed()
 
-	return (secp256k1.PubKey)(pk), nil
+	return secp256k1.PubKey{Key: pk}, nil
 }
 
 // EncodeUint64 encodes a uint64 value to a byte array
@@ -145,9 +155,10 @@ func HashMsg(msgData []byte) []byte {
 
 // GenerateFloatingKey creates a new private key with an account address derived from the corresponding public key
 func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
-	secretKey, _ = btcSecp256k1.NewPrivateKey(btcSecp256k1.S256())
-	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
-	addr, _ = sdk.AccAddressFromHexUnsafe(publicBytes.Address().String())
+	sk := secp256k1.GenPrivKey()
+	PubKey := sk.PubKey()
+	addr = sdk.AccAddress(PubKey.Address())
+	secretKey, _ = btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), sk.Bytes())
 	return
 }
 
@@ -180,10 +191,19 @@ func (z *ZeroReader) Inc() {
 }
 
 // GenerateDeterministicFloatingKey creates a new private key with an account address derived from the corresponding public key using a rand source
-func GenerateDeterministicFloatingKey(rand io.Reader) (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddress) {
-	secretKey, _ = DeterministicNewPrivateKey(btcSecp256k1.S256(), rand)
-	publicBytes := (secp256k1.PubKey)(secretKey.PubKey().SerializeCompressed())
-	addr, _ = sdk.AccAddressFromHexUnsafe(publicBytes.Address().String())
+func GenerateDeterministicFloatingKey(rand io.Reader) (acc Account) {
+	privkeySeed := make([]byte, 15)
+	_, err := rand.Read(privkeySeed)
+	if err != nil {
+		panic("failed to create account)")
+	}
+
+	acc.sk = secp256k1.GenPrivKeyFromSecret(privkeySeed)
+	acc.PubKey = acc.sk.PubKey()
+	acc.Addr = sdk.AccAddress(acc.PubKey.Address())
+	acc.ConsKey = ed25519.GenPrivKeyFromSecret(privkeySeed)
+	acc.SK, _ = btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), acc.sk.Bytes())
+
 	return
 }
 

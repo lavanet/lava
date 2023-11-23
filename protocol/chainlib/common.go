@@ -34,6 +34,7 @@ type VerificationContainer struct {
 	ParseDirective spectypes.ParseDirective
 	Value          string
 	LatestDistance uint64
+	Severity       spectypes.Verification_VerificationSeverity
 	VerificationKey
 }
 

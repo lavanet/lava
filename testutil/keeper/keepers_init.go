@@ -14,12 +14,19 @@ import (
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -65,7 +72,7 @@ type Keepers struct {
 	FixationStoreKeeper *fixationkeeper.Keeper
 	AccountKeeper       mockAccountKeeper
 	BankKeeper          mockBankKeeper
-	StakingKeeper       mockStakingKeeper
+	StakingKeeper       stakingkeeper.Keeper
 	Spec                speckeeper.Keeper
 	Epochstorage        epochstoragekeeper.Keeper
 	Dualstaking         dualstakingkeeper.Keeper
@@ -78,9 +85,11 @@ type Keepers struct {
 	ParamsKeeper        paramskeeper.Keeper
 	BlockStore          MockBlockStore
 	Downtime            downtimekeeper.Keeper
+	SlashingKeeper      slashingkeeper.Keeper
 }
 
 type Servers struct {
+	StakingServer      stakingtypes.MsgServer
 	EpochServer        epochstoragetypes.MsgServer
 	SpecServer         spectypes.MsgServer
 	PairingServer      pairingtypes.MsgServer
@@ -90,6 +99,7 @@ type Servers struct {
 	SubscriptionServer subscriptiontypes.MsgServer
 	DualstakingServer  dualstakingtypes.MsgServer
 	PlansServer        planstypes.MsgServer
+	SlashingServer     slashingtypes.MsgServer
 }
 
 type KeeperBeginBlocker interface {
@@ -110,7 +120,15 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stateStore := store.NewCommitMultiStore(db)
 
 	registry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
+	legacyCdc := codec.NewLegacyAmino()
+
+	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	stateStore.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
+
+	slashingStoreKey := sdk.NewKVStoreKey(slashingtypes.StoreKey)
+	stateStore.MountStoreWithDB(slashingStoreKey, storetypes.StoreTypeIAVL, db)
 
 	pairingStoreKey := sdk.NewKVStoreKey(pairingtypes.StoreKey)
 	pairingMemStoreKey := storetypes.NewMemoryStoreKey(pairingtypes.MemStoreKey)
@@ -203,18 +221,19 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks := Keepers{}
 	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
-	ks.BankKeeper = mockBankKeeper{balance: make(map[string]sdk.Coins)}
-	ks.StakingKeeper = mockStakingKeeper{}
+	ks.BankKeeper = mockBankKeeper{}
+	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, slashingStoreKey, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
-	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
+	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
-	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
+	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
@@ -222,6 +241,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
+	stakingparams := stakingtypes.DefaultParams()
+	stakingparams.BondDenom = epochstoragetypes.TokenDenom
+	ks.StakingKeeper.SetParams(ctx, stakingparams)
+	slashingParams := slashingtypes.DefaultParams()
+	ks.SlashingKeeper.SetParams(ctx, slashingParams)
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
@@ -236,6 +260,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
 
+	// register the staking hooks
+	ks.StakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(ks.Dualstaking.Hooks()),
+	)
+
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
 	ss := Servers{}
@@ -248,6 +277,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.ProtocolServer = protocolkeeper.NewMsgServerImpl(ks.Protocol)
 	ss.SubscriptionServer = subscriptionkeeper.NewMsgServerImpl(ks.Subscription)
 	ss.DualstakingServer = dualstakingkeeper.NewMsgServerImpl(ks.Dualstaking)
+	ss.StakingServer = stakingkeeper.NewMsgServerImpl(&ks.StakingKeeper)
+	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
@@ -255,7 +286,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
-	ks.Dualstaking.InitUnbondings(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Plans.InitPlans(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitSubscriptions(ctx, *fixationtypes.DefaultGenesis())
 	ks.Subscription.InitSubscriptionsTimers(ctx, *timerstoretypes.DefaultGenesis())

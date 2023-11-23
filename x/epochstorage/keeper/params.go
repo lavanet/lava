@@ -139,6 +139,25 @@ func (k Keeper) GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, e
 	return nextEpoch, erro
 }
 
+func (k Keeper) GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64) {
+	epochBlocks := k.EpochBlocksRaw(ctx)
+	details, found := k.GetEpochDetails(ctx)
+	if details.EarliestStart == details.StartBlock {
+		nextEpoch = details.StartBlock + epochBlocks
+		if !found {
+			utils.LavaFormatPanic("blabla", nil)
+		}
+	} else {
+		var err error
+		nextEpoch, err = k.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			utils.LavaFormatPanic("blabla", nil)
+		}
+	}
+
+	return nextEpoch
+}
+
 func (k Keeper) GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error) {
 	epochStart, _, err := k.GetEpochStartForBlock(ctx, block)
 	if epochStart <= 0 {

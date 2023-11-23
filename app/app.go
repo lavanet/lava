@@ -231,12 +231,9 @@ var (
 		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:                      {authtypes.Burner},
 		ibctransfertypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
-		epochstoragemoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:            {authtypes.Minter, authtypes.Burner, authtypes.Staking},
-		conflictmoduletypes.ModuleName:           {authtypes.Minter, authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -400,11 +397,6 @@ func New(
 	// Upgrade the KVStoreKey after upgrade keeper initialization
 	app.setupUpgradeStoreLoaders()
 
-	// register the staking hooks
-	app.StakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
-	)
-
 	// ... other modules keepers
 
 	// Create IBC Keeper
@@ -468,11 +460,11 @@ func New(
 		app.GetSubspace(dualstakingmoduletypes.ModuleName),
 
 		app.BankKeeper,
+		app.StakingKeeper,
 		app.AccountKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
 		app.FixationStoreKeeper,
-		app.TimerStoreKeeper,
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -512,6 +504,7 @@ func New(
 		app.PlansKeeper,
 		app.DowntimeKeeper,
 		app.DualstakingKeeper,
+		app.StakingKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 	)
@@ -602,6 +595,11 @@ func New(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
+
+	// register the staking hooks
+	app.StakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.DualstakingKeeper.Hooks()),
+	)
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(
@@ -716,6 +714,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -727,7 +726,6 @@ func New(
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
 		specmoduletypes.ModuleName,
-		epochstoragemoduletypes.ModuleName, // epochStyorage end block must come before pairing for proper epoch handling
 		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		downtimemoduletypes.ModuleName,
