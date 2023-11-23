@@ -29,7 +29,7 @@ func CmdStakeProvider() *cobra.Command {
 		Short: `stake a provider on the lava blockchain on a specific specification`,
 		Long: `args:
 		[chain-id] is the spec the provider wishes to support
-		[amount] is the ulava amount to be staked, this is the final amount, if is lower than the the original stake it will unbond from the validator
+		[amount] is the ulava amount to be staked, this is the final amount, if is lower than the the original stake it will unbond from the provider (and delegated validators)
 		[endpoint endpoint ...] are a space separated list of HOST:PORT,geolocation,[apiInterface,apiInterface,addon,addon,] should be defined within "quotes". Note that you can specify the geolocation using a single uint64 (which will be treated as a bitmask (see plan.proto)) or using one of the geolocation codes. Valid geolocation codes: AF, AS, AU, EU, USE (US east), USC, USW, GL (global).
 		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
 		{validator} delegate to a validator with the same amount with dualstaking, if not provided the validator will be chosen for best fit
