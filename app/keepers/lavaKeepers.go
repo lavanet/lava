@@ -21,7 +21,7 @@ import (
 	downtimemodulekeeper "github.com/lavanet/lava/x/downtime/keeper"
 	dualstakingmodulekeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragemodulekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	pairingmodulekeeper "github.com/lavanet/lava/x/pairing/keeper"
 	plansmodulekeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
@@ -56,7 +56,7 @@ type LavaKeepers struct {
 
 	// Special Keepers
 	TimerStoreKeeper    *timerstore.Keeper
-	FixationStoreKeeper *fixationstore.Keeper
+	FixationStoreKeeper *fixationkeeper.Keeper
 	SpecKeeper          specmodulekeeper.Keeper
 	SubscriptionKeeper  subscriptionmodulekeeper.Keeper
 	EpochstorageKeeper  epochstoragemodulekeeper.Keeper

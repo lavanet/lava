@@ -83,7 +83,7 @@ export class Relayer {
           request,
           (err: ServiceError | null, result: ProbeReply | null) => {
             if (err != null) {
-              console.log("failed sending probe", err);
+              Logger.warn("Failed sending probe: ", err, JSON.stringify(err));
               reject(err);
             }
 
@@ -130,7 +130,7 @@ export class Relayer {
           metaData,
           (err: ServiceError | null, result: RelayReply | null) => {
             if (err != null) {
-              console.log("failed sending relay", err);
+              Logger.warn("Failed sending relay: ", err, JSON.stringify(err));
               reject(err);
             }
 
@@ -436,9 +436,7 @@ export class Relayer {
         }
       })(key, valueInner);
     }
-    // console.log("message: " + serializedRequest);
     const encodedMessage = enc.encode(serializedRequest);
-    // console.log("encodedMessage: " + encodedMessage);
     const hash = sha256(encodedMessage);
 
     return hash;
@@ -448,7 +446,7 @@ export class Relayer {
   public async SendRelayToAllProvidersAndRace(
     batch: BatchRelays[]
   ): Promise<any> {
-    console.log("Started sending to all providers and race");
+    Logger.debug("Started sending to all providers and race");
     let lastError;
     for (
       let retryAttempt = 0;
@@ -470,7 +468,7 @@ export class Relayer {
       while (allRelays.size > 0) {
         const returnedResponse = await Promise.race([...allRelays.values()]);
         if (returnedResponse) {
-          console.log("Ended sending to all providers and race");
+          Logger.debug("Ended sending to all providers and race");
           return returnedResponse;
         }
         // Handle removal of completed promises separately (Optional and based on your needs)

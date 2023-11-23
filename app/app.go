@@ -10,6 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -408,12 +410,6 @@ func New(
 		appCodec, keys[ibcexported.StoreKey], app.GetSubspace(ibcexported.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
 	)
 
-	// timerstore keeper
-	app.TimerStoreKeeper = timerstore.NewKeeper(appCodec)
-
-	// fixation store keeper
-	app.FixationStoreKeeper = fixationstore.NewKeeper(appCodec, app.TimerStoreKeeper)
-
 	// Initialize SpecKeeper prior to govRouter (order is critical)
 	app.SpecKeeper = *specmodulekeeper.NewKeeper(
 		appCodec,
@@ -434,6 +430,12 @@ func New(
 		app.SpecKeeper,
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
+
+	// timerstore keeper
+	app.TimerStoreKeeper = timerstore.NewKeeper(appCodec)
+
+	// fixation store keeper
+	app.FixationStoreKeeper = fixationkeeper.NewKeeper(appCodec, app.TimerStoreKeeper, app.EpochstorageKeeper.BlocksToSaveRaw)
 
 	// Initialize PlansKeeper prior to govRouter (order is critical)
 	app.PlansKeeper = *plansmodulekeeper.NewKeeper(
@@ -643,7 +645,7 @@ func New(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		timerstore.ModuleName,
-		fixationstore.ModuleName,
+		fixationtypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -699,7 +701,7 @@ func New(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		downtimemoduletypes.ModuleName, // downtime has no end block but module manager requires it.
-		fixationstore.ModuleName,       // fixation store has no end block but module manager requires it.
+		fixationtypes.ModuleName,       // fixation store has no end block but module manager requires it.
 		timerstore.ModuleName,          // timer store has no end block but module manager requires it.
 	)
 
@@ -735,7 +737,7 @@ func New(
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
-		fixationstore.ModuleName,       // fixation store has no init genesis but module manager requires it.
+		fixationtypes.ModuleName,       // fixation store has no init genesis but module manager requires it.
 		timerstore.ModuleName,          // timer store has no init genesis but module manager requires it.
 		conflictmoduletypes.ModuleName, // NOTICE: the last module to initgenesis needs to push fixation in epoch storage
 		// this line is used by starport scaffolding # stargate/app/initGenesis

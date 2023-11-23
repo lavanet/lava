@@ -14,7 +14,7 @@ import (
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	planskeeper "github.com/lavanet/lava/x/plans/keeper"
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/subscription/keeper"
@@ -63,9 +63,9 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		"PlansParams",
 	)
-
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 	tsKeeper := timerstore.NewKeeper(cdc)
-	fsKeeper := fixationstore.NewKeeper(cdc, tsKeeper)
+	fsKeeper := fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw)
 
 	k := keeper.NewKeeper(
 		cdc,
@@ -74,7 +74,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 		nil,
 		nil,
-		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
+		epochstorageKeeper,
 		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, fsKeeper),
 		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper),
 		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, mockAccountKeeper{}, nil, nil, fsKeeper, tsKeeper),

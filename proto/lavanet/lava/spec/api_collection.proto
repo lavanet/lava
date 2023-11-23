@@ -31,6 +31,12 @@ message Verification {
   string name =1;
   ParseDirective parse_directive =2;
   repeated ParseValue values=3;
+
+  enum VerificationSeverity {
+    Fail = 0;
+    Warning = 1;
+  }
+  VerificationSeverity severity = 4;
 }
 
 message ParseValue {
@@ -67,6 +73,7 @@ message Api {
   uint64 extra_compute_units = 4;
   SpecCategory category = 6 [(gogoproto.nullable) = false];
   BlockParser block_parsing = 7 [(gogoproto.nullable) = false];
+  uint64 timeout_ms = 8;
 }
 
 message ParseDirective {

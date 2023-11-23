@@ -17,10 +17,6 @@
                     "denom": "ulava",
                     "amount": "50000000000"
                 },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
                 "api_collections": [
                     {
                         "enabled": true,
@@ -209,7 +205,8 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "timeout_ms":1000
                             },
                             {
                                 "name": "eth_getBalance",
@@ -1353,10 +1350,6 @@
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
-                },
-                "min_stake_client": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
                 },
                 "api_collections": [
                     {

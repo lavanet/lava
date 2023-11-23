@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/lavanet/lava/x/fixationstore"
 	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -31,7 +30,7 @@ type (
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
 		badgeTimerStore    timerstore.TimerStore
-		providerQosFS      fixationstore.FixationStore
+		providerQosFS      fixationtypes.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
 	}
@@ -90,7 +89,7 @@ func NewKeeper(
 	badgeTimerCallback := func(ctx sdk.Context, badgeKey, _ []byte) {
 		keeper.RemoveBadgeUsedCu(ctx, badgeKey)
 	}
-	badgeTimerStore := timerStoreKeeper.NewTimerStore(storeKey, types.BadgeTimerStorePrefix).
+	badgeTimerStore := timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.BadgeTimerStorePrefix).
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 

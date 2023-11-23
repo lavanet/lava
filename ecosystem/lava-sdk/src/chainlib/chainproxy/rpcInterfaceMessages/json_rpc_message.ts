@@ -54,9 +54,9 @@ export class JsonrpcMessage extends BaseMessage implements RPCInput {
 
   updateLatestBlockInMessage(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    latestBlock: number,
+    _latestBlock: number,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    modifyContent: boolean
+    _modifyContent: boolean
   ): boolean {
     return false;
   }
@@ -123,4 +123,50 @@ function validateRawJsonrpcMessage(
   if (!rawJsonObj.params) {
     return new Error("Missing params field from json");
   }
+}
+
+export class JsonrpcBatchMessage extends BaseMessage {
+  public batch: JsonrpcMessage[] = [];
+
+  initJsonrpcBatchMessage(batch: JsonrpcMessage[]) {
+    this.batch = batch;
+  }
+
+  updateLatestBlockInMessage(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _latestBlock: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _modifyContent: boolean
+  ): boolean {
+    return false;
+  }
+
+  getBatch() {
+    return this.batch;
+  }
+}
+
+export function newBatchMessage(
+  msgs: JsonrpcMessage[]
+): JsonrpcBatchMessage | Error {
+  const batch: JsonrpcMessage[] = [];
+  for (const msg of msgs) {
+    if (
+      !(msg.params instanceof Object) &&
+      !(msg.params instanceof Array) &&
+      msg.params !== null &&
+      msg.params !== undefined
+    ) {
+      return new Error(
+        `Message with id ${
+          msg.id
+        } has params of wrong type: ${typeof msg.params}`
+      );
+    }
+    batch.push(msg);
+  }
+
+  const jsonrpcBatchMessage = new JsonrpcBatchMessage();
+  jsonrpcBatchMessage.initJsonrpcBatchMessage(batch);
+  return jsonrpcBatchMessage;
 }

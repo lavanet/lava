@@ -8,7 +8,6 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/x/fixationstore"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	"github.com/lavanet/lava/x/timerstore"
 	timertypes "github.com/lavanet/lava/x/timerstore/types"
@@ -28,8 +27,8 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
 
-		delegationFS fixationstore.FixationStore // map proviers/chainID -> delegations
-		delegatorFS  fixationstore.FixationStore // map delegators -> providers
+		delegationFS fixationtypes.FixationStore // map proviers/chainID -> delegations
+		delegatorFS  fixationtypes.FixationStore // map delegators -> providers
 		unbondingTS  timerstore.TimerStore       // track unbonding timeouts
 	}
 )
@@ -78,7 +77,7 @@ func NewKeeper(
 		keeper.finalizeUnbonding(ctx, key, data)
 	}
 
-	unbondingTS := *timerStoreKeeper.NewTimerStore(storeKey, types.UnbondingPrefix).
+	unbondingTS := *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.UnbondingPrefix).
 		WithCallbackByBlockHeight(timerCallback)
 
 	keeper.delegationFS = delegationFS

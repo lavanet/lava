@@ -34,6 +34,7 @@ type VerificationContainer struct {
 	ParseDirective spectypes.ParseDirective
 	Value          string
 	LatestDistance uint64
+	Severity       spectypes.Verification_VerificationSeverity
 	VerificationKey
 }
 
@@ -256,4 +257,21 @@ func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (late
 	}
 	// both are positive
 	return returnBigger(firstRequestedBlock, second)
+}
+
+func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeouts int) time.Duration {
+	if chainMessage.TimeoutOverride() != 0 {
+		return chainMessage.TimeoutOverride()
+	}
+	// Calculate extra RelayTimeout
+	extraRelayTimeout := time.Duration(0)
+	if IsHangingApi(chainMessage) {
+		_, extraRelayTimeout, _, _ = chainParser.ChainBlockStats()
+	}
+	relayTimeAddition := common.GetTimePerCu(GetComputeUnits(chainMessage))
+	if chainMessage.GetApi().TimeoutMs > 0 {
+		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
+	}
+	// Set relay timout, increase it every time we fail a relay on timeout
+	return extraRelayTimeout + time.Duration(timeouts+1)*relayTimeAddition + common.AverageWorldLatency
 }

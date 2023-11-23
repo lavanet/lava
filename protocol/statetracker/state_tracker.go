@@ -32,7 +32,7 @@ type Updater interface {
 	UpdaterKey() string
 }
 
-func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *StateTracker, err error) {
+func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
 	// validate chainId
 	status, err := clientCtx.Client.Status(ctx)
 	if err != nil {
@@ -66,6 +66,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
+		OldBlockCallback:  blockNotFoundCallback,
 		BlocksToSave:      BlocksToSaveLavaChainTracker,
 		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
 		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
@@ -101,6 +102,6 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 }
 
 // For lavavisor access
-func (s *StateTracker) GetEventTracker() *EventTracker {
-	return s.EventTracker
+func (st *StateTracker) GetEventTracker() *EventTracker {
+	return st.EventTracker
 }

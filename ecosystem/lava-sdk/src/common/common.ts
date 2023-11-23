@@ -31,3 +31,5 @@ export enum HttpMethod {
   OPTIONS = "OPTIONS",
   TRACE = "TRACE",
 }
+
+export const DUMMY_URL = "http://dummy.com";

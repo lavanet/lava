@@ -9,8 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
-	timertypes "github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/x/timerstore/types"
 )
 
 // TimerStore manages timers to efficiently support future timeouts. Timeouts
@@ -60,7 +59,7 @@ import (
 //     }
 //
 //     // create TimerStore with a block-height callback
-//     tstore := timerstore.NewTimerStore(ctx).
+//     tstore := timerstore.NewTimerStoreBeginBlock(ctx).
 //         WithCallbackByBlockHeight(callback)
 //
 //     ...
@@ -126,15 +125,15 @@ func NewTimerStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix s
 	return &tstore
 }
 
-func DefaultGenesis() *timertypes.GenesisState {
-	return &timertypes.GenesisState{
+func DefaultGenesis() *types.GenesisState {
+	return &types.GenesisState{
 		Version:         TimerVersion(),
 		NextBlockHeight: math.MaxUint64,
 		NextBlockTime:   math.MaxUint64,
 	}
 }
 
-func (tstore *TimerStore) Export(ctx sdk.Context) (gs timertypes.GenesisState) {
+func (tstore *TimerStore) Export(ctx sdk.Context) (gs types.GenesisState) {
 	gs.Version = tstore.getVersion(ctx)
 	gs.NextBlockHeight = tstore.getNextTimeoutBlockHeight(ctx)
 	gs.NextBlockTime = tstore.getNextTimeoutBlockTime(ctx)
@@ -145,7 +144,7 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs timertypes.GenesisState) {
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	for ; iterator.Valid(); iterator.Next() {
 		value, key := types.DecodeBlockAndKey(iterator.Key())
-		gs.TimeEntries = append(gs.TimeEntries, timertypes.GenesisTimerEntry{
+		gs.TimeEntries = append(gs.TimeEntries, types.GenesisTimerEntry{
 			Key:   string(key),
 			Value: value,
 			Data:  iterator.Value(),
@@ -159,7 +158,7 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs timertypes.GenesisState) {
 	iterator = sdk.KVStorePrefixIterator(store, []byte{})
 	for ; iterator.Valid(); iterator.Next() {
 		value, key := types.DecodeBlockAndKey(iterator.Key())
-		gs.BlockEntries = append(gs.BlockEntries, timertypes.GenesisTimerEntry{
+		gs.BlockEntries = append(gs.BlockEntries, types.GenesisTimerEntry{
 			Key:   string(key),
 			Value: value,
 			Data:  iterator.Value(),
@@ -170,7 +169,7 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs timertypes.GenesisState) {
 	return gs
 }
 
-func (tstore *TimerStore) Init(ctx sdk.Context, gs timertypes.GenesisState) {
+func (tstore *TimerStore) Init(ctx sdk.Context, gs types.GenesisState) {
 	tstore.setVersion(ctx, gs.Version)
 	tstore.setNextTimeout(ctx, types.BlockHeight, gs.NextBlockHeight)
 	tstore.setNextTimeout(ctx, types.BlockTime, gs.NextBlockTime)

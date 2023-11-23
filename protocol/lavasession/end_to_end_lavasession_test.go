@@ -10,6 +10,130 @@ import (
 )
 
 func TestHappyFlowE2E(t *testing.T) {
+	prepareSessionsWithFirstRelay(t, cuForFirstRequest)
+}
+
+func TestHappyFlowE2EEmergency(t *testing.T) {
+	var skippedRelays uint64
+	var successfulRelays uint64
+
+	// 1 - consumer in emergency, provider not - fail
+	// 2 both in emergency - ok
+	// 3 - increase consumer virtual epoch - fail
+	// 4 - increase provider virtual epoch - ok
+	consumerVirtualEpochs := []uint64{1, 1, 2, 2}
+	providerVirtualEpochs := []uint64{0, 1, 1, 2}
+
+	csm, psm, ctx := prepareSessionsWithFirstRelay(t, maxCuForVirtualEpoch)
+	successfulRelays++
+
+	for i := 0; i < len(consumerVirtualEpochs); i++ {
+		css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, common.NOSTATE, consumerVirtualEpochs[i]) // get a session
+		require.NoError(t, err)
+
+		for _, cs := range css {
+			require.NotNil(t, cs)
+			require.Equal(t, cs.Epoch, csm.currentEpoch)
+			require.Equal(t, cs.Session.LatestRelayCu, maxCuForVirtualEpoch)
+
+			// Provider Side:
+
+			sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum-skippedRelays, nil)
+			// validate expected results
+			require.NotEmpty(t, psm.sessionsWithAllConsumers)
+			require.NotNil(t, sps)
+			require.NoError(t, err)
+			require.False(t, ConsumerNotRegisteredYet.Is(err))
+
+			// prepare session for usage
+			// as some iterations are skipped so usedCu doesn't increase and relayRequestTotalCU won't change
+
+			err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, cs.Session.LatestRelayCu+(skippedRelays*maxCuForVirtualEpoch), 0, providerVirtualEpochs[i])
+
+			if consumerVirtualEpochs[i] != providerVirtualEpochs[i] {
+				// provider is not in emergency mode, so prepare session will trigger an error
+				require.Error(t, err)
+				require.Equal(t, uint64(0), sps.LatestRelayCu)
+
+				skippedRelays++
+
+				err := csm.OnSessionFailure(cs.Session, nil)
+				require.NoError(t, err)
+
+				err = psm.OnSessionFailure(sps, cs.Session.RelayNum-skippedRelays)
+				require.NoError(t, err)
+			} else {
+				successfulRelays++
+
+				require.Nil(t, err)
+				require.Nil(t, err)
+				require.Equal(t, cs.Session.LatestRelayCu, sps.LatestRelayCu)
+
+				err = psm.OnSessionDone(sps, cs.Session.RelayNum-skippedRelays)
+				require.NoError(t, err)
+
+				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
+				require.Nil(t, err)
+			}
+
+			require.Equal(t, sps.CuSum, successfulRelays*maxCuForVirtualEpoch)
+			require.Equal(t, sps.RelayNum, cs.Session.RelayNum-skippedRelays)
+
+			// Consumer Side:
+
+			require.Equal(t, cs.Session.CuSum, successfulRelays*maxCuForVirtualEpoch)
+			require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
+			require.Equal(t, cs.Session.RelayNum, successfulRelays+skippedRelays)
+			require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+		}
+	}
+}
+
+func TestHappyFlowEmergencyInConsumer(t *testing.T) {
+	csm, psm, ctx := prepareSessionsWithFirstRelay(t, maxCuForVirtualEpoch)
+
+	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, common.NOSTATE, virtualEpoch) // get a session
+	require.Nil(t, err)
+
+	for _, cs := range css {
+		require.NotNil(t, cs)
+		require.Equal(t, cs.Epoch, csm.currentEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, maxCuForVirtualEpoch)
+
+		// Provider Side:
+
+		sps, err := psm.GetSession(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, nil)
+		// validate expected results
+		require.NotEmpty(t, psm.sessionsWithAllConsumers)
+		require.NotNil(t, sps)
+		require.NoError(t, err)
+		require.False(t, ConsumerNotRegisteredYet.Is(err))
+
+		// prepare session for usage
+		err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, cs.Session.LatestRelayCu, 0, 0)
+
+		// validate session was not prepared successfully
+		require.Error(t, err)
+		require.Equal(t, cs.Session.LatestRelayCu, maxCuForVirtualEpoch)
+		require.Equal(t, sps.CuSum, maxCuForVirtualEpoch)
+		require.Equal(t, sps.SessionID, uint64(cs.Session.SessionId))
+		require.Equal(t, sps.PairingEpoch, cs.Session.Parent.PairingEpoch)
+
+		err = psm.OnSessionFailure(sps, cs.Session.RelayNum-1)
+		require.Equal(t, sps.RelayNum, cs.Session.RelayNum-1)
+		require.NoError(t, err)
+
+		// Consumer Side:
+		err = csm.OnSessionFailure(cs.Session, nil)
+		require.Nil(t, err)
+		require.Equal(t, cs.Session.CuSum, maxCuForVirtualEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
+		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall+1)
+		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+	}
+}
+
+func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*ConsumerSessionManager, *ProviderSessionManager, context.Context) {
 	ctx := context.Background()
 
 	// Consumer Side:
@@ -33,7 +157,7 @@ func TestHappyFlowE2E(t *testing.T) {
 	err := csm.UpdateAllProviders(epoch1, cswpList) // update the providers.
 	require.NoError(t, err)
 	// get single consumer session
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
 	require.Nil(t, err)
 
 	for _, cs := range css {
@@ -57,7 +181,7 @@ func TestHappyFlowE2E(t *testing.T) {
 		require.NotNil(t, sps)
 
 		// prepare session for usage
-		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0)
+		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0, 0)
 
 		// validate session was prepared successfully
 		require.Nil(t, err)
@@ -78,4 +202,5 @@ func TestHappyFlowE2E(t *testing.T) {
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
 	}
+	return csm, psm, ctx
 }

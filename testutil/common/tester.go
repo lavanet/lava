@@ -14,7 +14,7 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
+	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -286,7 +286,7 @@ func (ts *Tester) TxProposalChangeParam(module, paramKey, paramVal string) error
 }
 
 func (ts *Tester) TxProposalAddPlans(plans ...planstypes.Plan) error {
-	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	return testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 }
 
 func (ts *Tester) TxProposalDelPlans(indices ...string) error {
@@ -362,12 +362,13 @@ func (ts *Tester) TxDualstakingClaimRewards(
 }
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
-func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int) (*subscriptiontypes.MsgBuyResponse, error) {
+func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int, autoRenewal bool) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
-		Creator:  creator,
-		Consumer: consumer,
-		Index:    plan,
-		Duration: uint64(months),
+		Creator:     creator,
+		Consumer:    consumer,
+		Index:       plan,
+		Duration:    uint64(months),
+		AutoRenewal: autoRenewal,
 	}
 	return ts.Servers.SubscriptionServer.Buy(ts.GoCtx, msg)
 }
@@ -382,13 +383,23 @@ func (ts *Tester) TxSubscriptionAddProject(creator string, pd projectstypes.Proj
 	return err
 }
 
-// TxSubscriptionAddProject: implement 'tx subscription del-project'
+// TxSubscriptionDelProject: implement 'tx subscription del-project'
 func (ts *Tester) TxSubscriptionDelProject(creator, projectID string) error {
 	msg := &subscriptiontypes.MsgDelProject{
 		Creator: creator,
 		Name:    projectID,
 	}
 	_, err := ts.Servers.SubscriptionServer.DelProject(ts.GoCtx, msg)
+	return err
+}
+
+// TxSubscriptionAutoRenewal: implement 'tx subscription auto-renewal'
+func (ts *Tester) TxSubscriptionAutoRenewal(creator string, enable bool) error {
+	msg := &subscriptiontypes.MsgAutoRenewal{
+		Creator: creator,
+		Enable:  enable,
+	}
+	_, err := ts.Servers.SubscriptionServer.AutoRenewal(ts.GoCtx, msg)
 	return err
 }
 
@@ -617,6 +628,44 @@ func (ts *Tester) QueryDualstakingDelegatorRewards(delegator string, provider st
 	return ts.Keepers.Dualstaking.DelegatorRewards(ts.GoCtx, msg)
 }
 
+// QueryFixationAllIndices implements 'q fixationstore all-indices'
+func (ts *Tester) QueryFixationAllIndices(storeKey string, prefix string) (*fixationstoretypes.QueryAllIndicesResponse, error) {
+	msg := &fixationstoretypes.QueryAllIndicesRequest{
+		StoreKey: storeKey,
+		Prefix:   prefix,
+	}
+	return ts.Keepers.FixationStoreKeeper.AllIndices(ts.GoCtx, msg)
+}
+
+// QueryStoreKeys implements 'q fixationstore store-keys'
+func (ts *Tester) QueryStoreKeys() (*fixationstoretypes.QueryStoreKeysResponse, error) {
+	msg := &fixationstoretypes.QueryStoreKeysRequest{}
+	return ts.Keepers.FixationStoreKeeper.StoreKeys(ts.GoCtx, msg)
+}
+
+// QueryFixationVersions implements 'q fixationstore versions'
+func (ts *Tester) QueryFixationVersions(storeKey string, prefix string, key string) (*fixationstoretypes.QueryVersionsResponse, error) {
+	msg := &fixationstoretypes.QueryVersionsRequest{
+		StoreKey: storeKey,
+		Prefix:   prefix,
+		Key:      key,
+	}
+	return ts.Keepers.FixationStoreKeeper.Versions(ts.GoCtx, msg)
+}
+
+// QueryFixationEntry implements 'q fixationstore entry'
+func (ts *Tester) QueryFixationEntry(storeKey string, prefix string, key string, block uint64, hideData bool, stringData bool) (*fixationstoretypes.QueryEntryResponse, error) {
+	msg := &fixationstoretypes.QueryEntryRequest{
+		StoreKey:   storeKey,
+		Prefix:     prefix,
+		Key:        key,
+		Block:      block,
+		HideData:   hideData,
+		StringData: stringData,
+	}
+	return ts.Keepers.FixationStoreKeeper.Entry(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
@@ -711,11 +760,11 @@ func (ts *Tester) AdvanceEpoch(delta ...time.Duration) *Tester {
 }
 
 func (ts *Tester) AdvanceBlockUntilStale(delta ...time.Duration) *Tester {
-	return ts.AdvanceBlocks(types.STALE_ENTRY_TIME)
+	return ts.AdvanceBlocks(ts.BlocksToSave())
 }
 
 func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
-	block := ts.BlockHeight() + types.STALE_ENTRY_TIME
+	block := ts.BlockHeight() + ts.BlocksToSave()
 	for block > ts.BlockHeight() {
 		ts.AdvanceEpoch()
 	}

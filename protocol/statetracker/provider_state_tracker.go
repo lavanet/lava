@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -19,10 +20,12 @@ type ProviderStateTracker struct {
 	stateQuery *ProviderStateQuery
 	txSender   *ProviderTxSender
 	*StateTracker
+	*EmergencyTracker
 }
 
-func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher) (ret *ProviderStateTracker, err error) {
-	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher)
+func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ProviderMetricsManager) (ret *ProviderStateTracker, err error) {
+	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
+	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +33,16 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	pst := &ProviderStateTracker{StateTracker: stateTrackerBase, stateQuery: NewProviderStateQuery(ctx, clientCtx), txSender: txSender}
-	return pst, nil
+	pst := &ProviderStateTracker{
+		StateTracker:     stateTrackerBase,
+		stateQuery:       NewProviderStateQuery(ctx, clientCtx),
+		txSender:         txSender,
+		EmergencyTracker: emergencyTracker,
+	}
+
+	pst.RegisterForEpochUpdates(ctx, emergencyTracker)
+	err = pst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
+	return pst, err
 }
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
@@ -77,14 +88,26 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 }
 
 func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	payemntUpdater := NewPaymentUpdater(pst.EventTracker)
-	payemntUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, payemntUpdater)
-	payemntUpdater, ok := payemntUpdaterRaw.(*PaymentUpdater)
+	paymentUpdater := NewPaymentUpdater(pst.EventTracker)
+	paymentUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, paymentUpdater)
+	paymentUpdater, ok := paymentUpdaterRaw.(*PaymentUpdater)
 	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: payemntUpdaterRaw})
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: paymentUpdaterRaw})
 	}
 
-	payemntUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+	paymentUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
+}
+
+func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
+	downtimeParamsUpdater := NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
+	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
+	}
+
+	return downtimeParamsUpdater.RegisterDowntimeParamsUpdatable(ctx, &downtimeParamsUpdatable)
 }
 
 func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {

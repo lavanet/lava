@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/lavanet/lava/x/timerstore"
@@ -48,7 +48,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 
 	tsKeeper := timerstore.NewKeeper(cdc)
-
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
@@ -57,13 +57,13 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		nil,
-		epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil),
+		epochstorageKeeper,
 		nil,
 		nil,
 		nil,
 		nil,
 		nil,
-		fixationstore.NewKeeper(cdc, tsKeeper),
+		fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw),
 		tsKeeper,
 	)
 

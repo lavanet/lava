@@ -126,3 +126,24 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	}
 	return nil
 }
+
+// Migrate5to6 implements store migration from v5 to v6:
+// -- find old subscriptions and trigger advance month to make them expire
+func (m Migrator) Migrate5to6(ctx sdk.Context) error {
+	indices := m.keeper.GetAllSubscriptionsIndices(ctx)
+	currentTime := ctx.BlockTime().UTC().Unix()
+	for _, ind := range indices {
+		sub, found := m.keeper.GetSubscription(ctx, ind)
+		if !found {
+			utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub not found"),
+				utils.Attribute{Key: "sub", Value: sub},
+			)
+		}
+
+		if sub.MonthExpiryTime < uint64(currentTime) {
+			m.keeper.advanceMonth(ctx, []byte(ind))
+		}
+	}
+
+	return nil
+}

@@ -70,9 +70,11 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 			providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-			clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+			clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 			_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 			_, delegator2 := ts.GetAccount(common.CONSUMER, 2)
+
+			ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 			ts.AdvanceEpoch() // to apply pairing
 
@@ -186,11 +188,13 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 2)
 
 	ts.AdvanceEpoch() // to apply pairing
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)/2))
 	delegationAmount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)))
@@ -235,8 +239,10 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	ts.AddAccount(common.CONSUMER, 2, testBalance) // add delegator2
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 	ts.AdvanceEpoch() // to apply pairing
 
@@ -338,9 +344,11 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	provider1Acc, provider1 := ts.GetAccount(common.PROVIDER, 0) // will have stake in "mock" and "mock1"
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1) // will have stake in "mock"
 	_, provider3 := ts.GetAccount(common.PROVIDER, 2)            // no one delegates to it
-	client1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+	client1Acc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 2) // delegates to no one
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
 	spec1 := common.CreateMockSpec()
 	spec1.Index = "mock1"

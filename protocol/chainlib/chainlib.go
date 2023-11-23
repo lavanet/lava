@@ -70,6 +70,7 @@ type ChainMessage interface {
 	AppendHeader(metadata []pairingtypes.Metadata)
 	GetExtensions() []*spectypes.Extension
 	DisableErrorHandling()
+	TimeoutOverride(...time.Duration) time.Duration
 	ChainMessageForSend
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	"github.com/lavanet/lava/x/fixationstore"
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
@@ -70,7 +70,7 @@ func v0_23_0_UpgradeHandler(
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		lk.PairingKeeper.InitProviderQoS(ctx, *fixationstore.DefaultGenesis())
+		lk.PairingKeeper.InitProviderQoS(ctx, *fixationtypes.DefaultGenesis())
 		return m.RunMigrations(ctx, c, vm)
 	}
 }

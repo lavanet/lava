@@ -314,7 +314,7 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32) (
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
 	extensionNames := common.GetExtensionNames(extensions)
@@ -333,7 +333,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	}
 
 	// Get a valid consumerSessionsWithProvider
-	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful)
+	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +401,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			}
 
 			// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
-			err = consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession)
+			err = consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession, virtualEpoch)
 			if err != nil {
 				utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", utils.Attribute{Key: "Error", Value: err.Error()})
 				if MaxComputeUnitsExceededError.Is(err) {
@@ -448,7 +448,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		}
 
 		// If we do not have enough fetch more
-		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful)
+		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
 
 		// If error exists but we have sessions, return them
 		if err != nil && len(sessions) != 0 {
@@ -470,9 +470,18 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 	if totalValidLength <= 0 {
-		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
-		err = PairingListEmptyError
-		return addresses, err
+		// check all ignored are actually valid addresses
+		ignoredProvidersListLength = 0
+		for _, address := range validAddresses {
+			if _, ok := ignoredProvidersList[address]; ok {
+				ignoredProvidersListLength++
+			}
+		}
+		if validAddressesLength-ignoredProvidersListLength <= 0 {
+			utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+			err = PairingListEmptyError
+			return addresses, err
+		}
 	}
 	var providers []string
 	if stateful == common.CONSISTENCY_SELECT_ALLPROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
@@ -501,7 +510,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	return providers, nil
 }
 
-func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32) (sessionWithProviderMap SessionWithProviderMap, err error) {
+func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 	if debug {
@@ -543,7 +552,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 					utils.Attribute{Key: "wantedProviderNumber", Value: wantedProviderNumber},
 				)
 			}
-			if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession); err != nil {
+			if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch); err != nil {
 				// Add to ignored
 				ignoredProviders.providers[providerAddress] = struct{}{}
 				continue

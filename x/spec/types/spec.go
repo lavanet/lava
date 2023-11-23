@@ -7,10 +7,16 @@ import (
 	"strings"
 	"unicode"
 
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-const minCU = 1
+const (
+	minCU                        = 1
+	ContributorPrecision         = 100000
+	maxContributorsPercentageStr = "0.8"
+)
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
@@ -36,6 +42,18 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	if spec.ReliabilityThreshold == 0 {
 		return details, fmt.Errorf("ReliabilityThreshold can't be zero")
 	}
+	if len(spec.Contributor) > 0 {
+		for _, contributorAddr := range spec.Contributor {
+			_, err := sdk.AccAddressFromBech32(contributorAddr)
+			if err != nil {
+				return details, fmt.Errorf("spec contributor is not a valid account address %s in list: %s", contributorAddr, strings.Join(spec.Contributor, ","))
+			}
+		}
+	}
+
+	if spec.ContributorPercentage != nil && (spec.ContributorPercentage.GT(math.LegacyMustNewDecFromStr(maxContributorsPercentageStr)) || (spec.ContributorPercentage.LT(math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64))))) {
+		return details, fmt.Errorf("spec contributor percentage must be in the range [%s - %s]", math.LegacyMustNewDecFromStr(strconv.FormatFloat(1.0/ContributorPrecision, 'f', -1, 64)).String(), maxContributorsPercentageStr)
+	}
 
 	if spec.BlocksInFinalizationProof == 0 {
 		return details, fmt.Errorf("BlocksInFinalizationProof can't be zero")
@@ -47,10 +65,6 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 
 	if spec.AllowedBlockLagForQosSync <= 0 {
 		return details, fmt.Errorf("AllowedBlockLagForQosSync can't be zero")
-	}
-
-	if spec.MinStakeClient.Denom != epochstoragetypes.TokenDenom || spec.MinStakeClient.Amount.IsZero() {
-		return details, fmt.Errorf("MinStakeClient can't be zero and must have denom of ulava")
 	}
 
 	if spec.MinStakeProvider.Denom != epochstoragetypes.TokenDenom || spec.MinStakeProvider.Amount.IsZero() {

@@ -162,7 +162,7 @@ wait_count_blocks 1 >/dev/null
 (trace lavad tx dualstaking delegate $(lavad keys show alice -a) ETH1 $PROVIDERSTAKE $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx dualstaking redelegate $(lavad keys show alice -a) ETH1 $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
-wait_count_blocks 1 >/dev/null
+wait_count_blocks 2 >/dev/null
 (trace lavad tx dualstaking claim-rewards $txoptions) >/dev/null
 wait_count_blocks 1 >/dev/null
 (trace lavad tx dualstaking unbond $(lavad keys show alice -a) STRK $PROVIDERSTAKE $txoptions) >/dev/null
@@ -172,6 +172,12 @@ trace lavad q dualstaking params >/dev/null
 trace lavad q dualstaking delegator-providers $(lavad keys show alice -a)>/dev/null
 trace lavad q dualstaking delegator-rewards $(lavad keys show alice -a) >/dev/null
 trace lavad q dualstaking provider-delegators $(lavad keys show alice -a)>/dev/null
+
+echo "Testing fixationstore q commands"
+trace lavad q fixationstore all-indices subscription subs-fs >/dev/null
+trace lavad q fixationstore store-keys >/dev/null
+trace lavad q fixationstore versions subscription subs-fs $(lavad keys show alice -a) >/dev/null
+trace lavad q fixationstore versions entry subs-fs $(lavad keys show alice -a) 100 >/dev/null
 
 echo "Testing events command"
 trace lavad test events 30 10 --event lava_relay_payment --from alice --timeout 1s >/dev/null

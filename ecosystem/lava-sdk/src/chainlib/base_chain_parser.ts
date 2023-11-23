@@ -30,6 +30,19 @@ export interface SendRelayOptions {
   apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
 }
 
+export interface SingleRelayOptions {
+  method: string; // Required: The RPC method to be called
+  params: Array<any> | Record<string, any>; // Required: An array of parameters to be passed to the RPC method
+  id?: number | string; // Optional: The ID of the relay. If not specified, it is set to a random number.
+  metadata?: Metadata[]; // Optional: Headers to be sent with the request.
+}
+
+export interface SendRelaysBatchOptions {
+  relays: Array<SingleRelayOptions>; // Required: The relays to send
+  chainId?: string; // Optional: The chain id to send the request to, if only one chain is initialized it will be chosen by default
+  apiInterface?: string; // Optional: Specify only if both tendermintrpc and jsonrpc are both supported, and you want to access tendermintrpc
+}
+
 /**
  * Options for sending Rest relay.
  */
@@ -70,7 +83,7 @@ export function CollectionKeyToString(key: CollectionKey): CollectionKeyString {
   return `'{"addon":"${key.addon}","internalPath":"${key.internalPath}","connectionType":"${key.connectionType}"}'`;
 }
 
-interface ApiContainer {
+export interface ApiContainer {
   api: Api;
   collectionKey: CollectionKey;
   apiKey: ApiKey;
@@ -150,10 +163,10 @@ export abstract class BaseChainParser {
     };
     const apiCont = this.serverApis.get(ApiKeyToString(apiKey));
     if (!apiCont) {
-      throw Logger.fatal("api not supported", name, connectionType);
+      throw Logger.fatal("API not supported", name, connectionType);
     }
     if (!apiCont.api.getEnabled()) {
-      throw Logger.fatal("api is disabled in spec", name, connectionType);
+      throw Logger.fatal("API is disabled in spec", name, connectionType);
     }
     return apiCont;
   }
@@ -163,11 +176,11 @@ export abstract class BaseChainParser {
     const collection = this.apiCollections.get(key);
 
     if (!collection) {
-      throw Logger.fatal("Api not supported", collectionKey);
+      throw Logger.fatal("API not supported", collectionKey);
     }
 
     if (!collection.getEnabled()) {
-      throw Logger.fatal("Api disabled in spec", collectionKey);
+      throw Logger.fatal("API disabled in spec", collectionKey);
     }
     return collection;
   }
@@ -341,7 +354,7 @@ export abstract class BaseChainParser {
   }
 
   protected isRest(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): options is SendRestRelayOptions {
     return "connectionType" in options; // how to check which options were given
   }
@@ -440,17 +453,17 @@ export abstract class BaseChainParser {
   }
 
   abstract parseMsg(
-    options: SendRelayOptions | SendRestRelayOptions
+    options: SendRelayOptions | SendRelaysBatchOptions | SendRestRelayOptions
   ): BaseChainMessageContainer;
 
   public chainBlockStats(): ChainBlockStats {
     const averageBlockTime = this.spec?.getAverageBlockTime();
     if (!averageBlockTime) {
-      throw Logger.fatal("no average block time in spec", this.spec);
+      throw Logger.fatal("No average block time in spec", this.spec);
     }
     const allowedLag = this.spec?.getAllowedBlockLagForQosSync();
     if (!allowedLag) {
-      throw Logger.fatal("no allowed lag in spec", this.spec);
+      throw Logger.fatal("No allowed lag in spec", this.spec);
     }
 
     const blockDistanceForFinalizedData =
@@ -458,13 +471,13 @@ export abstract class BaseChainParser {
 
     if (blockDistanceForFinalizedData == undefined) {
       throw Logger.fatal(
-        "no block distance for finalized data in spec",
+        "No block distance for finalized data in spec",
         this.spec
       );
     }
     const blocksInFinalizationProof = this.spec?.getBlocksInFinalizationProof();
     if (blocksInFinalizationProof == undefined) {
-      throw Logger.fatal("no block in finalization proof in spec", this.spec);
+      throw Logger.fatal("No block in finalization proof in spec", this.spec);
     }
     return {
       allowedBlockLagForQosSync: allowedLag,

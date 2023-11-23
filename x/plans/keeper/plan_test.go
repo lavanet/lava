@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
@@ -109,7 +110,7 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 
 	// proposal with a plan
 	ts.AdvanceEpoch()
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 	require.Nil(t, err)
 
 	plan, found := ts.FindPlan(plans[0].Index, ts.BlockHeight())
@@ -167,7 +168,7 @@ func TestAddInvalidPlan(t *testing.T) {
 				plans[0].Type = strings.Repeat("a", types.MAX_LEN_PLAN_TYPE+1)
 			}
 
-			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 			require.NotNil(t, err)
 		})
 	}
@@ -186,12 +187,12 @@ func TestAddRemove(t *testing.T) {
 	plans1 := ts.createTestPlans(TEST_PLANS_DIFF_ID, false, 0)
 	plans2 := ts.createTestPlans(TEST_PLANS_SAME_ID, true, len(plans1))
 
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans1)
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans1, false)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
 
-	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans2)
+	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans2, false)
 	require.Nil(t, err)
 
 	// plans with same ID added in same block: only 1 (of each pair) prevailed
@@ -209,7 +210,7 @@ func TestAddBadAndGoodPlans(t *testing.T) {
 	// make one of the plans invalid
 	plans[2].PlanPolicy.TotalCuLimit = 0
 
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans)
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
 	require.NotNil(t, err)
 
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
@@ -266,6 +267,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	ts.Keepers.Plans.PutPlan(ts.Ctx, plans[1].Index, plans[1].Block)
 
 	ts.AdvanceEpochUntilStale()
+	ts.AdvanceBlock()
 
 	// check that the old plans were removed
 	_, found = ts.FindPlan(plans[0].Index, plans[0].Block)
@@ -287,7 +289,7 @@ func TestAddAndDelete(t *testing.T) {
 	plans := ts.createTestPlans(1, true, 0)
 	index := plans[0].Index
 
-	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans[0:1])
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans[0:1], false)
 	require.Nil(t, err)
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 1, len(indices))
@@ -320,6 +322,7 @@ func TestAddAndDelete(t *testing.T) {
 
 	// advance epoch until the plan becomes stale
 	ts.AdvanceEpochUntilStale()
+	ts.AdvanceBlock()
 
 	_, found = ts.FindPlan(index, block1)
 	require.False(t, found)
@@ -328,5 +331,42 @@ func TestAddAndDelete(t *testing.T) {
 
 	// fail attempt to delete the plan again
 	err = testkeeper.SimulatePlansDelProposal(ts.Ctx, ts.Keepers.Plans, []string{index})
+	require.NotNil(t, err)
+}
+
+// TestModifyPlan checks that plan modification acts as expected:
+// 1. there should be no new version in the planFS (latest plan should have the same block)
+// 2. plan price cannot be increased
+func TestModifyPlan(t *testing.T) {
+	ts := newTester(t)
+	ts.AdvanceEpoch()
+
+	plans := ts.createTestPlans(1, false, 0)
+
+	// add a new plan
+	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{plans[0]}, false)
+	require.Nil(t, err)
+	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
+	require.Equal(t, 1, len(indices))
+	originalPlan, found := ts.Keepers.Plans.GetPlan(ts.Ctx, plans[0].Index)
+	require.True(t, found)
+	planBlock := originalPlan.Block
+
+	ts.AdvanceEpoch()
+
+	// modify the plan (block should stay the same, change should happen)
+	plans[0].AnnualDiscountPercentage = 42
+	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{plans[0]}, true)
+	require.Nil(t, err)
+	indices = ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
+	require.Equal(t, 1, len(indices))
+	modifiedPlan, found := ts.Keepers.Plans.GetPlan(ts.Ctx, plans[0].Index)
+	require.True(t, found)
+	require.Equal(t, planBlock, modifiedPlan.Block)
+	require.Equal(t, uint64(42), modifiedPlan.AnnualDiscountPercentage)
+
+	// modify the plan by increasing its price. proposal should fail
+	plans[0].Price = plans[0].Price.AddAmount(math.NewIntFromUint64(1))
+	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{plans[0]}, true)
 	require.NotNil(t, err)
 }

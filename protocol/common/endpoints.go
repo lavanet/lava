@@ -20,6 +20,9 @@ const (
 	URL_QUERY_PARAMETERS_SEPARATOR_OTHER_PARAMETERS = "&"
 	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
 	PROVIDER_ADDRESS_HEADER_NAME                    = "Lava-Provider-Address"
+	// these headers need to be lowercase
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
+	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
 )
 
 type NodeUrl struct {

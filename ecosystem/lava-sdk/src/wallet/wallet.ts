@@ -67,10 +67,9 @@ export class LavaWallet {
 
   // Print account details
   printAccount(AccountData: AccountData) {
-    Logger.info("INFO:");
-    Logger.info("Address: " + AccountData.address);
-    Logger.info("Public key: " + AccountData.pubkey);
-    Logger.emptyLine();
+    Logger.info(
+      `Account data - Address: ${AccountData.address}, Public key: ${AccountData.pubkey}`
+    );
   }
 }
 

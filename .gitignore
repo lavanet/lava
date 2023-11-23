@@ -48,25 +48,14 @@ ecosystem/lava-sdk/.vscode
 ecosystem/lava-sdk/.npmrc
 ecosystem/lava-sdk/package-lock.json
 ecosystem/lava-sdk/examples/jsonRPC_test.ts
-ecosystem/lava-sdk/examples/restAPI_test.ts
-ecosystem/lava-sdk/examples/tendermintRPC_test.ts
-ecosystem/lava-sdk/examples/tendermintRPC_test2.ts
 ecosystem/lava-sdk/examples/jsonRPC_badge_test.ts
-ecosystem/lava-sdk/examples/consumerSessionManager_test.ts
+ecosystem/lava-sdk/examples/restAPI_test.ts
+ecosystem/lava-sdk/examples/restAPI_badge_test.ts
+ecosystem/lava-sdk/examples/tendermintRPC_test.ts
+ecosystem/lava-sdk/examples/tendermintRPC_badge_test.ts
 ecosystem/lava-sdk/pairingList.json
-# ecosystem/lava-sdk/proto/**/*[!.proto] #tried but didnt work
-ecosystem/lava-sdk/proto/**/*.yaml
-ecosystem/lava-sdk/proto/**/*.bazel
-ecosystem/lava-sdk/proto/**/*.bzl
-ecosystem/lava-sdk/proto/**/*.md
-ecosystem/lava-sdk/proto/**/*.sh
-ecosystem/lava-sdk/proto/**/*.json
-ecosystem/lava-sdk/proto/**/*.go
-ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/amino
-ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/cosmos
-ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/gogoproto
-ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/google
-ecosystem/lava-sdk/proto/cosmos/cosmos-sdk/tendermint
+ecosystem/lava-sdk/proto
+ecosystem/lava-sdk/src/grpc_web_services
 ecosystem/lava-sdk/src/codec
 ecosystem/lava-sdk/proto/lavanet
 

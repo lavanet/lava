@@ -491,7 +491,6 @@ func TestSpecUpdateInherit(t *testing.T) {
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
 		MinStakeProvider:              common.NewCoin(5000),
-		MinStakeClient:                common.NewCoin(5000),
 		ApiCollections: []*types.ApiCollection{
 			{
 				Enabled:        true,
@@ -512,7 +511,6 @@ func TestSpecUpdateInherit(t *testing.T) {
 		AverageBlockTime:              13000,
 		AllowedBlockLagForQosSync:     2,
 		MinStakeProvider:              common.NewCoin(5000),
-		MinStakeClient:                common.NewCoin(5000),
 		Imports:                       []string{"parent"},
 	}
 

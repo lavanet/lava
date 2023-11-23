@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/lavanet/lava/x/fixationstore"
 	"github.com/lavanet/lava/x/timerstore"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -31,10 +30,10 @@ type (
 		plansKeeper        types.PlansKeeper
 		dualstakingKeeper  types.DualStakingKeeper
 
-		subsFS fixationstore.FixationStore
+		subsFS fixationtypes.FixationStore
 		subsTS timerstore.TimerStore
 
-		cuTrackerFS fixationstore.FixationStore // key: "<sub> <provider>", value: month aggregated CU
+		cuTrackerFS fixationtypes.FixationStore // key: "<sub> <provider>", value: month aggregated CU
 		cuTrackerTS timerstore.TimerStore
 	}
 )
@@ -83,14 +82,14 @@ func NewKeeper(
 		keeper.advanceMonth(ctx, subkey)
 	}
 
-	keeper.subsTS = *timerStoreKeeper.NewTimerStore(storeKey, types.SubsTimerPrefix).
+	keeper.subsTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.SubsTimerPrefix).
 		WithCallbackByBlockTime(subsTimerCallback)
 
 	cuTrackerCallback := func(ctx sdk.Context, cuTrackerTimerKey []byte, cuTrackerTimerData []byte) {
 		keeper.RewardAndResetCuTracker(ctx, cuTrackerTimerKey, cuTrackerTimerData)
 	}
 
-	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStore(storeKey, types.CuTrackerTimerPrefix).
+	keeper.cuTrackerTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.CuTrackerTimerPrefix).
 		WithCallbackByBlockHeight(cuTrackerCallback)
 
 	return keeper
