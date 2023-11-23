@@ -40,7 +40,7 @@ func (k *Keeper) Next(goCtx context.Context, req *types.QueryNextRequest) (*type
 			return createQueryNextResponse(
 				store.GetNextTimeoutBlockHeight(ctx),
 				store.GetNextTimeoutBlockTime(ctx),
-				BeginBlock,
+				types.BeginBlock,
 			), nil
 		}
 	}
@@ -50,7 +50,7 @@ func (k *Keeper) Next(goCtx context.Context, req *types.QueryNextRequest) (*type
 			return createQueryNextResponse(
 				store.GetNextTimeoutBlockHeight(ctx),
 				store.GetNextTimeoutBlockTime(ctx),
-				EndBlock,
+				types.EndBlock,
 			), nil
 		}
 	}

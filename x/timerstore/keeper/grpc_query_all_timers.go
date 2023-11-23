@@ -20,7 +20,7 @@ func (k *Keeper) AllTimers(goCtx context.Context, req *types.QueryAllTimersReque
 			return &types.QueryAllTimersResponse{
 				BlockTimeTimers:   store.DumpAllTimers(ctx, types.BlockTime),
 				BlockHeightTimers: store.DumpAllTimers(ctx, types.BlockHeight),
-				Tick:              BeginBlock,
+				Tick:              types.BeginBlock,
 			}, nil
 		}
 	}
@@ -30,7 +30,7 @@ func (k *Keeper) AllTimers(goCtx context.Context, req *types.QueryAllTimersReque
 			return &types.QueryAllTimersResponse{
 				BlockTimeTimers:   store.DumpAllTimers(ctx, types.BlockTime),
 				BlockHeightTimers: store.DumpAllTimers(ctx, types.BlockHeight),
-				Tick:              EndBlock,
+				Tick:              types.EndBlock,
 			}, nil
 		}
 	}
