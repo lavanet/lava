@@ -8,6 +8,8 @@ import { ConsumerSessionsWithProvider } from "../../lavasession/consumerTypes";
 import { PairingResponse } from "../stateQuery/state_query";
 import { Config } from "../state_tracker";
 import { Endpoint as ConsumerEndpoint } from "../../lavasession/consumerTypes";
+import { SortByGeolocations } from "../../lavasession/common";
+import { GeolocationFromString } from "../../lavasession/geolocation";
 
 export class PairingUpdater {
   private stateQuery: StateQuery;
@@ -149,12 +151,19 @@ export class PairingUpdater {
           geolocation: endpoint.getGeolocation(),
         };
 
-        if (endpoint.getGeolocation() == Number(this.config.geolocation)) {
+        if (
+          endpoint.getGeolocation() ==
+          GeolocationFromString(this.config.geolocation)
+        ) {
           sameGeoEndpoints.push(consumerEndpoint); // set same geo location provider endpoint
         } else {
           differntGeoEndpoints.push(consumerEndpoint); // set different geo location provider endpoint
         }
       }
+      SortByGeolocations(
+        differntGeoEndpoints,
+        GeolocationFromString(this.config.geolocation)
+      );
 
       // skip if we have no endpoints at all.
       if (sameGeoEndpoints.length == 0 && differntGeoEndpoints.length == 0) {
