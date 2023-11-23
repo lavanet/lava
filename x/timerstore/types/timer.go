@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -337,31 +336,31 @@ func (tstore *TimerStore) DelTimerByBlockTime(ctx sdk.Context, timestamp uint64,
 }
 
 // DumpAllTimers dumps the details of all existing timers (of a type) into a string (for test/debug).
-func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which TimerType) string {
+func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which TimerType) []*TimerInfo {
 	store := tstore.getStoreTimer(ctx, which)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	var b strings.Builder
+	timers := []*TimerInfo{}
 
 	for ; iterator.Valid(); iterator.Next() {
-		b.WriteString(tstore.formatTimerInfo(iterator.Key(), iterator.Value(), which))
+		timers = append(timers, tstore.createTimerInfo(iterator.Key(), iterator.Value(), which))
 	}
 
-	return b.String()
+	return timers
 }
 
-func (tstore *TimerStore) formatTimerInfo(key, value []byte, which TimerType) string {
+func (tstore *TimerStore) createTimerInfo(key, value []byte, which TimerType) *TimerInfo {
 	decodedValue, decodedKey := DecodeBlockAndKey(key)
 	formattedKey := commontypes.ByteSliceToASCIIStr(decodedKey, NonASCIICharPlaceholder)
 
 	if which == BlockTime {
 		blockTime := commontypes.ConvertUnixTimestampToString(decodedValue)
-		return fmt.Sprintf("block time: %s\nkey: %s\ndata: %v\n", blockTime, formattedKey, value)
+		return &TimerInfo{Block: &TimerInfo_BlockTime{BlockTime: blockTime}, Key: formattedKey, Data: value}
 	}
 
-	return fmt.Sprintf("block height: %d\nkey: %s\ndata: %v\n", decodedValue, formattedKey, value)
+	return &TimerInfo{Block: &TimerInfo_BlockHeight{BlockHeight: decodedValue}, Key: formattedKey, Data: value}
 }
 
 func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which TimerType) (uint64, []byte, []byte) {

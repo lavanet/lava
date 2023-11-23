@@ -30,9 +30,18 @@ message QueryAllTimersRequest {
   string prefix = 2;
 }
 
+message TimerInfo {
+  oneof block {
+    string blockTime = 1;
+    uint64 blockHeight = 2;
+  }
+  string key = 3;
+  bytes data = 4;
+}
+
 message QueryAllTimersResponse {
-  string blockTimeTimers = 1;
-  string blockHeightTimers = 2;
+  repeated TimerInfo blockTimeTimers = 1;
+  repeated TimerInfo blockHeightTimers = 2;
   string tick = 3;
 }
 
