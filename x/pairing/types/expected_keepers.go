@@ -97,7 +97,7 @@ type DowntimeKeeper interface {
 }
 
 type DualstakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool) (providerReward math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, err error)
 	Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error
 	Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error
 }
