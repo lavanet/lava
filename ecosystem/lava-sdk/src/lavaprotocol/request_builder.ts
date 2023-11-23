@@ -294,8 +294,11 @@ export function IsFinalizedBlock(
 }
 
 export function verifyRelayReply(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   reply: RelayReply,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   relayRequest: RelayRequest,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   providerAddress: string
 ): Error | undefined {
   // TODO: implement signature verificaion
@@ -360,10 +363,15 @@ export function verifyFinalizationData(
 }
 
 function verifyFinalizationDataIntegrity(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   reply: RelayReply,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   existingSessionLatestBlock: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   finalizedBlocks: Map<number, string>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   providerPublicAddress: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   blockDistanceForFinalizedData: number
 ): Error | undefined {
   return undefined;

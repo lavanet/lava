@@ -9,8 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -21,6 +24,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/stretchr/testify/require"
 )
 
 type Tester struct {
@@ -31,7 +35,7 @@ type Tester struct {
 	Servers *testkeeper.Servers
 	Keepers *testkeeper.Keepers
 
-	accounts map[string]Account
+	accounts map[string]sigs.Account
 	plans    map[string]planstypes.Plan
 	policies map[string]planstypes.Policy
 	projects map[string]projectstypes.ProjectData
@@ -39,8 +43,9 @@ type Tester struct {
 }
 
 const (
-	PROVIDER string = "provider"
-	CONSUMER string = "consumer"
+	PROVIDER  string = "provider"
+	CONSUMER  string = "consumer"
+	VALIDATOR string = "validator"
 )
 
 func NewTester(t *testing.T) *Tester {
@@ -65,7 +70,7 @@ func NewTesterRaw(t *testing.T) *Tester {
 		Servers: servers,
 		Keepers: keepers,
 
-		accounts: make(map[string]Account),
+		accounts: make(map[string]sigs.Account),
 		plans:    make(map[string]planstypes.Plan),
 		policies: make(map[string]planstypes.Policy),
 		projects: make(map[string]projectstypes.ProjectData),
@@ -96,18 +101,18 @@ func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {
 	return ts
 }
 
-func (ts *Tester) AddAccount(kind string, idx int, balance int64) (Account, string) {
+func (ts *Tester) AddAccount(kind string, idx int, balance int64) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
 	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
 	return ts.Account(name)
 }
 
-func (ts *Tester) GetAccount(kind string, idx int) (Account, string) {
+func (ts *Tester) GetAccount(kind string, idx int) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
 	return ts.Account(name)
 }
 
-func (ts *Tester) Account(name string) (Account, string) {
+func (ts *Tester) Account(name string) (sigs.Account, string) {
 	account, ok := ts.accounts[name]
 	if !ok {
 		panic("tester: unknown account name: '" + name + "'")
@@ -115,7 +120,7 @@ func (ts *Tester) Account(name string) (Account, string) {
 	return account, account.Addr.String()
 }
 
-func (ts *Tester) Accounts(name string) []Account {
+func (ts *Tester) Accounts(name string) []sigs.Account {
 	var names []string
 	for k := range ts.accounts {
 		if strings.HasPrefix(k, name) {
@@ -123,11 +128,15 @@ func (ts *Tester) Accounts(name string) []Account {
 		}
 	}
 	sort.Strings(names)
-	var accounts []Account
+	var accounts []sigs.Account
 	for _, k := range names {
 		accounts = append(accounts, ts.accounts[k])
 	}
 	return accounts
+}
+
+func (ts *Tester) AccountsMap() map[string]sigs.Account {
+	return ts.accounts
 }
 
 func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
@@ -168,7 +177,7 @@ func (ts *Tester) StakeProviderExtra(
 	return err
 }
 
-func (ts *Tester) AccountByAddr(addr string) (Account, string) {
+func (ts *Tester) AccountByAddr(addr string) (sigs.Account, string) {
 	for _, account := range ts.accounts {
 		if account.Addr.String() == addr {
 			return account, addr
@@ -304,11 +313,30 @@ func (ts *Tester) TxDualstakingDelegate(
 	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
+	validator, _ := ts.GetAccount(VALIDATOR, 0)
+	return ts.TxDualstakingDelegateValidator(
+		creator,
+		sdk.ValAddress(validator.Addr).String(),
+		provider,
+		chainID,
+		amount,
+	)
+}
+
+// TxDualstakingDelegate: implement 'tx dualstaking delegate'
+func (ts *Tester) TxDualstakingDelegateValidator(
+	creator string,
+	validator string,
+	provider string,
+	chainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgDelegateResponse, error) {
 	msg := &dualstakingtypes.MsgDelegate{
-		Creator:  creator,
-		Provider: provider,
-		ChainID:  chainID,
-		Amount:   amount,
+		Creator:   creator,
+		Validator: validator,
+		Provider:  provider,
+		ChainID:   chainID,
+		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Delegate(ts.GoCtx, msg)
 }
@@ -340,11 +368,30 @@ func (ts *Tester) TxDualstakingUnbond(
 	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
+	validator, _ := ts.GetAccount(VALIDATOR, 0)
+	return ts.TxDualstakingUnbondValidator(
+		creator,
+		sdk.ValAddress(validator.Addr).String(),
+		provider,
+		chainID,
+		amount,
+	)
+}
+
+// TxDualstakingUnbond: implement 'tx dualstaking unbond'
+func (ts *Tester) TxDualstakingUnbondValidator(
+	creator string,
+	validator string,
+	provider string,
+	chainID string,
+	amount sdk.Coin,
+) (*dualstakingtypes.MsgUnbondResponse, error) {
 	msg := &dualstakingtypes.MsgUnbond{
-		Creator:  creator,
-		Provider: provider,
-		ChainID:  chainID,
-		Amount:   amount,
+		Creator:   creator,
+		Validator: validator,
+		Provider:  provider,
+		ChainID:   chainID,
+		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)
 }
@@ -454,8 +501,10 @@ func (ts *Tester) TxPairingStakeProvider(
 	geoloc int32,
 	moniker string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
+	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
 		Creator:            addr,
+		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
 		Geolocation:        geoloc,
@@ -472,9 +521,11 @@ func (ts *Tester) TxPairingUnstakeProvider(
 	addr string,
 	chainID string,
 ) (*pairingtypes.MsgUnstakeProviderResponse, error) {
+	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgUnstakeProvider{
-		Creator: addr,
-		ChainID: chainID,
+		Validator: sdk.ValAddress(val.Addr).String(),
+		Creator:   addr,
+		ChainID:   chainID,
 	}
 	return ts.Servers.PairingServer.UnstakeProvider(ts.GoCtx, msg)
 }
@@ -504,6 +555,62 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 		ChainIds: slices.Slice(chainID),
 	}
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
+}
+
+// TxCreateValidator: implement 'tx staking createvalidator'
+func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) (*stakingtypes.MsgCreateValidatorResponse, error) {
+	msg, err := stakingtypes.NewMsgCreateValidator(
+		sdk.ValAddress(validator.Addr),
+		validator.PubKey,
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
+		sdk.ZeroInt(),
+	)
+	require.Nil(ts.T, err)
+	return ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
+}
+
+// TxDelegateValidator: implement 'tx staking delegate'
+func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount math.Int) (*stakingtypes.MsgDelegateResponse, error) {
+	msg := stakingtypes.NewMsgDelegate(
+		delegator.Addr,
+		sdk.ValAddress(validator.Addr),
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+	)
+	return ts.Servers.StakingServer.Delegate(ts.GoCtx, msg)
+}
+
+// TxReDelegateValidator: implement 'tx staking redelegate'
+func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator sigs.Account, amount math.Int) (*stakingtypes.MsgBeginRedelegateResponse, error) {
+	msg := stakingtypes.NewMsgBeginRedelegate(
+		delegator.Addr,
+		sdk.ValAddress(fromValidator.Addr),
+		sdk.ValAddress(toValidator.Addr),
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+	)
+	return ts.Servers.StakingServer.BeginRedelegate(ts.GoCtx, msg)
+}
+
+// TxUnbondValidator: implement 'tx staking undond'
+func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount math.Int) (*stakingtypes.MsgUndelegateResponse, error) {
+	msg := stakingtypes.NewMsgUndelegate(
+		delegator.Addr,
+		sdk.ValAddress(validator.Addr),
+		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+	)
+	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
+}
+
+// TxUnbondValidator: implement 'tx staking undond'
+func (ts *Tester) TxCancelUnbondValidator(delegator, validator sigs.Account, block int64, amount sdk.Coin) (*stakingtypes.MsgCancelUnbondingDelegationResponse, error) {
+	msg := stakingtypes.NewMsgCancelUnbondingDelegation(
+		delegator.Addr,
+		sdk.ValAddress(validator.Addr),
+		block,
+		amount,
+	)
+	return ts.Servers.StakingServer.CancelUnbondingDelegation(ts.GoCtx, msg)
 }
 
 // QuerySubscriptionCurrent: implement 'q subscription current'

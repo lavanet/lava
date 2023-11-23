@@ -73,7 +73,7 @@ echo "$json_content" > pairingList.json
 GEOLOCATION=2
 
 cp examples/jsonRPC.ts examples/jsonRPC_test.ts
-cp examples/restAPI.ts examples/restAPI_test.tsZ
+cp examples/restAPI.ts examples/restAPI_test.ts
 cp examples/tendermintRPC.ts examples/tendermintRPC_test.ts
 
 sed -i "s|geolocation:.*|geolocation: \"$GEOLOCATION\",\n\n    pairingListConfig: \"pairingList.json\",\n\n    lavaChainId: \"lava\",\n\n    logLevel: \"debug\",\n\n    allowInsecureTransport: true,|g" examples/jsonRPC_test.ts

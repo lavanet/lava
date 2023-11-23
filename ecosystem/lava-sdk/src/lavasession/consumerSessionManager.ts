@@ -801,7 +801,8 @@ export class ConsumerSessionManager {
       );
     }
     if (!retry) {
-      for (const s of pairingList) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for (const _ of pairingList) {
         await Promise.race(promiseProbeArray);
         const epochFromProviders = this.epochTracker.getEpoch();
         if (epochFromProviders > 0) {

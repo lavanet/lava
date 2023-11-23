@@ -10,12 +10,13 @@ const TypeMsgDelegate = "delegate"
 
 var _ sdk.Msg = &MsgDelegate{}
 
-func NewMsgDelegate(delegator string, provider string, chainID string, amount sdk.Coin) *MsgDelegate {
+func NewMsgDelegate(delegator string, validator string, provider string, chainID string, amount sdk.Coin) *MsgDelegate {
 	return &MsgDelegate{
-		Creator:  delegator,
-		Provider: provider,
-		ChainID:  chainID,
-		Amount:   amount,
+		Creator:   delegator,
+		Validator: validator,
+		Provider:  provider,
+		ChainID:   chainID,
+		Amount:    amount,
 	}
 }
 

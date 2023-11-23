@@ -15,13 +15,14 @@ var _ = strconv.Itoa(0)
 
 func CmdUnbond() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "unbond [provider] [chain-id] [amount]",
+		Use:   "unbond [validator] [provider] [chain-id] [amount]",
 		Short: "unbond from a provider",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argProvider := args[0]
-			argChainID := args[1]
-			argAmount, err := sdk.ParseCoinNormalized(args[2])
+			argValidator := args[0]
+			argProvider := args[1]
+			argChainID := args[2]
+			argAmount, err := sdk.ParseCoinNormalized(args[3])
 			if err != nil {
 				return err
 			}
@@ -33,6 +34,7 @@ func CmdUnbond() *cobra.Command {
 
 			msg := types.NewMsgUnbond(
 				clientCtx.GetFromAddress().String(),
+				argValidator,
 				argProvider,
 				argChainID,
 				argAmount,

@@ -1,4 +1,4 @@
-package timerstore
+package types
 
 import (
 	"math"
@@ -93,10 +93,10 @@ func testWithTimerTemplate(t *testing.T, playbook []timerTemplate, countTS int) 
 		case "deltime":
 			tstore[play.store].DelTimerByBlockTime(ctx, play.value, key)
 		case "nextheight":
-			value := tstore[play.store].getNextTimeoutBlockHeight(ctx)
+			value := tstore[play.store].GetNextTimeoutBlockHeight(ctx)
 			require.Equal(t, play.value, value, what)
 		case "nexttime":
-			value := tstore[play.store].getNextTimeoutBlockTime(ctx)
+			value := tstore[play.store].GetNextTimeoutBlockTime(ctx)
 			require.Equal(t, play.value, value, what)
 		case "tickheight":
 			callbackBlockCount = 0

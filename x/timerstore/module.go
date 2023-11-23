@@ -8,6 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/lavanet/lava/x/timerstore/client/cli"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	"github.com/lavanet/lava/x/timerstore/types"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +27,7 @@ const (
 type AppModuleBasic struct{}
 
 func (a AppModuleBasic) Name() string {
-	return ModuleName
+	return types.ModuleName
 }
 
 func (a AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
@@ -35,11 +38,13 @@ func (a AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.S
 
 func (a AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
-func (a AppModuleBasic) GetQueryCmd() *cobra.Command { return nil }
+func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd("")
+}
 
 // ---- AppModule
 
-func NewAppModule(k *Keeper) AppModule {
+func NewAppModule(k *timerstorekeeper.Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		k:              k,
@@ -49,7 +54,7 @@ func NewAppModule(k *Keeper) AppModule {
 type AppModule struct {
 	AppModuleBasic
 
-	k *Keeper
+	k *timerstorekeeper.Keeper
 }
 
 func (a AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
@@ -63,4 +68,10 @@ func (a AppModule) BeginBlock(context sdk.Context, _ abci.RequestBeginBlock) {
 func (a AppModule) EndBlock(context sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	a.k.EndBlock(context)
 	return []abci.ValidatorUpdate{}
+}
+
+// RegisterServices registers a GRPC query service to respond to the
+// module-specific GRPC queries.
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.k)
 }

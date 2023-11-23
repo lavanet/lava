@@ -8,6 +8,7 @@ import (
 
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
@@ -1145,7 +1146,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 
 	templates := []struct {
 		name           string
-		dev            common.Account
+		dev            sigs.Account
 		planIndex      int
 		setGeo         int32
 		expectedGeo    int32

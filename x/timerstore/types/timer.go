@@ -1,15 +1,14 @@
-package timerstore
+package types
 
 import (
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/timerstore/types"
+	commontypes "github.com/lavanet/lava/common/types"
 )
 
 // TimerStore manages timers to efficiently support future timeouts. Timeouts
@@ -106,6 +105,10 @@ import (
 // TimerCallback defined the callback handler function
 type TimerCallback func(ctx sdk.Context, key, data []byte)
 
+const (
+	NonASCIICharPlaceholder = '$'
+)
+
 // TimerStore represents a timer store to manager timers and timeouts
 type TimerStore struct {
 	storeKey  storetypes.StoreKey
@@ -125,26 +128,34 @@ func NewTimerStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix s
 	return &tstore
 }
 
-func DefaultGenesis() *types.GenesisState {
-	return &types.GenesisState{
+func DefaultGenesis() *GenesisState {
+	return &GenesisState{
 		Version:         TimerVersion(),
 		NextBlockHeight: math.MaxUint64,
 		NextBlockTime:   math.MaxUint64,
 	}
 }
 
-func (tstore *TimerStore) Export(ctx sdk.Context) (gs types.GenesisState) {
+func (tstore *TimerStore) GetStoreKey() storetypes.StoreKey {
+	return tstore.storeKey
+}
+
+func (fs *TimerStore) GetStorePrefix() string {
+	return fs.prefix
+}
+
+func (tstore *TimerStore) Export(ctx sdk.Context) (gs GenesisState) {
 	gs.Version = tstore.getVersion(ctx)
-	gs.NextBlockHeight = tstore.getNextTimeoutBlockHeight(ctx)
-	gs.NextBlockTime = tstore.getNextTimeoutBlockTime(ctx)
+	gs.NextBlockHeight = tstore.GetNextTimeoutBlockHeight(ctx)
+	gs.NextBlockTime = tstore.GetNextTimeoutBlockTime(ctx)
 
 	// get all time timers (measured in block time)
-	store := tstore.getStoreTimer(ctx, types.BlockTime)
+	store := tstore.getStoreTimer(ctx, BlockTime)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	for ; iterator.Valid(); iterator.Next() {
-		value, key := types.DecodeBlockAndKey(iterator.Key())
-		gs.TimeEntries = append(gs.TimeEntries, types.GenesisTimerEntry{
+		value, key := DecodeBlockAndKey(iterator.Key())
+		gs.TimeEntries = append(gs.TimeEntries, GenesisTimerEntry{
 			Key:   string(key),
 			Value: value,
 			Data:  iterator.Value(),
@@ -153,12 +164,12 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs types.GenesisState) {
 	iterator.Close()
 
 	// get all block timers (measured in block height)
-	store = tstore.getStoreTimer(ctx, types.BlockHeight)
+	store = tstore.getStoreTimer(ctx, BlockHeight)
 
 	iterator = sdk.KVStorePrefixIterator(store, []byte{})
 	for ; iterator.Valid(); iterator.Next() {
-		value, key := types.DecodeBlockAndKey(iterator.Key())
-		gs.BlockEntries = append(gs.BlockEntries, types.GenesisTimerEntry{
+		value, key := DecodeBlockAndKey(iterator.Key())
+		gs.BlockEntries = append(gs.BlockEntries, GenesisTimerEntry{
 			Key:   string(key),
 			Value: value,
 			Data:  iterator.Value(),
@@ -169,23 +180,23 @@ func (tstore *TimerStore) Export(ctx sdk.Context) (gs types.GenesisState) {
 	return gs
 }
 
-func (tstore *TimerStore) Init(ctx sdk.Context, gs types.GenesisState) {
+func (tstore *TimerStore) Init(ctx sdk.Context, gs GenesisState) {
 	tstore.setVersion(ctx, gs.Version)
-	tstore.setNextTimeout(ctx, types.BlockHeight, gs.NextBlockHeight)
-	tstore.setNextTimeout(ctx, types.BlockTime, gs.NextBlockTime)
+	tstore.setNextTimeout(ctx, BlockHeight, gs.NextBlockHeight)
+	tstore.setNextTimeout(ctx, BlockTime, gs.NextBlockTime)
 
 	for _, timeEntry := range gs.TimeEntries {
-		tstore.addTimer(ctx, types.BlockTime, timeEntry.Value, []byte(timeEntry.Key), timeEntry.Data)
+		tstore.addTimer(ctx, BlockTime, timeEntry.Value, []byte(timeEntry.Key), timeEntry.Data)
 	}
 
 	for _, blockEntry := range gs.BlockEntries {
-		tstore.addTimer(ctx, types.BlockHeight, blockEntry.Value, []byte(blockEntry.Key), blockEntry.Data)
+		tstore.addTimer(ctx, BlockHeight, blockEntry.Value, []byte(blockEntry.Key), blockEntry.Data)
 	}
 }
 
 func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
-	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
-	b := store.Get(types.KeyPrefix(types.TimerVersionKey))
+	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), KeyPrefix(tstore.prefix))
+	b := store.Get(KeyPrefix(TimerVersionKey))
 	// TODO: TEMPORARY: in transition from an old version key (that collided with that of
 	// fixation-store) to a newer version key, we could not safely migration: due to said
 	// collision the version was that of the fixation (and thus unreliable for timer). So
@@ -193,70 +204,70 @@ func (tstore *TimerStore) getVersion(ctx sdk.Context) uint64 {
 	// the new key is not found in the store yet.
 	if b == nil {
 		tstore.setVersion(ctx, TimerVersion())
-		b = store.Get(types.KeyPrefix(types.TimerVersionKey))
+		b = store.Get(KeyPrefix(TimerVersionKey))
 	}
-	return types.DecodeKey(b)
+	return DecodeKey(b)
 }
 
 func (tstore *TimerStore) setVersion(ctx sdk.Context, val uint64) {
-	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), types.KeyPrefix(tstore.prefix))
-	b := types.EncodeKey(val)
-	store.Set(types.KeyPrefix(types.TimerVersionKey), b)
+	store := prefix.NewStore(ctx.KVStore(tstore.storeKey), KeyPrefix(tstore.prefix))
+	b := EncodeKey(val)
+	store.Set(KeyPrefix(TimerVersionKey), b)
 }
 
 // WithCallbackByBlockHeight sets a callback handler for timeouts (by block height)
 func (tstore *TimerStore) WithCallbackByBlockHeight(callback TimerCallback) *TimerStore {
 	tstoreNew := tstore
-	tstoreNew.callbacks[types.BlockHeight] = callback
+	tstoreNew.callbacks[BlockHeight] = callback
 	return tstoreNew
 }
 
 // WithCallbackByBlockHeight sets a callback handler for timeouts (by block timestamp)
 func (tstore *TimerStore) WithCallbackByBlockTime(callback TimerCallback) *TimerStore {
 	tstoreNew := tstore
-	tstoreNew.callbacks[types.BlockTime] = callback
+	tstoreNew.callbacks[BlockTime] = callback
 	return tstoreNew
 }
 
 func (tstore *TimerStore) getStore(ctx sdk.Context, extraPrefix string) *prefix.Store {
 	store := prefix.NewStore(
 		ctx.KVStore(tstore.storeKey),
-		types.KeyPrefix(tstore.prefix+extraPrefix),
+		KeyPrefix(tstore.prefix+extraPrefix),
 	)
 	return &store
 }
 
-func (tstore *TimerStore) getStoreTimer(ctx sdk.Context, which types.TimerType) *prefix.Store {
-	prefix := types.TimerPrefix + types.TimerTypePrefix[which]
+func (tstore *TimerStore) getStoreTimer(ctx sdk.Context, which TimerType) *prefix.Store {
+	prefix := TimerPrefix + TimerTypePrefix[which]
 	return tstore.getStore(ctx, prefix)
 }
 
-func (tstore *TimerStore) getNextTimeout(ctx sdk.Context, which types.TimerType) uint64 {
-	store := tstore.getStore(ctx, types.NextTimerPrefix)
-	b := store.Get([]byte(types.NextTimerKey[which]))
+func (tstore *TimerStore) getNextTimeout(ctx sdk.Context, which TimerType) uint64 {
+	store := tstore.getStore(ctx, NextTimerPrefix)
+	b := store.Get([]byte(NextTimerKey[which]))
 	if len(b) == 0 {
 		return math.MaxUint64
 	}
-	return types.DecodeKey(b)
+	return DecodeKey(b)
 }
 
-func (tstore *TimerStore) getNextTimeoutBlockHeight(ctx sdk.Context) uint64 {
-	return tstore.getNextTimeout(ctx, types.BlockHeight)
+func (tstore *TimerStore) GetNextTimeoutBlockHeight(ctx sdk.Context) uint64 {
+	return tstore.getNextTimeout(ctx, BlockHeight)
 }
 
-func (tstore *TimerStore) getNextTimeoutBlockTime(ctx sdk.Context) uint64 {
-	return tstore.getNextTimeout(ctx, types.BlockTime)
+func (tstore *TimerStore) GetNextTimeoutBlockTime(ctx sdk.Context) uint64 {
+	return tstore.getNextTimeout(ctx, BlockTime)
 }
 
-func (tstore *TimerStore) setNextTimeout(ctx sdk.Context, which types.TimerType, value uint64) {
-	store := tstore.getStore(ctx, types.NextTimerPrefix)
-	b := types.EncodeKey(value)
-	store.Set([]byte(types.NextTimerKey[which]), b)
+func (tstore *TimerStore) setNextTimeout(ctx sdk.Context, which TimerType, value uint64) {
+	store := tstore.getStore(ctx, NextTimerPrefix)
+	b := EncodeKey(value)
+	store.Set([]byte(NextTimerKey[which]), b)
 }
 
-func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value uint64, key, data []byte) {
+func (tstore *TimerStore) addTimer(ctx sdk.Context, which TimerType, value uint64, key, data []byte) {
 	store := tstore.getStoreTimer(ctx, which)
-	timerKey := types.EncodeBlockAndKey(value, key)
+	timerKey := EncodeBlockAndKey(value, key)
 	store.Set(timerKey, data)
 
 	nextValue := tstore.getNextTimeout(ctx, which)
@@ -265,15 +276,15 @@ func (tstore *TimerStore) addTimer(ctx sdk.Context, which types.TimerType, value
 	}
 }
 
-func (tstore *TimerStore) hasTimer(ctx sdk.Context, which types.TimerType, value uint64, key []byte) bool {
+func (tstore *TimerStore) hasTimer(ctx sdk.Context, which TimerType, value uint64, key []byte) bool {
 	store := tstore.getStoreTimer(ctx, which)
-	timerKey := types.EncodeBlockAndKey(value, key)
+	timerKey := EncodeBlockAndKey(value, key)
 	return store.Has(timerKey)
 }
 
-func (tstore *TimerStore) delTimer(ctx sdk.Context, which types.TimerType, value uint64, key []byte) {
+func (tstore *TimerStore) delTimer(ctx sdk.Context, which TimerType, value uint64, key []byte) {
 	store := tstore.getStoreTimer(ctx, which)
-	timerKey := types.EncodeBlockAndKey(value, key)
+	timerKey := EncodeBlockAndKey(value, key)
 	if !store.Has(timerKey) {
 		// panic:ok: caller should only try to delete existing timers
 		// (use HasTimerByBlock{Height,Time} to check if a timer exists)
@@ -290,7 +301,7 @@ func (tstore *TimerStore) AddTimerByBlockHeight(ctx sdk.Context, block uint64, k
 		panic(fmt.Sprintf("timer expiry block %d smaller than ctx block %d",
 			block, uint64(ctx.BlockHeight())))
 	}
-	tstore.addTimer(ctx, types.BlockHeight, block, key, data)
+	tstore.addTimer(ctx, BlockHeight, block, key, data)
 }
 
 // AddTimerByBlockTime adds a new timer to expire on a future block with the given timestamp.
@@ -301,47 +312,58 @@ func (tstore *TimerStore) AddTimerByBlockTime(ctx sdk.Context, timestamp uint64,
 		panic(fmt.Sprintf("timer expiry time %d smaller than ctx time %d",
 			timestamp, uint64(ctx.BlockTime().UTC().Unix())))
 	}
-	tstore.addTimer(ctx, types.BlockTime, timestamp, key, data)
+	tstore.addTimer(ctx, BlockTime, timestamp, key, data)
 }
 
 // HasTimerByBlockHeight checks whether a timer exists for the <block, key> tuple.
 func (tstore *TimerStore) HasTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte) bool {
-	return tstore.hasTimer(ctx, types.BlockHeight, block, key)
+	return tstore.hasTimer(ctx, BlockHeight, block, key)
 }
 
 // HasTimerByBlockTime checks whether a timer exists for the <timestamp, key> tuple.
 func (tstore *TimerStore) HasTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte) bool {
-	return tstore.hasTimer(ctx, types.BlockTime, timestamp, key)
+	return tstore.hasTimer(ctx, BlockTime, timestamp, key)
 }
 
 // DelTimerByBlockHeight removes an existing timer for the <block, key> tuple.
 func (tstore *TimerStore) DelTimerByBlockHeight(ctx sdk.Context, block uint64, key []byte) {
-	tstore.delTimer(ctx, types.BlockHeight, block, key)
+	tstore.delTimer(ctx, BlockHeight, block, key)
 }
 
 // DelTimerByBlockTime removes an existing timer for the <timestamp, key> tuple.
 func (tstore *TimerStore) DelTimerByBlockTime(ctx sdk.Context, timestamp uint64, key []byte) {
-	tstore.delTimer(ctx, types.BlockTime, timestamp, key)
+	tstore.delTimer(ctx, BlockTime, timestamp, key)
 }
 
 // DumpAllTimers dumps the details of all existing timers (of a type) into a string (for test/debug).
-func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which types.TimerType) string {
+func (tstore *TimerStore) DumpAllTimers(ctx sdk.Context, which TimerType) []*TimerInfo {
 	store := tstore.getStoreTimer(ctx, which)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	var b strings.Builder
+	timers := []*TimerInfo{}
 
 	for ; iterator.Valid(); iterator.Next() {
-		value, key := types.DecodeBlockAndKey(iterator.Key())
-		b.WriteString(fmt.Sprintf("block %d key %v data %v\n", value, key, iterator.Value()))
+		timers = append(timers, tstore.createTimerInfo(iterator.Key(), iterator.Value(), which))
 	}
 
-	return b.String()
+	return timers
 }
 
-func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which types.TimerType) (uint64, []byte, []byte) {
+func (tstore *TimerStore) createTimerInfo(key, value []byte, which TimerType) *TimerInfo {
+	decodedValue, decodedKey := DecodeBlockAndKey(key)
+	formattedKey := commontypes.ByteSliceToASCIIStr(decodedKey, NonASCIICharPlaceholder)
+
+	if which == BlockTime {
+		blockTime := commontypes.ConvertUnixTimestampToString(decodedValue)
+		return &TimerInfo{Block: &TimerInfo_BlockTime{BlockTime: blockTime}, Key: formattedKey, Data: value}
+	}
+
+	return &TimerInfo{Block: &TimerInfo_BlockHeight{BlockHeight: decodedValue}, Key: formattedKey, Data: value}
+}
+
+func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which TimerType) (uint64, []byte, []byte) {
 	store := tstore.getStoreTimer(ctx, which)
 
 	// because the key is block height/timestamp, the iterator yields entries
@@ -354,11 +376,11 @@ func (tstore *TimerStore) getFrontTimer(ctx sdk.Context, which types.TimerType) 
 		return math.MaxUint64, []byte{}, []byte{}
 	}
 
-	value, key := types.DecodeBlockAndKey(iterator.Key())
+	value, key := DecodeBlockAndKey(iterator.Key())
 	return value, key, iterator.Value()
 }
 
-func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tickValue uint64) {
+func (tstore *TimerStore) tickValue(ctx sdk.Context, which TimerType, tickValue uint64) {
 	nextValue := tstore.getNextTimeout(ctx, which)
 	if tickValue < nextValue {
 		return
@@ -382,7 +404,7 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which types.TimerType, tick
 	}
 }
 
-func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which types.TimerType) ([][]byte, []uint64) {
+func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which TimerType) ([][]byte, []uint64) {
 	store := tstore.getStoreTimer(ctx, which)
 	nextTimeoutValue := tstore.getNextTimeout(ctx, which)
 
@@ -392,7 +414,7 @@ func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which types.TimerType)
 	var values []uint64
 	var keys [][]byte
 	for ; iterator.Valid(); iterator.Next() {
-		value, key := types.DecodeBlockAndKey(iterator.Key())
+		value, key := DecodeBlockAndKey(iterator.Key())
 		if value > nextTimeoutValue {
 			break
 		}
@@ -406,10 +428,10 @@ func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which types.TimerType)
 // Tick advances the timer by a block. It should be called at the beginning of each block.
 func (tstore *TimerStore) Tick(ctx sdk.Context) {
 	block := uint64(ctx.BlockHeight())
-	tstore.tickValue(ctx, types.BlockHeight, block)
+	tstore.tickValue(ctx, BlockHeight, block)
 
 	timestamp := uint64(ctx.BlockTime().UTC().Unix())
-	tstore.tickValue(ctx, types.BlockTime, timestamp)
+	tstore.tickValue(ctx, BlockTime, timestamp)
 }
 
 func (tstore *TimerStore) prefixForErrors(from uint64) string {
@@ -446,16 +468,16 @@ func (tstore *TimerStore) MigrateVersion(ctx sdk.Context) (err error) {
 //   - convert entry keys from "<block>" to "<block>index (otherwise timer for an entry
 //     with some block will be overwritten by timer for another entry with same block.
 func timerMigrate1to2(ctx sdk.Context, tstore *TimerStore) error {
-	for _, which := range []types.TimerType{types.BlockHeight, types.BlockTime} {
+	for _, which := range []TimerType{BlockHeight, BlockTime} {
 		store := tstore.getStoreTimer(ctx, which)
 
 		iterator := sdk.KVStorePrefixIterator(store, []byte{})
 		defer iterator.Close()
 
 		for ; iterator.Valid(); iterator.Next() {
-			value, key := types.DecodeBlockAndKey(iterator.Key())
-			key_v1 := types.EncodeKey(value) // same as iterator.Key()
-			key_v2 := types.EncodeBlockAndKey(value, key)
+			value, key := DecodeBlockAndKey(iterator.Key())
+			key_v1 := EncodeKey(value) // same as iterator.Key()
+			key_v2 := EncodeBlockAndKey(value, key)
 			store.Set(key_v2, iterator.Value())
 			store.Delete(key_v1)
 		}

@@ -6,8 +6,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	projecttypes "github.com/lavanet/lava/x/projects/types"
@@ -60,6 +62,8 @@ func CmdAccountInfo() *cobra.Command {
 			subscriptionQuerier := subscriptiontypes.NewQueryClient(clientCtx)
 			projectQuerier := projecttypes.NewQueryClient(clientCtx)
 			epochStorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
+			dualstakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
+			stakingQuerier := stakingtypes.NewQueryClient(clientCtx)
 			resultStatus, err := clientCtx.Client.Status(ctx)
 			if err != nil {
 				return err
@@ -114,6 +118,16 @@ func CmdAccountInfo() *cobra.Command {
 			developer, err := projectQuerier.Developer(cmd.Context(), &projecttypes.QueryDeveloperRequest{Developer: address})
 			if err == nil {
 				info.Project = developer.Project
+			}
+
+			providers, err := dualstakingQuerier.DelegatorProviders(cmd.Context(), &dualstakingtypes.QueryDelegatorProvidersRequest{Delegator: address, WithPending: true})
+			if err == nil {
+				info.DelegationsProviders = providers.Delegations
+			}
+
+			validators, err := stakingQuerier.DelegatorDelegations(ctx, &stakingtypes.QueryDelegatorDelegationsRequest{DelegatorAddr: address})
+			if err == nil {
+				info.DelegationsValidators = validators.DelegationResponses
 			}
 
 			// we finished gathering information, now print it

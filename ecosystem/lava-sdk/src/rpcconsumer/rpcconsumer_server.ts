@@ -33,11 +33,7 @@ import {
   RelayRequest,
 } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 import SDKErrors from "../sdk/errors";
-import {
-  AverageWorldLatency,
-  GetRelayTimeout,
-  getTimePerCu,
-} from "../common/timeout";
+import { GetRelayTimeout } from "../common/timeout";
 import { FinalizationConsensus } from "../lavaprotocol/finalization_consensus";
 import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 import { BaseChainMessageContainer } from "../chainlib/chain_message";

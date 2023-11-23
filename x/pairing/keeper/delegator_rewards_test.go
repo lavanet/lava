@@ -149,7 +149,7 @@ var (
 	relayCuSum = uint64(100)
 )
 
-func sendRelay(ts *tester, provider string, clientAcc common.Account, chainIDs []string) types.MsgRelayPayment {
+func sendRelay(ts *tester, provider string, clientAcc sigs.Account, chainIDs []string) types.MsgRelayPayment {
 	var relays []*types.RelaySession
 	epoch := int64(ts.EpochStart(ts.BlockHeight()))
 

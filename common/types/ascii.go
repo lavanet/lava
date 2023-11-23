@@ -1,6 +1,9 @@
 package types
 
-import "unicode"
+import (
+	"bytes"
+	"unicode"
+)
 
 const (
 	ASCII_MIN = 32  // min visible ascii
@@ -48,4 +51,22 @@ func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars 
 	}
 
 	return true
+}
+
+// Convert byte slice to ASCII-only string
+// Non-ASCII characters will be replaced with placeholder
+func ByteSliceToASCIIStr(input []byte, placeholder rune) string {
+	var result bytes.Buffer
+
+	for _, b := range input {
+		if b >= ASCII_MIN && b <= ASCII_MAX {
+			// If the byte is within the ASCII printable range, add it to the result.
+			result.WriteByte(b)
+		} else {
+			// If it's not an ASCII printable character, replace it with the placeholder.
+			result.WriteRune(placeholder)
+		}
+	}
+
+	return result.String()
 }

@@ -58,7 +58,7 @@ jobs:
         index=0
         for version in $new_tags_array; do
           echo "$version"
-          index="$index" version="$version" yq -i '.on.workflow_dispatch.inputs.tag_to_deploy.options[env(index)] = env(version)' .github/workflows/network-upgrades-receiver.yml
+          index="$index" version="$version" yq -i '.on.workflow_dispatch.inputs.tag_to_deploy.options[env(index)] = env(version)' .github/workflows/network-upgrades-receiver-lavad.yml
           index=$((index+1))
         done
         git config user.name github-actions
