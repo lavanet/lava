@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
