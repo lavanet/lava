@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/x/timerstore"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +34,7 @@ func TestMigrate1to2(t *testing.T) {
 
 	ctx, cdc := initCtx(t)
 
-	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
+	ts := timerstoretypes.NewTimerStore(mockStoreKey, cdc, mockPrefix)
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts, mockGetStaleBlock)
 	fs.Init(ctx, GenesisState{Version: 1})
 
@@ -147,7 +147,7 @@ func TestMigrate2to3(t *testing.T) {
 
 	ctx, cdc := initCtx(t)
 
-	ts := timerstore.NewTimerStore(mockStoreKey, cdc, mockPrefix)
+	ts := timerstoretypes.NewTimerStore(mockStoreKey, cdc, mockPrefix)
 	fs := NewFixationStore(mockStoreKey, cdc, mockPrefix, ts, mockGetStaleBlock)
 	fs.Init(ctx, GenesisState{Version: 2})
 

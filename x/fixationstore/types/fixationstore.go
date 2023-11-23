@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // FixationStore manages lists of entries with versions in the store.
@@ -171,7 +171,7 @@ type FixationStore struct {
 	storeKey       storetypes.StoreKey
 	cdc            codec.BinaryCodec
 	prefix         string
-	tstore         timerstore.TimerStore
+	tstore         timerstoretypes.TimerStore
 	getStaleBlocks GetStaleBlocks
 }
 
@@ -1114,7 +1114,7 @@ func (fs *FixationStore) Init(ctx sdk.Context, gs GenesisState) {
 }
 
 // NewFixationStore returns a new FixationStore object
-func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *timerstore.TimerStore, getStaleBlocks GetStaleBlocks) *FixationStore {
+func NewFixationStore(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, prefix string, tstore *timerstoretypes.TimerStore, getStaleBlocks GetStaleBlocks) *FixationStore {
 	fs := FixationStore{storeKey: storeKey, cdc: cdc, prefix: prefix}
 
 	callback := func(ctx sdk.Context, key, data []byte) {

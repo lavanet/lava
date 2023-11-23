@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +23,7 @@ func InitCtxAndFixationStores(t *testing.T, count int) (sdk.Context, []*Fixation
 	fs := make([]*FixationStore, count)
 	for i := 0; i < count; i++ {
 		fixationKey := "mock_fix_" + strconv.Itoa(i)
-		ts := timerstore.NewTimerStore(mockStoreKey, cdc, fixationKey)
+		ts := timerstoretypes.NewTimerStore(mockStoreKey, cdc, fixationKey)
 		fs[i] = NewFixationStore(mockStoreKey, cdc, fixationKey, ts, mockGetStaleBlock)
 		fs[i].Init(ctx, *DefaultGenesis())
 	}
