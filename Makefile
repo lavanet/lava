@@ -268,14 +268,18 @@ endef
 # otherwise it is an error.
 
 ifeq (,$(LAVA_BINARY))
-LAVA_BINARY := bad
-# these will be called if target is "build" or "install" and $(LAVA_BINARY)
-# remains undefined.
-build-bad install-bad docker-build-bad:
-	$(error "target '$(call prefix,-,$@)' requires valid env 'LAVA_BINARY'")
+  LAVA_BINARY := bad
+  # these will be called if target is "build" or "install" and $(LAVA_BINARY)
+  # remains undefined.
+  build-bad install-bad docker-build-bad:
+      $(error "target '$(call prefix,-,$@)' requires valid env 'LAVA_BINARY'")
 else
-$(call validate_binary,$(LAVA_BINARY),\
-  "targets 'build'(comma) 'install' require valid env 'LAVA_BINARY'")
+  $(info LAVA_BINARY is [$(LAVA_BINARY)])
+  $(info valid_binaries is [$(valid_binaries)])
+  
+  ifeq (,$(findstring $(LAVA_BINARY),$(valid_binaries)))
+    $(error "targets 'build', 'install' require valid env 'LAVA_BINARY'")
+  endif
 endif
 
 build: build-$(LAVA_BINARY)
