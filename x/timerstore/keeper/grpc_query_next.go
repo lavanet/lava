@@ -25,7 +25,7 @@ func createQueryNextResponse(nextBlockHeight, nextBlockTime uint64, tick string)
 	return &types.QueryNextResponse{
 		NextBlockHeight: blockHeight,
 		NextBlockTime:   blockTimeStr,
-		Tick:            BeginBlock,
+		Tick:            tick,
 	}
 }
 
