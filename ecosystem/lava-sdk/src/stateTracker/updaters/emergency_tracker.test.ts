@@ -24,6 +24,8 @@ import { getDefaultLavaSpec } from "../../chainlib/default_lava_spec";
 import { Params } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 import { Duration } from "google-protobuf/google/protobuf/duration_pb";
 import { StateChainQuery } from "../stateQuery/state_chain_query";
+import {BadgeManager} from "../../badge/badgeManager";
+import {StateBadgeQuery} from "../stateQuery/state_badge_query";
 
 function setupConsumerSessionManager(
   relayer?: Relayer,
@@ -84,10 +86,10 @@ describe("EmergencyTracker", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
-  jest.setTimeout(10000000);
+  //jest.setTimeout(10000000);
 
-  describe("test", () => {
-    it("EmergencyTrackerVirtualEpoch", async () => {
+  describe("getVirtualEpoch", () => {
+    it("EmergencyTrackerVirtualEpochWithChainQuery", async () => {
       const relayer = setupRelayer();
       const cm = setupConsumerSessionManager(relayer);
       const pairingList = createPairingList("", true);
@@ -170,6 +172,72 @@ describe("EmergencyTracker", () => {
 
       expect(emergencyTracker.getVirtualEpoch()).toEqual(0);
     });
+
+    it("EmergencyTrackerVirtualEpochWithBadgeQuery", async () => {
+      const relayer = setupRelayer();
+      const cm = setupConsumerSessionManager(relayer);
+      const pairingList = createPairingList("", true);
+      await cm.updateAllProviders(1, pairingList);
+
+      const rpcEndpoint = new RPCEndpoint(
+          "", // We do no need this in sdk as we are not opening any ports
+          "LAV1",
+          "tendermintrpc",
+          DEFAULT_GEOLOCATION // This is also deprecated
+      );
+      const finalizationConsensus = new FinalizationConsensus();
+      const consumerConsistency = new ConsumerConsistency("LAV1");
+
+      const rpcConsumerServerLoL = new RPCConsumerServer(
+          relayer,
+          cm,
+          new TendermintRpcChainParser(),
+          DEFAULT_GEOLOCATION,
+          rpcEndpoint,
+          "LAV1",
+          finalizationConsensus,
+          consumerConsistency
+      );
+      const spec = getDefaultLavaSpec();
+      const badge = {
+        badgeServerAddress: "<badge server address>",
+        projectId: "<badge project id>",
+      };
+
+      const badgeManager = new BadgeManager(badge);
+
+      const stateTracker = new StateTracker(
+          "",
+          relayer,
+          ["LAV1"],
+          {
+            geolocation: DEFAULT_GEOLOCATION,
+            network: DEFAULT_LAVA_PAIRING_NETWORK,
+          },
+          rpcConsumerServerLoL,
+          spec,
+          {
+            algo: "secp256k1",
+            address: "",
+            pubkey: new Uint8Array([]),
+          },
+          "",
+          badgeManager
+      );
+      rpcConsumerServerLoL.setEmergencyTracker(
+          stateTracker.getEmergencyTracker()
+      );
+
+      const emergencyTracker = stateTracker["emergencyTracker"];
+      expect(emergencyTracker.getVirtualEpoch()).toEqual(0);
+
+      (stateTracker['stateQuery'] as StateBadgeQuery)['virtualEpoch'] = 1;
+      expect(emergencyTracker.getVirtualEpoch()).toEqual(1);
+
+      (stateTracker['stateQuery'] as StateBadgeQuery)['virtualEpoch'] = 3;
+      expect(emergencyTracker.getVirtualEpoch()).toEqual(3);
+    });
+
   });
 });
 
