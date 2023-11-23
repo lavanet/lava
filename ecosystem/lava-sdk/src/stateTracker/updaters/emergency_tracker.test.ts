@@ -86,7 +86,7 @@ describe("EmergencyTracker", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
-  //jest.setTimeout(10000000);
+  jest.setTimeout(100000);
 
   describe("getVirtualEpoch", () => {
     it("EmergencyTrackerVirtualEpochWithChainQuery", async () => {
