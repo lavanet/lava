@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -23,22 +25,24 @@ var _ = strconv.Itoa(0)
 
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] --from <address> --provider-moniker <moniker>",
+		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] {validator} --from <address> --provider-moniker <moniker>",
 		Short: `stake a provider on the lava blockchain on a specific specification`,
 		Long: `args:
 		[chain-id] is the spec the provider wishes to support
-		[amount] is the ulava amount to be staked
+		[amount] is the ulava amount to be staked, this is the final amount, if is lower than the the original stake it will unbond from the provider (and delegated validators)
 		[endpoint endpoint ...] are a space separated list of HOST:PORT,geolocation,[apiInterface,apiInterface,addon,addon,] should be defined within "quotes". Note that you can specify the geolocation using a single uint64 (which will be treated as a bitmask (see plan.proto)) or using one of the geolocation codes. Valid geolocation codes: AF, AS, AU, EU, USE (US east), USC, USW, GL (global).
 		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
+		{validator} delegate to a validator with the same amount with dualstaking, if not provided the validator will be chosen for best fit, when amount is decreasing to unbond, this determines the validator to extract funds from
 		
 		IMPORTANT: endpoint should not contain your node URL, it should point to the grpc listener of your provider service defined in your provider config or cli args`,
 		Example: `
 		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider-africa.com:2221,AF my-provider-europe.com:2221,EU" AF,EU -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc,archive,trace" 1 -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 
-		Args: cobra.ExactArgs(4),
+		Args: cobra.RangeArgs(4, 5),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
 			argAmount, err := sdk.ParseCoinNormalized(args[1])
@@ -75,8 +79,16 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			var validator string
+			if len(args) == 5 {
+				validator = args[4]
+			} else {
+				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
+			}
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
+				validator,
 				argChainID,
 				argAmount,
 				argEndpoints,
@@ -102,17 +114,20 @@ func CmdStakeProvider() *cobra.Command {
 
 func CmdBulkStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bulk-stake-provider [chain-id,chain-id,chain-id...] [amount] [endpoint-url,geolocation endpoint-url,geolocation] [geolocation] {repeat arguments for another bulk} --from <address> --provider-moniker <moniker>",
-		Short: "used to stake with a provider on a given endpoint in all of it's api interfaces and all chains with the same stake, each chain will require it's own stake, this command can be run in bulk, by repeating the arguments",
+		Use:   "bulk-stake-provider [chain-id,chain-id,chain-id...] [amount] [endpoint-url,geolocation endpoint-url,geolocation] [geolocation] {repeat arguments for another bulk} {validator} --from <address> --provider-moniker <moniker>",
+		Short: "used to stake with a provider on a given endpoint in all of it's api interfaces and all chains with the same stake, each chain will require it's own stake, this command can be run in bulk, by repeating the arguments. for dual staking you can optionaly choose a validator to delegate",
 		Long: `args:
 		[chain-id,chain-id] is the specs the provider wishes to support separated by a ','
 		[amount] is the ulava amount to be staked
 		[endpoint-url,geolocation endpoint-url,geolocation...] are a space separated list of HOST:PORT,geolocation, should be defined within "quotes"
 		[geolocation] should be the geolocation code to be staked for
-		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block`,
+		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block
+		{validator} optional validator address to delegate, if not provided the validator will be chosen for you for best match`,
 		Example: `lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and COS3,COS5 in another
-		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 COS3,COS5 500000ulava "my-other-grpc-addr.com:1111,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 COS3,COS5 500000ulava "my-other-grpc-addr.com:1111,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing bulk-stake-provider lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 COS3,COS5 500000ulava "my-other-grpc-addr.com:1111,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args)%BULK_ARG_COUNT != 0 {
 				return fmt.Errorf("invalid number of arguments, needs to be a multiple of %d, arg count: %d", BULK_ARG_COUNT, len(args))
@@ -158,6 +173,12 @@ func CmdBulkStakeProvider() *cobra.Command {
 				if err != nil {
 					return nil, err
 				}
+				var validator string
+				if len(args) == 5 {
+					validator = args[4]
+				} else {
+					validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
+				}
 
 				for _, chainID := range chainIDs {
 					if chainID == "" {
@@ -166,6 +187,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 
 					msg := types.NewMsgStakeProvider(
 						clientCtx.GetFromAddress().String(),
+						validator,
 						chainID,
 						argAmount,
 						allEndpoints,
@@ -261,4 +283,25 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 		}
 	}
 	return endp, endpointsGeoloc, nil
+}
+
+func getValidator(clientCtx client.Context, provider string) string {
+	q := stakingtypes.NewQueryClient(clientCtx)
+	ctx := context.Background()
+	resD, err := q.DelegatorValidators(ctx, &stakingtypes.QueryDelegatorValidatorsRequest{DelegatorAddr: provider})
+	if err == nil && len(resD.Validators) > 0 {
+		return resD.Validators[0].OperatorAddress
+	}
+
+	resV, err := q.Validators(ctx, &stakingtypes.QueryValidatorsRequest{})
+	if err != nil {
+		panic("failed to fetch list of validators")
+	}
+	validatorBiggest := resV.Validators[0]
+	for _, validator := range resV.Validators {
+		if validator.Tokens.GT(validatorBiggest.Tokens) {
+			validatorBiggest = validator
+		}
+	}
+	return validatorBiggest.OperatorAddress
 }

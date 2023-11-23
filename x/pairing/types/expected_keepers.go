@@ -7,6 +7,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
@@ -14,7 +15,7 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 type SpecKeeper interface {
@@ -98,13 +99,12 @@ type PlanKeeper interface {
 type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
 	GetParams(ctx sdk.Context) (params v1.Params)
-	GetLastBlockTime(ctx sdk.Context) (time.Time, bool)
 }
 
 type DualstakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error)
-	Delegate(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error
-	Unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, unstake bool) error
+	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
+	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
 }
 
 type FixationStoreKeeper interface {
@@ -112,5 +112,10 @@ type FixationStoreKeeper interface {
 }
 
 type TimerStoreKeeper interface {
-	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
+	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstoretypes.TimerStore
+}
+
+type StakingKeeper interface {
+	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
+	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 }

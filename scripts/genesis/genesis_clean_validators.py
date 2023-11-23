@@ -2,7 +2,7 @@ import json
 
 # Specify the file path, field to edit, and new value
 path = '/home/user/go/lava/scripts/genesis/'
-genesis_org = 'genesis_specs.json'
+genesis_org = 'genesis_091123.json'
 genesis = 'genesis.json'
 
 distributionModule = "lava@1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8l8newj"
@@ -12,6 +12,9 @@ notbondedpool = "lava@1tygms3xhhs3yv487phx3dw4a95jn7t7lerzmgw"
 # Load the JSON file
 with open(path + genesis_org, 'r') as file:
     data = json.load(file)
+
+data["app_state"]["spec"]["specList"] = []
+data["app_state"]["spec"]["specCount"] = 0
 
 data["app_state"]["epochstorage"]["params"]["epochBlocks"] = "60"
 data["app_state"]["epochstorage"]["params"]["unstakeHoldBlocks"] = "3020"
@@ -61,7 +64,7 @@ data["app_state"]["bank"]["supply"] = []
 
 for bankAdd in data["app_state"]["bank"]["balances"]:
         if bankAdd["address"] == distributionModule:
-            bankAdd["coins"][0]["amount"] = str(int(float(data["app_state"]["distribution"]["fee_pool"]["community_pool"][0]["amount"])))
+            bankAdd["coins"][0]["amount"] = str(int(float(data["app_state"]["distribution"]["fee_pool"]["community_pool"][0]["amount"]))-1)
             break
         
 

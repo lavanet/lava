@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 
@@ -29,10 +29,11 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
-		badgeTimerStore    timerstore.TimerStore
+		badgeTimerStore    timerstoretypes.TimerStore
 		providerQosFS      fixationtypes.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
+		stakingKeeper      types.StakingKeeper
 	}
 )
 
@@ -61,6 +62,7 @@ func NewKeeper(
 	planKeeper types.PlanKeeper,
 	downtimeKeeper types.DowntimeKeeper,
 	dualstakingKeeper types.DualstakingKeeper,
+	stakingKeeper types.StakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -83,6 +85,7 @@ func NewKeeper(
 		planKeeper:         planKeeper,
 		downtimeKeeper:     downtimeKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
+		stakingKeeper:      stakingKeeper,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)

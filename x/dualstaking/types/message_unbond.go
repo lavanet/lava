@@ -10,12 +10,13 @@ const TypeMsgUnbond = "unbond"
 
 var _ sdk.Msg = &MsgUnbond{}
 
-func NewMsgUnbond(delegator string, provider string, chainID string, amount sdk.Coin) *MsgUnbond {
+func NewMsgUnbond(delegator string, validator string, provider string, chainID string, amount sdk.Coin) *MsgUnbond {
 	return &MsgUnbond{
-		Creator:  delegator,
-		Provider: provider,
-		ChainID:  chainID,
-		Amount:   amount,
+		Creator:   delegator,
+		Validator: validator,
+		Provider:  provider,
+		ChainID:   chainID,
+		Amount:    amount,
 	}
 }
 

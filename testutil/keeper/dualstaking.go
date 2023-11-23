@@ -17,7 +17,7 @@ import (
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +55,7 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"SpecParams",
 	)
 
-	tsKeeper := timerstore.NewKeeper(cdc)
+	tsKeeper := timerstorekeeper.NewKeeper(cdc)
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
 
 	k := keeper.NewKeeper(
@@ -64,11 +64,11 @@ func DualstakingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		&mockBankKeeper{},
+		nil,
 		&mockAccountKeeper{},
 		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
 		fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw),
-		tsKeeper,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

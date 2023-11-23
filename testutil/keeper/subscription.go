@@ -19,7 +19,7 @@ import (
 	projectskeeper "github.com/lavanet/lava/x/projects/keeper"
 	"github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/lavanet/lava/x/subscription/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +64,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		"PlansParams",
 	)
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
-	tsKeeper := timerstore.NewKeeper(cdc)
+	tsKeeper := timerstorekeeper.NewKeeper(cdc)
 	fsKeeper := fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw)
 
 	k := keeper.NewKeeper(
@@ -77,7 +77,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		epochstorageKeeper,
 		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, fsKeeper),
 		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper),
-		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, mockAccountKeeper{}, nil, nil, fsKeeper, tsKeeper),
+		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, nil, mockAccountKeeper{}, nil, nil, fsKeeper),
 		fsKeeper,
 		tsKeeper,
 	)

@@ -7,10 +7,11 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -31,13 +32,15 @@ type BankKeeper interface {
 }
 
 type EpochstorageKeeper interface {
-	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
 	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
 	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
 	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
+	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
+	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
+
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -45,10 +48,22 @@ type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (active bool, found bool, providerType spectypes.Spec_ProvidersTypes)
 	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
+	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
 }
 
 type StakingKeeper interface {
 	UnbondingTime(ctx sdk.Context) time.Duration
+	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
+	GetDelegatorValidator(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error)
+	GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool)
+	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	GetValidatorDelegations(ctx sdk.Context, valAddr sdk.ValAddress) (delegations []stakingtypes.Delegation)
+	BondDenom(ctx sdk.Context) string
+	ValidateUnbondAmount(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (shares sdk.Dec, err error)
+	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (time.Time, error)
+	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
+	GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator
+	GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator)
 }
 
 type FixationStoreKeeper interface {
@@ -56,5 +71,5 @@ type FixationStoreKeeper interface {
 }
 
 type TimerStoreKeeper interface {
-	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstore.TimerStore
+	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstoretypes.TimerStore
 }

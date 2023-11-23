@@ -9,8 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
-	"github.com/lavanet/lava/x/timerstore"
-	timertypes "github.com/lavanet/lava/x/timerstore/types"
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -23,13 +21,13 @@ type (
 		paramstore paramtypes.Subspace
 
 		bankKeeper         types.BankKeeper
+		stakingKeeper      types.StakingKeeper
 		accountKeeper      types.AccountKeeper
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
 
 		delegationFS fixationtypes.FixationStore // map proviers/chainID -> delegations
 		delegatorFS  fixationtypes.FixationStore // map delegators -> providers
-		unbondingTS  timerstore.TimerStore       // track unbonding timeouts
 	}
 )
 
@@ -39,11 +37,11 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
+	stakingKeeper types.StakingKeeper,
 	accountKeeper types.AccountKeeper,
 	epochstorageKeeper types.EpochstorageKeeper,
 	specKeeper types.SpecKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
-	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -57,32 +55,17 @@ func NewKeeper(
 		paramstore: ps,
 
 		bankKeeper:         bankKeeper,
+		stakingKeeper:      stakingKeeper,
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
 		specKeeper:         specKeeper,
 	}
 
-	// ensure bonded and not bonded module accounts are set
-	if addr := accountKeeper.GetModuleAddress(types.BondedPoolName); addr == nil {
-		panic(fmt.Sprintf("%s module account has not been set", types.BondedPoolName))
-	}
-	if addr := accountKeeper.GetModuleAddress(types.NotBondedPoolName); addr == nil {
-		panic(fmt.Sprintf("%s module account has not been set", types.NotBondedPoolName))
-	}
-
 	delegationFS := *fixationStoreKeeper.NewFixationStore(storeKey, types.DelegationPrefix)
 	delegatorFS := *fixationStoreKeeper.NewFixationStore(storeKey, types.DelegatorPrefix)
 
-	timerCallback := func(ctx sdk.Context, key, data []byte) {
-		keeper.finalizeUnbonding(ctx, key, data)
-	}
-
-	unbondingTS := *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.UnbondingPrefix).
-		WithCallbackByBlockHeight(timerCallback)
-
 	keeper.delegationFS = delegationFS
 	keeper.delegatorFS = delegatorFS
-	keeper.unbondingTS = unbondingTS
 
 	return keeper
 }
@@ -97,11 +80,6 @@ func (k Keeper) ExportDelegators(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.delegatorFS.Export(ctx)
 }
 
-// ExportUnbondings exports dualstaking unbonding timers data (for genesis)
-func (k Keeper) ExportUnbondings(ctx sdk.Context) timertypes.GenesisState {
-	return k.unbondingTS.Export(ctx)
-}
-
 // InitDelegations imports dualstaking delegations data (from genesis)
 func (k Keeper) InitDelegations(ctx sdk.Context, data fixationtypes.GenesisState) {
 	k.delegationFS.Init(ctx, data)
@@ -110,11 +88,6 @@ func (k Keeper) InitDelegations(ctx sdk.Context, data fixationtypes.GenesisState
 // InitDelegators imports dualstaking delegators data (from genesis)
 func (k Keeper) InitDelegators(ctx sdk.Context, data fixationtypes.GenesisState) {
 	k.delegatorFS.Init(ctx, data)
-}
-
-// InitUnbondings imports subscriptions timers data (from genesis)
-func (k Keeper) InitUnbondings(ctx sdk.Context, gs timertypes.GenesisState) {
-	k.unbondingTS.Init(ctx, gs)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

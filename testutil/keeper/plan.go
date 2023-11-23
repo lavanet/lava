@@ -17,7 +17,7 @@ import (
 	"github.com/lavanet/lava/x/plans/keeper"
 	"github.com/lavanet/lava/x/plans/types"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/timerstore"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +64,7 @@ func PlanKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 		epochstorageKeeper,
 		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
-		fixationkeeper.NewKeeper(cdc, timerstore.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
+		fixationkeeper.NewKeeper(cdc, timerstorekeeper.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
