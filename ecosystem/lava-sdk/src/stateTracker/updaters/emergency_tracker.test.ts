@@ -1,19 +1,29 @@
-import {StateTracker} from "../state_tracker";
-import {DEFAULT_GEOLOCATION, DEFAULT_LAVA_PAIRING_NETWORK,} from "../../config/default";
-import {RPCConsumerServer} from "../../rpcconsumer/rpcconsumer_server";
-import {Relayer} from "../../relayer/relayer";
-import {ProviderOptimizer, ProviderOptimizerStrategy,} from "../../providerOptimizer/providerOptimizer";
-import {ConsumerSessionManager} from "../../lavasession/consumerSessionManager";
-import {ConsumerSessionsWithProvider, Endpoint, RPCEndpoint,} from "../../lavasession/consumerTypes";
-import {AverageWorldLatency} from "../../common/timeout";
-import {ProbeReply} from "../../grpc_web_services/lavanet/lava/pairing/relay_pb";
-import {TendermintRpcChainParser} from "../../chainlib/tendermint";
-import {FinalizationConsensus} from "../../lavaprotocol/finalization_consensus";
-import {ConsumerConsistency} from "../../rpcconsumer/consumerConsistency";
-import {getDefaultLavaSpec} from "../../chainlib/default_lava_spec";
-import {Params} from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
-import {Duration} from "google-protobuf/google/protobuf/duration_pb";
-import {StateChainQuery} from "../stateQuery/state_chain_query";
+import { StateTracker } from "../state_tracker";
+import {
+  DEFAULT_GEOLOCATION,
+  DEFAULT_LAVA_PAIRING_NETWORK,
+} from "../../config/default";
+import { RPCConsumerServer } from "../../rpcconsumer/rpcconsumer_server";
+import { Relayer } from "../../relayer/relayer";
+import {
+  ProviderOptimizer,
+  ProviderOptimizerStrategy,
+} from "../../providerOptimizer/providerOptimizer";
+import { ConsumerSessionManager } from "../../lavasession/consumerSessionManager";
+import {
+  ConsumerSessionsWithProvider,
+  Endpoint,
+  RPCEndpoint,
+} from "../../lavasession/consumerTypes";
+import { AverageWorldLatency } from "../../common/timeout";
+import { ProbeReply } from "../../grpc_web_services/lavanet/lava/pairing/relay_pb";
+import { TendermintRpcChainParser } from "../../chainlib/tendermint";
+import { FinalizationConsensus } from "../../lavaprotocol/finalization_consensus";
+import { ConsumerConsistency } from "../../rpcconsumer/consumerConsistency";
+import { getDefaultLavaSpec } from "../../chainlib/default_lava_spec";
+import { Params } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
+import { Duration } from "google-protobuf/google/protobuf/duration_pb";
+import { StateChainQuery } from "../stateQuery/state_chain_query";
 
 function setupConsumerSessionManager(
   relayer?: Relayer,
@@ -125,15 +135,15 @@ describe("EmergencyTracker", () => {
         stateTracker.getEmergencyTracker()
       );
 
-      const emergencyTracker = stateTracker['emergencyTracker'];
+      const emergencyTracker = stateTracker["emergencyTracker"];
 
-      let params = new Params();
+      const params = new Params();
       params.setEpochDuration(new Duration().setSeconds(4));
       params.setDowntimeDuration(new Duration().setSeconds(2));
 
-      emergencyTracker['downtimeParams'] = params;
+      emergencyTracker["downtimeParams"] = params;
 
-      (stateTracker['stateQuery'] as StateChainQuery)['currentEpoch'] = 10;
+      (stateTracker["stateQuery"] as StateChainQuery)["currentEpoch"] = 10;
       await emergencyTracker.update();
 
       expect(emergencyTracker.getVirtualEpoch()).toEqual(0);
@@ -155,7 +165,7 @@ describe("EmergencyTracker", () => {
       expect(emergencyTracker.getVirtualEpoch()).toEqual(2);
 
       // increase epoch and call update to reset virtual epoch
-      (stateTracker['stateQuery'] as StateChainQuery)['currentEpoch'] = 20;
+      (stateTracker["stateQuery"] as StateChainQuery)["currentEpoch"] = 20;
       await emergencyTracker.update();
 
       expect(emergencyTracker.getVirtualEpoch()).toEqual(0);
