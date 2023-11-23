@@ -67,7 +67,7 @@ export class JsonRpcChainParser extends BaseChainParser {
     let api: Api | undefined;
     let apiCollection: ApiCollection | undefined;
     let latestRequestedBlock = 0;
-    let earliestRequestedBlock = 0;
+    // const earliestRequestedBlock = 0;
     const jsonrpcMsgs: JsonrpcMessage[] = [];
 
     for (let idx = 0; idx < options.relays.length; idx++) {
@@ -125,11 +125,10 @@ export class JsonRpcChainParser extends BaseChainParser {
         blockParser.setEncoding("");
         api.setBlockParsing(blockParser);
 
-        [latestRequestedBlock, earliestRequestedBlock] =
-          compareRequestedBlockInBatch(
-            latestRequestedBlock,
-            requestedBlockForMessage
-          );
+        [latestRequestedBlock] = compareRequestedBlockInBatch(
+          latestRequestedBlock,
+          requestedBlockForMessage
+        );
       }
     }
 
