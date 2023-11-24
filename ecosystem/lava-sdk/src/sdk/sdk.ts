@@ -73,7 +73,6 @@ export class LavaSDK {
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
   private providerOptimizerStrategy: ProviderOptimizerStrategy;
   private maxConcurrentProviders: number;
-  private stateTracker: StateTracker | undefined;
 
   /**
    * Create Lava-SDK instance
@@ -383,7 +382,6 @@ export class LavaSDK {
       }
     }
     await tracker.startTracking();
-    this.stateTracker = tracker;
   }
 
   private setupChainAssets(

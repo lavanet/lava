@@ -47,6 +47,7 @@ export class StateBadgeQuery {
 
     let timeLeftToNextPairing;
     let virtualEpoch;
+    let currentEpoch;
 
     for (const chainID of this.chainIDs) {
       const badgeResponse = await this.fetchNewBadge(chainID);
@@ -85,7 +86,7 @@ export class StateBadgeQuery {
       // Generate StakeEntry
       const stakeEntry = pairingResponse.getProvidersList();
 
-      const currentEpoch = pairingResponse.getCurrentEpoch();
+      currentEpoch = pairingResponse.getCurrentEpoch();
 
       // Save pairing response for chainID
       this.pairing.set(chainID, {
@@ -94,8 +95,6 @@ export class StateBadgeQuery {
         currentEpoch: currentEpoch,
         spec: specResponse,
       });
-
-      this.currentEpoch = currentEpoch;
     }
 
     // If timeLeftToNextPairing undefined return an error
@@ -109,6 +108,7 @@ export class StateBadgeQuery {
     }
 
     this.virtualEpoch = virtualEpoch;
+    this.currentEpoch = currentEpoch;
 
     Logger.debug("Fetching pairing ended");
 
