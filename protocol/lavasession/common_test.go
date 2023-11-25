@@ -20,38 +20,37 @@ func (pg printGeos) String() string {
 
 func TestGeoOrdering(t *testing.T) {
 	pairingEndpoints := []*Endpoint{
-
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_EU,
 		},
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_AF,
 		},
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_AS,
 		},
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_AU,
 		},
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_USE,
 		},
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_USC,
 		},
-		&Endpoint{
+		{
 			NetworkAddress: "",
 			Enabled:        true,
 			Geolocation:    planstypes.Geolocation_USW,
