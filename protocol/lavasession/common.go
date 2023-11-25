@@ -8,8 +8,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
-	"slices"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
@@ -150,10 +151,10 @@ func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geol
 	}
 
 	// sort the endpoints by geolocation relevance:
-	lessFunc := func(a *Endpoint, b *Endpoint) int {
+	lessFunc := func(a *Endpoint, b *Endpoint) bool {
 		latencyA := int(latencyToGeo(a.Geolocation, currentGeo))
 		latencyB := int(latencyToGeo(b.Geolocation, currentGeo))
-		return latencyA - latencyB
+		return latencyA < latencyB
 	}
 	slices.SortStableFunc(pairingEndpoints, lessFunc)
 }
