@@ -110,5 +110,4 @@ func TestGeoOrdering(t *testing.T) {
 			}
 		})
 	}
-
 }
