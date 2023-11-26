@@ -93,6 +93,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 	}
 
 	// give money back to delegators from the bonded pool
+	originalDelegations := []dualstakingtypes.Delegation{}
 	for _, ind := range delegationsInds {
 		// find the delegation and keep its original form
 		var d dualstakingtypes.Delegation
@@ -101,8 +102,13 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 			continue
 		}
 
-		if d.Delegator == d.Provider {
+		if d.Delegator == d.Provider || d.Provider == EMPTY_PROVIDER {
 			continue
+		}
+
+		providerAddr, err := sdk.AccAddressFromBech32(d.Provider)
+		if err != nil {
+			return err
 		}
 
 		originalAmount := d.Amount
@@ -123,6 +129,25 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 		}
 
 		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegatorAddr, sdk.Coins{originalAmount})
+		if err != nil {
+			return err
+		}
+
+		entry, found, index := m.keeper.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, d.ChainID, providerAddr)
+		if !found {
+			continue
+		}
+		entry.DelegateTotal = entry.DelegateTotal.Sub(originalAmount)
+		m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, d.ChainID, entry, index)
+
+		originalDelegations = append(originalDelegations, d)
+	}
+
+	// get highest staked validator and delegate to it
+	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	highestVal := validatorsByPower[0]
+	for _, d := range originalDelegations {
+		err := m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
 		if err != nil {
 			return err
 		}
@@ -207,21 +232,25 @@ func (m Migrator) VerifyDelegationsBalance(ctx sdk.Context) error {
 
 // MigrateVersion1To2 implements store migration: Create a self delegation for all providers, Make providers-validators delegations balance
 func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
-	err := m.ConvertProviderStakeToSelfDelegation(ctx)
+	// first balance all validators
+	err := m.HandleValidatorsDelegators(ctx)
 	if err != nil {
 		return err
 	}
 
+	// create providers self delegations
+	err = m.ConvertProviderStakeToSelfDelegation(ctx)
+	if err != nil {
+		return err
+	}
+
+	// convert the rest of the delegations
 	err = m.HandleProviderDelegators(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = m.HandleValidatorsDelegators(ctx)
-	if err != nil {
-		return err
-	}
-
+	// verify the balance once again to make sure
 	err = m.VerifyDelegationsBalance(ctx)
 	if err != nil {
 		return err
