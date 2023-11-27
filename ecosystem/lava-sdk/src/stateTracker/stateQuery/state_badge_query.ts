@@ -86,7 +86,7 @@ export class StateBadgeQuery {
       // Generate StakeEntry
       const stakeEntry = pairingResponse.getProvidersList();
 
-      currentEpoch = pairingResponse.getCurrentEpoch();
+      currentEpoch = badge.getEpoch();
 
       // Save pairing response for chainID
       this.pairing.set(chainID, {
