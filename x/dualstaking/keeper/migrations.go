@@ -80,8 +80,8 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	// burn all coins from the pools
-	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), epochstoragetypes.TokenDenom)
-	err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
+	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), epochstoragetypes.TokenDenom)
+	err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
 	if err != nil {
 		return err
 	}
