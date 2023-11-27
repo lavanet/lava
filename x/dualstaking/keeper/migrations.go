@@ -92,7 +92,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 
 	if !moduleBalance.IsZero() {
 		moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), epochstoragetypes.TokenDenom)
-		err = m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
+		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
 		if err != nil {
 			return err
 		}
