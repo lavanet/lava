@@ -262,5 +262,5 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 		return err
 	}
 
-	return fmt.Errorf("stop here")
+	return nil
 }
