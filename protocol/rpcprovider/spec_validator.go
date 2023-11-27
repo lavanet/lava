@@ -139,7 +139,6 @@ func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) erro
 			relayReceiver.enabled = false
 			utils.LavaFormatError("[-] Verification failed for endpoint. Disabling endpoint.", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 			errors = append(errors, err)
-
 		} else if !relayReceiver.enabled {
 			relayReceiver.enabled = true
 			utils.LavaFormatError("[+] Verification passed for disabled endpoint. Enabling endpoint.", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
