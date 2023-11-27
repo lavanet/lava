@@ -623,7 +623,7 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 	for _, d := range delegations {
 		v, found := k.stakingKeeper.GetValidator(ctx, d.GetValidatorAddr())
 		if found {
-			sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromShares(d.Shares).TruncateInt())
+			sumValidatorDelegations = sumValidatorDelegations.Add(v.TokensFromSharesRoundUp(d.Shares).TruncateInt())
 		}
 	}
 

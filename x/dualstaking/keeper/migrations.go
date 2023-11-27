@@ -37,13 +37,12 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 				if err != nil {
 					return err
 				}
-				moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
-				if moduleBalance.IsLT(entry.Stake) {
-					utils.LavaFormatError("insufficient balance to unstake", nil,
-						utils.Attribute{Key: "Unstake", Value: entry.Stake},
-						utils.Attribute{Key: "ModuleBalance", Value: moduleBalance},
-					)
+
+				err = m.keeper.bankKeeper.MintCoins(ctx, types.ModuleName, []sdk.Coin{entry.Stake})
+				if err != nil {
+					return err
 				}
+
 				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{entry.Stake})
 				if err != nil {
 					utils.LavaFormatError("failed to send coins from module to account", err,
@@ -63,6 +62,14 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 		}
 	}
 
+	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
+	if !moduleBalance.IsZero() {
+		err := m.keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(moduleBalance))
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -74,11 +81,18 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 	delegationsInds := m.keeper.delegationFS.GetAllEntryIndices(ctx)
 	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
-	// move all funds from unbonded pool to bonded pool
-	notBondedPoolAddr := m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName)
-	notBondedPoolAmount := m.keeper.bankKeeper.GetBalance(ctx, notBondedPoolAddr, epochstoragetypes.TokenDenom)
-	if !notBondedPoolAmount.IsZero() {
-		err := m.keeper.bankKeeper.SendCoinsFromModuleToModule(ctx, dualstakingtypes.NotBondedPoolName, dualstakingtypes.BondedPoolName, sdk.Coins{notBondedPoolAmount})
+	// burn all coins from the pools
+	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), epochstoragetypes.TokenDenom)
+	if !moduleBalance.IsZero() {
+		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
+		if err != nil {
+			return err
+		}
+	}
+
+	if !moduleBalance.IsZero() {
+		moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), epochstoragetypes.TokenDenom)
+		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
 		if err != nil {
 			return err
 		}
@@ -94,10 +108,15 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 			continue
 		}
 
-		if d.Delegator == d.Provider {
+		if d.Delegator == d.Provider || d.Provider == EMPTY_PROVIDER {
 			continue
 		}
-		originalDelegations = append(originalDelegations, d)
+
+		providerAddr, err := sdk.AccAddressFromBech32(d.Provider)
+		if err != nil {
+			return err
+		}
+
 		originalAmount := d.Amount
 
 		// zero the delegation amount in the fixation store
@@ -109,10 +128,25 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 		if err != nil {
 			return err
 		}
-		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, dualstakingtypes.BondedPoolName, delegatorAddr, sdk.Coins{originalAmount})
+
+		err = m.keeper.bankKeeper.MintCoins(ctx, types.ModuleName, []sdk.Coin{originalAmount})
 		if err != nil {
 			return err
 		}
+
+		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegatorAddr, sdk.Coins{originalAmount})
+		if err != nil {
+			return err
+		}
+
+		entry, found, index := m.keeper.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, d.ChainID, providerAddr)
+		if !found {
+			continue
+		}
+		entry.DelegateTotal = entry.DelegateTotal.Sub(originalAmount)
+		m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, d.ChainID, entry, index)
+
+		originalDelegations = append(originalDelegations, d)
 	}
 
 	// get highest staked validator and delegate to it
@@ -202,23 +236,27 @@ func (m Migrator) VerifyDelegationsBalance(ctx sdk.Context) error {
 	return nil
 }
 
-// MigrateVersion1To2 implements store migration: Create a self delegation for all providers
+// MigrateVersion1To2 implements store migration: Create a self delegation for all providers, Make providers-validators delegations balance
 func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
-	return m.ConvertProviderStakeToSelfDelegation(ctx)
-}
-
-// MigrateVersion2To3 implements store migration: Make providers-validators delegations balance
-func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
-	err := m.HandleProviderDelegators(ctx)
+	// first balance all validators
+	err := m.HandleValidatorsDelegators(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = m.HandleValidatorsDelegators(ctx)
+	// create providers self delegations
+	err = m.ConvertProviderStakeToSelfDelegation(ctx)
 	if err != nil {
 		return err
 	}
 
+	// convert the rest of the delegations
+	err = m.HandleProviderDelegators(ctx)
+	if err != nil {
+		return err
+	}
+
+	// verify the balance once again to make sure
 	err = m.VerifyDelegationsBalance(ctx)
 	if err != nil {
 		return err
