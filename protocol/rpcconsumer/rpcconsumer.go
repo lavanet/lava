@@ -105,6 +105,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
+	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, consumerMetricsManager)
