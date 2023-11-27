@@ -162,7 +162,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 	}
 
-	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, true)
+	specValidator := NewSpecValidator()
+	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, specValidator, true)
+	specValidator.Start(ctx)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("[-] RPCProvider running with disabled endpoints:", disabledEndpointsList, "[-]"), nil)
@@ -172,7 +174,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		activeEndpointsList := getActiveEndpoints(rpcProviderEndpoints, disabledEndpointsList)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 		// try to save disabled endpoints
-		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, 1)
+		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, specValidator, 1)
 	} else {
 		utils.LavaFormatInfo("[+] all endpoints up and running")
 	}
@@ -214,14 +216,14 @@ func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint,
 	return activeEndpointsList
 }
 
-func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, retryCount int) {
+func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, specValidator *SpecValidator, retryCount int) {
 	time.Sleep(time.Duration(retryCount) * time.Second)
 	parallel := retryCount > 2
 	utils.LavaFormatInfo("Retrying disabled endpoints", utils.Attribute{Key: "disabled endpoints list", Value: disabledEndpoints}, utils.Attribute{Key: "parallel", Value: parallel})
-	disabledEndpointsAfterRetry := rpcp.SetupProviderEndpoints(disabledEndpoints, parallel)
+	disabledEndpointsAfterRetry := rpcp.SetupProviderEndpoints(disabledEndpoints, specValidator, parallel)
 	if len(disabledEndpointsAfterRetry) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsAfterRetry, "[-]"), nil)
-		rpcp.RetryDisabledEndpoints(disabledEndpointsAfterRetry, retryCount+1)
+		rpcp.RetryDisabledEndpoints(disabledEndpointsAfterRetry, specValidator, retryCount+1)
 		activeEndpointsList := getActiveEndpoints(disabledEndpoints, disabledEndpointsAfterRetry)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 	} else {
@@ -229,24 +231,24 @@ func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession
 	}
 }
 
-func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, parallel bool) (disabledEndpointsRet []*lavasession.RPCProviderEndpoint) {
+func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, specValidator *SpecValidator, parallel bool) (disabledEndpointsRet []*lavasession.RPCProviderEndpoint) {
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcProviderEndpoints)
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) {
+		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
-			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint)
+			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
 			if err != nil {
 				rpcp.providerMetricsManager.SetDisabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 				disabledEndpoints <- rpcProviderEndpoint
 			}
 		}
 		if parallel {
-			go setupEndpoint(rpcProviderEndpoint)
+			go setupEndpoint(rpcProviderEndpoint, specValidator)
 		} else {
-			setupEndpoint(rpcProviderEndpoint)
+			setupEndpoint(rpcProviderEndpoint, specValidator)
 		}
 	}
 	wg.Wait()
@@ -258,7 +260,7 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	return disabledEndpointsList
 }
 
-func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
+func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
@@ -271,7 +273,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
-	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface})
+	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface}
+	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	if err != nil {
 		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
@@ -300,11 +303,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 		}
 
-		// Fetch and validate all verifications
-		err = chainFetcher.Validate(ctx)
+		// Add the chain fetcher to the spec validator
+		err := specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
 		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+			return err
 		}
+
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
@@ -330,8 +334,14 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			}
+
 			// Any validation needs to be before we store chain tracker for given chain id
 			rpcp.chainTrackers.SetTrackerForChain(rpcProviderEndpoint.ChainID, chainTracker)
+
+			err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, specValidator, rpcEndpoint)
+			if err != nil {
+				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+			}
 		} else {
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
@@ -362,6 +372,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		if !ok {
 			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
 			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+			specValidator.AddRPCProviderListener(rpcProviderEndpoint.NetworkAddress.Address, listener)
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
 		}
 	}()
@@ -581,5 +592,6 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().String(StickinessHeaderName, RPCProviderStickinessHeaderName, "the name of the header to be attacked to requests for stickiness by consumer, used for consistency")
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
+	cmdRPCProvider.Flags().Uint64Var(&SpecValidationIntervalSec, SpecValidationIntervalSecFlagName, SpecValidationIntervalSec, "determines the interval of which to run validation on the spec for all connected chains")
 	return cmdRPCProvider
 }

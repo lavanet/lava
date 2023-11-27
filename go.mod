@@ -40,6 +40,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/gjson v1.16.0
 	github.com/tidwall/sjson v1.2.5
+	go.uber.org/mock v0.3.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
 )
@@ -99,7 +100,6 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
-	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
