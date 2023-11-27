@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -97,6 +98,7 @@ func runSDKE2E(timeout time.Duration) {
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      sdkLogsFolder,
+		tokenDenom:   commonconsts.TestTokenDenom,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {

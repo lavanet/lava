@@ -19,6 +19,8 @@ type (
 		storeKey   storetypes.StoreKey
 		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
+
+		stakingKeeper types.StakingKeeper
 	}
 )
 

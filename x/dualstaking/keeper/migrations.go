@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -62,7 +61,7 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 		}
 	}
 
-	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
+	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), m.keeper.stakingKeeper.BondDenom(ctx))
 	if !moduleBalance.IsZero() {
 		err := m.keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(moduleBalance))
 		if err != nil {
@@ -82,7 +81,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	// burn all coins from the pools
-	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), epochstoragetypes.TokenDenom)
+	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), m.keeper.stakingKeeper.BondDenom(ctx))
 	if !moduleBalance.IsZero() {
 		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
 		if err != nil {
@@ -91,7 +90,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 	}
 
 	if !moduleBalance.IsZero() {
-		moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), epochstoragetypes.TokenDenom)
+		moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), m.keeper.stakingKeeper.BondDenom(ctx))
 		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
 		if err != nil {
 			return err
@@ -120,7 +119,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 		originalAmount := d.Amount
 
 		// zero the delegation amount in the fixation store
-		d.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
+		d.Amount = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 		m.keeper.delegationFS.ModifyEntry(ctx, ind, block, &d)
 
 		// give money back from the bonded pool

@@ -64,9 +64,5 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
 	}
 
-	if msg.DelegateLimit.Denom != epochstoragetypes.TokenDenom {
-		return sdkerrors.Wrapf(DelegateLimitError, "Coin denomanator is not ulava")
-	}
-
 	return nil
 }

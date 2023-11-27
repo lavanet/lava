@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -97,6 +98,11 @@ func CmdStakeProvider() *cobra.Command {
 				delegationLimit,
 				commission,
 			)
+
+			if msg.DelegateLimit.Denom != "ulava" {
+				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
+			}
+
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -196,6 +202,11 @@ func CmdBulkStakeProvider() *cobra.Command {
 						delegationLimit,
 						commission,
 					)
+
+					if msg.DelegateLimit.Denom != "ulava" {
+						return nil, sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
+					}
+
 					if err := msg.ValidateBasic(); err != nil {
 						return nil, err
 					}

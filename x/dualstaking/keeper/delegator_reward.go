@@ -128,7 +128,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 			continue
 		}
 
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.Amount.Amount}}
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: reward.Amount.Amount}}
 
 		// not minting new coins because they're minted when the provider
 		// asked for payment (and the delegator reward map was updated)
@@ -195,7 +195,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 
 	if !calcOnly {
 		if fullProviderReward.GT(math.ZeroInt()) {
-			fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, fullProviderReward)}
+			fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), fullProviderReward)}
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, providerAddr, fullProviderRewardCoins)
 			if err != nil {
 				// panic:ok: reward transfer should never fail
@@ -224,7 +224,7 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 				delegatorReward.Provider = delegation.Provider
 				delegatorReward.Delegator = delegation.Delegator
 				delegatorReward.ChainId = delegation.ChainID
-				delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
+				delegatorReward.Amount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatorRewardAmount)
 			} else {
 				delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
 			}
@@ -244,7 +244,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 		return nil
 	}
 	rewardPerContributor := contributorReward.QuoRaw(int64(len(contributorAddresses)))
-	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, rewardPerContributor)}
+	rewardCoins := sdk.Coins{sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardPerContributor)}
 	details := map[string]string{
 		"rewardCoins": rewardCoins.String(),
 		"specId":      specId,
@@ -252,10 +252,10 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 	leftRewards := contributorReward
 	for i, contributorAddress := range contributorAddresses {
 		details["address."+strconv.Itoa(i)] = contributorAddress.String()
-		if leftRewards.LT(rewardCoins.AmountOf(epochstoragetypes.TokenDenom)) {
+		if leftRewards.LT(rewardCoins.AmountOf(k.stakingKeeper.BondDenom(ctx))) {
 			return utils.LavaFormatError("trying to pay contributors more than their allowed amount", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		}
-		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
+		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(k.stakingKeeper.BondDenom(ctx)))
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, contributorAddress, rewardCoins)
 		if err != nil {
 			return err

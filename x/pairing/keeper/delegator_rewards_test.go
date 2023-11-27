@@ -8,7 +8,6 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -84,14 +83,14 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 
 			delegationAmount := testStake
 			// delegate
-			amount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(tt.d1Amount*delegationAmount/100))
+			amount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(tt.d1Amount*delegationAmount/100))
 			if amount1.IsZero() {
 				amount1.Amount = sdk.OneInt()
 			}
 			_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
 			require.Nil(t, err)
 
-			amount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(tt.d2Amount*delegationAmount/100))
+			amount2 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(tt.d2Amount*delegationAmount/100))
 			_, err = ts.TxDualstakingDelegate(delegator2, provider, ts.spec.Index, amount2)
 			require.Nil(t, err)
 			ts.AdvanceEpoch() // apply delegations
@@ -99,7 +98,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// change delegation traits of stake entry and get the modified one
 			stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 			require.True(t, found)
-			stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(tt.limit*testStake/100))
+			stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(tt.limit*testStake/100))
 			stakeEntry.DelegateCommission = tt.commission
 			ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 			ts.AdvanceEpoch()
@@ -193,8 +192,8 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
 
-	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)/2))
-	delegationAmount2 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(testStake)))
+	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(uint64(testStake)/2))
+	delegationAmount2 := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(uint64(testStake)))
 
 	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
@@ -206,7 +205,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	require.True(t, found)
 
 	// modify the stake entry to have a delegation limit higher than the total delegations
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(2*testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(2*testStake))
 	stakeEntry.DelegateCommission = 50
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
@@ -221,7 +220,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
 
 	// modify the stake entry to have a delegation limit lower than the total delegations
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 
@@ -243,7 +242,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	ts.AdvanceEpoch() // to apply pairing
 
-	delegationAmount1 := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
+	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
@@ -355,7 +354,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	makeProviderCommissionZero(ts, spec1.Index, provider1Acc.Addr)
 	makeProviderCommissionZero(ts, ts.spec.Index, provider2Acc.Addr)
 
-	delegationAmount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
+	delegationAmount := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	_, err = ts.TxDualstakingDelegate(delegator1, provider1, ts.spec.Index, delegationAmount)
 	require.Nil(t, err)
 	_, err = ts.TxDualstakingDelegate(delegator1, provider1, spec1.Index, delegationAmount)
@@ -412,7 +411,7 @@ func makeProviderCommissionZero(ts *tester, chainID string, provider sdk.AccAddr
 	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, chainID, provider)
 	require.True(ts.T, found)
 	stakeEntry.DelegateCommission = 0
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, stakeEntry.Chain, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 }

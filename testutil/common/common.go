@@ -19,7 +19,7 @@ import (
 func CreateNewAccount(ctx context.Context, keepers testkeeper.Keepers, balance int64) (acc sigs.Account) {
 	acc = sigs.GenerateDeterministicFloatingKey(testkeeper.Randomizer)
 	testkeeper.Randomizer.Inc()
-	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(balance)))
+	coins := sdk.NewCoins(sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(balance)))
 	keepers.BankKeeper.SetBalance(sdk.UnwrapSDKContext(ctx), acc.Addr, coins)
 	return
 }
@@ -29,7 +29,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 	for _, collection := range spec.ApiCollections {
 		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{collection.CollectionData.ApiInterface}, Geolocation: 1})
 	}
-	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Index, Amount: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: "prov", DelegateLimit: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()), DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String()})
+	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Index, Amount: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: "prov", DelegateLimit: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.ZeroInt()), DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String()})
 	require.Nil(t, err)
 }
 

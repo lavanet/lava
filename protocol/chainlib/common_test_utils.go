@@ -22,7 +22,6 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -179,7 +178,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(ts.Validator.Addr),
 		ts.Validator.PubKey,
-		sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(uint64(balance))),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx)), sdk.NewIntFromUint64(uint64(balance))),
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
 		sdk.ZeroInt(),

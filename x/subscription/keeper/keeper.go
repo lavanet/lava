@@ -28,6 +28,7 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
 		dualstakingKeeper  types.DualStakingKeeper
+		stakingKeeper      types.StakingKeeper
 
 		subsFS fixationtypes.FixationStore
 		subsTS timerstoretypes.TimerStore
@@ -51,6 +52,7 @@ func NewKeeper(
 	dualstakingKeeper types.DualStakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
+	stakingKeeper types.StakingKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -72,6 +74,7 @@ func NewKeeper(
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
+		stakingKeeper:      stakingKeeper,
 
 		subsFS:      fs,
 		cuTrackerFS: cuTracker,

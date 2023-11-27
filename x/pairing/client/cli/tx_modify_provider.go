@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -190,6 +191,11 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
 			)
+
+			if msg.DelegateLimit.Denom != "ulava" {
+				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
+			}
+
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

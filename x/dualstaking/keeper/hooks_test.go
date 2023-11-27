@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -138,7 +137,7 @@ func TestReDelegateToProvider(t *testing.T) {
 		provider.Addr.String(),
 		dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
 		entry.Chain,
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount))
+		sdk.NewCoin(ts.TokenDenom(), amount))
 
 	require.Nil(t, err)
 
@@ -208,7 +207,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 			provider,
 			dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
 			ts.spec.Index,
-			sdk.NewCoin(epochstoragetypes.TokenDenom, redelegateAmts[i]))
+			sdk.NewCoin(ts.TokenDenom(), redelegateAmts[i]))
 		require.Nil(t, err)
 	}
 
@@ -281,19 +280,19 @@ func TestValidatorSlash(t *testing.T) {
 			provider,
 			dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
 			ts.spec.Index,
-			sdk.NewCoin(epochstoragetypes.TokenDenom, redelegateAmts[i]))
+			sdk.NewCoin(ts.TokenDenom(), redelegateAmts[i]))
 		require.Nil(t, err)
 	}
 
 	// sanity check: redelegate from provider0 to provider1 and check delegations balance
-	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], ts.spec.Index, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(5)))
+	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], ts.spec.Index, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(5)))
 	require.Nil(t, err)
 	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.Nil(t, err)
 	require.True(t, diff.IsZero())
 
 	// sanity check: unbond some of provider2's funds and check delegations balance
-	_, err = ts.TxDualstakingUnbond(delegator, providers[2], ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(5)))
+	_, err = ts.TxDualstakingUnbond(delegator, providers[2], ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(5)))
 	require.Nil(t, err)
 	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.Nil(t, err)
@@ -356,7 +355,7 @@ func TestCancelUnbond(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// cancel the unbond TX and check for balances
-	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(50)))
+	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(50)))
 	require.Nil(t, err)
 
 	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)

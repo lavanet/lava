@@ -114,4 +114,5 @@ type TimerStoreKeeper interface {
 type StakingKeeper interface {
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	BondDenom(ctx sdk.Context) string
 }

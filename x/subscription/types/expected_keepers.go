@@ -61,3 +61,7 @@ type TimerStoreKeeper interface {
 type DualStakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error)
 }
+
+type StakingKeeper interface {
+	BondDenom(ctx sdk.Context) string
+}
