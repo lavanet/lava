@@ -1058,8 +1058,6 @@ func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
 func (fs *FixationStore) Export(ctx sdk.Context) GenesisState {
 	gs := GenesisState{}
 
-	gs.Version = fs.getVersion(ctx)
-
 	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
 		var entries GenesisEntries
 		entries.Index = index
