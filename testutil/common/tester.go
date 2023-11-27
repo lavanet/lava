@@ -557,8 +557,9 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
-// TxCreateValidator: implement 'tx staking createvalidator'
-func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) (*stakingtypes.MsgCreateValidatorResponse, error) {
+// TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
+func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
+	// create a validator
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(validator.Addr),
 		validator.PubKey,
@@ -568,7 +569,30 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) (*s
 		sdk.ZeroInt(),
 	)
 	require.Nil(ts.T, err)
-	return ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
+	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
+	require.Nil(ts.T, err)
+
+	// move validator's coins from unbonded pool to bonded
+	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validator.Addr))
+	require.True(ts.T, found)
+	valTokens := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, amount))
+	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(ts.Ctx, stakingtypes.NotBondedPoolName, stakingtypes.BondedPoolName, valTokens)
+	require.Nil(ts.T, err)
+
+	// before changing the validaor's state, run the BeforeValidatorModified hook manually
+	err = ts.Keepers.StakingKeeper.Hooks().BeforeValidatorModified(ts.Ctx, val.GetOperator())
+	require.Nil(ts.T, err)
+
+	// update the validator status to "bonded" and apply
+	val = val.UpdateStatus(stakingtypes.Bonded)
+	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
+	ts.Keepers.StakingKeeper.SetValidatorByPowerIndex(ts.Ctx, val)
+
+	// run the AfterValidatorBonded hook manually
+	consAddr, err := val.GetConsAddr()
+	require.Nil(ts.T, err)
+	err = ts.Keepers.StakingKeeper.Hooks().AfterValidatorBonded(ts.Ctx, consAddr, val.GetOperator())
+	require.Nil(ts.T, err)
 }
 
 // TxDelegateValidator: implement 'tx staking delegate'
