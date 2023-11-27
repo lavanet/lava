@@ -63,9 +63,11 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 	}
 
 	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), epochstoragetypes.TokenDenom)
-	err := m.keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(moduleBalance))
-	if err != nil {
-		return err
+	if !moduleBalance.IsZero() {
+		err := m.keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(moduleBalance))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -81,15 +83,19 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 
 	// burn all coins from the pools
 	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), epochstoragetypes.TokenDenom)
-	err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
-	if err != nil {
-		return err
+	if !moduleBalance.IsZero() {
+		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
+		if err != nil {
+			return err
+		}
 	}
 
-	moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), epochstoragetypes.TokenDenom)
-	err = m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
-	if err != nil {
-		return err
+	if !moduleBalance.IsZero() {
+		moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), epochstoragetypes.TokenDenom)
+		err = m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
+		if err != nil {
+			return err
+		}
 	}
 
 	// give money back to delegators from the bonded pool
