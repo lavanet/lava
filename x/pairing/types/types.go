@@ -1,6 +1,10 @@
 package types
 
-import math "math"
+import (
+	math "math"
+
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+)
 
 const (
 	ProviderStakeEventName       = "stake_new_provider"
@@ -38,6 +42,18 @@ const (
 
 // Frozen provider block const
 const FROZEN_BLOCK = math.MaxInt64
+
+func Freeze(stakeEntry *epochstoragetypes.StakeEntry) {
+	stakeEntry.StakeAppliedBlock = FROZEN_BLOCK
+}
+
+func UnFreeze(stakeEntry *epochstoragetypes.StakeEntry, currentBlock uint64) {
+	stakeEntry.StakeAppliedBlock = currentBlock
+}
+
+func IsFrozen(stakeEntry *epochstoragetypes.StakeEntry) bool {
+	return stakeEntry.StakeAppliedBlock == FROZEN_BLOCK
+}
 
 type ClientUsedCU struct {
 	TotalUsed uint64

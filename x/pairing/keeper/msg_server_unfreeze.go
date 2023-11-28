@@ -16,7 +16,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 	if err != nil {
 		return nil, utils.LavaFormatError("Unfreeze_get_provider_address", err, utils.Attribute{Key: "providerAddress", Value: msg.GetCreator()})
 	}
-	current_block := uint64(ctx.BlockHeight())
+	currentBlock := uint64(ctx.BlockHeight())
 	unfrozen_chains := []string{}
 	for _, chainId := range msg.GetChainIds() {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainId, providerAddr)
@@ -24,9 +24,9 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 			return nil, utils.LavaFormatWarning("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
 		}
 
-		if stakeEntry.StakeAppliedBlock > current_block {
+		if stakeEntry.StakeAppliedBlock > currentBlock {
 			// unfreeze the provider by making the StakeAppliedBlock the current block. This will let the provider be added to the pairing list in the next epoch, when current entries becomes the front of epochStorage
-			stakeEntry.StakeAppliedBlock = current_block
+			types.UnFreeze(&stakeEntry, currentBlock)
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainId, stakeEntry, index)
 			unfrozen_chains = append(unfrozen_chains, chainId)
 		}
