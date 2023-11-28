@@ -272,60 +272,74 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 	clientsCount := 1
 	providersCount := 2
-
-	ts := newTester(t)
-	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
-	err := ts.addProviderGeolocation(2, 2)
-	require.Nil(t, err)
-
-	clients := ts.Accounts(common.CONSUMER)
-
-	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
-
-	// check which const is larger
-	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
-	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
-		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	plays := []struct {
+		providersToPair uint64
+		shouldBeFrozen  bool
+	}{
+		{
+			providersToPair: 4,
+			shouldBeFrozen:  false,
+		},
+		{
+			providersToPair: 2,
+			shouldBeFrozen:  true,
+		},
 	}
-
-	// advance enough epochs so we can check punishment due to unresponsiveness
-	// (if the epoch is too early, there's no punishment)
-	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
-
-	// find two providers in the pairing
-	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
-	require.NoError(t, err)
-	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
-
-	// create unresponsive data that includes provider1 being unresponsive
-	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
-	// create relay requests for provider0 that contain complaints about provider1
-	relayEpoch := ts.BlockHeight()
-	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
-		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
-
-		relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
-		relaySession.UnresponsiveProviders = unresponsiveProvidersData
-		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
-		relaySession.Sig = sig
+	for _, play := range plays {
+		ts := newTester(t)
+		ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
+		err := ts.addProviderGeolocation(2, 2)
 		require.Nil(t, err)
+		plan := ts.plan
+		plan.PlanPolicy.MaxProvidersToPair = play.providersToPair
+		ts.ModifyPlan(ts.plan.Index, plan)
+		clients := ts.Accounts(common.CONSUMER)
+		recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
 
-		relayPaymentMessage := types.MsgRelayPayment{
-			Creator: provider0_addr.String(),
-			Relays:  slices.Slice(relaySession),
+		// check which const is larger
+		largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+		if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+			largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+		}
+		// advance enough epochs so we can check punishment due to unresponsiveness
+		// (if the epoch is too early, there's no punishment)
+		ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+
+		// find two providers in the pairing
+		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
+		require.NoError(t, err)
+		provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
+		provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+
+		// create unresponsive data that includes provider1 being unresponsive
+		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
+		// create relay requests for provider0 that contain complaints about provider1
+		relayEpoch := ts.BlockHeight()
+		for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
+			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
+
+			relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
+			relaySession.UnresponsiveProviders = unresponsiveProvidersData
+			sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
+			relaySession.Sig = sig
+			require.Nil(t, err)
+
+			relayPaymentMessage := types.MsgRelayPayment{
+				Creator: provider0_addr.String(),
+				Relays:  slices.Slice(relaySession),
+			}
+
+			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
 		}
 
-		ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
+		// advance enough epochs so the unresponsive provider will be punished
+		if largerConst < recommendedEpochNumToCollectPayment {
+			largerConst = recommendedEpochNumToCollectPayment
+		}
+
+		ts.AdvanceEpochs(largerConst)
+
+		// test the unresponsive provider1 hasn't froze
+		ts.checkProviderFreeze(provider1_addr, play.shouldBeFrozen)
 	}
-
-	// advance enough epochs so the unresponsive provider will be punished
-	if largerConst < recommendedEpochNumToCollectPayment {
-		largerConst = recommendedEpochNumToCollectPayment
-	}
-
-	ts.AdvanceEpochs(largerConst)
-
-	// test the unresponsive provider1 hasn't froze
-	ts.checkProviderFreeze(provider1_addr, false)
 }
