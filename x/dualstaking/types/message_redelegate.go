@@ -48,14 +48,18 @@ func (msg *MsgRedelegate) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid delegator address (%s)", err)
 	}
 
-	_, err = sdk.AccAddressFromBech32(msg.FromProvider)
-	if err != nil {
-		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (from) provider address (%s)", err)
+	if msg.FromProvider != EMPTY_PROVIDER {
+		_, err = sdk.AccAddressFromBech32(msg.FromProvider)
+		if err != nil {
+			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (from) provider address (%s)", err)
+		}
 	}
 
-	_, err = sdk.AccAddressFromBech32(msg.ToProvider)
-	if err != nil {
-		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (to) provider address (%s)", err)
+	if msg.ToProvider != EMPTY_PROVIDER {
+		_, err = sdk.AccAddressFromBech32(msg.ToProvider)
+		if err != nil {
+			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (to) provider address (%s)", err)
+		}
 	}
 
 	if !msg.Amount.IsValid() {
