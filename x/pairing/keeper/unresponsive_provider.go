@@ -99,7 +99,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && uint64(existingProviders[providerStakeEntry.GetChain()]) > minProviders {
+			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.GetChain()] > minProviders {
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
 				existingProviders[providerStakeEntry.GetChain()]--
 				if err != nil {
