@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"golang.org/x/exp/slices"
 )
 
 // Wrapper struct
@@ -90,16 +91,34 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
 		)
 	}
-	slashAmount := sdk.NewDecFromInt(val.Tokens).Mul(fraction)
 
+	remainingTokensToSlash := fraction.MulInt(val.Tokens).TruncateInt()
 	delegations := h.k.stakingKeeper.GetValidatorDelegations(ctx, valAddr)
 	for _, d := range delegations {
-		err := h.k.UnbondUniformProviders(ctx, d.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, slashAmount.TruncateInt()))
+		tokens := val.TokensFromShares(d.Shares).TruncateInt()
+		tokensToSlash := fraction.MulInt(tokens).TruncateInt()
+		err := h.k.UnbondUniformProviders(ctx, d.DelegatorAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, tokensToSlash))
 		if err != nil {
 			return utils.LavaFormatError("slash hook failed", err,
 				utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-				utils.Attribute{Key: "delegator_address", Value: d.String()},
-				utils.Attribute{Key: "slash_amount", Value: slashAmount.String()},
+				utils.Attribute{Key: "delegator_address", Value: d.DelegatorAddress},
+				utils.Attribute{Key: "slash_amount", Value: tokensToSlash.String()},
+			)
+		}
+		remainingTokensToSlash = remainingTokensToSlash.Sub(tokensToSlash)
+	}
+
+	// if there's a remainder, remove it from the highest delegation
+	if !remainingTokensToSlash.IsZero() {
+		slices.SortFunc(delegations, func(i, j stakingtypes.Delegation) bool {
+			return i.Shares.GT(j.Shares)
+		})
+		err := h.k.UnbondUniformProviders(ctx, delegations[0].DelegatorAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, remainingTokensToSlash))
+		if err != nil {
+			return utils.LavaFormatError("slash hook failed", err,
+				utils.Attribute{Key: "validator_address", Value: valAddr.String()},
+				utils.Attribute{Key: "delegator_address", Value: delegations[0].DelegatorAddress},
+				utils.Attribute{Key: "slash_amount", Value: remainingTokensToSlash.String()},
 			)
 		}
 	}
