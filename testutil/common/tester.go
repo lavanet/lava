@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
@@ -175,6 +176,27 @@ func (ts *Tester) StakeProviderExtra(
 	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
 
 	return err
+}
+
+// GetValidator gets a validator object
+// Usually, you get the account of your created validator with ts.GetAccount
+// so input valAcc.addr to this function
+func (ts *Tester) GetValidator(addr sdk.AccAddress) stakingtypes.Validator {
+	v, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(addr))
+	require.True(ts.T, found)
+	return v
+}
+
+// SlashValidator slashes a validator and returns the expected amount of burned tokens (of the validator).
+// Usually, you get the account of your created validator with ts.GetAccount, so input valAcc to this function
+func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, power int64, block int64) math.Int {
+	// slash
+	valConsAddr := sdk.GetConsAddress(valAcc.PubKey)
+	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
+
+	// calculate expected burned tokens
+	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, power)
+	return fraction.MulInt(consensusPowerTokens).TruncateInt()
 }
 
 func (ts *Tester) AccountByAddr(addr string) (sigs.Account, string) {
@@ -559,6 +581,16 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
 func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
+	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, 1)
+	if amount.LT(consensusPowerTokens) {
+		utils.LavaFormatWarning(`validator stake should usually be larger than the amount of tokens for one 
+		unit of consensus power`,
+			fmt.Errorf("validator stake might be too small"),
+			utils.Attribute{Key: "consensus_power_tokens", Value: consensusPowerTokens.String()},
+			utils.Attribute{Key: "validator_stake", Value: amount.String()},
+		)
+	}
+
 	// create a validator
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(validator.Addr),
@@ -572,6 +604,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
 	require.Nil(ts.T, err)
 
+	// **** Make validator boded ****
 	// move validator's coins from unbonded pool to bonded
 	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validator.Addr))
 	require.True(ts.T, found)
