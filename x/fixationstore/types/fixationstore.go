@@ -1043,22 +1043,8 @@ func (fs *FixationStore) createEntryStoreKey(index string) string {
 	return fs.prefix + EntryPrefix + index
 }
 
-func (fs *FixationStore) getVersion(ctx sdk.Context) uint64 {
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), KeyPrefix(fs.prefix))
-	b := store.Get(KeyPrefix(FixationVersionKey))
-	return DecodeKey(b)
-}
-
-func (fs *FixationStore) setVersion(ctx sdk.Context, val uint64) {
-	store := prefix.NewStore(ctx.KVStore(fs.storeKey), KeyPrefix(fs.prefix))
-	b := EncodeKey(val)
-	store.Set(KeyPrefix(FixationVersionKey), b)
-}
-
 func (fs *FixationStore) Export(ctx sdk.Context) GenesisState {
 	gs := GenesisState{}
-
-	gs.Version = fs.getVersion(ctx)
 
 	for _, index := range fs.AllEntryIndicesFilter(ctx, "", nil) {
 		var entries GenesisEntries
@@ -1089,9 +1075,6 @@ func DefaultGenesis() *GenesisState {
 }
 
 func (fs *FixationStore) Init(ctx sdk.Context, gs GenesisState) {
-	// will be overwritten by below if genesis state exists
-	fs.setVersion(ctx, gs.Version)
-
 	for _, entries := range gs.Entries {
 		safeIndex, err := SanitizeIndex(entries.Index)
 		if err != nil {
