@@ -5,6 +5,7 @@ package types
 
 import (
 	"cosmossdk.io/math"
+	regmath "math"
 )
 
 func (se StakeEntry) EffectiveStake() math.Int {
@@ -15,4 +16,19 @@ func (se StakeEntry) EffectiveStake() math.Int {
 		effective.Add(se.DelegateTotal.Amount)
 	}
 	return effective
+}
+
+// Frozen provider block const
+const FROZEN_BLOCK = regmath.MaxInt64
+
+func (stakeEntry *StakeEntry)Freeze() {
+	stakeEntry.StakeAppliedBlock = FROZEN_BLOCK
+}
+
+func (stakeEntry *StakeEntry) UnFreeze(currentBlock uint64) {
+	stakeEntry.StakeAppliedBlock = currentBlock
+}
+
+func (stakeEntry *StakeEntry)IsFrozen() bool {
+	return stakeEntry.StakeAppliedBlock == FROZEN_BLOCK
 }
