@@ -27,7 +27,7 @@ const (
 	UnbondingPrefix = "unbonding-ts"
 
 	// empty provider consts
-	EMPTY_PROVIDER         = "EMPTY_PROVIDER"
+	EMPTY_PROVIDER         = "empty_provider"
 	EMPTY_PROVIDER_CHAINID = ""
 )
 
