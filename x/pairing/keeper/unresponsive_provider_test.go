@@ -8,6 +8,7 @@ import (
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -16,9 +17,9 @@ func (ts *tester) checkProviderFreeze(provider sdk.AccAddress, shouldFreeze bool
 	stakeEntry, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 	if shouldFreeze {
-		require.Equal(ts.T, uint64(types.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
+		require.Equal(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
 	} else {
-		require.NotEqual(ts.T, uint64(types.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
+		require.NotEqual(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
 	}
 }
 

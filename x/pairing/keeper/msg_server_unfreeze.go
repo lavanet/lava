@@ -26,7 +26,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 
 		if stakeEntry.StakeAppliedBlock > currentBlock {
 			// unfreeze the provider by making the StakeAppliedBlock the current block. This will let the provider be added to the pairing list in the next epoch, when current entries becomes the front of epochStorage
-			types.UnFreeze(&stakeEntry, currentBlock)
+			stakeEntry.UnFreeze(currentBlock)
 			k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainId, stakeEntry, index)
 			unfrozen_chains = append(unfrozen_chains, chainId)
 		}

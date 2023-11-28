@@ -75,7 +75,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
 		// count providers per geolocation
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
-			if !types.IsFrozen(&providerStakeEntry) {
+			if !providerStakeEntry.IsFrozen() {
 				existingProviders[providerStakeEntry.GetChain()]++
 			}
 		}
