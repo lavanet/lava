@@ -20,8 +20,8 @@ const (
 	defaultRollingLogMaxSize      = "100"                 // 100MB
 	defaultRollingLogMaxAge       = "1"                   // 1 day
 	defaultRollingLogFileBackups  = "3"                   // 3 files of defaultRollingLogMaxSize size
-	defaultRollingLogFileLocation = "logs/rollingRPC.log" // same directory
-	defaultRollingLogFormat       = "json"                // same directory
+	defaultRollingLogFileLocation = "logs/rollingRPC.log" // logs directory
+	defaultRollingLogFormat       = "json"                // defaults to json format
 )
 
 // default rolling logs behavior (if enabled) will store 3 files each 1GB for up to 1 day every time.
