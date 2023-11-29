@@ -119,7 +119,6 @@ message QueryProvidersRequest {
 
 message QueryProvidersResponse {
   repeated lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
-           string                               output     = 2;
 }
 
 message QueryGetPairingRequest {
