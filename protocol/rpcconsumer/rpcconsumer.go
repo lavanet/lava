@@ -322,8 +322,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
 			// set rolling log.
-			common.SetupRollingLogger()
-			// defer closeLoggerOnFinish()
+			closeLoggerOnFinish := common.SetupRollingLogger()
+			defer closeLoggerOnFinish()
 
 			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
