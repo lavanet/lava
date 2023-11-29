@@ -12,7 +12,6 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	stakgingKeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
@@ -81,7 +80,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, nil, mockAccountKeeper{}, nil, nil, fsKeeper),
 		fsKeeper,
 		tsKeeper,
-		stakgingKeeper.NewKeeper(cdc, nil, nil, nil, ""),
+		nil,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
