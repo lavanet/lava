@@ -67,7 +67,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
-			utils.LoggingLevel(logLevel)
+			utils.SetGlobalLoggingLevel(logLevel)
 
 			RunBadgeServer(cmd, v)
 
