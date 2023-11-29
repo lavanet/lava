@@ -24,7 +24,7 @@ const (
 	defaultRollingLogFormat       = "json"                // defaults to json format
 )
 
-// default rolling logs behavior (if enabled) will store 3 files each 1GB for up to 1 day every time.
+// default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
 func AddRollingLogConfig(cmd *cobra.Command) {
 	cmd.Flags().String(RollingLogLevelFlag, defaultRollingLogState, "rolling-log info level (off, debug, info, warn, error, fatal)")
 	cmd.Flags().String(RollingLogMaxSizeFlag, defaultRollingLogMaxSize, "rolling-log max size in MB")
