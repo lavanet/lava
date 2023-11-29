@@ -21,6 +21,7 @@ type (
 
 		epochstorageKeeper types.EpochStorageKeeper
 		specKeeper         types.SpecKeeper
+		stakingKeeper      types.StakingKeeper
 
 		plansFS fixationtypes.FixationStore
 	}
@@ -34,6 +35,7 @@ func NewKeeper(
 	epochstorageKeeper types.EpochStorageKeeper,
 	specKeeper types.SpecKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
+	stakingKeeper types.StakingKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -48,6 +50,7 @@ func NewKeeper(
 		epochstorageKeeper: epochstorageKeeper,
 		plansFS:            fs,
 		specKeeper:         specKeeper,
+		stakingKeeper:      stakingKeeper,
 	}
 }
 

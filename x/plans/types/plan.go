@@ -15,14 +15,8 @@ func (p Plan) ValidatePlan() error {
 		return sdkerrors.Wrap(ErrInvalidPlanIndex, "plan's index can't be empty")
 	}
 
-	// TODO: YAROM
-
-	// validate denom is ulava
-	if p.GetPrice().Denom != tokenDenom {
-		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price denom is not in ulava")
-	}
 	// check that the plan's price is non-zero
-	if p.GetPrice().IsEqual(sdk.NewCoin(tokenDenom, sdk.ZeroInt())) {
+	if p.GetPrice().Amount.IsZero() {
 		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price can't be zero")
 	}
 

@@ -63,8 +63,9 @@ func PlanKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		epochstorageKeeper,
-		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec),
+		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec, nil),
 		fixationkeeper.NewKeeper(cdc, timerstorekeeper.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
+		nil,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
