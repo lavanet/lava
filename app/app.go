@@ -69,9 +69,6 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -199,7 +196,6 @@ var (
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		staking.AppModuleBasic{},
-		mint.AppModuleBasic{},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(getGovProposalHandlers()),
 		params.AppModuleBasic{},
@@ -228,15 +224,14 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:               nil,
 		distrtypes.ModuleName:                    nil,
-		minttypes.ModuleName:                     {authtypes.Minter},
 		stakingtypes.BondedPoolName:              {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:                      {authtypes.Burner},
-		ibctransfertypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
-		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		ibctransfertypes.ModuleName:              {authtypes.Burner},
+		subscriptionmoduletypes.ModuleName:       {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:            {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -310,7 +305,7 @@ func New(
 
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
-		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
+		distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, consensusparamtypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, crisistypes.StoreKey, ibctransfertypes.StoreKey, ibcexported.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
@@ -365,11 +360,6 @@ func New(
 	)
 	app.StakingKeeper = stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec, keys[minttypes.StoreKey], app.StakingKeeper,
-		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
@@ -615,7 +605,6 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
@@ -656,7 +645,6 @@ func New(
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -684,7 +672,6 @@ func New(
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -722,7 +709,6 @@ func New(
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -760,7 +746,6 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
@@ -985,7 +970,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
-	paramsKeeper.Subspace(minttypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint:staticcheck

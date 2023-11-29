@@ -10,7 +10,6 @@ import (
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -39,7 +38,6 @@ type LavaKeepers struct {
 	CapabilityKeeper *capabilitykeeper.Keeper
 	StakingKeeper    *stakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
-	MintKeeper       mintkeeper.Keeper
 	DistrKeeper      distrkeeper.Keeper
 	GovKeeper        govkeeper.Keeper
 	CrisisKeeper     crisiskeeper.Keeper
