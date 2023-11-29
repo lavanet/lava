@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
-	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
+	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +21,7 @@ func TestCreateValidator(t *testing.T) {
 	_, err := ts.TxCreateValidator(validator, amount)
 	require.Nil(t, err)
 
-	res, err := ts.QueryDualstakingProviderDelegators(dualstakingkeeper.EMPTY_PROVIDER, true)
+	res, err := ts.QueryDualstakingProviderDelegators(dualstakingtypes.EMPTY_PROVIDER, true)
 	require.Nil(t, err)
 	require.Equal(t, res.Delegations[0].Delegator, validator.Addr.String())
 }
@@ -37,7 +37,7 @@ func TestDelegateToValidator(t *testing.T) {
 	_, err := ts.TxCreateValidator(validator, amount)
 	require.Nil(t, err)
 
-	res, err := ts.QueryDualstakingProviderDelegators(dualstakingkeeper.EMPTY_PROVIDER, true)
+	res, err := ts.QueryDualstakingProviderDelegators(dualstakingtypes.EMPTY_PROVIDER, true)
 	require.Nil(t, err)
 	require.Equal(t, res.Delegations[0].Delegator, validator.Addr.String())
 
@@ -46,7 +46,7 @@ func TestDelegateToValidator(t *testing.T) {
 	_, err = ts.TxDelegateValidator(delegator, validator, amount)
 	require.Nil(t, err)
 
-	res, err = ts.QueryDualstakingProviderDelegators(dualstakingkeeper.EMPTY_PROVIDER, true)
+	res, err = ts.QueryDualstakingProviderDelegators(dualstakingtypes.EMPTY_PROVIDER, true)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	require.True(t, res.Delegations[0].Delegator == validator.Addr.String() || res.Delegations[0].Delegator == delegator.Addr.String())
@@ -68,7 +68,7 @@ func TestReDelegateToValidator(t *testing.T) {
 	_, err = ts.TxCreateValidator(validator2, amount)
 	require.Nil(t, err)
 
-	delegatorsRes, err := ts.QueryDualstakingProviderDelegators(dualstakingkeeper.EMPTY_PROVIDER, true)
+	delegatorsRes, err := ts.QueryDualstakingProviderDelegators(dualstakingtypes.EMPTY_PROVIDER, true)
 	require.Nil(t, err)
 	require.Equal(t, 2, len(delegatorsRes.Delegations))
 
@@ -77,7 +77,7 @@ func TestReDelegateToValidator(t *testing.T) {
 	_, err = ts.TxDelegateValidator(delegator, validator1, amount)
 	require.Nil(t, err)
 
-	delegatorsRes, err = ts.QueryDualstakingProviderDelegators(dualstakingkeeper.EMPTY_PROVIDER, true)
+	delegatorsRes, err = ts.QueryDualstakingProviderDelegators(dualstakingtypes.EMPTY_PROVIDER, true)
 	require.Nil(t, err)
 	require.Equal(t, 3, len(delegatorsRes.Delegations))
 
@@ -89,7 +89,7 @@ func TestReDelegateToValidator(t *testing.T) {
 	_, err = ts.TxReDelegateValidator(delegator, validator1, validator2, amount)
 	require.Nil(t, err)
 
-	delegatorsRes1, err := ts.QueryDualstakingProviderDelegators(dualstakingkeeper.EMPTY_PROVIDER, true)
+	delegatorsRes1, err := ts.QueryDualstakingProviderDelegators(dualstakingtypes.EMPTY_PROVIDER, true)
 	require.Nil(t, err)
 	require.Equal(t, delegatorsRes, delegatorsRes1)
 
@@ -128,14 +128,14 @@ func TestReDelegateToProvider(t *testing.T) {
 	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(providersRes.Delegations))
-	require.Equal(t, dualstakingkeeper.EMPTY_PROVIDER, providersRes.Delegations[0].Provider)
+	require.Equal(t, dualstakingtypes.EMPTY_PROVIDER, providersRes.Delegations[0].Provider)
 
 	ts.AdvanceEpoch()
 
 	_, err = ts.TxDualstakingRedelegate(delegator.Addr.String(),
-		dualstakingkeeper.EMPTY_PROVIDER,
+		dualstakingtypes.EMPTY_PROVIDER,
 		provider.Addr.String(),
-		dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
 		entry.Chain,
 		sdk.NewCoin(ts.TokenDenom(), amount))
 
@@ -203,9 +203,9 @@ func TestUnbondUniformProviders(t *testing.T) {
 		_, provider := ts.GetAccount(common.PROVIDER, i)
 		providers = append(providers, provider)
 		_, err = ts.TxDualstakingRedelegate(delegatorAcc.Addr.String(),
-			dualstakingkeeper.EMPTY_PROVIDER,
+			dualstakingtypes.EMPTY_PROVIDER,
 			provider,
-			dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
+			dualstakingtypes.EMPTY_PROVIDER_CHAINID,
 			ts.spec.Index,
 			sdk.NewCoin(ts.TokenDenom(), redelegateAmts[i]))
 		require.Nil(t, err)
@@ -276,9 +276,9 @@ func TestValidatorSlash(t *testing.T) {
 		_, provider := ts.GetAccount(common.PROVIDER, i)
 		providers = append(providers, provider)
 		_, err = ts.TxDualstakingRedelegate(delegatorAcc.Addr.String(),
-			dualstakingkeeper.EMPTY_PROVIDER,
+			dualstakingtypes.EMPTY_PROVIDER,
 			provider,
-			dualstakingkeeper.EMPTY_PROVIDER_CHAINID,
+			dualstakingtypes.EMPTY_PROVIDER_CHAINID,
 			ts.spec.Index,
 			sdk.NewCoin(ts.TokenDenom(), redelegateAmts[i]))
 		require.Nil(t, err)

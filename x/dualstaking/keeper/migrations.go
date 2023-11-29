@@ -107,7 +107,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 			continue
 		}
 
-		if d.Delegator == d.Provider || d.Provider == EMPTY_PROVIDER {
+		if d.Delegator == d.Provider || d.Provider == dualstakingtypes.EMPTY_PROVIDER {
 			continue
 		}
 

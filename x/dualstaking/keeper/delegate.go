@@ -31,11 +31,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const (
-	EMPTY_PROVIDER         = "empty_provider"
-	EMPTY_PROVIDER_CHAINID = ""
-)
-
 // validateCoins validates that the input amount is valid and non-negative
 func validateCoins(amount sdk.Coin) error {
 	if !amount.IsValid() {
@@ -89,7 +84,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		)
 	}
 
-	if provider != EMPTY_PROVIDER {
+	if provider != types.EMPTY_PROVIDER {
 		// update the stake entry
 		err = k.increaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
 		if err != nil {
@@ -185,7 +180,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if provider != EMPTY_PROVIDER {
+	if provider != types.EMPTY_PROVIDER {
 		if err := k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount, unstake); err != nil {
 			return err
 		}
@@ -283,7 +278,7 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		)
 	}
 
-	if provider != EMPTY_PROVIDER {
+	if provider != types.EMPTY_PROVIDER {
 		if _, err = sdk.AccAddressFromBech32(provider); err != nil {
 			return utils.LavaFormatWarning("invalid provider address", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -322,7 +317,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		)
 	}
 
-	if from != EMPTY_PROVIDER {
+	if from != types.EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(from); err != nil {
 			return utils.LavaFormatWarning("invalid from-provider address", err,
 				utils.Attribute{Key: "from_provider", Value: from},
@@ -330,7 +325,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		}
 	}
 
-	if to != EMPTY_PROVIDER {
+	if to != types.EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(to); err != nil {
 			return utils.LavaFormatWarning("invalid to-provider address", err,
 				utils.Attribute{Key: "to_provider", Value: to},
@@ -382,7 +377,7 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		)
 	}
 
-	if provider != EMPTY_PROVIDER {
+	if provider != types.EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(provider); err != nil {
 			return utils.LavaFormatWarning("invalid provider address", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -458,7 +453,7 @@ func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch u
 }
 
 func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]types.Delegation, error) {
-	if provider != EMPTY_PROVIDER {
+	if provider != types.EMPTY_PROVIDER {
 		_, err := sdk.AccAddressFromBech32(provider)
 		if err != nil {
 			return nil, utils.LavaFormatWarning("cannot get provider's delegators", err,
@@ -526,15 +521,15 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 	}
 
 	// first remove from the empty provider
-	if lavaslices.Contains[string](providers, EMPTY_PROVIDER) {
-		delegation, found := k.GetDelegation(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, epoch)
+	if lavaslices.Contains[string](providers, types.EMPTY_PROVIDER) {
+		delegation, found := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, epoch)
 		if found {
 			if delegation.Amount.Amount.GTE(amount.Amount) {
 				// we have enough here, remove all from empty delegator and bail
-				return k.unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, amount, false)
+				return k.unbond(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, amount, false)
 			} else {
 				// we dont have enough in the empty provider, remove everything and continue with the rest
-				err = k.unbond(ctx, delegator, EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
+				err = k.unbond(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, delegation.Amount, false)
 				if err != nil {
 					return err
 				}
@@ -543,7 +538,7 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		}
 	}
 
-	providers, _ = lavaslices.Remove[string](providers, EMPTY_PROVIDER)
+	providers, _ = lavaslices.Remove[string](providers, types.EMPTY_PROVIDER)
 
 	var delegations []types.Delegation
 	for _, provider := range providers {

@@ -54,7 +54,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		return nil
 	} else if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
-		err = h.k.delegate(ctx, delAddr.String(), EMPTY_PROVIDER, EMPTY_PROVIDER_CHAINID,
+		err = h.k.delegate(ctx, delAddr.String(), types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID,
 			sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), diff))
 		if err != nil {
 			return err
