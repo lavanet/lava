@@ -264,3 +264,45 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 
 	return nil
 }
+
+// MigrateVersion2To3 implements store migration: Create a self delegation for all providers, Make providers-validators delegations balance
+func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
+	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+	chains := m.keeper.specKeeper.GetAllChainIDs(ctx)
+	for _, chainID := range chains {
+		storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
+		if found {
+			providers := map[string]interface{}{}
+			stakeEntries := []epochstoragetypes.StakeEntry{}
+
+			// remove duplicates
+			for _, entry := range storage.StakeEntries {
+				if _, ok := providers[entry.Address]; !ok {
+					d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
+					if found {
+						entry.Stake = d.Amount
+						stakeEntries = append(stakeEntries, entry)
+					}
+
+					providers[entry.Address] = struct{}{}
+				}
+			}
+
+			// add back the old ones if they were deleted
+			deletedEntriesToAdd := []epochstoragetypes.StakeEntry{} //load stake storage
+			for _, entry := range deletedEntriesToAdd {
+				if _, ok := providers[entry.Address]; !ok {
+					d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
+					if found {
+						entry.Stake = d.Amount
+						stakeEntries = append(stakeEntries, entry)
+					}
+				}
+			}
+
+			storage.StakeEntries = stakeEntries
+			m.keeper.epochstorageKeeper.SetStakeStorageCurrent(ctx, storage.Index, storage)
+		}
+	}
+	return nil
+}
