@@ -209,6 +209,9 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 
 	if delegator == provider {
 		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
+		if stakeEntry.Stake.IsGTE(k.GetMinStake(ctx, chainID)) && stakeEntry.IsFrozen() {
+			stakeEntry.UnFreeze(uint64(ctx.BlockHeight()))
+		}
 	} else {
 		stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
 	}
@@ -246,8 +249,8 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 		if err != nil {
 			return fmt.Errorf("invalid or insufficient funds: %w", err)
 		}
-		if stakeEntry.Stake.IsLT(k.getMinStake(ctx, chainID)) {
-			return fmt.Errorf("provider self unbond to less than min stake")
+		if stakeEntry.Stake.IsLT(k.GetMinStake(ctx, chainID)) {
+			stakeEntry.Freeze()
 		}
 	} else {
 		stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
@@ -419,7 +422,7 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	// NOT REACHED
 }
 
-func (k Keeper) getMinStake(ctx sdk.Context, chainID string) sdk.Coin {
+func (k Keeper) GetMinStake(ctx sdk.Context, chainID string) sdk.Coin {
 	spec, found := k.specKeeper.GetSpec(ctx, chainID)
 	if !found {
 		utils.LavaFormatError("critical: failed to get spec for chainID",
