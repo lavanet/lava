@@ -49,6 +49,10 @@ type FixationTemplate struct {
 	count int64 // target block or count
 }
 
+func mockGetStaleBlock(ctx sdk.Context) uint64 {
+	return 1500
+}
+
 // helper to automate testing operations
 func testWithFixationTemplate(t *testing.T, playbook []FixationTemplate, countObj, countVS int) {
 	ctx, fs := InitCtxAndFixationStores(t, countVS)

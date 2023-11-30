@@ -69,18 +69,14 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 		}
 	}
 
-	// check all supported geolocations form all providers prior to making decisions
-	existingProviders := map[int32]map[string]struct{}{}
+	// check all supported providers from all geolocations prior to making decisions
+	existingProviders := map[string]uint64{}
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
 		// count providers per geolocation
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
-			for _, endpoint := range providerStakeEntry.Endpoints {
-				_, ok := existingProviders[endpoint.Geolocation]
-				if !ok {
-					existingProviders[endpoint.Geolocation] = map[string]struct{}{}
-				}
-				existingProviders[endpoint.Geolocation][providerStakeEntry.Address] = struct{}{}
+			if !providerStakeEntry.IsFrozen() {
+				existingProviders[providerStakeEntry.GetChain()]++
 			}
 		}
 	}
@@ -103,9 +99,9 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && uint64(len(existingProviders[providerStakeEntry.Geolocation])) > minProviders {
+			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.GetChain()] > minProviders {
 				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
-				delete(existingProviders[providerStakeEntry.Geolocation], providerStakeEntry.Address)
+				existingProviders[providerStakeEntry.GetChain()]--
 				if err != nil {
 					utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
 						utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},

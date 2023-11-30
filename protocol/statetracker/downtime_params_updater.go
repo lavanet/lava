@@ -75,6 +75,10 @@ func (dpu *DowntimeParamsUpdater) Update(latestBlock int64) {
 			time.Sleep(50 * time.Millisecond * time.Duration(i+1))
 		}
 
+		if params == nil {
+			return
+		}
+
 		for _, downtimeParamsUpdatable := range dpu.downtimeParamsUpdatables {
 			// iterate over all updaters and execute their updatable
 			(*downtimeParamsUpdatable).SetDowntimeParams(*params)
