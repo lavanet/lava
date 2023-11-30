@@ -42,7 +42,7 @@ function setupConsumerSessionManager(
     relayer = setupRelayer();
     jest
       .spyOn(relayer, "probeProvider")
-      .mockImplementation((providerAddress, apiInterface, guid, specId) => {
+      .mockImplementation((_providerAddress, _apiInterface, guid) => {
         const response: ProbeReply = new ProbeReply();
         response.setLatestBlock(42);
         response.setLavaEpoch(20);
@@ -950,20 +950,18 @@ describe("ConsumerSessionManager", () => {
 
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation(
-          async (providerAddress, apiInterface, guid, specId) => {
-            if (providerAddress === pairingList[1].publicLavaAddress) {
-              providerRetries++;
-              throw new Error("test");
-            }
-
-            const response: ProbeReply = new ProbeReply();
-            response.setLatestBlock(42);
-            response.setLavaEpoch(20);
-            response.setGuid(guid);
-            return Promise.resolve(response);
+        .mockImplementation(async (providerAddress, _apiInterface, guid) => {
+          if (providerAddress === pairingList[1].publicLavaAddress) {
+            providerRetries++;
+            throw new Error("test");
           }
-        );
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          response.setGuid(guid);
+          return Promise.resolve(response);
+        });
 
       const cm = setupConsumerSessionManager(relayer);
       // @ts-expect-error - we are spying on a private method
@@ -983,23 +981,21 @@ describe("ConsumerSessionManager", () => {
 
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation(
-          async (providerAddress, apiInterface, guid, specId) => {
-            if (
-              providerAddress === pairingList[1].publicLavaAddress &&
-              providerRetries < 1
-            ) {
-              providerRetries++;
-              throw new Error("test");
-            }
-
-            const response: ProbeReply = new ProbeReply();
-            response.setLatestBlock(42);
-            response.setLavaEpoch(20);
-            response.setGuid(guid);
-            return Promise.resolve(response);
+        .mockImplementation(async (providerAddress, _apiInterface, guid) => {
+          if (
+            providerAddress === pairingList[1].publicLavaAddress &&
+            providerRetries < 1
+          ) {
+            providerRetries++;
+            throw new Error("test");
           }
-        );
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          response.setGuid(guid);
+          return Promise.resolve(response);
+        });
 
       const optimizer = setupProviderOptimizer(
         ProviderOptimizerStrategy.Latency,
@@ -1020,23 +1016,19 @@ describe("ConsumerSessionManager", () => {
     it("disables provider for failed probes", async () => {
       const pairingList = createPairingList("", true);
       const relayer = setupRelayer();
-      let providerRetries = 0;
 
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation(
-          async (providerAddress, apiInterface, guid, specId) => {
-            if (providerAddress == pairingList[1].publicLavaAddress) {
-              providerRetries++;
-              throw new Error("test");
-            }
-            const response: ProbeReply = new ProbeReply();
-            response.setLatestBlock(42);
-            response.setLavaEpoch(20);
-            response.setGuid(guid);
-            return Promise.resolve(response);
+        .mockImplementation(async (providerAddress, _apiInterface, guid) => {
+          if (providerAddress == pairingList[1].publicLavaAddress) {
+            throw new Error("test");
           }
-        );
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          response.setGuid(guid);
+          return Promise.resolve(response);
+        });
 
       const optimizer = setupProviderOptimizer(
         ProviderOptimizerStrategy.Latency,
@@ -1059,7 +1051,7 @@ describe("ConsumerSessionManager", () => {
       let startEpoch = 1;
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation((providerAddress, apiInterface, guid, specId) => {
+        .mockImplementation((_providerAddress, _apiInterface, guid) => {
           const response: ProbeReply = new ProbeReply();
           response.setLavaEpoch(startEpoch++);
           response.setGuid(guid);
