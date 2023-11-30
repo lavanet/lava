@@ -29,7 +29,6 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 		chainID,
 		types.EMPTY_PROVIDER_CHAINID,
 		amount,
-		unstake,
 	)
 	if err != nil {
 		return err
