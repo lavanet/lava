@@ -3,6 +3,7 @@ parent:
   order: false
 -->
 
+[![Website](https://img.shields.io/badge/WEBSITE-https%3A%2F%2Fwww.lavanet.xyz-green?style=for-the-badge)](https://www.lavanet.xyz) &emsp;  [![Discord](https://img.shields.io/discord/963778337904427018?color=green&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/EKzbc6bx)
 
 <div align="center">
   <h1> <img src="https://user-images.githubusercontent.com/2770565/223762290-44afc792-8ad4-4dbb-b2c2-532780d6c5de.png" alt="Logo" width="30" height="25"> Lava Network  </h1>
