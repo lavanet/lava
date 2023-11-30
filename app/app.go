@@ -124,6 +124,9 @@ import (
 	protocolmodule "github.com/lavanet/lava/x/protocol"
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
+	rewardsmodule "github.com/lavanet/lava/x/rewards"
+	rewardsmodulekeeper "github.com/lavanet/lava/x/rewards/keeper"
+	rewardsmoduletypes "github.com/lavanet/lava/x/rewards/types"
 	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -217,6 +220,7 @@ var (
 		protocolmodule.AppModuleBasic{},
 		plansmodule.AppModuleBasic{},
 		downtimemodule.AppModuleBasic{},
+		rewardsmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -232,6 +236,7 @@ var (
 		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
+		rewardsmoduletypes.ModuleName:            {authtypes.Minter},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -317,6 +322,7 @@ func New(
 		projectsmoduletypes.StoreKey,
 		plansmoduletypes.StoreKey,
 		downtimemoduletypes.StoreKey,
+		rewardsmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -503,6 +509,16 @@ func New(
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[rewardsmoduletypes.StoreKey],
+		keys[rewardsmoduletypes.MemStoreKey],
+		app.GetSubspace(rewardsmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+	)
+	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// register the proposal types
 	govRouter := v1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, v1beta1.ProposalHandler).
@@ -625,6 +641,7 @@ func New(
 		plansModule,
 		protocolModule,
 		downtimeModule,
+		rewardsModule,
 
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)), // always be last to make sure that it checks for all invariants and not only part of them
 		// this line is used by starport scaffolding # stargate/app/appModule
@@ -662,6 +679,7 @@ func New(
 		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		feegrant.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		paramstypes.ModuleName)
 
 	app.mm.SetOrderEndBlockers(
@@ -687,6 +705,7 @@ func New(
 		protocolmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -725,6 +744,7 @@ func New(
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		paramstypes.ModuleName,
 		fixationtypes.ModuleName,       // fixation store has no init genesis but module manager requires it.
 		timerstoretypes.ModuleName,     // timer store has no init genesis but module manager requires it.
@@ -762,6 +782,7 @@ func New(
 		projectsModule,
 		protocolModule,
 		plansModule,
+		rewardsModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -986,6 +1007,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(protocolmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
+	paramsKeeper.Subspace(rewardsmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
