@@ -1,4 +1,4 @@
-const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
+import { LavaSDK } from "../../../../ecosystem/lava-sdk/bin/src/sdk/sdk"
 
 function delay(ms: number) {
     return new Promise( resolve => setTimeout(resolve, ms) );

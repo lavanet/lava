@@ -61,8 +61,7 @@ func RunSDKTest(testFile string, privateKey string, publicKey string, logs *byte
 	utils.LavaFormatInfo(fmt.Sprintf("Running test: %s", testFile))
 	err := cmd.Run()
 	if err != nil {
-		utils.LavaFormatError("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
-		return err
+		utils.LavaFormatPanic("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
 	} else {
 		utils.LavaFormatInfo(logs.String())
 	}

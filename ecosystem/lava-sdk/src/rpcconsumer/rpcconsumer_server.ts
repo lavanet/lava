@@ -250,7 +250,7 @@ export class RPCConsumerServer {
           singleConsumerSession.sessionId
         }, guid:${relayResult.request
           .getRelayData()
-          ?.getSalt()}, requestedBlock: ${relayResult.request
+          ?.getSalt_asB64()}, requestedBlock: ${relayResult.request
           .getRelayData()
           ?.getRequestBlock()}, apiInterface:${relayResult.request
           .getRelayData()
