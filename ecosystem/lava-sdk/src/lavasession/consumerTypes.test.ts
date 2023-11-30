@@ -5,7 +5,7 @@ import {
   QoSReport,
   SingleConsumerSession,
 } from "./consumerTypes";
-import { AVAILABILITY_PERCENTAGE, DEFAULT_DECIMAL_PRECISION } from "./common";
+import { AVAILABILITY_PERCENTAGE } from "./common";
 import { AlreadyLockedError, NotLockedError } from "./errors";
 
 describe("consumerTypes", () => {

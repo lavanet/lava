@@ -278,7 +278,7 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 				utils.LavaFormatFatal("failed to fetch DisableInteractive flag", err)
 			}
 			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blocks})
-			utils.LoggingLevel(logLevel)
+			utils.SetGlobalLoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			_, err = tx.NewFactoryCLI(clientCtx, cmd.Flags())
 			if err != nil {

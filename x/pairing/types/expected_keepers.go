@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -95,6 +96,7 @@ type PlanKeeper interface {
 
 type DowntimeKeeper interface {
 	GetDowntimeFactor(ctx sdk.Context, epochStartBlock uint64) uint64
+	GetParams(ctx sdk.Context) (params v1.Params)
 }
 
 type DualstakingKeeper interface {

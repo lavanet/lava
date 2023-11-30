@@ -67,7 +67,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
-			utils.LoggingLevel(logLevel)
+			utils.SetGlobalLoggingLevel(logLevel)
 
 			RunBadgeServer(cmd, v)
 
@@ -134,7 +134,6 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("Error initiating state tracker", err)
 	}
-	stateTracker.RegisterForEpochUpdates(ctx, server)
 	// setting stateTracker in server so we can register for spec updates.
 	server.InitializeStateTracker(stateTracker)
 
