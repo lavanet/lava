@@ -171,7 +171,7 @@ func (ts *Tester) StakeProviderExtra(
 		}
 	}
 
-	stake := sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewInt(amount))
+	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
 	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
 
 	return err
