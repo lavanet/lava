@@ -24,6 +24,17 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 			return nil, utils.LavaFormatWarning("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
 		}
 
+		minStake := k.Keeper.dualstakingKeeper.GetMinStake(ctx, chainId)
+		if stakeEntry.Stake.IsLT(minStake) {
+			return nil, utils.LavaFormatWarning("Unfreeze_insufficient_stake", types.UnFreezeInsufficientStakeError,
+				[]utils.Attribute{
+					{Key: "chainID", Value: chainId},
+					{Key: "providerAddress", Value: msg.GetCreator()},
+					{Key: "stake", Value: stakeEntry.Stake},
+					{Key: "minStake", Value: minStake},
+				}...)
+		}
+
 		if stakeEntry.StakeAppliedBlock > currentBlock {
 			// unfreeze the provider by making the StakeAppliedBlock the current block. This will let the provider be added to the pairing list in the next epoch, when current entries becomes the front of epochStorage
 			stakeEntry.UnFreeze(currentBlock)
