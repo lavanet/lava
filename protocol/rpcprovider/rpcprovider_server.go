@@ -259,7 +259,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 		// if after UpdateLatestBlockInMessage it's not aligned we have a problem
 		reqBlock, _ = chainMessage.RequestedBlock()
 		if reqBlock != request.RelayData.RequestBlock {
-			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: reqBlock}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
+			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.LogAttr("method", chainMessage.GetApi().Name), utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: reqBlock}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
 		}
 	}
 	return nil
