@@ -22,6 +22,11 @@ Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) whic
 
 **Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 
+## Repository Contents
+This repository (**@lavanet/lava**) contains the source code for all [lava binaries (`lavad`, `lavap`, `lavavisor`)](https://github.com/lavanet/lava/tree/main/cmd), [LavaSDK](https://github.com/lavanet/lava/tree/main/ecosystem/lava-sdk), [LavaJS](https://github.com/lavanet/lava/tree/main/ecosystem/lavajs).
+
+Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository.
+
 ### Installing development dependencies
 before running the scripts make sure you have go installed and added to $PATH, you can validate by running `which go`
 init_install will install all necessary dependencies to develop on lava.
