@@ -122,7 +122,7 @@ export class LavaSDK {
     this.walletAddress = "";
     this.badgeManager = new BadgeManager(badge);
     this.network = network || DEFAULT_LAVA_PAIRING_NETWORK;
-    this.geolocation = geolocation || DEFAULT_GEOLOCATION;
+    this.geolocation = geolocation || DEFAULT_GEOLOCATION.toString();
     this.lavaChainId = lavaChainId || DEFAULT_LAVA_CHAINID;
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
