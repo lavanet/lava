@@ -245,7 +245,19 @@ export class RPCConsumerServer {
       );
 
       Logger.info(`Sending relay to provider ${providerPublicAddress}`);
-
+      Logger.debug(
+        `Relay stats sessionId:${
+          singleConsumerSession.sessionId
+        }, guid:${relayResult.request
+          .getRelayData()
+          ?.getSalt()}, requestedBlock: ${relayResult.request
+          .getRelayData()
+          ?.getRequestBlock()}, apiInterface:${relayResult.request
+          .getRelayData()
+          ?.getApiInterface()}, seenBlock: ${relayResult.request
+          .getRelayData()
+          ?.getSeenBlock()}`
+      );
       const promise = this.relayInner(
         singleConsumerSession,
         relayResult,
