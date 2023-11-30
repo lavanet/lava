@@ -1,17 +1,21 @@
 package types
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 )
 
-func NewDelegation(delegator, provider, chainID string) Delegation {
+func NewDelegation(delegator, provider, chainID string, blockTime time.Time) Delegation {
 	return Delegation{
 		Delegator: delegator,
 		Provider:  provider,
 		ChainID:   chainID,
 		Amount:    sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		Timestamp: subscriptionkeeper.NextMonth(blockTime).UTC().Unix(),
 	}
 }
 
@@ -35,6 +39,10 @@ func (delegation *Delegation) Equal(other *Delegation) bool {
 		return false
 	}
 	return true
+}
+
+func (delegation *Delegation) IsFirstMonthPassed(currentTimestamp int64) bool {
+	return delegation.Timestamp <= currentTimestamp
 }
 
 func NewDelegator(delegator, provider string) Delegator {

@@ -52,7 +52,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	found := k.delegationFS.FindEntry(ctx, index, nextEpoch, &delegationEntry)
 	if !found {
 		// new delegation (i.e. not increase of existing one)
-		delegationEntry = types.NewDelegation(delegator, provider, chainID)
+		delegationEntry = types.NewDelegation(delegator, provider, chainID, ctx.BlockTime())
 	}
 
 	delegationEntry.AddAmount(amount)
