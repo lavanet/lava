@@ -13,6 +13,7 @@ func CreateBadge(cuAllocation, epoch uint64, address sdk.AccAddress, lavaChainID
 		Address:      address.String(),
 		LavaChainId:  lavaChainID,
 		ProjectSig:   sig,
+		VirtualEpoch: 0,
 	}
 
 	return &badge

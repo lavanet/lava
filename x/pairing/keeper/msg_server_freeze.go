@@ -31,7 +31,7 @@ func (k Keeper) FreezeProvider(ctx sdk.Context, provider string, chainIDs []stri
 		}
 
 		// freeze the provider by making the StakeAppliedBlock be max. This will remove the provider from the pairing list in the next epoch
-		stakeEntry.StakeAppliedBlock = types.FROZEN_BLOCK
+		stakeEntry.Freeze()
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainId, stakeEntry, index)
 	}
 

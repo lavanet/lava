@@ -1,4 +1,3 @@
-import Long from "long";
 import { ReportedProvider } from "../grpc_web_services/lavanet/lava/pairing/relay_pb";
 
 export class ReportedProviders {

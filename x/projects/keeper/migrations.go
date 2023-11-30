@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/projects/migrations/v2"
@@ -20,12 +18,8 @@ func NewMigrator(keeper Keeper) Migrator {
 }
 
 func (m Migrator) migrateFixationsVersion(ctx sdk.Context) error {
-	if err := m.keeper.projectsFS.MigrateVersion(ctx); err != nil {
-		return fmt.Errorf("%w: projects fixation-store", err)
-	}
-	if err := m.keeper.developerKeysFS.MigrateVersion(ctx); err != nil {
-		return fmt.Errorf("%w: developerKeys fixation-store", err)
-	}
+	// This migration used to call a deprecated fixationstore function called MigrateVersionAndPrefix
+
 	return nil
 }
 

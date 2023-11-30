@@ -195,6 +195,15 @@ func (ts *Tester) AddPlan(name string, plan planstypes.Plan) *Tester {
 	return ts
 }
 
+func (ts *Tester) ModifyPlan(name string, plan planstypes.Plan) *Tester {
+	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan, true)
+	if err != nil {
+		panic("tester: falied to add plan: '" + plan.Index + "'")
+	}
+	ts.plans[name] = plan
+	return ts
+}
+
 func (ts *Tester) Plan(name string) planstypes.Plan {
 	plan, ok := ts.plans[name]
 	if !ok {

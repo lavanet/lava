@@ -6,7 +6,7 @@ import {
   SingleConsumerSession,
 } from "./consumerTypes";
 import { Geolocation } from "./geolocation";
-import { AVAILABILITY_PERCENTAGE, DEFAULT_DECIMAL_PRECISION } from "./common";
+import { AVAILABILITY_PERCENTAGE } from "./common";
 import { AlreadyLockedError, NotLockedError } from "./errors";
 
 const geolocationValue: Geolocation = Geolocation.USC;

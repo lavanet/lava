@@ -9,4 +9,5 @@ var allowedErrors = map[string]string{
 	"purging provider after all endpoints are disabled provider":     "This error is allowed because it is caused by the initial bootup, continuous failure would be caught by the e2e so we can allowed this error.",
 	"Provider Side Failed Sending Message, Reason: Unavailable":      "This error is allowed because it is caused by the lavad restart to turn on emergency mode",
 	"Maximum cu exceeded PrepareSessionForUsage":                     "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
+	"Trying to update provider list for older epoch":                 "This error is allowed because it is caused by virtual epoch having started and epoch not having changed",
 }

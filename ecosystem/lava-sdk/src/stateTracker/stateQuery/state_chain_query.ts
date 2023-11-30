@@ -22,6 +22,7 @@ import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
 import { GeolocationFromString } from "../../lavasession/geolocation";
+import { Params as DowntimeParams } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
   stakeEntry: StakeEntry[];
@@ -38,6 +39,8 @@ export class StateChainQuery {
   private latestBlockNumber = 0;
   private lavaSpec: Spec;
   private csp: ConsumerSessionsWithProvider[] = [];
+  private currentEpoch: number | undefined;
+  private downtimeParams: DowntimeParams | undefined;
 
   constructor(
     pairingListConfig: string,
@@ -81,6 +84,8 @@ export class StateChainQuery {
       Logger.debug("Fetching pairing started");
       // Save time till next epoch
       let timeLeftToNextPairing;
+      let currentEpoch;
+      let downtimeParams;
 
       const lavaPairing = this.getPairing("LAV1");
 
@@ -121,14 +126,17 @@ export class StateChainQuery {
           continue;
         }
 
+        downtimeParams = pairingResponse.getDowntimeParams();
+
         const providers = pairing.getProvidersList();
         timeLeftToNextPairing = pairing.getTimeLeftToNextPairing();
-        const currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
+        currentEpoch = pairingResponse.getPairing()?.getCurrentEpoch();
         if (!currentEpoch) {
           throw Logger.fatal(
             "Failed fetching current epoch from pairing request."
           );
         }
+
         // Save pairing response for chainID
         this.pairing.set(chainID, {
           providers: providers,
@@ -143,6 +151,9 @@ export class StateChainQuery {
         throw StateTrackerErrors.errTimeTillNextEpochMissing;
       }
 
+      this.currentEpoch = currentEpoch;
+      this.downtimeParams = downtimeParams;
+
       Logger.debug("Fetching pairing ended");
 
       // Return timeLeftToNextPairing
@@ -150,6 +161,14 @@ export class StateChainQuery {
     } catch (err) {
       throw err;
     }
+  }
+
+  public getCurrentEpoch(): number | undefined {
+    return this.currentEpoch;
+  }
+
+  public getDowntimeParams(): DowntimeParams | undefined {
+    return this.downtimeParams;
   }
 
   // getPairing return pairing list for specific chainID

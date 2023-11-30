@@ -1,7 +1,6 @@
 import BigNumber from "bignumber.js";
 import {
   AVAILABILITY_PERCENTAGE,
-  DEFAULT_DECIMAL_PRECISION,
   MAX_ALLOWED_BLOCK_LISTED_SESSION_PER_PROVIDER,
   MAX_SESSIONS_ALLOWED_PER_PROVIDER,
   MIN_PROVIDERS_FOR_SYNC,
@@ -482,20 +481,32 @@ export class ConsumerSessionsWithProvider {
   }
 
   public validateComputeUnits(
-    cuNeededForSession: number
+    cuNeededForSession: number,
+    virtualEpoch: number
   ): MaxComputeUnitsExceededError | undefined {
-    if (this.usedComputeUnits + cuNeededForSession > this.maxComputeUnits) {
+    if (
+      this.usedComputeUnits + cuNeededForSession >
+      this.maxComputeUnits * (virtualEpoch + 1)
+    ) {
       Logger.warn(
-        `MaxComputeUnitsExceededError: ${this.publicLavaAddress} cu: ${this.usedComputeUnits} max: ${this.maxComputeUnits}`
+        `MaxComputeUnitsExceededError: ${this.publicLavaAddress} cu: ${
+          this.usedComputeUnits
+        } max: ${
+          this.maxComputeUnits * (virtualEpoch + 1)
+        } virtual_epoch: ${virtualEpoch}`
       );
       return new MaxComputeUnitsExceededError();
     }
   }
 
   public addUsedComputeUnits(
-    cu: number
+    cu: number,
+    virtualEpoch: number
   ): MaxComputeUnitsExceededError | undefined {
-    if (this.usedComputeUnits + cu > this.maxComputeUnits) {
+    if (
+      this.usedComputeUnits + cu >
+      this.maxComputeUnits * (virtualEpoch + 1)
+    ) {
       return new MaxComputeUnitsExceededError();
     }
 
