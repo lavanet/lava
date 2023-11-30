@@ -8,5 +8,28 @@ option go_package = "github.com/lavanet/lava/x/rewards/types";
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
+  
+  string min_bonded_target = 1 [
+    (gogoproto.moretags) = "yaml:\"min_bonded_target\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
 
+  string max_bonded_target = 2 [
+    (gogoproto.moretags) = "yaml:\"max_bonded_target\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+
+  string low_factor = 3 [
+    (gogoproto.moretags) = "yaml:\"low_factor\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+
+  string leftover_burn_rate = 4 [
+    (gogoproto.moretags) = "yaml:\"leftover_burn_rate\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
 }
