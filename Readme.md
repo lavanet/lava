@@ -12,15 +12,9 @@ parent:
 ![image](https://user-images.githubusercontent.com/2770565/203528359-dced4d06-f020-4b6a-bb5f-319124924689.png)
 
 ### What is Lava?
-The Lava Protocol aims to provide decentralized and scalable access to blockchain data through the use of a network of providers and consumers. It utilizes a proof-of-stake consensus mechanism and incentivizes participants through the use of its native LAVA token. The protocol includes features such as a stake-weighted pseudorandom pairing function, backfilling, and a lazy settlement process to improve scalability and efficiency. The roadmap for the Lava Protocol includes further development of governance, conflict resolution, privacy, and quality of service, as well as support for additional API specifications. It is designed to be a public good that enables decentralized access to the Web3 ecosystem.
+Lava Protocol is multichain RPC and decentralized web3 APIs that just freakin' works! Lava Protocol implements a proof-of-stake (PoS) blockchain based upon [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) with a native LAVA token. Lava is an open network of 25+ blockchains, with a modular and interoperable system for supporting new web3 APIs.
+You can learn more about Lava in the [litepaper](https://litepaper.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme) or by visiting the [Docs](https://docs.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme).
 
-Read more about Lava in the [litepaper](https://litepaper.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme) and visit the [Docs](https://docs.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme)
-
-## Lava blockchain
-
-Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) which runs on top of [Tendermint Core](https://github.com/tendermint/tendermint) consensus engine.
-
-**Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 
 ## Repository Contents
 This repository (**@lavanet/lava**) contains the source code for all official lava binaries ([`lavad`](https://github.com/lavanet/lava/tree/main/cmd/lavad), [`lavap`](https://github.com/lavanet/lava/tree/main/cmd/lavap), [`lavavisor`](https://github.com/lavanet/lava/tree/main/cmd/lavavisor)), as well as [LavaSDK](https://github.com/lavanet/lava/tree/main/ecosystem/lava-sdk), and [LavaJS](https://github.com/lavanet/lava/tree/main/ecosystem/lavajs). 
@@ -28,6 +22,7 @@ This repository (**@lavanet/lava**) contains the source code for all official la
 Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository ([@lavanet/docs](https://github.com/lavanet/lava)).
 
 ### Installing development dependencies
+**Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 before running the scripts make sure you have go installed and added to $PATH, you can validate by running `which go`
 init_install will install all necessary dependencies to develop on lava.
 ```bash
@@ -57,7 +52,7 @@ Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
 ### Add `lavad` autocomplete
 
-You can add a useful autocomplete feature to `lavad` with a simple bash [script](https://github.com/lavanet/lava/blob/update-readme-autocomplete/scripts/lavad_auto_completion_install.sh).
+You can add a useful autocomplete feature to `lavad` with a simple bash [script](https://github.com/lavanet/lava/blob/main/scripts/lavad_auto_completion_install.sh).
 
 ### Quick Start
 
