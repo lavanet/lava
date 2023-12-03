@@ -19,7 +19,6 @@ func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (
 		msg.FromChainID,
 		msg.ToChainID,
 		msg.Amount,
-		false,
 	)
 
 	if err == nil {

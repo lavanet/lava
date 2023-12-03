@@ -493,3 +493,129 @@ func TestBondUnbondBond(t *testing.T) {
 
 	ts.verifyDelegatorsBalance()
 }
+
+func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
+	ts := newTester(t)
+
+	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(0, 1, 0, 0)
+
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+
+	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+
+	// unbond once
+	_, err := ts.TxDualstakingUnbond(provider1Addr, provider1Addr, ts.spec.Name, staked)
+	require.NoError(t, err)
+
+	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, staked.IsEqual(stakeEntry.Stake))
+
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+	staked = staked.Sub(staked)
+	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, staked.IsEqual(stakeEntry.Stake))
+	require.True(t, stakeEntry.IsFrozen())
+}
+
+func TestDualstakingBondStakeIsGreaterThanMinStakeCausesUnFreeze(t *testing.T) {
+	ts := newTester(t)
+
+	// 0 delegator, 0 provider staked, 1 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(0, 1, 0, 0)
+
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+
+	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+
+	// delegate once
+	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	_, err := ts.TxDualstakingDelegate(provider1Addr, provider1Addr, ts.spec.Name, amount)
+	require.NoError(t, err)
+
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+	staked = staked.Add(amount)
+	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, staked.IsEqual(stakeEntry.Stake))
+	require.False(t, stakeEntry.IsFrozen())
+}
+
+func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
+	ts := newTester(t)
+
+	// 0 delegator, 2 provider staked, 0 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(0, 2, 0, 0)
+
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
+
+	stake := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+
+	// redelegate once
+	_, err := ts.TxDualstakingRedelegate(provider1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, stake)
+	require.NoError(t, err)
+
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+
+	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, stakeEntry.Stake.IsZero())
+	require.True(t, stakeEntry.IsFrozen())
+
+	stakeEntry = ts.getStakeEntry(provider2Acct.Addr, ts.spec.Name)
+	require.True(t, stake.IsEqual(stakeEntry.Stake))
+	require.True(t, stake.IsEqual(stakeEntry.DelegateTotal))
+	require.False(t, stakeEntry.IsFrozen())
+
+	// redelegate again
+	_, err = ts.TxDualstakingRedelegate(provider2Addr, provider2Addr, provider1Addr, ts.spec.Name, ts.spec.Name, stake)
+	require.NoError(t, err)
+
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+
+	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, stakeEntry.Stake.IsZero())
+	require.True(t, stake.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, stakeEntry.IsFrozen())
+
+	stakeEntry = ts.getStakeEntry(provider2Acct.Addr, ts.spec.Name)
+	require.True(t, stakeEntry.Stake.IsZero())
+	require.True(t, stake.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, stakeEntry.IsFrozen())
+}
+
+func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
+	ts := newTester(t)
+
+	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(0, 1, 0, 0)
+
+	provider1Acct, _ := ts.GetAccount(common.PROVIDER, 0)
+	validator1Acct, _ := ts.GetAccount(common.VALIDATOR, 0)
+
+	stakeInt := sdk.NewInt(testStake)
+	stake := sdk.NewCoin("ulava", stakeInt)
+
+	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, stake.IsEqual(stakeEntry.Stake))
+	require.False(t, stakeEntry.IsFrozen())
+
+	// unbond once
+	_, err := ts.TxUnbondValidator(provider1Acct, validator1Acct, stakeInt)
+	require.NoError(t, err)
+
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// now in effect
+
+	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, stakeEntry.Stake.IsZero())
+	require.True(t, stakeEntry.IsFrozen())
+}

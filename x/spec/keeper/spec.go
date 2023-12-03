@@ -342,3 +342,15 @@ func (k Keeper) GetContributorReward(ctx sdk.Context, chainId string) (contribut
 	}
 	return contributors, *spec.ContributorPercentage
 }
+
+func (k Keeper) GetMinStake(ctx sdk.Context, chainID string) sdk.Coin {
+	spec, found := k.GetSpec(ctx, chainID)
+	if !found {
+		utils.LavaFormatError("critical: failed to get spec for chainID",
+			fmt.Errorf("unknown chainID"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
+	}
+
+	return spec.MinStakeProvider
+}

@@ -23,6 +23,7 @@ type SpecKeeper interface {
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool) // this spec is unexpanded don;t use for collections work
 	GetExpectedServicesForExpandedSpec(expandedSpec spectypes.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{}
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
+	GetMinStake(ctx sdk.Context, chainID string) sdk.Coin
 }
 
 type EpochstorageKeeper interface {
