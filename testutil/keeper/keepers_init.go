@@ -223,11 +223,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
+	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.StakingKeeper)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
-	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	// register the staking hooks
 	ks.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(ks.Dualstaking.Hooks()))
 	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, slashingStoreKey, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
