@@ -436,7 +436,7 @@ func TestDelegationTimestamp(t *testing.T) {
 
 	// delegate and check the timestamp is equal to current time + month
 	currentTimeAfterMonth := subscriptionkeeper.NextMonth(ts.BlockTime()).UTC().Unix()
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -451,8 +451,8 @@ func TestDelegationTimestamp(t *testing.T) {
 
 	// advance time and delegate again to verify that the timestamp hasn't changed
 	ts.AdvanceMonths(1)
-	expectedDelegation := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(2*testStake))
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
+	expectedDelegation := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(2*testStake))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -480,14 +480,14 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	// increase delegation limit of stake entry
 	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10*testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(10*testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 
 	// delegate and check the delegation's timestamp is equal than nowPlusMonthTime
 	nowPlusMonthTime := subscriptionkeeper.NextMonth(ts.BlockTime()).UTC().Unix()
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -522,7 +522,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// increase delegation limit and zero commission of stake entry
 	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10*testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(10*testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 	makeProviderCommissionZero(ts, ts.spec.Index, providerAcc.Addr)
@@ -530,7 +530,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
 	nowPlusMonthTime := subscriptionkeeper.NextMonth(ts.BlockTime()).UTC().Unix()
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -573,12 +573,12 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// increase delegation limit and zero commission of both stake entries
 	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10*testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(10*testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 	stakeEntry, found, stakeEntryIndex = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider1Acc.Addr)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(10*testStake))
+	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(10*testStake))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
 	makeProviderCommissionZero(ts, ts.spec.Index, provider1Acc.Addr)
@@ -587,7 +587,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
 	nowPlusMonthTime := subscriptionkeeper.NextMonth(ts.BlockTime()).UTC().Unix()
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -602,7 +602,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 
 	// advance a month a redelegate some of the funds to the second provider
 	ts.AdvanceMonths(1)
-	redelegateAmount := sdk.NewCoin(epochstoragetypes.TokenDenom, res.Delegations[0].Amount.Amount.QuoRaw(2))
+	redelegateAmount := sdk.NewCoin(ts.TokenDenom(), res.Delegations[0].Amount.Amount.QuoRaw(2))
 	_, err = ts.TxDualstakingRedelegate(delegator, provider, provider1, ts.spec.Index, ts.spec.Index, redelegateAmount)
 	require.Nil(t, err)
 
