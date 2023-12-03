@@ -101,7 +101,7 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 	}
 }
 
-func TestFailedVerificationDisablesReceiver(t *testing.T) {
+func TestFailedThenSuccessVerificationDisablesThenEnablesReceiver(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -121,7 +121,7 @@ func TestFailedVerificationDisablesReceiver(t *testing.T) {
 	var chainFetcherIf chainlib.ChainFetcherIf = chainFetcher
 	specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
 
-	chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Return(errors.New(""))
+	secondCall := chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Return(errors.New(""))
 
 	addressData := lavasession.NetworkAddressData{}
 	providerListener := NewProviderListener(context.Background(), addressData)
@@ -131,8 +131,21 @@ func TestFailedVerificationDisablesReceiver(t *testing.T) {
 	providerListener.RegisterReceiver(relayReceiver, rpcProviderEndpoint)
 	specValidator.AddRPCProviderListener(addressData.Address, providerListener)
 
+	// Check that the receiver is first enabled
+	rpcEndpoint := specValidator.getRpcProviderEndpointFromChainFetcher(&chainFetcherIf)
+	require.True(t, providerListener.relayServer.relayReceivers[rpcEndpoint.Key()].enabled)
+
 	specValidator.validateChain(ctx, specName)
 
-	rpcEndpoint := specValidator.getRpcProviderEndpointFromChainFetcher(&chainFetcherIf)
+	// Check that the receiver is disabled
+	rpcEndpoint = specValidator.getRpcProviderEndpointFromChainFetcher(&chainFetcherIf)
 	require.False(t, providerListener.relayServer.relayReceivers[rpcEndpoint.Key()].enabled)
+
+	chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(secondCall).Return(nil)
+
+	specValidator.validateChain(ctx, specName)
+
+	// Check that the receiver is enabled
+	rpcEndpoint = specValidator.getRpcProviderEndpointFromChainFetcher(&chainFetcherIf)
+	require.True(t, providerListener.relayServer.relayReceivers[rpcEndpoint.Key()].enabled)
 }
