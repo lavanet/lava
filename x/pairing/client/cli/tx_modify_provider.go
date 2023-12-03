@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	AmountFlagName    = "amount"
 	EndpointsFlagName = "endpoints"
 	GeolocationFlag   = "geolocation"
 	ValidatorFlag     = "validator"
@@ -63,7 +64,7 @@ func CmdModifyProvider() *cobra.Command {
 		[chain-id] is the spec the provider wishes to modify the entry for
 		`,
 		Example: `lavad tx pairing modify-provider "ETH1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --from <wallet>
-lavad tx pairing modify-provider "ETH1" --endpoints "my-provider-africa.com:443,AF my-provider-europe.com:443,EU" --geolocation "AF,EU" --validator lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk --from <wallet>`,
+		lavad tx pairing modify-provider "ETH1" --endpoints "my-provider-africa.com:443,AF my-provider-europe.com:443,EU" --geolocation "AF,EU" --validator lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk --from <wallet>`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainID := args[0]
@@ -106,7 +107,20 @@ lavad tx pairing modify-provider "ETH1" --endpoints "my-provider-africa.com:443,
 			if providerEntry == nil {
 				return utils.LavaFormatError("provider isn't staked on chainID, no address match", nil)
 			}
-
+			newAmount, err := cmd.Flags().GetString(AmountFlagName)
+			if err != nil {
+				return err
+			}
+			if newAmount != "" {
+				newStake, err := sdk.ParseCoinNormalized(newAmount)
+				if err != nil {
+					return err
+				}
+				if providerEntry.Stake.Amount.GT(newStake.Amount) {
+					return utils.LavaFormatError("can't reduce provider stake", nil, utils.Attribute{Key: "current", Value: providerEntry.Stake}, utils.Attribute{Key: "requested", Value: providerEntry.Stake})
+				}
+				providerEntry.Stake = newStake
+			}
 			var geolocation int32
 			if cmd.Flags().Changed(GeolocationFlag) {
 				geolocation, err = planstypes.ParseGeoEnum(geolocationVar.String())
@@ -184,6 +198,7 @@ lavad tx pairing modify-provider "ETH1" --endpoints "my-provider-africa.com:443,
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().String(EndpointsFlagName, "", "The endpoints provider is offering in the format \"endpoint-url,geolocation endpoint-url,geolocation\"")
+	cmd.Flags().String(AmountFlagName, "", "modify the provider's staked amount")
 	cmd.Flags().String(ValidatorFlag, "", "the validator to delegate/bond to with dualstaking")
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
