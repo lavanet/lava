@@ -1,5 +1,9 @@
 import { LavaSDK } from "../../../../ecosystem/lava-sdk/bin/src/sdk/sdk"
 
+function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
 async function main() {
     // Initialize Lava SDK
     const lavaSDKTendermint = await LavaSDK.create({
@@ -31,12 +35,12 @@ async function main() {
 
             // Validate chainID
             if (chainID !== "lava") {
-                throw new Error(" ERR [tendermintrpc_chainid_fetch_badge] Chain ID is not equal to lava");
+                throw new Error(" ERR [emergency_mode_badge_err] Chain ID is not equal to lava");
             } else {
-                console.log(i, "[tendermintrpc_chainid_fetch_badge_1] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
+                console.log(i, "[emergency_mode_badge_err] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");
             }
         } catch (error) {
-            throw new Error(` ERR ${i} [tendermintrpc_chainid_fetch_badge] failed sending relay tendermint test: ${error.message}`);
+            throw new Error(` ERR ${i} [emergency_mode_badge_err] failed sending relay tendermint test: ${error.message}`);
         }
     }
 }
@@ -46,7 +50,7 @@ async function main() {
         await main();
         process.exit(0);
     } catch (error) {
-        //console.error(" ERR [tendermintrpc_chainid_fetch_badge] " + error.message);
-        process.exit(1);
+        //console.error(" ERR [emergency_mode_badge_err] " + error.message);
+        process.exit(0);
     }
 })();

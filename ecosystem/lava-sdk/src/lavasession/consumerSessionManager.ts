@@ -410,10 +410,16 @@ export class ConsumerSessionManager {
     consumerSession.consecutiveNumberOfFailures++;
 
     let consumerSessionBlockListed = false;
-    // TODO: Verify if code == SessionOutOfSyncError.ABCICode() (from go)
+    let syncLoss = false;
+    if (errorReceived) {
+      syncLoss = errorReceived.message.includes(
+        "Session went out of sync with the provider"
+      );
+    }
     if (
       consumerSession.consecutiveNumberOfFailures >
-      MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION
+        MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION ||
+      syncLoss
     ) {
       Logger.debug(
         `Blocking consumer session id: ${consumerSession.sessionId}`
