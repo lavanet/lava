@@ -14,16 +14,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 const (
-	defaultGasPrice      = "0.000000001" + epochstoragetypes.TokenDenom
+	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
 	defaultGasAdjustment = 3
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
@@ -45,7 +45,7 @@ func NewTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Fac
 
 func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasUsed uint64, txFactory tx.Factory) error {
 	txEvents := simResult.GetResult().Events
-	lavaReward := sdk.NewCoin("ulava", sdk.NewInt(0))
+	lavaReward := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(0))
 	for _, txEvent := range txEvents {
 		if txEvent.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
 			for _, attribute := range txEvent.Attributes {
@@ -313,7 +313,7 @@ func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliability
 
 func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	feesPart := strings.Split(msg, "insufficient fees; got: ")[1]
-	prices := strings.Split(feesPart, epochstoragetypes.TokenDenom)
+	prices := strings.Split(feesPart, commontypes.TokenDenom)
 	var required int
 	var err error
 	for _, p := range prices {
@@ -331,7 +331,7 @@ func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	minimumGasPricesGot := (float64(gasUsed) / float64(required))
 	utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
 		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
-		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + epochstoragetypes.TokenDenom},
+		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + commontypes.TokenDenom},
 	)
 
 	return nil

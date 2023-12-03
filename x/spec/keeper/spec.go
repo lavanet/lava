@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"cosmossdk.io/math"
@@ -220,6 +221,11 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 	if err != nil {
 		details := map[string]string{"imports": strings.Join(spec.Imports, ",")}
 		return details, err
+	}
+
+	if spec.MinStakeProvider.Denom != k.stakingKeeper.BondDenom(ctx) {
+		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
+		return details, fmt.Errorf("MinStakeProvider must have denom of ulava")
 	}
 
 	details, err := spec.ValidateSpec(k.MaxCU(ctx))

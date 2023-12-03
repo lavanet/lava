@@ -1,7 +1,5 @@
 package types
 
-const TokenDenom = "ulava"
-
 const (
 	NewEpochEventName            = "new_epoch"
 	EarliestEpochEventName       = "earliest_epoch"

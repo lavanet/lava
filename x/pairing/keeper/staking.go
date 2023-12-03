@@ -132,14 +132,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
+		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
 		Address:            creator,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,
 		Chain:              chainID,
 		Moniker:            moniker,
-		DelegateTotal:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
 	}

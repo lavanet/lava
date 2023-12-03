@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/stretchr/testify/require"
 )
 
-var zeroCoin = sdk.NewCoin("ulava", sdk.ZeroInt())
+var zeroCoin = sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 
 func TestDelegateFail(t *testing.T) {
 	ts := newTester(t)
@@ -74,7 +75,7 @@ func TestDelegateFail(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			amount := sdk.NewCoin("ulava", sdk.ZeroInt())
+			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
 			_, err := ts.TxDualstakingDelegate(tt.delegator, tt.provider, tt.chainID, amount)
 			require.Error(t, err, tt.name)
@@ -94,7 +95,7 @@ func TestDelegate(t *testing.T) {
 	delegated := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 	// not yet in effect
@@ -140,7 +141,7 @@ func TestRedelegateFail(t *testing.T) {
 	_, provider4Addr := ts.GetAccount(common.PROVIDER, 3)
 
 	// delegate once for setup
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 
@@ -220,7 +221,7 @@ func TestRedelegateFail(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			amount := sdk.NewCoin("ulava", sdk.ZeroInt())
+			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
 			_, err := ts.TxDualstakingRedelegate(
 				tt.delegator, tt.provider1, tt.provider2, tt.chainID, tt.chainID, amount)
@@ -243,7 +244,7 @@ func TestRedelegate(t *testing.T) {
 	delegated2 := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(
 		client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
@@ -258,7 +259,7 @@ func TestRedelegate(t *testing.T) {
 	require.True(t, delegated2.IsEqual(stakeEntry2.DelegateTotal))
 
 	// redelegate once
-	amount = sdk.NewCoin("ulava", sdk.NewInt(5000))
+	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
 	_, err = ts.TxDualstakingRedelegate(
 		client1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, amount)
 	require.NoError(t, err)
@@ -280,7 +281,7 @@ func TestRedelegate(t *testing.T) {
 	require.NoError(t, err)
 
 	// redelegate from unstaking provider
-	amount = sdk.NewCoin("ulava", sdk.NewInt(5000))
+	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
 	_, err = ts.TxDualstakingRedelegate(
 		client1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, amount)
 	require.NoError(t, err)
@@ -305,7 +306,7 @@ func TestUnbondFail(t *testing.T) {
 	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
 	// delegate once for setup
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 
@@ -362,7 +363,7 @@ func TestUnbondFail(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			amount := sdk.NewCoin("ulava", sdk.ZeroInt())
+			amount := sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt())
 			amount.Amount = amount.Amount.Add(sdk.NewInt(tt.amount))
 			_, err := ts.TxDualstakingUnbond(tt.delegator, tt.provider, tt.chainID, amount)
 			require.Error(t, err, tt.name)
@@ -382,7 +383,7 @@ func TestUnbond(t *testing.T) {
 	delegated := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 
@@ -394,7 +395,7 @@ func TestUnbond(t *testing.T) {
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
 
 	// unbond once
-	amount = sdk.NewCoin("ulava", sdk.NewInt(1000))
+	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1000))
 	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 
@@ -460,7 +461,7 @@ func TestBondUnbondBond(t *testing.T) {
 	delegated := zeroCoin
 
 	// delegate once
-	amount := sdk.NewCoin("ulava", sdk.NewInt(10000))
+	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
 	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
 	require.NoError(t, err)
 

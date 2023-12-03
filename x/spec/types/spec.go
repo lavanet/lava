@@ -9,7 +9,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 const (
@@ -67,8 +66,8 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		return details, fmt.Errorf("AllowedBlockLagForQosSync can't be zero")
 	}
 
-	if spec.MinStakeProvider.Denom != epochstoragetypes.TokenDenom || spec.MinStakeProvider.Amount.IsZero() {
-		return details, fmt.Errorf("MinStakeProvider can't be zero and must have denom of ulava")
+	if spec.MinStakeProvider.Amount.IsZero() {
+		return details, fmt.Errorf("MinStakeProvider can't be zero")
 	}
 
 	for _, apiCollection := range spec.ApiCollections {

@@ -19,3 +19,7 @@ type SpecKeeper interface {
 type FixationStoreKeeper interface {
 	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstoretypes.FixationStore
 }
+
+type StakingKeeper interface {
+	BondDenom(ctx sdk.Context) string
+}

@@ -46,6 +46,7 @@ func ConflictKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		epochstorage,
 		nil,
+		nil,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

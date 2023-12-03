@@ -88,6 +88,10 @@ func (k Keeper) GetAllPlanIndices(ctx sdk.Context) (val []string) {
 }
 
 func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error {
+	if planToAdd.Price.Denom != k.stakingKeeper.BondDenom(ctx) {
+		return fmt.Errorf("wrong denom type: %s", planToAdd.Price.Denom)
+	}
+
 	for _, chainPolicy := range planToAdd.PlanPolicy.ChainPolicies {
 		specID := chainPolicy.ChainId
 		if specID == types.WILDCARD_CHAIN_POLICY && len(chainPolicy.Apis) == 0 && len(chainPolicy.Requirements) == 0 {
