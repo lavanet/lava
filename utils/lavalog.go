@@ -15,6 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
@@ -28,12 +29,15 @@ const (
 	LAVA_LOG_ERROR
 	LAVA_LOG_FATAL
 	LAVA_LOG_PANIC
+	NoColor = true
 )
 
 var (
 	JsonFormat = false
 	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
 	ExtendedLogLevel = "development"
+	rollingLogLogger = zerolog.New(os.Stderr).Level(zerolog.Disabled) // this is the singleton rolling logger.
+	globalLogLevel   = zerolog.DebugLevel
 )
 
 type Attribute struct {
@@ -67,59 +71,119 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 	ctx.EventManager().EmitEvent(sdk.NewEvent(EventPrefix+name, eventAttrs...))
 }
 
-func LoggingLevel(logLevel string) {
+func getLogLevel(logLevel string) zerolog.Level {
 	switch logLevel {
 	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		return zerolog.DebugLevel
 	case "info":
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		return zerolog.InfoLevel
 	case "warn":
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		return zerolog.WarnLevel
 	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		return zerolog.ErrorLevel
 	case "fatal":
-		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+		return zerolog.FatalLevel
 	default:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		return zerolog.InfoLevel
 	}
+}
+
+func SetGlobalLoggingLevel(logLevel string) {
+	// setting global level prevents us from having two different levels for example one for stdout and one for rolling log.
+	// zerolog.SetGlobalLevel(getLogLevel(logLevel))
+	globalLogLevel = getLogLevel(logLevel)
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
+}
+
+func RollingLoggerSetup(rollingLogLevel string, filePath string, maxSize string, maxBackups string, maxAge string, stdFormat string) func() {
+	maxSizeNumber, err := strconv.Atoi(maxSize)
+	if err != nil {
+		LavaFormatFatal("strconv.Atoi(maxSize)", err, LogAttr("maxSize", maxSize))
+	}
+	maxBackupsNumber, err := strconv.Atoi(maxBackups)
+	if err != nil {
+		LavaFormatFatal("strconv.Atoi(maxSize)", err, LogAttr("maxBackups", maxBackups))
+	}
+	maxAgeNumber, err := strconv.Atoi(maxAge)
+	if err != nil {
+		LavaFormatFatal("strconv.Atoi(maxSize)", err, LogAttr("maxAge", maxAge))
+	}
+
+	rollingLogOutput := &lumberjack.Logger{
+		Filename:   filePath,
+		MaxSize:    maxSizeNumber,
+		MaxBackups: maxBackupsNumber,
+		MaxAge:     maxAgeNumber,
+		Compress:   true,
+	}
+	var logLevel zerolog.Level
+	switch rollingLogLevel {
+	case "off":
+		return func() {} // default is disabled.
+	case "debug":
+		logLevel = zerolog.DebugLevel
+	case "info":
+		logLevel = zerolog.InfoLevel
+	case "warn":
+		logLevel = zerolog.WarnLevel
+	case "error":
+		logLevel = zerolog.ErrorLevel
+	case "fatal":
+		logLevel = zerolog.FatalLevel
+	default:
+		LavaFormatFatal("unsupported case for rollingLoggerSetup", nil, LogAttr("rollingLogLevel", rollingLogLevel))
+	}
+	// set the rolling log level.
+	if stdFormat == "json" {
+		rollingLogLogger = zerolog.New(rollingLogOutput).Level(logLevel).With().Timestamp().Logger()
+	} else {
+		rollingLogLogger = zerolog.New(zerolog.ConsoleWriter{Out: rollingLogOutput, NoColor: NoColor, TimeFormat: time.Stamp}).Level(logLevel).With().Timestamp().Logger()
+	}
+	rollingLogLogger.Debug().Msg("Starting Rolling Logger")
+	return func() { rollingLogOutput.Close() }
 }
 
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	NoColor := true
-
 	if JsonFormat {
-		zerologlog.Logger = zerologlog.Output(os.Stderr)
+		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(globalLogLevel)
 	} else {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp})
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(globalLogLevel)
 	}
 
 	var logEvent *zerolog.Event
+	var rollingLoggerEvent *zerolog.Event
 	switch severity {
 	case LAVA_LOG_PANIC:
 		// prefix = "Panic:"
 		logEvent = zerologlog.Panic()
+		rollingLoggerEvent = rollingLogLogger.Panic()
 	case LAVA_LOG_FATAL:
 		// prefix = "Fatal:"
 		logEvent = zerologlog.Fatal()
+		rollingLoggerEvent = rollingLogLogger.Fatal()
 	case LAVA_LOG_ERROR:
 		// prefix = "Error:"
 		logEvent = zerologlog.Error()
+		rollingLoggerEvent = rollingLogLogger.Error()
 	case LAVA_LOG_WARN:
 		// prefix = "Warning:"
 		logEvent = zerologlog.Warn()
+		rollingLoggerEvent = rollingLogLogger.Warn()
 	case LAVA_LOG_INFO:
 		logEvent = zerologlog.Info()
+		rollingLoggerEvent = rollingLogLogger.Info()
 		// prefix = "Info:"
 	case LAVA_LOG_DEBUG:
 		logEvent = zerologlog.Debug()
+		rollingLoggerEvent = rollingLogLogger.Debug()
 		// prefix = "Debug:"
 	}
 	output := description
 	attrStrings := []string{}
 	if err != nil {
 		logEvent = logEvent.Err(err)
+		rollingLoggerEvent = rollingLoggerEvent.Err(err)
 		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
 	}
 	if len(attributes) > 0 {
@@ -171,12 +235,14 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 				st_val = fmt.Sprintf("%+v", value)
 			}
 			logEvent = logEvent.Str(key, st_val)
+			rollingLoggerEvent = rollingLoggerEvent.Str(key, st_val)
 			attrStrings = append(attrStrings, fmt.Sprintf("%s:%s", attr.Key, st_val))
 		}
 		attributesStr := "{" + strings.Join(attrStrings, ",") + "}"
 		output = fmt.Sprintf("%s %+v", output, attributesStr)
 	}
 	logEvent.Msg(description)
+	rollingLoggerEvent.Msg(description)
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called

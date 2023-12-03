@@ -244,6 +244,10 @@ export class LavaSDK {
       this.badgeManager
     );
 
+    if (rpcConsumerServerLoL) {
+      rpcConsumerServerLoL.setEmergencyTracker(tracker.getEmergencyTracker());
+    }
+
     // Register LAVATendermint csm for update
     // If badge does not exists
     if (!this.badgeManager.isActive()) {
@@ -367,6 +371,8 @@ export class LavaSDK {
           finalizationConsensus,
           consumerConsistency
         );
+
+        rpcConsumerServer.setEmergencyTracker(tracker.getEmergencyTracker());
 
         // save rpc consumer server in map
         this.rpcConsumerServerRouter.set(
@@ -508,6 +514,7 @@ export class LavaSDK {
         options?.chainId ?? JSON.stringify(this.rpcConsumerServerRouter.keys())
       );
     }
+
     const relayResult = rpcConsumerServer.sendRelay(options);
     return await relayResult.then((response) => {
       // // Decode response

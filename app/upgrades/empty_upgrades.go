@@ -154,6 +154,12 @@ var Upgrade_0_30_1 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
+var Upgrade_0_30_2 = Upgrade{
+	UpgradeName:          "v0.30.2",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
 var Upgrade_remove_mint = Upgrade{
 	UpgradeName:          "remove-mint",
 	CreateUpgradeHandler: defaultUpgradeHandler,

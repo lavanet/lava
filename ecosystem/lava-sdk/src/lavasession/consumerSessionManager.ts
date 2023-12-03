@@ -208,7 +208,8 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[],
-    stateful: number
+    stateful: number,
+    virtualEpoch: number
   ): ConsumerSessionsMap | Error {
     const numberOfResets = this.validatePairingListNotEmpty(addon, extensions);
     const tempIgnoredProviders: IgnoredProviders = {
@@ -222,7 +223,8 @@ export class ConsumerSessionManager {
       requestedBlock,
       addon,
       extensions,
-      stateful
+      stateful,
+      virtualEpoch
     );
     if (sessionWithProvidersMap instanceof Error) {
       return sessionWithProvidersMap;
@@ -289,8 +291,10 @@ export class ConsumerSessionManager {
           sessionEpoch = pairingEpoch;
         }
 
-        const err =
-          consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession);
+        const err = consumerSessionsWithProvider.addUsedComputeUnits(
+          cuNeededForSession,
+          virtualEpoch
+        );
         if (err) {
           Logger.warn(err);
 
@@ -346,7 +350,8 @@ export class ConsumerSessionManager {
         requestedBlock,
         addon,
         extensions,
-        stateful
+        stateful,
+        virtualEpoch
       );
 
       if (sessionWithProvidersMap instanceof Error && sessions.size !== 0) {
@@ -547,7 +552,8 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[],
-    stateful: number
+    stateful: number,
+    virtualEpoch: number
   ): SessionsWithProviderMap | Error {
     if (ignoredProviders.currentEpoch < this.currentEpoch) {
       Logger.debug(
@@ -604,8 +610,10 @@ export class ConsumerSessionManager {
           );
         }
 
-        const err =
-          consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession);
+        const err = consumerSessionsWithProvider.validateComputeUnits(
+          cuNeededForSession,
+          virtualEpoch
+        );
         if (err) {
           ignoredProviders.providers.add(providerAddress);
           continue;

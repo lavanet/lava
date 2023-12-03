@@ -157,6 +157,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_27_0,
 	upgrades.Upgrade_0_30_0,
 	upgrades.Upgrade_0_30_1,
+	upgrades.Upgrade_0_30_2,
 	upgrades.Upgrade_remove_mint,
 }
 
