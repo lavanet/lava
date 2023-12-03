@@ -93,15 +93,19 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 	}
 
 	// unbond from providers according to slash
-	// sort the delegations so if there's a remainder, remove it from the highest delegation in the last iteration
+	// sort the delegations from lowest to highest so if there's a remainder,
+	// remove it from the highest delegation in the last iteration
 	remainingTokensToSlash := fraction.MulInt(val.Tokens).TruncateInt()
 	delegations := h.k.stakingKeeper.GetValidatorDelegations(ctx, valAddr)
 	slices.SortFunc(delegations, func(i, j stakingtypes.Delegation) bool {
-		return i.Shares.GT(j.Shares)
+		return val.TokensFromShares(i.Shares).LT(val.TokensFromShares(j.Shares))
 	})
 	for i, d := range delegations {
 		tokens := val.TokensFromShares(d.Shares)
 		tokensToSlash := fraction.Mul(tokens).TruncateInt()
+		if i == len(delegations)-1 {
+			tokensToSlash = remainingTokensToSlash
+		}
 		err := h.k.UnbondUniformProviders(ctx, d.DelegatorAddress, sdk.NewCoin(commontypes.TokenDenom, tokensToSlash))
 		if err != nil {
 			return utils.LavaFormatError("slash hook failed", err,
@@ -111,17 +115,6 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 			)
 		}
 		remainingTokensToSlash = remainingTokensToSlash.Sub(tokensToSlash)
-
-		if !remainingTokensToSlash.IsZero() && i == len(delegations)-1 {
-			err := h.k.UnbondUniformProviders(ctx, delegations[0].DelegatorAddress, sdk.NewCoin(commontypes.TokenDenom, remainingTokensToSlash))
-			if err != nil {
-				return utils.LavaFormatError("slash hook unbond remainder failed", err,
-					utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-					utils.Attribute{Key: "delegator_address", Value: delegations[0].DelegatorAddress},
-					utils.Attribute{Key: "slash_amount", Value: remainingTokensToSlash.String()},
-				)
-			}
-		}
 	}
 
 	details := make(map[string]string)
