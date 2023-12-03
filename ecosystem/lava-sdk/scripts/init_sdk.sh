@@ -114,6 +114,6 @@ else
 fi
 
 cd $__lava_root_dir/testutil/e2e/sdk/tests
-npm init --yes; npm install --save-dev @types/node
+npm install --save-dev @types/node
 
 cd $curr_dir
