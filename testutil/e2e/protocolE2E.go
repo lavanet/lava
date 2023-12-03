@@ -1289,7 +1289,7 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Starting Lava OK")
 
 	// set in init_chain.sh
-	var epochDuration int64 = 30 * 1.2
+	var epochDuration int64 = 20 * 1.2
 
 	signalChannel := make(chan bool)
 	url := "http://127.0.0.1:3347"
