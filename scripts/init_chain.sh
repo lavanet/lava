@@ -44,7 +44,7 @@ else
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.downtime.params.downtime_duration = "10s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "30s"' \
+        | jq '.app_state.downtime.params.epoch_duration = "20s"' \
     )
 fi
 

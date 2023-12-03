@@ -160,6 +160,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_27_0,
 	upgrades.Upgrade_0_30_0,
 	upgrades.Upgrade_0_30_1,
+	upgrades.Upgrade_0_30_2,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -413,6 +414,7 @@ func New(
 		keys[specmoduletypes.StoreKey],
 		keys[specmoduletypes.MemStoreKey],
 		app.GetSubspace(specmoduletypes.ModuleName),
+		app.StakingKeeper,
 	)
 	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -425,6 +427,7 @@ func New(
 		app.BankKeeper,
 		app.AccountKeeper,
 		app.SpecKeeper,
+		app.StakingKeeper,
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -443,6 +446,7 @@ func New(
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
 		app.FixationStoreKeeper,
+		app.StakingKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -485,6 +489,7 @@ func New(
 		app.DualstakingKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
+		app.StakingKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -570,6 +575,7 @@ func New(
 		app.PairingKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.StakingKeeper,
 	)
 	conflictModule := conflictmodule.NewAppModule(appCodec, app.ConflictKeeper, app.AccountKeeper, app.BankKeeper)
 

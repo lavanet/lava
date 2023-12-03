@@ -5,10 +5,12 @@ import (
 	"strconv"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -190,6 +192,11 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
 			)
+
+			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
+				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
+			}
+
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

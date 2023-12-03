@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
@@ -65,6 +66,7 @@ type lavaTest struct {
 	providerType         map[string][]epochStorageTypes.Endpoint
 	wg                   sync.WaitGroup
 	logPath              string
+	tokenDenom           string
 }
 
 var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
@@ -1146,6 +1148,7 @@ func runProtocolE2E(timeout time.Duration) {
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,
+		tokenDenom:   commonconsts.TestTokenDenom,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
@@ -1286,7 +1289,7 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Starting Lava OK")
 
 	// set in init_chain.sh
-	var epochDuration int64 = 30 * 1.2
+	var epochDuration int64 = 20 * 1.2
 
 	signalChannel := make(chan bool)
 	url := "http://127.0.0.1:3347"

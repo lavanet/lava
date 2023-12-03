@@ -879,7 +879,7 @@ func TestPairingUniformDistribution(t *testing.T) {
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
 }
 
-// Test that random selection of providers is alighned with their stake
+// Test that random selection of providers is aligned with their stake
 func TestPairingDistributionPerStake(t *testing.T) {
 	providersCount := 10
 	providersToPair := 3
@@ -893,8 +893,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	stake := p.Stake.Amount.Int64()
-	err = ts.StakeProviderExtra(p.Address, ts.spec, stake*2, p.Endpoints, p.Geolocation, p.Moniker)
+	_, err = ts.TxDualstakingDelegate(p.Address, p.Address, ts.spec.Index, p.Stake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -982,21 +981,21 @@ func TestGeolocationPairingScores(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:      "free",
 		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
 		PlanPolicy: freePlanPolicy,
 	}
 
 	basicPlan := planstypes.Plan{
 		Index:      "basic",
 		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
 		PlanPolicy: basicPlanPolicy,
 	}
 
 	premiumPlan := planstypes.Plan{
 		Index:      "premium",
 		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
 		PlanPolicy: premiumPlanPolicy,
 	}
 
@@ -1190,7 +1189,7 @@ func TestDuplicateProviders(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index:      "basic",
 		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
 		PlanPolicy: basicPlanPolicy,
 	}
 
@@ -1238,7 +1237,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index:      "free",
 		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
 		PlanPolicy: freePlanPolicy,
 	}
 

@@ -57,7 +57,7 @@ func (ts *tester) createTestPlans(count int, withSameIndex bool, startIndex int)
 			Description:              "plan to test",
 			Type:                     "rpc",
 			Block:                    100,
-			Price:                    common.NewCoin(1),
+			Price:                    common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), 1),
 			PlanPolicy:               policy,
 			AllowOveruse:             true,
 			OveruseRate:              overuseRate,
@@ -152,7 +152,7 @@ func TestAddInvalidPlan(t *testing.T) {
 
 			switch tt.fieldIndex {
 			case PRICE_FIELD:
-				plans[0].Price = common.NewCoin(0)
+				plans[0].Price = common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), 0)
 			case OVERUSE_FIELDS:
 				plans[0].AllowOveruse = true
 				plans[0].OveruseRate = 0

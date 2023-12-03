@@ -172,7 +172,7 @@ func (ts *Tester) StakeProviderExtra(
 		}
 	}
 
-	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
 	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
 
 	return err
@@ -248,7 +248,7 @@ func (ts *Tester) Policy(name string) planstypes.Policy {
 }
 
 func (ts *Tester) TokenDenom() string {
-	return epochstoragetypes.TokenDenom
+	return ts.Keepers.StakingKeeper.BondDenom(ts.Ctx)
 }
 
 func (ts *Tester) AddProjectData(name string, pd projectstypes.ProjectData) *Tester {
@@ -280,18 +280,18 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 
 // misc shortcuts
 
-func NewCoin(amount int64) sdk.Coin {
-	return sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+func NewCoin(tokenDenom string, amount int64) sdk.Coin {
+	return sdk.NewCoin(tokenDenom, sdk.NewInt(amount))
 }
 
-func NewCoins(amount ...int64) []sdk.Coin {
-	return slices.Map(amount, NewCoin)
+func NewCoins(tokenDenom string, amount ...int64) []sdk.Coin {
+	return slices.Map(amount, func(a int64) sdk.Coin { return NewCoin(tokenDenom, a) })
 }
 
 // keeper helpers
 
 func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
-	denom := epochstoragetypes.TokenDenom
+	denom := ts.Keepers.StakingKeeper.BondDenom(ts.Ctx)
 	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
 }
 
@@ -317,6 +317,11 @@ func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projects
 
 func (ts *Tester) VotePeriod() uint64 {
 	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
+}
+
+func (ts *Tester) ChangeDelegationTimestamp(provider, delegator, chainID string, block uint64, timestamp int64) error {
+	index := dualstakingtypes.DelegationKey(provider, delegator, chainID)
+	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, index, block, timestamp)
 }
 
 // proposals, transactions, queries
@@ -541,7 +546,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
 		Moniker:            moniker,
-		DelegateLimit:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
@@ -604,7 +609,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(validator.Addr),
 		validator.PubKey,
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
 		sdk.ZeroInt(),
@@ -617,7 +622,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	// move validator's coins from unbonded pool to bonded
 	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validator.Addr))
 	require.True(ts.T, found)
-	valTokens := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, amount))
+	valTokens := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), amount))
 	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(ts.Ctx, stakingtypes.NotBondedPoolName, stakingtypes.BondedPoolName, valTokens)
 	require.Nil(ts.T, err)
 
@@ -642,7 +647,7 @@ func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount 
 	msg := stakingtypes.NewMsgDelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
 	return ts.Servers.StakingServer.Delegate(ts.GoCtx, msg)
 }
@@ -653,7 +658,7 @@ func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator si
 		delegator.Addr,
 		sdk.ValAddress(fromValidator.Addr),
 		sdk.ValAddress(toValidator.Addr),
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
 	return ts.Servers.StakingServer.BeginRedelegate(ts.GoCtx, msg)
 }
@@ -663,7 +668,7 @@ func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount ma
 	msg := stakingtypes.NewMsgUndelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
 	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
 }
@@ -898,6 +903,10 @@ func (ts *Tester) GetNextEpoch() uint64 {
 		panic("GetNextEpoch: failed to fetch: " + err.Error())
 	}
 	return epoch
+}
+
+func (ts *Tester) GetNextMonth(from time.Time) int64 {
+	return subscriptionkeeper.NextMonth(from).UTC().Unix()
 }
 
 func (ts *Tester) AdvanceToBlock(block uint64) {
