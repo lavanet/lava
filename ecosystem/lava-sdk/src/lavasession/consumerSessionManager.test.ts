@@ -57,7 +57,7 @@ function setupConsumerSessionManager(
 
   const cm = new ConsumerSessionManager(
     relayer,
-    new RPCEndpoint("stub", "stub", "stub", "0"),
+    new RPCEndpoint("stub", "stub", "stub", 1),
     optimizer
   );
 
@@ -1129,6 +1129,7 @@ function createPairingList(
       addons: new Set(),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
   const pairingEndpointsWithAddon: Endpoint[] = [
@@ -1138,6 +1139,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
   const pairingEndpointsWithExtension: Endpoint[] = [
@@ -1147,6 +1149,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
   const pairingEndpointsWithExtensions: Endpoint[] = [
@@ -1156,6 +1159,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
 

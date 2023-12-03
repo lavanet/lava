@@ -108,7 +108,7 @@ describe("EmergencyTracker", () => {
         relayer,
         cm,
         new TendermintRpcChainParser(),
-        DEFAULT_GEOLOCATION,
+        DEFAULT_GEOLOCATION.toString(),
         rpcEndpoint,
         "LAV1",
         finalizationConsensus,
@@ -121,7 +121,7 @@ describe("EmergencyTracker", () => {
         relayer,
         ["LAV1"],
         {
-          geolocation: DEFAULT_GEOLOCATION,
+          geolocation: DEFAULT_GEOLOCATION.toString(),
           network: DEFAULT_LAVA_PAIRING_NETWORK,
         },
         rpcConsumerServerLoL,
@@ -192,7 +192,7 @@ describe("EmergencyTracker", () => {
         relayer,
         cm,
         new TendermintRpcChainParser(),
-        DEFAULT_GEOLOCATION,
+        DEFAULT_GEOLOCATION.toString(),
         rpcEndpoint,
         "LAV1",
         finalizationConsensus,
@@ -211,7 +211,7 @@ describe("EmergencyTracker", () => {
         relayer,
         ["LAV1"],
         {
-          geolocation: DEFAULT_GEOLOCATION,
+          geolocation: DEFAULT_GEOLOCATION.toString(),
           network: DEFAULT_LAVA_PAIRING_NETWORK,
         },
         rpcConsumerServerLoL,
@@ -252,6 +252,7 @@ function createPairingList(
       addons: new Set(),
       connectionRefusals: 0,
       enabled,
+      geolocation: DEFAULT_GEOLOCATION,
     },
   ];
   const pairingEndpointsWithAddon: Endpoint[] = [
@@ -261,6 +262,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: DEFAULT_GEOLOCATION,
     },
   ];
   const pairingEndpointsWithExtension: Endpoint[] = [
@@ -270,6 +272,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: DEFAULT_GEOLOCATION,
     },
   ];
   const pairingEndpointsWithExtensions: Endpoint[] = [
@@ -279,6 +282,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: DEFAULT_GEOLOCATION,
     },
   ];
 

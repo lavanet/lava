@@ -115,7 +115,7 @@ func PrintGeolocations() string {
 		geos = append(geos, geoInt)
 	}
 
-	sort.Slice(geos, func(i, j int) bool {
+	sort.SliceStable(geos, func(i, j int) bool {
 		return geos[i] < geos[j]
 	})
 

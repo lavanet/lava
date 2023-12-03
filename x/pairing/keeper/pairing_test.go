@@ -1139,7 +1139,7 @@ func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot
 		return false
 	}
 
-	sort.Slice(providerScores, func(i, j int) bool {
+	sort.SliceStable(providerScores, func(i, j int) bool {
 		return providerScores[i].Score.GT(providerScores[j].Score)
 	})
 
