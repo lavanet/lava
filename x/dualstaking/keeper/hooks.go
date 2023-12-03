@@ -5,8 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
+	"golang.org/x/exp/slices"
 )
 
 // Wrapper struct
@@ -89,18 +91,30 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
 		)
 	}
-	slashAmount := sdk.NewDecFromInt(val.Tokens).Mul(fraction)
 
+	// unbond from providers according to slash
+	// sort the delegations from lowest to highest so if there's a remainder,
+	// remove it from the highest delegation in the last iteration
+	remainingTokensToSlash := fraction.MulInt(val.Tokens).TruncateInt()
 	delegations := h.k.stakingKeeper.GetValidatorDelegations(ctx, valAddr)
-	for _, d := range delegations {
-		err := h.k.UnbondUniformProviders(ctx, d.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), slashAmount.TruncateInt()))
+	slices.SortFunc(delegations, func(i, j stakingtypes.Delegation) bool {
+		return val.TokensFromShares(i.Shares).LT(val.TokensFromShares(j.Shares))
+	})
+	for i, d := range delegations {
+		tokens := val.TokensFromShares(d.Shares)
+		tokensToSlash := fraction.Mul(tokens).TruncateInt()
+		if i == len(delegations)-1 {
+			tokensToSlash = remainingTokensToSlash
+		}
+		err := h.k.UnbondUniformProviders(ctx, d.DelegatorAddress, sdk.NewCoin(commontypes.TokenDenom, tokensToSlash))
 		if err != nil {
 			return utils.LavaFormatError("slash hook failed", err,
 				utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-				utils.Attribute{Key: "delegator_address", Value: d.String()},
-				utils.Attribute{Key: "slash_amount", Value: slashAmount.String()},
+				utils.Attribute{Key: "delegator_address", Value: d.DelegatorAddress},
+				utils.Attribute{Key: "slash_amount", Value: tokensToSlash.String()},
 			)
 		}
+		remainingTokensToSlash = remainingTokensToSlash.Sub(tokensToSlash)
 	}
 
 	details := make(map[string]string)

@@ -153,19 +153,18 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	// otherwise just append the new version (for next epoch).
 	if delegationEntry.Amount.IsZero() {
 		delegatorEntry.DelProvider(provider)
-		if delegatorEntry.IsEmpty() {
-			err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
-			if err != nil {
-				// delete should never fail here
-				return utils.LavaFormatError("critical: delete delegator entry", err,
-					utils.Attribute{Key: "delegator", Value: delegator},
-					utils.Attribute{Key: "provider", Value: provider},
-					utils.Attribute{Key: "chainID", Value: chainID},
-				)
-			}
+	}
+	if delegatorEntry.IsEmpty() {
+		err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
+		if err != nil {
+			// delete should never fail here
+			return utils.LavaFormatError("critical: delete delegator entry", err,
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
 		}
 	} else {
-		delegatorEntry.AddProvider(provider)
 		err := k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
 		if err != nil {
 			// append should never fail here
