@@ -233,7 +233,11 @@ export class RPCConsumerServer {
       const singleConsumerSession = sessionInfo.session;
       const epoch = sessionInfo.epoch;
       const reportedProviders = sessionInfo.reportedProviders;
-
+      Logger.debug(
+        `Before Construct: ${relayData.getRequestBlock()}, address: ${providerPublicAddress}, session: ${
+          singleConsumerSession.sessionId
+        }`
+      );
       relayResult.request = constructRelayRequest(
         lavaChainId,
         chainID,
@@ -245,7 +249,19 @@ export class RPCConsumerServer {
       );
 
       Logger.info(`Sending relay to provider ${providerPublicAddress}`);
-
+      Logger.debug(
+        `Relay stats sessionId:${
+          singleConsumerSession.sessionId
+        }, guid:${relayResult.request
+          .getRelayData()
+          ?.getSalt_asB64()}, requestedBlock: ${relayResult.request
+          .getRelayData()
+          ?.getRequestBlock()}, apiInterface:${relayResult.request
+          .getRelayData()
+          ?.getApiInterface()}, seenBlock: ${relayResult.request
+          .getRelayData()
+          ?.getSeenBlock()}`
+      );
       const promise = this.relayInner(
         singleConsumerSession,
         relayResult,
@@ -383,7 +399,10 @@ export class RPCConsumerServer {
       return relayResponse;
     }
     const chainBlockStats = this.chainParser.chainBlockStats();
+    Logger.debug("Updating requested Block", singleConsumerSession.sessionId);
     UpdateRequestedBlock(relayData, reply);
+    Logger.debug("after Updating", relayData.getRequestBlock());
+    Logger.debug("did errored", relayResponse.err);
     const finalized = IsFinalizedBlock(
       relayData.getRequestBlock(),
       reply.getLatestBlock(),

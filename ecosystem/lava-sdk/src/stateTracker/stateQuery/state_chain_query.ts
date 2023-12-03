@@ -21,6 +21,7 @@ import { SendRelayOptions } from "../../chainlib/base_chain_parser";
 import { Spec } from "../../grpc_web_services/lavanet/lava/spec/spec_pb";
 import { StakeEntry } from "../../grpc_web_services/lavanet/lava/epochstorage/stake_entry_pb";
 import { Endpoint as PairingEndpoint } from "../../grpc_web_services/lavanet/lava/epochstorage/endpoint_pb";
+import { GeolocationFromString } from "../../lavasession/geolocation";
 import { Params as DowntimeParams } from "../../grpc_web_services/lavanet/lava/downtime/v1/downtime_pb";
 
 interface PairingList {
@@ -328,7 +329,9 @@ export class StateChainQuery {
         const pairingEndpoint = new PairingEndpoint();
         pairingEndpoint.setIpport(provider.rpcAddress);
         pairingEndpoint.setApiInterfacesList(["tendermintrpc"]);
-        pairingEndpoint.setGeolocation(Number(this.config.geolocation));
+        pairingEndpoint.setGeolocation(
+          GeolocationFromString(this.config.geolocation)
+        );
         // Add newly created endpoint in the pairing endpoint list
         pairingEndpoints.push(pairingEndpoint);
 
@@ -338,6 +341,7 @@ export class StateChainQuery {
           connectionRefusals: 0,
           addons: new Set<string>(),
           extensions: new Set<string>(),
+          geolocation: GeolocationFromString(this.config.geolocation),
         };
 
         // Create a new pairing object

@@ -1,23 +1,32 @@
 # Lava E2E
+If you wish you can also run E2E tests independently
 
-If you wish you can also run E2E tests independently:
-
-1. Lava Protocol E2:
+## Lava Protocol E2
 
 ```
 go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
 ```
 
-2. Lava SDK E2E:
+## Lava SDK E2E
 
+If this is the first time you run the e2e after fetching a branch and you didn't compile the protobufs first run 
+
+```bash
+cd ecosystem/lava-sdk; ./init_sdk.sh
 ```
+
+Now you can run the test running:
+```bash
 yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
 ```
 
-Run all our E2E using the following command (from the root) - NOT STABLE
+--------------------
 
-```
+
+## Run all our E2E using the following command (from the root) {NOT STABLE}
+
+```bash
 yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -v -timeout 1200s
 ```

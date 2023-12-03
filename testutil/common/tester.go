@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
@@ -171,10 +172,31 @@ func (ts *Tester) StakeProviderExtra(
 		}
 	}
 
-	stake := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
 	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
 
 	return err
+}
+
+// GetValidator gets a validator object
+// Usually, you get the account of your created validator with ts.GetAccount
+// so input valAcc.addr to this function
+func (ts *Tester) GetValidator(addr sdk.AccAddress) stakingtypes.Validator {
+	v, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(addr))
+	require.True(ts.T, found)
+	return v
+}
+
+// SlashValidator slashes a validator and returns the expected amount of burned tokens (of the validator).
+// Usually, you get the account of your created validator with ts.GetAccount, so input valAcc to this function
+func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, power int64, block int64) math.Int {
+	// slash
+	valConsAddr := sdk.GetConsAddress(valAcc.PubKey)
+	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
+
+	// calculate expected burned tokens
+	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, power)
+	return fraction.MulInt(consensusPowerTokens).TruncateInt()
 }
 
 func (ts *Tester) AccountByAddr(addr string) (sigs.Account, string) {
@@ -226,7 +248,7 @@ func (ts *Tester) Policy(name string) planstypes.Policy {
 }
 
 func (ts *Tester) TokenDenom() string {
-	return epochstoragetypes.TokenDenom
+	return ts.Keepers.StakingKeeper.BondDenom(ts.Ctx)
 }
 
 func (ts *Tester) AddProjectData(name string, pd projectstypes.ProjectData) *Tester {
@@ -258,18 +280,18 @@ func (ts *Tester) Spec(name string) spectypes.Spec {
 
 // misc shortcuts
 
-func NewCoin(amount int64) sdk.Coin {
-	return sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(amount))
+func NewCoin(tokenDenom string, amount int64) sdk.Coin {
+	return sdk.NewCoin(tokenDenom, sdk.NewInt(amount))
 }
 
-func NewCoins(amount ...int64) []sdk.Coin {
-	return slices.Map(amount, NewCoin)
+func NewCoins(tokenDenom string, amount ...int64) []sdk.Coin {
+	return slices.Map(amount, func(a int64) sdk.Coin { return NewCoin(tokenDenom, a) })
 }
 
 // keeper helpers
 
 func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
-	denom := epochstoragetypes.TokenDenom
+	denom := ts.Keepers.StakingKeeper.BondDenom(ts.Ctx)
 	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
 }
 
@@ -295,6 +317,11 @@ func (ts *Tester) GetProjectDeveloperData(devkey string, block uint64) (projects
 
 func (ts *Tester) VotePeriod() uint64 {
 	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
+}
+
+func (ts *Tester) ChangeDelegationTimestamp(provider, delegator, chainID string, block uint64, timestamp int64) error {
+	index := dualstakingtypes.DelegationKey(provider, delegator, chainID)
+	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, index, block, timestamp)
 }
 
 // proposals, transactions, queries
@@ -519,7 +546,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
 		Moniker:            moniker,
-		DelegateLimit:      sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
+		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
@@ -566,18 +593,53 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
-// TxCreateValidator: implement 'tx staking createvalidator'
-func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) (*stakingtypes.MsgCreateValidatorResponse, error) {
+// TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
+func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
+	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, 1)
+	if amount.LT(consensusPowerTokens) {
+		utils.LavaFormatWarning(`validator stake should usually be larger than the amount of tokens for one 
+		unit of consensus power`,
+			fmt.Errorf("validator stake might be too small"),
+			utils.Attribute{Key: "consensus_power_tokens", Value: consensusPowerTokens.String()},
+			utils.Attribute{Key: "validator_stake", Value: amount.String()},
+		)
+	}
+
+	// create a validator
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(validator.Addr),
 		validator.PubKey,
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
 		sdk.ZeroInt(),
 	)
 	require.Nil(ts.T, err)
-	return ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
+	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
+	require.Nil(ts.T, err)
+
+	// **** Make validator boded ****
+	// move validator's coins from unbonded pool to bonded
+	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validator.Addr))
+	require.True(ts.T, found)
+	valTokens := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), amount))
+	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(ts.Ctx, stakingtypes.NotBondedPoolName, stakingtypes.BondedPoolName, valTokens)
+	require.Nil(ts.T, err)
+
+	// before changing the validaor's state, run the BeforeValidatorModified hook manually
+	err = ts.Keepers.StakingKeeper.Hooks().BeforeValidatorModified(ts.Ctx, val.GetOperator())
+	require.Nil(ts.T, err)
+
+	// update the validator status to "bonded" and apply
+	val = val.UpdateStatus(stakingtypes.Bonded)
+	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
+	ts.Keepers.StakingKeeper.SetValidatorByPowerIndex(ts.Ctx, val)
+
+	// run the AfterValidatorBonded hook manually
+	consAddr, err := val.GetConsAddr()
+	require.Nil(ts.T, err)
+	err = ts.Keepers.StakingKeeper.Hooks().AfterValidatorBonded(ts.Ctx, consAddr, val.GetOperator())
+	require.Nil(ts.T, err)
 }
 
 // TxDelegateValidator: implement 'tx staking delegate'
@@ -585,7 +647,7 @@ func (ts *Tester) TxDelegateValidator(delegator, validator sigs.Account, amount 
 	msg := stakingtypes.NewMsgDelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
 	return ts.Servers.StakingServer.Delegate(ts.GoCtx, msg)
 }
@@ -596,7 +658,7 @@ func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator si
 		delegator.Addr,
 		sdk.ValAddress(fromValidator.Addr),
 		sdk.ValAddress(toValidator.Addr),
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
 	return ts.Servers.StakingServer.BeginRedelegate(ts.GoCtx, msg)
 }
@@ -606,7 +668,7 @@ func (ts *Tester) TxUnbondValidator(delegator, validator sigs.Account, amount ma
 	msg := stakingtypes.NewMsgUndelegate(
 		delegator.Addr,
 		sdk.ValAddress(validator.Addr),
-		sdk.NewCoin(epochstoragetypes.TokenDenom, amount),
+		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
 	return ts.Servers.StakingServer.Undelegate(ts.GoCtx, msg)
 }
@@ -841,6 +903,10 @@ func (ts *Tester) GetNextEpoch() uint64 {
 		panic("GetNextEpoch: failed to fetch: " + err.Error())
 	}
 	return epoch
+}
+
+func (ts *Tester) GetNextMonth(from time.Time) int64 {
+	return subscriptionkeeper.NextMonth(from).UTC().Unix()
 }
 
 func (ts *Tester) AdvanceToBlock(block uint64) {

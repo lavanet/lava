@@ -43,6 +43,7 @@ require (
 	go.uber.org/mock v0.3.0
 	gonum.org/v1/gonum v0.13.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
@@ -104,7 +105,6 @@ require (
 	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	pgregory.net/rapid v0.5.5 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )

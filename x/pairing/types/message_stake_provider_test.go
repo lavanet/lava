@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/sample"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            "invalid_address",
 				Moniker:            "dummyMoniker",
-				DelegateLimit:      types.NewCoin("ulava", types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 			},
 			err: legacyerrors.ErrInvalidAddress,
@@ -29,7 +30,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
 				Moniker:            "dummyMoniker",
-				DelegateLimit:      types.NewCoin("ulava", types.ZeroInt()),
+				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 			},
 		},

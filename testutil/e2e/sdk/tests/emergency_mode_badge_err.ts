@@ -1,4 +1,4 @@
-const { LavaSDK } = require("../../../../ecosystem/lava-sdk/bin/src/sdk/sdk");
+import { LavaSDK } from "../../../../ecosystem/lava-sdk/bin/src/sdk/sdk"
 
 async function main() {
     // Initialize Lava SDK

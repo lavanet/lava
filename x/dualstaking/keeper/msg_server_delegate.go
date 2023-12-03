@@ -60,7 +60,6 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		types.EMPTY_PROVIDER_CHAINID,
 		chainID,
 		amount,
-		false,
 	)
 
 	if err == nil {

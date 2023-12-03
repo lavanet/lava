@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
@@ -108,7 +109,7 @@ func (lt *lavaTest) getBalances(addresses []string) ([]sdk.Coin, error) {
 			return nil, fmt.Errorf("could not get balance of address %s. err: %s", addr, err.Error())
 		}
 
-		balanceRequest := bankTypes.NewQueryBalanceRequest(sdkAddr, epochStorageTypes.TokenDenom)
+		balanceRequest := bankTypes.NewQueryBalanceRequest(sdkAddr, lt.tokenDenom)
 		res, err := bankQueryClient.Balance(context.Background(), balanceRequest)
 		if err != nil {
 			return nil, fmt.Errorf("could not get balance of address %s. err: %s", sdkAddr.String(), err.Error())
@@ -198,6 +199,7 @@ func runPaymentE2E(timeout time.Duration) {
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,
+		tokenDenom:   commonconsts.TestTokenDenom,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {

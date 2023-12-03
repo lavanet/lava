@@ -429,7 +429,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	sub1Acct, sub1Addr := ts.Account("sub1")
 	plan := ts.Plan("free")
 
-	coins := common.NewCoins(10000)
+	coins := common.NewCoins(ts.TokenDenom(), 10000)
 	ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
@@ -487,7 +487,7 @@ func TestPrice(t *testing.T) {
 
 			plan := ts.Plan("free")
 			plan.AnnualDiscountPercentage = tt.discount
-			plan.Price = common.NewCoin(tt.price)
+			plan.Price = common.NewCoin(ts.TokenDenom(), tt.price)
 			err := ts.TxProposalAddPlans(plan)
 			require.Nil(t, err)
 

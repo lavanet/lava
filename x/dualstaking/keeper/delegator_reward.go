@@ -83,8 +83,8 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int) (providerReward math.Int, delegatorsReward math.Int) {
-	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry)
+func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegations []types.Delegation) (providerReward math.Int, delegatorsReward math.Int) {
+	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
 	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
 	rawDelegatorsReward := totalReward.Mul(effectiveDelegations).Quo(effectiveStake)
@@ -97,8 +97,13 @@ func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward
 // CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
 // effectiveDelegations = min(totalDelegations, delegateLimit)
 // effectiveStake = effectiveDelegations + providerStake
-func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry) (effectiveDelegations math.Int, effectiveStake math.Int) {
-	effectiveDelegationsInt64 := math.Min(stakeEntry.DelegateTotal.Amount.Int64(), stakeEntry.DelegateLimit.Amount.Int64())
+func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry, delegations []types.Delegation) (effectiveDelegations math.Int, effectiveStake math.Int) {
+	var totalDelegations int64
+	for _, d := range delegations {
+		totalDelegations += d.Amount.Amount.Int64()
+	}
+
+	effectiveDelegationsInt64 := math.Min(totalDelegations, stakeEntry.DelegateLimit.Amount.Int64())
 	effectiveDelegations = math.NewInt(effectiveDelegationsInt64)
 	return effectiveDelegations, effectiveDelegations.Add(stakeEntry.Stake.Amount)
 }
@@ -128,7 +133,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 			continue
 		}
 
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: reward.Amount.Amount}}
+		rewardCoins := sdk.Coins{sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: reward.Amount.Amount}}
 
 		// not minting new coins because they're minted when the provider
 		// asked for payment (and the delegator reward map was updated)
@@ -151,7 +156,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, err error) {
 	block := uint64(ctx.BlockHeight())
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
@@ -177,7 +182,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
 		totalReward = totalReward.Sub(contributorReward)
-		if !calcOnly {
+		if !calcOnlyContributer {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
 				return math.ZeroInt(), err
@@ -186,16 +191,18 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	}
 
 	relevantDelegations := slices.Filter(delegations,
-		func(d types.Delegation) bool { return d.ChainID == chainID && d.Delegator != d.Provider })
+		func(d types.Delegation) bool {
+			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != d.Provider
+		})
 
-	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward)
+	providerReward, delegatorsReward := k.CalcRewards(*stakeEntry, totalReward, relevantDelegations)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward, calcOnly)
+	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, totalReward, delegatorsReward, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards)
 
-	if !calcOnly {
+	if !calcOnlyProvider {
 		if fullProviderReward.GT(math.ZeroInt()) {
-			fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, fullProviderReward)}
+			fullProviderRewardCoins := sdk.Coins{sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), fullProviderReward)}
 			err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, providerAddr, fullProviderRewardCoins)
 			if err != nil {
 				// panic:ok: reward transfer should never fail
@@ -224,7 +231,7 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 				delegatorReward.Provider = delegation.Provider
 				delegatorReward.Delegator = delegation.Delegator
 				delegatorReward.ChainId = delegation.ChainID
-				delegatorReward.Amount = sdk.NewCoin(epochstoragetypes.TokenDenom, delegatorRewardAmount)
+				delegatorReward.Amount = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatorRewardAmount)
 			} else {
 				delegatorReward.Amount = delegatorReward.Amount.AddAmount(delegatorRewardAmount)
 			}
@@ -244,7 +251,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 		return nil
 	}
 	rewardPerContributor := contributorReward.QuoRaw(int64(len(contributorAddresses)))
-	rewardCoins := sdk.Coins{sdk.NewCoin(epochstoragetypes.TokenDenom, rewardPerContributor)}
+	rewardCoins := sdk.Coins{sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardPerContributor)}
 	details := map[string]string{
 		"rewardCoins": rewardCoins.String(),
 		"specId":      specId,
@@ -252,10 +259,10 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 	leftRewards := contributorReward
 	for i, contributorAddress := range contributorAddresses {
 		details["address."+strconv.Itoa(i)] = contributorAddress.String()
-		if leftRewards.LT(rewardCoins.AmountOf(epochstoragetypes.TokenDenom)) {
+		if leftRewards.LT(rewardCoins.AmountOf(k.stakingKeeper.BondDenom(ctx))) {
 			return utils.LavaFormatError("trying to pay contributors more than their allowed amount", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		}
-		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(epochstoragetypes.TokenDenom))
+		leftRewards = leftRewards.Sub(rewardCoins.AmountOf(k.stakingKeeper.BondDenom(ctx)))
 		err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, senderModule, contributorAddress, rewardCoins)
 		if err != nil {
 			return err
