@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -99,7 +100,7 @@ func CmdStakeProvider() *cobra.Command {
 				commission,
 			)
 
-			if msg.DelegateLimit.Denom != "ulava" {
+			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
 				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
 			}
 
@@ -203,7 +204,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 						commission,
 					)
 
-					if msg.DelegateLimit.Denom != "ulava" {
+					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
 						return nil, sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
 					}
 
