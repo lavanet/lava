@@ -321,6 +321,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			// set log format
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
+			// set rolling log.
+			closeLoggerOnFinish := common.SetupRollingLogger()
+			defer closeLoggerOnFinish()
 
 			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -381,7 +384,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
-			utils.LoggingLevel(logLevel)
+			utils.SetGlobalLoggingLevel(logLevel)
 
 			test_mode, err := cmd.Flags().GetBool(common.TestModeFlagName)
 			if err != nil {
@@ -455,6 +458,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
+	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }
 

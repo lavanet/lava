@@ -49,6 +49,7 @@ protoc \
     "$LAVA_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/conflict/conflict_data.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/downtime/v1/downtime.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \

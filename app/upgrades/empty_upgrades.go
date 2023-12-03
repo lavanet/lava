@@ -4,6 +4,7 @@ import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
@@ -154,8 +155,17 @@ var Upgrade_0_30_1 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_add_rewards = Upgrade{
-	UpgradeName:          "add-rewards",
+var Upgrade_0_30_2 = Upgrade{
+	UpgradeName:          "v0.30.2",
 	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{Added: []string{rewardstypes.StoreKey}},
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_remove_mint_add_rewards = Upgrade{
+	UpgradeName:          "remove-mint-add-rewards",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added:   []string{rewardstypes.StoreKey},
+		Deleted: []string{minttypes.StoreKey},
+	},
 }

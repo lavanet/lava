@@ -49,6 +49,7 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 		err := fmt.Errorf("invalid type")
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", err)
 	}
+
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, AddBlockDelayForEpochUpdaterBadgeServer)
 }
 

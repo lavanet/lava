@@ -31,7 +31,7 @@ func CmdDelegate() *cobra.Command {
 			if len(args) == 4 {
 				index++
 			} else {
-				argvalidator = getValidator(clientCtx)
+				argvalidator = GetValidator(clientCtx)
 			}
 
 			argProvider := args[index]
@@ -62,7 +62,7 @@ func CmdDelegate() *cobra.Command {
 	return cmd
 }
 
-func getValidator(clientCtx client.Context) string {
+func GetValidator(clientCtx client.Context) string {
 	provider := clientCtx.GetFromAddress().String()
 	q := stakingtypes.NewQueryClient(clientCtx)
 	ctx := context.Background()

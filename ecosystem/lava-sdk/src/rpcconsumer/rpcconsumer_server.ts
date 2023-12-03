@@ -39,6 +39,7 @@ import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 import { BaseChainMessageContainer } from "../chainlib/chain_message";
 import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { promiseAny } from "../util/common";
+import { EmergencyTrackerInf } from "../stateTracker/updaters/emergency_tracker";
 
 const MaxRelayRetries = 4;
 
@@ -52,6 +53,7 @@ export class RPCConsumerServer {
   private consumerAddress: string;
   private finalizationConsensus: FinalizationConsensus;
   private consumerConsistency: ConsumerConsistency;
+  private emergencyTracker: EmergencyTrackerInf | undefined;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
@@ -80,6 +82,10 @@ export class RPCConsumerServer {
 
   public setChainParser(chainParser: BaseChainParser) {
     this.chainParser = chainParser;
+  }
+
+  public setEmergencyTracker(emergencyTracker: EmergencyTrackerInf) {
+    this.emergencyTracker = emergencyTracker;
   }
 
   public supportedChainAndApiInterface(): SupportedChainAndApiInterface {
@@ -175,13 +181,18 @@ export class RPCConsumerServer {
       this.chainParser,
       timeouts
     );
+    let virtualEpoch = 0;
+    if (this.emergencyTracker) {
+      virtualEpoch = this.emergencyTracker.getVirtualEpoch();
+    }
     const consumerSessionsMap = this.consumerSessionManager.getSessions(
       GetComputeUnits(chainMessage),
       unwantedProviders,
       LATEST_BLOCK,
       "",
       [],
-      GetStateful(chainMessage)
+      GetStateful(chainMessage),
+      virtualEpoch
     );
     if (consumerSessionsMap instanceof Error) {
       return consumerSessionsMap;
