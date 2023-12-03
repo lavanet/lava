@@ -72,15 +72,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 				utils.Attribute{Key: "provider", Value: senderAddr.String()},
 			)
 		}
-
-		if !existingEntry.Stake.Equal(amount) {
-			return utils.LavaFormatWarning("cannot edit stake amount", fmt.Errorf("cannot edit stake amount"),
-				utils.Attribute{Key: "spec", Value: specChainID},
-				utils.Attribute{Key: "provider", Value: senderAddr.String()},
-				utils.Attribute{Key: "stake", Value: existingEntry.Stake},
-			)
-		}
-
 		details := []utils.Attribute{
 			{Key: "spec", Value: specChainID},
 			{Key: "provider", Value: senderAddr.String()},
@@ -98,6 +89,27 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 
+		if amount.Amount.GT(existingEntry.Stake.Amount) {
+			// delegate the difference
+			diffAmount := amount.Sub(existingEntry.Stake)
+			err = k.dualstakingKeeper.DelegateFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, diffAmount)
+			if err != nil {
+				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
+				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+					details...,
+				)
+			}
+		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
+			// unbond the difference
+			diffAmount := existingEntry.Stake.Sub(amount)
+			err = k.dualstakingKeeper.UnbondFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, diffAmount, false)
+			if err != nil {
+				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
+				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+					details...,
+				)
+			}
+		}
 		// TODO: create a new entry entirely because then we can keep the copies of this list as pointers only
 		// then we need to change the Copy of StoreCurrentEpochStakeStorage to copy of the pointers only
 		// must also change the unstaking to create a new entry entirely
