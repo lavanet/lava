@@ -129,13 +129,18 @@ export class ConsumerSessionManager {
         ) {
           this.allowedUpdateForCurrentEpoch = false;
         } else {
-          const errorMsg = `Trying to update provider list for older epoch ${JSON.stringify(
+          let errorMsg = `Trying to update provider list for older epoch ${JSON.stringify(
             {
               epoch,
               currentEpoch: this.currentEpoch,
             }
           )}`;
-          Logger.error(errorMsg);
+          if (epoch == this.currentEpoch) {
+            errorMsg += ", this is ok only during emergency mode";
+            Logger.warn(errorMsg);
+          } else {
+            Logger.error(errorMsg);
+          }
           return new Error(errorMsg);
         }
       }
