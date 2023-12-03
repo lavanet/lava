@@ -10,6 +10,7 @@ import (
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 )
 
 func defaultUpgradeHandler(
@@ -151,4 +152,10 @@ var Upgrade_0_30_1 = Upgrade{
 	UpgradeName:          "v0.30.1",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_add_rewards = Upgrade{
+	UpgradeName:          "add-rewards",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{Added: []string{rewardstypes.StoreKey}},
 }
