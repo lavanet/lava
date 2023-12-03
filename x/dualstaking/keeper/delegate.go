@@ -209,7 +209,7 @@ func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 
 	if delegator == provider {
 		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
-		if stakeEntry.Stake.IsGTE(k.GetMinStake(ctx, chainID)) && stakeEntry.IsFrozen() {
+		if stakeEntry.Stake.IsGTE(k.specKeeper.GetMinStake(ctx, chainID)) && stakeEntry.IsFrozen() {
 			stakeEntry.UnFreeze(uint64(ctx.BlockHeight()))
 		}
 	} else {
@@ -249,7 +249,7 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 		if err != nil {
 			return fmt.Errorf("invalid or insufficient funds: %w", err)
 		}
-		if stakeEntry.Stake.IsLT(k.GetMinStake(ctx, chainID)) {
+		if stakeEntry.Stake.IsLT(k.specKeeper.GetMinStake(ctx, chainID)) {
 			stakeEntry.Freeze()
 		}
 	} else {
@@ -420,18 +420,6 @@ func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
 	}
 
 	// NOT REACHED
-}
-
-func (k Keeper) GetMinStake(ctx sdk.Context, chainID string) sdk.Coin {
-	spec, found := k.specKeeper.GetSpec(ctx, chainID)
-	if !found {
-		utils.LavaFormatError("critical: failed to get spec for chainID",
-			fmt.Errorf("unknown chainID"),
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
-	}
-
-	return spec.MinStakeProvider
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to

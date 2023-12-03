@@ -24,7 +24,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 			return nil, utils.LavaFormatWarning("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
 		}
 
-		minStake := k.Keeper.dualstakingKeeper.GetMinStake(ctx, chainId)
+		minStake := k.Keeper.specKeeper.GetMinStake(ctx, chainId)
 		if stakeEntry.Stake.IsLT(minStake) {
 			return nil, utils.LavaFormatWarning("Unfreeze_insufficient_stake", types.UnFreezeInsufficientStakeError,
 				[]utils.Attribute{

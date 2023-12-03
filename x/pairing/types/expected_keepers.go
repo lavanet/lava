@@ -23,6 +23,7 @@ type SpecKeeper interface {
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool) // this spec is unexpanded don;t use for collections work
 	GetExpectedServicesForExpandedSpec(expandedSpec spectypes.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{}
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
+	GetMinStake(ctx sdk.Context, chainID string) sdk.Coin
 }
 
 type EpochstorageKeeper interface {
@@ -103,7 +104,6 @@ type DualstakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error)
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
 	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
-	GetMinStake(ctx sdk.Context, chainID string) sdk.Coin
 }
 
 type FixationStoreKeeper interface {
