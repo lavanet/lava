@@ -166,6 +166,10 @@ type TestStruct struct {
 	Validator sigs.Account
 }
 
+func (ts *TestStruct) BondDenom() string {
+	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
+}
+
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
 	rand.InitRandomSeed()
 	ts := TestStruct{}
@@ -178,7 +182,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 	msg, err := stakingtypes.NewMsgCreateValidator(
 		sdk.ValAddress(ts.Validator.Addr),
 		ts.Validator.PubKey,
-		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx)), sdk.NewIntFromUint64(uint64(balance))),
+		sdk.NewCoin(ts.BondDenom(), sdk.NewIntFromUint64(uint64(balance))),
 		stakingtypes.Description{},
 		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
 		sdk.ZeroInt(),
