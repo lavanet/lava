@@ -4,6 +4,7 @@ import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
@@ -151,4 +152,10 @@ var Upgrade_0_30_1 = Upgrade{
 	UpgradeName:          "v0.30.1",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_remove_mint = Upgrade{
+	UpgradeName:          "remove-mint",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{Deleted: []string{minttypes.ModuleName}},
 }
