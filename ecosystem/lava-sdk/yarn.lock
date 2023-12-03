@@ -2500,6 +2500,17 @@
   version "1.3.4"
   resolved "https://registry.npmjs.org/@types/object-hash/-/object-hash-1.3.4.tgz"
   integrity sha512-xFdpkAkikBgqBdG9vIlsqffDV8GpvnPEzs0IUtr1v3BEB97ijsFQ4RXVbUZwjFThhB4MDSTUfvmxUD5PGx0wXA==
+"@types/node@^20.10.1":
+  version "20.10.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.10.1.tgz#d2c96f356c3125fedc983d74c424910c3767141c"
+  integrity sha512-T2qwhjWwGH81vUEx4EXmBKsTJRXFXNZTL4v0gi01+zyBmCwzE6TyHszqX01m+QHTEq+EZNo13NeJIdEqf+Myrg==
+  dependencies:
+    undici-types "~5.26.4"
+
+"@types/prettier@^2.1.5":
+  version "2.7.1"
+  resolved "https://registry.npmjs.org/@types/prettier/-/prettier-2.7.1.tgz"
+  integrity sha512-ri0UmynRRvZiiUJdiz38MmIblKK+oH30MztdBVR95dv/Ubw6neWSb8u1XpRb72L4qsZOhz+L+z9JD40SJmfWow==
 
 "@types/seedrandom@^3.0.6":
   version "3.0.6"
@@ -6176,6 +6187,11 @@ unbzip2-stream@^1.0.9:
   dependencies:
     buffer "^5.2.1"
     through "^2.3.8"
+
+undici-types@~5.26.4:
+  version "5.26.5"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-5.26.5.tgz#bcd539893d00b56e964fd2657a4866b221a65617"
+  integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
 
 union@~0.5.0:
   version "0.5.0"

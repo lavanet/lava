@@ -362,6 +362,9 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+
 	// stake the provider on an additional chain and apply pairing (advance epoch)
 	spec1 := ts.spec
 	spec1Name := "spec1"
@@ -385,6 +388,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
+	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
 
 	// send two relay payments in spec and spec1
 	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
@@ -493,7 +497,16 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.Nil(t, err)
+	delegationTime := ts.BlockTime()
 	ts.AdvanceEpoch()
+
+	// delegations are calculated in the reward process only if a month had passed since they were
+	// delegated. If we advanced a month, we would trigger the payment code (which is not desired
+	// now since we want to check the expected reward, before it gets transferred). So, we need to artificially
+	// change the delegations' timestamp to be a month forward
+	fakeTimestamp := ts.BlockTime().AddDate(0, -2, 0)
+	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
+	require.Nil(t, err)
 
 	// send two relay payments in spec and spec1
 	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
@@ -555,7 +568,10 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	}
 
 	// advance month + blocksToSave + 1 to trigger the monthly payment
+	// (also restore delegation original timestamp)
 	oldBalance := ts.GetBalance(providerAcct.Addr)
+	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(delegationTime))
+	require.Nil(t, err)
 
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
