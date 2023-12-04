@@ -800,6 +800,7 @@ func New(
 		NewAnteHandler(
 			app.AccountKeeper,
 			app.BankKeeper,
+			app.DualstakingKeeper,
 			encodingConfig.TxConfig.SignModeHandler(),
 			app.FeeGrantKeeper,
 			ante.DefaultSigVerificationGasConsumer),

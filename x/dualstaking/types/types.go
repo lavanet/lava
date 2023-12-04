@@ -14,3 +14,7 @@ const (
 	NotBondedPoolName = "not_bonded_dualstaking_pool"
 	BondedPoolName    = "bonded_dualstaking_pool"
 )
+
+const (
+	DelegationQueKeyPrefix = "DelegationQue/value/"
+)
