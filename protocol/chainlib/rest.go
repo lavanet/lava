@@ -40,8 +40,15 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 
 func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
+		var data []byte = nil
+		urlPath := string(craftData.Data)
+		if craftData.ConnectionType == http.MethodPost {
+			// on post we need to send the data provided in the templace with the api as method
+			data = craftData.Data
+			urlPath = craftData.Path
+		}
 		// chain fetcher sends the replaced request inside data
-		chainMessage, err := apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, metadata, 0)
+		chainMessage, err := apip.ParseMsg(urlPath, data, craftData.ConnectionType, metadata, 0)
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
