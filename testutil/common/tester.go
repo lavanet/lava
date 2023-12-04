@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
@@ -22,7 +23,6 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
@@ -849,7 +849,7 @@ func (ts *Tester) GetNextEpoch() uint64 {
 }
 
 func (ts *Tester) GetNextMonth(from time.Time) int64 {
-	return subscriptionkeeper.NextMonth(from).UTC().Unix()
+	return utils.NextMonth(from).UTC().Unix()
 }
 
 func (ts *Tester) AdvanceToBlock(block uint64) {
@@ -901,7 +901,7 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 // so caller can control when to cross the desired time).
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
-		next = subscriptionkeeper.NextMonth(next)
+		next = utils.NextMonth(next)
 		fmt.Printf("next: %v\n", next.Unix())
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
