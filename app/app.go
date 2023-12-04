@@ -238,7 +238,6 @@ var (
 		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
-		rewardsmoduletypes.ModuleName:            {authtypes.Minter},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
