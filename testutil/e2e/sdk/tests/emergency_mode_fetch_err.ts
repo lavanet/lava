@@ -43,7 +43,6 @@ async function main() {
 }
 
 (async () => {
-    console.log("Start")
     try {
         await main();
         process.exit(0);
