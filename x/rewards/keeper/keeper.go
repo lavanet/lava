@@ -36,6 +36,11 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	// ensure validators pool account is set
+	if addr := accountKeeper.GetModuleAddress(types.ValidatorsPoolName); addr == nil {
+		panic(fmt.Sprintf("%s module account has not been set", types.ValidatorsPoolName))
+	}
+
 	return &Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
