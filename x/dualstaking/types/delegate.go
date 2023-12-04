@@ -4,9 +4,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 )
 
 func NewDelegation(delegator, provider, chainID string, blockTime time.Time) Delegation {
@@ -15,7 +15,7 @@ func NewDelegation(delegator, provider, chainID string, blockTime time.Time) Del
 		Provider:  provider,
 		ChainID:   chainID,
 		Amount:    sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt()),
-		Timestamp: subscriptionkeeper.NextMonth(blockTime).UTC().Unix(),
+		Timestamp: utils.NextMonth(blockTime).UTC().Unix(),
 	}
 }
 
