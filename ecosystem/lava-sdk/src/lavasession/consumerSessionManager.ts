@@ -399,6 +399,7 @@ export class ConsumerSessionManager {
     errorReceived?: Error | null
   ): Error | undefined {
     if (!consumerSession.isLocked()) {
+      consumerSession.blockListed = true;
       return new Error("Session is not locked");
     }
 
@@ -413,7 +414,7 @@ export class ConsumerSessionManager {
     let syncLoss = false;
     if (errorReceived) {
       syncLoss = errorReceived.message.includes(
-        "Session went out of sync with the provider"
+        "codespace SessionOutOfSync Error code 677"
       );
     }
     if (
