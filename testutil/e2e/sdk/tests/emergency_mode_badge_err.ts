@@ -1,9 +1,5 @@
 import { LavaSDK } from "../../../../ecosystem/lava-sdk/bin/src/sdk/sdk"
 
-function delay(ms: number) {
-    return new Promise( resolve => setTimeout(resolve, ms) );
-}
-
 async function main() {
     // Initialize Lava SDK
     const lavaSDKTendermint = await LavaSDK.create({
