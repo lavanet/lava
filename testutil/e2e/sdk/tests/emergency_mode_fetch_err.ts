@@ -43,7 +43,8 @@ async function main() {
         await main();
         process.exit(0);
     } catch (error) {
-        //console.error(" ERR [emergency_mode_fetch_err] " + error.message);
+        // This is a _err script, meaning it desires an error
+        // Therefore, a failure is acceptable
         process.exit(0);
     }
 })();
