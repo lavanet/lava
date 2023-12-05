@@ -16,8 +16,10 @@ const (
 	SpecValidationIntervalDisabledChainsFlagName = "spec-validation-interval-disabled-chains"
 )
 
-var SpecValidationInterval = time.Duration(3 * time.Hour)
-var SpecValidationIntervalDisabledChains = time.Duration(10 * time.Minute)
+var (
+	SpecValidationInterval               = 3 * time.Hour
+	SpecValidationIntervalDisabledChains = 10 * time.Minute
+)
 
 type SpecValidator struct {
 	lock sync.RWMutex
