@@ -125,14 +125,14 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 			if supportedToCheck == "" {
 				continue
 			}
-			if !bcp.isExtension(supportedToCheck) {
-				// neither is an error
-				return nil, nil, utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", nil, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
+			if bcp.isExtension(supportedToCheck) {
+				extensions = append(extensions, supportedToCheck)
 			}
-			extensions = append(extensions, supportedToCheck)
+			// neither is an error
+			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
 		}
 	}
-	return addons, extensions, nil
+	return addons, extensions, err
 }
 
 // gets all verifications for an endpoint supporting multiple addons and extensions
@@ -347,6 +347,10 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 		}
 	}
 	return serverApis, taggedApis, apiCollections, headers, verifications
+}
+
+func (bcp *BaseChainParser) ExtensionsParser() *extensionslib.ExtensionParser {
+	return &bcp.extensionParser
 }
 
 // matchSpecApiByName returns service api which match given name

@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
@@ -63,6 +64,7 @@ type ChainParser interface {
 	Activate()
 	UpdateBlockTime(newBlockTime time.Duration)
 	GetUniqueName() string
+	ExtensionsParser() *extensionslib.ExtensionParser
 }
 
 type ChainMessage interface {
@@ -70,6 +72,7 @@ type ChainMessage interface {
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
 	GetExtensions() []*spectypes.Extension
+	OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser)
 	DisableErrorHandling()
 	TimeoutOverride(...time.Duration) time.Duration
 	ChainMessageForSend
