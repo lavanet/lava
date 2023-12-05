@@ -8,7 +8,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	common "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 type (
@@ -20,7 +22,7 @@ type (
 
 		bankKeeper       types.BankKeeper
 		accountKeeper    types.AccountKeeper
-		timerStoreKeeper types.TimerStoreKeeper
+		monthlyRewardsTS timerstoretypes.TimerStore
 	}
 )
 
@@ -38,16 +40,28 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	keeper := Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
 		memKey:     memKey,
 		paramstore: ps,
 
-		bankKeeper:       bankKeeper,
-		accountKeeper:    accountKeeper,
-		timerStoreKeeper: timerStoreKeeper,
+		bankKeeper:    bankKeeper,
+		accountKeeper: accountKeeper,
 	}
+
+	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
+		keeper.DistributeMonthlyBonusRewards(ctx)
+	}
+
+	keeper.monthlyRewardsTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.MonthlyRewardsTSPrefix).
+		WithCallbackByBlockTime(subsTimerCallback)
+
+	return &keeper
+}
+
+func (k Keeper) SetNextMonthRewardTime(ctx sdk.Context) {
+	k.monthlyRewardsTS.AddTimerByBlockTime(ctx, uint64(common.NextMonth(ctx.BlockTime()).Unix()), []byte{}, []byte{})
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

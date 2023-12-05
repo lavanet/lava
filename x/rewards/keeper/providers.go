@@ -17,3 +17,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid, subscriptio
 
 	k.setBasePay(ctx, index, basepay)
 }
+
+func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
+	_ = ""
+}
