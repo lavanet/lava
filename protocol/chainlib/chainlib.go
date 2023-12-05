@@ -62,6 +62,7 @@ type ChainParser interface {
 	Active() bool
 	Activate()
 	UpdateBlockTime(newBlockTime time.Duration)
+	GetUniqueName() string
 }
 
 type ChainMessage interface {
