@@ -12,16 +12,19 @@ import (
 )
 
 const (
-	SpecValidationIntervalSecFlagName = "spec-validation-interval-sec"
+	SpecValidationIntervalFlagName               = "spec-validation-interval"
+	SpecValidationIntervalDisabledChainsFlagName = "spec-validation-interval-disabled-chains"
 )
 
-var SpecValidationIntervalSec = uint64(10800) // 3 Hours
+var SpecValidationInterval = time.Duration(3 * time.Hour)
+var SpecValidationIntervalDisabledChains = time.Duration(10 * time.Minute)
 
 type SpecValidator struct {
 	lock sync.RWMutex
 
-	chainFetchers     map[string][]*chainlib.ChainFetcherIf // key is chainId
-	providerListeners map[string]*ProviderListener          // key is address
+	chainFetchers        map[string][]*chainlib.ChainFetcherIf // key is chainId
+	providerListeners    map[string]*ProviderListener          // key is address
+	disabledChainsTicker *time.Ticker
 }
 
 func NewSpecValidator() *SpecValidator {
@@ -41,8 +44,9 @@ func (sv *SpecValidator) Start(ctx context.Context) {
 }
 
 func (sv *SpecValidator) validateAllChainsLoop(ctx context.Context) {
-	timerInterval := time.Duration(SpecValidationIntervalSec) * time.Second
+	timerInterval := SpecValidationInterval
 	ticker := time.NewTicker(timerInterval)
+	sv.disabledChainsTicker = time.NewTicker(SpecValidationIntervalDisabledChains)
 	for {
 		select {
 		case <-ticker.C:
@@ -50,6 +54,14 @@ func (sv *SpecValidator) validateAllChainsLoop(ctx context.Context) {
 				sv.lock.Lock()
 				defer sv.lock.Unlock()
 				sv.validateAllChains(ctx)
+				// we just ran validate on all chains no reason to do disabled chains in the next interval
+				sv.disabledChainsTicker.Reset(SpecValidationIntervalDisabledChains)
+			}()
+		case <-sv.disabledChainsTicker.C:
+			func() {
+				sv.lock.Lock()
+				defer sv.lock.Unlock()
+				sv.validateAllDisabledChains(ctx)
 			}()
 		case <-ctx.Done():
 			ticker.Stop()
@@ -110,6 +122,33 @@ func (sv *SpecValidator) validateAllChains(ctx context.Context) {
 	for chainId := range sv.chainFetchers {
 		sv.validateChain(ctx, chainId)
 	}
+}
+
+func (sv *SpecValidator) validateAllDisabledChains(ctx context.Context) {
+	for chainId := range sv.getDisabledChains(ctx) {
+		sv.validateChain(ctx, chainId)
+	}
+}
+
+func (sv *SpecValidator) getDisabledChains(ctx context.Context) map[string]struct{} {
+	disabledChains := map[string]struct{}{}
+	for _, chainFetchersList := range sv.chainFetchers {
+		for _, chainFetcher := range chainFetchersList {
+			rpcEndpoint := sv.getRpcProviderEndpointFromChainFetcher(chainFetcher)
+			providerListener, found := sv.providerListeners[rpcEndpoint.NetworkAddress]
+			if !found {
+				continue
+			}
+			relayReceiver, found := providerListener.relayServer.relayReceivers[rpcEndpoint.Key()]
+			if !found {
+				continue
+			}
+			if !relayReceiver.enabled {
+				disabledChains[rpcEndpoint.ChainID] = struct{}{}
+			}
+		}
+	}
+	return disabledChains
 }
 
 func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) error {
