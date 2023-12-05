@@ -127,6 +127,7 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 			}
 			if bcp.isExtension(supportedToCheck) {
 				extensions = append(extensions, supportedToCheck)
+				continue
 			}
 			// neither is an error
 			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
