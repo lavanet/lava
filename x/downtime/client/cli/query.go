@@ -23,7 +23,10 @@ func CmdQueryParams() *cobra.Command {
 		Use:   "params",
 		Short: "Query downtime module params",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
 			queryClient := v1.NewQueryClient(clientCtx)
 			resp, err := queryClient.QueryParams(cmd.Context(), &v1.QueryParamsRequest{})
 			if err != nil {
@@ -45,7 +48,10 @@ func CmdQueryDowntime() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
 			queryClient := v1.NewQueryClient(clientCtx)
 			resp, err := queryClient.QueryDowntime(cmd.Context(), &v1.QueryDowntimeRequest{
 				EpochStartBlock: start,
