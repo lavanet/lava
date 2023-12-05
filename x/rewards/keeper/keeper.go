@@ -22,6 +22,8 @@ type (
 
 		bankKeeper       types.BankKeeper
 		accountKeeper    types.AccountKeeper
+		specKeeper       types.SpecKeeper
+		epochstorage     types.EpochstorageKeeper
 		monthlyRewardsTS timerstoretypes.TimerStore
 	}
 )
@@ -33,6 +35,8 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
+	specKeeper types.SpecKeeper,
+	epochStorageKeeper types.EpochstorageKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
@@ -48,6 +52,8 @@ func NewKeeper(
 
 		bankKeeper:    bankKeeper,
 		accountKeeper: accountKeeper,
+		specKeeper:    specKeeper,
+		epochstorage:  epochStorageKeeper,
 	}
 
 	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {

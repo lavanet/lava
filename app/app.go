@@ -475,6 +475,8 @@ func New(
 		app.GetSubspace(rewardsmoduletypes.ModuleName),
 		app.BankKeeper,
 		app.AccountKeeper,
+		app.SpecKeeper,
+		app.EpochstorageKeeper,
 		app.TimerStoreKeeper,
 	)
 	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
