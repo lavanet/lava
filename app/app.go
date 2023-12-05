@@ -517,6 +517,10 @@ func New(
 		app.GetSubspace(rewardsmoduletypes.ModuleName),
 		app.BankKeeper,
 		app.AccountKeeper,
+		app.DowntimeKeeper,
+		app.StakingKeeper,
+		authtypes.FeeCollectorName,
+		app.TimerStoreKeeper,
 	)
 	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -659,6 +663,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -680,7 +685,6 @@ func New(
 		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		feegrant.ModuleName,
-		rewardsmoduletypes.ModuleName,
 		paramstypes.ModuleName)
 
 	app.mm.SetOrderEndBlockers(
