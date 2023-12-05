@@ -181,6 +181,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, sub, totalMonthlyReward)
+
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
 		providerReward, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName, false, false, false)

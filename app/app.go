@@ -468,6 +468,16 @@ func New(
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[rewardsmoduletypes.StoreKey],
+		keys[rewardsmoduletypes.MemStoreKey],
+		app.GetSubspace(rewardsmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+	)
+	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
 		appCodec,
 		keys[subscriptionmoduletypes.StoreKey],
@@ -480,6 +490,7 @@ func New(
 		app.ProjectsKeeper,
 		app.PlansKeeper,
 		app.DualstakingKeeper,
+		app.RewardsKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 	)
@@ -509,16 +520,6 @@ func New(
 		app.TimerStoreKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
-		appCodec,
-		keys[rewardsmoduletypes.StoreKey],
-		keys[rewardsmoduletypes.MemStoreKey],
-		app.GetSubspace(rewardsmoduletypes.ModuleName),
-		app.BankKeeper,
-		app.AccountKeeper,
-	)
-	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// register the proposal types
 	govRouter := v1beta1.NewRouter()

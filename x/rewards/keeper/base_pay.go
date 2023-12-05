@@ -7,14 +7,14 @@ import (
 )
 
 // SetBasePay set a specific BasePay in the store from its index
-func (k Keeper) SetBasePay(ctx sdk.Context, index types.BasePayIndex, basePay types.BasePay) {
+func (k Keeper) setBasePay(ctx sdk.Context, index types.BasePayIndex, basePay types.BasePay) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
 	b := k.cdc.MustMarshal(&basePay)
 	store.Set([]byte(index.String()), b)
 }
 
 // GetBasePay returns a BasePay from its index
-func (k Keeper) GetBasePay(
+func (k Keeper) getBasePay(
 	ctx sdk.Context,
 	index types.BasePayIndex,
 ) (val types.BasePay, found bool) {
@@ -30,7 +30,7 @@ func (k Keeper) GetBasePay(
 }
 
 // RemoveBasePay removes a BasePay from the store
-func (k Keeper) RemoveBasePay(
+func (k Keeper) removeBasePay(
 	ctx sdk.Context,
 	index types.BasePayIndex,
 ) {
@@ -39,7 +39,7 @@ func (k Keeper) RemoveBasePay(
 }
 
 // GetAllBasePay returns all BasePay
-func (k Keeper) GetAllBasePay(ctx sdk.Context) (list []types.BasePayWithIndex) {
+func (k Keeper) getAllBasePay(ctx sdk.Context) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 

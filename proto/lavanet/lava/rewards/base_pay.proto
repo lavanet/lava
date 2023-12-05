@@ -5,8 +5,14 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/lavanet/lava/x/rewards/types";
 import "cosmos/base/v1beta1/coin.proto"; 
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
 
 // aggregated rewards for the provider through out the month
 message BasePay {
-  cosmos.base.v1beta1.Coin total = 1;
+  string total = 1 [
+  (cosmos_proto.scalar)  = "cosmos.Int",
+  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+  (gogoproto.nullable)   = false
+  ];
 }

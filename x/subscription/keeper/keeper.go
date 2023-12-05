@@ -28,6 +28,7 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
 		dualstakingKeeper  types.DualStakingKeeper
+		rewardsKeeper      types.RewardsKeeper
 
 		subsFS fixationtypes.FixationStore
 		subsTS timerstoretypes.TimerStore
@@ -49,6 +50,7 @@ func NewKeeper(
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
 	dualstakingKeeper types.DualStakingKeeper,
+	rewardsKeeper types.RewardsKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
