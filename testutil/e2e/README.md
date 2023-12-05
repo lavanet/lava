@@ -1,7 +1,8 @@
 # Lava E2E
+
 If you wish you can also run E2E tests independently
 
-## Lava Protocol E2
+## Lava Protocol E2E
 
 ```
 go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
@@ -9,20 +10,34 @@ go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s
 
 ## Lava SDK E2E
 
-If this is the first time you run the e2e after fetching a branch and you didn't compile the protobufs first run 
+If this is the first time you run the e2e after fetching a branch and you didn't compile the protobufs first run:
+
+(Make sure that GOPATH is defined in your environment)
+
+Init and build the SDK:
 
 ```bash
-cd ecosystem/lava-sdk; ./init_sdk.sh
+cd ecosystem/lava-sdk
+./scripts/init_sdk.sh
+yarn build
+cd -
+```
+
+Build lavajs:
+
+```bash
+cd ./ecosystem/lavajs
+yarn e2e-setup
+cd -
 ```
 
 Now you can run the test running:
+
 ```bash
-yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
 ```
 
---------------------
-
+---
 
 ## Run all our E2E using the following command (from the root) {NOT STABLE}
 
@@ -30,7 +45,6 @@ go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
 yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup;
 go test ./testutil/e2e/ -v -timeout 1200s
 ```
-
 
 This E2E performs the steps below to test if the system is working as expected.
 
@@ -59,4 +73,4 @@ After the steps above are finished (even if a step fails and the E2E ends) the E
 
 # Allowed Error List
 
-The allowed error list contains a list of errors that is allowed to happen during tests. The key is the error substring that can be seen in the logs. The value is the description on why this error is allowed. 
+The allowed error list contains a list of errors that is allowed to happen during tests. The key is the error substring that can be seen in the logs. The value is the description on why this error is allowed.

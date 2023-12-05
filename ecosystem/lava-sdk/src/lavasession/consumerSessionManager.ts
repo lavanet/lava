@@ -399,6 +399,7 @@ export class ConsumerSessionManager {
     errorReceived?: Error | null
   ): Error | undefined {
     if (!consumerSession.isLocked()) {
+      consumerSession.blockListed = true;
       return new Error("Session is not locked");
     }
 
@@ -410,10 +411,16 @@ export class ConsumerSessionManager {
     consumerSession.consecutiveNumberOfFailures++;
 
     let consumerSessionBlockListed = false;
-    // TODO: Verify if code == SessionOutOfSyncError.ABCICode() (from go)
+    let syncLoss = false;
+    if (errorReceived) {
+      syncLoss = errorReceived.message.includes(
+        "codespace SessionOutOfSync Error code 677"
+      );
+    }
     if (
       consumerSession.consecutiveNumberOfFailures >
-      MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION
+        MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION ||
+      syncLoss
     ) {
       Logger.debug(
         `Blocking consumer session id: ${consumerSession.sessionId}`
