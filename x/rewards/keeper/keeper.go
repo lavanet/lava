@@ -1,7 +1,9 @@
 package keeper
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math"
 
 	cosmosMath "cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/log"
@@ -24,11 +26,15 @@ type (
 
 		bankKeeper     types.BankKeeper
 		accountKeeper  types.AccountKeeper
-		downtimeKeeper types.DowntimeKeeper
+		downtimeKeeper types.DowntimeKeeper // used to get the approximate creation time for blocks
 		stakingKeeper  types.StakingKeeper
 
+		// account name used by the distribution module to reward validators
 		feeCollectorName string
 
+		// used to operate the monthly refill of the validators block pool mechanism
+		// there is a single timer in all times that is expired in the next month
+		// the timer subkey holds the block in which the timer will expire (not exact)
 		refillBlockPoolTS timerstoretypes.TimerStore
 	}
 )
@@ -78,7 +84,10 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-// refillValidatorsBlockPool should transfer the monthly quota from the validators pool to the validators block pool
+// refillValidatorsBlockPool is called once a month (as a timer callback). it does the following:
+// 1. burns the current token in the validators block pool by the burn rate
+// 2. transfers the monthly tokens quota from the validators pool to the validators block pool
+// 3. opens a new timer for the next month (and encodes the expiry block in it)
 func (k Keeper) refillValidatorsBlockPool(ctx sdk.Context, _ []byte) {
 	// burn remaining tokens in the block pool
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
@@ -100,11 +109,32 @@ func (k Keeper) refillValidatorsBlockPool(ctx sdk.Context, _ []byte) {
 		panic(err)
 	}
 
-	// open a new timer for next month
+	// calculate the block in which the timer will expire (+5% for errors)
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
-	k.refillBlockPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), nil, nil)
+	durationUntilNextMonth := nextMonth - ctx.BlockTime().UTC().Unix()
+	blockCreationTime := k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds()
+	blocksToNextTimerExpiry := durationUntilNextMonth / int64(blockCreationTime) * 105 / 100
+
+	// open a new timer for next month
+	blocksToNextTimerExpirybytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(blocksToNextTimerExpirybytes, uint64(blocksToNextTimerExpiry))
+	k.refillBlockPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, nil)
 }
 
+// BlocksToNextTimerExpiry is a wrapper function that extracts the timer's expiry block
+// for the timer's subkey and returns the amount of blocks remaining (according to the
+// current block height)
+func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
+	data, _ := k.refillBlockPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
+	if len(data) == 0 {
+		// something is wrong, don't panic but make validators rewards 0
+		return math.MaxInt64
+	}
+	return int64(binary.BigEndian.Uint64(data[0])) - ctx.BlockHeight()
+}
+
+// BondedTargetFactor calculates the bonded target factor which is used to calculate the validators
+// block rewards
 func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	params := k.GetParams(ctx)
 
@@ -129,21 +159,9 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	}
 }
 
-func (k Keeper) BlocksToNextEmission(ctx sdk.Context) int64 {
-	// get the duration until the end of the next timer from the current block time
-	blockTime := ctx.BlockTime().UTC().Unix()
-	refillTime := k.refillBlockPoolTS.GetNextTimeoutBlockTime(ctx)
-	durationUntilNextMonth := refillTime - uint64(blockTime)
-
-	// get the block creation time
-	downtimeParams := k.downtimeKeeper.GetParams(ctx)
-	blockCreationTime := uint64(downtimeParams.DowntimeDuration.Seconds())
-
-	// return the number of block until next month + 5%
-	blocks := (durationUntilNextMonth / blockCreationTime) * 105 / 100
-	return int64(blocks)
-}
-
+// AddCollectedFees transfer the validators block rewards from the validators block pool to
+// the fee collector account. This account is used by Cosmos' distribution module to send the
+// validator rewards
 func (k Keeper) AddCollectedFees(ctx sdk.Context, fees sdk.Coins) error {
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ValidatorsBlockPoolName, k.feeCollectorName, fees)
 }

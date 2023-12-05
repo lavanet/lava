@@ -665,7 +665,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to fill the validator rewards pool
+		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to send rewards to the fee collector
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,

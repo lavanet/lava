@@ -10,7 +10,7 @@ const (
 // validators block rewards pool constants
 // this pool is used as the reserve for validator rewards per block
 // it gets its token through the validators rewards pool each month
-// this monthly transfer happens using the emission timer store
+// this monthly transfer happens using the "refill block pool" timer store
 const (
 	ValidatorsBlockPoolName    = "validators_block_rewards_pool"
 	RefillBlockPoolTimerPrefix = "refill-block-pool-ts"
