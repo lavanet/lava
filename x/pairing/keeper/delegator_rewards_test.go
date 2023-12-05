@@ -5,7 +5,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
@@ -436,7 +435,7 @@ func TestDelegationTimestamp(t *testing.T) {
 	_, delegator := ts.GetAccount(common.CONSUMER, 1)
 
 	// delegate and check the timestamp is equal to current time + month
-	currentTimeAfterMonth := commontypes.NextMonth(ts.BlockTime()).UTC().Unix()
+	currentTimeAfterMonth := ts.GetNextMonth(ts.BlockTime())
 	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
@@ -486,7 +485,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// delegate and check the delegation's timestamp is equal than nowPlusMonthTime
-	nowPlusMonthTime := commontypes.NextMonth(ts.BlockTime()).UTC().Unix()
+	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
 	require.Nil(t, err)
@@ -529,7 +528,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	makeProviderCommissionZero(ts, ts.spec.Index, providerAcc.Addr)
 
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
-	nowPlusMonthTime := commontypes.NextMonth(ts.BlockTime()).UTC().Unix()
+	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
 	require.Nil(t, err)
@@ -586,7 +585,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	makeProviderCommissionZero(ts, ts.spec.Index, providerAcc.Addr)
 
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
-	nowPlusMonthTime := commontypes.NextMonth(ts.BlockTime()).UTC().Unix()
+	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(testStake)))
 	require.Nil(t, err)

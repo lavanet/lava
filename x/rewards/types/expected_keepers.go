@@ -1,9 +1,10 @@
 package types
 
 import (
+	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
@@ -11,13 +12,15 @@ import (
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
 type AccountKeeper interface {
-	GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
+	GetModuleAddress(name string) sdk.AccAddress
 	// Methods imported from account should be defined here
 }
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
-	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+	BurnCoins(ctx sdk.Context, name string, amt sdk.Coins) error
+	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	SendCoinsFromModuleToModule(ctx sdk.Context, senderPool, recipientPool string, amt sdk.Coins) error
 	// Methods imported from bank should be defined here
 }
 
@@ -33,4 +36,14 @@ type TimerStoreKeeper interface {
 
 type EpochstorageKeeper interface {
 	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
+}
+
+type DowntimeKeeper interface {
+	GetParams(ctx sdk.Context) (params v1.Params)
+	// Methods imported from bank should be defined here
+}
+
+type StakingKeeper interface {
+	BondedRatio(ctx sdk.Context) math.LegacyDec
+	// Methods imported from bank should be defined here
 }

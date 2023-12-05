@@ -6,15 +6,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	common "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
-
-const MONTHS_IN_YEAR = 12
 
 // GetSubscription returns the subscription of a given consumer
 func (k Keeper) GetSubscription(ctx sdk.Context, consumer string) (val types.Subscription, found bool) {
@@ -157,7 +154,7 @@ func (k Keeper) CreateSubscription(
 	price := plan.GetPrice()
 	price.Amount = price.Amount.MulRaw(int64(duration))
 
-	if duration >= MONTHS_IN_YEAR {
+	if duration >= utils.MONTHS_IN_YEAR {
 		// adjust cost if discount given
 		discount := plan.GetAnnualDiscountPercentage()
 		if discount > 0 {
@@ -182,7 +179,7 @@ func (k Keeper) CreateSubscription(
 	}
 
 	if !found {
-		expiry := uint64(common.NextMonth(ctx.BlockTime()).UTC().Unix())
+		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
@@ -232,7 +229,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		)
 		// normally would panic! but can "recover" by auto-extending by 1 month
 		// (don't bother to modfy sub.MonthExpiryTime to minimize state changes)
-		expiry := uint64(common.NextMonth(date).UTC().Unix())
+		expiry := uint64(utils.NextMonth(date).UTC().Unix())
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		return
 	}
@@ -248,7 +245,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.Block = block
 
 		// restart timer and append new (fixated) version of this subscription
-		expiry := uint64(common.NextMonth(date).UTC().Unix())
+		expiry := uint64(utils.NextMonth(date).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 
