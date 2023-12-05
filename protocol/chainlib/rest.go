@@ -291,9 +291,6 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -350,9 +347,6 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
