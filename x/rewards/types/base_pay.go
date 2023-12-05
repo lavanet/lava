@@ -13,9 +13,8 @@ const (
 )
 
 type BasePayIndex struct {
-	Provider     string
-	ChainID      string
-	Subscription string
+	Provider string
+	ChainID  string
 }
 
 type BasePayWithIndex struct {
@@ -24,14 +23,14 @@ type BasePayWithIndex struct {
 }
 
 const (
-	serializedFormat = "%s %s %s"
+	serializedFormat = "%s %s"
 )
 
 func (bp BasePayIndex) String() string {
-	return fmt.Sprintf(serializedFormat, bp.ChainID, bp.Provider, bp.Subscription)
+	return fmt.Sprintf(serializedFormat, bp.ChainID, bp.Provider)
 }
 
 func BasePayKeyRecover(key string) (bp BasePayIndex) {
-	fmt.Sscanf(key, "%s %s %s", &bp.ChainID, &bp.Provider, &bp.Subscription)
+	fmt.Sscanf(key, serializedFormat, &bp.ChainID, &bp.Provider)
 	return bp
 }
