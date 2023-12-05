@@ -38,6 +38,10 @@ func NewTendermintRpcChainParser() (chainParser *TendermintChainParser, err erro
 	return &TendermintChainParser{}, nil
 }
 
+func (bcp *TendermintChainParser) GetUniqueName() string {
+	return "tendermint_chain_parser"
+}
+
 func (apip *TendermintChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")

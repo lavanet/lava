@@ -241,7 +241,7 @@ export class RPCConsumerServer {
       relayResult.request = constructRelayRequest(
         lavaChainId,
         chainID,
-        relayData,
+        relayData.clone(), // clone here so we can modify the query without affecting retries
         providerPublicAddress,
         singleConsumerSession,
         epoch,
@@ -268,6 +268,10 @@ export class RPCConsumerServer {
         chainMessage,
         relayTimeout
       )
+        .catch((err: any) => {
+          responsesReceived++;
+          throw err;
+        })
         .then((relayResponse: RelayResponse) => {
           responsesReceived++;
 
@@ -346,7 +350,7 @@ export class RPCConsumerServer {
 
     // this should never happen, but we need to satisfy the typescript compiler
     if (finalRelayResult === undefined) {
-      return new Error("finalRelayResult is undefined");
+      return new Error("UnreachableCode finalRelayResult is undefined");
     }
 
     return finalRelayResult;
