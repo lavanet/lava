@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
@@ -12,8 +13,8 @@ func (k Keeper) TotalPoolTokens(ctx sdk.Context, pool string) math.Int {
 	return k.bankKeeper.GetBalance(ctx, poolAddr, epochstoragetypes.TokenDenom).Amount
 }
 
-// burnPoolTokens removes coins from a pool module account
-func (k Keeper) burnPoolTokens(ctx sdk.Context, pool string, amt math.Int) error {
+// BurnPoolTokens removes coins from a pool module account
+func (k Keeper) BurnPoolTokens(ctx sdk.Context, pool string, amt math.Int) error {
 	if !amt.IsPositive() {
 		// skip as no coins need to be burned
 		return nil

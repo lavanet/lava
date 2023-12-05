@@ -1,11 +1,17 @@
 package types
 
-import "time"
-
+// validators rewards pool constants
+// this pool is used as the main reserve of token for validators rewards
+// it gets its token through continuous vesting from the treatury account
 const (
-	ValidatorsPoolName                           = "validators_rewards_pool"
-	ValidatorsVestingTime          time.Duration = time.Hour * 24 * 30                // month
-	ValidatorsTotalVestingTime     time.Duration = ValidatorsVestingTime * (12*4 - 1) // 4 years minus one month
-	TestValidatorsVestingTime      time.Duration = time.Second
-	TestValidatorsTotalVestingTime time.Duration = TestValidatorsVestingTime * (12*4 - 1)
+	ValidatorsPoolName = "validators_rewards_pool"
+)
+
+// validators block rewards pool constants
+// this pool is used as the reserve for validator rewards per block
+// it gets its token through the validators rewards pool each month
+// this monthly transfer happens using the emission timer store
+const (
+	ValidatorsBlockPoolName    = "validators_block_rewards_pool"
+	RefillBlockPoolTimerPrefix = "refill-block-pool-ts"
 )

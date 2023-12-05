@@ -228,17 +228,18 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:               nil,
-		distrtypes.ModuleName:                    nil,
-		stakingtypes.BondedPoolName:              {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                      {authtypes.Burner},
-		ibctransfertypes.ModuleName:              {authtypes.Burner},
-		subscriptionmoduletypes.ModuleName:       {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
-		rewardsmoduletypes.ValidatorsPoolName:    {authtypes.Burner, authtypes.Staking},
+		authtypes.FeeCollectorName:                 nil,
+		distrtypes.ModuleName:                      nil,
+		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                        {authtypes.Burner},
+		ibctransfertypes.ModuleName:                {authtypes.Burner},
+		subscriptionmoduletypes.ModuleName:         {authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.BondedPoolName:      {authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.NotBondedPoolName:   {authtypes.Burner, authtypes.Staking},
+		pairingmoduletypes.ModuleName:              {authtypes.Burner, authtypes.Staking},
+		rewardsmoduletypes.ValidatorsPoolName:      {authtypes.Burner, authtypes.Staking},
+		rewardsmoduletypes.ValidatorsBlockPoolName: {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -518,6 +519,10 @@ func New(
 		app.GetSubspace(rewardsmoduletypes.ModuleName),
 		app.BankKeeper,
 		app.AccountKeeper,
+		app.DowntimeKeeper,
+		app.StakingKeeper,
+		authtypes.FeeCollectorName,
+		app.TimerStoreKeeper,
 	)
 	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -660,6 +665,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -681,7 +687,6 @@ func New(
 		protocolmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
 		feegrant.ModuleName,
-		rewardsmoduletypes.ModuleName,
 		paramstypes.ModuleName)
 
 	app.mm.SetOrderEndBlockers(
