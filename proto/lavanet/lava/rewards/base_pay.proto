@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.rewards;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/lavanet/lava/x/rewards/types";
+import "cosmos/base/v1beta1/coin.proto"; 
+
+// aggregated rewards for the provider through out the month
+message BasePay {
+  cosmos.base.v1beta1.Coin total = 1;
+}
