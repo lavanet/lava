@@ -43,7 +43,7 @@ func (k Keeper) SpecEmissions(ctx sdk.Context) (emisions []types.SpecEmmision) {
 
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
-			emisions = append(emisions, types.SpecEmmision{ChainID: chainID, Emision: stake.Quo(totalStake)})
+			emisions = append(emisions, types.SpecEmmision{ChainID: chainID, Emission: stake.Quo(totalStake)})
 		}
 	}
 
