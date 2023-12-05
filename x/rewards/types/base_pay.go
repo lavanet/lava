@@ -28,10 +28,10 @@ const (
 )
 
 func (bp BasePayIndex) String() string {
-	return fmt.Sprintf(serializedFormat, bp.Provider, bp.ChainID, bp.Subscription)
+	return fmt.Sprintf(serializedFormat, bp.ChainID, bp.Provider, bp.Subscription)
 }
 
 func BasePayKeyRecover(key string) (bp BasePayIndex) {
-	fmt.Sscanf(key, "%s %s %s", &bp.Provider, &bp.ChainID, &bp.Subscription)
+	fmt.Sscanf(key, "%s %s %s", &bp.ChainID, &bp.Provider, &bp.Subscription)
 	return bp
 }
