@@ -3,8 +3,8 @@ package keeper
 import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
-	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustmentDenom uint64, rewards math.Int) {
@@ -22,26 +22,33 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 }
 
 func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
-	total := sdk.ZeroInt() // TODO yarom, get the pool balance
+	total := k.TotalPoolTokens(ctx, types.ProviderDistributionPool)
+	totalRewarded := sdk.ZeroInt()
 	specs := k.SpecEmissionParts(ctx)
 	for _, spec := range specs {
 		basepays, totalbasepay := k.SpecProvidersBasePay(ctx, spec.ChainID)
 		specTotalPayout := k.SpecTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		for _, basepay := range basepays {
-			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(basepay.Total)
+			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(basepay.Total).TruncateInt()
+			totalRewarded = totalRewarded.Add(reward)
+			if totalRewarded.GT(total) {
+				utils.LavaFormatError("trying to send more than we can", nil, utils.LogAttr("total", total.String()), utils.LogAttr("totalRewarded", totalRewarded.String()))
+				return
+			}
 			// now give the reward the provider contributor and delegators
 			providerAddr, err := sdk.AccAddressFromBech32(basepay.Provider)
 			if err != nil {
 				continue
 			}
-			_, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward.TruncateInt(), subsciptiontypes.ModuleName, false, false, false)
+			_, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, "reward pool", false, false, false)
 			if err != nil {
-				// what now? yarom
+				utils.LavaFormatError("Failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 			}
 		}
 	}
 	k.removeAllBasePay(ctx)
-	// TODO yarom burn leftovers
+	tokensToBurn := total.Sub(totalRewarded)
+	k.BurnPoolTokens(ctx, types.ProviderDistributionPool, tokensToBurn)
 }
 
 func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmmisionPart) math.LegacyDec {
