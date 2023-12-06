@@ -1,4 +1,6 @@
 #!/bin/bash
+LAVAD_BINARY=upgrade-test/lavad
+
 # make install-all
 killall -9 lavad
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -11,9 +13,9 @@ if ! command_exists jq; then
 fi
 
 rm -rf ~/.lava
-lavad init validator --chain-id lava
-lavad config broadcast-mode sync
-lavad config keyring-backend test
+$LAVAD_BINARY init validator --chain-id lava
+$LAVAD_BINARY config broadcast-mode sync
+$LAVAD_BINARY config keyring-backend test
 
 # Specify the file path, field to edit, and new value
 path="$HOME/.lava/config/"
@@ -50,6 +52,7 @@ fi
 
 echo -n "$data" > "$path$genesis"
 
+echo "using genesis file"
 echo $(cat "$path$genesis")
 
 # Determine OS
@@ -82,10 +85,10 @@ sed $SED_INLINE -e "s/enable = .*/enable = true/" "$path$app"
 users=("alice" "bob" "user1" "user2" "user3" "user4" "user5" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")
 
 for user in "${users[@]}"; do
-    lavad keys add "$user"
-    lavad add-genesis-account "$user" 50000000000000ulava
+    $LAVAD_BINARY keys add "$user"
+    $LAVAD_BINARY add-genesis-account "$user" 50000000000000ulava
 done
 
-lavad gentx alice 100000000000ulava --chain-id lava
-lavad collect-gentxs
-lavad start --pruning=nothing
+$LAVAD_BINARY gentx alice 100000000000ulava --chain-id lava
+$LAVAD_BINARY collect-gentxs
+# lavad start --pruning=nothing
