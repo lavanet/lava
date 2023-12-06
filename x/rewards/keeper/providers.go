@@ -4,6 +4,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/rewards/types"
+	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustmentDenom uint64, rewards math.Int) {
@@ -28,8 +29,15 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 		specTotalPayout := k.SpecTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		for _, basepay := range basepays {
 			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(basepay.Total)
-			// now give the reward somehow to the provider
-			_ = reward
+			// now give the reward the provider contributor and delegators
+			providerAddr, err := sdk.AccAddressFromBech32(basepay.Provider)
+			if err != nil {
+				continue
+			}
+			_, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward.TruncateInt(), subsciptiontypes.ModuleName, false, false, false)
+			if err != nil {
+				// what now? yarom
+			}
 		}
 	}
 	k.removeAllBasePay(ctx)

@@ -21,12 +21,13 @@ type (
 		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper     types.BankKeeper
-		accountKeeper  types.AccountKeeper
-		specKeeper     types.SpecKeeper
-		epochstorage   types.EpochstorageKeeper
-		downtimeKeeper types.DowntimeKeeper
-		stakingKeeper  types.StakingKeeper
+		bankKeeper        types.BankKeeper
+		accountKeeper     types.AccountKeeper
+		specKeeper        types.SpecKeeper
+		epochstorage      types.EpochstorageKeeper
+		downtimeKeeper    types.DowntimeKeeper
+		stakingKeeper     types.StakingKeeper
+		dualstakingKeeper types.DualStakingKeeper
 
 		monthlyRewardsTS timerstoretypes.TimerStore
 
@@ -45,6 +46,7 @@ func NewKeeper(
 	epochStorageKeeper types.EpochstorageKeeper,
 	downtimeKeeper types.DowntimeKeeper,
 	stakingKeeper types.StakingKeeper,
+	dualstakingKeeper types.DualStakingKeeper,
 	feeCollectorName string,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -59,12 +61,13 @@ func NewKeeper(
 		memKey:     memKey,
 		paramstore: ps,
 
-		bankKeeper:     bankKeeper,
-		accountKeeper:  accountKeeper,
-		specKeeper:     specKeeper,
-		epochstorage:   epochStorageKeeper,
-		downtimeKeeper: downtimeKeeper,
-		stakingKeeper:  stakingKeeper,
+		bankKeeper:        bankKeeper,
+		accountKeeper:     accountKeeper,
+		specKeeper:        specKeeper,
+		epochstorage:      epochStorageKeeper,
+		downtimeKeeper:    downtimeKeeper,
+		stakingKeeper:     stakingKeeper,
+		dualstakingKeeper: dualstakingKeeper,
 
 		feeCollectorName: feeCollectorName,
 	}

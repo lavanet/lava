@@ -47,3 +47,8 @@ type StakingKeeper interface {
 	BondedRatio(ctx sdk.Context) math.LegacyDec
 	// Methods imported from bank should be defined here
 }
+
+type DualStakingKeeper interface {
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, err error)
+	// Methods imported from bank should be defined here
+}

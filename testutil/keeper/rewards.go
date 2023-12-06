@@ -48,6 +48,7 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		nil,
+		nil,
 		authtypes.FeeCollectorName,
 		nil,
 	)

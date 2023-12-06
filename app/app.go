@@ -479,6 +479,7 @@ func New(
 		app.EpochstorageKeeper,
 		app.DowntimeKeeper,
 		app.StakingKeeper,
+		app.DualstakingKeeper,
 		authtypes.FeeCollectorName,
 		app.TimerStoreKeeper,
 	)
