@@ -24,9 +24,8 @@ var (
 type SpecValidator struct {
 	lock sync.RWMutex
 
-	chainFetchers        map[string][]*chainlib.ChainFetcherIf // key is chainId
-	providerListeners    map[string]*ProviderListener          // key is address
-	disabledChainsTicker *time.Ticker
+	chainFetchers     map[string][]*chainlib.ChainFetcherIf // key is chainId
+	providerListeners map[string]*ProviderListener          // key is address
 }
 
 func NewSpecValidator() *SpecValidator {
@@ -46,27 +45,26 @@ func (sv *SpecValidator) Start(ctx context.Context) {
 }
 
 func (sv *SpecValidator) validateAllChainsLoop(ctx context.Context) {
-	timerInterval := SpecValidationInterval
-	ticker := time.NewTicker(timerInterval)
-	sv.disabledChainsTicker = time.NewTicker(SpecValidationIntervalDisabledChains)
+	validationTicker := time.NewTicker(SpecValidationInterval)
+	validationTickerForDisabled := time.NewTicker(SpecValidationIntervalDisabledChains)
 	for {
 		select {
-		case <-ticker.C:
+		case <-validationTicker.C:
 			func() {
 				sv.lock.Lock()
 				defer sv.lock.Unlock()
 				sv.validateAllChains(ctx)
 				// we just ran validate on all chains no reason to do disabled chains in the next interval
-				sv.disabledChainsTicker.Reset(SpecValidationIntervalDisabledChains)
+				validationTickerForDisabled.Reset(SpecValidationIntervalDisabledChains)
 			}()
-		case <-sv.disabledChainsTicker.C:
+		case <-validationTickerForDisabled.C:
 			func() {
 				sv.lock.Lock()
 				defer sv.lock.Unlock()
 				sv.validateAllDisabledChains(ctx)
 			}()
 		case <-ctx.Done():
-			ticker.Stop()
+			validationTicker.Stop()
 			return
 		}
 	}
