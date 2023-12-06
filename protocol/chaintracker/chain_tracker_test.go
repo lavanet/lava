@@ -469,12 +469,12 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 		t.Run(play.name, func(t *testing.T) {
 			mockBlocks := int64(25)
 			fetcherBlocks := 1
-			called := 0
+			called := false
 			callback := func() {
-				called++
 			}
 			updatedTime := 0 * time.Second
 			updateCallback := func(arg time.Duration) {
+				called = true
 				updatedTime = arg
 			}
 			mockTimeUpdater := MockTimeUpdater{callBack: updateCallback}
@@ -492,11 +492,14 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 				time.Sleep(play.updateTime)
 			}
 			// give it more time to update in case it didn't trigger on slow machines
-			if updatedTime.Milliseconds() == 0 {
-				time.Sleep(10 * play.updateTime)
+			if !called {
+				for i := 0; i < iterations*2; i++ {
+					mockChainFetcher.AdvanceBlock()
+					time.Sleep(play.updateTime)
+				}
 			}
 			require.InDelta(t, play.updateTime, updatedTime, float64(play.updateTime)*0.2)
-			// if we wait more time we expect this to fine tune
+			// if we wait more time we expect this to stay correct
 			for i := 0; i < iterations*4; i++ {
 				mockChainFetcher.AdvanceBlock()
 				time.Sleep(play.updateTime)

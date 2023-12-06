@@ -88,7 +88,7 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 
 		chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Do(raiseCallCount)
 	}
-	SpecValidationIntervalSec = 1
+	SpecValidationInterval = 1 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	specValidator.Start(ctx)
