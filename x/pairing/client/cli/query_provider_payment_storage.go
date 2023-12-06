@@ -14,7 +14,10 @@ func CmdListProviderPaymentStorage() *cobra.Command {
 		Use:   "list-provider-payment-storage",
 		Short: "list all ProviderPaymentStorage",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
 
 			pageReq, err := client.ReadPageRequest(cmd.Flags())
 			if err != nil {
@@ -48,7 +51,10 @@ func CmdShowProviderPaymentStorage() *cobra.Command {
 		Short: "shows a ProviderPaymentStorage",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx := client.GetClientContextFromCmd(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 
