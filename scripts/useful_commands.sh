@@ -53,9 +53,9 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-# Function to check the Go version is at least 1.20
+# Function to check the Go version is at least 1.21
 check_go_version() {
-  local GO_VERSION=1.20
+  local GO_VERSION=1.21
 
   if ! command_exists go; then
     return 1
