@@ -92,7 +92,7 @@ func (sv *SpecValidator) AddRPCProviderListener(address string, providerListener
 	sv.providerListeners[address] = providerListener
 }
 
-func (sv *SpecValidator) SetSpec(spec spectypes.Spec) {
+func (sv *SpecValidator) VerifySpec(spec spectypes.Spec) {
 	sv.lock.Lock()
 	defer sv.lock.Unlock()
 
@@ -101,6 +101,7 @@ func (sv *SpecValidator) SetSpec(spec spectypes.Spec) {
 		utils.LavaFormatError("Could not find chainFetchers with given chainId", nil, utils.Attribute{Key: "chainId", Value: chainId})
 		return
 	}
+	utils.LavaFormatDebug("Running spec verification for chainId", utils.LogAttr("chainId", chainId))
 	sv.validateChain(context.Background(), chainId)
 }
 
