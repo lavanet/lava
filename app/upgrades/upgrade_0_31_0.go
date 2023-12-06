@@ -20,7 +20,7 @@ type Upgrade_0_31_0_Info struct {
 
 func (u *Upgrade_0_31_0_Info) FromPlan(plan upgradetypes.Plan) error {
 	info := plan.Info
-	var intermediaryInfo = struct {
+	intermediaryInfo := struct {
 		ExpeditedMinDeposit   string `json:"expedited_min_deposit"`
 		ExpeditedThreshold    string `json:"expedited_threshold"`
 		ExpeditedVotingPeriod string `json:"expedited_voting_period"`
