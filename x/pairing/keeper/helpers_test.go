@@ -215,6 +215,8 @@ func (ts *tester) payAndVerifyBalance(
 	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), relayPayment.Relays[0].SpecId)
 	require.Nil(ts.T, err)
 	require.Equal(ts.T, want, reward.Rewards[0].Amount.Amount)
+	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())
+	require.Nil(ts.T, err)
 }
 
 // verifyRelayPayments verifies relay payments saved on-chain after getting payment
