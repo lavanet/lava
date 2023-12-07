@@ -51,8 +51,13 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
 
-			addr, err := sdk.AccAddressFromBech32(args[0])
+			createModuleAccount, err := cmd.Flags().GetBool(flagModuleAccount)
 			if err != nil {
+				return err
+			}
+
+			addr, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil && !createModuleAccount {
 				inBuf := bufio.NewReader(cmd.InOrStdin())
 				keyringBackend, err := cmd.Flags().GetString(flags.FlagKeyringBackend)
 				if err != nil {
@@ -92,11 +97,6 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			vestingAmt, err := sdk.ParseCoinsNormalized(vestingAmtStr)
 			if err != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
-			}
-
-			createModuleAccount, err := cmd.Flags().GetBool(flagModuleAccount)
-			if err != nil {
-				return err
 			}
 
 			// create concrete account type based on input parameters
