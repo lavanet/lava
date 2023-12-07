@@ -11,10 +11,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils"
+	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
@@ -98,27 +98,30 @@ func (lt *lavaTest) getProvidersAddresses() ([]string, error) {
 	return addresses, nil
 }
 
-// getBalances gets the current balances of the input addresses
-func (lt *lavaTest) getBalances(addresses []string) ([]sdk.Coin, error) {
-	bankQueryClient := bankTypes.NewQueryClient(lt.grpcConn)
+// getRewards gets the current balances of the input addresses
+func (lt *lavaTest) getRewards(addresses []string) ([]sdk.Coin, error) {
+	dualstakingQueryClient := dualstakingTypes.NewQueryClient(lt.grpcConn)
 
-	var balances []sdk.Coin
+	var rewards []sdk.Coin
 	for _, addr := range addresses {
 		sdkAddr, err := sdk.AccAddressFromBech32(addr)
 		if err != nil {
 			return nil, fmt.Errorf("could not get balance of address %s. err: %s", addr, err.Error())
 		}
 
-		balanceRequest := bankTypes.NewQueryBalanceRequest(sdkAddr, lt.tokenDenom)
-		res, err := bankQueryClient.Balance(context.Background(), balanceRequest)
+		rewardsRequest := dualstakingTypes.QueryDelegatorRewardsRequest{Delegator: addr, Provider: addr, ChainId: ""}
+		res, err := dualstakingQueryClient.DelegatorRewards(context.Background(), &rewardsRequest)
 		if err != nil {
-			return nil, fmt.Errorf("could not get balance of address %s. err: %s", sdkAddr.String(), err.Error())
+			return nil, fmt.Errorf("could not get rewards of address %s. err: %s", sdkAddr.String(), err.Error())
 		}
-
-		balances = append(balances, *res.Balance)
+		total := sdk.NewCoin(commonconsts.TestTokenDenom, sdk.ZeroInt())
+		for _, r := range res.Rewards {
+			total.Add(r.Amount)
+		}
+		rewards = append(rewards, total)
 	}
 
-	return balances, nil
+	return rewards, nil
 }
 
 // checkPayment checks that at least one providers' balance increased (can't be known
@@ -146,7 +149,7 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 	}
 
 	// get new balance and checks that at least one provider's balance was increased
-	newBalances, err := lt.getBalances(providers)
+	newBalances, err := lt.getRewards(providers)
 	if err != nil {
 		panic(err)
 	}
@@ -240,7 +243,7 @@ func runPaymentE2E(timeout time.Duration) {
 	if err != nil {
 		panic(err)
 	}
-	startBalances, err := lt.getBalances(providers)
+	startBalances, err := lt.getRewards(providers)
 	if err != nil {
 		panic(err)
 	}
