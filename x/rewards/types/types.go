@@ -1,10 +1,12 @@
 package types
 
-// treasury  constants
+type Pool string
+
+// validators_rewards_pool constants
 // this pool is used as the main and reserve of token for validators rewards
 // it will get depleted after ValidatorsRewardsPoolLifetime (4 years minus one month)
 const (
-	ValidatorsRewardsPoolName           = "validators_rewards_pool"
+	ValidatorsRewardsPoolName     Pool  = "validators_rewards_pool"
 	ValidatorsRewardsPoolLifetime int64 = 47
 )
 
@@ -13,7 +15,7 @@ const (
 // it gets its token through the validators rewards pool each month
 // this monthly transfer happens using the "refill reward pools" timer store
 const (
-	ValidatorsBlockRewardsPoolName = "validators_block_rewards_pool"
+	ValidatorsBlockRewardsPoolName Pool = "validators_block_rewards_pool"
 )
 
 // refill reward pools time stores constant

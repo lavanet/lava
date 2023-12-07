@@ -105,8 +105,8 @@ func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte) {
 	validatorPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(
 		ctx,
-		types.ValidatorsRewardsPoolName,
-		types.ValidatorsBlockRewardsPoolName,
+		string(types.ValidatorsRewardsPoolName),
+		string(types.ValidatorsBlockRewardsPoolName),
 		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, validatorPoolBalance.QuoRaw(types.ValidatorsRewardsPoolLifetime))),
 	)
 	if err != nil {
@@ -167,5 +167,5 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 // the fee collector account. This account is used by Cosmos' distribution module to send the
 // validator rewards
 func (k Keeper) AddCollectedFees(ctx sdk.Context, fees sdk.Coins) error {
-	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ValidatorsBlockRewardsPoolName, k.feeCollectorName, fees)
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ValidatorsBlockRewardsPoolName), k.feeCollectorName, fees)
 }
