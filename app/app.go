@@ -228,18 +228,18 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                 nil,
-		distrtypes.ModuleName:                      nil,
-		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                        {authtypes.Burner},
-		ibctransfertypes.ModuleName:                {authtypes.Burner},
-		subscriptionmoduletypes.ModuleName:         {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.BondedPoolName:      {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.NotBondedPoolName:   {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:              {authtypes.Burner, authtypes.Staking},
-		rewardsmoduletypes.ValidatorsPoolName:      {authtypes.Burner, authtypes.Staking},
-		rewardsmoduletypes.ValidatorsBlockPoolName: {authtypes.Burner, authtypes.Staking},
+		authtypes.FeeCollectorName:                        nil,
+		distrtypes.ModuleName:                             nil,
+		stakingtypes.BondedPoolName:                       {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:                    {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                               {authtypes.Burner},
+		ibctransfertypes.ModuleName:                       {authtypes.Burner},
+		subscriptionmoduletypes.ModuleName:                {authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.BondedPoolName:             {authtypes.Burner, authtypes.Staking},
+		dualstakingmoduletypes.NotBondedPoolName:          {authtypes.Burner, authtypes.Staking},
+		pairingmoduletypes.ModuleName:                     {authtypes.Burner, authtypes.Staking},
+		rewardsmoduletypes.ValidatorsRewardsPoolName:      {authtypes.Burner, authtypes.Staking},
+		rewardsmoduletypes.ValidatorsBlockRewardsPoolName: {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )

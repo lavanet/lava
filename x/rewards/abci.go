@@ -14,7 +14,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator block pool balance
-	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsBlockPoolName)
+	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)
 
 	// validators bonus rewards = (blockPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).TruncateInt().QuoRaw(blocksToNextTimerExpiry)
