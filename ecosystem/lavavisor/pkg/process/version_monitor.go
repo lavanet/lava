@@ -1,6 +1,8 @@
 package processmanager
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -8,7 +10,9 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/statetracker"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
@@ -17,6 +21,11 @@ import (
 type ProtocolBinaryFetcherInf interface {
 	SetCurrentRunningVersion(currentVersion string)
 	FetchProtocolBinary(protocolConsensusVersion *protocoltypes.Version) (selectedBinaryPath string, err error)
+}
+
+type KeyRingPassword struct {
+	Password   bool   // whether the password is required
+	Passphrase string // the password
 }
 
 type VersionMonitor struct {
@@ -218,13 +227,13 @@ func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.Protoco
 	return nil
 }
 
-func (vm *VersionMonitor) StartProcess() {
+func (vm *VersionMonitor) StartProcess(keyringPassword *KeyRingPassword) {
 	// Create a channel to capture OS signals (e.g., Ctrl+C)
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
 	// Start subprocess in a Goroutine
-	go vm.startSubprocess()
+	go vm.startSubprocess(keyringPassword)
 
 	// Main loop for monitoring the subprocess
 	for {
@@ -232,7 +241,7 @@ func (vm *VersionMonitor) StartProcess() {
 		case <-vm.restart:
 			utils.LavaFormatInfo("[Lavavisor] Received restart signal, restarting subprocess...")
 			vm.StopSubprocess()
-			go vm.startSubprocess()
+			go vm.startSubprocess(keyringPassword)
 		case sig := <-sigCh:
 			utils.LavaFormatInfo("[Lavavisor] Received signal:", utils.Attribute{Key: "signal", Value: sig})
 			vm.StopSubprocess()
@@ -250,7 +259,58 @@ func (vm *VersionMonitor) StopSubprocess() {
 	}
 }
 
-func (vm *VersionMonitor) startSubprocess() {
+// func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
+// 	// make sure the subprocess wont continue running if we run into a panic.
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			utils.LavaFormatError("[Lavavisor] Panic occurred: ", nil)
+// 			vm.StopSubprocess()
+// 		}
+// 	}()
+
+// 	utils.LavaFormatInfo("[Lavavisor] Starting subprocess...")
+// 	vm.onGoingCmd = exec.Command(vm.BinaryPath, vm.command...)
+
+// 	// Set up output redirection so you can see the subprocess's output
+// 	vm.onGoingCmd.Stdout = os.Stdout
+// 	vm.onGoingCmd.Stderr = os.Stderr
+
+// 	// Interaction with the command's Stdin
+// 	stdin, err := vm.onGoingCmd.StdinPipe()
+// 	if err != nil {
+// 		fmt.Println("Error obtaining stdin:", err)
+// 		return
+// 	}
+
+// 	if err := vm.onGoingCmd.Start(); err != nil {
+// 		utils.LavaFormatError("[Lavavisor] Error starting subprocess:", err)
+// 	}
+
+// 	time.Sleep(time.Second * 3)
+
+// 	if keyringPassword != nil && keyringPassword.Password {
+// 		// Send input to the command
+// 		_, err = stdin.Write([]byte(keyringPassword.Passphrase + "\n"))
+// 		if err != nil {
+// 			fmt.Println("Error writing to stdin:", err)
+// 			return
+// 		}
+// 		utils.LavaFormatInfo("[Lavavisor] entered keyring-os password.")
+// 	}
+// 	stdin.Close() // Flush the input stream (this sends the input to the process)
+
+// 	if err := vm.onGoingCmd.Wait(); err != nil {
+// 		if strings.Contains(err.Error(), "signal: killed") {
+// 			utils.LavaFormatInfo("[Lavavisor] Subprocess stopped due to sig killed.")
+// 		} else {
+// 			utils.LavaFormatError("[Lavavisor] Subprocess exited with error", err)
+// 		}
+// 	} else {
+// 		utils.LavaFormatInfo("[Lavavisor] Subprocess exited without error.")
+// 	}
+// }
+
+func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
 	// make sure the subprocess wont continue running if we run into a panic.
 	defer func() {
 		if r := recover(); r != nil {
@@ -264,11 +324,51 @@ func (vm *VersionMonitor) startSubprocess() {
 
 	// Set up output redirection so you can see the subprocess's output
 	vm.onGoingCmd.Stdout = os.Stdout
-	vm.onGoingCmd.Stderr = os.Stderr
+	// vm.onGoingCmd.Stderr = os.Stderr
+
+	foundPasswordTrigger := make(chan struct{})
+	processStart := common.ProcessStartLogText
+	stderrPipe, err := vm.onGoingCmd.StderrPipe()
+	if err != nil {
+		utils.LavaFormatError("[Lavavisor] Error obtaining stderr pipe:", err)
+		return
+	}
+
+	// Interaction with the command's Stdin
+	stdin, err := vm.onGoingCmd.StdinPipe()
+	if err != nil {
+		fmt.Println("Error obtaining stdin:", err)
+		return
+	}
+
+	go func() {
+		scanner := bufio.NewScanner(stderrPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			fmt.Println(line)
+			if strings.Contains(line, processStart) {
+				foundPasswordTrigger <- struct{}{}
+			}
+		}
+	}()
 
 	if err := vm.onGoingCmd.Start(); err != nil {
 		utils.LavaFormatError("[Lavavisor] Error starting subprocess:", err)
 	}
+
+	<-foundPasswordTrigger
+	time.Sleep(time.Second * 3)
+
+	if keyringPassword != nil && keyringPassword.Password {
+		// Send input to the command
+		_, err = stdin.Write([]byte(keyringPassword.Passphrase + "\n"))
+		if err != nil {
+			fmt.Println("Error writing to stdin:", err)
+			return
+		}
+		utils.LavaFormatInfo("[Lavavisor] entered keyring-os password.")
+	}
+	stdin.Close() // Flush the input stream (this sends the input to the process)
 
 	if err := vm.onGoingCmd.Wait(); err != nil {
 		if strings.Contains(err.Error(), "signal: killed") {
@@ -280,6 +380,81 @@ func (vm *VersionMonitor) startSubprocess() {
 		utils.LavaFormatInfo("[Lavavisor] Subprocess exited without error.")
 	}
 }
+
+// func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			utils.LavaFormatError("[Lavavisor] Panic occurred: ", nil)
+// 			vm.StopSubprocess()
+// 		}
+// 	}()
+
+// 	utils.LavaFormatInfo("[Lavavisor] Starting subprocess...")
+// 	vm.onGoingCmd = exec.Command(vm.BinaryPath, vm.command...)
+
+// 	// 	// Interaction with the command's Stdin
+// 	stdin, err := vm.onGoingCmd.StdinPipe()
+// 	if err != nil {
+// 		fmt.Println("Error obtaining stdin:", err)
+// 		return
+// 	}
+
+// 	stderrPipe, err := vm.onGoingCmd.StderrPipe()
+// 	if err != nil {
+// 		utils.LavaFormatError("[Lavavisor] Error obtaining stderr pipe:", err)
+// 		return
+// 	}
+
+// 	// Channel to signal when "NOW" is found in stdout or stderr
+// 	foundNOW := make(chan struct{})
+// 	searchFor := "RPCConsumer started"
+
+// 	// Goroutine to read stderr and search for "NOW"
+// 	go func() {
+// 		scanner := bufio.NewScanner(stderrPipe)
+// 		for scanner.Scan() {
+// 			line := scanner.Text()
+// 			// fmt.Println("stderr:", line) // Optional: Print the stderr line
+// 			if strings.Contains(line, searchFor) {
+// 				utils.LavaFormatInfo("[Lavavisor] found line!")
+// 				foundNOW <- struct{}{} // Signal that "NOW" is found in stderr
+// 				return
+// 			}
+// 		}
+// 	}()
+
+// 	// Start the command
+// 	if err := vm.onGoingCmd.Start(); err != nil {
+// 		utils.LavaFormatError("[Lavavisor] Error starting subprocess:", err)
+// 		return
+// 	}
+
+// 	// Wait for "NOW" to be found in either stdout or stderr
+// 	<-foundNOW
+// 	time.Sleep(time.Second * 5) // making sure the process waits for input
+
+// 	// Proceed with writing passphrase after finding "NOW"
+// 	if keyringPassword != nil && keyringPassword.Password {
+// 		// Send input to the command
+// 		_, err = stdin.Write([]byte(keyringPassword.Passphrase + "\n"))
+// 		if err != nil {
+// 			fmt.Println("Error writing to stdin:", err)
+// 			return
+// 		}
+// 		utils.LavaFormatInfo("[Lavavisor] entered keyring-os password.")
+// 	}
+// 	stdin.Close() // Flush the input stream (this sends the input to the process)
+
+// 	if err := vm.onGoingCmd.Wait(); err != nil {
+// 		if strings.Contains(err.Error(), "signal: killed") {
+// 			utils.LavaFormatInfo("[Lavavisor] Subprocess stopped due to sig killed.")
+// 		} else {
+// 			utils.LavaFormatError("[Lavavisor] Subprocess exited with error", err)
+// 		}
+// 	} else {
+// 		utils.LavaFormatInfo("[Lavavisor] Subprocess exited without error.")
+// 	}
+// }
 
 func NewVersionMonitorProcessWrapFlow(initVersion string, lavavisorPath string, autoDownload bool, command string) *VersionMonitor {
 	var binaryPath string
