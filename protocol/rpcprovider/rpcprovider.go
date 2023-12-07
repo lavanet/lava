@@ -54,6 +54,7 @@ var (
 type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
+	RegisterForSpecVerifications(ctx context.Context, specVerifier statetracker.SpecVerifier, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error
@@ -339,7 +340,9 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			// Any validation needs to be before we store chain tracker for given chain id
 			rpcp.chainTrackers.SetTrackerForChain(rpcProviderEndpoint.ChainID, chainTracker)
 
-			err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, specValidator, rpcEndpoint)
+			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint)
+			utils.LavaFormatDebug("Registering for spec verifications for endpoint",
+				utils.LogAttr("rpcEndpoint", rpcEndpoint))
 			if err != nil {
 				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
