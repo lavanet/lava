@@ -357,6 +357,7 @@ func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
 	}
 
 	<-foundPasswordTrigger
+	// wait to make sure process is waiting for password
 	time.Sleep(time.Second * 3)
 
 	if keyringPassword != nil && keyringPassword.Password {
@@ -380,81 +381,6 @@ func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
 		utils.LavaFormatInfo("[Lavavisor] Subprocess exited without error.")
 	}
 }
-
-// func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			utils.LavaFormatError("[Lavavisor] Panic occurred: ", nil)
-// 			vm.StopSubprocess()
-// 		}
-// 	}()
-
-// 	utils.LavaFormatInfo("[Lavavisor] Starting subprocess...")
-// 	vm.onGoingCmd = exec.Command(vm.BinaryPath, vm.command...)
-
-// 	// 	// Interaction with the command's Stdin
-// 	stdin, err := vm.onGoingCmd.StdinPipe()
-// 	if err != nil {
-// 		fmt.Println("Error obtaining stdin:", err)
-// 		return
-// 	}
-
-// 	stderrPipe, err := vm.onGoingCmd.StderrPipe()
-// 	if err != nil {
-// 		utils.LavaFormatError("[Lavavisor] Error obtaining stderr pipe:", err)
-// 		return
-// 	}
-
-// 	// Channel to signal when "NOW" is found in stdout or stderr
-// 	foundNOW := make(chan struct{})
-// 	searchFor := "RPCConsumer started"
-
-// 	// Goroutine to read stderr and search for "NOW"
-// 	go func() {
-// 		scanner := bufio.NewScanner(stderrPipe)
-// 		for scanner.Scan() {
-// 			line := scanner.Text()
-// 			// fmt.Println("stderr:", line) // Optional: Print the stderr line
-// 			if strings.Contains(line, searchFor) {
-// 				utils.LavaFormatInfo("[Lavavisor] found line!")
-// 				foundNOW <- struct{}{} // Signal that "NOW" is found in stderr
-// 				return
-// 			}
-// 		}
-// 	}()
-
-// 	// Start the command
-// 	if err := vm.onGoingCmd.Start(); err != nil {
-// 		utils.LavaFormatError("[Lavavisor] Error starting subprocess:", err)
-// 		return
-// 	}
-
-// 	// Wait for "NOW" to be found in either stdout or stderr
-// 	<-foundNOW
-// 	time.Sleep(time.Second * 5) // making sure the process waits for input
-
-// 	// Proceed with writing passphrase after finding "NOW"
-// 	if keyringPassword != nil && keyringPassword.Password {
-// 		// Send input to the command
-// 		_, err = stdin.Write([]byte(keyringPassword.Passphrase + "\n"))
-// 		if err != nil {
-// 			fmt.Println("Error writing to stdin:", err)
-// 			return
-// 		}
-// 		utils.LavaFormatInfo("[Lavavisor] entered keyring-os password.")
-// 	}
-// 	stdin.Close() // Flush the input stream (this sends the input to the process)
-
-// 	if err := vm.onGoingCmd.Wait(); err != nil {
-// 		if strings.Contains(err.Error(), "signal: killed") {
-// 			utils.LavaFormatInfo("[Lavavisor] Subprocess stopped due to sig killed.")
-// 		} else {
-// 			utils.LavaFormatError("[Lavavisor] Subprocess exited with error", err)
-// 		}
-// 	} else {
-// 		utils.LavaFormatInfo("[Lavavisor] Subprocess exited without error.")
-// 	}
-// }
 
 func NewVersionMonitorProcessWrapFlow(initVersion string, lavavisorPath string, autoDownload bool, command string) *VersionMonitor {
 	var binaryPath string
