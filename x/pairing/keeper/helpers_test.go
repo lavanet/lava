@@ -210,11 +210,13 @@ func (ts *tester) payAndVerifyBalance(
 	if totalCuUsed != 0 {
 		want = planPrice.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}
-	want.Int64()
 
-	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), relayPayment.Relays[0].SpecId)
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), "")
 	require.Nil(ts.T, err)
-	require.Equal(ts.T, want, reward.Rewards[0].Amount.Amount)
+	for _, reward := range reward.Rewards {
+		want = want.Sub(reward.Amount.Amount)
+	}
+	require.True(ts.T, want.IsZero())
 	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())
 	require.Nil(ts.T, err)
 }
