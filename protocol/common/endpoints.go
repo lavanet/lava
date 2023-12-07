@@ -23,6 +23,7 @@ const (
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
+	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
 )
 
 type NodeUrl struct {

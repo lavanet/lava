@@ -722,6 +722,8 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 			headerDirectives[name] = metaElement.Value
 		case common.RELAY_TIMEOUT_HEADER_NAME:
 			headerDirectives[name] = metaElement.Value
+		case common.EXTENSION_OVERRIDE_HEADER_NAME:
+			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
 		}
@@ -748,6 +750,17 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 		if err == nil {
 			// set an override timeout
 			chainMessage.TimeoutOverride(timeout)
+		}
+	}
+	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
+	if ok {
+		extensions := strings.Split(extensionsStr, ",")
+		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
+		if len(extensions) == 1 && extensions[0] == "none" {
+			// none eliminates existing extensions
+			chainMessage.OverrideExtensions([]string{}, rpccs.chainParser.ExtensionsParser())
+		} else if len(extensions) > 0 {
+			chainMessage.OverrideExtensions(extensions, rpccs.chainParser.ExtensionsParser())
 		}
 	}
 }
