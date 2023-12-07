@@ -224,7 +224,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	blockOnSyncLoss := map[string]struct{}{}
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
-	retries := 0
+	retries := uint64(0)
 	timeouts := 0
 	unwantedProviders := rpccs.GetInitialUnwantedProviders(directiveHeaders)
 	for ; retries < MaxRelayRetries; retries++ {
@@ -296,6 +296,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 
 	// TODO: secure, go over relay results to find discrepancies and choose majority, or trigger a second wallet relay
 	if len(relayResults) == 0 {
+		rpccs.appendHeadersToRelayResult(ctx, errorRelayResult, retries)
 		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	} else if len(relayErrors) > 0 {
 		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
@@ -314,8 +315,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if retries > 0 {
 		utils.LavaFormatDebug("relay succeeded after retries", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "retries", Value: retries})
 	}
+	rpccs.appendHeadersToRelayResult(ctx, returnedResult, retries)
 	return returnedResult, nil
-	// return returnedResult.Reply, returnedResult.ReplyServer, nil
 }
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
@@ -763,4 +764,40 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 			chainMessage.OverrideExtensions(extensions, rpccs.chainParser.ExtensionsParser())
 		}
 	}
+}
+
+func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, retries uint64) {
+	if relayResult == nil {
+		return
+	}
+	metadataReply := []pairingtypes.Metadata{}
+	// add the provider that responded
+	if relayResult.GetProvider() != "" {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
+				Value: relayResult.GetProvider(),
+			})
+	}
+	// add the relay retried count
+	if retries > 0 {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.RETRY_COUNT_HEADER_NAME,
+				Value: strconv.FormatUint(retries, 10),
+			})
+	}
+	guid, found := utils.GetUniqueIdentifier(ctx)
+	if found && guid != 0 {
+		guidStr := strconv.FormatUint(guid, 10)
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.GUID_HEADER_NAME,
+				Value: guidStr,
+			})
+	}
+	if relayResult.Reply == nil {
+		relayResult.Reply = &pairingtypes.RelayReply{}
+	}
+	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
 }

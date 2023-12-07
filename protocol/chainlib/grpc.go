@@ -311,12 +311,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		nodeError := &GrpcNodeErrorResponse{}
 		unMarshalingError := json.Unmarshal(relayReply.Data, nodeError)
 		metadataToReply := relayReply.Metadata
-		if relayResult.GetProvider() != "" {
-			metadataToReply = append(metadataToReply, pairingtypes.Metadata{
-				Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
-				Value: relayResult.GetProvider(),
-			})
-		}
 		if unMarshalingError == nil {
 			return nil, convertRelayMetaDataToMDMetaData(metadataToReply), status.Error(codes.Code(nodeError.ErrorCode), nodeError.ErrorMessage)
 		}
