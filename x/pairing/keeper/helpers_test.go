@@ -134,7 +134,6 @@ func (ts *tester) payAndVerifyBalance(
 	validPayment bool,
 	providerRewardPerc uint64,
 ) {
-
 	proj, err := ts.QueryProjectDeveloper(clientAddr.String())
 	if !validConsumer {
 		require.NotNil(ts.T, err)
