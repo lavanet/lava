@@ -33,6 +33,8 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
         | jq '.app_state.epochstorage.params.epochBlocks = "6"' \
+        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
+        | jq '.app_state.downtime.params.epoch_duration = "20s"' \
     )
 else
     # Edit genesis file without the additional line
@@ -43,7 +45,7 @@ else
         | jq '.app_state.mint.params.mint_denom = "ulava"' \
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
-        | jq '.app_state.downtime.params.downtime_duration = "10s"' \
+        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
         | jq '.app_state.downtime.params.epoch_duration = "20s"' \
     )
 fi
@@ -86,6 +88,7 @@ for user in "${users[@]}"; do
     lavad add-genesis-account "$user" 50000000000000ulava
 done
 
+lavad add-genesis-account validators_rewards_pool 50000000000000ulava --module-account # add validators_rewards_pool for validators block rewards
 lavad gentx alice 100000000000ulava --chain-id lava
 lavad collect-gentxs
 lavad start --pruning=nothing
