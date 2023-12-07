@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	flagVestingStart = "vesting-start-time"
-	flagVestingEnd   = "vesting-end-time"
-	flagVestingAmt   = "vesting-amount"
+	flagVestingStart  = "vesting-start-time"
+	flagVestingEnd    = "vesting-end-time"
+	flagVestingAmt    = "vesting-amount"
+	flagModuleAccount = "module-account"
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
@@ -93,13 +94,22 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
 			}
 
+			createModuleAccount, err := cmd.Flags().GetBool(flagModuleAccount)
+			if err != nil {
+				return err
+			}
+
 			// create concrete account type based on input parameters
 			var genAccount authtypes.GenesisAccount
 
 			balances := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
 			baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
-
-			if !vestingAmt.IsZero() {
+			if createModuleAccount {
+				moduleAddress := authtypes.NewModuleAddress(args[0]).String()
+				baseAccount.Address = moduleAddress
+				balances.Address = moduleAddress
+				genAccount = authtypes.NewModuleAccount(baseAccount, args[0], authtypes.Burner, authtypes.Staking)
+			} else if !vestingAmt.IsZero() {
 				baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
 
 				if (balances.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
@@ -186,6 +196,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
 	cmd.Flags().Int64(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
 	cmd.Flags().Int64(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")
+	cmd.Flags().Bool(flagModuleAccount, false, "create a module account")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
