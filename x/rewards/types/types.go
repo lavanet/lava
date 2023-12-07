@@ -2,9 +2,10 @@ package types
 
 // validators rewards pool constants
 // this pool is used as the main reserve of token for validators rewards
-// it gets its token through continuous vesting from the treatury account
+// it will get depleted after ValidatorsPoolLifetime
 const (
-	ValidatorsPoolName = "validators_rewards_pool"
+	ValidatorsPoolName           = "validators_rewards_pool"
+	ValidatorsPoolLifetime int64 = 47 // 4 years minus one month
 )
 
 // validators block rewards pool constants

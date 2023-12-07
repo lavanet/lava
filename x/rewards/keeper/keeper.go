@@ -71,9 +71,10 @@ func NewKeeper(
 	}
 
 	refillBlockPoolTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
-		keeper.refillValidatorsBlockPool(ctx, subkey)
+		keeper.RefillValidatorsBlockPool(ctx, subkey)
 	}
 
+	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators
 	keeper.refillBlockPoolTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.RefillBlockPoolTimerPrefix).
 		WithCallbackByBlockTime(refillBlockPoolTimerCallback)
 
@@ -88,7 +89,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // 1. burns the current token in the validators block pool by the burn rate
 // 2. transfers the monthly tokens quota from the validators pool to the validators block pool
 // 3. opens a new timer for the next month (and encodes the expiry block in it)
-func (k Keeper) refillValidatorsBlockPool(ctx sdk.Context, _ []byte) {
+func (k Keeper) RefillValidatorsBlockPool(ctx sdk.Context, _ []byte) {
 	// burn remaining tokens in the block pool
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, types.ValidatorsBlockPoolName)).TruncateInt()
@@ -103,7 +104,7 @@ func (k Keeper) refillValidatorsBlockPool(ctx sdk.Context, _ []byte) {
 		ctx,
 		types.ValidatorsPoolName,
 		types.ValidatorsBlockPoolName,
-		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, validatorPoolBalance)),
+		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, validatorPoolBalance.QuoRaw(types.ValidatorsPoolLifetime))),
 	)
 	if err != nil {
 		panic(err)
@@ -113,12 +114,12 @@ func (k Keeper) refillValidatorsBlockPool(ctx sdk.Context, _ []byte) {
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
 	durationUntilNextMonth := nextMonth - ctx.BlockTime().UTC().Unix()
 	blockCreationTime := k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds()
-	blocksToNextTimerExpiry := durationUntilNextMonth / int64(blockCreationTime) * 105 / 100
+	blocksToNextTimerExpiry := (durationUntilNextMonth / int64(blockCreationTime) * 105 / 100) + ctx.BlockHeight()
 
 	// open a new timer for next month
 	blocksToNextTimerExpirybytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(blocksToNextTimerExpirybytes, uint64(blocksToNextTimerExpiry))
-	k.refillBlockPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, nil)
+	k.refillBlockPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, []byte{})
 }
 
 // BlocksToNextTimerExpiry is a wrapper function that extracts the timer's expiry block
