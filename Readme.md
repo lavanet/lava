@@ -24,33 +24,36 @@ Lava uses a monorepository structure to unify most of its products in the same l
 ## 💻 Developing on Lava
 
 ### Installing development dependencies
+
 **Note**: Requires [Go 1.20.5](https://golang.org/dl/)
-Before running the scripts, make sure you have go installed and added to $PATH, you can validate by running `which go`
-`init_install` will install all necessary dependencies to develop on lava.
+
+Before running the scripts, make sure you have go installed and added to $PATH, you can validate by running `which go`.
+
+`init_install` will install all necessary dependencies to develop on lava:
 ```bash
 ./scripts/init_install.sh
 ```
 
 ### Building the binaries 
-`install-all` will build all lava binaries (lavad, lavap, lavavisor) and place them in the go bin path on your environment.
+`install-all` will build all lava binaries (lavad, lavap, lavavisor) and place them in the go bin path on your environment:
+
 ```bash
 make install-all
 ```
 
 ### Building the binaries locally
-You can also build the binaries locally (path will be ./build/...) by running 
+You can also build the binaries locally (path will be `./build/...`) by running
 ```bash
 make build-all
 ```
 
 ### Building only a specific binary
-it is possible to also build only one binary, for example lavad only. 
+It is possible to also build only one binary, for example `lavad` only. 
 ```bash
 LAVA_BINARY=lavad make install
 ```
 
-Learn more about installing the binaries on our [docs](https://docs.lavanet.xyz/install-lava)
-Or check out the latest [release](https://github.com/lavanet/lava/releases).
+Learn more about installing the binaries on our [docs](https://docs.lavanet.xyz/install-lava). Or check out the latest [release](https://github.com/lavanet/lava/releases) for precompiled binaries.
 
 ### Add `lavad` autocomplete
 
