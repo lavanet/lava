@@ -14,6 +14,7 @@ parent:
 Lava Protocol is multichain RPC and decentralized web3 APIs that **just freakin' works**! Lava Protocol implements a proof-of-stake (PoS) blockchain based upon [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) with a native LAVA token. Lava is an open network of 30+ blockchains and ecosystems, with a modular and interoperable system for supporting new web3 APIs.
 You can learn more about Lava in the [litepaper](https://litepaper.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme) or by visiting the [Docs](https://docs.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme).
 
+<br />
 
 ## 🧰 Repository Contents
 
@@ -21,15 +22,16 @@ This repository (**@lavanet/lava**) contains the source code for all official la
 
 Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository ([@lavanet/docs](https://github.com/lavanet/docs)).
 
+<br />
+
 ## 💻 Developing on Lava
 
 ### Installing development dependencies
 
 **Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 
-Before running the scripts, make sure you have go installed and added to $PATH, you can validate by running `which go`.
+Before running the scripts, make sure you have `go` installed and added to `$PATH`, you can validate by running `which go`. Running `init_install` will install all necessary dependencies to develop on lava:
 
-`init_install` will install all necessary dependencies to develop on lava:
 ```bash
 ./scripts/init_install.sh
 ```
@@ -48,12 +50,12 @@ make build-all
 ```
 
 ### Building only a specific binary
-It is possible to also build only one binary, for example `lavad` only. 
+It is possible to also build only one binary, for example `lavad` only: 
 ```bash
 LAVA_BINARY=lavad make install
 ```
 
-Learn more about installing the binaries on our [docs](https://docs.lavanet.xyz/install-lava). Or check out the latest [release](https://github.com/lavanet/lava/releases) for precompiled binaries.
+(🪧) Learn more about installing the binaries on our [docs](https://docs.lavanet.xyz/install-lava), or check out the latest [release](https://github.com/lavanet/lava/releases) for precompiled binaries.
 
 ### Add `lavad` autocomplete
 
