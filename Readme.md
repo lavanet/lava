@@ -19,7 +19,7 @@ You can learn more about Lava in the [litepaper](https://litepaper.lavanet.xyz?u
 
 This repository (**@lavanet/lava**) contains the source code for all official lava binaries ([`lavad`](https://github.com/lavanet/lava/tree/main/cmd/lavad), [`lavap`](https://github.com/lavanet/lava/tree/main/cmd/lavap), [`lavavisor`](https://github.com/lavanet/lava/tree/main/cmd/lavavisor)), as well as [LavaSDK](https://github.com/lavanet/lava/tree/main/ecosystem/lava-sdk), and [LavaJS](https://github.com/lavanet/lava/tree/main/ecosystem/lavajs). 
 
-Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository ([@lavanet/docs](https://github.com/lavanet/lava)).
+Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository ([@lavanet/docs](https://github.com/lavanet/docs)).
 
 ## 💻 Developing on Lava
 
