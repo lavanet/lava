@@ -9,14 +9,15 @@ parent:
   <h1> <img src="https://user-images.githubusercontent.com/2770565/223762290-44afc792-8ad4-4dbb-b2c2-532780d6c5de.png" alt="Logo" width="30" height="25"> Lava Network  </h1>
 </div>
 
-![image](https://user-images.githubusercontent.com/2770565/203528359-dced4d06-f020-4b6a-bb5f-319124924689.png)
+![LavaCubicBanner](https://github.com/lavanet/lava/assets/82295340/b902152e-0351-46d4-a82f-dd9ea40e3ecf)
 
 ### What is Lava?
-Lava Protocol is multichain RPC and decentralized web3 APIs that just freakin' works! Lava Protocol implements a proof-of-stake (PoS) blockchain based upon [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) with a native LAVA token. Lava is an open network of 25+ blockchains, with a modular and interoperable system for supporting new web3 APIs.
+Lava Protocol is multichain RPC and decentralized web3 APIs that **just freakin' works**! Lava Protocol implements a proof-of-stake (PoS) blockchain based upon [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) with a native LAVA token. Lava is an open network of 25+ blockchains, with a modular and interoperable system for supporting new web3 APIs.
 You can learn more about Lava in the [litepaper](https://litepaper.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme) or by visiting the [Docs](https://docs.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme).
 
 
 ## Repository Contents
+
 This repository (**@lavanet/lava**) contains the source code for all official lava binaries ([`lavad`](https://github.com/lavanet/lava/tree/main/cmd/lavad), [`lavap`](https://github.com/lavanet/lava/tree/main/cmd/lavap), [`lavavisor`](https://github.com/lavanet/lava/tree/main/cmd/lavavisor)), as well as [LavaSDK](https://github.com/lavanet/lava/tree/main/ecosystem/lava-sdk), and [LavaJS](https://github.com/lavanet/lava/tree/main/ecosystem/lavajs). 
 
 Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository ([@lavanet/docs](https://github.com/lavanet/lava)).
