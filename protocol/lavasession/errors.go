@@ -17,7 +17,7 @@ var ( // Consumer Side Errors
 	NegativeComputeUnitsAmountError                      = sdkerrors.New("NegativeComputeUnitsAmount", 674, "Tried to subtract to negative compute units amount")
 	ReportAndBlockProviderError                          = sdkerrors.New("ReportAndBlockProvider Error", 675, "Report and block the provider")
 	BlockProviderError                                   = sdkerrors.New("BlockProvider Error", 676, "Block the provider")
-	SessionOutOfSyncError                                = sdkerrors.New("SessionOutOfSync Error", 677, "Session went out of sync with the provider")
+	SessionOutOfSyncError                                = sdkerrors.New("SessionOutOfSync Error", 677, "Session went out of sync with the provider") // do no change the name, before also fixing the consumerSessionManager.ts file as it relies on the error message
 	MaximumNumberOfBlockListedSessionsError              = sdkerrors.New("MaximumNumberOfBlockListedSessions Error", 678, "Provider reached maximum number of block listed sessions.")
 	SendRelayError                                       = sdkerrors.New("SendRelay Error", 679, "Failed To Send Relay")
 	DataReliabilityIndexRequestedIsOriginalProviderError = sdkerrors.New("DataReliabilityIndexRequestedIsOriginalProvider Error", 680, "Data reliability session index belongs to the original provider")

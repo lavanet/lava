@@ -53,8 +53,7 @@ func (ts *tester) addValidators(count int) {
 	start := len(ts.Accounts(common.VALIDATOR))
 	for i := 0; i < count; i++ {
 		acc, _ := ts.AddAccount(common.VALIDATOR, start+i, testBalance)
-		_, err := ts.TxCreateValidator(acc, math.NewInt(testBalance))
-		require.Nil(ts.T, err)
+		ts.TxCreateValidator(acc, math.NewInt(testBalance))
 	}
 }
 

@@ -638,6 +638,9 @@ func (csm *ConsumerSessionManager) verifyLock(consumerSession *SingleConsumerSes
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
 		defer consumerSession.lock.Unlock()
+		// if failed to lock we should block session as it seems like a very rare case.
+		consumerSession.BlockListed = true // block this session from future usages
+		utils.LavaFormatError("Verify Lock failed on session Failure, blocking session", nil, utils.LogAttr("consumerSession", consumerSession))
 		return LockMisUseDetectedError
 	}
 	return nil

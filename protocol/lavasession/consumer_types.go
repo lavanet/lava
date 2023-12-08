@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -83,6 +84,7 @@ type Endpoint struct {
 	ConnectionRefusals uint64
 	Addons             map[string]struct{}
 	Extensions         map[string]struct{}
+	Geolocation        planstypes.Geolocation
 }
 
 type SessionWithProvider struct {

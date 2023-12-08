@@ -7,7 +7,6 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
 // Function to validate a plan object fields
@@ -15,12 +14,9 @@ func (p Plan) ValidatePlan() error {
 	if p.GetIndex() == "" {
 		return sdkerrors.Wrap(ErrInvalidPlanIndex, "plan's index can't be empty")
 	}
-	// validate denom is ulava
-	if p.GetPrice().Denom != epochstoragetypes.TokenDenom {
-		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price denom is not in ulava")
-	}
+
 	// check that the plan's price is non-zero
-	if p.GetPrice().IsEqual(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())) {
+	if p.GetPrice().Amount.IsZero() {
 		return sdkerrors.Wrap(ErrInvalidPlanPrice, "plan's price can't be zero")
 	}
 

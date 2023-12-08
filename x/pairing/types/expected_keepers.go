@@ -23,6 +23,7 @@ type SpecKeeper interface {
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool) // this spec is unexpanded don;t use for collections work
 	GetExpectedServicesForExpandedSpec(expandedSpec spectypes.Spec, mandatory bool) map[epochstoragetypes.EndpointService]struct{}
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
+	GetMinStake(ctx sdk.Context, chainID string) sdk.Coin
 }
 
 type EpochstorageKeeper interface {
@@ -100,7 +101,7 @@ type DowntimeKeeper interface {
 }
 
 type DualstakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnly bool) (providerReward math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, err error)
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
 	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
 }
@@ -116,4 +117,5 @@ type TimerStoreKeeper interface {
 type StakingKeeper interface {
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	BondDenom(ctx sdk.Context) string
 }
