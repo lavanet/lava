@@ -11,27 +11,28 @@ parent:
 
 ![LavaCubicBanner](https://github.com/lavanet/lava/assets/82295340/b902152e-0351-46d4-a82f-dd9ea40e3ecf)
 
-### What is Lava?
-Lava Protocol is multichain RPC and decentralized web3 APIs that **just freakin' works**! Lava Protocol implements a proof-of-stake (PoS) blockchain based upon [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) with a native LAVA token. Lava is an open network of 25+ blockchains, with a modular and interoperable system for supporting new web3 APIs.
+Lava Protocol is multichain RPC and decentralized web3 APIs that **just freakin' works**! Lava Protocol implements a proof-of-stake (PoS) blockchain based upon [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) with a native LAVA token. Lava is an open network of 30+ blockchains and ecosystems, with a modular and interoperable system for supporting new web3 APIs.
 You can learn more about Lava in the [litepaper](https://litepaper.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme) or by visiting the [Docs](https://docs.lavanet.xyz?utm_source=github.com&utm_medium=github&utm_campaign=readme).
 
 
-## Repository Contents
+## 🧰 Repository Contents
 
 This repository (**@lavanet/lava**) contains the source code for all official lava binaries ([`lavad`](https://github.com/lavanet/lava/tree/main/cmd/lavad), [`lavap`](https://github.com/lavanet/lava/tree/main/cmd/lavap), [`lavavisor`](https://github.com/lavanet/lava/tree/main/cmd/lavavisor)), as well as [LavaSDK](https://github.com/lavanet/lava/tree/main/ecosystem/lava-sdk), and [LavaJS](https://github.com/lavanet/lava/tree/main/ecosystem/lavajs). 
 
 Lava uses a monorepository structure to unify most of its products in the same location. The source code for Lava's technical documentation website is available in a separate repository ([@lavanet/docs](https://github.com/lavanet/lava)).
 
+## 💻 Developing on Lava
+
 ### Installing development dependencies
 **Note**: Requires [Go 1.20.5](https://golang.org/dl/)
-before running the scripts make sure you have go installed and added to $PATH, you can validate by running `which go`
-init_install will install all necessary dependencies to develop on lava.
+Before running the scripts, make sure you have go installed and added to $PATH, you can validate by running `which go`
+`init_install` will install all necessary dependencies to develop on lava.
 ```bash
 ./scripts/init_install.sh
 ```
 
-## Building the binaries
-install-all will build all lava binaries (lavad, lavap, lavavisor) and place them in the go bin path on your environment.
+### Building the binaries 
+`install-all` will build all lava binaries (lavad, lavap, lavavisor) and place them in the go bin path on your environment.
 ```bash
 make install-all
 ```
@@ -48,14 +49,14 @@ it is possible to also build only one binary, for example lavad only.
 LAVA_BINARY=lavad make install
 ```
 
-
+Learn more about installing the binaries on our [docs](https://docs.lavanet.xyz/install-lava)
 Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
 ### Add `lavad` autocomplete
 
 You can add a useful autocomplete feature to `lavad` with a simple bash [script](https://github.com/lavanet/lava/blob/main/scripts/lavad_auto_completion_install.sh).
 
-### Quick Start
+## 🔥 Quick Start
 
 Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?utm_source=github.com&utm_medium=github&utm_campaign=readme)
 
