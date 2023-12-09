@@ -2,8 +2,10 @@ package monitoring
 
 import (
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/utils/slices"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -37,7 +39,7 @@ func (healthResults *HealthResults) updateLatestBlock(specId string, latestBlock
 	if !ok {
 		healthResults.LatestBlocks[specId] = latestBlock
 	} else {
-		healthResults.LatestBlocks[specId] = max(existing, latestBlock)
+		healthResults.LatestBlocks[specId] = slices.Max([]int64{existing, latestBlock})
 	}
 }
 
@@ -76,9 +78,9 @@ func (healthResults *HealthResults) SetProviderData(providerKey LavaEntity, late
 		if latestData.block == 0 {
 			latestData.block = existing.block
 		} else {
-			latestData.block = min(existing.block, latestData.block)
+			latestData.block = slices.Min([]int64{existing.block, latestData.block})
 		}
-		latestData.latency = max(existing.latency, latestData.latency)
+		latestData.latency = slices.Max([]time.Duration{existing.latency, latestData.latency})
 	}
 	healthResults.ProviderData[providerKey] = latestData
 
