@@ -3,11 +3,13 @@ package monitoring
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gogo/status"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider"
@@ -22,6 +24,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+)
+
+var QueryRetries = uint64(3)
+
+const (
+	BasicQueryRetries = 3
+	QuerySleepTime    = 100 * time.Millisecond
 )
 
 type LavaEntity struct {
@@ -39,16 +48,6 @@ type SubscriptionData struct {
 	UsagePercentageLeftThisMonth float64
 }
 
-type HealthResults struct {
-	LatestBlocks       map[string]uint64
-	ProviderData       map[LavaEntity]ReplyData
-	ConsumerBlocks     map[LavaEntity]uint64
-	SubscriptionsData  map[string]SubscriptionData
-	FrozenProviders    map[LavaEntity]struct{}
-	UnhealthyProviders map[LavaEntity]string
-	Specs              map[string]*spectypes.Spec
-}
-
 func RunHealth(ctx context.Context,
 	clientCtx client.Context,
 	subscriptionAddresses []string,
@@ -58,9 +57,9 @@ func RunHealth(ctx context.Context,
 	prometheusListenAddr string) (*HealthResults, error) {
 	specQuerier := spectypes.NewQueryClient(clientCtx)
 	healthResults := &HealthResults{
-		LatestBlocks:      map[string]uint64{},
+		LatestBlocks:      map[string]int64{},
 		ProviderData:      map[LavaEntity]ReplyData{},
-		ConsumerBlocks:    map[LavaEntity]uint64{},
+		ConsumerBlocks:    map[LavaEntity]int64{},
 		SubscriptionsData: map[string]SubscriptionData{},
 		FrozenProviders:   map[LavaEntity]struct{}{},
 		Specs:             map[string]*spectypes.Spec{},
@@ -69,110 +68,298 @@ func RunHealth(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
+	errCh := make(chan error, 1)
 	currentBlock := resultStatus.SyncInfo.LatestBlockHeight
 	// get a list of all necessary specs for the test
-	necessaryChains := map[string]*spectypes.Spec{}
 	dualStakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
-	for _, providerAddress := range providerAddresses {
-		response, err := dualStakingQuerier.DelegatorProviders(ctx, &dualstakingtypes.QueryDelegatorProvidersRequest{
-			Delegator:   providerAddress,
-			WithPending: false,
-		})
-		if err != nil || response == nil {
-			continue
-		}
-		delegations := response.GetDelegations()
-		for _, delegation := range delegations {
-			if delegation.Provider == providerAddress {
-				necessaryChains[delegation.ChainID] = &spectypes.Spec{}
-				healthResults.ProviderData[LavaEntity{
-					Address: providerAddress,
-					SpecId:  delegation.ChainID,
-				}] = ReplyData{}
-			}
-		}
+	var wgspecs sync.WaitGroup
+	wgspecs.Add(len(providerAddresses))
 
+	processProvider := func(providerAddress string) {
+		defer wgspecs.Done()
+		var err error
+		for i := 0; i < BasicQueryRetries; i++ {
+			var response *dualstakingtypes.QueryDelegatorProvidersResponse
+			queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			response, err = dualStakingQuerier.DelegatorProviders(queryCtx, &dualstakingtypes.QueryDelegatorProvidersRequest{
+				Delegator:   providerAddress,
+				WithPending: false,
+			})
+			cancel()
+			if err != nil || response == nil {
+				time.Sleep(QuerySleepTime)
+				continue
+			}
+			delegations := response.GetDelegations()
+			for _, delegation := range delegations {
+				if delegation.Provider == providerAddress {
+					healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID})
+					healthResults.SetProviderData(LavaEntity{
+						Address: providerAddress,
+						SpecId:  delegation.ChainID,
+					}, ReplyData{})
+				}
+			}
+			return
+		}
+		if err != nil {
+			errCh <- err
+		}
+	}
+
+	for _, providerAddress := range providerAddresses {
+		go processProvider(providerAddress)
 	}
 
 	for _, consumerEndpoint := range consumerEndpoints {
-		necessaryChains[consumerEndpoint.ChainID] = &spectypes.Spec{}
+		healthResults.setSpec(&spectypes.Spec{Index: consumerEndpoint.ChainID})
 	}
 
 	for _, referenceEndpoint := range referenceEndpoints {
-		necessaryChains[referenceEndpoint.ChainID] = &spectypes.Spec{}
+		healthResults.setSpec(&spectypes.Spec{Index: referenceEndpoint.ChainID})
 	}
 
-	// populate the specs
-	for specId := range necessaryChains {
-		specResp, err := specQuerier.SpecRaw(ctx, &spectypes.QueryGetSpecRequest{
-			ChainID: specId,
-		})
-		if err != nil || specResp == nil {
-			return nil, err
-		}
-		spec := specResp.GetSpec()
-		necessaryChains[specId] = &spec
+	wgspecs.Wait()
+	if len(errCh) > 0 {
+		return nil, <-errCh
 	}
-	healthResults.Specs = necessaryChains
+	// add specs
+	specs := healthResults.getSpecs()
+	processSpec := func(specId string) {
+		defer wgspecs.Done()
+		var err error
+		for i := 0; i < BasicQueryRetries; i++ {
+			var specResp *spectypes.QueryGetSpecResponse
+			queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			specResp, err = specQuerier.SpecRaw(queryCtx, &spectypes.QueryGetSpecRequest{
+				ChainID: specId,
+			})
+			cancel()
+			if err != nil || specResp == nil {
+				time.Sleep(QuerySleepTime)
+				continue
+			}
+			spec := specResp.GetSpec()
+			healthResults.setSpec(&spec)
+			return
+		}
+		errCh <- err
+	}
+	wgspecs.Add(len(specs))
+	// populate the specs
+	for specId := range specs {
+		go processSpec(specId)
+	}
+
+	wgspecs.Wait()
+	if len(errCh) > 0 {
+		return nil, <-errCh
+	}
 	pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
 
 	stakeEntries := map[LavaEntity]epochstoragetypes.StakeEntry{}
-
-	// get provider stake entries
-	for specId := range healthResults.Specs {
-		response, err := pairingQuerier.Providers(ctx, &pairingtypes.QueryProvidersRequest{
-			ChainID:    specId,
-			ShowFrozen: true,
-		})
-		if err != nil || response == nil {
-			return nil, err
-		}
-
-		for _, providerEntry := range response.StakeEntry {
-			providerKey := LavaEntity{
-				Address: providerEntry.Address,
-				SpecId:  specId,
+	var mutex sync.Mutex // Mutex to protect concurrent access to stakeEntries
+	wgspecs.Add(len(healthResults.getSpecs()))
+	processSpecProviders := func(specId string) {
+		defer wgspecs.Done()
+		var err error
+		for i := 0; i < BasicQueryRetries; i++ {
+			var response *pairingtypes.QueryProvidersResponse
+			queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			response, err = pairingQuerier.Providers(queryCtx, &pairingtypes.QueryProvidersRequest{
+				ChainID:    specId,
+				ShowFrozen: true,
+			})
+			cancel()
+			if err != nil || response == nil {
+				time.Sleep(QuerySleepTime)
+				continue
 			}
-			if _, ok := healthResults.ProviderData[providerKey]; ok {
-				if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
-					healthResults.FrozenProviders[providerKey] = struct{}{}
-				} else {
-					stakeEntries[providerKey] = providerEntry
+
+			for _, providerEntry := range response.StakeEntry {
+				providerKey := LavaEntity{
+					Address: providerEntry.Address,
+					SpecId:  specId,
 				}
+
+				mutex.Lock() // Lock before updating stakeEntries
+				if _, ok := healthResults.getProviderData(providerKey); ok {
+					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
+						healthResults.FreezeProvider(providerKey)
+					} else {
+						stakeEntries[providerKey] = providerEntry
+					}
+				}
+				mutex.Unlock()
 			}
+			return
+		}
+		if err != nil {
+			errCh <- err
 		}
 	}
-
+	// get provider stake entries
+	for specId := range healthResults.getSpecs() {
+		go processSpecProviders(specId)
+	}
+	wgspecs.Wait()
+	if len(errCh) > 0 {
+		return nil, <-errCh
+	}
 	err = checkSubscriptions(ctx, clientCtx, subscriptionAddresses, healthResults)
 	if err != nil {
 		return nil, err
 	}
 
-	CheckProviders(ctx, clientCtx, healthResults, stakeEntries)
+	err = CheckProviders(ctx, clientCtx, healthResults, stakeEntries)
+	if err != nil {
+		return nil, err
+	}
 
+	err = CheckConsumersAndReferences(ctx, clientCtx, referenceEndpoints, consumerEndpoints, healthResults)
+	if err != nil {
+		return nil, err
+	}
 	return healthResults, nil
+}
+
+func CheckConsumersAndReferences(ctx context.Context,
+	clientCtx client.Context,
+	referenceEndpoints []*lavasession.RPCEndpoint,
+	consumerEndpoints []*lavasession.RPCEndpoint,
+	healthResults *HealthResults) error {
+	// populate data from providers
+	for entry, data := range healthResults.ProviderData {
+		providerBlock := data.block
+		specId := entry.SpecId
+		healthResults.updateLatestBlock(specId, providerBlock)
+	}
+	errCh := make(chan error, 1)
+	queryEndpoint := func(endpoint *lavasession.RPCEndpoint, isReference bool) error {
+		chainParser, err := chainlib.NewChainParser(endpoint.ApiInterface)
+		if err != nil {
+			return err
+		}
+		chainParser.SetSpec(*healthResults.getSpec(endpoint.ChainID))
+		compatibleEndpoint := &lavasession.RPCProviderEndpoint{
+			NetworkAddress: lavasession.NetworkAddressData{},
+			ChainID:        endpoint.ChainID,
+			ApiInterface:   endpoint.ApiInterface,
+			Geolocation:    0,
+			NodeUrls: []common.NodeUrl{
+				{
+					Url: endpoint.NetworkAddress,
+				},
+			},
+		}
+		chainProxy, err := chainlib.GetChainRouter(ctx, 1, compatibleEndpoint, chainParser)
+		if err != nil {
+			return utils.LavaFormatDebug("failed creating chain proxy, continuing with others endpoints", utils.Attribute{Key: "endpoint", Value: compatibleEndpoint})
+		}
+		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, compatibleEndpoint, nil)
+		var latestBlock int64
+		for i := uint64(0); i <= QueryRetries; i++ {
+			sendCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			latestBlock, err = chainFetcher.FetchLatestBlockNum(sendCtx)
+			cancel()
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			if isReference {
+				utils.LavaFormatDebug("failed querying latest block from reference", utils.LogAttr("endpoint", endpoint.String()))
+			} else {
+				healthResults.updateConsumer(endpoint, 0)
+			}
+			return nil
+		}
+		if !isReference {
+			healthResults.updateConsumer(endpoint, latestBlock)
+		}
+		healthResults.updateLatestBlock(endpoint.ChainID, latestBlock)
+		return nil
+	}
+
+	// populate data from references
+	var wg sync.WaitGroup
+	wg.Add(len(referenceEndpoints))
+	wg.Add(len(consumerEndpoints))
+	for _, endpoint := range referenceEndpoints {
+		go func(ep *lavasession.RPCEndpoint) {
+			// Decrement the WaitGroup counter when the goroutine completes
+			defer wg.Done()
+			err := queryEndpoint(ep, true)
+			if err != nil {
+				errCh <- err
+			}
+		}(endpoint)
+	}
+	// query our consumers
+	for _, endpoint := range consumerEndpoints {
+		go func(ep *lavasession.RPCEndpoint) {
+			// Decrement the WaitGroup counter when the goroutine completes
+			defer wg.Done()
+			err := queryEndpoint(ep, false)
+			if err != nil {
+				errCh <- err
+			}
+		}(endpoint)
+	}
+	wg.Wait()
+	if len(errCh) > 0 {
+		return <-errCh
+	}
+	return nil
 }
 
 func checkSubscriptions(ctx context.Context, clientCtx client.Context, subscriptionAddresses []string, healthResults *HealthResults) error {
 	subscriptionQuerier := subscriptiontypes.NewQueryClient(clientCtx)
+	var wg sync.WaitGroup
+	wg.Add(len(subscriptionAddresses))
+	errCh := make(chan error, 1)
 	for _, subscriptionAddr := range subscriptionAddresses {
-		response, err := subscriptionQuerier.Current(ctx, &subscriptiontypes.QueryCurrentRequest{
-			Consumer: subscriptionAddr,
-		})
-		if err != nil {
-			return err
-		}
-		healthResults.SubscriptionsData[subscriptionAddr] = SubscriptionData{
-			FullMonthsLeft:               response.Sub.DurationLeft,
-			UsagePercentageLeftThisMonth: float64(response.Sub.MonthCuLeft) / float64(response.Sub.MonthCuTotal),
-		}
+		go func(addr string) {
+			var err error
+			for i := 0; i < BasicQueryRetries; i++ {
+				var response *subscriptiontypes.QueryCurrentResponse
+				queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				response, err = subscriptionQuerier.Current(queryCtx, &subscriptiontypes.QueryCurrentRequest{
+					Consumer: addr,
+				})
+				cancel()
+				if err != nil {
+					time.Sleep(QuerySleepTime)
+					continue
+				}
+				healthResults.setSubscriptionData(addr, SubscriptionData{
+					FullMonthsLeft:               response.Sub.DurationLeft,
+					UsagePercentageLeftThisMonth: float64(response.Sub.MonthCuLeft) / float64(response.Sub.MonthCuTotal),
+				})
+				break
+			}
+			if err != nil {
+				errCh <- err
+			}
+		}(subscriptionAddr)
+	}
+	wg.Wait()
+	if len(errCh) > 0 {
+		return <-errCh
 	}
 	return nil
 }
 
 func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults *HealthResults, providerEntries map[LavaEntity]epochstoragetypes.StakeEntry) error {
 	protocolQuerier := protocoltypes.NewQueryClient(clientCtx)
-	param, err := protocolQuerier.Params(ctx, &protocoltypes.QueryParamsRequest{})
+	var param *protocoltypes.QueryParamsResponse
+	var err error
+	for i := 0; i < BasicQueryRetries; i++ {
+		param, err = protocolQuerier.Params(ctx, &protocoltypes.QueryParamsRequest{})
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -181,13 +368,17 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 		return err
 	}
 	targetVersion := lvutil.ParseToSemanticVersion(lavaVersion.ProviderTarget)
-	for _, providerEntry := range providerEntries {
+	var wg sync.WaitGroup
+	wg.Add(len(providerEntries))
+
+	checkProviderEndpoints := func(providerEntry epochstoragetypes.StakeEntry) {
+		defer wg.Done()
 		providerKey := LavaEntity{
 			Address: providerEntry.Address,
 			SpecId:  providerEntry.Chain,
 		}
 		for _, endpoint := range providerEntry.Endpoints {
-			checkOneProvider := func(apiInterface string, addon string) (time.Duration, string, int64, error) {
+			checkOneProvider := func(endpoint epochstoragetypes.Endpoint, apiInterface string, addon string, providerEntry epochstoragetypes.StakeEntry) (time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
@@ -237,26 +428,28 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			for _, endpointService := range endpointServices {
-				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpointService.ApiInterface, endpointService.Addon)
+				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpoint, endpointService.ApiInterface, endpointService.Addon, providerEntry)
 				if err != nil {
-					healthResults.UnhealthyProviders[providerKey] = err.Error()
+					healthResults.SetUnhealthyProvider(providerKey, err.Error())
 					continue
 				}
 				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
 				if lvutil.IsVersionLessThan(parsedVer, targetVersion) || lvutil.IsVersionGreaterThan(parsedVer, targetVersion) {
-					healthResults.UnhealthyProviders[providerKey] = "Version:" + version + " should be: " + lavaVersion.ProviderTarget
+					healthResults.SetUnhealthyProvider(providerKey, "Version:"+version+" should be: "+lavaVersion.ProviderTarget)
 					continue
 				}
 				latestData := ReplyData{
 					block:   latestBlockFromProbe,
 					latency: probeLatency,
 				}
-				if existing, ok := healthResults.ProviderData[providerKey]; ok {
-					latestData.block = min(existing.block, latestBlockFromProbe)
-				}
-				healthResults.ProviderData[providerKey] = latestData
+				healthResults.SetProviderData(providerKey, latestData)
 			}
 		}
 	}
+
+	for _, providerEntry := range providerEntries {
+		go checkProviderEndpoints(providerEntry)
+	}
+	wg.Wait()
 	return nil
 }

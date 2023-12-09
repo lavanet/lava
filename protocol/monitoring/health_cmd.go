@@ -27,6 +27,8 @@ const (
 	ConsumerEndpointPropertyName      = "consumer_endpoints"
 	ReferenceEndpointPropertyName     = "reference_endpoints"
 	allowedBlockTimeLagFlagName       = "allowed_time_lag"
+	QueryRetriesFlagName              = "query-retries"
+	RunLabelFlagName                  = "run-label"
 	allowedBlockTimeDefaultLag        = 30 * time.Second
 )
 
@@ -108,6 +110,7 @@ reference_endpoints:
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			rand.InitRandomSeed()
+			runLabel := viper.GetString(RunLabelFlagName)
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			providerAddresses := viper.GetStringSlice(ProviderAddressesPropertyName)
 			subscriptionAddresses := viper.GetStringSlice(SubscriptionAddressesPropertyName)
@@ -116,8 +119,25 @@ reference_endpoints:
 			keyName = ReferenceEndpointPropertyName
 			referenceEndpoints, _ := ParseEndpoints(keyName, viper.GetViper())
 			interval := viper.GetDuration(intervalFlagName)
+			healthMetrics := metrics.NewHealthMetrics(prometheusListenAddr)
+			RunHealthCheck := func(ctx context.Context,
+				clientCtx client.Context,
+				subscriptionAddresses []string,
+				providerAddresses []string,
+				consumerEndpoints []*lavasession.RPCEndpoint,
+				referenceEndpoints []*lavasession.RPCEndpoint,
+				prometheusListenAddr string) {
+				healthResult, err := RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
+				if err != nil {
+					utils.LavaFormatError("invalid health run", err)
+					healthMetrics.SetFailedRun(runLabel)
+				} else {
+					CheckHealthResults(healthResult)
+					healthMetrics.SetSuccess(runLabel)
+				}
+			}
 
-			RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
+			RunHealthCheck(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 
 			var ticker *time.Ticker
 			if interval > 0*time.Second {
@@ -130,7 +150,7 @@ reference_endpoints:
 			for {
 				select {
 				case <-ticker.C:
-					RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
+					RunHealthCheck(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 				case <-ctx.Done():
 					utils.LavaFormatInfo("health ctx.Done")
 					return nil
@@ -142,11 +162,19 @@ reference_endpoints:
 
 		},
 	}
+	cmdTestHealth.Flags().String(RunLabelFlagName, "", "a label to add to this health checker to differentiate different sources")
 	cmdTestHealth.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdTestHealth.Flags().Duration(intervalFlagName, intervalDefaultDuration, "the interval duration for the health check, (defaults to 0s) if 0 runs once")
 	cmdTestHealth.Flags().Duration(allowedBlockTimeLagFlagName, allowedBlockTimeDefaultLag, "the amount of time one rpc can be behind the most advanced one")
+	cmdTestHealth.Flags().Uint64Var(&QueryRetries, QueryRetriesFlagName, QueryRetries, "set the amount of max queries to send every health run to consumers and references")
+	viper.BindPFlag(QueryRetriesFlagName, cmdTestHealth.Flags().Lookup(QueryRetriesFlagName)) // bind the flag
 	flags.AddQueryFlagsToCmd(cmdTestHealth)
 	common.AddRollingLogConfig(cmdTestHealth)
-
+	// add prefix config
+	// add monitoring endpoint
+	// add the ability to quiet it down
+	// add prometheus
+	// add health run times
+	// add latest health results to prom
 	return cmdTestHealth
 }
