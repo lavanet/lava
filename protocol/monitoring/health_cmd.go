@@ -29,6 +29,7 @@ const (
 	allowedBlockTimeLagFlagName       = "allowed_time_lag"
 	QueryRetriesFlagName              = "query-retries"
 	RunLabelFlagName                  = "run-label"
+	AlertingWebHookFlagName           = "alert-webhook-url"
 	allowedBlockTimeDefaultLag        = 30 * time.Second
 )
 
@@ -40,7 +41,7 @@ func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*
 	return
 }
 
-func CreateTestHealthCobraCommand() *cobra.Command {
+func CreateHealthCobraCommand() *cobra.Command {
 	cmdTestHealth := &cobra.Command{
 		Use:   `health config_file`,
 		Short: `start monitoring the health of the protocol processes defined in the config`,
@@ -120,6 +121,12 @@ reference_endpoints:
 			referenceEndpoints, _ := ParseEndpoints(keyName, viper.GetViper())
 			interval := viper.GetDuration(intervalFlagName)
 			healthMetrics := metrics.NewHealthMetrics(prometheusListenAddr)
+			alertingOptions := AlertingOptions{
+				Url:        viper.GetString(AlertingWebHookFlagName),
+				Logging:    false,
+				Identifier: "",
+			}
+			alerting := NewAlerting(alertingOptions)
 			RunHealthCheck := func(ctx context.Context,
 				clientCtx client.Context,
 				subscriptionAddresses []string,
@@ -132,7 +139,7 @@ reference_endpoints:
 					utils.LavaFormatError("invalid health run", err)
 					healthMetrics.SetFailedRun(runLabel)
 				} else {
-					CheckHealthResults(healthResult)
+					alerting.CheckHealthResults(healthResult)
 					healthMetrics.SetSuccess(runLabel)
 				}
 			}
@@ -162,6 +169,7 @@ reference_endpoints:
 
 		},
 	}
+	cmdTestHealth.Flags().String(AlertingWebHookFlagName, "", "a url to post an alert to")
 	cmdTestHealth.Flags().String(RunLabelFlagName, "", "a label to add to this health checker to differentiate different sources")
 	cmdTestHealth.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdTestHealth.Flags().Duration(intervalFlagName, intervalDefaultDuration, "the interval duration for the health check, (defaults to 0s) if 0 runs once")

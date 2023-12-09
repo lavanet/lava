@@ -19,6 +19,8 @@ type HealthResults struct {
 }
 
 func (healthResults *HealthResults) FreezeProvider(providerKey LavaEntity) {
+	healthResults.Lock.Lock()
+	defer healthResults.Lock.Unlock()
 	healthResults.FrozenProviders[providerKey] = struct{}{}
 }
 

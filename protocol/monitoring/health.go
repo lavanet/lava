@@ -46,6 +46,7 @@ type ReplyData struct {
 type SubscriptionData struct {
 	FullMonthsLeft               uint64
 	UsagePercentageLeftThisMonth float64
+	DurationLeft                 time.Duration
 }
 
 func RunHealth(ctx context.Context,
@@ -332,9 +333,15 @@ func checkSubscriptions(ctx context.Context, clientCtx client.Context, subscript
 					time.Sleep(QuerySleepTime)
 					continue
 				}
+				fullMonthsLeft := uint64(0)
+				if response.Sub.DurationLeft > 0 {
+					// DurationLeft is 0 when expired only, it is 1 for the last month
+					fullMonthsLeft = response.Sub.DurationLeft - 1
+				}
 				healthResults.setSubscriptionData(addr, SubscriptionData{
-					FullMonthsLeft:               response.Sub.DurationLeft,
+					FullMonthsLeft:               fullMonthsLeft,
 					UsagePercentageLeftThisMonth: float64(response.Sub.MonthCuLeft) / float64(response.Sub.MonthCuTotal),
+					DurationLeft:                 time.Until(time.Unix(int64(response.Sub.MonthExpiryTime), 0)),
 				})
 				break
 			}
