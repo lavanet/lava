@@ -16,6 +16,7 @@ type HealthResults struct {
 	SubscriptionsData  map[string]SubscriptionData
 	FrozenProviders    map[LavaEntity]struct{}
 	UnhealthyProviders map[LavaEntity]string
+	UnhealthyConsumers map[LavaEntity]string
 	Specs              map[string]*spectypes.Spec
 	Lock               sync.RWMutex
 }
@@ -41,6 +42,19 @@ func (healthResults *HealthResults) updateLatestBlock(specId string, latestBlock
 	} else {
 		healthResults.LatestBlocks[specId] = slices.Max([]int64{existing, latestBlock})
 	}
+}
+
+func (healthResults *HealthResults) updateConsumerError(endpoint *lavasession.RPCEndpoint, err error) {
+	healthResults.Lock.Lock()
+	defer healthResults.Lock.Unlock()
+	healthResults.ConsumerBlocks[LavaEntity{
+		Address: endpoint.String(),
+		SpecId:  endpoint.ChainID,
+	}] = 0
+	healthResults.UnhealthyConsumers[LavaEntity{
+		Address: endpoint.String(),
+		SpecId:  endpoint.ChainID,
+	}] = err.Error()
 }
 
 func (healthResults *HealthResults) updateConsumer(endpoint *lavasession.RPCEndpoint, latestBlock int64) {

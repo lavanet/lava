@@ -58,12 +58,14 @@ func RunHealth(ctx context.Context,
 	prometheusListenAddr string) (*HealthResults, error) {
 	specQuerier := spectypes.NewQueryClient(clientCtx)
 	healthResults := &HealthResults{
-		LatestBlocks:      map[string]int64{},
-		ProviderData:      map[LavaEntity]ReplyData{},
-		ConsumerBlocks:    map[LavaEntity]int64{},
-		SubscriptionsData: map[string]SubscriptionData{},
-		FrozenProviders:   map[LavaEntity]struct{}{},
-		Specs:             map[string]*spectypes.Spec{},
+		LatestBlocks:       map[string]int64{},
+		ProviderData:       map[LavaEntity]ReplyData{},
+		ConsumerBlocks:     map[LavaEntity]int64{},
+		SubscriptionsData:  map[string]SubscriptionData{},
+		FrozenProviders:    map[LavaEntity]struct{}{},
+		UnhealthyProviders: map[LavaEntity]string{},
+		UnhealthyConsumers: map[LavaEntity]string{},
+		Specs:              map[string]*spectypes.Spec{},
 	}
 	resultStatus, err := clientCtx.Client.Status(ctx)
 	if err != nil {
@@ -271,7 +273,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 			if isReference {
 				utils.LavaFormatDebug("failed querying latest block from reference", utils.LogAttr("endpoint", endpoint.String()))
 			} else {
-				healthResults.updateConsumer(endpoint, 0)
+				healthResults.updateConsumerError(endpoint, err)
 			}
 			return nil
 		}
