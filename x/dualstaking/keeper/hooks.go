@@ -46,7 +46,7 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	if RedelegationFlag {
+	if DisableDualstakingHook {
 		return nil
 	}
 
@@ -142,7 +142,7 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 }
 
 func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	if RedelegationFlag {
+	if DisableDualstakingHook {
 		return nil
 	}
 
