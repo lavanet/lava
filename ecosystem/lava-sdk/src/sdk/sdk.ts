@@ -329,6 +329,14 @@ export class LavaSDK {
           continue;
         }
 
+        if (!apiInterfaceSpecification.includes(apiInterface)) {
+          Logger.debug(
+            "Skipping API Interface as its not mentioned in apiSpecification: ",
+            apiInterface
+          );
+          continue;
+        }
+
         // in case we have rest - POST + rest - GET collections this will prevent us from adding the same chainId and apiInterface twice
         if (
           !(
@@ -411,6 +419,24 @@ export class LavaSDK {
         this.rpcConsumerServerRouter.set(
           this.getRouterKey(chainId, apiInterface),
           rpcConsumerServer
+        );
+      }
+
+      if (this.rpcConsumerServerRouter.size < 1) {
+        const skippedApiInterfaces: Array<string | undefined> = [];
+        apiCollectionList.forEach((collection) => {
+          skippedApiInterfaces.push(
+            collection.getCollectionData()?.getApiInterface()
+          );
+        });
+
+        Logger.warn(
+          "unexpected behavior rpcConsumerServerRouter size is smaller than 1 while finished initializing",
+          chainId,
+          "skipped initializing the following Api interfaces",
+          skippedApiInterfaces,
+          "VS your api specification",
+          apiInterfaceSpecification
         );
       }
     }
@@ -544,7 +570,9 @@ export class LavaSDK {
         rpcConsumerServer.message,
         "Check you initialized the chains properly",
         "Chain Requested",
-        options?.chainId ?? JSON.stringify(this.rpcConsumerServerRouter.keys())
+        options?.chainId,
+        "Chains stored:",
+        JSON.stringify(this.rpcConsumerServerRouter.keys())
       );
     }
 
