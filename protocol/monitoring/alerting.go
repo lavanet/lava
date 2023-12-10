@@ -44,7 +44,7 @@ type AlertingOptions struct {
 	AllowedTimeGapVsReference     time.Duration
 	MaxProviderLatency            time.Duration
 	SameAlertInterval             time.Duration
-	SendSameAlertWithoutInterval  bool
+	DisableAlertSuppression       bool
 	SuppressionCounterThreshold   uint64
 }
 
@@ -97,7 +97,10 @@ func NewAlerting(options AlertingOptions) *Alerting {
 	al.allowedTimeGapVsReference = options.AllowedTimeGapVsReference
 	al.maxProviderLatency = options.MaxProviderLatency
 	al.suppressionCounterThreshold = options.SuppressionCounterThreshold
-	if !options.SendSameAlertWithoutInterval {
+	if options.DisableAlertSuppression {
+		al.sameAlertInterval = 0
+		al.suppressionCounterThreshold = 0
+	} else {
 		if options.SameAlertInterval != 0 {
 			al.sameAlertInterval = options.SameAlertInterval
 		} else {
@@ -108,8 +111,6 @@ func NewAlerting(options AlertingOptions) *Alerting {
 			utils.LavaFormatFatal("failed setting up cache for queries", err)
 		}
 		al.AlertsCache = cache
-	} else {
-		al.sameAlertInterval = 0
 	}
 	return al
 }

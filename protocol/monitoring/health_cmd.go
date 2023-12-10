@@ -20,27 +20,29 @@ import (
 )
 
 const (
-	allowedBlockTimeDefaultLag       = 30 * time.Second
-	intervalDefaultDuration          = 0 * time.Second
-	defaultCUPercentageThreshold     = 0.2
-	defaultSubscriptionLeftDays      = 10
-	defaultMaxProviderLatency        = 200 * time.Millisecond
-	defaultAlertSuppressionInterval  = 6 * time.Hour
-	maxProviderLatencyFlagName       = "max-provider-latency"
-	subscriptionLeftTimeFlagName     = "subscription-days-left-alert"
-	providerAddressesFlagName        = "provider_addresses"
-	subscriptionAddressesFlagName    = "subscription_addresses"
-	intervalFlagName                 = "interval"
-	consumerEndpointPropertyName     = "consumer_endpoints"
-	referenceEndpointPropertyName    = "reference_endpoints"
-	allowedBlockTimeLagFlagName      = "allowed_time_lag"
-	queryRetriesFlagName             = "query-retries"
-	runLabelFlagName                 = "run-label"
-	alertingWebHookFlagName          = "alert-webhook-url"
-	identifierFlagName               = "identifier"
-	percentageCUFlagName             = "cu-percent-threshold"
-	alertSuppressionIntervalFlagName = "alert-suppression-interval"
-	disableAlertSuppressionFlagName  = "disable-alert-suppression"
+	allowedBlockTimeDefaultLag        = 30 * time.Second
+	intervalDefaultDuration           = 0 * time.Second
+	defaultCUPercentageThreshold      = 0.2
+	defaultSubscriptionLeftDays       = 10
+	defaultMaxProviderLatency         = 200 * time.Millisecond
+	defaultAlertSuppressionInterval   = 6 * time.Hour
+	DefaultSuppressionCountThreshold  = 3
+	maxProviderLatencyFlagName        = "max-provider-latency"
+	subscriptionLeftTimeFlagName      = "subscription-days-left-alert"
+	providerAddressesFlagName         = "provider_addresses"
+	subscriptionAddressesFlagName     = "subscription_addresses"
+	intervalFlagName                  = "interval"
+	consumerEndpointPropertyName      = "consumer_endpoints"
+	referenceEndpointPropertyName     = "reference_endpoints"
+	allowedBlockTimeLagFlagName       = "allowed_time_lag"
+	queryRetriesFlagName              = "query-retries"
+	runLabelFlagName                  = "run-label"
+	alertingWebHookFlagName           = "alert-webhook-url"
+	identifierFlagName                = "identifier"
+	percentageCUFlagName              = "cu-percent-threshold"
+	alertSuppressionIntervalFlagName  = "alert-suppression-interval"
+	disableAlertSuppressionFlagName   = "disable-alert-suppression"
+	SuppressionCountThresholdFlagName = "suppression-alert-count-threshold"
 )
 
 func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*lavasession.RPCEndpoint, err error) {
@@ -140,7 +142,8 @@ reference_endpoints:
 				AllowedTimeGapVsReference:     viper.GetDuration(allowedBlockTimeLagFlagName),
 				MaxProviderLatency:            viper.GetDuration(maxProviderLatencyFlagName),
 				SameAlertInterval:             viper.GetDuration(alertSuppressionIntervalFlagName),
-				SendSameAlertWithoutInterval:  viper.GetBool(disableAlertSuppressionFlagName),
+				DisableAlertSuppression:       viper.GetBool(disableAlertSuppressionFlagName),
+				SuppressionCounterThreshold:   viper.GetUint64(SuppressionCountThresholdFlagName),
 			}
 			alerting := NewAlerting(alertingOptions)
 			RunHealthCheck := func(ctx context.Context,
@@ -187,7 +190,7 @@ reference_endpoints:
 			}
 		},
 	}
-
+	cmdTestHealth.Flags().Uint64(SuppressionCountThresholdFlagName, DefaultSuppressionCountThreshold, "how many consecutive alerts need to be triggered so an alert is emitted")
 	cmdTestHealth.Flags().Bool(disableAlertSuppressionFlagName, false, "if set to true, this will disable alert suppression and send all alerts every health run")
 	cmdTestHealth.Flags().Duration(alertSuppressionIntervalFlagName, defaultAlertSuppressionInterval, "interval of time in which the same alert won't be triggered")
 	cmdTestHealth.Flags().Duration(maxProviderLatencyFlagName, defaultMaxProviderLatency, "the maximum allowed provider latency, above which it will alert")
