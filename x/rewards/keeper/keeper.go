@@ -115,19 +115,17 @@ func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte, data []byte) {
 	if monthsLeft != 0 {
 		validatorPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)
 		monthlyQuota[0] = monthlyQuota[0].AddAmount(validatorPoolBalance.QuoRaw(int64(monthsLeft)))
-	}
-	err = k.bankKeeper.SendCoinsFromModuleToModule(
-		ctx,
-		string(types.ValidatorsRewardsPoolName),
-		string(types.ValidatorsBlockRewardsPoolName),
-		monthlyQuota,
-	)
-	if err != nil {
-		panic(err)
-	}
 
-	// update the month left
-	if monthsLeft != 0 {
+		err = k.bankKeeper.SendCoinsFromModuleToModule(
+			ctx,
+			string(types.ValidatorsRewardsPoolName),
+			string(types.ValidatorsBlockRewardsPoolName),
+			monthlyQuota,
+		)
+		if err != nil {
+			panic(err)
+		}
+
 		monthsLeft -= 1
 	}
 
