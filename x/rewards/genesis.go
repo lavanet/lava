@@ -13,6 +13,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	k.SetParams(ctx, genState.Params)
 	// TODO yarom: add base pay and timerstore
 	k.SetNextMonthRewardTime(ctx)
+	k.RefillRewardsPool(ctx, nil)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
