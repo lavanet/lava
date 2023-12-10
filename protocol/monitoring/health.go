@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,10 @@ const (
 type LavaEntity struct {
 	Address string
 	SpecId  string
+}
+
+func (e *LavaEntity) String() string {
+	return fmt.Sprintf("%s|%s", e.Address, e.SpecId)
 }
 
 type ReplyData struct {

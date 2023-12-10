@@ -20,17 +20,27 @@ import (
 )
 
 const (
-	ProviderAddressesPropertyName     = "provider_addresses"
-	SubscriptionAddressesPropertyName = "subscription_addresses"
-	intervalFlagName                  = "interval"
-	intervalDefaultDuration           = 0 * time.Second
-	ConsumerEndpointPropertyName      = "consumer_endpoints"
-	ReferenceEndpointPropertyName     = "reference_endpoints"
-	allowedBlockTimeLagFlagName       = "allowed_time_lag"
-	QueryRetriesFlagName              = "query-retries"
-	RunLabelFlagName                  = "run-label"
-	AlertingWebHookFlagName           = "alert-webhook-url"
-	allowedBlockTimeDefaultLag        = 30 * time.Second
+	allowedBlockTimeDefaultLag       = 30 * time.Second
+	intervalDefaultDuration          = 0 * time.Second
+	defaultCUPercentageThreshold     = 0.2
+	defaultSubscriptionLeftDays      = 10
+	defaultMaxProviderLatency        = 200 * time.Millisecond
+	defaultAlertSuppressionInterval  = 6 * time.Hour
+	maxProviderLatencyFlagName       = "max-provider-latency"
+	subscriptionLeftTimeFlagName     = "subscription-days-left-alert"
+	providerAddressesFlagName        = "provider_addresses"
+	subscriptionAddressesFlagName    = "subscription_addresses"
+	intervalFlagName                 = "interval"
+	consumerEndpointPropertyName     = "consumer_endpoints"
+	referenceEndpointPropertyName    = "reference_endpoints"
+	allowedBlockTimeLagFlagName      = "allowed_time_lag"
+	queryRetriesFlagName             = "query-retries"
+	runLabelFlagName                 = "run-label"
+	alertingWebHookFlagName          = "alert-webhook-url"
+	identifierFlagName               = "identifier"
+	percentageCUFlagName             = "cu-percent-threshold"
+	alertSuppressionIntervalFlagName = "alert-suppression-interval"
+	disableAlertSuppressionFlagName  = "disable-alert-suppression"
 )
 
 func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*lavasession.RPCEndpoint, err error) {
@@ -111,20 +121,26 @@ reference_endpoints:
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			rand.InitRandomSeed()
-			runLabel := viper.GetString(RunLabelFlagName)
+			runLabel := viper.GetString(runLabelFlagName)
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
-			providerAddresses := viper.GetStringSlice(ProviderAddressesPropertyName)
-			subscriptionAddresses := viper.GetStringSlice(SubscriptionAddressesPropertyName)
-			keyName := ConsumerEndpointPropertyName
+			providerAddresses := viper.GetStringSlice(providerAddressesFlagName)
+			subscriptionAddresses := viper.GetStringSlice(subscriptionAddressesFlagName)
+			keyName := consumerEndpointPropertyName
 			consumerEndpoints, _ := ParseEndpoints(keyName, viper.GetViper())
-			keyName = ReferenceEndpointPropertyName
+			keyName = referenceEndpointPropertyName
 			referenceEndpoints, _ := ParseEndpoints(keyName, viper.GetViper())
 			interval := viper.GetDuration(intervalFlagName)
 			healthMetrics := metrics.NewHealthMetrics(prometheusListenAddr)
 			alertingOptions := AlertingOptions{
-				Url:        viper.GetString(AlertingWebHookFlagName),
-				Logging:    false,
-				Identifier: "",
+				Url:                           viper.GetString(alertingWebHookFlagName),
+				Logging:                       false,
+				Identifier:                    viper.GetString(identifierFlagName),
+				SubscriptionCUPercentageAlert: viper.GetFloat64(percentageCUFlagName),
+				SubscriptionLeftTimeAlert:     time.Duration(viper.GetUint64(subscriptionLeftTimeFlagName)) * time.Hour * 24,
+				AllowedTimeGapVsReference:     viper.GetDuration(allowedBlockTimeLagFlagName),
+				MaxProviderLatency:            viper.GetDuration(maxProviderLatencyFlagName),
+				SameAlertInterval:             viper.GetDuration(alertSuppressionIntervalFlagName),
+				SendSameAlertWithoutInterval:  viper.GetBool(disableAlertSuppressionFlagName),
 			}
 			alerting := NewAlerting(alertingOptions)
 			RunHealthCheck := func(ctx context.Context,
@@ -141,6 +157,7 @@ reference_endpoints:
 					healthMetrics.SetFailedRun(runLabel)
 				} else {
 					alerting.CheckHealthResults(healthResult)
+					activeAlerts := alerting.ActiveAlerts()
 					healthMetrics.SetSuccess(runLabel)
 				}
 			}
@@ -169,13 +186,20 @@ reference_endpoints:
 			}
 		},
 	}
-	cmdTestHealth.Flags().String(AlertingWebHookFlagName, "", "a url to post an alert to")
-	cmdTestHealth.Flags().String(RunLabelFlagName, "", "a label to add to this health checker to differentiate different sources")
+
+	cmdTestHealth.Flags().Bool(disableAlertSuppressionFlagName, false, "if set to true, this will disable alert suppression and send all alerts every health run")
+	cmdTestHealth.Flags().Duration(alertSuppressionIntervalFlagName, defaultAlertSuppressionInterval, "interval of time in which the same alert won't be triggered")
+	cmdTestHealth.Flags().Duration(maxProviderLatencyFlagName, defaultMaxProviderLatency, "the maximum allowed provider latency, above which it will alert")
+	cmdTestHealth.Flags().Uint64(subscriptionLeftTimeFlagName, defaultSubscriptionLeftDays, "the amount of days left in a subscription to trigger an alert")
+	cmdTestHealth.Flags().Float64(percentageCUFlagName, defaultCUPercentageThreshold, "the left cu percentage threshold to trigger a subscription alert")
+	cmdTestHealth.Flags().String(identifierFlagName, "", "an identifier to this instance of health added to all alerts")
+	cmdTestHealth.Flags().String(alertingWebHookFlagName, "", "a url to post an alert to")
+	cmdTestHealth.Flags().String(runLabelFlagName, "", "a label to add to this health checker to differentiate different sources")
 	cmdTestHealth.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdTestHealth.Flags().Duration(intervalFlagName, intervalDefaultDuration, "the interval duration for the health check, (defaults to 0s) if 0 runs once")
 	cmdTestHealth.Flags().Duration(allowedBlockTimeLagFlagName, allowedBlockTimeDefaultLag, "the amount of time one rpc can be behind the most advanced one")
-	cmdTestHealth.Flags().Uint64Var(&QueryRetries, QueryRetriesFlagName, QueryRetries, "set the amount of max queries to send every health run to consumers and references")
-	viper.BindPFlag(QueryRetriesFlagName, cmdTestHealth.Flags().Lookup(QueryRetriesFlagName)) // bind the flag
+	cmdTestHealth.Flags().Uint64Var(&QueryRetries, queryRetriesFlagName, QueryRetries, "set the amount of max queries to send every health run to consumers and references")
+	viper.BindPFlag(queryRetriesFlagName, cmdTestHealth.Flags().Lookup(queryRetriesFlagName)) // bind the flag
 	flags.AddQueryFlagsToCmd(cmdTestHealth)
 	common.AddRollingLogConfig(cmdTestHealth)
 	// add prefix config

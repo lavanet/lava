@@ -46,6 +46,16 @@ type AlertingOptions struct {
 	SendSameAlertWithoutInterval  bool
 }
 
+type AlertAttribute struct {
+	entity LavaEntity
+	data   string
+}
+
+type AlertEntry struct {
+	alertType string
+	entity    LavaEntity
+}
+
 type Alerting struct {
 	url                           string
 	logging                       bool
@@ -56,10 +66,15 @@ type Alerting struct {
 	maxProviderLatency            time.Duration
 	sameAlertInterval             time.Duration
 	AlertsCache                   *ristretto.Cache
+	activeAlerts                  map[AlertEntry]uint64 // count how many occurrences of an alert
+	healthy                       map[AlertEntry]struct{}
 }
 
 func NewAlerting(options AlertingOptions) *Alerting {
-	al := &Alerting{}
+	al := &Alerting{
+		activeAlerts: map[AlertEntry]uint64{},
+		healthy:      map[AlertEntry]struct{}{},
+	}
 	if options.Url != "" {
 		al.url = options.Url
 	}
@@ -88,6 +103,59 @@ func NewAlerting(options AlertingOptions) *Alerting {
 		al.sameAlertInterval = 0
 	}
 	return al
+}
+
+func (al *Alerting) AddNewAlert(alert string, attributes []AlertAttribute) {
+	for _, attr := range attributes {
+		alertEntity := AlertEntry{
+			alertType: alert,
+			entity:    attr.entity,
+		}
+		occurences, ok := al.activeAlerts[alertEntity]
+	}
+}
+
+// func (al *Alerting) SendAlert(alert string, attrs []utils.Attribute) {
+func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
+	// check for occurrence suppression
+	suppressed := al.AddNewAlert(alert, attributes)
+	if suppressed {
+		return
+	}
+	attrs := []utils.Attribute{}
+	for _, attr := range attributes {
+		attrs = append(attrs, utils.LogAttr(attr.entity.String(), attr.data))
+	}
+	if al.identifier != "" {
+		attrs = append(attrs, utils.LogAttr("identifier", al.identifier))
+	}
+
+	if al.sameAlertInterval > 0 && al.AlertsCache != nil {
+		slices.SortStableFunc(attrs, func(attr1, attr2 utils.Attribute) bool {
+			return attr1.Key < attr2.Key
+		})
+		hashStr := string(sigs.HashMsg([]byte(fmt.Sprintf("%s %v", alert, attrs))))
+		storedVal, found := al.AlertsCache.Get(hashStr)
+		if found {
+			// was already in the cache
+			storedTime, ok := storedVal.(time.Time)
+			if !ok {
+				utils.LavaFormatFatal("invalid usage of cache", nil, utils.Attribute{Key: "storedVal", Value: storedVal})
+			}
+			if !time.Now().After(storedTime.Add(al.sameAlertInterval)) {
+				// filter this alert
+				return
+			}
+		}
+		al.AlertsCache.SetWithTTL(hashStr, time.Now(), 1, al.sameAlertInterval)
+	}
+
+	if al.logging {
+		utils.LavaFormatError(alert, nil, attrs...)
+	}
+	if al.url != "" {
+		al.SendUrlAlert(alert, attrs)
+	}
 }
 
 func (al *Alerting) SendUrlAlert(alert string, attrs []utils.Attribute) error {
@@ -135,47 +203,12 @@ func (al *Alerting) SendUrlAlert(alert string, attrs []utils.Attribute) error {
 	return nil
 }
 
-func (al *Alerting) SendAlert(alert string, attrs []utils.Attribute) {
-	if al.identifier != "" {
-		attrs = append(attrs, utils.LogAttr("identifier", al.identifier))
-	}
-
-	if al.sameAlertInterval > 0 && al.AlertsCache != nil {
-		slices.SortStableFunc(attrs, func(attr1, attr2 utils.Attribute) bool {
-			return attr1.Key < attr2.Key
-		})
-		hashStr := string(sigs.HashMsg([]byte(fmt.Sprintf("%s %v", alert, attrs))))
-		storedVal, found := al.AlertsCache.Get(hashStr)
-		if found {
-			// was already in the cache
-			storedTime, ok := storedVal.(time.Time)
-			if !ok {
-				utils.LavaFormatFatal("invalid usage of cache", nil, utils.Attribute{Key: "storedVal", Value: storedVal})
-			}
-			if !time.Now().After(storedTime.Add(al.sameAlertInterval)) {
-				// filter this alert
-				return
-			}
-		}
-		al.AlertsCache.SetWithTTL(hashStr, time.Now(), 1, al.sameAlertInterval)
-	}
-
-	if al.logging {
-		utils.LavaFormatError(alert, nil, attrs...)
-	}
-	if al.url != "" {
-		al.SendUrlAlert(alert, attrs)
-	}
-}
-
 func (al *Alerting) SendFrozenProviders(frozenProviders map[LavaEntity]struct{}) {
 	providers := map[string][]string{}
-	attrs := []utils.Attribute{}
+	attrs := []AlertAttribute{}
 	for frozen := range frozenProviders {
+		attrs = append(attrs, AlertAttribute{entity: frozen, data: "frozen"})
 		providers[frozen.Address] = append(providers[frozen.Address], frozen.SpecId)
-	}
-	for providerAddr, chains := range providers {
-		attrs = append(attrs, utils.LogAttr(providerAddr, strings.Join(chains, ",")))
 	}
 	if len(attrs) > 0 {
 		al.SendAlert(FrozenProviderAttribute, attrs)
@@ -183,9 +216,9 @@ func (al *Alerting) SendFrozenProviders(frozenProviders map[LavaEntity]struct{})
 }
 
 func (al *Alerting) UnhealthyProviders(unhealthy map[LavaEntity]string) {
-	attrs := []utils.Attribute{}
+	attrs := []AlertAttribute{}
 	for provider, errSt := range unhealthy {
-		attrs = append(attrs, utils.LogAttr(provider.Address, fmt.Sprintf("spec: %s, err: %s", provider.SpecId, errSt)))
+		attrs = append(attrs, AlertAttribute{entity: provider, data: errSt})
 	}
 	if len(attrs) > 0 {
 		al.SendAlert(UnhealthyProviderAttribute, attrs)
@@ -212,10 +245,10 @@ func (al *Alerting) ShouldAlertSubscription(data SubscriptionData) (reason strin
 }
 
 func (al *Alerting) CheckSubscriptionData(subs map[string]SubscriptionData) {
-	attrs := []utils.Attribute{}
+	attrs := []AlertAttribute{}
 	for subscriptionAddr, data := range subs {
 		if reason, alert := al.ShouldAlertSubscription(data); alert {
-			attrs = append(attrs, utils.LogAttr(subscriptionAddr, reason))
+			attrs = append(attrs, AlertAttribute{entity: LavaEntity{Address: subscriptionAddr, SpecId: ""}, data: reason})
 		}
 	}
 	if len(attrs) > 0 {
@@ -224,8 +257,8 @@ func (al *Alerting) CheckSubscriptionData(subs map[string]SubscriptionData) {
 }
 
 func (al *Alerting) ProvidersAlerts(healthResults *HealthResults) {
-	attrs := []utils.Attribute{}
-	attrsForLatency := []utils.Attribute{}
+	attrs := []AlertAttribute{}
+	attrsForLatency := []AlertAttribute{}
 	for provider, data := range healthResults.ProviderData {
 		specId := provider.SpecId
 		if al.allowedTimeGapVsReference > 0 {
@@ -234,13 +267,13 @@ func (al *Alerting) ProvidersAlerts(healthResults *HealthResults) {
 				gap := latestBlock - data.block
 				timeGap := time.Duration(gap*healthResults.Specs[specId].AverageBlockTime) * time.Millisecond
 				if timeGap > al.allowedTimeGapVsReference {
-					attrs = append(attrs, utils.LogAttr(provider.Address, fmt.Sprintf("spec: %s, block gap: %s/%s", provider.SpecId, utils.StrValue(data.block), utils.StrValue(latestBlock))))
+					attrs = append(attrs, AlertAttribute{entity: provider, data: fmt.Sprintf("block gap: %s/%s", utils.StrValue(data.block), utils.StrValue(latestBlock))})
 				}
 			}
 		}
 		if al.maxProviderLatency > 0 {
 			if data.latency > al.maxProviderLatency {
-				attrsForLatency = append(attrsForLatency, utils.LogAttr(provider.Address, fmt.Sprintf("spec: %s, latency: %s/%s", provider.SpecId, utils.StrValue(data.latency), utils.StrValue(al.maxProviderLatency))))
+				attrsForLatency = append(attrsForLatency, AlertAttribute{entity: provider, data: fmt.Sprintf("latency: %s/%s", utils.StrValue(data.latency), utils.StrValue(al.maxProviderLatency))})
 			}
 		}
 	}
@@ -253,7 +286,7 @@ func (al *Alerting) ProvidersAlerts(healthResults *HealthResults) {
 }
 
 func (al *Alerting) ConsumerAlerts(healthResults *HealthResults) {
-	attrs := []utils.Attribute{}
+	attrs := []AlertAttribute{}
 	for consumer, consumerBlock := range healthResults.ConsumerBlocks {
 		specId := consumer.SpecId
 		if consumerBlock == 0 {
@@ -265,7 +298,7 @@ func (al *Alerting) ConsumerAlerts(healthResults *HealthResults) {
 				gap := latestBlock - consumerBlock
 				timeGap := time.Duration(gap*healthResults.Specs[specId].AverageBlockTime) * time.Millisecond
 				if timeGap > al.allowedTimeGapVsReference {
-					attrs = append(attrs, utils.LogAttr(consumer.Address, fmt.Sprintf("spec: %s, block gap: %s/%s", consumer.SpecId, utils.StrValue(consumerBlock), utils.StrValue(latestBlock))))
+					attrs = append(attrs, AlertAttribute{entity: consumer, data: fmt.Sprintf("block gap: %s/%s", utils.StrValue(consumerBlock), utils.StrValue(latestBlock))})
 				}
 			}
 		}
@@ -273,9 +306,9 @@ func (al *Alerting) ConsumerAlerts(healthResults *HealthResults) {
 	if len(attrs) > 0 {
 		al.SendAlert(ConsumerBlockGapAttribute, attrs)
 	}
-	attrsUnhealthy := []utils.Attribute{}
+	attrsUnhealthy := []AlertAttribute{}
 	for consumer, errSt := range healthResults.UnhealthyConsumers {
-		attrsUnhealthy = append(attrsUnhealthy, utils.LogAttr(consumer.Address, fmt.Sprintf("spec: %s, err: %s", consumer.SpecId, errSt)))
+		attrsUnhealthy = append(attrsUnhealthy, AlertAttribute{entity: consumer, data: errSt})
 	}
 	if len(attrsUnhealthy) > 0 {
 		al.SendAlert(UnhealthyConsumerAttribute, attrsUnhealthy)
@@ -285,6 +318,8 @@ func (al *Alerting) ConsumerAlerts(healthResults *HealthResults) {
 func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 	healthResults.Lock.RLock()
 	defer healthResults.Lock.RUnlock()
+	// reset healthy
+	al.healthy = map[AlertEntry]struct{}{}
 
 	// handle frozen providers
 	if len(healthResults.FrozenProviders) > 0 {
@@ -304,4 +339,8 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 
 	// check consumers vs reference
 	al.ConsumerAlerts(healthResults)
+}
+
+func (al *Alerting) ActiveAlerts() (alerts uint64, healthy uint64) {
+
 }
