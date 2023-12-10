@@ -14,7 +14,7 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
-// dualstaking uses hookd to catch delegations/unbonding tx's to do the same action on the providers delegations.
+// DisableDualstakingHook: dualstaking uses hookd to catch delegations/unbonding tx's to do the same action on the providers delegations.
 // in the case of redelegation, since the user doesnt put/takes tokens back we dont want to take action in the providers delegations.
 // this flag is a local flag used to mark the next hooks to do nothing since this was cause by redelegation tx (redelegation = delegation + unbond)
 var DisableDualstakingHook bool
