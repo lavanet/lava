@@ -1,3 +1,4 @@
+# this script is adding another validator to the chain (without a running node) (this validator will be soon jailed due to inactivity)
 clear
 rm -rf ~/.lava_test
 lavad init validator2 --chain-id lava --home ~/.lava_test
