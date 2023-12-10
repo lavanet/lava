@@ -259,57 +259,6 @@ func (vm *VersionMonitor) StopSubprocess() {
 	}
 }
 
-// func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
-// 	// make sure the subprocess wont continue running if we run into a panic.
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			utils.LavaFormatError("[Lavavisor] Panic occurred: ", nil)
-// 			vm.StopSubprocess()
-// 		}
-// 	}()
-
-// 	utils.LavaFormatInfo("[Lavavisor] Starting subprocess...")
-// 	vm.onGoingCmd = exec.Command(vm.BinaryPath, vm.command...)
-
-// 	// Set up output redirection so you can see the subprocess's output
-// 	vm.onGoingCmd.Stdout = os.Stdout
-// 	vm.onGoingCmd.Stderr = os.Stderr
-
-// 	// Interaction with the command's Stdin
-// 	stdin, err := vm.onGoingCmd.StdinPipe()
-// 	if err != nil {
-// 		fmt.Println("Error obtaining stdin:", err)
-// 		return
-// 	}
-
-// 	if err := vm.onGoingCmd.Start(); err != nil {
-// 		utils.LavaFormatError("[Lavavisor] Error starting subprocess:", err)
-// 	}
-
-// 	time.Sleep(time.Second * 3)
-
-// 	if keyringPassword != nil && keyringPassword.Password {
-// 		// Send input to the command
-// 		_, err = stdin.Write([]byte(keyringPassword.Passphrase + "\n"))
-// 		if err != nil {
-// 			fmt.Println("Error writing to stdin:", err)
-// 			return
-// 		}
-// 		utils.LavaFormatInfo("[Lavavisor] entered keyring-os password.")
-// 	}
-// 	stdin.Close() // Flush the input stream (this sends the input to the process)
-
-// 	if err := vm.onGoingCmd.Wait(); err != nil {
-// 		if strings.Contains(err.Error(), "signal: killed") {
-// 			utils.LavaFormatInfo("[Lavavisor] Subprocess stopped due to sig killed.")
-// 		} else {
-// 			utils.LavaFormatError("[Lavavisor] Subprocess exited with error", err)
-// 		}
-// 	} else {
-// 		utils.LavaFormatInfo("[Lavavisor] Subprocess exited without error.")
-// 	}
-// }
-
 func (vm *VersionMonitor) startSubprocess(keyringPassword *KeyRingPassword) {
 	// make sure the subprocess wont continue running if we run into a panic.
 	defer func() {

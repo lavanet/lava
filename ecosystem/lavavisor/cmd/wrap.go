@@ -2,7 +2,6 @@ package lavavisor
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 const KeyRingPasswordFlag = "enter-keyring-password"
@@ -55,7 +55,12 @@ func getKeyringPassword(cmd *cobra.Command) *processmanager.KeyRingPassword {
 	var passphrase string
 	if password {
 		utils.LavaFormatInfo("[Lavavisor] Please enter the keyring password:")
-		fmt.Scanf("%s", &passphrase)
+		passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+		if err != nil {
+			utils.LavaFormatFatal("failed reading password from user", err)
+		}
+		passphrase = string(passwordBytes)
+		utils.LavaFormatInfo("[Lavavisor] Password received")
 	}
 	return &processmanager.KeyRingPassword{Password: password, Passphrase: passphrase}
 }
