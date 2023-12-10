@@ -4,10 +4,10 @@ type Pool string
 
 // validators_rewards_pool constants
 // this pool is used as the main and reserve of token for validators rewards
-// it will get depleted after ValidatorsRewardsPoolLifetime (4 years minus one month)
+// it will get depleted after ValidatorsRewardsPoolLifetime
 const (
 	ValidatorsRewardsPoolName     Pool  = "validators_rewards_pool"
-	ValidatorsRewardsPoolLifetime int64 = 47
+	ValidatorsRewardsPoolLifetime int64 = 48 // 4 years (in months)
 )
 
 // validators block rewards pool constants

@@ -212,3 +212,12 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 func (k Keeper) AddCollectedFees(ctx sdk.Context, fees sdk.Coins) error {
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ValidatorsBlockRewardsPoolName), k.feeCollectorName, fees)
 }
+
+func (k Keeper) InitRewardsRefillTS(ctx sdk.Context, gs timerstoretypes.GenesisState) {
+	k.refillRewardsPoolTS.Init(ctx, gs)
+}
+
+// ExportRewardsRefillTS exports refill block pools timers data (for genesis)
+func (k Keeper) ExportRewardsRefillTS(ctx sdk.Context) timerstoretypes.GenesisState {
+	return k.refillRewardsPoolTS.Export(ctx)
+}
