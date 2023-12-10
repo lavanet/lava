@@ -121,7 +121,6 @@ reference_endpoints:
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			rand.InitRandomSeed()
-			runLabel := viper.GetString(runLabelFlagName)
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			providerAddresses := viper.GetStringSlice(providerAddressesFlagName)
 			subscriptionAddresses := viper.GetStringSlice(subscriptionAddressesFlagName)
@@ -131,10 +130,11 @@ reference_endpoints:
 			referenceEndpoints, _ := ParseEndpoints(keyName, viper.GetViper())
 			interval := viper.GetDuration(intervalFlagName)
 			healthMetrics := metrics.NewHealthMetrics(prometheusListenAddr)
+			identifier := viper.GetString(identifierFlagName)
 			alertingOptions := AlertingOptions{
 				Url:                           viper.GetString(alertingWebHookFlagName),
 				Logging:                       false,
-				Identifier:                    viper.GetString(identifierFlagName),
+				Identifier:                    identifier,
 				SubscriptionCUPercentageAlert: viper.GetFloat64(percentageCUFlagName),
 				SubscriptionLeftTimeAlert:     time.Duration(viper.GetUint64(subscriptionLeftTimeFlagName)) * time.Hour * 24,
 				AllowedTimeGapVsReference:     viper.GetDuration(allowedBlockTimeLagFlagName),
@@ -154,11 +154,12 @@ reference_endpoints:
 				healthResult, err := RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 				if err != nil {
 					utils.LavaFormatError("invalid health run", err)
-					healthMetrics.SetFailedRun(runLabel)
+					healthMetrics.SetFailedRun(identifier)
 				} else {
 					alerting.CheckHealthResults(healthResult)
-					activeAlerts := alerting.ActiveAlerts()
-					healthMetrics.SetSuccess(runLabel)
+					activeAlerts, unhealthy, healthy := alerting.ActiveAlerts()
+					healthMetrics.SetSuccess(identifier)
+					healthMetrics.SetAlertResults(identifier, activeAlerts, unhealthy, healthy)
 				}
 			}
 

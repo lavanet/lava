@@ -21,6 +21,35 @@ type HealthResults struct {
 	Lock               sync.RWMutex
 }
 
+func (healthResults *HealthResults) GetAllEntities() map[LavaEntity]struct{} {
+	healthResults.Lock.RLock()
+	defer healthResults.Lock.RUnlock()
+	entities := map[LavaEntity]struct{}{}
+	for entity := range healthResults.FrozenProviders {
+		entities[entity] = struct{}{}
+	}
+	for entity := range healthResults.UnhealthyProviders {
+		entities[entity] = struct{}{}
+	}
+	for entity := range healthResults.UnhealthyConsumers {
+		entities[entity] = struct{}{}
+	}
+	for entity := range healthResults.ConsumerBlocks {
+		entities[entity] = struct{}{}
+	}
+	for entity := range healthResults.ProviderData {
+		entities[entity] = struct{}{}
+	}
+	for entitySt := range healthResults.SubscriptionsData {
+		entity := LavaEntity{
+			Address: entitySt,
+			SpecId:  "",
+		}
+		entities[entity] = struct{}{}
+	}
+	return entities
+}
+
 func (healthResults *HealthResults) FreezeProvider(providerKey LavaEntity) {
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()

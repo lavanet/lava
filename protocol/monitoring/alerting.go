@@ -19,6 +19,7 @@ import (
 const (
 	CacheMaxCost               = 10 * 1024 // 10K cost
 	CacheNumCounters           = 100000    // expect 10K items
+	OKString                   = "OK"
 	FrozenProviderAttribute    = "frozen_provider_alert"
 	SubscriptionAlertAttribute = "subscription_limit_alert"
 	UnhealthyProviderAttribute = "unhealthy_provider_alert"
@@ -44,6 +45,7 @@ type AlertingOptions struct {
 	MaxProviderLatency            time.Duration
 	SameAlertInterval             time.Duration
 	SendSameAlertWithoutInterval  bool
+	SuppressionCounterThreshold   uint64
 }
 
 type AlertAttribute struct {
@@ -67,13 +69,19 @@ type Alerting struct {
 	sameAlertInterval             time.Duration
 	AlertsCache                   *ristretto.Cache
 	activeAlerts                  map[AlertEntry]uint64 // count how many occurrences of an alert
-	healthy                       map[AlertEntry]struct{}
+	healthy                       map[LavaEntity]struct{}
+	unhealthy                     map[LavaEntity]struct{}
+	currentAlerts                 map[AlertEntry]struct{}
+	suppressionCounterThreshold   uint64
+	suppressedAlerts              uint64 // monitoring
 }
 
 func NewAlerting(options AlertingOptions) *Alerting {
 	al := &Alerting{
-		activeAlerts: map[AlertEntry]uint64{},
-		healthy:      map[AlertEntry]struct{}{},
+		activeAlerts:  map[AlertEntry]uint64{},
+		healthy:       map[LavaEntity]struct{}{},
+		unhealthy:     map[LavaEntity]struct{}{},
+		currentAlerts: map[AlertEntry]struct{}{},
 	}
 	if options.Url != "" {
 		al.url = options.Url
@@ -88,6 +96,7 @@ func NewAlerting(options AlertingOptions) *Alerting {
 	al.subscriptionLeftTimeAlert = options.SubscriptionLeftTimeAlert
 	al.allowedTimeGapVsReference = options.AllowedTimeGapVsReference
 	al.maxProviderLatency = options.MaxProviderLatency
+	al.suppressionCounterThreshold = options.SuppressionCounterThreshold
 	if !options.SendSameAlertWithoutInterval {
 		if options.SameAlertInterval != 0 {
 			al.sameAlertInterval = options.SameAlertInterval
@@ -105,14 +114,27 @@ func NewAlerting(options AlertingOptions) *Alerting {
 	return al
 }
 
-func (al *Alerting) AddNewAlert(alert string, attributes []AlertAttribute) {
+func (al *Alerting) AddNewAlert(alert string, attributes []AlertAttribute) bool {
+	suppressed := false
+	if al.suppressionCounterThreshold > 1 {
+		suppressed = true
+	}
 	for _, attr := range attributes {
 		alertEntity := AlertEntry{
 			alertType: alert,
 			entity:    attr.entity,
 		}
-		occurences, ok := al.activeAlerts[alertEntity]
+		occurrences := al.activeAlerts[alertEntity]
+		// if it doesn't exist it return 0 and then we make it 1
+		occurrences++
+		al.currentAlerts[alertEntity] = struct{}{} // so we can clear keys that weren't changed
+
+		al.activeAlerts[alertEntity] = occurrences
+		if occurrences >= al.suppressionCounterThreshold {
+			suppressed = false
+		}
 	}
+	return suppressed
 }
 
 // func (al *Alerting) SendAlert(alert string, attrs []utils.Attribute) {
@@ -120,6 +142,7 @@ func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
 	// check for occurrence suppression
 	suppressed := al.AddNewAlert(alert, attributes)
 	if suppressed {
+		al.suppressedAlerts++
 		return
 	}
 	attrs := []utils.Attribute{}
@@ -158,10 +181,36 @@ func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
 	}
 }
 
+func (al *Alerting) SendRecoveryAlert(alertEntry AlertEntry) {
+	count, ok := al.activeAlerts[alertEntry]
+	if !ok {
+		return
+	}
+	if count >= al.suppressionCounterThreshold {
+		attrs := []utils.Attribute{
+			{
+				Key:   alertEntry.entity.String(),
+				Value: OKString,
+			},
+		}
+		// meaning it's not suppressed
+		if al.logging {
+			utils.LavaFormatInfo(alertEntry.alertType, attrs...)
+		}
+		if al.url != "" {
+			al.SendUrlAlert(alertEntry.alertType, attrs)
+		}
+	}
+}
+
 func (al *Alerting) SendUrlAlert(alert string, attrs []utils.Attribute) error {
 	attachments := []map[string]interface{}{}
 	fields := []map[string]interface{}{}
+	colorToSet := green
 	for _, attr := range attrs {
+		if utils.StrValue(attr.Value) != OKString {
+			colorToSet = red
+		}
 		attrMap := map[string]interface{}{
 			"title":  attr.Key,
 			"name":   attr.Key,
@@ -173,7 +222,7 @@ func (al *Alerting) SendUrlAlert(alert string, attrs []utils.Attribute) error {
 	}
 	attachment := map[string]interface{}{
 		"text":   "Data",
-		"color":  red,
+		"color":  colorToSet,
 		"fields": fields,
 	}
 	attachments = append(attachments, attachment)
@@ -319,7 +368,7 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 	healthResults.Lock.RLock()
 	defer healthResults.Lock.RUnlock()
 	// reset healthy
-	al.healthy = map[AlertEntry]struct{}{}
+	al.currentAlerts = map[AlertEntry]struct{}{}
 
 	// handle frozen providers
 	if len(healthResults.FrozenProviders) > 0 {
@@ -339,8 +388,37 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 
 	// check consumers vs reference
 	al.ConsumerAlerts(healthResults)
+
+	// delete alerts that are not active
+	keysToDelete := []AlertEntry{}
+	for alertEntry := range al.activeAlerts {
+		_, ok := al.currentAlerts[alertEntry]
+		if !ok {
+			// this entry wasn't alerted currently therefore we can shut it off
+			keysToDelete = append(keysToDelete, alertEntry)
+		}
+	}
+	for _, keyToDelete := range keysToDelete {
+		al.SendRecoveryAlert(keyToDelete)
+		delete(al.activeAlerts, keyToDelete)
+	}
+	al.healthy = map[LavaEntity]struct{}{}
+	al.unhealthy = map[LavaEntity]struct{}{}
+
+	for entity := range al.currentAlerts {
+		al.unhealthy[entity.entity] = struct{}{}
+	}
+
+	allEntities := healthResults.GetAllEntities()
+	for entity := range allEntities {
+		_, ok := al.unhealthy[entity]
+		if !ok {
+			// not unhealthy sets healthy
+			al.healthy[entity] = struct{}{}
+		}
+	}
 }
 
-func (al *Alerting) ActiveAlerts() (alerts uint64, healthy uint64) {
-
+func (al *Alerting) ActiveAlerts() (alerts uint64, unhealthy uint64, healthy uint64) {
+	return uint64(len(al.activeAlerts)), uint64(len(al.unhealthy)), uint64(len(al.healthy))
 }

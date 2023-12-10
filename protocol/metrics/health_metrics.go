@@ -9,9 +9,11 @@ import (
 )
 
 type HealthMetrics struct {
-	failedRuns     *prometheus.CounterVec
-	successfulRuns *prometheus.CounterVec
-	// protocolVersionMetric      *prometheus.GaugeVec
+	failedRuns      *prometheus.CounterVec
+	successfulRuns  *prometheus.CounterVec
+	failureAlerts   *prometheus.GaugeVec
+	healthyChecks   *prometheus.GaugeVec
+	unhealthyChecks *prometheus.GaugeVec
 }
 
 func NewHealthMetrics(networkAddress string) *HealthMetrics {
@@ -19,6 +21,22 @@ func NewHealthMetrics(networkAddress string) *HealthMetrics {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
 	}
+
+	failureAlerts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_health_failure_alerts",
+		Help: "The current amount of active alerts",
+	}, []string{"identifier"})
+
+	healthyChecks := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_healthy_entities",
+		Help: "The current amount of healthy checks",
+	}, []string{"identifier"})
+
+	unhealthyChecks := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_unhealthy_entities",
+		Help: "The current amount of healthy checks",
+	}, []string{"identifier"})
+
 	failedRuns := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_health_failed_runs",
 		Help: "The total of runs failed",
@@ -31,14 +49,20 @@ func NewHealthMetrics(networkAddress string) *HealthMetrics {
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(failedRuns)
 	prometheus.MustRegister(successfulRuns)
+	prometheus.MustRegister(failureAlerts)
+	prometheus.MustRegister(healthyChecks)
+	prometheus.MustRegister(unhealthyChecks)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
 		http.ListenAndServe(networkAddress, nil)
 	}()
 	return &HealthMetrics{
-		failedRuns:     failedRuns,
-		successfulRuns: successfulRuns,
+		failedRuns:      failedRuns,
+		successfulRuns:  successfulRuns,
+		failureAlerts:   failureAlerts,
+		healthyChecks:   healthyChecks,
+		unhealthyChecks: unhealthyChecks,
 	}
 }
 
@@ -54,4 +78,13 @@ func (pme *HealthMetrics) SetSuccess(label string) {
 		return
 	}
 	pme.successfulRuns.WithLabelValues(label).Add(1)
+}
+
+func (pme *HealthMetrics) SetAlertResults(label string, fails uint64, unhealthy uint64, healthy uint64) {
+	if pme == nil {
+		return
+	}
+	pme.failureAlerts.WithLabelValues(label).Set(float64(fails))
+	pme.unhealthyChecks.WithLabelValues(label).Set(float64(unhealthy))
+	pme.healthyChecks.WithLabelValues(label).Set(float64(healthy))
 }
