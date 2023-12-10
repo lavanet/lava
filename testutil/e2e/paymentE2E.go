@@ -127,7 +127,7 @@ func (lt *lavaTest) getRewards(addresses []string) ([]sdk.Coin, error) {
 // checkPayment checks that at least one providers' balance increased (can't be known
 // in test time since pairing is pseudo-random)
 // with the monthly payment mechanism, we just wait and the providers get the rewards automatically
-func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
+func (lt *lavaTest) checkPayment(providers []string, startRewards []sdk.Coin) {
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 
 	// wait for month+blocksToSave pass (debug_month = 2min, debug_epochsToSave = 5) and query for expected payout
@@ -149,22 +149,22 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 	}
 
 	// get new balance and checks that at least one provider's balance was increased
-	newBalances, err := lt.getRewards(providers)
+	newRewards, err := lt.getRewards(providers)
 	if err != nil {
 		panic(err)
 	}
 
-	for i := range newBalances {
-		newAmount := newBalances[i].Amount
-		startAmount := startBalances[i].Amount
+	for i := range newRewards {
+		newAmount := newRewards[i].Amount
+		startAmount := startRewards[i].Amount
 		payout := newAmount.Sub(startAmount)
 		if payout.IsNegative() || !withinRange(payout.Uint64(), expectedPayoutArr[i], 80) {
 			panic(utils.LavaFormatError("payment check failed", fmt.Errorf("provider did not get expected payment"),
 				utils.Attribute{Key: "provider", Value: providers[i]},
-				utils.Attribute{Key: "start_balance", Value: startBalances[i].String()},
+				utils.Attribute{Key: "start_balance", Value: startRewards[i].String()},
 				utils.Attribute{Key: "expected_payout", Value: expectedPayoutArr[i]},
-				utils.Attribute{Key: "start_balance+expected_payout", Value: startBalances[i].AddAmount(sdk.NewIntFromUint64(expectedPayoutArr[i])).String()},
-				utils.Attribute{Key: "actual_balance", Value: newBalances[i]},
+				utils.Attribute{Key: "start_balance+expected_payout", Value: startRewards[i].AddAmount(sdk.NewIntFromUint64(expectedPayoutArr[i])).String()},
+				utils.Attribute{Key: "actual_balance", Value: newRewards[i]},
 			))
 		}
 	}

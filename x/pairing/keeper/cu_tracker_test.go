@@ -253,6 +253,9 @@ func TestTrackedCuWithQos(t *testing.T) {
 			ts.AdvanceMonths(1)
 			ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
+			balance1 := ts.GetBalance(provider1Acc.Addr)
+			balance2 := ts.GetBalance(provider2Acc.Addr)
+
 			reward, err := ts.QueryDualstakingDelegatorRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String(), ts.spec.Index)
 			require.Nil(ts.T, err)
 			require.Equal(ts.T, tt.p1ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
@@ -264,6 +267,12 @@ func TestTrackedCuWithQos(t *testing.T) {
 			require.Equal(ts.T, tt.p2ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
 			_, err = ts.TxDualstakingClaimRewards(provider2Acc.Addr.String(), provider2Acc.Addr.String())
 			require.Nil(ts.T, err)
+
+			newBalance1 := ts.GetBalance(provider1Acc.Addr)
+			newBalance2 := ts.GetBalance(provider2Acc.Addr)
+
+			require.Equal(t, balance1+tt.p1ExpectedReward, newBalance1)
+			require.Equal(t, balance2+tt.p2ExpectedReward, newBalance2)
 		})
 	}
 }
