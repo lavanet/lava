@@ -25,6 +25,8 @@ const NUMBER_OF_RESETS_TO_TEST = 10;
 const FIRST_EPOCH_HEIGHT = 20;
 const SECOND_EPOCH_HEIGHT = 40;
 const CU_FOR_FIRST_REQUEST = 10;
+const MAX_CU_FOR_VIRTUAL_EPOCH = 200;
+const FIRST_VIRTUAL_EPOCH = 1;
 const SERVICED_BLOCK_NUMBER = 30;
 const RELAY_NUMBER_AFTER_FIRST_CALL = 1;
 const RELAY_NUMBER_AFTER_FIRST_FAIL = 1;
@@ -40,7 +42,7 @@ function setupConsumerSessionManager(
     relayer = setupRelayer();
     jest
       .spyOn(relayer, "probeProvider")
-      .mockImplementation((providerAddress, apiInterface, guid, specId) => {
+      .mockImplementation((_providerAddress, _apiInterface, guid) => {
         const response: ProbeReply = new ProbeReply();
         response.setLatestBlock(42);
         response.setLavaEpoch(20);
@@ -55,7 +57,7 @@ function setupConsumerSessionManager(
 
   const cm = new ConsumerSessionManager(
     relayer,
-    new RPCEndpoint("stub", "stub", "stub", "0"),
+    new RPCEndpoint("stub", "stub", "stub", 1),
     optimizer
   );
 
@@ -100,7 +102,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -136,6 +139,159 @@ describe("ConsumerSessionManager", () => {
       }
     });
 
+    it("virtual epoch increase maxCu", async () => {
+      const cm = setupConsumerSessionManager();
+      const pairingList = createPairingList("", true);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      let consumerSessions = cm.getSessions(
+        MAX_CU_FOR_VIRTUAL_EPOCH,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        0
+      );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
+      expect(consumerSessions.size).toBeGreaterThan(0);
+
+      for (const consumerSession of consumerSessions.values()) {
+        expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          MAX_CU_FOR_VIRTUAL_EPOCH
+        );
+        cm.onSessionDone(
+          consumerSession.session,
+          SERVICED_BLOCK_NUMBER,
+          MAX_CU_FOR_VIRTUAL_EPOCH,
+          0,
+          consumerSession.session.calculateExpectedLatency(2),
+          SERVICED_BLOCK_NUMBER - 1,
+          NUMBER_OF_PROVIDERS,
+          NUMBER_OF_PROVIDERS,
+          false
+        );
+        expect(consumerSession.session.cuSum).toEqual(MAX_CU_FOR_VIRTUAL_EPOCH);
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          LATEST_RELAY_CU_AFTER_DONE
+        );
+        expect(consumerSession.session.relayNum).toEqual(
+          RELAY_NUMBER_AFTER_FIRST_CALL
+        );
+        expect(consumerSession.session.latestBlock).toEqual(
+          SERVICED_BLOCK_NUMBER
+        );
+      }
+
+      //increase virtual epoch
+      consumerSessions = cm.getSessions(
+        MAX_CU_FOR_VIRTUAL_EPOCH,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        FIRST_VIRTUAL_EPOCH
+      );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
+      expect(consumerSessions.size).toBeGreaterThan(0);
+
+      for (const consumerSession of consumerSessions.values()) {
+        expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          MAX_CU_FOR_VIRTUAL_EPOCH
+        );
+        cm.onSessionDone(
+          consumerSession.session,
+          SERVICED_BLOCK_NUMBER,
+          MAX_CU_FOR_VIRTUAL_EPOCH,
+          0,
+          consumerSession.session.calculateExpectedLatency(2),
+          SERVICED_BLOCK_NUMBER - 1,
+          NUMBER_OF_PROVIDERS,
+          NUMBER_OF_PROVIDERS,
+          false
+        );
+        expect(consumerSession.session.cuSum).toEqual(
+          MAX_CU_FOR_VIRTUAL_EPOCH * (FIRST_VIRTUAL_EPOCH + 1)
+        );
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          LATEST_RELAY_CU_AFTER_DONE
+        );
+        expect(consumerSession.session.relayNum).toEqual(
+          RELAY_NUMBER_AFTER_FIRST_CALL + 1
+        );
+        expect(consumerSession.session.latestBlock).toEqual(
+          SERVICED_BLOCK_NUMBER
+        );
+      }
+    });
+
+    it("virtual epoch exceeding maxCu with failure", async () => {
+      const cm = setupConsumerSessionManager();
+      const pairingList = createPairingList("", true);
+      await cm.updateAllProviders(FIRST_EPOCH_HEIGHT, pairingList);
+
+      let consumerSessions = cm.getSessions(
+        MAX_CU_FOR_VIRTUAL_EPOCH,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        0
+      );
+      if (consumerSessions instanceof Error) {
+        throw consumerSessions;
+      }
+      expect(consumerSessions.size).toBeGreaterThan(0);
+
+      for (const consumerSession of consumerSessions.values()) {
+        expect(consumerSession.epoch).toEqual(cm.getCurrentEpoch());
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          MAX_CU_FOR_VIRTUAL_EPOCH
+        );
+        cm.onSessionDone(
+          consumerSession.session,
+          SERVICED_BLOCK_NUMBER,
+          MAX_CU_FOR_VIRTUAL_EPOCH,
+          0,
+          consumerSession.session.calculateExpectedLatency(2),
+          SERVICED_BLOCK_NUMBER - 1,
+          NUMBER_OF_PROVIDERS,
+          NUMBER_OF_PROVIDERS,
+          false
+        );
+        expect(consumerSession.session.cuSum).toEqual(MAX_CU_FOR_VIRTUAL_EPOCH);
+        expect(consumerSession.session.latestRelayCu).toEqual(
+          LATEST_RELAY_CU_AFTER_DONE
+        );
+        expect(consumerSession.session.relayNum).toEqual(
+          RELAY_NUMBER_AFTER_FIRST_CALL
+        );
+        expect(consumerSession.session.latestBlock).toEqual(
+          SERVICED_BLOCK_NUMBER
+        );
+      }
+
+      //increase virtual epoch with more cu than allowed
+      consumerSessions = cm.getSessions(
+        MAX_CU_FOR_VIRTUAL_EPOCH * (FIRST_VIRTUAL_EPOCH + 1) + 10,
+        new Set(),
+        SERVICED_BLOCK_NUMBER,
+        "",
+        [],
+        NOSTATE,
+        FIRST_VIRTUAL_EPOCH
+      );
+      expect(consumerSessions).toBeInstanceOf(Error);
+    });
+
     it("tests pairing reset", async () => {
       const cm = setupConsumerSessionManager();
       const pairingList = createPairingList("", true);
@@ -148,7 +304,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -201,7 +358,8 @@ describe("ConsumerSessionManager", () => {
           SERVICED_BLOCK_NUMBER,
           "",
           [],
-          NOSTATE
+          NOSTATE,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -218,7 +376,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -257,7 +416,8 @@ describe("ConsumerSessionManager", () => {
             SERVICED_BLOCK_NUMBER,
             "",
             [],
-            NOSTATE
+            NOSTATE,
+            0
           );
 
           if (consumerSessions instanceof Map) {
@@ -285,7 +445,8 @@ describe("ConsumerSessionManager", () => {
           SERVICED_BLOCK_NUMBER,
           "",
           [],
-          NOSTATE
+          NOSTATE,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -308,7 +469,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -357,7 +519,8 @@ describe("ConsumerSessionManager", () => {
           SERVICED_BLOCK_NUMBER,
           "",
           [],
-          NOSTATE
+          NOSTATE,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -419,7 +582,8 @@ describe("ConsumerSessionManager", () => {
           SERVICED_BLOCK_NUMBER,
           "",
           [],
-          NOSTATE
+          NOSTATE,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -484,7 +648,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -536,7 +701,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       if (consumerSessions instanceof Error) {
         throw consumerSessions;
@@ -574,7 +740,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
 
       expect(sessions).toBeInstanceOf(PairingListEmptyError);
@@ -595,7 +762,8 @@ describe("ConsumerSessionManager", () => {
             SERVICED_BLOCK_NUMBER,
             addon,
             [],
-            NOSTATE
+            NOSTATE,
+            0
           );
           if (consumerSessions instanceof Error) {
             throw consumerSessions;
@@ -621,7 +789,8 @@ describe("ConsumerSessionManager", () => {
           SERVICED_BLOCK_NUMBER,
           addon,
           [],
-          NOSTATE
+          NOSTATE,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -689,7 +858,8 @@ describe("ConsumerSessionManager", () => {
             SERVICED_BLOCK_NUMBER,
             addon,
             extensions,
-            NOSTATE
+            NOSTATE,
+            0
           );
           if (consumerSessions instanceof Error) {
             throw consumerSessions;
@@ -715,7 +885,8 @@ describe("ConsumerSessionManager", () => {
           SERVICED_BLOCK_NUMBER,
           addon,
           extensions,
-          NOSTATE
+          NOSTATE,
+          0
         );
         if (consumerSessions instanceof Error) {
           throw consumerSessions;
@@ -779,20 +950,18 @@ describe("ConsumerSessionManager", () => {
 
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation(
-          async (providerAddress, apiInterface, guid, specId) => {
-            if (providerAddress === pairingList[1].publicLavaAddress) {
-              providerRetries++;
-              throw new Error("test");
-            }
-
-            const response: ProbeReply = new ProbeReply();
-            response.setLatestBlock(42);
-            response.setLavaEpoch(20);
-            response.setGuid(guid);
-            return Promise.resolve(response);
+        .mockImplementation(async (providerAddress, _apiInterface, guid) => {
+          if (providerAddress === pairingList[1].publicLavaAddress) {
+            providerRetries++;
+            throw new Error("test");
           }
-        );
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          response.setGuid(guid);
+          return Promise.resolve(response);
+        });
 
       const cm = setupConsumerSessionManager(relayer);
       // @ts-expect-error - we are spying on a private method
@@ -812,23 +981,21 @@ describe("ConsumerSessionManager", () => {
 
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation(
-          async (providerAddress, apiInterface, guid, specId) => {
-            if (
-              providerAddress === pairingList[1].publicLavaAddress &&
-              providerRetries < 1
-            ) {
-              providerRetries++;
-              throw new Error("test");
-            }
-
-            const response: ProbeReply = new ProbeReply();
-            response.setLatestBlock(42);
-            response.setLavaEpoch(20);
-            response.setGuid(guid);
-            return Promise.resolve(response);
+        .mockImplementation(async (providerAddress, _apiInterface, guid) => {
+          if (
+            providerAddress === pairingList[1].publicLavaAddress &&
+            providerRetries < 1
+          ) {
+            providerRetries++;
+            throw new Error("test");
           }
-        );
+
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          response.setGuid(guid);
+          return Promise.resolve(response);
+        });
 
       const optimizer = setupProviderOptimizer(
         ProviderOptimizerStrategy.Latency,
@@ -849,23 +1016,19 @@ describe("ConsumerSessionManager", () => {
     it("disables provider for failed probes", async () => {
       const pairingList = createPairingList("", true);
       const relayer = setupRelayer();
-      let providerRetries = 0;
 
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation(
-          async (providerAddress, apiInterface, guid, specId) => {
-            if (providerAddress == pairingList[1].publicLavaAddress) {
-              providerRetries++;
-              throw new Error("test");
-            }
-            const response: ProbeReply = new ProbeReply();
-            response.setLatestBlock(42);
-            response.setLavaEpoch(20);
-            response.setGuid(guid);
-            return Promise.resolve(response);
+        .mockImplementation(async (providerAddress, _apiInterface, guid) => {
+          if (providerAddress == pairingList[1].publicLavaAddress) {
+            throw new Error("test");
           }
-        );
+          const response: ProbeReply = new ProbeReply();
+          response.setLatestBlock(42);
+          response.setLavaEpoch(20);
+          response.setGuid(guid);
+          return Promise.resolve(response);
+        });
 
       const optimizer = setupProviderOptimizer(
         ProviderOptimizerStrategy.Latency,
@@ -888,7 +1051,7 @@ describe("ConsumerSessionManager", () => {
       let startEpoch = 1;
       jest
         .spyOn(relayer, "probeProvider")
-        .mockImplementation((providerAddress, apiInterface, guid, specId) => {
+        .mockImplementation((_providerAddress, _apiInterface, guid) => {
           const response: ProbeReply = new ProbeReply();
           response.setLavaEpoch(startEpoch++);
           response.setGuid(guid);
@@ -917,7 +1080,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        CONSISTENCY_SELECT_ALLPROVIDERS
+        CONSISTENCY_SELECT_ALLPROVIDERS,
+        0
       );
       expect(sessions).not.toBeInstanceOf(Error);
       if (!(sessions instanceof Error)) {
@@ -929,7 +1093,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        NOSTATE
+        NOSTATE,
+        0
       );
       expect(sessions).not.toBeInstanceOf(Error);
       if (!(sessions instanceof Error)) {
@@ -941,7 +1106,8 @@ describe("ConsumerSessionManager", () => {
         SERVICED_BLOCK_NUMBER,
         "",
         [],
-        CONSISTENCY_SELECT_ALLPROVIDERS
+        CONSISTENCY_SELECT_ALLPROVIDERS,
+        0
       );
       expect(sessions).not.toBeInstanceOf(Error);
       if (!(sessions instanceof Error)) {
@@ -963,6 +1129,7 @@ function createPairingList(
       addons: new Set(),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
   const pairingEndpointsWithAddon: Endpoint[] = [
@@ -972,6 +1139,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
   const pairingEndpointsWithExtension: Endpoint[] = [
@@ -981,6 +1149,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
   const pairingEndpointsWithExtensions: Endpoint[] = [
@@ -990,6 +1159,7 @@ function createPairingList(
       addons: new Set(["addon"]),
       connectionRefusals: 0,
       enabled,
+      geolocation: 1,
     },
   ];
 

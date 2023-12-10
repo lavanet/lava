@@ -7,7 +7,6 @@ import {
   DEFAULT_PARSED_RESULT_INDEX,
   IsString,
   IsNumber,
-  NOT_APPLICABLE,
 } from "../common/common";
 import {
   BlockParser,

@@ -11,6 +11,10 @@ import { PairingUpdater } from "./updaters/pairing_updater";
 import { ConsumerSessionManager } from "../lavasession/consumerSessionManager";
 import { RPCConsumerServer } from "../rpcconsumer/rpcconsumer_server";
 import { Spec } from "../grpc_web_services/lavanet/lava/spec/spec_pb";
+import {
+  EmergencyTracker,
+  EmergencyTrackerInf,
+} from "./updaters/emergency_tracker";
 
 const DEFAULT_RETRY_INTERVAL = 10000;
 // we are adding 10% to the epoch passing time so we dont race providers updates.
@@ -26,6 +30,7 @@ export class StateTracker {
   private updaters: Map<string, Updater>;
   private stateQuery: StateQuery;
   private timeTillNextEpoch = 0;
+  private emergencyTracker: EmergencyTracker;
 
   // Constructor for State Tracker
   constructor(
@@ -67,13 +72,21 @@ export class StateTracker {
       );
     }
 
+    // Create Emergency Tracker
+    this.emergencyTracker = new EmergencyTracker(this.stateQuery);
+
     // Create Pairing Updater
     const pairingUpdater = new PairingUpdater(this.stateQuery, config);
 
     // Register all updaters
     this.registerForUpdates(pairingUpdater, "pairingUpdater");
+    this.registerForUpdates(this.emergencyTracker, "emergencyTracker");
 
     Logger.debug("Pairing updater added");
+  }
+
+  public getEmergencyTracker(): EmergencyTrackerInf {
+    return this.emergencyTracker;
   }
 
   getPairingResponse(chainId: string): PairingResponse | undefined {

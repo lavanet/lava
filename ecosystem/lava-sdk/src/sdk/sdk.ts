@@ -33,6 +33,7 @@ import {
 } from "../providerOptimizer/providerOptimizer";
 import { AverageWorldLatency } from "../common/timeout";
 import { ConsumerConsistency } from "../rpcconsumer/consumerConsistency";
+import { GeolocationFromString } from "../lavasession/geolocation";
 
 export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
 type RelayReceiver = string; // chainId + ApiInterface
@@ -46,7 +47,7 @@ export interface LavaSDKOptions {
   chainIds: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
   pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
   network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
-  geolocation?: string; // Optional: The geolocation to be used ["1" for North America, "2" for Europe ]
+  geolocation?: string; // Optional: The geolocation to be used ["1" or "USC" for US central, "2" or "EU" for Europe, 4: "USE",  8: "USW",  16: "AF",  32: "AS",  64: "AU"]
   lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
   secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
   allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
@@ -121,7 +122,7 @@ export class LavaSDK {
     this.walletAddress = "";
     this.badgeManager = new BadgeManager(badge);
     this.network = network || DEFAULT_LAVA_PAIRING_NETWORK;
-    this.geolocation = geolocation || DEFAULT_GEOLOCATION;
+    this.geolocation = geolocation || DEFAULT_GEOLOCATION.toString();
     this.lavaChainId = lavaChainId || DEFAULT_LAVA_CHAINID;
     this.pairingListConfig = pairingListConfig || "";
     this.account = SDKErrors.errAccountNotInitialized;
@@ -189,7 +190,7 @@ export class LavaSDK {
         "", // We do no need this in sdk as we are not opening any ports
         "LAV1",
         "tendermintrpc",
-        this.geolocation // This is also deprecated
+        GeolocationFromString(this.geolocation) // This is also deprecated
       );
 
       const chainAsset = this.setupChainAssets(
@@ -243,6 +244,10 @@ export class LavaSDK {
       this.walletAddress,
       this.badgeManager
     );
+
+    if (rpcConsumerServerLoL) {
+      rpcConsumerServerLoL.setEmergencyTracker(tracker.getEmergencyTracker());
+    }
 
     // Register LAVATendermint csm for update
     // If badge does not exists
@@ -325,7 +330,7 @@ export class LavaSDK {
           "", // We do no need this in sdk as we are not opening any ports
           chainId,
           apiInterface,
-          this.geolocation // This is also deprecated
+          GeolocationFromString(this.geolocation)
         );
 
         // create provider optimizer
@@ -367,6 +372,8 @@ export class LavaSDK {
           finalizationConsensus,
           consumerConsistency
         );
+
+        rpcConsumerServer.setEmergencyTracker(tracker.getEmergencyTracker());
 
         // save rpc consumer server in map
         this.rpcConsumerServerRouter.set(
@@ -508,6 +515,7 @@ export class LavaSDK {
         options?.chainId ?? JSON.stringify(this.rpcConsumerServerRouter.keys())
       );
     }
+
     const relayResult = rpcConsumerServer.sendRelay(options);
     return await relayResult.then((response) => {
       // // Decode response

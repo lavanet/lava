@@ -54,6 +54,7 @@ var (
 type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable statetracker.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
+	RegisterForSpecVerifications(ctx context.Context, specVerifier statetracker.SpecVerifier, endpoint lavasession.RPCEndpoint) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable statetracker.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable statetracker.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable statetracker.DowntimeParamsUpdatable) error
@@ -102,6 +103,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.parallelConnections = parallelConnections
 	rpcp.cache = cache
 	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcp.providerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ProviderVersion)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	rpcp.shardID = shardID
 	// single state tracker
@@ -162,7 +164,9 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		}
 	}
 
-	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, true)
+	specValidator := NewSpecValidator()
+	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, specValidator, true)
+	specValidator.Start(ctx)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("[-] RPCProvider running with disabled endpoints:", disabledEndpointsList, "[-]"), nil)
@@ -172,7 +176,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		activeEndpointsList := getActiveEndpoints(rpcProviderEndpoints, disabledEndpointsList)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 		// try to save disabled endpoints
-		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, 1)
+		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, specValidator, 1)
 	} else {
 		utils.LavaFormatInfo("[+] all endpoints up and running")
 	}
@@ -214,14 +218,14 @@ func getActiveEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint,
 	return activeEndpointsList
 }
 
-func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, retryCount int) {
+func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession.RPCProviderEndpoint, specValidator *SpecValidator, retryCount int) {
 	time.Sleep(time.Duration(retryCount) * time.Second)
 	parallel := retryCount > 2
 	utils.LavaFormatInfo("Retrying disabled endpoints", utils.Attribute{Key: "disabled endpoints list", Value: disabledEndpoints}, utils.Attribute{Key: "parallel", Value: parallel})
-	disabledEndpointsAfterRetry := rpcp.SetupProviderEndpoints(disabledEndpoints, parallel)
+	disabledEndpointsAfterRetry := rpcp.SetupProviderEndpoints(disabledEndpoints, specValidator, parallel)
 	if len(disabledEndpointsAfterRetry) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("RPCProvider running with disabled endpoints:", disabledEndpointsAfterRetry, "[-]"), nil)
-		rpcp.RetryDisabledEndpoints(disabledEndpointsAfterRetry, retryCount+1)
+		rpcp.RetryDisabledEndpoints(disabledEndpointsAfterRetry, specValidator, retryCount+1)
 		activeEndpointsList := getActiveEndpoints(disabledEndpoints, disabledEndpointsAfterRetry)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 	} else {
@@ -229,24 +233,24 @@ func (rpcp *RPCProvider) RetryDisabledEndpoints(disabledEndpoints []*lavasession
 	}
 }
 
-func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, parallel bool) (disabledEndpointsRet []*lavasession.RPCProviderEndpoint) {
+func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, specValidator *SpecValidator, parallel bool) (disabledEndpointsRet []*lavasession.RPCProviderEndpoint) {
 	var wg sync.WaitGroup
 	parallelJobs := len(rpcProviderEndpoints)
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
-		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) {
+		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
-			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint)
+			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
 			if err != nil {
 				rpcp.providerMetricsManager.SetDisabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 				disabledEndpoints <- rpcProviderEndpoint
 			}
 		}
 		if parallel {
-			go setupEndpoint(rpcProviderEndpoint)
+			go setupEndpoint(rpcProviderEndpoint, specValidator)
 		} else {
-			setupEndpoint(rpcProviderEndpoint)
+			setupEndpoint(rpcProviderEndpoint, specValidator)
 		}
 	}
 	wg.Wait()
@@ -258,7 +262,7 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	return disabledEndpointsList
 }
 
-func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
+func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
@@ -271,7 +275,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
-	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface})
+	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface}
+	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	if err != nil {
 		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
@@ -300,11 +305,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 		}
 
-		// Fetch and validate all verifications
-		err = chainFetcher.Validate(ctx)
+		// Add the chain fetcher to the spec validator
+		err := specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
 		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to failing to validate, continuing with other endpoints", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+			return err
 		}
+
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
@@ -330,8 +336,16 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			}
+
 			// Any validation needs to be before we store chain tracker for given chain id
 			rpcp.chainTrackers.SetTrackerForChain(rpcProviderEndpoint.ChainID, chainTracker)
+
+			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint)
+			utils.LavaFormatDebug("Registering for spec verifications for endpoint",
+				utils.LogAttr("rpcEndpoint", rpcEndpoint))
+			if err != nil {
+				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+			}
 		} else {
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
@@ -362,6 +376,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		if !ok {
 			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
 			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+			specValidator.AddRPCProviderListener(rpcProviderEndpoint.NetworkAddress.Address, listener)
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
 		}
 	}()
@@ -419,6 +434,11 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo(common.ProcessStartLogText)
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
 			config_name := DefaultRPCProviderFileName
 			if len(args) == 1 {
 				config_name = args[0] // name of config file (without extension)
@@ -431,12 +451,11 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			// set log format
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
+			// set rolling log.
+			closeLoggerOnFinish := common.SetupRollingLogger()
+			defer closeLoggerOnFinish()
 
 			utils.LavaFormatInfo("RPCProvider started")
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
 			var rpcProviderEndpoints []*lavasession.RPCProviderEndpoint
 			var endpoints_strings []string
 			var viper_endpoints *viper.Viper
@@ -508,7 +527,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
-			utils.LoggingLevel(logLevel)
+			utils.SetGlobalLoggingLevel(logLevel)
 
 			// check if the command includes --pprof-address
 			pprofAddressFlagUsed := cmd.Flags().Lookup("pprof-address").Changed
@@ -581,5 +600,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint(rewardserver.RewardsSnapshotTimeoutSecFlagName, rewardserver.DefaultRewardsSnapshotTimeoutSec, "the seconds to wait until making snapshot of the rewards memory")
 	cmdRPCProvider.Flags().String(StickinessHeaderName, RPCProviderStickinessHeaderName, "the name of the header to be attacked to requests for stickiness by consumer, used for consistency")
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
+	cmdRPCProvider.Flags().DurationVar(&SpecValidationInterval, SpecValidationIntervalFlagName, SpecValidationInterval, "determines the interval of which to run validation on the spec for all connected chains")
+	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
+	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

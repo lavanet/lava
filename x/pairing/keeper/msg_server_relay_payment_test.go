@@ -217,8 +217,12 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	require.Nil(t, err)
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
-	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Addr)
+
 	// reward + before == after
+	_, err = ts.TxDualstakingClaimRewards(provider1Acct.Addr.String(), provider1Acct.Addr.String())
+	require.Nil(ts.T, err)
+
+	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Addr)
 	require.Equal(t, balanceProviderAfterPayment, int64(reward)+balanceProviderBeforePayment)
 }
 

@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
@@ -65,6 +66,7 @@ type lavaTest struct {
 	providerType         map[string][]epochStorageTypes.Endpoint
 	wg                   sync.WaitGroup
 	logPath              string
+	tokenDenom           string
 }
 
 var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
@@ -621,10 +623,10 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	lt.execCommand(ctx, "startJSONRPCConsumer", "07_lavaOverLava", command, true)
 
 	// scripts/init_e2e.sh will:
-	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
+	// - produce 5 specs: ETH1, GTH1, SEP1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 
-	lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(2, 6, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -1146,6 +1148,7 @@ func runProtocolE2E(timeout time.Duration) {
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,
+		tokenDenom:   commonconsts.TestTokenDenom,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
@@ -1170,13 +1173,13 @@ func runProtocolE2E(timeout time.Duration) {
 	lt.stakeLava(ctx)
 
 	// scripts/init_e2e.sh will:
-	// - produce 4 specs: ETH1, GTH1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
+	// - produce 4 specs: ETH1, GTH1, SEP1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 	// - produce 5 staked providers (for each of ETH1, LAV1)
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(2, 5, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, 6, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
@@ -1286,7 +1289,7 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Starting Lava OK")
 
 	// set in init_chain.sh
-	var epochDuration int64 = 30 * 1.2
+	var epochDuration int64 = 20 * 1.2
 
 	signalChannel := make(chan bool)
 	url := "http://127.0.0.1:3347"

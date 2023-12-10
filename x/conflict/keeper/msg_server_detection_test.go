@@ -30,8 +30,7 @@ type tester struct {
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 	val, _ := ts.AddAccount(common.VALIDATOR, 0, 1000000)
-	_, err := ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(10000)))
-	require.Nil(t, err)
+	ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(10000)))
 
 	ts.AddPlan("free", common.CreateMockPlan())
 	ts.AddSpec("mock", common.CreateMockSpec())

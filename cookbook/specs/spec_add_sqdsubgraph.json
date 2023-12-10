@@ -44,6 +44,24 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/subgraphs/name/1",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": false,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "inheritance_apis": [],
@@ -52,23 +70,56 @@
                             {
                                 "name": "health",
                                 "parse_directive": {
-                                    "function_template": "/",
+                                    "function_template": "{\"query\":\"{\n  pools(first: 5) {\n    id\n    poolid\n    platform {\n      id\n    }\n    name\n  }\n}\"}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
-                                            "latest"
+                                            "0",
+                                            "error"
                                         ],
-                                        "parser_func": "DEFAULT"
+                                        "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "/subgraphs/name/health"
+                                    "api_name": "/subgraphs/name/1"
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "GraphQL server error (client error): Invalid subgraph name \"1\""
                                     }
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "convex"
+                        },
+                        "apis": [
+                            {
+                                "name": "/subgraphs/name/convex",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 200,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": []
                     }
                 ]
             }

@@ -120,7 +120,7 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
-			utils.LoggingLevel(logLevel)
+			utils.SetGlobalLoggingLevel(logLevel)
 			var viper_endpoints *viper.Viper
 			viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
 			if err != nil {

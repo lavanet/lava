@@ -77,6 +77,10 @@ func NewGrpcChainParser() (chainParser *GrpcChainParser, err error) {
 	return &GrpcChainParser{}, nil
 }
 
+func (bcp *GrpcChainParser) GetUniqueName() string {
+	return "grpc_chain_parser"
+}
+
 func (apip *GrpcChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -307,12 +311,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		nodeError := &GrpcNodeErrorResponse{}
 		unMarshalingError := json.Unmarshal(relayReply.Data, nodeError)
 		metadataToReply := relayReply.Metadata
-		if relayResult.GetProvider() != "" {
-			metadataToReply = append(metadataToReply, pairingtypes.Metadata{
-				Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
-				Value: relayResult.GetProvider(),
-			})
-		}
 		if unMarshalingError == nil {
 			return nil, convertRelayMetaDataToMDMetaData(metadataToReply), status.Error(codes.Code(nodeError.ErrorCode), nodeError.ErrorMessage)
 		}

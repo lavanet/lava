@@ -60,6 +60,10 @@ func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server
 	return server, nil
 }
 
+func (s *Server) GetUniqueName() string {
+	return "badge_server"
+}
+
 func (s *Server) InitializeStateTracker(tracker *BadgeStateTracker) {
 	if s.stateTracker != nil {
 		utils.LavaFormatFatal("state tracker already initialized", nil)
@@ -130,6 +134,7 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 		Epoch:        s.GetEpoch(),
 		Address:      req.BadgeAddress,
 		LavaChainId:  s.ChainId,
+		VirtualEpoch: s.stateTracker.GetLatestVirtualEpoch(),
 	}
 
 	result := pairingtypes.GenerateBadgeResponse{

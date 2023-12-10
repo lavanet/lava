@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,10 +23,6 @@ func NewMigrator(keeper Keeper) Migrator {
 //   - Trigger the version upgrade of the planFS fixation store
 //   - Update plan policy
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
-	if err := m.keeper.plansFS.MigrateVersion(ctx); err != nil {
-		return fmt.Errorf("%w: plans fixation-store", err)
-	}
-
 	planIndices := m.keeper.plansFS.AllEntryIndicesFilter(ctx, "", nil)
 
 	for _, planIndex := range planIndices {
@@ -68,14 +63,7 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 //   - Trigger the version upgrade of the planFS fixation store
 //   - Replace the store prefix from module-name ("plan") to "plan-fs"
 func (m Migrator) Migrate3to4(ctx sdk.Context) error {
-	const V4_PlanFixationStorePrefix = "plan"
-
-	// MigrateVersionAndPrefix() will take care of calling MigrateVersion()
-	// with the old prefix first, before changing to the new (current) prefix.
-
-	if err := m.keeper.plansFS.MigrateVersionAndPrefix(ctx, V4_PlanFixationStorePrefix); err != nil {
-		return fmt.Errorf("%w: plans fixation-store", err)
-	}
+	// This migration used to call a deprecated fixationstore function called MigrateVersionAndPrefix
 
 	return nil
 }
@@ -84,22 +72,25 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 //   - Trigger the version upgrade of the planFS fixation store (so it will
 //     call the version upgrade of its timer store).
 func (m Migrator) Migrate4to5(ctx sdk.Context) error {
-	if err := m.keeper.plansFS.MigrateVersion(ctx); err != nil {
-		return fmt.Errorf("%w: plans fixation-store", err)
-	}
+	// This migration used to call a deprecated fixationstore function called MigrateVersion
+
 	return nil
 }
 
 // Migrate5to6 implements store migration from v5 to v6:
 // -- trigger fixation migration, deleteat and live variables
 func (m Migrator) Migrate5to6(ctx sdk.Context) error {
-	return m.keeper.plansFS.MigrateVersion(ctx)
+	// This migration used to call a deprecated fixationstore function called MigrateVersion
+
+	return nil
 }
 
 // Migrate6to7 implements store migration from v6 to v7:
 // -- trigger fixation migration (v4->v5), initialize IsLatest field
 func (m Migrator) Migrate6to7(ctx sdk.Context) error {
-	return m.keeper.plansFS.MigrateVersion(ctx)
+	// This migration used to call a deprecated fixationstore function called MigrateVersion
+
+	return nil
 }
 
 func (m Migrator) Migrate7to8(ctx sdk.Context) error {

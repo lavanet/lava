@@ -689,7 +689,7 @@ func TestStakeEndpoints(t *testing.T) {
 		},
 	}
 
-	amount := common.NewCoin(testStake)
+	amount := common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), testStake)
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {

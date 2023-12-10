@@ -16,6 +16,8 @@ export class StateBadgeQuery {
   private walletAddress: string;
   private relayer: Relayer;
   private account: AccountData;
+  private virtualEpoch = 0;
+  private currentEpoch: number | undefined;
 
   constructor(
     badgeManager: BadgeManager,
@@ -44,6 +46,8 @@ export class StateBadgeQuery {
     Logger.debug("Fetching pairing started");
 
     let timeLeftToNextPairing;
+    let virtualEpoch;
+    let currentEpoch;
 
     for (const chainID of this.chainIDs) {
       const badgeResponse = await this.fetchNewBadge(chainID);
@@ -76,14 +80,19 @@ export class StateBadgeQuery {
       // Parse time till next epoch
       timeLeftToNextPairing = pairingResponse.getTimeLeftToNextPairing();
 
+      // Parse current virtual epoch
+      virtualEpoch = badge.getVirtualEpoch();
+
       // Generate StakeEntry
       const stakeEntry = pairingResponse.getProvidersList();
+
+      currentEpoch = badge.getEpoch();
 
       // Save pairing response for chainID
       this.pairing.set(chainID, {
         providers: stakeEntry,
         maxCu: badge.getCuAllocation(),
-        currentEpoch: pairingResponse.getCurrentEpoch(),
+        currentEpoch: currentEpoch,
         spec: specResponse,
       });
     }
@@ -93,6 +102,14 @@ export class StateBadgeQuery {
       throw StateTrackerErrors.errTimeTillNextEpochMissing;
     }
 
+    // If virtualEpoch is undefined providers work in regular mode
+    if (virtualEpoch == undefined) {
+      virtualEpoch = 0;
+    }
+
+    this.virtualEpoch = virtualEpoch;
+    this.currentEpoch = currentEpoch;
+
     Logger.debug("Fetching pairing ended");
 
     return timeLeftToNextPairing;
@@ -100,6 +117,14 @@ export class StateBadgeQuery {
 
   public async init(): Promise<void> {
     return;
+  }
+
+  public getVirtualEpoch(): number {
+    return this.virtualEpoch;
+  }
+
+  public getCurrentEpoch(): number | undefined {
+    return this.currentEpoch;
   }
 
   // getPairing return pairing list for specific chainID

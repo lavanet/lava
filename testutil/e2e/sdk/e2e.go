@@ -33,14 +33,50 @@ type Pair struct {
 	PublicAddress string `json:"publicAddress"`
 }
 
-func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *bytes.Buffer) {
+func RunSDKTest(testFile string, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) error {
+	utils.LavaFormatInfo("[+] Starting SDK test", utils.LogAttr("test_file", testFile))
+	// Prepare command for running test
+	cmd := exec.Command("ts-node", testFile)
+
+	// Get os environment
+	cmd.Env = os.Environ()
+
+	// Set the environment variable for the private key
+	cmd.Env = append(cmd.Env, "PRIVATE_KEY="+privateKey)
+	cmd.Env = append(cmd.Env, "PUBLIC_KEY="+publicKey)
+
+	// Set the environment variable for badge server project id
+	cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")
+
+	// Set the environment variable for badge server address
+	cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:"+badgePort)
+
+	// Set the environment variable for badge server address
+	cmd.Env = append(cmd.Env, "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
+
+	// Run the command and capture both standard output and standard error
+	cmd.Stdout = logs
+	cmd.Stderr = logs
+
+	// Run the test.
+	utils.LavaFormatInfo(fmt.Sprintf("Running test: %s", testFile))
+	err := cmd.Run()
+	if err != nil {
+		utils.LavaFormatPanic("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
+	} else {
+		utils.LavaFormatInfo(logs.String())
+	}
+	return nil
+}
+
+func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) {
 	defer func() {
 		// Delete the file directly without checking if it exists
 		os.Remove("testutil/e2e/sdk/pairingList.json")
 	}()
 
 	// Generate pairing list config
-	generatePairingList(grpcConn, ctx)
+	GeneratePairingList(grpcConn, ctx)
 
 	// Get a list of all tests files in the tests folder
 	testFiles := []string{}
@@ -52,7 +88,7 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 			// Skip the "node_modules" directory
 			return filepath.SkipDir
 		}
-		if !info.IsDir() && strings.HasSuffix(path, ".ts") {
+		if !info.IsDir() && !strings.Contains(path, "emergency") && strings.HasSuffix(path, ".ts") {
 			testFiles = append(testFiles, path)
 		}
 		return nil
@@ -65,37 +101,9 @@ func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey stri
 	testFilesThatFailed := []string{}
 	// Loop through each test file and execute it
 	for _, testFile := range testFiles {
-		// Prepare command for running test
-		cmd := exec.Command("ts-node", testFile)
-
-		// Get os environment
-		cmd.Env = os.Environ()
-
-		// Set the environment variable for the private key
-		cmd.Env = append(cmd.Env, "PRIVATE_KEY="+privateKey)
-		cmd.Env = append(cmd.Env, "PUBLIC_KEY="+publicKey)
-
-		// Set the environment variable for badge server project id
-		cmd.Env = append(cmd.Env, "BADGE_PROJECT_ID="+"alice")
-
-		// Set the environment variable for badge server address
-		cmd.Env = append(cmd.Env, "BADGE_SERVER_ADDR="+"http://localhost:7070")
-
-		// Set the environment variable for badge server address
-		cmd.Env = append(cmd.Env, "PAIRING_LIST="+"testutil/e2e/sdk/pairingList.json")
-
-		// Run the command and capture both standard output and standard error
-		cmd.Stdout = logs
-		cmd.Stderr = logs
-
-		// Run the test.
-		utils.LavaFormatInfo(fmt.Sprintf("Running test: %s", testFile))
-		err := cmd.Run()
+		err := RunSDKTest(testFile, privateKey, publicKey, logs, badgePort)
 		if err != nil {
-			utils.LavaFormatError("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
 			testFilesThatFailed = append(testFilesThatFailed, testFile)
-		} else {
-			utils.LavaFormatInfo(logs.String())
 		}
 	}
 	if len(testFilesThatFailed) > 0 {
@@ -132,7 +140,7 @@ func CheckTsNode() {
 }
 
 // generatePairingList pairing list seed file
-func generatePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
+func GeneratePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 	c := pairingTypes.NewQueryClient(grpcConn)
 
 	queryResponse, err := c.Providers(ctx, &pairingTypes.QueryProvidersRequest{ChainID: "LAV1", ShowFrozen: false})
