@@ -72,7 +72,7 @@ func NewKeeper(
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
-		keeper.RefillRewardsPool(ctx, subkey, data)
+		keeper.RefillRewardsPools(ctx, subkey, data)
 	}
 
 	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators
@@ -86,18 +86,18 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
-// RefillRewardsPool is called once a month (as a timer callback). it does the following for validators:
-//  1. burns the current token in the validators block pool by the burn rate
-//  2. transfers the monthly tokens quota from the validators pool to the validators block pool
+// RefillRewardsPools is called once a month (as a timer callback). it does the following for validators:
+//  1. burns the current token in the validators distribution pool by the burn rate
+//  2. transfers the monthly tokens quota from the validators allocation pool to the validators distribution pool
 //  3. opens a new timer for the next month (and encodes the expiry block and months left to allocation pool in it)
 //
 // for providers:
 // TBD
-func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte, data []byte) {
+func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	// burn remaining tokens in the block pool
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
-	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)).TruncateInt()
-	err := k.BurnPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName, tokensToBurn)
+	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)).TruncateInt()
+	err := k.BurnPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName, tokensToBurn)
 	if err != nil {
 		utils.LavaFormatError("critical - could not burn validators block pool tokens", err)
 	}
@@ -105,7 +105,7 @@ func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte, data []byte) {
 	// get the months left for the allocation pools
 	var monthsLeft uint64
 	if len(data) == 0 {
-		monthsLeft = uint64(types.ValidatorsRewardsPoolLifetime)
+		monthsLeft = uint64(types.RewardsAllocationPoolsLifetime)
 	} else {
 		monthsLeft = binary.BigEndian.Uint64(data)
 	}
@@ -113,13 +113,13 @@ func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte, data []byte) {
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
 	monthlyQuota := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.ZeroInt()}}
 	if monthsLeft != 0 {
-		validatorPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)
+		validatorPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName)
 		monthlyQuota[0] = monthlyQuota[0].AddAmount(validatorPoolBalance.QuoRaw(int64(monthsLeft)))
 
 		err = k.bankKeeper.SendCoinsFromModuleToModule(
 			ctx,
-			string(types.ValidatorsRewardsPoolName),
-			string(types.ValidatorsBlockRewardsPoolName),
+			string(types.ValidatorsRewardsAllocationPoolName),
+			string(types.ValidatorsRewardsDistributionPoolName),
 			monthlyQuota,
 		)
 		if err != nil {
@@ -208,7 +208,7 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 // the fee collector account. This account is used by Cosmos' distribution module to send the
 // validator rewards
 func (k Keeper) AddCollectedFees(ctx sdk.Context, fees sdk.Coins) error {
-	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ValidatorsBlockRewardsPoolName), k.feeCollectorName, fees)
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ValidatorsRewardsDistributionPoolName), k.feeCollectorName, fees)
 }
 
 func (k Keeper) InitRewardsRefillTS(ctx sdk.Context, gs timerstoretypes.GenesisState) {

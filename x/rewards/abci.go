@@ -14,10 +14,10 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator block pool balance
-	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)
+	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 
-	// validators bonus rewards = (blockPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).TruncateInt().QuoRaw(blocksToNextTimerExpiry)
+	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
+	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).TruncateInt().QuoRaw(blocksToNextTimerExpiry)
 	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, validatorsRewards))
 
 	// distribute rewards to validators (same as Cosmos mint module)

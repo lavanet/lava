@@ -12,7 +12,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 	k.InitRewardsRefillTS(ctx, genState.RefillRewardsTS)
-	k.RefillRewardsPool(ctx, nil, nil)
+	k.RefillRewardsPools(ctx, nil, nil)
 }
 
 // ExportGenesis returns the capability module's exported genesis.

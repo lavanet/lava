@@ -19,12 +19,12 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 
 	pools := []types.PoolInfo{
 		{
-			Name:    string(types.ValidatorsBlockRewardsPoolName),
-			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)),
+			Name:    string(types.ValidatorsRewardsDistributionPoolName),
+			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)),
 		},
 		{
-			Name:    string(types.ValidatorsRewardsPoolName),
-			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)),
+			Name:    string(types.ValidatorsRewardsAllocationPoolName),
+			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName)),
 		},
 	}
 
