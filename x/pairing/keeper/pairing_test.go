@@ -552,7 +552,7 @@ func TestAddonPairing(t *testing.T) {
 			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
 
-			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId, ts.BlockHeight())
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
@@ -1962,7 +1962,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 			require.NoError(t, err)
 
-			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+			strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId, ts.BlockHeight())
 			require.NoError(t, err)
 			if len(tt.expectedStrictestPolicies) > 0 {
 				require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
@@ -2113,7 +2113,7 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		project, err := ts.GetProjectForBlock(projectID, ts.BlockHeight())
 		require.NoError(t, err)
 
-		strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId)
+		strictestPolicy, _, err := ts.Keepers.Pairing.GetProjectStrictestPolicy(ts.Ctx, project, specId, ts.BlockHeight())
 		require.NoError(t, err)
 
 		require.NotEqual(t, 0, len(strictestPolicy.ChainPolicies))
