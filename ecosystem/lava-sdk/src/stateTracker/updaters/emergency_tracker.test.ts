@@ -35,7 +35,7 @@ function setupConsumerSessionManager(
     relayer = setupRelayer();
     jest
       .spyOn(relayer, "probeProvider")
-      .mockImplementation((providerAddress, apiInterface, guid, specId) => {
+      .mockImplementation((providerAddress, apiInterface, guid) => {
         const response: ProbeReply = new ProbeReply();
         response.setLatestBlock(42);
         response.setLavaEpoch(20);

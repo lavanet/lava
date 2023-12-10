@@ -1,7 +1,4 @@
-import {
-  Api,
-  SpecCategory,
-} from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
+import { SpecCategory } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 
 export function CombineSpecCategories(
   first: SpecCategory,
