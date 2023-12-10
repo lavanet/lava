@@ -34,27 +34,42 @@ import {
 import { AverageWorldLatency } from "../common/timeout";
 import { ConsumerConsistency } from "../rpcconsumer/consumerConsistency";
 import { GeolocationFromString } from "../lavasession/geolocation";
-
-export type ChainIDsToInit = string | string[]; // chainId or an array of chain ids to initialize sdk for.
+import {
+  ChainIDsToInit,
+  ChainIdSpecification,
+} from "../stateTracker/types/types";
 type RelayReceiver = string; // chainId + ApiInterface
 
 /**
  * Options for initializing the LavaSDK.
+ * @param privateKey // Required: The private key of the staked Lava client for the specified chainID
+ * @param badge // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
+ * @param chainIds // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
+ * @param pairingListConfig // Optional: The Lava pairing list config used for communicating with the Lava network
+ * @param network // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
+ * @param geolocation // Optional: The geolocation to be used ["1" or "USC" for US central, "2" or "EU" for Europe, 4: "USE",  8: "USW",  16: "AF",  32: "AS",  64: "AU"]
+ * @param lavaChainId // Optional: The Lava chain ID (default value for Lava Testnet)
+ * @param secure // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
+ * @param allowInsecureTransport // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
+ * @param logLevel // Optional for log level settings, "debug" | "info" | "warn" | "error" | "success" | "NoPrints"
+ * @param transport // Optional for transport settings if you would like to change the default transport settings. see utils/browser.ts for the current settings
+ * @param providerOptimizerStrategy // Optional: the strategy to use to pick providers (default: balanced)
+ * @param maxConcurrentProviders // Optional: the maximum number of providers to use concurrently (default: 3)}
  */
 export interface LavaSDKOptions {
-  privateKey?: string; // Required: The private key of the staked Lava client for the specified chainID
-  badge?: BadgeOptions; // Required: Public URL of badge server and ID of the project you want to connect. Remove privateKey if badge is enabled.
-  chainIds: ChainIDsToInit; // Required: The ID of the chain you want to query or an array of chain ids example "ETH1" | ["ETH1", "LAV1"]
-  pairingListConfig?: string; // Optional: The Lava pairing list config used for communicating with the Lava network
-  network?: string; // Optional: The network from pairingListConfig to be used ["mainnet", "testnet"]
-  geolocation?: string; // Optional: The geolocation to be used ["1" or "USC" for US central, "2" or "EU" for Europe, 4: "USE",  8: "USW",  16: "AF",  32: "AS",  64: "AU"]
-  lavaChainId?: string; // Optional: The Lava chain ID (default value for Lava Testnet)
-  secure?: boolean; // Optional: communicates through https, this is a temporary flag that will be disabled once the chain will use https by default
-  allowInsecureTransport?: boolean; // Optional: indicates to use a insecure transport when connecting the provider, this is used for testing purposes only and allows self-signed certificates to be used
-  logLevel?: string | LogLevel; // Optional for log level settings, "debug" | "info" | "warn" | "error" | "success" | "NoPrints"
-  transport?: any; // Optional for transport settings if you would like to change the default transport settings. see utils/browser.ts for the current settings
-  providerOptimizerStrategy?: ProviderOptimizerStrategy; // Optional: the strategy to use to pick providers (default: balanced)
-  maxConcurrentProviders?: number; // Optional: the maximum number of providers to use concurrently (default: 3)}
+  privateKey?: string;
+  badge?: BadgeOptions;
+  chainIds: ChainIDsToInit;
+  pairingListConfig?: string;
+  network?: string;
+  geolocation?: string;
+  lavaChainId?: string;
+  secure?: boolean;
+  allowInsecureTransport?: boolean;
+  logLevel?: string | LogLevel;
+  transport?: any;
+  providerOptimizerStrategy?: ProviderOptimizerStrategy;
+  maxConcurrentProviders?: number;
 }
 
 export class LavaSDK {
@@ -68,7 +83,7 @@ export class LavaSDK {
   private account: AccountData | Error;
   private secure: boolean;
   private allowInsecureTransport: boolean;
-  private chainIDRpcInterface: string[];
+  private chainIDRpcInterface: ChainIdSpecification;
   private transport: any;
   private rpcConsumerServerRouter: Map<RelayReceiver, RPCConsumerServer>; // routing the right chainID and apiInterface to rpc server
   private relayer?: Relayer; // we setup the relayer in the init function as we require extra information
@@ -228,12 +243,21 @@ export class LavaSDK {
         consumerConsistency
       );
     }
+    const chainIds: string[] = [];
+    this.chainIDRpcInterface.forEach((specification) => {
+      if (typeof specification == "string") {
+        chainIds.push(specification);
+      } else {
+        // If it's ChainIdWithSpecificAPIInterfaces, extract chainId and append it to chainIDs
+        chainIds.push(specification.chainId);
+      }
+    });
 
     // Init state tracker
     const tracker = new StateTracker(
       this.pairingListConfig,
       this.relayer,
-      this.chainIDRpcInterface,
+      chainIds,
       {
         geolocation: this.geolocation,
         network: this.network,
@@ -267,7 +291,15 @@ export class LavaSDK {
     await tracker.initialize();
 
     // init rpcconsumer servers
-    for (const chainId of this.chainIDRpcInterface) {
+    for (const specification of this.chainIDRpcInterface) {
+      let chainId: string;
+      let apiInterfaceSpecification: string[] = [];
+      if (typeof specification == "string") {
+        chainId = specification;
+      } else {
+        chainId = specification.chainId;
+        apiInterfaceSpecification = specification.apiInterfaces;
+      }
       const pairingResponse = tracker.getPairingResponse(chainId);
 
       if (pairingResponse == undefined) {
