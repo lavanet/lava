@@ -140,7 +140,7 @@ func RunHealth(ctx context.Context,
 		for i := 0; i < BasicQueryRetries; i++ {
 			var specResp *spectypes.QueryGetSpecResponse
 			queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			specResp, err = specQuerier.SpecRaw(queryCtx, &spectypes.QueryGetSpecRequest{
+			specResp, err = specQuerier.Spec(queryCtx, &spectypes.QueryGetSpecRequest{
 				ChainID: specId,
 			})
 			cancel()
