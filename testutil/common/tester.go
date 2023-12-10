@@ -22,6 +22,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -785,6 +786,12 @@ func (ts *Tester) QueryFixationEntry(storeKey string, prefix string, key string,
 		StringData: stringData,
 	}
 	return ts.Keepers.FixationStoreKeeper.Entry(ts.GoCtx, msg)
+}
+
+// QueryRewardsPools implements 'q rewards pools'
+func (ts *Tester) QueryRewardsPools() (*rewardstypes.QueryPoolsResponse, error) {
+	msg := &rewardstypes.QueryPoolsRequest{}
+	return ts.Keepers.Rewards.Pools(ts.GoCtx, msg)
 }
 
 // block/epoch helpers

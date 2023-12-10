@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/rewards/params.proto";
+import "cosmos/base/v1beta1/coin.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/lavanet/lava/x/rewards/types";
@@ -14,6 +15,11 @@ service Query {
   // Parameters queries the parameters of the module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/params";
+  }
+
+  // Pools queries all the pools' info
+  rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/pools";
   }
   // this line is used by starport scaffolding # 2
 }
@@ -25,6 +31,21 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryPoolsRequest is request type for the Query/Pools RPC method.
+message QueryPoolsRequest {}
+
+message PoolInfo {
+  string name = 1; // pool name
+  cosmos.base.v1beta1.Coin balance = 2 [(gogoproto.nullable) = false]; // pool balance
+  int64 blocks_to_refill = 3; // number of blocks until block pool is refilled
+}
+
+// QueryPoolsResponse is response type for the Query/Pools RPC method.
+message QueryPoolsResponse {
+  // details holds all the info of this module's pools.
+  repeated PoolInfo details = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

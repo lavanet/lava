@@ -49,6 +49,8 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	protocolkeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	rewardskeeper "github.com/lavanet/lava/x/rewards/keeper"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -86,6 +88,7 @@ type Keepers struct {
 	BlockStore          MockBlockStore
 	Downtime            downtimekeeper.Keeper
 	SlashingKeeper      slashingkeeper.Keeper
+	Rewards             rewardskeeper.Keeper
 }
 
 type Servers struct {
@@ -100,6 +103,7 @@ type Servers struct {
 	DualstakingServer  dualstakingtypes.MsgServer
 	PlansServer        planstypes.MsgServer
 	SlashingServer     slashingtypes.MsgServer
+	RewardsServer      rewardstypes.MsgServer
 }
 
 type KeeperBeginBlocker interface {
@@ -183,6 +187,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
+	rewardsStoreKey := sdk.NewKVStoreKey(rewardstypes.StoreKey)
+	rewardsMemStoreKey := storetypes.NewMemoryStoreKey(rewardstypes.MemStoreKey)
+	stateStore.MountStoreWithDB(rewardsStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(rewardsMemStoreKey, storetypes.StoreTypeMemory, nil)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
@@ -208,6 +217,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	subscriptionparamsSubspace, _ := paramsKeeper.GetSubspace(subscriptiontypes.ModuleName)
 
 	dualstakingparamsSubspace, _ := paramsKeeper.GetSubspace(dualstakingtypes.ModuleName)
+
+	rewardsparamsSubspace, _ := paramsKeeper.GetSubspace(rewardstypes.ModuleName)
 
 	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
 		conflicttypes.Amino,
@@ -237,6 +248,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Downtime, ks.StakingKeeper, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
@@ -259,6 +271,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
+	ks.Rewards.SetParams(ctx, rewardstypes.DefaultParams())
 
 	// register the staking hooks
 	ks.StakingKeeper.SetHooks(
@@ -279,6 +292,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.DualstakingServer = dualstakingkeeper.NewMsgServerImpl(ks.Dualstaking)
 	ss.StakingServer = stakingkeeper.NewMsgServerImpl(&ks.StakingKeeper)
 	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
+	ss.RewardsServer = rewardskeeper.NewMsgServerImpl(ks.Rewards)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
