@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
@@ -84,6 +85,7 @@ func (k Keeper) CreateSubscription(
 			PlanBlock:     plan.Block,
 			DurationTotal: 0,
 			AutoRenewal:   autoRenewalFlag,
+			OveruseBought: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()),
 		}
 
 		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()

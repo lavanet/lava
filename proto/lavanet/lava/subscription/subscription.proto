@@ -2,6 +2,8 @@ syntax = "proto3";
 package lavanet.lava.subscription;
 
 option go_package = "github.com/lavanet/lava/x/subscription/types";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 message Subscription {
   string creator = 1; // creator pays for the subscription
@@ -19,4 +21,5 @@ message Subscription {
   string cluster = 13;         // cluster key
   uint64 duration_total = 14;  // continous subscription usage
   bool auto_renewal = 15; // automatic renewal when the subscription expires
+  cosmos.base.v1beta1.Coin overuse_bought = 16 [(gogoproto.nullable) = false]; // amount of funds the subscription used to buy overuse CU in this month
 }
