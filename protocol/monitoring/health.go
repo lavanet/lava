@@ -55,7 +55,8 @@ func RunHealth(ctx context.Context,
 	providerAddresses []string,
 	consumerEndpoints []*lavasession.RPCEndpoint,
 	referenceEndpoints []*lavasession.RPCEndpoint,
-	prometheusListenAddr string) (*HealthResults, error) {
+	prometheusListenAddr string,
+) (*HealthResults, error) {
 	specQuerier := spectypes.NewQueryClient(clientCtx)
 	healthResults := &HealthResults{
 		LatestBlocks:       map[string]int64{},
@@ -230,7 +231,8 @@ func CheckConsumersAndReferences(ctx context.Context,
 	clientCtx client.Context,
 	referenceEndpoints []*lavasession.RPCEndpoint,
 	consumerEndpoints []*lavasession.RPCEndpoint,
-	healthResults *HealthResults) error {
+	healthResults *HealthResults,
+) error {
 	// populate data from providers
 	for entry, data := range healthResults.ProviderData {
 		providerBlock := data.block

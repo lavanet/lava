@@ -97,7 +97,6 @@ func (healthResults *HealthResults) SetProviderData(providerKey LavaEntity, late
 		latestData.latency = slices.Max([]time.Duration{existing.latency, latestData.latency})
 	}
 	healthResults.ProviderData[providerKey] = latestData
-
 }
 
 func (healthResults *HealthResults) SetUnhealthyProvider(providerKey LavaEntity, errMsg string) {

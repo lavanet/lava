@@ -269,7 +269,6 @@ func (al *Alerting) ConsumerAlerts(healthResults *HealthResults) {
 				}
 			}
 		}
-
 	}
 	if len(attrs) > 0 {
 		al.SendAlert(ConsumerBlockGapAttribute, attrs)

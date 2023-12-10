@@ -133,7 +133,8 @@ reference_endpoints:
 				providerAddresses []string,
 				consumerEndpoints []*lavasession.RPCEndpoint,
 				referenceEndpoints []*lavasession.RPCEndpoint,
-				prometheusListenAddr string) {
+				prometheusListenAddr string,
+			) {
 				healthResult, err := RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 				if err != nil {
 					utils.LavaFormatError("invalid health run", err)
@@ -166,7 +167,6 @@ reference_endpoints:
 					return nil
 				}
 			}
-
 		},
 	}
 	cmdTestHealth.Flags().String(AlertingWebHookFlagName, "", "a url to post an alert to")
