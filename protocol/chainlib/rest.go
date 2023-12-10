@@ -38,10 +38,21 @@ func NewRestChainParser() (chainParser *RestChainParser, err error) {
 	return &RestChainParser{}, nil
 }
 
+func (bcp *RestChainParser) GetUniqueName() string {
+	return "rest_chain_parser"
+}
+
 func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
+		var data []byte = nil
+		urlPath := string(craftData.Data)
+		if craftData.ConnectionType == http.MethodPost {
+			// on post we need to send the data provided in the templace with the api as method
+			data = craftData.Data
+			urlPath = craftData.Path
+		}
 		// chain fetcher sends the replaced request inside data
-		chainMessage, err := apip.ParseMsg(string(craftData.Data), nil, craftData.ConnectionType, metadata, 0)
+		chainMessage, err := apip.ParseMsg(urlPath, data, craftData.ConnectionType, metadata, 0)
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -280,9 +291,6 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -339,9 +347,6 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)

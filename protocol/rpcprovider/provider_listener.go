@@ -36,7 +36,7 @@ func (pl *ProviderListener) RegisterReceiver(existingReceiver RelayReceiver, end
 		// there was already a receiver defined
 		return utils.LavaFormatError("double_receiver_setup receiver already defined on this address with the same chainID and apiInterface", nil, utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface})
 	}
-	pl.relayServer.relayReceivers[listen_endpoint.Key()] = existingReceiver
+	pl.relayServer.relayReceivers[listen_endpoint.Key()] = &relayReceiverWrapper{relayReceiver: &existingReceiver, enabled: true}
 	utils.LavaFormatInfo("Provider Listening on Address", utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface}, utils.Attribute{Key: "Address", Value: endpoint.NetworkAddress})
 	return nil
 }
@@ -77,7 +77,7 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		serveExecutor = func() error { return pl.httpServer.ServeTLS(lis, "", "") }
 	}
 
-	relayServer := &relayServer{relayReceivers: map[string]RelayReceiver{}}
+	relayServer := &relayServer{relayReceivers: map[string]*relayReceiverWrapper{}}
 	pl.relayServer = relayServer
 	pairingtypes.RegisterRelayerServer(grpcServer, relayServer)
 	go func() {
@@ -90,9 +90,14 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 	return pl
 }
 
+type relayReceiverWrapper struct {
+	relayReceiver *RelayReceiver
+	enabled       bool
+}
+
 type relayServer struct {
 	pairingtypes.UnimplementedRelayerServer
-	relayReceivers map[string]RelayReceiver
+	relayReceivers map[string]*relayReceiverWrapper
 	lock           sync.RWMutex
 }
 
@@ -141,5 +146,8 @@ func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayRe
 		}
 		return nil, utils.LavaFormatError("got called with unhandled relay receiver", nil, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
 	}
-	return relayReceiver, nil
+	if !relayReceiver.enabled {
+		return nil, utils.LavaFormatError("relayReceiver is disabled", nil, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+	}
+	return *relayReceiver.relayReceiver, nil
 }

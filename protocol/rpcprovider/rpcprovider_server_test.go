@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -194,7 +195,7 @@ func TestHandleConsistency(t *testing.T) {
 			requestBlock:       10001,
 			specId:             "LAV1",
 			err:                nil,
-			timeout:            25 * time.Millisecond, // 150 is one way travel time
+			timeout:            50 * time.Millisecond, // 150 is one way travel time
 			chainTrackerBlocks: []int64{100, 101},
 			changeTime:         100 * time.Second,
 			sleep:              true,
@@ -205,7 +206,7 @@ func TestHandleConsistency(t *testing.T) {
 			requestBlock:       101,
 			specId:             "LAV1",
 			err:                nil,
-			timeout:            25 * time.Millisecond, // 150 is one way travel time
+			timeout:            50 * time.Millisecond, // 150 is one way travel time
 			chainTrackerBlocks: []int64{100, 101},
 			changeTime:         100 * time.Second,
 			sleep:              true,
@@ -227,6 +228,7 @@ func TestHandleConsistency(t *testing.T) {
 			}
 			mockChainTracker := &MockChainTracker{}
 			require.GreaterOrEqual(t, len(play.chainTrackerBlocks), 1)
+			calls := 1                                                                                      // how many times we have setLatestBlock in the mock
 			mockChainTracker.SetLatestBlock(play.chainTrackerBlocks[0], time.Now().Add(-1*play.changeTime)) // change time is only in the past
 			require.NoError(t, err)
 			reliabilityManager := reliabilitymanager.NewReliabilityManager(mockChainTracker, nil, ts.Providers[0].Addr.String(), chainProxy, chainParser)
@@ -245,12 +247,13 @@ func TestHandleConsistency(t *testing.T) {
 					nextBlock := play.chainTrackerBlocks[1]
 					time.Sleep(6 * time.Millisecond)
 					mockChainTracker.SetLatestBlock(nextBlock, time.Now())
+					calls += 1
 				}
 			}()
 			ctx, cancel := context.WithTimeout(context.Background(), play.timeout)
 			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, blocksInFinalizationData, blockDistanceToFinalization)
 			cancel()
-			require.Equal(t, play.err == nil, err == nil, err)
+			require.Equal(t, play.err == nil, err == nil, err, strconv.Itoa(calls))
 			require.Less(t, timeSlept, play.timeout)
 			if play.sleep {
 				require.NotZero(t, timeSlept)

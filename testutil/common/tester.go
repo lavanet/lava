@@ -218,7 +218,7 @@ func (ts *Tester) AddPlan(name string, plan planstypes.Plan) *Tester {
 }
 
 func (ts *Tester) ModifyPlan(name string, plan planstypes.Plan) *Tester {
-	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan, true)
+	err := ts.Keepers.Plans.AddPlan(ts.Ctx, plan, false)
 	if err != nil {
 		panic("tester: falied to add plan: '" + plan.Index + "'")
 	}

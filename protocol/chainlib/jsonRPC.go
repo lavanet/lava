@@ -36,6 +36,10 @@ func NewJrpcChainParser() (chainParser *JsonRPCChainParser, err error) {
 	return &JsonRPCChainParser{}, nil
 }
 
+func (bcp *JsonRPCChainParser) GetUniqueName() string {
+	return "jsonrpc_chain_parser"
+}
+
 func (apip *JsonRPCChainParser) getApiCollection(connectionType, internalPath, addon string) (*spectypes.ApiCollection, error) {
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -408,9 +412,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		headers := convertToMetadataMap(metadataValues)
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
 		reply := relayResult.GetReply()
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			// Get unique GUID response
@@ -428,17 +429,17 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 
 			// Construct json response
 			response := convertToJsonError(errMasking)
-
 			// Return error json response
-			return fiberCtx.SendString(response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
+		response := string(reply.Data)
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",
 			fiberCtx.Request().URI().String(),
 			string(fiberCtx.Body()),
-			string(reply.Data),
+			response,
 			msgSeed,
 			time.Since(startTime),
 			nil,
@@ -447,7 +448,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return fiberCtx.SendString(string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 
 	// Go

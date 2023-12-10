@@ -134,9 +134,6 @@ func (ts *tester) payAndVerifyBalance(
 	validPayment bool,
 	providerRewardPerc uint64,
 ) {
-	// get consumer's project and subscription before payment
-	balance := ts.GetBalance(providerAddr)
-
 	proj, err := ts.QueryProjectDeveloper(clientAddr.String())
 	if !validConsumer {
 		require.NotNil(ts.T, err)
@@ -213,9 +210,19 @@ func (ts *tester) payAndVerifyBalance(
 	if totalCuUsed != 0 {
 		want = planPrice.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}
-	expectedReward := balance + want.Int64()
-	actualReward := ts.GetBalance(providerAddr)
-	require.Equal(ts.T, expectedReward, actualReward)
+
+	balanceWant := ts.GetBalance(providerAddr) + want.Int64()
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), "")
+	require.Nil(ts.T, err)
+	for _, reward := range reward.Rewards {
+		want = want.Sub(reward.Amount.Amount)
+	}
+	require.True(ts.T, want.IsZero())
+	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())
+	require.Nil(ts.T, err)
+
+	balance := ts.GetBalance(providerAddr) + want.Int64()
+	require.Equal(ts.T, balanceWant, balance)
 }
 
 // verifyRelayPayments verifies relay payments saved on-chain after getting payment
