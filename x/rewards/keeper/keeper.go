@@ -35,6 +35,7 @@ type (
 		// used to operate the monthly refill of the validators and providers rewards pool mechanism
 		// there is always a single timer that is expired in the next month
 		// the timer subkey holds the block in which the timer will expire (not exact)
+		// the timer data holds the number of months left for the allocation pools (until all funds are gone)
 		refillRewardsPoolTS timerstoretypes.TimerStore
 	}
 )
@@ -70,8 +71,8 @@ func NewKeeper(
 		feeCollectorName: feeCollectorName,
 	}
 
-	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
-		keeper.RefillRewardsPool(ctx, subkey)
+	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
+		keeper.RefillRewardsPool(ctx, subkey, data)
 	}
 
 	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators
@@ -88,11 +89,11 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // RefillRewardsPool is called once a month (as a timer callback). it does the following for validators:
 //  1. burns the current token in the validators block pool by the burn rate
 //  2. transfers the monthly tokens quota from the validators pool to the validators block pool
-//  3. opens a new timer for the next month (and encodes the expiry block in it)
+//  3. opens a new timer for the next month (and encodes the expiry block and months left to allocation pool in it)
 //
 // for providers:
 // TBD
-func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte) {
+func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte, data []byte) {
 	// burn remaining tokens in the block pool
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)).TruncateInt()
@@ -101,16 +102,33 @@ func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte) {
 		utils.LavaFormatError("critical - could not burn validators block pool tokens", err)
 	}
 
-	// transfer the new monthly quota
-	validatorPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)
+	// get the months left for the allocation pools
+	var monthsLeft uint64
+	if len(data) == 0 {
+		monthsLeft = uint64(types.ValidatorsRewardsPoolLifetime)
+	} else {
+		monthsLeft = binary.BigEndian.Uint64(data)
+	}
+
+	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
+	monthlyQuota := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.ZeroInt()}}
+	if monthsLeft != 0 {
+		validatorPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)
+		monthlyQuota[0] = monthlyQuota[0].AddAmount(validatorPoolBalance.QuoRaw(int64(monthsLeft)))
+	}
 	err = k.bankKeeper.SendCoinsFromModuleToModule(
 		ctx,
 		string(types.ValidatorsRewardsPoolName),
 		string(types.ValidatorsBlockRewardsPoolName),
-		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, validatorPoolBalance.QuoRaw(types.ValidatorsRewardsPoolLifetime))),
+		monthlyQuota,
 	)
 	if err != nil {
 		panic(err)
+	}
+
+	// update the month left
+	if monthsLeft != 0 {
+		monthsLeft -= 1
 	}
 
 	// calculate the block in which the timer will expire (+5% for errors)
@@ -119,22 +137,47 @@ func (k Keeper) RefillRewardsPool(ctx sdk.Context, _ []byte) {
 	blockCreationTime := k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds()
 	blocksToNextTimerExpiry := (durationUntilNextMonth / int64(blockCreationTime) * 105 / 100) + ctx.BlockHeight()
 
+	// update the months left of the allocation pool and encode it
+	monthsLeftBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(monthsLeftBytes, monthsLeft)
+
 	// open a new timer for next month
 	blocksToNextTimerExpirybytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(blocksToNextTimerExpirybytes, uint64(blocksToNextTimerExpiry))
-	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, []byte{})
+	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, monthsLeftBytes)
 }
 
-// BlocksToNextTimerExpiry is a wrapper function that extracts the timer's expiry block
-// for the timer's subkey and returns the amount of blocks remaining (according to the
-// current block height)
+// BlocksToNextTimerExpiry extracts the timer's expiry block from the timer's subkey
+// and returns the amount of blocks remaining (according to the current block height)
 func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
-	data, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
-	if len(data) == 0 {
+	keys, _, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
+	if len(keys) == 0 {
 		// something is wrong, don't panic but make validators rewards 0
 		return math.MaxInt64
 	}
-	return int64(binary.BigEndian.Uint64(data[0])) - ctx.BlockHeight()
+	return int64(binary.BigEndian.Uint64(keys[0])) - ctx.BlockHeight()
+}
+
+// TimeToNextTimerExpiry returns the time in which the timer will expire (according
+// to the current block time)
+func (k Keeper) TimeToNextTimerExpiry(ctx sdk.Context) int64 {
+	_, expiries, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
+	if len(expiries) == 0 {
+		// something is wrong, don't panic but return largest duration
+		return math.MaxInt64
+	}
+
+	return int64(expiries[0]) - ctx.BlockTime().UTC().Unix()
+}
+
+func (k Keeper) AllocationPoolMonthsLeft(ctx sdk.Context) int64 {
+	_, _, data := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
+	if len(data) == 0 {
+		// something is wrong, don't panic but return largest duration
+		return math.MaxInt64
+	}
+
+	return int64(binary.BigEndian.Uint64(data[0]))
 }
 
 // BondedTargetFactor calculates the bonded target factor which is used to calculate the validators

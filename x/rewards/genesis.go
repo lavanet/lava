@@ -1,6 +1,8 @@
 package rewards
 
 import (
+	"encoding/binary"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
@@ -11,7 +13,9 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
-	k.RefillRewardsPool(ctx, nil)
+	allocationPoolMonthsLeft := make([]byte, 8)
+	binary.BigEndian.PutUint64(allocationPoolMonthsLeft, uint64(types.ValidatorsRewardsPoolLifetime))
+	k.RefillRewardsPool(ctx, nil, allocationPoolMonthsLeft)
 }
 
 // ExportGenesis returns the capability module's exported genesis.

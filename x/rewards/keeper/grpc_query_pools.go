@@ -17,18 +17,25 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	details := []types.PoolInfo{
+	pools := []types.PoolInfo{
 		{
-			Name:           string(types.ValidatorsBlockRewardsPoolName),
-			Balance:        sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)),
-			BlocksToRefill: k.BlocksToNextTimerExpiry(ctx),
+			Name:    string(types.ValidatorsBlockRewardsPoolName),
+			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsBlockRewardsPoolName)),
 		},
 		{
-			Name:           string(types.ValidatorsRewardsPoolName),
-			Balance:        sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)),
-			BlocksToRefill: 0, // the main validators pool never refills
+			Name:    string(types.ValidatorsRewardsPoolName),
+			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsPoolName)),
 		},
 	}
 
-	return &types.QueryPoolsResponse{Details: details}, nil
+	estimatedBlocksToRefill := k.BlocksToNextTimerExpiry(ctx)
+	timeToRefill := k.TimeToNextTimerExpiry(ctx)
+	monthsLeft := k.AllocationPoolMonthsLeft(ctx)
+
+	return &types.QueryPoolsResponse{
+		Pools:                    pools,
+		TimeToRefill:             timeToRefill,
+		EstimatedBlocksToRefill:  estimatedBlocksToRefill,
+		AllocationPoolMonthsLeft: monthsLeft,
+	}, nil
 }
