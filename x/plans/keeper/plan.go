@@ -16,12 +16,9 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan, modify bool) erro
 		return err
 	}
 
-	// overwrite the planToAdd's block field with the current block height
-	planToAdd.Block = uint64(ctx.BlockHeight())
-
 	if modify {
 		var planFromStore types.Plan
-		block, _, _, found := k.plansFS.FindEntryDetailed(ctx, planToAdd.GetIndex(), uint64(ctx.BlockHeight()), &planFromStore)
+		block, _, _, found := k.plansFS.FindEntryDetailed(ctx, planToAdd.GetIndex(), planToAdd.Block, &planFromStore)
 		if found {
 			if planFromStore.Price.Amount.LT(planToAdd.Price.Amount) {
 				return utils.LavaFormatError("failed modifying plan in planFS", fmt.Errorf("plan price cannot be increased"),
@@ -29,17 +26,30 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan, modify bool) erro
 					utils.Attribute{Key: "originalPlan", Value: planFromStore},
 				)
 			}
-
-			planToAdd.Block = block
+			if planToAdd.Block != block {
+				return utils.LavaFormatError("failed modifying plan in planFS", fmt.Errorf("plan to modify does not exist"),
+					utils.Attribute{Key: "planToAdd", Value: planToAdd},
+					utils.Attribute{Key: "originalPlan", Value: planFromStore},
+					utils.Attribute{Key: "requestedBlock", Value: planToAdd.Block},
+				)
+			}
+			k.plansFS.ModifyEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
+		} else {
+			return utils.LavaFormatError("failed modifying plan in planFS", fmt.Errorf("plan to modify does not exist"),
+				utils.Attribute{Key: "planToAdd", Value: planToAdd},
+				utils.Attribute{Key: "originalPlan", Value: planFromStore},
+				utils.Attribute{Key: "requestedBlock", Value: planToAdd.Block},
+			)
 		}
-	}
-
-	// TODO: verify the CU per epoch field
-	err = k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
-	if err != nil {
-		return utils.LavaFormatError("failed adding plan to planFS", err,
-			utils.Attribute{Key: "planToAdd", Value: planToAdd},
-		)
+	} else {
+		planToAdd.Block = uint64(ctx.BlockHeight())
+		// TODO: verify the CU per epoch field
+		err = k.plansFS.AppendEntry(ctx, planToAdd.GetIndex(), planToAdd.Block, &planToAdd)
+		if err != nil {
+			return utils.LavaFormatError("failed adding plan to planFS", err,
+				utils.Attribute{Key: "planToAdd", Value: planToAdd},
+			)
+		}
 	}
 
 	return nil
