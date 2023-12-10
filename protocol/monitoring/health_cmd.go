@@ -36,7 +36,6 @@ const (
 	referenceEndpointPropertyName     = "reference_endpoints"
 	allowedBlockTimeLagFlagName       = "allowed_time_lag"
 	queryRetriesFlagName              = "query-retries"
-	runLabelFlagName                  = "run-label"
 	alertingWebHookFlagName           = "alert-webhook-url"
 	identifierFlagName                = "identifier"
 	percentageCUFlagName              = "cu-percent-threshold"
@@ -196,9 +195,8 @@ reference_endpoints:
 	cmdTestHealth.Flags().Duration(maxProviderLatencyFlagName, defaultMaxProviderLatency, "the maximum allowed provider latency, above which it will alert")
 	cmdTestHealth.Flags().Uint64(subscriptionLeftTimeFlagName, defaultSubscriptionLeftDays, "the amount of days left in a subscription to trigger an alert")
 	cmdTestHealth.Flags().Float64(percentageCUFlagName, defaultCUPercentageThreshold, "the left cu percentage threshold to trigger a subscription alert")
-	cmdTestHealth.Flags().String(identifierFlagName, "", "an identifier to this instance of health added to all alerts")
+	cmdTestHealth.Flags().String(identifierFlagName, "", "an identifier to this instance of health added to all alerts, used to differentiate different sources")
 	cmdTestHealth.Flags().String(alertingWebHookFlagName, "", "a url to post an alert to")
-	cmdTestHealth.Flags().String(runLabelFlagName, "", "a label to add to this health checker to differentiate different sources")
 	cmdTestHealth.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdTestHealth.Flags().Duration(intervalFlagName, intervalDefaultDuration, "the interval duration for the health check, (defaults to 0s) if 0 runs once")
 	cmdTestHealth.Flags().Duration(allowedBlockTimeLagFlagName, allowedBlockTimeDefaultLag, "the amount of time one rpc can be behind the most advanced one")
