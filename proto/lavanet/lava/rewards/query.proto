@@ -21,6 +21,11 @@ service Query {
   rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/pools";
   }
+
+  // BlockReward queries for the validators reward for proposing a block
+  rpc BlockReward(QueryBlockRewardRequest) returns (QueryBlockRewardResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/block_reward";
+  }
   // this line is used by starport scaffolding # 2
 }
 
@@ -46,6 +51,14 @@ message PoolInfo {
 message QueryPoolsResponse {
   // details holds all the info of this module's pools.
   repeated PoolInfo details = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryBlockRewardRequest is request type for the Query/BlockReward RPC method.
+message QueryBlockRewardRequest {}
+
+// QueryBlockRewardResponse is response type for the Query/BlockReward RPC method.
+message QueryBlockRewardResponse {
+  cosmos.base.v1beta1.Coin reward = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

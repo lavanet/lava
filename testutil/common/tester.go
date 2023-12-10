@@ -794,6 +794,12 @@ func (ts *Tester) QueryRewardsPools() (*rewardstypes.QueryPoolsResponse, error) 
 	return ts.Keepers.Rewards.Pools(ts.GoCtx, msg)
 }
 
+// QueryRewardsBlockReward implements 'q rewards block-reward'
+func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardResponse, error) {
+	msg := &rewardstypes.QueryBlockRewardRequest{}
+	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
