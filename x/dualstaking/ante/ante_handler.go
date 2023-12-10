@@ -1,11 +1,12 @@
 package ante
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
 // RedelegationFlager sets the GasMeter in the Context and wraps the next AnteHandler with a defer clause
@@ -22,28 +23,21 @@ func NewRedelegationFlager(dualstaking keeper.Keeper) RedelegationFlager {
 }
 
 func (rf RedelegationFlager) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	que := types.DelegationQue{}
-	msgs := tx.GetMsgs()
-	for _, msg := range msgs {
-		switch msg.(type) {
-		case *stakingtypes.MsgBeginRedelegate:
-			que.Redelegate()
-		case *stakingtypes.MsgCreateValidator:
-			que.DelegateUnbond()
-		case *stakingtypes.MsgDelegate:
-			que.DelegateUnbond()
-		case *stakingtypes.MsgUndelegate:
-			que.DelegateUnbond()
-		case *stakingtypes.MsgCancelUnbondingDelegation:
-			que.DelegateUnbond()
-		case *types.MsgDelegate:
-			que.DelegateUnbond()
-		case *types.MsgUnbond:
-			que.DelegateUnbond()
-
-		default:
+	redelegations := false
+	others := false
+	for _, msg := range tx.GetMsgs() {
+		if _, ok := msg.(*stakingtypes.MsgBeginRedelegate); ok {
+			redelegations = true
+		} else {
+			others = true
 		}
 	}
-	rf.SetDelegationQue(ctx, que)
+
+	if redelegations && others {
+		return ctx, fmt.Errorf("cannot send batch requests with redelegation messages")
+	}
+
+	keeper.RedelegationFlag = redelegations
+
 	return next(ctx, tx, simulate)
 }

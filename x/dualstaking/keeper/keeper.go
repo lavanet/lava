@@ -14,6 +14,8 @@ import (
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
+var RedelegationFlag bool
+
 type (
 	Keeper struct {
 		cdc        codec.BinaryCodec
