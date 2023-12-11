@@ -368,6 +368,7 @@ func (al *Alerting) ConsumerAlerts(healthResults *HealthResults) {
 func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 	healthResults.Lock.RLock()
 	defer healthResults.Lock.RUnlock()
+	suppressed := al.suppressedAlerts
 	// reset healthy
 	al.currentAlerts = map[AlertEntry]struct{}{}
 
@@ -420,6 +421,8 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 	}
 	if len(al.currentAlerts) == 0 {
 		utils.LavaFormatInfo("[+] healthy - no new alerts")
+	} else {
+		utils.LavaFormatInfo("[-] unhealthy", utils.LogAttr("count", uint64(len(al.unhealthy))), utils.LogAttr("currently suppressed", al.suppressedAlerts-suppressed))
 	}
 }
 

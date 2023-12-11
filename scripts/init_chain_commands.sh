@@ -53,7 +53,7 @@ lavad tx dualstaking delegate $(lavad keys show servicer3 -a) ETH1 $PROVIDERSTAK
 # we need to wait for the next epoch for the stake to take action.
 sleep_until_next_epoch
 
-HEALTH_FILE="config/health_examples/health_init_chain_commands.yml"
+HEALTH_FILE="config/health_examples/health_template.yml"
 create_health_config $HEALTH_FILE $(lavad keys show user1 -a) $(lavad keys show servicer1 -a) $(lavad keys show servicer2 -a) $(lavad keys show servicer3 -a)
 
 if [[ "$1" != "--skip-providers" ]]; then

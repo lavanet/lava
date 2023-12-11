@@ -83,44 +83,38 @@ latest_vote() {
 }
 
 create_health_config() {
-  local existing_file="$1"
+  local source_file="$1"
+  local destination_file="${source_file%.*}_gen.yml"
   local subscription_address="$2"
   local provider_address_1="$3"
   local provider_address_2="$4"
   local provider_address_3="$5"
 
-  # Check if the file exists
-  if [ ! -f "$existing_file" ]; then
-      echo "Error: File $existing_file not found."
-      exit 1
-  fi
-
   # Use awk to find the line number of the comment
-  local comment_line_number=$(awk '/#REPLACED/ {print NR; exit}' "$existing_file")
+  local comment_line_number=$(awk '/#REPLACED/ {print NR; exit}' "$source_file")
 
-  # If the comment is found, update the file in-place
+  # If the comment is found, create a new file with the updated content
   if [ -n "$comment_line_number" ]; then
-      # Use awk to update the file in-place
-      awk -v line="$comment_line_number" -v sub_addr="$subscription_address" \
-          -v prov_addr_1="$provider_address_1" -v prov_addr_2="$provider_address_2" \
-          -v prov_addr_3="$provider_address_3" \
-          '{
-              print;
-              if (NR == line) {
-                  print "subscription_addresses:";
-                  print "  - " sub_addr;
-                  print "provider_addresses:";
-                  print "  - " prov_addr_1;
-                  print "  - " prov_addr_2;
-                  print "  - " prov_addr_3;
-                  exit;
-              }
-          }' "$existing_file" > "$existing_file.tmp" \
-          && mv "$existing_file.tmp" "$existing_file"
+    # Use awk to update the content and create a new file
+    awk -v line="$comment_line_number" -v sub_addr="$subscription_address" \
+        -v prov_addr_1="$provider_address_1" -v prov_addr_2="$provider_address_2" \
+        -v prov_addr_3="$provider_address_3" \
+        '{
+            if (NR <= line) {
+                print;
+            } else if (NR == line + 1) {
+                print "subscription_addresses:";
+                print "  - " sub_addr;
+                print "provider_addresses:";
+                print "  - " prov_addr_1;
+                print "  - " prov_addr_2;
+                print "  - " prov_addr_3;
+            }
+        }' "$source_file" > "$destination_file"
 
-      echo "File $existing_file updated successfully."
+    echo "File $destination_file created successfully."
   else
-      echo "Comment #REPLACED not found in the file."
-      exit 1
+    echo "Comment #REPLACED not found in the file."
+    exit 1
   fi
 }

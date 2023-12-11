@@ -17,8 +17,4 @@ consumer_endpoints:
       network-address: http://127.0.0.1:3333
 #REPLACED
 subscription_addresses:
-  - lava@1dnyjnugq597s8k3ymtdz5xjhcsxwp55mewl2wg
 provider_addresses:
-  - lava@1uuu72skp8skesyg9nqag0en7vmmhjwsjdf2js3
-  - lava@1yrml5z58ugaft4jcg7jmp8tr0yw5kzuxp7jw6q
-  - lava@14hgzc9e9vu3kw9v9n4wh4zanpv8zd9yl2zz43j
