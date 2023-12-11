@@ -200,6 +200,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
 	paramsKeeper.Subspace(protocoltypes.ModuleName)
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
+	paramsKeeper.Subspace(rewardstypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
