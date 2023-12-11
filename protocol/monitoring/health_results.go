@@ -31,6 +31,12 @@ func (healthResults *HealthResults) FormatForLatestBlock() map[string]uint64 {
 	for entity, data := range healthResults.ProviderData {
 		results[entity.String()] = uint64(data.block)
 	}
+	for entity := range healthResults.UnhealthyProviders {
+		results[entity.String()] = 0
+	}
+	for entity := range healthResults.UnhealthyConsumers {
+		results[entity.String()] = 0
+	}
 	return results
 }
 
