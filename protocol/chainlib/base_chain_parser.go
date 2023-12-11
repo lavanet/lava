@@ -376,6 +376,7 @@ func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiCo
 		utils.LavaFormatWarning("API was found on a different connection type", nil,
 			utils.Attribute{Key: "connection_type_found", Value: foundNameOnDifferentConnectionType},
 			utils.Attribute{Key: "connection_type_requested", Value: connectionType},
+			utils.LogAttr("requested api", name),
 		)
 	}
 	return nil, false
