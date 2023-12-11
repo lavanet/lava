@@ -17,7 +17,7 @@ func TestSetSpecWithoutChainFetchersNorProviderListenerNoErrors(t *testing.T) {
 	spec := testcommon.CreateMockSpec()
 
 	specValidator := NewSpecValidator()
-	require.NotPanics(t, func() { specValidator.SetSpec(spec) })
+	require.NotPanics(t, func() { specValidator.VerifySpec(spec) })
 }
 
 func TestSetSpecWithoutRelayReceiversNoErrors(t *testing.T) {
@@ -28,7 +28,7 @@ func TestSetSpecWithoutRelayReceiversNoErrors(t *testing.T) {
 
 	specValidator := NewSpecValidator()
 	specValidator.AddRPCProviderListener("", providerListener)
-	require.NotPanics(t, func() { specValidator.SetSpec(spec) })
+	require.NotPanics(t, func() { specValidator.VerifySpec(spec) })
 }
 
 func TestAddChainFetcherAndSetSpecCallsValidate(t *testing.T) {
@@ -52,7 +52,7 @@ func TestAddChainFetcherAndSetSpecCallsValidate(t *testing.T) {
 	specValidator.AddChainFetcher(ctx, &chainFetcherIf, specName)
 
 	chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall)
-	specValidator.SetSpec(spec)
+	specValidator.VerifySpec(spec)
 }
 
 func TestStartCallsAllValidateFunctions(t *testing.T) {
@@ -88,7 +88,7 @@ func TestStartCallsAllValidateFunctions(t *testing.T) {
 
 		chainFetcher.EXPECT().Validate(gomock.Any()).Times(1).After(firstCall).Do(raiseCallCount)
 	}
-	SpecValidationIntervalSec = 1
+	SpecValidationInterval = 1 * time.Second
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	specValidator.Start(ctx)

@@ -12,10 +12,14 @@ import (
 )
 
 const (
-	SpecValidationIntervalSecFlagName = "spec-validation-interval-sec"
+	SpecValidationIntervalFlagName               = "spec-validation-interval"
+	SpecValidationIntervalDisabledChainsFlagName = "spec-validation-interval-disabled-chains"
 )
 
-var SpecValidationIntervalSec = uint64(10800) // 3 Hours
+var (
+	SpecValidationInterval               = 3 * time.Hour
+	SpecValidationIntervalDisabledChains = 10 * time.Minute
+)
 
 type SpecValidator struct {
 	lock sync.RWMutex
@@ -41,18 +45,26 @@ func (sv *SpecValidator) Start(ctx context.Context) {
 }
 
 func (sv *SpecValidator) validateAllChainsLoop(ctx context.Context) {
-	timerInterval := time.Duration(SpecValidationIntervalSec) * time.Second
-	ticker := time.NewTicker(timerInterval)
+	validationTicker := time.NewTicker(SpecValidationInterval)
+	validationTickerForDisabled := time.NewTicker(SpecValidationIntervalDisabledChains)
 	for {
 		select {
-		case <-ticker.C:
+		case <-validationTicker.C:
 			func() {
 				sv.lock.Lock()
 				defer sv.lock.Unlock()
 				sv.validateAllChains(ctx)
+				// we just ran validate on all chains no reason to do disabled chains in the next interval
+				validationTickerForDisabled.Reset(SpecValidationIntervalDisabledChains)
+			}()
+		case <-validationTickerForDisabled.C:
+			func() {
+				sv.lock.Lock()
+				defer sv.lock.Unlock()
+				sv.validateAllDisabledChains(ctx)
 			}()
 		case <-ctx.Done():
-			ticker.Stop()
+			validationTicker.Stop()
 			return
 		}
 	}
@@ -80,7 +92,7 @@ func (sv *SpecValidator) AddRPCProviderListener(address string, providerListener
 	sv.providerListeners[address] = providerListener
 }
 
-func (sv *SpecValidator) SetSpec(spec spectypes.Spec) {
+func (sv *SpecValidator) VerifySpec(spec spectypes.Spec) {
 	sv.lock.Lock()
 	defer sv.lock.Unlock()
 
@@ -89,6 +101,7 @@ func (sv *SpecValidator) SetSpec(spec spectypes.Spec) {
 		utils.LavaFormatError("Could not find chainFetchers with given chainId", nil, utils.Attribute{Key: "chainId", Value: chainId})
 		return
 	}
+	utils.LavaFormatDebug("Running spec verification for chainId", utils.LogAttr("chainId", chainId))
 	sv.validateChain(context.Background(), chainId)
 }
 
@@ -110,6 +123,33 @@ func (sv *SpecValidator) validateAllChains(ctx context.Context) {
 	for chainId := range sv.chainFetchers {
 		sv.validateChain(ctx, chainId)
 	}
+}
+
+func (sv *SpecValidator) validateAllDisabledChains(ctx context.Context) {
+	for chainId := range sv.getDisabledChains(ctx) {
+		sv.validateChain(ctx, chainId)
+	}
+}
+
+func (sv *SpecValidator) getDisabledChains(ctx context.Context) map[string]struct{} {
+	disabledChains := map[string]struct{}{}
+	for _, chainFetchersList := range sv.chainFetchers {
+		for _, chainFetcher := range chainFetchersList {
+			rpcEndpoint := sv.getRpcProviderEndpointFromChainFetcher(chainFetcher)
+			providerListener, found := sv.providerListeners[rpcEndpoint.NetworkAddress]
+			if !found {
+				continue
+			}
+			relayReceiver, found := providerListener.relayServer.relayReceivers[rpcEndpoint.Key()]
+			if !found {
+				continue
+			}
+			if !relayReceiver.enabled {
+				disabledChains[rpcEndpoint.ChainID] = struct{}{}
+			}
+		}
+	}
+	return disabledChains
 }
 
 func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) error {

@@ -403,10 +403,7 @@ export class RPCConsumerServer {
       return relayResponse;
     }
     const chainBlockStats = this.chainParser.chainBlockStats();
-    Logger.debug("Updating requested Block", singleConsumerSession.sessionId);
     UpdateRequestedBlock(relayData, reply);
-    Logger.debug("after Updating", relayData.getRequestBlock());
-    Logger.debug("did errored", relayResponse.err);
     const finalized = IsFinalizedBlock(
       relayData.getRequestBlock(),
       reply.getLatestBlock(),

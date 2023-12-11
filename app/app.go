@@ -162,6 +162,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_30_1,
 	upgrades.Upgrade_0_30_2,
 	upgrades.Upgrade_0_31_0,
+	upgrades.Upgrade_0_31_1,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -801,6 +802,7 @@ func New(
 		NewAnteHandler(
 			app.AccountKeeper,
 			app.BankKeeper,
+			app.DualstakingKeeper,
 			encodingConfig.TxConfig.SignModeHandler(),
 			app.FeeGrantKeeper,
 			ante.DefaultSigVerificationGasConsumer),

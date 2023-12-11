@@ -25,6 +25,17 @@ type ExtensionParser struct {
 	configuredExtensions map[ExtensionKey]*spectypes.Extension
 }
 
+func (ep *ExtensionParser) GetExtension(extension ExtensionKey) *spectypes.Extension {
+	if extension.Extension == "" {
+		return nil
+	}
+	extensionRet, ok := ep.configuredExtensions[extension]
+	if ok {
+		return extensionRet
+	}
+	return nil
+}
+
 func (ep *ExtensionParser) AllowedExtension(extension string) bool {
 	if extension == "" {
 		return true
