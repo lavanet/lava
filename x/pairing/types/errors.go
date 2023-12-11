@@ -21,4 +21,5 @@ var (
 	DelegateCommissionOOBError                         = sdkerrors.New("DelegateCommissionOOBError Error", 694, "Delegation commission out of bound [0,100]")
 	DelegateLimitError                                 = sdkerrors.New("DelegateLimitError Error", 695, "Delegation limit coin is invalid")
 	ProviderRewardError                                = sdkerrors.New("ProviderRewardError Error", 696, "could not calculate provider reward with delegations")
+	UnFreezeInsufficientStakeError                     = sdkerrors.New("UnFreezeInsufficientStakeError Error", 697, "could not unfreeze provider due to insufficient stake. Stake must be above minimum stake to unfreeze")
 )

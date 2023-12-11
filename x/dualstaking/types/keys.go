@@ -25,6 +25,10 @@ const (
 
 	// prefix for the unbonding timer store
 	UnbondingPrefix = "unbonding-ts"
+
+	// empty provider consts
+	EMPTY_PROVIDER         = "empty_provider"
+	EMPTY_PROVIDER_CHAINID = ""
 )
 
 func KeyPrefix(p string) []byte {

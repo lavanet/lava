@@ -129,13 +129,18 @@ export class ConsumerSessionManager {
         ) {
           this.allowedUpdateForCurrentEpoch = false;
         } else {
-          const errorMsg = `Trying to update provider list for older epoch ${JSON.stringify(
+          let errorMsg = `Trying to update provider list for older epoch ${JSON.stringify(
             {
               epoch,
               currentEpoch: this.currentEpoch,
             }
           )}`;
-          Logger.error(errorMsg);
+          if (epoch == this.currentEpoch) {
+            errorMsg += ", this is ok only during emergency mode";
+            Logger.warn(errorMsg);
+          } else {
+            Logger.error(errorMsg);
+          }
           return new Error(errorMsg);
         }
       }
@@ -208,7 +213,8 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[],
-    stateful: number
+    stateful: number,
+    virtualEpoch: number
   ): ConsumerSessionsMap | Error {
     const numberOfResets = this.validatePairingListNotEmpty(addon, extensions);
     const tempIgnoredProviders: IgnoredProviders = {
@@ -222,7 +228,8 @@ export class ConsumerSessionManager {
       requestedBlock,
       addon,
       extensions,
-      stateful
+      stateful,
+      virtualEpoch
     );
     if (sessionWithProvidersMap instanceof Error) {
       return sessionWithProvidersMap;
@@ -289,8 +296,10 @@ export class ConsumerSessionManager {
           sessionEpoch = pairingEpoch;
         }
 
-        const err =
-          consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession);
+        const err = consumerSessionsWithProvider.addUsedComputeUnits(
+          cuNeededForSession,
+          virtualEpoch
+        );
         if (err) {
           Logger.warn(err);
 
@@ -346,7 +355,8 @@ export class ConsumerSessionManager {
         requestedBlock,
         addon,
         extensions,
-        stateful
+        stateful,
+        virtualEpoch
       );
 
       if (sessionWithProvidersMap instanceof Error && sessions.size !== 0) {
@@ -389,6 +399,7 @@ export class ConsumerSessionManager {
     errorReceived?: Error | null
   ): Error | undefined {
     if (!consumerSession.isLocked()) {
+      consumerSession.blockListed = true;
       return new Error("Session is not locked");
     }
 
@@ -400,10 +411,16 @@ export class ConsumerSessionManager {
     consumerSession.consecutiveNumberOfFailures++;
 
     let consumerSessionBlockListed = false;
-    // TODO: Verify if code == SessionOutOfSyncError.ABCICode() (from go)
+    let syncLoss = false;
+    if (errorReceived) {
+      syncLoss = errorReceived.message.includes(
+        "codespace SessionOutOfSync Error code 677"
+      );
+    }
     if (
       consumerSession.consecutiveNumberOfFailures >
-      MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION
+        MAXIMUM_NUMBER_OF_FAILURES_ALLOWED_PER_CONSUMER_SESSION ||
+      syncLoss
     ) {
       Logger.debug(
         `Blocking consumer session id: ${consumerSession.sessionId}`
@@ -547,7 +564,8 @@ export class ConsumerSessionManager {
     requestedBlock: number,
     addon: string,
     extensions: string[],
-    stateful: number
+    stateful: number,
+    virtualEpoch: number
   ): SessionsWithProviderMap | Error {
     if (ignoredProviders.currentEpoch < this.currentEpoch) {
       Logger.debug(
@@ -604,8 +622,10 @@ export class ConsumerSessionManager {
           );
         }
 
-        const err =
-          consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession);
+        const err = consumerSessionsWithProvider.validateComputeUnits(
+          cuNeededForSession,
+          virtualEpoch
+        );
         if (err) {
           ignoredProviders.providers.add(providerAddress);
           continue;

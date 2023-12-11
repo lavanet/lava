@@ -6,7 +6,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/epochstorage/types"
 	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
 	v4 "github.com/lavanet/lava/x/epochstorage/types/migrations/v4"
 )
@@ -120,8 +119,8 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	StakeStorages := m.keeper.GetAllStakeStorage(ctx)
 	for st := range StakeStorages {
 		for s := range StakeStorages[st].StakeEntries {
-			StakeStorages[st].StakeEntries[s].DelegateTotal = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
-			StakeStorages[st].StakeEntries[s].DelegateLimit = sdk.NewCoin(types.TokenDenom, sdk.ZeroInt())
+			StakeStorages[st].StakeEntries[s].DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+			StakeStorages[st].StakeEntries[s].DelegateLimit = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 			StakeStorages[st].StakeEntries[s].DelegateCommission = 100
 		}
 		m.keeper.SetStakeStorage(ctx, StakeStorages[st])

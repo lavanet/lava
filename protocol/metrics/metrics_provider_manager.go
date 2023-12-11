@@ -32,6 +32,7 @@ type ProviderMetricsManager struct {
 	fetchBlockFailedMetric      *prometheus.CounterVec
 	fetchLatestSuccessMetric    *prometheus.CounterVec
 	fetchBlockSuccessMetric     *prometheus.CounterVec
+	protocolVersionMetric       *prometheus.GaugeVec
 	virtualEpochMetric          *prometheus.GaugeVec
 }
 
@@ -107,6 +108,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
+
+	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_protocol_version",
+		Help: "The current running lavap version for the process. major := version / 1000000, minor := (version / 1000) % 1000 patch := version % 1000",
+	}, []string{"version"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCUServicedMetric)
 	prometheus.MustRegister(totalCUPaidMetric)
@@ -121,6 +127,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(fetchLatestSuccessMetric)
 	prometheus.MustRegister(fetchBlockSuccessMetric)
 	prometheus.MustRegister(virtualEpochMetric)
+	prometheus.MustRegister(protocolVersionMetric)
 
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
@@ -142,6 +149,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		fetchLatestSuccessMetric:    fetchLatestSuccessMetric,
 		fetchBlockSuccessMetric:     fetchBlockSuccessMetric,
 		virtualEpochMetric:          virtualEpochMetric,
+		protocolVersionMetric:       protocolVersionMetric,
 	}
 }
 
@@ -253,4 +261,11 @@ func (pme *ProviderMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 		return
 	}
 	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
+}
+
+func (pme *ProviderMetricsManager) SetVersion(version string) {
+	if pme == nil {
+		return
+	}
+	SetVersionInner(pme.protocolVersionMetric, version)
 }

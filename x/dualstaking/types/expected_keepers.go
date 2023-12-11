@@ -25,6 +25,7 @@ type AccountKeeper interface {
 type BankKeeper interface {
 	BurnCoins(ctx sdk.Context, name string, amt sdk.Coins) error
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromModuleToModule(ctx sdk.Context, senderPool, recipientPool string, amt sdk.Coins) error
@@ -40,7 +41,7 @@ type EpochstorageKeeper interface {
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
-
+	SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeStorage epochstoragetypes.StakeStorage)
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -49,6 +50,7 @@ type SpecKeeper interface {
 	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
 	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 	GetAllChainIDs(ctx sdk.Context) (chainIDs []string)
+	GetMinStake(ctx sdk.Context, chainID string) sdk.Coin
 }
 
 type StakingKeeper interface {

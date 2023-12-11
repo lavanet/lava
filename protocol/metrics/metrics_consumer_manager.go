@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -22,6 +23,7 @@ type ConsumerMetricsManager struct {
 	LatestProviderRelay        *prometheus.GaugeVec
 	virtualEpochMetric         *prometheus.GaugeVec
 	lock                       sync.Mutex
+	protocolVersionMetric      *prometheus.GaugeVec
 	providerRelays             map[string]uint64
 }
 
@@ -79,6 +81,10 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Name: "virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
+	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_provider_protocol_version",
+		Help: "The current running lavap version for the process. major := version / 1000000, minor := (version / 1000) % 1000, patch := version % 1000",
+	}, []string{"version"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -90,6 +96,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(latestBlockMetric)
 	prometheus.MustRegister(latestProviderRelay)
 	prometheus.MustRegister(virtualEpochMetric)
+	prometheus.MustRegister(protocolVersionMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -107,6 +114,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		LatestProviderRelay:        latestProviderRelay,
 		providerRelays:             map[string]uint64{},
 		virtualEpochMetric:         virtualEpochMetric,
+		protocolVersionMetric:      protocolVersionMetric,
 	}
 }
 
@@ -196,4 +204,23 @@ func (pme *ConsumerMetricsManager) ResetQOSMetrics() {
 	pme.qosMetric.Reset()
 	pme.qosExcellenceMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
+}
+
+func (pme *ConsumerMetricsManager) SetVersion(version string) {
+	if pme == nil {
+		return
+	}
+	SetVersionInner(pme.protocolVersionMetric, version)
+}
+
+func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string) {
+	var major, minor, patch int
+	_, err := fmt.Sscanf(version, "%d.%d.%d", &major, &minor, &patch)
+	if err != nil {
+		utils.LavaFormatError("Failed parsing version at metrics manager", err, utils.LogAttr("version", version))
+		protocolVersionMetric.WithLabelValues("version").Set(0)
+		return
+	}
+	combined := major*1000000 + minor*1000 + patch
+	protocolVersionMetric.WithLabelValues("version").Set(float64(combined))
 }

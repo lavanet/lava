@@ -55,12 +55,11 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 	err = k.Redelegate(
 		ctx,
 		delegator,
-		EMPTY_PROVIDER,
+		types.EMPTY_PROVIDER,
 		provider,
-		EMPTY_PROVIDER_CHAINID,
+		types.EMPTY_PROVIDER_CHAINID,
 		chainID,
 		amount,
-		false,
 	)
 
 	if err == nil {

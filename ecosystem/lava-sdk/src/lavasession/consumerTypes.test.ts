@@ -5,8 +5,11 @@ import {
   QoSReport,
   SingleConsumerSession,
 } from "./consumerTypes";
-import { AVAILABILITY_PERCENTAGE, DEFAULT_DECIMAL_PRECISION } from "./common";
+import { Geolocation } from "./geolocation";
+import { AVAILABILITY_PERCENTAGE } from "./common";
 import { AlreadyLockedError, NotLockedError } from "./errors";
+
+const geolocationValue: Geolocation = Geolocation.USC;
 
 describe("consumerTypes", () => {
   describe("SingleConsumerSession", () => {
@@ -20,6 +23,7 @@ describe("consumerTypes", () => {
           extensions: new Set(),
           addons: new Set(),
           connectionRefusals: 0,
+          geolocation: geolocationValue,
         }
       );
 
@@ -40,6 +44,7 @@ describe("consumerTypes", () => {
           extensions: new Set(),
           addons: new Set(),
           connectionRefusals: 0,
+          geolocation: geolocationValue,
         }
       );
 

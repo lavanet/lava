@@ -1,6 +1,6 @@
 {
   "name": "@lavanet/lava-sdk",
-  "version": "0.27.3",
+  "version": "0.30.4",
   "description": "An SDK for interacting with Lava provider",
   "main": "./bin/src/sdk/sdk.js",
   "author": "Lava Protocol Inc",
@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.2.2",
+    "@types/node": "^20.10.1",
     "@types/seedrandom": "^3.0.6",
     "http-server": "^14.1.1",
     "typescript": "^4.8.4",

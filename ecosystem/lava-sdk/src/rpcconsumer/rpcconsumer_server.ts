@@ -39,6 +39,7 @@ import { BACKOFF_TIME_ON_FAILURE, LATEST_BLOCK } from "../common/common";
 import { BaseChainMessageContainer } from "../chainlib/chain_message";
 import { Header } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { promiseAny } from "../util/common";
+import { EmergencyTrackerInf } from "../stateTracker/updaters/emergency_tracker";
 
 const MaxRelayRetries = 4;
 
@@ -52,6 +53,7 @@ export class RPCConsumerServer {
   private consumerAddress: string;
   private finalizationConsensus: FinalizationConsensus;
   private consumerConsistency: ConsumerConsistency;
+  private emergencyTracker: EmergencyTrackerInf | undefined;
   constructor(
     relayer: Relayer,
     consumerSessionManager: ConsumerSessionManager,
@@ -80,6 +82,10 @@ export class RPCConsumerServer {
 
   public setChainParser(chainParser: BaseChainParser) {
     this.chainParser = chainParser;
+  }
+
+  public setEmergencyTracker(emergencyTracker: EmergencyTrackerInf) {
+    this.emergencyTracker = emergencyTracker;
   }
 
   public supportedChainAndApiInterface(): SupportedChainAndApiInterface {
@@ -175,13 +181,18 @@ export class RPCConsumerServer {
       this.chainParser,
       timeouts
     );
+    let virtualEpoch = 0;
+    if (this.emergencyTracker) {
+      virtualEpoch = this.emergencyTracker.getVirtualEpoch();
+    }
     const consumerSessionsMap = this.consumerSessionManager.getSessions(
       GetComputeUnits(chainMessage),
       unwantedProviders,
       LATEST_BLOCK,
       "",
       [],
-      GetStateful(chainMessage)
+      GetStateful(chainMessage),
+      virtualEpoch
     );
     if (consumerSessionsMap instanceof Error) {
       return consumerSessionsMap;
@@ -222,11 +233,15 @@ export class RPCConsumerServer {
       const singleConsumerSession = sessionInfo.session;
       const epoch = sessionInfo.epoch;
       const reportedProviders = sessionInfo.reportedProviders;
-
+      Logger.debug(
+        `Before Construct: ${relayData.getRequestBlock()}, address: ${providerPublicAddress}, session: ${
+          singleConsumerSession.sessionId
+        }`
+      );
       relayResult.request = constructRelayRequest(
         lavaChainId,
         chainID,
-        relayData,
+        relayData.clone(), // clone here so we can modify the query without affecting retries
         providerPublicAddress,
         singleConsumerSession,
         epoch,
@@ -234,13 +249,29 @@ export class RPCConsumerServer {
       );
 
       Logger.info(`Sending relay to provider ${providerPublicAddress}`);
-
+      Logger.debug(
+        `Relay stats sessionId:${
+          singleConsumerSession.sessionId
+        }, guid:${relayResult.request
+          .getRelayData()
+          ?.getSalt_asB64()}, requestedBlock: ${relayResult.request
+          .getRelayData()
+          ?.getRequestBlock()}, apiInterface:${relayResult.request
+          .getRelayData()
+          ?.getApiInterface()}, seenBlock: ${relayResult.request
+          .getRelayData()
+          ?.getSeenBlock()}`
+      );
       const promise = this.relayInner(
         singleConsumerSession,
         relayResult,
         chainMessage,
         relayTimeout
       )
+        .catch((err: any) => {
+          responsesReceived++;
+          throw err;
+        })
         .then((relayResponse: RelayResponse) => {
           responsesReceived++;
 
@@ -319,7 +350,7 @@ export class RPCConsumerServer {
 
     // this should never happen, but we need to satisfy the typescript compiler
     if (finalRelayResult === undefined) {
-      return new Error("finalRelayResult is undefined");
+      return new Error("UnreachableCode finalRelayResult is undefined");
     }
 
     return finalRelayResult;

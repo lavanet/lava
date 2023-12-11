@@ -66,6 +66,17 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
+func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Context, specVerifier SpecVerifier, endpoint lavasession.RPCEndpoint) error {
+	// register for spec verifications sets spec and verifies when a spec has been modified
+	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
+	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForSpecVerifications", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
+	}
+	return specUpdater.RegisterSpecVerifier(ctx, &specVerifier, endpoint)
+}
+
 func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
 	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.EventTracker, version, versionValidator)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)

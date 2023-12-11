@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -17,6 +18,7 @@ func TestLavaProtocol(t *testing.T) {
 }
 
 func TestLavaSDK(t *testing.T) {
+	fmt.Println("Starting SDK tests, what will happen, you will not see... until it's too late")
 	// default timeout same as `go test`
 	timeout := time.Minute * 10
 

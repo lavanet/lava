@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -12,6 +13,11 @@ import (
 
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
+
+// DisableDualstakingHook : dualstaking uses hookd to catch delegations/unbonding tx's to do the same action on the providers delegations.
+// in the case of redelegation, since the user doesnt put/takes tokens back we dont want to take action in the providers delegations.
+// this flag is a local flag used to mark the next hooks to do nothing since this was cause by redelegation tx (redelegation = delegation + unbond)
+var DisableDualstakingHook bool
 
 type (
 	Keeper struct {
@@ -92,4 +98,15 @@ func (k Keeper) InitDelegators(ctx sdk.Context, data fixationtypes.GenesisState)
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, index string, block uint64, timestamp int64) error {
+	var d types.Delegation
+	entryBlock, _, _, found := k.delegationFS.FindEntryDetailed(ctx, index, block, &d)
+	if !found {
+		return fmt.Errorf("cannot change delegation timestamp: delegation not found. index: %s, block: %s", index, strconv.FormatUint(block, 10))
+	}
+	d.Timestamp = timestamp
+	k.delegationFS.ModifyEntry(ctx, index, entryBlock, &d)
+	return nil
 }

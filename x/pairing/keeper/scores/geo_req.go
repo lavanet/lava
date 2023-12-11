@@ -68,9 +68,20 @@ type GeoLatency struct {
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
 func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (minLatencyGeo planstypes.Geolocation, minLatencyCost math.Uint) {
+	minGeo, minLatency := CalcGeoLatency(reqGeo, providerGeos)
+
+	return minGeo, calculateCostFromLatency(minLatency)
+}
+
+func CalcGeoLatency(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (planstypes.Geolocation, uint64) {
 	minGeo := planstypes.Geolocation(-1)
 	minLatency := uint64(maxGeoLatency)
 	for _, pGeo := range providerGeos {
+		if pGeo == reqGeo {
+			minGeo = pGeo
+			minLatency = 1
+			continue
+		}
 		if inner, ok := GEO_LATENCY_MAP[reqGeo]; ok {
 			if latency, ok := inner[pGeo]; ok {
 				if latency < minLatency {
@@ -80,8 +91,7 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 			}
 		}
 	}
-
-	return minGeo, calculateCostFromLatency(minLatency)
+	return minGeo, minLatency
 }
 
 func calculateCostFromLatency(latency uint64) math.Uint {
@@ -104,6 +114,7 @@ var GEO_LATENCY_MAP = map[planstypes.Geolocation]map[planstypes.Geolocation]uint
 	planstypes.Geolocation_USE: {
 		planstypes.Geolocation_USC: 42,
 		planstypes.Geolocation_USW: 68,
+		planstypes.Geolocation_EU:  116,
 	},
 	planstypes.Geolocation_USW: {
 		planstypes.Geolocation_USC: 45,
@@ -112,11 +123,13 @@ var GEO_LATENCY_MAP = map[planstypes.Geolocation]map[planstypes.Geolocation]uint
 	planstypes.Geolocation_USC: {
 		planstypes.Geolocation_USE: 42,
 		planstypes.Geolocation_USW: 45,
+		planstypes.Geolocation_EU:  170,
 	},
 	planstypes.Geolocation_EU: {
 		planstypes.Geolocation_USE: 116,
 		planstypes.Geolocation_AF:  138,
 		planstypes.Geolocation_AS:  155,
+		planstypes.Geolocation_USC: 170,
 	},
 	planstypes.Geolocation_AF: {
 		planstypes.Geolocation_EU:  138,
