@@ -38,7 +38,6 @@ import { GeolocationFromString } from "../lavasession/geolocation";
 import {
   ChainIDsToInit,
   ChainIdSpecification,
-  ChainIdWithSpecificAPIInterfaces,
 } from "../stateTracker/types/types";
 type RelayReceiver = string; // chainId + ApiInterface
 
