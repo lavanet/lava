@@ -216,11 +216,15 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	case LAVA_LOG_PANIC:
 		// prefix = "Panic:"
 		logEvent = zerologlog.Panic()
-		rollingLoggerEvent = rollingLogLogger.Panic()
+		if rollingLogLogger.GetLevel() != zerolog.Disabled {
+			rollingLoggerEvent = rollingLogLogger.Panic()
+		}
 	case LAVA_LOG_FATAL:
 		// prefix = "Fatal:"
 		logEvent = zerologlog.Fatal()
-		rollingLoggerEvent = rollingLogLogger.Fatal()
+		if rollingLogLogger.GetLevel() != zerolog.Disabled {
+			rollingLoggerEvent = rollingLogLogger.Fatal()
+		}
 	case LAVA_LOG_ERROR:
 		// prefix = "Error:"
 		logEvent = zerologlog.Error()

@@ -215,16 +215,17 @@ func RunHealth(ctx context.Context,
 	if len(errCh) > 0 {
 		return nil, <-errCh
 	}
+	utils.LavaFormatDebug("[+] checking subscriptions")
 	err = checkSubscriptions(ctx, clientCtx, subscriptionAddresses, healthResults)
 	if err != nil {
 		return nil, err
 	}
-
+	utils.LavaFormatDebug("[+] checking providers")
 	err = CheckProviders(ctx, clientCtx, healthResults, stakeEntries)
 	if err != nil {
 		return nil, err
 	}
-
+	utils.LavaFormatDebug("[+] checking consumers")
 	err = CheckConsumersAndReferences(ctx, clientCtx, referenceEndpoints, consumerEndpoints, healthResults)
 	if err != nil {
 		return nil, err
@@ -250,7 +251,11 @@ func CheckConsumersAndReferences(ctx context.Context,
 		if err != nil {
 			return err
 		}
-		chainParser.SetSpec(*healthResults.getSpec(endpoint.ChainID))
+		spec := healthResults.getSpec(endpoint.ChainID)
+		if spec == nil {
+			return err
+		}
+		chainParser.SetSpec(*spec)
 		compatibleEndpoint := &lavasession.RPCProviderEndpoint{
 			NetworkAddress: lavasession.NetworkAddressData{},
 			ChainID:        endpoint.ChainID,
@@ -330,6 +335,7 @@ func checkSubscriptions(ctx context.Context, clientCtx client.Context, subscript
 	errCh := make(chan error, 1)
 	for _, subscriptionAddr := range subscriptionAddresses {
 		go func(addr string) {
+			defer wg.Done()
 			var err error
 			for i := 0; i < BasicQueryRetries; i++ {
 				var response *subscriptiontypes.QueryCurrentResponse

@@ -1,0 +1,24 @@
+max-provider-latency: 150ms
+subscription-days-left-alert: 10
+interval: 5s
+allowed_time_lag: 30s
+query-retries: 5
+identifier: health_example
+cu-percent-threshold: 0.2
+alert-suppression-interval: 60s
+disable-alert-suppression: false
+suppression-alert-count-threshold: 2
+metrics-listen-address: ":7776"
+disable-alert-logging: false
+allow-insecure-provider-dialing: true
+consumer_endpoints:
+    - chain-id: ETH1
+      api-interface: jsonrpc
+      network-address: http://127.0.0.1:3333
+#REPLACED
+subscription_addresses:
+  - lava@1jf3fayz3m0jds5p2te6d2l8pcq0e6a9zsfk0jy
+provider_addresses:
+  - lava@1vhfufdv6lzw46v548klkqve0gr72stpzmzggpy
+  - lava@1renjjws5wsynckwcsqwh03la26z6dyyptedjrm
+  - lava@16uj4cmsavndyhmx5lacph6nlmtjdc3guqaj4zz

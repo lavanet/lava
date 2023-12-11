@@ -1,3 +1,16 @@
+max-provider-latency: 150ms
+subscription-days-left-alert: 10
+interval: 5m
+allowed_time_lag: 30s
+query-retries: 5
+alert-webhook-url: <alert-hook>
+identifier: health_example
+cu-percent-threshold: 0.2
+alert-suppression-interval: 6h
+disable-alert-suppression: false
+suppression-alert-count-threshold: 3
+metrics-listen-address: ":7776"
+disable-alert-logging: false
 subscription_addresses:
 	- lava@...
 	- lava@...
@@ -16,14 +29,3 @@ reference_endpoints:
 	- chain-id: ETH1
       api-interface: jsonrpc
       network-address: public-rpc-2
-max-provider-latency: 150ms
-subscription-days-left-alert: 10
-interval: 5m
-allowed_time_lag: 30s
-query-retries: 5
-alert-webhook-url: <alert-hook>
-identifier: health_example
-cu-percent-threshold: 0.2
-alert-suppression-interval: 6h
-disable-alert-suppression: false
-suppression-alert-count-threshold: 3

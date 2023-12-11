@@ -27,6 +27,7 @@ const (
 	defaultMaxProviderLatency         = 200 * time.Millisecond
 	defaultAlertSuppressionInterval   = 6 * time.Hour
 	DefaultSuppressionCountThreshold  = 3
+	DisableAlertLogging               = "disable-alert-logging"
 	maxProviderLatencyFlagName        = "max-provider-latency"
 	subscriptionLeftTimeFlagName      = "subscription-days-left-alert"
 	providerAddressesFlagName         = "provider_addresses"
@@ -120,6 +121,10 @@ reference_endpoints:
 					}
 				}
 			}
+			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
+			if lavasession.AllowInsecureConnectionToProviders {
+				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
+			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
 			rand.InitRandomSeed()
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
@@ -132,9 +137,10 @@ reference_endpoints:
 			interval := viper.GetDuration(intervalFlagName)
 			healthMetrics := metrics.NewHealthMetrics(prometheusListenAddr)
 			identifier := viper.GetString(identifierFlagName)
+			utils.SetGlobalLoggingLevel(logLevel)
 			alertingOptions := AlertingOptions{
 				Url:                           viper.GetString(alertingWebHookFlagName),
-				Logging:                       false,
+				Logging:                       viper.GetBool(DisableAlertLogging),
 				Identifier:                    identifier,
 				SubscriptionCUPercentageAlert: viper.GetFloat64(percentageCUFlagName),
 				SubscriptionLeftTimeAlert:     time.Duration(viper.GetUint64(subscriptionLeftTimeFlagName)) * time.Hour * 24,
@@ -192,6 +198,9 @@ reference_endpoints:
 			}
 		},
 	}
+
+	cmdTestHealth.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allows connecting to providers without TLS mostly for local health checks inside the same vpc/server")
+	cmdTestHealth.Flags().Bool(DisableAlertLogging, false, "set to true to disable printing alerts to stdout")
 	cmdTestHealth.Flags().Uint64(SuppressionCountThresholdFlagName, DefaultSuppressionCountThreshold, "how many consecutive alerts need to be triggered so an alert is emitted")
 	cmdTestHealth.Flags().Bool(disableAlertSuppressionFlagName, false, "if set to true, this will disable alert suppression and send all alerts every health run")
 	cmdTestHealth.Flags().Duration(alertSuppressionIntervalFlagName, defaultAlertSuppressionInterval, "interval of time in which the same alert won't be triggered")

@@ -81,3 +81,46 @@ latest_vote() {
   fi
   lavad q gov proposals 2> /dev/null | yq eval '.proposals[].id'  | wc -l
 }
+
+create_health_config() {
+  local existing_file="$1"
+  local subscription_address="$2"
+  local provider_address_1="$3"
+  local provider_address_2="$4"
+  local provider_address_3="$5"
+
+  # Check if the file exists
+  if [ ! -f "$existing_file" ]; then
+      echo "Error: File $existing_file not found."
+      exit 1
+  fi
+
+  # Use awk to find the line number of the comment
+  local comment_line_number=$(awk '/#REPLACED/ {print NR; exit}' "$existing_file")
+
+  # If the comment is found, update the file in-place
+  if [ -n "$comment_line_number" ]; then
+      # Use awk to update the file in-place
+      awk -v line="$comment_line_number" -v sub_addr="$subscription_address" \
+          -v prov_addr_1="$provider_address_1" -v prov_addr_2="$provider_address_2" \
+          -v prov_addr_3="$provider_address_3" \
+          '{
+              print;
+              if (NR == line) {
+                  print "subscription_addresses:";
+                  print "  - " sub_addr;
+                  print "provider_addresses:";
+                  print "  - " prov_addr_1;
+                  print "  - " prov_addr_2;
+                  print "  - " prov_addr_3;
+                  exit;
+              }
+          }' "$existing_file" > "$existing_file.tmp" \
+          && mv "$existing_file.tmp" "$existing_file"
+
+      echo "File $existing_file updated successfully."
+  else
+      echo "Comment #REPLACED not found in the file."
+      exit 1
+  fi
+}
