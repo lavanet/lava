@@ -18,11 +18,12 @@ message Plan {
     reserved 6; // max CU per epoch for the whole plan duration
     reserved 7; // max providers to be paired in an epoch
     bool allow_overuse = 8 [(gogoproto.jsontag) = "allow_overuse"]; // allow CU overuse flag
-    uint64 overuse_rate = 9 [(gogoproto.jsontag) = "overuse_rate"]; // price of CU overuse
+    reserved 9; // price of CU overuse
     string description = 11 [(gogoproto.jsontag) = "description"]; // plan description (for humans)
     string type = 12 [(gogoproto.jsontag) = "type"]; // plan type
     uint64 annual_discount_percentage = 13 [(gogoproto.jsontag) = "annual_discount_percentage"]; // discount for buying the plan for a year
     Policy plan_policy = 14 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "plan_policy"];
+    cosmos.base.v1beta1.Coin overuse_rate = 15 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "overuse_rate"]; // price of CU overuse
 }
 
 // The geolocation values are encoded as bits in a bitmask, with two special values:

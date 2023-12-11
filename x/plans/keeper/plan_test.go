@@ -60,7 +60,7 @@ func (ts *tester) createTestPlans(count int, withSameIndex bool, startIndex int)
 			Price:                    common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), 1),
 			PlanPolicy:               policy,
 			AllowOveruse:             true,
-			OveruseRate:              overuseRate,
+			OveruseRate:              common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), int64(overuseRate)),
 			AnnualDiscountPercentage: 20,
 		}
 
@@ -69,7 +69,7 @@ func (ts *tester) createTestPlans(count int, withSameIndex bool, startIndex int)
 		// if withSameIndex is true, create an additional plan with a
 		// different overuseRate and append it to plans
 		if withSameIndex {
-			plan.OveruseRate = uint64(15)
+			plan.OveruseRate = common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), 15)
 			plans = append(plans, plan)
 		}
 	}
@@ -155,7 +155,7 @@ func TestAddInvalidPlan(t *testing.T) {
 				plans[0].Price = common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), 0)
 			case OVERUSE_FIELDS:
 				plans[0].AllowOveruse = true
-				plans[0].OveruseRate = 0
+				plans[0].OveruseRate = common.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), 0)
 			case CU_FIELD_TOTAL:
 				plans[0].PlanPolicy.TotalCuLimit = 0
 			case CU_FIELD_EPOCH:
@@ -246,7 +246,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 
 	// add 3rd plan (so the prevous two would become stale)
 	plan := plans[1]
-	plan.OveruseRate += 20
+	plan.OveruseRate = plan.OveruseRate.AddAmount(math.NewInt(20))
 	err = ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 	plan.Block = ts.BlockHeight()

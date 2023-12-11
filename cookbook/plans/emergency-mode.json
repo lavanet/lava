@@ -13,10 +13,9 @@
         },
         "annual_discount_percentage": 20,
         "allow_overuse": false,
-        "overuse_rate": 0,
+        "overuse_rate": "0ulava",
         "plan_policy": {
-          "chain_policies": [
-          ],
+          "chain_policies": [],
           "geolocation_profile": "GL",
           "total_cu_limit": 1000000,
           "epoch_cu_limit": 50,

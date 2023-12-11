@@ -29,6 +29,7 @@ func ParsePlansAddProposalJSON(proposalFile string) (ret PlansAddProposalJSON, e
 	decoderHooks := []mapstructure.DecodeHookFunc{
 		types.PriceDecodeHookFunc,
 		types.PolicyEnumDecodeHookFunc,
+		types.OveruseRateDecodeHookFunc,
 	}
 
 	for _, fileName := range strings.Split(proposalFile, ",") {

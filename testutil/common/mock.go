@@ -30,7 +30,7 @@ func CreateMockPlan() plantypes.Plan {
 		Block:                    100,
 		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(100)),
 		AllowOveruse:             true,
-		OveruseRate:              10,
+		OveruseRate:              sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(10)),
 		AnnualDiscountPercentage: 20,
 		PlanPolicy:               CreateMockPolicy(),
 	}

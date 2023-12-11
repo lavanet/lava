@@ -896,7 +896,7 @@ func TestPlanRemovedWhenSubscriptionExpires(t *testing.T) {
 
 	// update plan
 	ts.AdvanceEpoch()
-	plan.OveruseRate++
+	plan.OveruseRate.Amount.AddRaw(1)
 	err = ts.Keepers.Plans.AddPlan(ts.Ctx, plan, false)
 	require.Nil(t, err)
 

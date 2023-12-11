@@ -13,13 +13,12 @@
                 },
                 "annual_discount_percentage": 20,
                 "allow_overuse": true,
-                "overuse_rate": 2,
+                "overuse_rate": "2ulava",
                 "plan_policy": {
                     "chain_policies": [
                         {
                             "chain_id": "LAV1",
-                            "apis": [
-                            ]
+                            "apis": []
                         },
                         {
                             "chain_id": "ETH1",

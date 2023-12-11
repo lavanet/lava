@@ -21,12 +21,12 @@ func (p Plan) ValidatePlan() error {
 	}
 
 	// check that if overuse is allowed then the overuse rate is non-zero
-	if p.GetAllowOveruse() && p.GetOveruseRate() == 0 {
+	if p.GetAllowOveruse() && (p.GetOveruseRate().IsNil() || p.GetOveruseRate().IsZero()) {
 		return sdkerrors.Wrap(ErrInvalidPlanOveruse, "plan can't allow CU overuse and have overuse rate of zero")
 	}
 
 	// check that if overuse is not allowed then the overuse rate is zero
-	if !p.GetAllowOveruse() && p.GetOveruseRate() != 0 {
+	if !p.GetAllowOveruse() && !(p.GetOveruseRate().IsNil() || p.GetOveruseRate().IsZero()) {
 		return sdkerrors.Wrap(ErrInvalidPlanOveruse, "plan can't forbid CU overuse and have a non-zero overuse rate")
 	}
 
@@ -67,6 +67,29 @@ func PriceDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (inte
 			return nil, fmt.Errorf("failed to convert amount to math.Int")
 		}
 		return sdk.NewIntFromBigInt(amount), nil
+	}
+
+	return data, nil
+}
+
+// OveruseRateHookFunc helps the decoder to correctly unmarshal the overuse rate field's amount (type sdk.Coin)
+func OveruseRateDecodeHookFunc(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	if t == reflect.TypeOf(sdk.Coin{}) && f == reflect.TypeOf("") {
+		amountStr, ok := data.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected data type for amount field")
+		}
+
+		// Convert the string coins to sdk.Coin
+		coins, err := sdk.ParseCoinsNormalized(amountStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert amount to sdk.Coin: %w", err)
+		}
+
+		if len(coins) != 1 {
+			return nil, fmt.Errorf("unexpected amount of coins given. Expected: 1 , Got: %d", len(coins))
+		}
+		return coins[0], nil
 	}
 
 	return data, nil

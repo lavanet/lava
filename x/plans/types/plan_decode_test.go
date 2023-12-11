@@ -56,10 +56,10 @@ func TestDecodeJsonPlan(t *testing.T) {
 		Index:                    "to_delete_plan",
 		Description:              "This plan has no restrictions",
 		Type:                     "rpc",
-		Price:                    types.NewCoin(commontypes.TokenDenom, types.NewIntFromUint64(100000)),
+		Price:                    types.NewCoin(commontypes.TokenDenom, types.NewInt(100000)),
 		AnnualDiscountPercentage: 20,
 		AllowOveruse:             true,
-		OveruseRate:              2,
+		OveruseRate:              types.NewCoin(commontypes.TokenDenom, types.NewInt(2)),
 		PlanPolicy: Policy{
 			ChainPolicies: []ChainPolicy{
 				{ChainId: "LAV1", Apis: []string{}},
@@ -83,7 +83,7 @@ func TestDecodeJsonPlan(t *testing.T) {
         },
         "annual_discount_percentage": 20,
         "allow_overuse": true,
-        "overuse_rate": 2,
+        "overuse_rate": "2ulava",
         "plan_policy": {
             "chain_policies": [
                 {
@@ -110,6 +110,7 @@ func TestDecodeJsonPlan(t *testing.T) {
 	decoderHooks := []mapstructure.DecodeHookFunc{
 		PriceDecodeHookFunc,
 		PolicyEnumDecodeHookFunc,
+		OveruseRateDecodeHookFunc,
 	}
 
 	err := decoder.Decode(input, "plan", &plan, decoderHooks, nil, nil)
@@ -131,10 +132,10 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				Index:                    "to_delete_plan",
 				Description:              "This plan has no restrictions",
 				Type:                     "rpc",
-				Price:                    types.NewCoin(commontypes.TokenDenom, types.NewIntFromUint64(100000)),
+				Price:                    types.NewCoin(commontypes.TokenDenom, types.NewInt(100000)),
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
-				OveruseRate:              2,
+				OveruseRate:              types.NewCoin(commontypes.TokenDenom, types.NewInt(2)),
 				PlanPolicy: Policy{
 					ChainPolicies: []ChainPolicy{
 						{ChainId: "LAV1", Apis: []string{}},
@@ -152,10 +153,10 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				Index:                    "to_delete_plan_2",
 				Description:              "This plan has no restrictions",
 				Type:                     "rpc",
-				Price:                    types.NewCoin(commontypes.TokenDenom, types.NewIntFromUint64(100000)),
+				Price:                    types.NewCoin(commontypes.TokenDenom, types.NewInt(100000)),
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
-				OveruseRate:              2,
+				OveruseRate:              types.NewCoin(commontypes.TokenDenom, types.NewInt(2)),
 				PlanPolicy: Policy{
 					ChainPolicies: []ChainPolicy{
 						{ChainId: "LAV1", Apis: []string{}},
@@ -190,7 +191,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 					},
 					"annual_discount_percentage": 20,
 					"allow_overuse": true,
-					"overuse_rate": 2,
+					"overuse_rate": "2ulava",
 					"plan_policy": {
 						"chain_policies": [
 							{
@@ -228,7 +229,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 					},
 					"annual_discount_percentage": 20,
 					"allow_overuse": true,
-					"overuse_rate": 2,
+					"overuse_rate": "2ulava",
 					"plan_policy": {
 						"chain_policies": [
 							{
@@ -265,6 +266,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 	decoderHooks := []mapstructure.DecodeHookFunc{
 		PriceDecodeHookFunc,
 		PolicyEnumDecodeHookFunc,
+		OveruseRateDecodeHookFunc,
 	}
 
 	var (
