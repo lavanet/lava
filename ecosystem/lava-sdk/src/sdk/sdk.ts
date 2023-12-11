@@ -37,6 +37,7 @@ import { GeolocationFromString } from "../lavasession/geolocation";
 import {
   ChainIDsToInit,
   ChainIdSpecification,
+  ChainIdWithSpecificAPIInterfaces,
 } from "../stateTracker/types/types";
 type RelayReceiver = string; // chainId + ApiInterface
 
@@ -328,8 +329,11 @@ export class LavaSDK {
           Logger.debug("Skipping grpc for: ", chainId);
           continue;
         }
-
-        if (!apiInterfaceSpecification.includes(apiInterface)) {
+        // check if we have a specification for api interfaces if we do we need to check the api interface fits the specification
+        if (
+          apiInterfaceSpecification.length > 0 &&
+          !apiInterfaceSpecification.includes(apiInterface)
+        ) {
           Logger.debug(
             "Skipping API Interface as its not mentioned in apiSpecification: ",
             apiInterface
@@ -435,6 +439,8 @@ export class LavaSDK {
           chainId,
           "skipped initializing the following Api interfaces",
           skippedApiInterfaces,
+          ",map:",
+          JSON.stringify(this.rpcConsumerServerRouter.values()),
           "VS your api specification",
           apiInterfaceSpecification
         );
