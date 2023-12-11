@@ -14,6 +14,7 @@ type HealthMetrics struct {
 	failureAlerts   *prometheus.GaugeVec
 	healthyChecks   *prometheus.GaugeVec
 	unhealthyChecks *prometheus.GaugeVec
+	latestBlocks    *prometheus.GaugeVec
 }
 
 func NewHealthMetrics(networkAddress string) *HealthMetrics {
@@ -21,6 +22,11 @@ func NewHealthMetrics(networkAddress string) *HealthMetrics {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
 	}
+
+	latestBlocks := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_health_latest_blocks",
+		Help: "The latest blocks queried on all checks",
+	}, []string{"identifier", "entity"})
 
 	failureAlerts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_health_failure_alerts",
@@ -52,6 +58,7 @@ func NewHealthMetrics(networkAddress string) *HealthMetrics {
 	prometheus.MustRegister(failureAlerts)
 	prometheus.MustRegister(healthyChecks)
 	prometheus.MustRegister(unhealthyChecks)
+	prometheus.MustRegister(latestBlocks)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -63,6 +70,7 @@ func NewHealthMetrics(networkAddress string) *HealthMetrics {
 		failureAlerts:   failureAlerts,
 		healthyChecks:   healthyChecks,
 		unhealthyChecks: unhealthyChecks,
+		latestBlocks:    latestBlocks,
 	}
 }
 
@@ -78,6 +86,15 @@ func (pme *HealthMetrics) SetSuccess(label string) {
 		return
 	}
 	pme.successfulRuns.WithLabelValues(label).Add(1)
+}
+
+func (pme *HealthMetrics) SetLatestBlockData(label string, data map[string]uint64) {
+	if pme == nil {
+		return
+	}
+	for entity, value := range data {
+		pme.latestBlocks.WithLabelValues(label, entity).Set(float64(value))
+	}
 }
 
 func (pme *HealthMetrics) SetAlertResults(label string, fails uint64, unhealthy uint64, healthy uint64) {

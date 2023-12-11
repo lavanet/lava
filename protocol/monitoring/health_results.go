@@ -21,6 +21,19 @@ type HealthResults struct {
 	Lock               sync.RWMutex
 }
 
+func (healthResults *HealthResults) FormatForLatestBlock() map[string]uint64 {
+	healthResults.Lock.RLock()
+	defer healthResults.Lock.RUnlock()
+	results := map[string]uint64{}
+	for entity, block := range healthResults.ConsumerBlocks {
+		results[entity.String()] = uint64(block)
+	}
+	for entity, data := range healthResults.ProviderData {
+		results[entity.String()] = uint64(data.block)
+	}
+	return results
+}
+
 func (healthResults *HealthResults) GetAllEntities() map[LavaEntity]struct{} {
 	healthResults.Lock.RLock()
 	defer healthResults.Lock.RUnlock()

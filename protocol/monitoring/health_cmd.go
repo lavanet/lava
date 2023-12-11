@@ -153,11 +153,14 @@ reference_endpoints:
 				referenceEndpoints []*lavasession.RPCEndpoint,
 				prometheusListenAddr string,
 			) {
+				utils.LavaFormatInfo("[+] starting health run")
 				healthResult, err := RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 				if err != nil {
-					utils.LavaFormatError("invalid health run", err)
+					utils.LavaFormatError("[-] invalid health run", err)
 					healthMetrics.SetFailedRun(identifier)
 				} else {
+					utils.LavaFormatInfo("[+] completed health run")
+					healthMetrics.SetLatestBlockData(identifier, healthResult.FormatForLatestBlock())
 					alerting.CheckHealthResults(healthResult)
 					activeAlerts, unhealthy, healthy := alerting.ActiveAlerts()
 					healthMetrics.SetSuccess(identifier)
