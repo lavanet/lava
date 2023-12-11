@@ -7,6 +7,7 @@ import (
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // account keeper mock
@@ -20,7 +21,10 @@ func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) type
 }
 
 func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) types.ModuleAccountI {
-	return nil
+	moduleAddress := authtypes.NewModuleAddress(module).String()
+	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
+	baseAccount.Address = moduleAddress
+	return authtypes.NewModuleAccount(baseAccount, module, authtypes.Burner, authtypes.Staking)
 }
 
 func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
@@ -263,4 +267,11 @@ func (b *MockBlockStore) LoadBlockMetaByHash(hash []byte) *tenderminttypes.Block
 
 func (b *MockBlockStore) DeleteLatestBlock() error {
 	return nil
+}
+
+// rewards pool mock
+type mockRewardsPool struct{}
+
+func (k mockRewardsPool) GetModuleAddress(moduleName string) sdk.AccAddress {
+	return sdk.AccAddress([]byte(moduleName))
 }

@@ -106,6 +106,11 @@ type Servers struct {
 	RewardsServer      rewardstypes.MsgServer
 }
 
+type RewardsPools struct {
+	ValidatorsAllocationPool   mockRewardsPool
+	ValidatorsDistributionPool mockRewardsPool
+}
+
 type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
@@ -114,7 +119,7 @@ type KeeperEndBlocker interface {
 	EndBlock(ctx sdk.Context)
 }
 
-func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
+func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Context) {
 	seed := time.Now().Unix()
 	// seed = 1695297312 // uncomment this to debug a specific scenario
 	Randomizer = sigs.NewZeroReader(seed)
@@ -299,6 +304,18 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
 
+	// pools
+	allocationPoolBalance := uint64(30000000000000)
+	p := RewardsPools{}
+	p.ValidatorsAllocationPool = mockRewardsPool{}
+	p.ValidatorsDistributionPool = mockRewardsPool{}
+	err := ks.BankKeeper.AddToBalance(
+		p.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
+	require.Nil(t, err)
+
+	ctx = ctx.WithBlockTime(time.Now())
+
 	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
 	ks.Plans.InitPlans(ctx, *fixationtypes.DefaultGenesis())
@@ -308,11 +325,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Subscription.InitCuTrackerTimers(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Projects.InitDevelopers(ctx, *fixationtypes.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *fixationtypes.DefaultGenesis())
+	ks.Rewards.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
+	ks.Rewards.RefillRewardsPools(ctx, nil, nil)
 
 	NewBlock(ctx, &ks)
-	ctx = ctx.WithBlockTime(time.Now())
 
-	return &ss, &ks, sdk.WrapSDKContext(ctx)
+	return &ss, &ks, &p, sdk.WrapSDKContext(ctx)
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
@@ -383,7 +401,8 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	if len(customBlockTime) > 0 {
 		ks.BlockStore.AdvanceBlock(customBlockTime[0])
 	} else {
-		ks.BlockStore.AdvanceBlock(BLOCK_TIME)
+		defaultBlockTime := ks.Downtime.GetParams(unwrapedCtx).DowntimeDuration
+		ks.BlockStore.AdvanceBlock(defaultBlockTime)
 	}
 
 	b := ks.BlockStore.LoadBlock(int64(block))

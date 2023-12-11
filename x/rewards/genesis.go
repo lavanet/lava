@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis
@@ -11,7 +12,7 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
-	k.InitRewardsRefillTS(ctx, genState.RefillRewardsTS)
+	k.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
 	k.RefillRewardsPools(ctx, nil, nil)
 }
 

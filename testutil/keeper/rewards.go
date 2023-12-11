@@ -15,6 +15,7 @@ import (
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
+	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,7 +48,7 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		nil,
 		authtypes.FeeCollectorName,
-		nil,
+		timerstorekeeper.NewKeeper(cdc),
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

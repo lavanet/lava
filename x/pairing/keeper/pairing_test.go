@@ -140,7 +140,7 @@ func TestGetPairing(t *testing.T) {
 	require.Nil(t, err)
 
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
-	constBlockTime := testkeeper.BLOCK_TIME
+	constBlockTime := ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
 	epochBlocks := ts.EpochBlocks()
 
 	// test: different epoch, valid tells if the payment request should work
@@ -871,9 +871,9 @@ func TestPairingUniformDistribution(t *testing.T) {
 	ts.setupForPayments(providersCount, 1, providersToPair)
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
-	// extend the subscription to accommodate many (pairing) epochs
-	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 5, false)
-	require.NoError(t, err)
+	// make the subscription auto-renew so it won't expire after many (pairing) epochs
+	err := ts.TxSubscriptionAutoRenewal(clientAddr, true)
+	require.Nil(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
@@ -899,8 +899,8 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	// extend the subscription to accommodate many (pairing) epochs
-	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10, false)
+	// make the subscription auto-renew so it won't expire after many (pairing) epochs
+	err = ts.TxSubscriptionAutoRenewal(clientAddr, true)
 	require.Nil(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }

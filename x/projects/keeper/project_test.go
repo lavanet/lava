@@ -1085,7 +1085,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 }
 
 func TestSetPolicyByGeolocation(t *testing.T) {
-	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	servers, keepers, _, _ctx := testkeeper.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
 	// for convinience

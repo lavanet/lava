@@ -86,6 +86,14 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
+// redeclaring BeginBlock for testing (this is not called outside of unit tests)
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	err := k.DistributeBlockReward(ctx)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // RefillRewardsPools is called once a month (as a timer callback). it does the following for validators:
 //  1. burns the current token in the validators distribution pool by the burn rate
 //  2. transfers the monthly tokens quota from the validators allocation pool to the validators distribution pool
@@ -133,7 +141,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
 	durationUntilNextMonth := nextMonth - ctx.BlockTime().UTC().Unix()
 	blockCreationTime := k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds()
-	blocksToNextTimerExpiry := (durationUntilNextMonth / int64(blockCreationTime) * 105 / 100) + ctx.BlockHeight()
+	blocksToNextTimerExpiry := ((durationUntilNextMonth / int64(blockCreationTime)) * 105 / 100) + ctx.BlockHeight()
 
 	// update the months left of the allocation pool and encode it
 	monthsLeftBytes := make([]byte, 8)
@@ -151,6 +159,7 @@ func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
 	keys, _, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
 	if len(keys) == 0 {
 		// something is wrong, don't panic but make validators rewards 0
+		utils.LavaFormatError("could not get blocks to next timer expiry", fmt.Errorf("no timers found"))
 		return math.MaxInt64
 	}
 	return int64(binary.BigEndian.Uint64(keys[0])) - ctx.BlockHeight()
@@ -162,6 +171,7 @@ func (k Keeper) TimeToNextTimerExpiry(ctx sdk.Context) int64 {
 	_, expiries, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
 	if len(expiries) == 0 {
 		// something is wrong, don't panic but return largest duration
+		utils.LavaFormatError("could not get time to next timer expiry", fmt.Errorf("no timers found"))
 		return math.MaxInt64
 	}
 
@@ -172,6 +182,7 @@ func (k Keeper) AllocationPoolMonthsLeft(ctx sdk.Context) int64 {
 	_, _, data := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
 	if len(data) == 0 {
 		// something is wrong, don't panic but return largest duration
+		utils.LavaFormatError("could not get allocation pool months left", fmt.Errorf("no timers found"))
 		return math.MaxInt64
 	}
 
