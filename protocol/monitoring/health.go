@@ -35,12 +35,13 @@ const (
 )
 
 type LavaEntity struct {
-	Address string
-	SpecId  string
+	Address      string
+	SpecId       string
+	ApiInterface string
 }
 
 func (e *LavaEntity) String() string {
-	return fmt.Sprintf("%s|%s", e.Address, e.SpecId)
+	return fmt.Sprintf("%s|%s|%s", e.Address, e.SpecId, e.ApiInterface)
 }
 
 type ReplyData struct {
@@ -73,12 +74,38 @@ func RunHealth(ctx context.Context,
 		UnhealthyConsumers: map[LavaEntity]string{},
 		Specs:              map[string]*spectypes.Spec{},
 	}
-	resultStatus, err := clientCtx.Client.Status(ctx)
+	currentBlock := int64(0)
+	for i := 0; i < BasicQueryRetries; i++ {
+		resultStatus, err := clientCtx.Client.Status(ctx)
+		if err == nil {
+			currentBlock = resultStatus.SyncInfo.LatestBlockHeight
+			break
+		}
+		time.Sleep(QuerySleepTime)
+	}
+	if currentBlock == 0 {
+		return nil, utils.LavaFormatError("failed querying lava chain for block", nil)
+	}
+	var err error
+	var allChains *spectypes.QueryShowAllChainsResponse
+	for i := 0; i < BasicQueryRetries; i++ {
+		allChains, err = specQuerier.ShowAllChains(ctx, &spectypes.QueryShowAllChainsRequest{})
+		if err == nil {
+			break
+		}
+		time.Sleep(QuerySleepTime)
+	}
 	if err != nil {
 		return nil, err
 	}
+	chainIdToApiInterfaces := map[string][]string{}
+	for _, chainInfo := range allChains.ChainInfoList {
+		if len(chainInfo.EnabledApiInterfaces) > 0 {
+			chainIdToApiInterfaces[chainInfo.ChainID] = chainInfo.EnabledApiInterfaces
+		}
+	}
 	errCh := make(chan error, 1)
-	currentBlock := resultStatus.SyncInfo.LatestBlockHeight
+
 	// get a list of all necessary specs for the test
 	dualStakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
 	var wgspecs sync.WaitGroup
@@ -103,10 +130,13 @@ func RunHealth(ctx context.Context,
 			for _, delegation := range delegations {
 				if delegation.Provider == providerAddress {
 					healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID})
-					healthResults.SetProviderData(LavaEntity{
-						Address: providerAddress,
-						SpecId:  delegation.ChainID,
-					}, ReplyData{})
+					for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
+						healthResults.SetProviderData(LavaEntity{
+							Address:      providerAddress,
+							SpecId:       delegation.ChainID,
+							ApiInterface: apiInterface,
+						}, ReplyData{})
+					}
 				}
 			}
 			return
@@ -190,9 +220,21 @@ func RunHealth(ctx context.Context,
 					Address: providerEntry.Address,
 					SpecId:  specId,
 				}
+				apiInterfaces := chainIdToApiInterfaces[specId]
+				// just to check if this is a provider we need to check we need one of the apiInterfaces
+				if len(apiInterfaces) == 0 {
+					utils.LavaFormatError("invalid state len(apiInterfaces) == 0", nil, utils.LogAttr("specId", specId))
+					// shouldn't happen
+					continue
+				}
+				lookupKey := LavaEntity{
+					Address:      providerEntry.Address,
+					SpecId:       specId,
+					ApiInterface: apiInterfaces[0],
+				}
 
 				mutex.Lock() // Lock before updating stakeEntries
-				if _, ok := healthResults.getProviderData(providerKey); ok {
+				if _, ok := healthResults.getProviderData(lookupKey); ok {
 					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
 						healthResults.FreezeProvider(providerKey)
 					} else {
@@ -395,10 +437,6 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 
 	checkProviderEndpoints := func(providerEntry epochstoragetypes.StakeEntry) {
 		defer wg.Done()
-		providerKey := LavaEntity{
-			Address: providerEntry.Address,
-			SpecId:  providerEntry.Chain,
-		}
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(endpoint epochstoragetypes.Endpoint, apiInterface string, addon string, providerEntry epochstoragetypes.StakeEntry) (time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
@@ -450,6 +488,11 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 				utils.LavaFormatWarning("endpoint has no supported services", nil, utils.Attribute{Key: "endpoint", Value: endpoint})
 			}
 			for _, endpointService := range endpointServices {
+				providerKey := LavaEntity{
+					Address:      providerEntry.Address,
+					SpecId:       providerEntry.Chain,
+					ApiInterface: endpointService.ApiInterface,
+				}
 				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpoint, endpointService.ApiInterface, endpointService.Addon, providerEntry)
 				if err != nil {
 					healthResults.SetUnhealthyProvider(providerKey, err.Error())

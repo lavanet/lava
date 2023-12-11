@@ -418,6 +418,9 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 			al.healthy[entity] = struct{}{}
 		}
 	}
+	if len(al.currentAlerts) == 0 {
+		utils.LavaFormatInfo("[+] healthy - no new alerts")
+	}
 }
 
 func (al *Alerting) ActiveAlerts() (alerts uint64, unhealthy uint64, healthy uint64) {

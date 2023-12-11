@@ -58,7 +58,7 @@ create_health_config $HEALTH_FILE $(lavad keys show user1 -a) $(lavad keys show 
 
 if [[ "$1" != "--skip-providers" ]]; then
 . ${__dir}/setup_providers.sh
-echo "running health check"
-sleep 3
+echo "letting providers start and running health check"
+sleep 5
 lavap test health $HEALTH_FILE
 fi

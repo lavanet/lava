@@ -140,7 +140,7 @@ reference_endpoints:
 			utils.SetGlobalLoggingLevel(logLevel)
 			alertingOptions := AlertingOptions{
 				Url:                           viper.GetString(alertingWebHookFlagName),
-				Logging:                       viper.GetBool(DisableAlertLogging),
+				Logging:                       !viper.GetBool(DisableAlertLogging),
 				Identifier:                    identifier,
 				SubscriptionCUPercentageAlert: viper.GetFloat64(percentageCUFlagName),
 				SubscriptionLeftTimeAlert:     time.Duration(viper.GetUint64(subscriptionLeftTimeFlagName)) * time.Hour * 24,

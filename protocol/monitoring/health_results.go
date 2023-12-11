@@ -96,12 +96,14 @@ func (healthResults *HealthResults) updateConsumerError(endpoint *lavasession.RP
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	healthResults.ConsumerBlocks[LavaEntity{
-		Address: endpoint.String(),
-		SpecId:  endpoint.ChainID,
+		Address:      endpoint.String(),
+		SpecId:       endpoint.ChainID,
+		ApiInterface: endpoint.ApiInterface,
 	}] = 0
 	healthResults.UnhealthyConsumers[LavaEntity{
-		Address: endpoint.String(),
-		SpecId:  endpoint.ChainID,
+		Address:      endpoint.String(),
+		SpecId:       endpoint.ChainID,
+		ApiInterface: endpoint.ApiInterface,
 	}] = err.Error()
 }
 
@@ -109,8 +111,9 @@ func (healthResults *HealthResults) updateConsumer(endpoint *lavasession.RPCEndp
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	healthResults.ConsumerBlocks[LavaEntity{
-		Address: endpoint.String(),
-		SpecId:  endpoint.ChainID,
+		Address:      endpoint.String(),
+		SpecId:       endpoint.ChainID,
+		ApiInterface: endpoint.ApiInterface,
 	}] = latestBlock
 }
 
@@ -137,8 +140,8 @@ func (healthResults *HealthResults) SetProviderData(providerKey LavaEntity, late
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	if existing, ok := healthResults.ProviderData[providerKey]; ok {
-		if latestData.block == 0 {
-			latestData.block = existing.block
+		if existing.block == 0 {
+			existing.block = latestData.block
 		} else {
 			latestData.block = slices.Min([]int64{existing.block, latestData.block})
 		}
