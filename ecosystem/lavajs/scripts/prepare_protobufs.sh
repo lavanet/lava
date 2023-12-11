@@ -37,6 +37,7 @@ function prepare() {
         exit 1
     fi
 
+    
 
     echo "✨✨✨✨✨ GOPATH set to $GOPATH" >&2
     echo "✨✨✨✨✨ go env GOPATH: $(go env GOPATH)" >&2
@@ -52,10 +53,10 @@ function prepare() {
     fi
 
     echo "$(ls $gopath/pkg/mod/github.com/cosmos)"
-    specific_dir="$gopath/pkg/mod/github.com/cosmos/cosmos-sdk@v0.47.3"
+    specific_dir="$GOPATH/pkg/mod/github.com/lavanet/cosmos-sdk@v0.47.7-0.20231211141641-2a9ea55b724d"
 
     if [[ ! -d "$specific_dir" ]]; then
-        echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$gopath/pkg/mod'." >&2
+        echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$GOPATH/pkg/mod'." >&2
         echo "make sure you ran 'go mod tidy' in the lava main repo"
         exit 1
     fi
