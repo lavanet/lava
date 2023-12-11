@@ -16,6 +16,12 @@ export const APIInterfaceJsonRPC = "jsonrpc";
 export const APIInterfaceTendermintRPC = "tendermintrpc";
 export const APIInterfaceRest = "rest";
 export const APIInterfaceGrpc = "grpc";
+export const AllApiInterfaces = [
+  APIInterfaceJsonRPC,
+  APIInterfaceTendermintRPC,
+  APIInterfaceRest,
+  APIInterfaceGrpc,
+];
 export const HeadersPassSend = Header.HeaderType.PASS_SEND;
 
 /**

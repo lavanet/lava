@@ -21,6 +21,7 @@ import {
   SendRelayOptions,
   SendRelaysBatchOptions,
   SendRestRelayOptions,
+  AllApiInterfaces,
 } from "../chainlib/base_chain_parser";
 import { JsonRpcChainParser } from "../chainlib/jsonrpc";
 import { RestChainParser } from "../chainlib/rest";
@@ -300,6 +301,16 @@ export class LavaSDK {
       } else {
         chainId = specification.chainId;
         apiInterfaceSpecification = specification.apiInterfaces;
+        apiInterfaceSpecification.forEach((apiInterface) => {
+          if (!AllApiInterfaces.includes(apiInterface)) {
+            Logger.error(
+              "Api interface does not exist, allowed list:",
+              AllApiInterfaces,
+              "provided:",
+              apiInterface
+            );
+          }
+        });
       }
       const pairingResponse = tracker.getPairingResponse(chainId);
 
