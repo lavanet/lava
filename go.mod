@@ -220,4 +220,4 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
-replace github.com/cosmos/cosmos-sdk => github.com/lavanet/cosmos-sdk v0.47.7-0.20231206103345-2d840a1d27f9
+replace github.com/cosmos/cosmos-sdk => github.com/lavanet/cosmos-sdk v0.47.7-0.20231211141641-2a9ea55b724d // branch: v0.47.x-lava
