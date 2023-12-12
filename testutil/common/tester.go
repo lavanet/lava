@@ -22,6 +22,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -34,6 +35,7 @@ type Tester struct {
 	Ctx     sdk.Context
 	Servers *testkeeper.Servers
 	Keepers *testkeeper.Keepers
+	Pools   *testkeeper.RewardsPools
 
 	accounts map[string]sigs.Account
 	plans    map[string]planstypes.Plan
@@ -61,7 +63,7 @@ func NewTester(t *testing.T) *Tester {
 }
 
 func NewTesterRaw(t *testing.T) *Tester {
-	servers, keepers, GoCtx := testkeeper.InitAllKeepers(t)
+	servers, keepers, pools, GoCtx := testkeeper.InitAllKeepers(t)
 
 	ts := &Tester{
 		T:       t,
@@ -69,6 +71,7 @@ func NewTesterRaw(t *testing.T) *Tester {
 		Ctx:     sdk.UnwrapSDKContext(GoCtx),
 		Servers: servers,
 		Keepers: keepers,
+		Pools:   pools,
 
 		accounts: make(map[string]sigs.Account),
 		plans:    make(map[string]planstypes.Plan),
@@ -785,6 +788,18 @@ func (ts *Tester) QueryFixationEntry(storeKey string, prefix string, key string,
 		StringData: stringData,
 	}
 	return ts.Keepers.FixationStoreKeeper.Entry(ts.GoCtx, msg)
+}
+
+// QueryRewardsPools implements 'q rewards pools'
+func (ts *Tester) QueryRewardsPools() (*rewardstypes.QueryPoolsResponse, error) {
+	msg := &rewardstypes.QueryPoolsRequest{}
+	return ts.Keepers.Rewards.Pools(ts.GoCtx, msg)
+}
+
+// QueryRewardsBlockReward implements 'q rewards block-reward'
+func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardResponse, error) {
+	msg := &rewardstypes.QueryBlockRewardRequest{}
+	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
 // block/epoch helpers

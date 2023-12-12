@@ -7,25 +7,27 @@ const (
 
 type Pool string
 
-// validators_rewards_pool constants
-// this pool is used as the main and reserve of token for validators rewards
-// it will get depleted after ValidatorsRewardsPoolLifetime (4 years minus one month)
+// Allocation pools constants:
+// These pools are used as the main and reserve of tokens for the distribution rewards pools.
+// Each month, the allocation pools transfer a monthly quota of tokens to the distribution
+// pools so there will be funds to distribute rewards for validators/providers.
+// The allocation pools will get depleted after RewardsAllocationPoolsLifetime.
 const (
-	ValidatorsRewardsPoolName     Pool  = "validators_rewards_pool"
-	ValidatorsRewardsPoolLifetime int64 = 47
+	ValidatorsRewardsAllocationPoolName Pool  = "validators_rewards_allocation_pool"
+	RewardsAllocationPoolsLifetime      int64 = 48 // 4 years (in months)
 )
 
-// validators block rewards pool constants
-// this pool is used as the reserve for validator rewards per block
-// it gets its token through the validators rewards pool each month
-// this monthly transfer happens using the "refill reward pools" timer store
+// Distribution pools constants:
+// These pools are used as the reserve of tokens for validators/providers rewards.
+// Once a month, these pools' tokens are burned by the burn rate and get their
+// monthly quota of tokens from the allocation pools
 const (
-	ValidatorsBlockRewardsPoolName Pool = "validators_block_rewards_pool"
+	ValidatorsRewardsDistributionPoolName Pool = "validators_rewards_distribution_pool"
 )
 
-// refill reward pools time stores constant
-// used to fill the block rewards pools (for both validators and providers)
-// once a month.
+// Refill reward pools time stores constants:
+// This timer store is used to trigger the refill mechanism of the distribution
+// pools once a month.
 const (
 	RefillRewardsPoolTimerPrefix = "refill-rewards-pool-ts"
 )

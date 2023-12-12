@@ -21,33 +21,24 @@ genesis='genesis.json'
 config='config.toml'
 app='app.toml'
 
+data=$(cat "$path$genesis" \
+    | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
+    | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
+    | jq '.app_state.gov.params.voting_period = "3s"' \
+    | jq '.app_state.mint.params.mint_denom = "ulava"' \
+    | jq '.app_state.staking.params.bond_denom = "ulava"' \
+    | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
+    | jq '.app_state.downtime.params.downtime_duration = "1s"' \
+    | jq '.app_state.downtime.params.epoch_duration = "20s"' \
+)
+
 # Edit genesis file
 if [ "$1" == "debug" ]; then
-    # Edit genesis file with additional line
-    data=$(cat "$path$genesis" \
-        | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
-        | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
-        | jq '.app_state.gov.params.voting_period = "3s"' \
-        | jq '.app_state.mint.params.mint_denom = "ulava"' \
-        | jq '.app_state.staking.params.bond_denom = "ulava"' \
-        | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
+    # make chain memory to be 5 epochs (instead of 10) and each epoch to be 6 blocks (instead of 20)
+    data=$(echo "$data" \
         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
         | jq '.app_state.epochstorage.params.epochBlocks = "6"' \
-        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "20s"' \
-    )
-else
-    # Edit genesis file without the additional line
-    data=$(cat "$path$genesis" \
-        | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
-        | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
-        | jq '.app_state.gov.params.voting_period = "3s"' \
-        | jq '.app_state.mint.params.mint_denom = "ulava"' \
-        | jq '.app_state.staking.params.bond_denom = "ulava"' \
-        | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
-        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "20s"' \
-    )
+        )
 fi
 
 echo -n "$data" > "$path$genesis"
@@ -88,7 +79,9 @@ for user in "${users[@]}"; do
     lavad add-genesis-account "$user" 50000000000000ulava
 done
 
-lavad add-genesis-account validators_rewards_pool 50000000000000ulava --module-account # add validators_rewards_pool for validators block rewards
-lavad gentx alice 100000000000ulava --chain-id lava
+# add validators_allocation_pool for validators block rewards
+# its total balance is 3% from the total tokens amount: 10^9 * 10^6 ulava
+lavad add-genesis-account validators_rewards_allocation_pool 30000000000000ulava --module-account 
+lavad gentx alice 10000000000000ulava --chain-id lava
 lavad collect-gentxs
 lavad start --pruning=nothing

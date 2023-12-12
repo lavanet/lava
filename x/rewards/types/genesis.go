@@ -1,5 +1,7 @@
 package types
 
+import fmt "fmt"
+
 // this line is used by starport scaffolding # genesis/types/import
 
 // DefaultIndex is the default capability global index
@@ -17,6 +19,11 @@ func DefaultGenesis() *GenesisState {
 // failure.
 func (gs GenesisState) Validate() error {
 	// this line is used by starport scaffolding # genesis/types/validate
+	timeEntries := gs.RefillRewardsTS.GetTimeEntries()
+	if len(timeEntries) > 1 {
+		return fmt.Errorf(`there should be up to one timer in RefillRewardsTS
+			at all times. amount of timers found: %v`, len(timeEntries))
+	}
 
 	return gs.Params.Validate()
 }

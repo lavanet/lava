@@ -49,6 +49,8 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	protocolkeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	rewardskeeper "github.com/lavanet/lava/x/rewards/keeper"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	"github.com/lavanet/lava/x/spec"
 	speckeeper "github.com/lavanet/lava/x/spec/keeper"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -86,6 +88,7 @@ type Keepers struct {
 	BlockStore          MockBlockStore
 	Downtime            downtimekeeper.Keeper
 	SlashingKeeper      slashingkeeper.Keeper
+	Rewards             rewardskeeper.Keeper
 }
 
 type Servers struct {
@@ -100,6 +103,12 @@ type Servers struct {
 	DualstakingServer  dualstakingtypes.MsgServer
 	PlansServer        planstypes.MsgServer
 	SlashingServer     slashingtypes.MsgServer
+	RewardsServer      rewardstypes.MsgServer
+}
+
+type RewardsPools struct {
+	ValidatorsAllocationPool   mockRewardsPool
+	ValidatorsDistributionPool mockRewardsPool
 }
 
 type KeeperBeginBlocker interface {
@@ -110,7 +119,7 @@ type KeeperEndBlocker interface {
 	EndBlock(ctx sdk.Context)
 }
 
-func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
+func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Context) {
 	seed := time.Now().Unix()
 	// seed = 1695297312 // uncomment this to debug a specific scenario
 	Randomizer = sigs.NewZeroReader(seed)
@@ -183,6 +192,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
+	rewardsStoreKey := sdk.NewKVStoreKey(rewardstypes.StoreKey)
+	rewardsMemStoreKey := storetypes.NewMemoryStoreKey(rewardstypes.MemStoreKey)
+	stateStore.MountStoreWithDB(rewardsStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(rewardsMemStoreKey, storetypes.StoreTypeMemory, nil)
+
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	paramsKeeper := paramskeeper.NewKeeper(cdc, pairingtypes.Amino, paramsStoreKey, tkey)
@@ -191,6 +205,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(pairingtypes.ModuleName)
 	paramsKeeper.Subspace(protocoltypes.ModuleName)
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
+	paramsKeeper.Subspace(rewardstypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -208,6 +223,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	subscriptionparamsSubspace, _ := paramsKeeper.GetSubspace(subscriptiontypes.ModuleName)
 
 	dualstakingparamsSubspace, _ := paramsKeeper.GetSubspace(dualstakingtypes.ModuleName)
+
+	rewardsparamsSubspace, _ := paramsKeeper.GetSubspace(rewardstypes.ModuleName)
 
 	conflictparamsSubspace := paramstypes.NewSubspace(cdc,
 		conflicttypes.Amino,
@@ -238,6 +255,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Downtime, ks.StakingKeeper, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
@@ -260,6 +278,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
+	ks.Rewards.SetParams(ctx, rewardstypes.DefaultParams())
 
 	// register the staking hooks
 	ks.StakingKeeper.SetHooks(
@@ -280,10 +299,23 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.DualstakingServer = dualstakingkeeper.NewMsgServerImpl(ks.Dualstaking)
 	ss.StakingServer = stakingkeeper.NewMsgServerImpl(&ks.StakingKeeper)
 	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
+	ss.RewardsServer = rewardskeeper.NewMsgServerImpl(ks.Rewards)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
 	ks.Epochstorage.SetEpochDetails(ctx, *epochstoragetypes.DefaultGenesis().EpochDetails)
+
+	// pools
+	allocationPoolBalance := uint64(30000000000000)
+	p := RewardsPools{}
+	p.ValidatorsAllocationPool = mockRewardsPool{}
+	p.ValidatorsDistributionPool = mockRewardsPool{}
+	err := ks.BankKeeper.AddToBalance(
+		p.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
+	require.Nil(t, err)
+
+	ctx = ctx.WithBlockTime(time.Now())
 
 	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
@@ -294,11 +326,12 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Subscription.InitCuTrackerTimers(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Projects.InitDevelopers(ctx, *fixationtypes.DefaultGenesis())
 	ks.Projects.InitProjects(ctx, *fixationtypes.DefaultGenesis())
+	ks.Rewards.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
+	ks.Rewards.RefillRewardsPools(ctx, nil, nil)
 
 	NewBlock(ctx, &ks)
-	ctx = ctx.WithBlockTime(time.Now())
 
-	return &ss, &ks, sdk.WrapSDKContext(ctx)
+	return &ss, &ks, &p, sdk.WrapSDKContext(ctx)
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
@@ -369,7 +402,8 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	if len(customBlockTime) > 0 {
 		ks.BlockStore.AdvanceBlock(customBlockTime[0])
 	} else {
-		ks.BlockStore.AdvanceBlock(BLOCK_TIME)
+		defaultBlockTime := ks.Downtime.GetParams(unwrapedCtx).DowntimeDuration
+		ks.BlockStore.AdvanceBlock(defaultBlockTime)
 	}
 
 	b := ks.BlockStore.LoadBlock(int64(block))

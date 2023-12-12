@@ -40,12 +40,10 @@ type EpochstorageKeeper interface {
 
 type DowntimeKeeper interface {
 	GetParams(ctx sdk.Context) (params v1.Params)
-	// Methods imported from bank should be defined here
 }
 
 type StakingKeeper interface {
 	BondedRatio(ctx sdk.Context) math.LegacyDec
-	// Methods imported from bank should be defined here
 }
 
 type DualStakingKeeper interface {
