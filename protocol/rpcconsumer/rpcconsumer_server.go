@@ -205,6 +205,12 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return nil, err
 	}
+	// temporarily disable subscriptions
+	isSubscription := chainlib.IsSubscription(chainMessage)
+	if isSubscription {
+		return &common.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are not supported at the moment", nil)
+	}
+
 	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
 	if _, ok := rpccs.consumerServices[chainlib.GetAddon(chainMessage)]; !ok {
 		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
@@ -344,7 +350,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if isSubscription {
 		// temporarily disable subscriptions
 		// TODO: fix subscription and disable this case.
-		return &common.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are not supported currently", nil)
+		return &common.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are disabled currently", nil)
 	}
 
 	privKey := rpccs.privKey
