@@ -29,7 +29,7 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 		basepays, totalbasepay := k.SpecProvidersBasePay(ctx, spec.ChainID)
 		specTotalPayout := k.SpecTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		for _, basepay := range basepays {
-			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(basepay.Total).TruncateInt()
+			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
 			totalRewarded = totalRewarded.Add(reward)
 			if totalRewarded.GT(total) {
 				utils.LavaFormatError("trying to send more than we can", nil, utils.LogAttr("total", total.String()), utils.LogAttr("totalRewarded", totalRewarded.String()))
@@ -56,7 +56,7 @@ func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, to
 	// TODO yarom move the param read to a method
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.GetParams(ctx).Providers.MaxRewardBoost))
 	// TODO yarom test all edge cases
-	diminishingRewards := sdk.MaxDec(sdk.ZeroDec(), specPayoutAllocation.Mul(sdk.NewDecWithPrec(15, 1).Sub(totalProvidersBaseRewards.Mul(sdk.NewDecWithPrec(5, 1)))))
+	diminishingRewards := sdk.MaxDec(sdk.ZeroDec(), (sdk.NewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(sdk.NewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
 	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 
@@ -81,6 +81,10 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emisions []types.SpecEmmisio
 
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
+			if totalStake.IsZero() {
+				continue
+			}
+
 			emisions = append(emisions, types.SpecEmmisionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
 		}
 	}

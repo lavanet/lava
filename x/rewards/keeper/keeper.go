@@ -31,9 +31,6 @@ type (
 		downtimeKeeper    types.DowntimeKeeper
 		stakingKeeper     types.StakingKeeper
 		dualstakingKeeper types.DualStakingKeeper
-
-		monthlyProvidersRewardsTS timerstoretypes.TimerStore
-
 		// account name used by the distribution module to reward validators
 		feeCollectorName string
 
@@ -82,26 +79,16 @@ func NewKeeper(
 		feeCollectorName: feeCollectorName,
 	}
 
-	subsTimerCallback := func(ctx sdk.Context, subkey, _ []byte) {
-		keeper.DistributeMonthlyBonusRewards(ctx)
-	}
-
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
 		keeper.RefillRewardsPools(ctx, subkey, data)
+		keeper.DistributeMonthlyBonusRewards(ctx)
 	}
-
-	keeper.monthlyProvidersRewardsTS = *timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, types.MonthlyRewardsTSPrefix).
-		WithCallbackByBlockTime(subsTimerCallback)
 
 	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators
 	keeper.refillRewardsPoolTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.RefillRewardsPoolTimerPrefix).
 		WithCallbackByBlockTime(refillRewardsPoolTimerCallback)
 
 	return &keeper
-}
-
-func (k Keeper) SetNextMonthRewardTime(ctx sdk.Context) {
-	k.monthlyProvidersRewardsTS.AddTimerByBlockTime(ctx, uint64(utils.NextMonth(ctx.BlockTime()).Unix()), []byte{}, []byte{})
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
@@ -133,6 +120,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	}
 
 	k.RefillValidatorsAllocationPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName)
+	k.RefillValidatorsAllocationPool(ctx, monthsLeft, types.ProvidersAllocationPool, types.ProviderDistributionPool)
 
 	if monthsLeft > 0 {
 		monthsLeft -= 1

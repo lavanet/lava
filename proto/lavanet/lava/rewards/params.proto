@@ -33,7 +33,7 @@ message Params {
     (gogoproto.nullable)   = false
   ];
 
-  Providers providers =5;
+  Providers providers =5 [(gogoproto.nullable)=false];
 }
 
 message Providers {

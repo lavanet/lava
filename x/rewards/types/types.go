@@ -1,10 +1,5 @@
 package types
 
-const (
-	ProvidersVestingPool     = "providers_vesting_pool"
-	ProviderDistributionPool = "provider_distribution_pool"
-)
-
 type Pool string
 
 // Allocation pools constants:
@@ -23,6 +18,11 @@ const (
 // monthly quota of tokens from the allocation pools
 const (
 	ValidatorsRewardsDistributionPoolName Pool = "validators_rewards_distribution_pool"
+)
+
+const (
+	ProvidersAllocationPool  Pool = "providers_allocation_pool"
+	ProviderDistributionPool Pool = "providers_distribution_pool"
 )
 
 // Refill reward pools time stores constants:

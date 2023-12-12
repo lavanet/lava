@@ -240,6 +240,8 @@ var (
 		pairingmoduletypes.ModuleName:                                    {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProviderDistributionPool):              {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProvidersAllocationPool):               {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -427,6 +429,10 @@ func New(
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
+	// downtime module
+	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
+	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
+
 	// timerstore keeper
 	app.TimerStoreKeeper = timerstorekeeper.NewKeeper(appCodec)
 
@@ -504,10 +510,6 @@ func New(
 		app.TimerStoreKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
-
-	// downtime module
-	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
-	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
 
 	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
 		appCodec,

@@ -74,6 +74,7 @@ func NewKeeper(
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
+		rewardsKeeper:      rewardsKeeper,
 
 		subsFS:      fs,
 		cuTrackerFS: cuTracker,

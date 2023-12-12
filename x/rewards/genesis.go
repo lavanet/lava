@@ -13,7 +13,6 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 	// TODO yarom: add base pay and timerstore
-	k.SetNextMonthRewardTime(ctx)
 	k.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
 	k.RefillRewardsPools(ctx, nil, nil)
 }
