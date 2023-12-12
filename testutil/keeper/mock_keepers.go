@@ -203,7 +203,7 @@ func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
 	if prevBlock, ok := b.blockHistory[b.height-1]; ok {
 		blockHeader.Time = prevBlock.Time.Add(blockTime)
 	} else {
-		blockHeader.Time = time.Now()
+		blockHeader.Time = time.Now().Add(blockTime)
 	}
 
 	// update the blockstore's block history with current block
