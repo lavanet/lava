@@ -17,7 +17,7 @@ lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --ga
 wait_count_blocks 4
 echo "voted on first proposal"
 sleep 4
-lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_count_blocks 2
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_count_blocks 4
@@ -31,7 +31,7 @@ PROVIDER3_LISTENER="127.0.0.1:2223"
 
 sleep 4
 
-lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_count_blocks 2
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx  subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

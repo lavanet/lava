@@ -20,7 +20,7 @@ sleep 6 # need to sleep because plan policies need the specs when setting chain 
 # Plans proposal
 echo ---- Plans proposal ----
 wait_next_block
-lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/emergency-mode.json,./cookbook/plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/emergency-mode.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov deposit 2 100ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
@@ -30,7 +30,7 @@ sleep 6
 # Plan removal (of one)
 echo ---- Plans removal ----
 wait_next_block
-lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov deposit 3 1ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
