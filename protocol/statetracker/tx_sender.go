@@ -92,11 +92,13 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 	idx := -1
 	sequenceNumberParsed := 0
 	latestResult := common.TxResultData{}
+	var gasUsed uint64
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
 		utils.LavaFormatDebug("Attempting to send relay payment transaction", utils.LogAttr("index", idx))
-		var gasUsed uint64
 		txfactory, gasUsed, err = ts.simulateTxWithRetry(clientCtx, txfactory, msg)
-
+		if err != nil {
+			return utils.LavaFormatError("Failed Simulating transaction", err)
+		}
 		// incase we got an error the tx result is basically the error
 		latestResult, err = ts.SendTxAndVerifyCommit(txfactory, msg)
 		transactionResult := latestResult.RawLog
