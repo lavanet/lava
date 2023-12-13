@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gogo/status"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type ProviderListener struct {
@@ -145,10 +147,12 @@ func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayRe
 		for k := range rs.relayReceivers {
 			keys = append(keys, k)
 		}
-		return nil, utils.LavaFormatError("got called with unhandled relay receiver", lavaprotocol.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		err := utils.LavaFormatError("got called with unhandled relay receiver", lavaprotocol.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		return nil, status.Error(codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()), err.Error())
 	}
 	if !relayReceiver.enabled {
-		return nil, utils.LavaFormatError("relayReceiver is disabled", lavaprotocol.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+		err := utils.LavaFormatError("relayReceiver is disabled", lavaprotocol.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+		return nil, status.Error(codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()), err.Error())
 	}
 	return *relayReceiver.relayReceiver, nil
 }
