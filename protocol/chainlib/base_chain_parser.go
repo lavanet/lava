@@ -218,12 +218,12 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api not supported", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	// Return an error if api is disabled
 	if !apiCont.api.Enabled {
-		return nil, utils.LavaFormatError("api is disabled", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api is disabled", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	return &apiCont, nil
