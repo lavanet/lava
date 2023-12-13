@@ -355,8 +355,8 @@ func TestModifyPlan(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// modify the plan (block should stay the same, change should happen)
-	plans[0].AnnualDiscountPercentage = 42
-	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{plans[0]}, true)
+	originalPlan.AnnualDiscountPercentage = 42
+	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
 	require.Nil(t, err)
 	indices = ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 1, len(indices))
@@ -366,7 +366,7 @@ func TestModifyPlan(t *testing.T) {
 	require.Equal(t, uint64(42), modifiedPlan.AnnualDiscountPercentage)
 
 	// modify the plan by increasing its price. proposal should fail
-	plans[0].Price = plans[0].Price.AddAmount(math.NewIntFromUint64(1))
-	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{plans[0]}, true)
+	originalPlan.Price = originalPlan.Price.AddAmount(math.NewIntFromUint64(1))
+	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
 	require.NotNil(t, err)
 }

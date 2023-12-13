@@ -137,7 +137,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
+			return nil, utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("reason", err), utils.Attribute{Key: "method", Value: msg.Method})
 		}
 
 		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -434,9 +434,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		headers := convertToMetadataMap(metadataValues)
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
 		reply := relayResult.GetReply()
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 
 		if err != nil {
@@ -455,17 +452,17 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 
 			// Construct json response
 			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, fiberCtx.Body())
-
 			// Return error json response
-			return fiberCtx.SendString(response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
+		response := string(reply.Data)
 		// Return json response
-		return fiberCtx.SendString(string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 
 	app.Get("/*", func(fiberCtx *fiber.Ctx) error {
@@ -490,9 +487,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
-		if relayResult.GetProvider() != "" {
-			fiberCtx.Set(common.PROVIDER_ADDRESS_HEADER_NAME, relayResult.GetProvider())
-		}
 		if err != nil {
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
@@ -515,15 +509,16 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return fiberCtx.SendString(response)
+			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
+		response := string(reply.Data)
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", response, msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return fiberCtx.SendString(string(reply.Data))
+		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 	//
 	// Go

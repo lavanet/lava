@@ -2,7 +2,6 @@ import * as http from "http";
 import * as https from "https";
 import * as url from "url";
 import { grpc } from "@improbable-eng/grpc-web";
-import { Logger } from "../logger/logger";
 
 export function NodeHttpTransport(
   httpsOptions?: https.RequestOptions

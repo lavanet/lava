@@ -22,7 +22,7 @@ func (k Keeper) EffectivePolicy(goCtx context.Context, req *types.QueryEffective
 	if err != nil {
 		return nil, err
 	}
-	strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, req.SpecID)
+	strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, req.SpecID, uint64(ctx.BlockHeight()))
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (k Keeper) EffectivePolicy(goCtx context.Context, req *types.QueryEffective
 	if pendingProject.Equal(project) {
 		return &types.QueryEffectivePolicyResponse{Policy: strictestPolicy}, err
 	} else {
-		pendingPolicy, _, err := k.GetProjectStrictestPolicy(ctx, pendingProject, req.SpecID)
+		pendingPolicy, _, err := k.GetProjectStrictestPolicy(ctx, pendingProject, req.SpecID, uint64(ctx.BlockHeight()))
 		return &types.QueryEffectivePolicyResponse{Policy: strictestPolicy, PendingPolicy: pendingPolicy}, err
 	}
 }
