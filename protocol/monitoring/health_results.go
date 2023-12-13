@@ -102,7 +102,7 @@ func (healthResults *HealthResults) updateConsumerError(endpoint *lavasession.RP
 		ApiInterface: endpoint.ApiInterface,
 	}] = 0
 	msg := "invalid response"
-	if len(err.Error()) < 40 {
+	if len(err.Error()) < NiceOutputLength {
 		msg = err.Error()
 	}
 	if common.IsTimeout(err) {

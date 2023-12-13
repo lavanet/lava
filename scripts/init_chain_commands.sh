@@ -54,7 +54,7 @@ lavad tx dualstaking delegate $(lavad keys show servicer3 -a) ETH1 $PROVIDERSTAK
 sleep_until_next_epoch
 
 HEALTH_FILE="config/health_examples/health_template.yml"
-create_health_config $HEALTH_FILE $(lavad keys show user1 -a) $(lavad keys show servicer1 -a) $(lavad keys show servicer2 -a) $(lavad keys show servicer3 -a)
+create_health_config $HEALTH_FILE $(lavad keys show user1 -a) $(lavad keys show servicer2 -a) $(lavad keys show servicer3 -a)
 
 if [[ "$1" != "--skip-providers" ]]; then
 . ${__dir}/setup_providers.sh

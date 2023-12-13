@@ -33,6 +33,7 @@ var QueryRetries = uint64(3)
 const (
 	BasicQueryRetries = 3
 	QuerySleepTime    = 100 * time.Millisecond
+	NiceOutputLength  = 40
 )
 
 type LavaEntity struct {
@@ -146,7 +147,10 @@ func RunHealth(ctx context.Context,
 			return
 		}
 		if err != nil {
-			errCh <- err
+			select {
+			case errCh <- err:
+			default:
+			}
 		}
 	}
 
@@ -164,7 +168,7 @@ func RunHealth(ctx context.Context,
 
 	wgspecs.Wait()
 	if len(errCh) > 0 {
-		return nil, <-errCh
+		return nil, utils.LavaFormatWarning("[-] process providers specs", <-errCh)
 	}
 	// add specs
 	specs := healthResults.getSpecs()
@@ -186,20 +190,24 @@ func RunHealth(ctx context.Context,
 			healthResults.setSpec(&spec)
 			return
 		}
-		errCh <- err
+		select {
+		case errCh <- err:
+		default:
+		}
 	}
 	wgspecs.Add(len(specs))
 	// populate the specs
+	utils.LavaFormatDebug("[+] populating specs")
 	for specId := range specs {
 		go processSpec(specId)
 	}
 
 	wgspecs.Wait()
 	if len(errCh) > 0 {
-		return nil, <-errCh
+		return nil, utils.LavaFormatWarning("[-] populating specs", <-errCh)
 	}
 	pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
-
+	utils.LavaFormatDebug("[+] getting provider entries")
 	stakeEntries := map[LavaEntity]epochstoragetypes.StakeEntry{}
 	var mutex sync.Mutex // Mutex to protect concurrent access to stakeEntries
 	wgspecs.Add(len(healthResults.getSpecs()))
@@ -250,7 +258,10 @@ func RunHealth(ctx context.Context,
 			return
 		}
 		if err != nil {
-			errCh <- err
+			select {
+			case errCh <- err:
+			default:
+			}
 		}
 	}
 	// get provider stake entries
@@ -259,23 +270,24 @@ func RunHealth(ctx context.Context,
 	}
 	wgspecs.Wait()
 	if len(errCh) > 0 {
-		return nil, <-errCh
+		return nil, utils.LavaFormatWarning("[-] processing providers entries", <-errCh)
 	}
 	utils.LavaFormatDebug("[+] checking subscriptions")
 	err = checkSubscriptions(ctx, clientCtx, subscriptionAddresses, healthResults)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("[-] checking subscriptions", <-errCh)
 	}
 	utils.LavaFormatDebug("[+] checking providers")
 	err = CheckProviders(ctx, clientCtx, healthResults, stakeEntries)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("[-] checking providers health", <-errCh)
 	}
 	utils.LavaFormatDebug("[+] checking consumers")
 	err = CheckConsumersAndReferences(ctx, clientCtx, referenceEndpoints, consumerEndpoints, healthResults)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("[-] checking consumers and references", <-errCh)
 	}
+	utils.LavaFormatDebug("health results", utils.LogAttr("dump", healthResults))
 	return healthResults, nil
 }
 
@@ -313,9 +325,20 @@ func CheckConsumersAndReferences(ctx context.Context,
 				},
 			},
 		}
-		chainProxy, err := chainlib.GetChainRouter(ctx, 1, compatibleEndpoint, chainParser)
+		var chainProxy chainlib.ChainRouter
+		for i := uint64(0); i <= QueryRetries; i++ {
+			sendCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			chainProxy, err = chainlib.GetChainRouter(sendCtx, 1, compatibleEndpoint, chainParser)
+			cancel()
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
-			return utils.LavaFormatDebug("failed creating chain proxy, continuing with others endpoints", utils.Attribute{Key: "endpoint", Value: compatibleEndpoint})
+			utils.LavaFormatDebug("failed creating chain proxy, continuing with others endpoints", utils.LogAttr("reference", isReference), utils.Attribute{Key: "endpoint", Value: compatibleEndpoint})
+			if !isReference {
+				healthResults.updateConsumerError(endpoint, err)
+			}
 		}
 		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, compatibleEndpoint, nil)
 		var latestBlock int64
@@ -352,7 +375,10 @@ func CheckConsumersAndReferences(ctx context.Context,
 			defer wg.Done()
 			err := queryEndpoint(ep, true)
 			if err != nil {
-				errCh <- err
+				select {
+				case errCh <- err:
+				default:
+				}
 			}
 		}(endpoint)
 	}
@@ -363,7 +389,10 @@ func CheckConsumersAndReferences(ctx context.Context,
 			defer wg.Done()
 			err := queryEndpoint(ep, false)
 			if err != nil {
-				errCh <- err
+				select {
+				case errCh <- err:
+				default:
+				}
 			}
 		}(endpoint)
 	}
@@ -407,7 +436,10 @@ func checkSubscriptions(ctx context.Context, clientCtx client.Context, subscript
 				break
 			}
 			if err != nil {
-				errCh <- err
+				select {
+				case errCh <- err:
+				default:
+				}
 			}
 		}(subscriptionAddr)
 	}
@@ -534,8 +566,8 @@ func prettifyProviderError(err error) string {
 	if code == codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()) {
 		return "provider running with disabled support due to verification"
 	}
-	if len(err.Error()) < 30 {
+	if len(err.Error()) < NiceOutputLength {
 		return err.Error()
 	}
-	return err.Error()[:30]
+	return err.Error()[:NiceOutputLength]
 }
