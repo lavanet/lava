@@ -111,8 +111,10 @@ func (k Keeper) CreateSubscription(
 	//   What: find plan, update duration (total and remaining), calculate price,
 	//         charge fees, save subscription.
 	//
-	// Subscription upgrade: (TBD)
-	//
+	// Subscription upgrade:
+	//   When: if already exists and existing plan, and new plan's price is higher than current plan's
+	//   What: find subscription, verify new plan's price, upgrade, set duration, calculate price,
+	//         charge fees, save subscription.
 	// Subscription downgrade: (TBD)
 
 	if !found {
