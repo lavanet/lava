@@ -88,68 +88,90 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		return err
 	}
 
-	retryWithNewSequenceNumber := false
 	success := false
 	idx := -1
 	sequenceNumberParsed := 0
 	latestResult := common.TxResultData{}
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
-		if retryWithNewSequenceNumber { // a retry
-			// if sequence number error happened it means that we already sent a tx this block.
-			// we need to wait a block for the tx to be approved,
-			// only then we can ask for a new sequence number continue and try again.
-			var seq uint64
-			if sequenceNumberParsed != 0 {
-				utils.LavaFormatInfo("Sequence Number extracted from transaction error, retrying", utils.Attribute{Key: "sequence", Value: strconv.Itoa(sequenceNumberParsed)})
-				seq = uint64(sequenceNumberParsed)
-			} else {
-				var err error
-				_, seq, err = clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
-				if err != nil {
-					utils.LavaFormatError("failed to get correct sequence number for account, give up", err)
-					break // give up
-				}
-			}
-			txfactory = txfactory.WithSequence(seq)
-			utils.LavaFormatInfo("Retrying with sequence number:", utils.Attribute{Key: "SeqNum", Value: seq})
-			// reset the state
-			sequenceNumberParsed = 0
-		}
-
-		_, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
-		if err != nil {
-			return err
-		}
-		txfactory = txfactory.WithGas(gasUsed)
+		utils.LavaFormatDebug("Attempting to send relay payment transaction", utils.LogAttr("index", idx))
+		var gasUsed uint64
+		txfactory, gasUsed, err = ts.simulateTxWithRetry(clientCtx, txfactory, msg)
 
 		// incase we got an error the tx result is basically the error
-
 		latestResult, err = ts.SendTxAndVerifyCommit(txfactory, msg)
 		transactionResult := latestResult.RawLog
 		if err == nil { // if we get some other code which isn't 0 then keep retrying
 			success = true
 			break
 		} else if strings.Contains(transactionResult, "account sequence") {
-			retryWithNewSequenceNumber = true
-			sequenceNumberParsed, err = common.FindSequenceNumber(transactionResult)
+			txfactory, err = ts.getNewFactoryFromASequenceNumberError(transactionResult, txfactory, clientCtx)
 			if err != nil {
-				utils.LavaFormatWarning("Failed findSequenceNumber", err, utils.Attribute{Key: "sequence", Value: transactionResult})
+				return utils.LavaFormatError("Failed getting a new factory", err)
 			}
+			// we got a new factory with an adjusted sequence number we should be good to try again
 		} else if strings.Contains(transactionResult, "out of gas") {
 			utils.LavaFormatInfo("Transaction got out of gas error, retrying next block.")
-			retryWithNewSequenceNumber = true // retry with out of gas issue
 		} else if strings.Contains(transactionResult, "insufficient fees; got:") { //
 			err := parseInsufficientFeesError(transactionResult, gasUsed)
 			if err == nil {
 				return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: latestResult})
 			}
 		}
+		utils.LavaFormatDebug("Failed sending transaction, will retry", utils.LogAttr("Index", idx), utils.LogAttr("reason:", err), utils.LogAttr("rawLog", transactionResult))
 	}
 	if !success {
 		return utils.LavaFormatError("Failed sending transaction with all retries and giving up", nil, utils.Attribute{Key: "result", Value: latestResult}, utils.Attribute{Key: "Number Of Retries executed", Value: idx}, utils.Attribute{Key: "Parsed Sequence", Value: sequenceNumberParsed})
 	}
 	utils.LavaFormatInfo("Succeeded sending transaction", utils.Attribute{Key: "hash", Value: hex.EncodeToString(latestResult.Txhash)})
 	return nil
+}
+
+func (ts *TxSender) getSequenceNumberFromErrorOrClient(clientCtx client.Context, errString string) (uint64, error) {
+	sequenceNumberParsed, err := common.FindSequenceNumber(errString)
+	if err != nil {
+		utils.LavaFormatWarning("getSequenceNumberFromErrorOrClient: Failed to findSequenceNumber, fetching from client", err)
+		_, seq, err := clientCtx.AccountRetriever.GetAccountNumberSequence(clientCtx, clientCtx.GetFromAddress())
+		if err != nil {
+			return 0, utils.LavaFormatError("failed to get correct sequence number for account, give up", err)
+		}
+		return seq, nil
+	}
+	return uint64(sequenceNumberParsed), nil
+}
+
+// this method will attempt to create a new tx factory from a sequence number error provided the expected sequence number is inside the error string
+// the new factory should succeed in executing the tx
+func (ts *TxSender) getNewFactoryFromASequenceNumberError(errString string, txfactory tx.Factory, clientCtx client.Context) (tx.Factory, error) {
+	sequence, errSequence := ts.getSequenceNumberFromErrorOrClient(clientCtx, errString)
+	if errSequence != nil {
+		return txfactory, errSequence
+	}
+	utils.LavaFormatDebug("Retrying with new sequence factory", utils.LogAttr("sequence", sequence))
+	return txfactory.WithSequence(sequence), nil
+}
+
+func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.Factory, msg sdk.Msg) (tx.Factory, uint64, error) {
+	for retrySimulation := 0; retrySimulation < RETRY_INCORRECT_SEQUENCE; retrySimulation++ {
+		utils.LavaFormatDebug("Running Simulation", utils.LogAttr("idx", retrySimulation))
+		_, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
+		if err != nil {
+			utils.LavaFormatInfo("Simulation failed", utils.LogAttr("reason:", err))
+			errString := err.Error()
+			if strings.Contains(errString, "account sequence") {
+				utils.LavaFormatInfo("Identified account sequence reason, attempting to run a new simulation with the correct sequence number")
+				txfactory, err = ts.getNewFactoryFromASequenceNumberError(errString, txfactory, clientCtx)
+				if err != nil {
+					return txfactory, 0, err
+				}
+				continue // if we got a new factory successfully continue to next attempt in simulation
+			} else {
+				return txfactory, 0, err
+			}
+		}
+		txfactory = txfactory.WithGas(gasUsed)
+		return txfactory, gasUsed, nil
+	}
+	return txfactory, 0, utils.LavaFormatError("Failed Calculating gas for reward transaction", nil)
 }
 
 func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (parsedResult common.TxResultData, err error) {
@@ -286,6 +308,7 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 
 func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, description, latestBlocks)
+	utils.LavaFormatDebug("Sending reward TX", utils.LogAttr("Number_of_relay_sessions_for_payment", len(relayRequests)))
 	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)
