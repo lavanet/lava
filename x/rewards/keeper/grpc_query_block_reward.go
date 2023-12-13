@@ -18,7 +18,7 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get params for validator rewards calculation
-	bondedTargetFactor := k.BondedTargetFactor(ctx)
+	bondedTargetFactor := k.bondedTargetFactor(ctx)
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator block pool balance
