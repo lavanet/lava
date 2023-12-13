@@ -137,7 +137,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
+			return nil, utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("reason", err), utils.Attribute{Key: "method", Value: msg.Method})
 		}
 
 		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
