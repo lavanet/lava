@@ -116,11 +116,12 @@ func (k Keeper) bondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	}
 }
 
+// InitRewardsRefillTS initializes the refill pools' timer store
 func (k Keeper) InitRewardsRefillTS(ctx sdk.Context, gs timerstoretypes.GenesisState) {
 	k.refillRewardsPoolTS.Init(ctx, gs)
 }
 
-// ExportRewardsRefillTS exports refill block pools timers data (for genesis)
+// ExportRewardsRefillTS exports refill pools timers data (for genesis)
 func (k Keeper) ExportRewardsRefillTS(ctx sdk.Context) timerstoretypes.GenesisState {
 	return k.refillRewardsPoolTS.Export(ctx)
 }

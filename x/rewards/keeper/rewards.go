@@ -18,7 +18,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) error {
 	bondedTargetFactor := k.bondedTargetFactor(ctx)
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
-	// get validator block pool balance
+	// get validator distribution pool balance
 	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
@@ -44,7 +44,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) error {
 	return nil
 }
 
-// addCollectedFees transfer the validators block rewards from the validators block pool to
+// addCollectedFees transfer the validators block rewards from the validators distribution pool to
 // the fee collector account. This account is used by Cosmos' distribution module to send the
 // validator rewards
 func (k Keeper) addCollectedFees(ctx sdk.Context, fees sdk.Coins) error {
@@ -67,7 +67,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 		monthsLeft = binary.BigEndian.Uint64(data)
 	}
 
-	k.refillValidatorsAllocationPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName)
+	k.refillAllocationPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName)
 
 	if monthsLeft > 0 {
 		monthsLeft -= 1
@@ -89,20 +89,23 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, monthsLeftBytes)
 }
 
-func (k Keeper) refillValidatorsAllocationPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool) {
-	// burn remaining tokens in the block pool
+func (k Keeper) refillAllocationPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool) {
+	// burn remaining tokens in the distribution pool
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, distributionPool)).TruncateInt()
 	err := k.BurnPoolTokens(ctx, distributionPool, tokensToBurn)
 	if err != nil {
-		utils.LavaFormatError("critical - could not burn validators block pool tokens", err)
+		utils.LavaFormatError("critical - could not burn distribution pool tokens", err,
+			utils.Attribute{Key: "distribution_pool", Value: string(distributionPool)},
+			utils.Attribute{Key: "tokens_to_burn", Value: tokensToBurn.String()},
+		)
 	}
 
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
 	monthlyQuota := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.ZeroInt()}}
-	if monthsLeft != 0 {
-		validatorPoolBalance := k.TotalPoolTokens(ctx, allocationPool)
-		monthlyQuota[0] = monthlyQuota[0].AddAmount(validatorPoolBalance.QuoRaw(int64(monthsLeft)))
+	allocPoolBalance := k.TotalPoolTokens(ctx, allocationPool)
+	if monthsLeft != 0 && !allocPoolBalance.IsZero() {
+		monthlyQuota[0] = monthlyQuota[0].AddAmount(allocPoolBalance.QuoRaw(int64(monthsLeft)))
 
 		err = k.bankKeeper.SendCoinsFromModuleToModule(
 			ctx,
@@ -141,6 +144,8 @@ func (k Keeper) TimeToNextTimerExpiry(ctx sdk.Context) int64 {
 	return int64(expiries[0]) - ctx.BlockTime().UTC().Unix()
 }
 
+// AllocationPoolMonthsLeft returns the amount of months the allocation pools
+// have left before all their are depleted
 func (k Keeper) AllocationPoolMonthsLeft(ctx sdk.Context) int64 {
 	_, _, data := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
 	if len(data) == 0 {
