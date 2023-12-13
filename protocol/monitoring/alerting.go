@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -115,10 +113,9 @@ func NewAlerting(options AlertingOptions) *Alerting {
 	return al
 }
 
-func (al *Alerting) AddNewAlert(alert string, attributes []AlertAttribute) bool {
-	suppressed := false
-	if al.suppressionCounterThreshold > 1 {
-		suppressed = true
+func (al *Alerting) FilterOccurenceSuppresedAlerts(alert string, attributes []AlertAttribute) (filteredAttributes []AlertAttribute) {
+	if al.suppressionCounterThreshold <= 1 {
+		return attributes
 	}
 	for _, attr := range attributes {
 		alertEntity := AlertEntry{
@@ -132,54 +129,60 @@ func (al *Alerting) AddNewAlert(alert string, attributes []AlertAttribute) bool 
 
 		al.activeAlerts[alertEntity] = occurrences
 		if occurrences >= al.suppressionCounterThreshold {
-			suppressed = false
+			filteredAttributes = append(filteredAttributes, attr)
+			continue
 		}
+		al.suppressedAlerts++
 	}
-	return suppressed
+	return filteredAttributes
 }
 
 // func (al *Alerting) SendAlert(alert string, attrs []utils.Attribute) {
 func (al *Alerting) SendAlert(alert string, attributes []AlertAttribute) {
 	// check for occurrence suppression
-	suppressed := al.AddNewAlert(alert, attributes)
-	if suppressed {
-		al.suppressedAlerts++
+	attributes = al.FilterOccurenceSuppresedAlerts(alert, attributes)
+	if len(attributes) == 0 {
 		return
 	}
-	attrs := []utils.Attribute{}
-	for _, attr := range attributes {
-		attrs = append(attrs, utils.LogAttr(attr.entity.String(), attr.data))
+	attrs := al.FilterTimeSuppresedAlerts(attributes, alert)
+	if len(attrs) == 0 {
+		return
 	}
 	if al.identifier != "" {
-		attrs = append(attrs, utils.LogAttr("identifier", al.identifier))
+		alert = alert + " - " + al.identifier
 	}
-
-	if al.sameAlertInterval > 0 && al.AlertsCache != nil {
-		slices.SortStableFunc(attrs, func(attr1, attr2 utils.Attribute) bool {
-			return attr1.Key < attr2.Key
-		})
-		hashStr := string(sigs.HashMsg([]byte(fmt.Sprintf("%s %v", alert, attrs))))
-		storedVal, found := al.AlertsCache.Get(hashStr)
-		if found {
-			// was already in the cache
-			storedTime, ok := storedVal.(time.Time)
-			if !ok {
-				utils.LavaFormatFatal("invalid usage of cache", nil, utils.Attribute{Key: "storedVal", Value: storedVal})
-			}
-			if !time.Now().After(storedTime.Add(al.sameAlertInterval)) {
-				// filter this alert
-				return
-			}
-		}
-		al.AlertsCache.SetWithTTL(hashStr, time.Now(), 1, al.sameAlertInterval)
-	}
-
 	if al.logging {
 		utils.LavaFormatError(alert, nil, attrs...)
 	}
 	if al.url != "" {
-		al.SendUrlAlert(alert, attrs)
+		go al.SendUrlAlert(alert, attrs)
 	}
+}
+
+func (al *Alerting) FilterTimeSuppresedAlerts(attributes []AlertAttribute, alert string) []utils.Attribute {
+	attrs := []utils.Attribute{}
+	for _, attr := range attributes {
+		if al.sameAlertInterval > 0 && al.AlertsCache != nil {
+			// we only hash by keys, values can differ (like blocks or error)
+			hashStr := string(sigs.HashMsg([]byte(fmt.Sprintf("%s %s", alert, attr.entity.String()))))
+			storedVal, found := al.AlertsCache.Get(hashStr)
+			if found {
+				// was already in the cache
+				storedTime, ok := storedVal.(time.Time)
+				if !ok {
+					utils.LavaFormatFatal("invalid usage of cache", nil, utils.Attribute{Key: "storedVal", Value: storedVal})
+				}
+				if !time.Now().After(storedTime.Add(al.sameAlertInterval)) {
+					// filter this alert
+					al.suppressedAlerts++
+					continue
+				}
+			}
+			al.AlertsCache.SetWithTTL(hashStr, time.Now(), 1, al.sameAlertInterval)
+		}
+		attrs = append(attrs, utils.LogAttr(attr.entity.String(), attr.data))
+	}
+	return attrs
 }
 
 func (al *Alerting) SendRecoveryAlert(alertEntry AlertEntry) {
@@ -199,34 +202,26 @@ func (al *Alerting) SendRecoveryAlert(alertEntry AlertEntry) {
 			utils.LavaFormatInfo(alertEntry.alertType, attrs...)
 		}
 		if al.url != "" {
-			al.SendUrlAlert(alertEntry.alertType, attrs)
+			go al.SendUrlAlert(alertEntry.alertType, attrs)
 		}
 	}
 }
 
 func (al *Alerting) SendUrlAlert(alert string, attrs []utils.Attribute) error {
 	attachments := []map[string]interface{}{}
-	fields := []map[string]interface{}{}
 	colorToSet := green
 	for _, attr := range attrs {
 		if utils.StrValue(attr.Value) != OKString {
 			colorToSet = red
 		}
-		attrMap := map[string]interface{}{
-			"title":  attr.Key,
-			"name":   attr.Key,
-			"value":  utils.StrValue(attr.Value),
-			"short":  false,
-			"inline": true,
+		attachment := map[string]interface{}{
+			"text":        attr.Key,
+			"color":       colorToSet,
+			"footer":      attr.Value,
+			"description": attr.Value,
 		}
-		fields = append(fields, attrMap)
+		attachments = append(attachments, attachment)
 	}
-	attachment := map[string]interface{}{
-		"text":   "Data",
-		"color":  colorToSet,
-		"fields": fields,
-	}
-	attachments = append(attachments, attachment)
 	payload := map[string]interface{}{
 		"text":        alert,
 		"title":       alert,

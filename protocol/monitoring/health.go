@@ -12,6 +12,7 @@ import (
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/utils"
@@ -41,7 +42,10 @@ type LavaEntity struct {
 }
 
 func (e *LavaEntity) String() string {
-	return fmt.Sprintf("%s|%s|%s", e.Address, e.SpecId, e.ApiInterface)
+	if e.SpecId == "" && e.ApiInterface == "" {
+		return e.Address
+	}
+	return fmt.Sprintf("%s | %s | %s", e.Address, e.SpecId, e.ApiInterface)
 }
 
 type ReplyData struct {
@@ -442,7 +446,8 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
-					return 0, "", 0, utils.LavaFormatWarning("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					utils.LavaFormatDebug("failed connecting to provider endpoint", utils.LogAttr("error", err), utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, err
 				}
 				defer conn.Close()
 				relayerClient := *relayerClientPt
@@ -456,7 +461,8 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 				var trailer metadata.MD
 				probeResp, err := relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
 				if err != nil {
-					return 0, "", 0, utils.LavaFormatWarning("failed probing provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					utils.LavaFormatDebug("failed probing provider endpoint", utils.LogAttr("error", err), utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					return 0, "", 0, err
 				}
 				versions := strings.Join(trailer.Get(common.VersionMetadataKey), ",")
 				relayLatency := time.Since(relaySentTime)
@@ -495,7 +501,8 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 				}
 				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpoint, endpointService.ApiInterface, endpointService.Addon, providerEntry)
 				if err != nil {
-					healthResults.SetUnhealthyProvider(providerKey, err.Error())
+					errMsg := prettifyProviderError(err)
+					healthResults.SetUnhealthyProvider(providerKey, errMsg)
 					continue
 				}
 				parsedVer := lvutil.ParseToSemanticVersion(strings.TrimPrefix(version, "v"))
@@ -517,4 +524,18 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 	}
 	wg.Wait()
 	return nil
+}
+
+func prettifyProviderError(err error) string {
+	code := status.Code(err)
+	if code == codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()) {
+		return "provider running with unhandled support"
+	}
+	if code == codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()) {
+		return "provider running with disabled support due to verification"
+	}
+	if len(err.Error()) < 30 {
+		return err.Error()
+	}
+	return err.Error()[:30]
 }

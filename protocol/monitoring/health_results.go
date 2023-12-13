@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils/slices"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -100,11 +101,18 @@ func (healthResults *HealthResults) updateConsumerError(endpoint *lavasession.RP
 		SpecId:       endpoint.ChainID,
 		ApiInterface: endpoint.ApiInterface,
 	}] = 0
+	msg := "invalid response"
+	if len(err.Error()) < 40 {
+		msg = err.Error()
+	}
+	if common.IsTimeout(err) {
+		msg = "timeout"
+	}
 	healthResults.UnhealthyConsumers[LavaEntity{
 		Address:      endpoint.String(),
 		SpecId:       endpoint.ChainID,
 		ApiInterface: endpoint.ApiInterface,
-	}] = err.Error()
+	}] = msg
 }
 
 func (healthResults *HealthResults) updateConsumer(endpoint *lavasession.RPCEndpoint, latestBlock int64) {
