@@ -283,10 +283,11 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 		return utils.LavaFormatError("Trying to upgrade subscription, but got an error while trying to get next epoch", err,
 			utils.LogAttr("consumer", sub.Consumer))
 	}
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, date)
 
 	sub.PlanIndex = toPlanIndex
 	sub.PlanBlock = toPlanBlock
+
+	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, date)
 
 	return nil
 }
