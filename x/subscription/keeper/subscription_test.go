@@ -5,8 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -30,6 +33,20 @@ func (ts *tester) getSubscription(consumer string) (types.Subscription, bool) {
 		return types.Subscription{}, false
 	}
 	return *sub.Sub, true
+}
+
+func getSubscriptionAndFailTestIfNotFound(t *testing.T, ts *tester, consumer string) types.Subscription {
+	sub, found := ts.getSubscription(consumer)
+	require.True(t, found)
+	require.NotNil(t, sub)
+	return sub
+}
+
+func getProjectAndFailTestIfNotFound(t *testing.T, ts *tester, consumer string, block uint64) projectstypes.Project {
+	project, err := ts.GetProjectForDeveloper(consumer, block)
+	require.Nil(t, err)
+	require.NotNil(t, project)
+	return project
 }
 
 func TestCreateSubscription(t *testing.T) {
@@ -134,12 +151,12 @@ func TestCreateSubscription(t *testing.T) {
 			success:   false,
 		},
 		{
-			name:      "double subscription",
+			name:      "upgrade subscription",
 			index:     plans[1].Index,
 			creator:   0,
 			consumers: []int{0},
 			duration:  1,
-			success:   false,
+			success:   true,
 		},
 	}
 
@@ -279,7 +296,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 3, false)
 	require.Nil(t, err)
 
-	// add another project under the subcscription
+	// add another project under the subscription
 	projectData := projectstypes.ProjectData{
 		Name:    "another_project",
 		Enabled: true,
@@ -873,4 +890,190 @@ func TestNextToMonthExpiryQuery(t *testing.T) {
 	res, err = ts.QuerySubscriptionNextToMonthExpiry()
 	require.Nil(t, err)
 	require.Equal(t, 0, len(res.Subscriptions))
+}
+
+func TestSubscriptionUpgrade(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	_, consumer := ts.Account("sub1")
+	freePlan := ts.Plan("free")
+
+	// Add premium plan
+	upgradedPlan := common.CreateMockPlan()
+	upgradedPlan.Index = "premium"
+	upgradedPlan.Price = freePlan.Price.AddAmount(math.NewInt(100))
+	ts.AddPlan(upgradedPlan.Index, upgradedPlan)
+
+	// Buy free plan
+	_, err := ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false)
+	require.Nil(t, err)
+	// Verify subscription found inside getSubscription
+	getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+
+	// Charge CU from project so we can differentiate the old project from the new one
+	projectCuUsed := uint64(100)
+	project := getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
+	ts.Keepers.Projects.ChargeComputeUnitsToProject(ts.Ctx, project, ts.BlockHeight(), projectCuUsed)
+
+	// Validate the charge of CU
+	project = getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
+	require.Equal(t, projectCuUsed, project.UsedCu)
+
+	ts.AdvanceEpochs(2)
+	sub := getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+	currentDurationTotal := sub.DurationTotal
+
+	// Buy premium plan
+	_, err = ts.TxSubscriptionBuy(consumer, consumer, upgradedPlan.Index, 1, false)
+	require.Nil(t, err)
+
+	nextEpoch := ts.GetNextEpoch()
+
+	// Test that the subscription and project are not changed until next epoch
+	for ts.BlockHeight() < nextEpoch {
+		sub := getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+		require.Equal(t, freePlan.Index, sub.PlanIndex, "plan should be free until next epoch. Block: %v", ts.BlockHeight())
+		require.Equal(t, currentDurationTotal, sub.DurationTotal)
+
+		project = getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
+		require.Equal(t, projectCuUsed, project.UsedCu)
+
+		ts.AdvanceBlock()
+	}
+
+	// Test that the subscription is now updated
+	sub = getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+	require.Equal(t, upgradedPlan.Index, sub.PlanIndex)
+
+	// Test that the project is now updated
+	project = getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
+	require.Equal(t, uint64(0), project.UsedCu)
+}
+
+func TestSubscriptionDowngradeFails(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	_, consumer := ts.Account("sub1")
+	freePlan := ts.Plan("free")
+
+	// Add premium plan
+	upgradedPlan := common.CreateMockPlan()
+	upgradedPlan.Index = "premium"
+	upgradedPlan.Price = freePlan.Price.AddAmount(math.NewInt(100))
+	ts.AddPlan(upgradedPlan.Index, upgradedPlan)
+
+	// Buy premium plan
+	_, err := ts.TxSubscriptionBuy(consumer, consumer, upgradedPlan.Index, 1, false)
+	require.Nil(t, err)
+	// Verify subscription found inside getSubscription
+	getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+
+	ts.AdvanceEpochs(2)
+
+	// Buy premium plan
+	_, err = ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false)
+	require.NotNil(t, err)
+
+	ts.AdvanceEpoch()
+
+	sub := getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+	require.Equal(t, upgradedPlan.Index, sub.PlanIndex)
+}
+
+func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	consumerAcc, consumerAddr := ts.Account("sub1")
+
+	spec := ts.AddSpec("testSpec", common.CreateMockSpec()).Spec("testSpec")
+
+	// Setup validator and provider
+	testBalance := int64(1000000)
+	testStake := int64(100000)
+
+	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
+	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
+
+	_, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	err := ts.StakeProviderExtra(providerAddr, spec, testStake, nil, 0, "provider")
+	require.Nil(t, err)
+
+	// Trigger changes
+	ts.AdvanceEpoch()
+
+	freePlan := ts.Plan("free")
+
+	// Add premium plan
+	upgradedPlan := common.CreateMockPlan()
+	upgradedPlan.Index = "premium"
+	upgradedPlan.Price = freePlan.Price.AddAmount(math.NewInt(100))
+	ts.AddPlan(upgradedPlan.Index, upgradedPlan)
+
+	// Buy free plan
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 3, false)
+	require.Nil(t, err)
+
+	// Verify subscription found inside getSubscription
+	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
+
+	// Send relay
+	sessionId := uint64(1)
+	relayNum := uint64(1)
+	sendRelayPayment := func() {
+		relaySession := &pairingtypes.RelaySession{
+			Provider:    providerAddr,
+			ContentHash: []byte(spec.ApiCollections[0].Apis[0].Name),
+			SessionId:   sessionId,
+			SpecId:      spec.Index,
+			CuSum:       1000,
+			Epoch:       int64(ts.EpochStart(ts.BlockHeight())),
+			RelayNum:    relayNum,
+		}
+
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.Nil(ts.T, err)
+		relaySession.Sig = sig
+
+		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
+		require.Nil(t, err)
+
+		sessionId++
+		relayNum++
+	}
+
+	// Send relay under the free subscription
+	sendRelayPayment()
+
+	// Buy premium plan
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, upgradedPlan.Index, 1, false)
+	require.Nil(t, err)
+
+	// Trigger new subscription
+	ts.AdvanceEpoch()
+
+	// Test that the subscription is now updated
+	sub := getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
+	require.Equal(t, upgradedPlan.Index, sub.PlanIndex)
+
+	// Test that the project is now updated
+	project := getProjectAndFailTestIfNotFound(t, ts, consumerAddr, ts.BlockHeight())
+	require.Equal(t, uint64(0), project.UsedCu)
+
+	// Send relay under the premium subscription
+	sendRelayPayment()
+
+	// Advance month + blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// Query provider's rewards
+	rewards, err := ts.QueryDualstakingDelegatorRewards(providerAddr, providerAddr, spec.Index)
+	require.Nil(t, err)
+	require.Len(t, rewards.Rewards, 1)
+	reward := rewards.Rewards[0]
+
+	// Verify that provider got rewarded for both subscriptions
+	require.Equal(t, freePlan.Price.AddAmount(upgradedPlan.Price.Amount), reward.Amount)
 }

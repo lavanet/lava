@@ -19,7 +19,7 @@ const MONTHS_IN_YEAR = 12
 // adjusting for end-of-months differences if needed.
 func NextMonth(date time.Time) time.Time {
 	// End-of-month days are tricky because months differ in days counts.
-	// To avoid this complixity, we trim day-of-month greater than 28 back to
+	// To avoid this complexity, we trim day-of-month greater than 28 back to
 	// day 28, which all months always have (at the cost of the user possibly
 	// losing 1 (and up to 3) days of subscription in the first month.
 
@@ -91,7 +91,7 @@ func (k Keeper) CreateSubscription(
 
 	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
 	if !found {
-		return utils.LavaFormatWarning("cannot create subcscription with invalid plan", err,
+		return utils.LavaFormatWarning("cannot create subscription with invalid plan", err,
 			utils.Attribute{Key: "plan", Value: planIndex},
 			utils.Attribute{Key: "block", Value: block},
 		)
@@ -116,39 +116,43 @@ func (k Keeper) CreateSubscription(
 	// Subscription downgrade: (TBD)
 
 	if !found {
-		// creeate new subscription with this plan
-		sub = types.Subscription{
-			Creator:       creator,
-			Consumer:      consumer,
-			Block:         block,
-			PlanIndex:     planIndex,
-			PlanBlock:     plan.Block,
-			DurationTotal: 0,
-			AutoRenewal:   autoRenewalFlag,
-		}
-
-		sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
-		sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
-		sub.Cluster = types.GetClusterKey(sub)
-
-		// new subscription needs a default project
-		err = k.projectsKeeper.CreateAdminProject(ctx, consumer, plan)
+		sub, err = k.createNewSubscription(ctx, &plan, creator, consumer, block, autoRenewalFlag)
 		if err != nil {
-			return utils.LavaFormatWarning("failed to create default project", err)
+			return utils.LavaFormatWarning("failed to create subscription", err)
 		}
 	} else {
 		// allow renewal with the same plan ("same" means both plan index);
-		// otherwise, only one subscription per consumer.
+		// otherwise, upgrade the plan.
 		if plan.Index != sub.PlanIndex {
-			return utils.LavaFormatWarning("consumer has existing subscription with a different plan",
-				fmt.Errorf("subscription renewal failed"),
-				utils.Attribute{Key: "consumer", Value: consumer},
-			)
-		}
+			currentPlan, err := k.GetPlanFromSubscription(ctx, consumer, block)
+			if err != nil {
+				return utils.LavaFormatError("failed to find plan for current subscription", err,
+					utils.LogAttr("consumer", consumer),
+					utils.LogAttr("block", block),
+				)
+			}
+			if plan.Price.Amount.LT(currentPlan.Price.Amount) {
+				return utils.LavaFormatError("New plan's price must be higher than the old plan", nil,
+					utils.LogAttr("consumer", consumer),
+					utils.LogAttr("currentPlan", currentPlan),
+					utils.LogAttr("newPlan", plan),
+					utils.LogAttr("block", block),
+				)
+			}
+			err = k.upgradeSubscriptionPlan(ctx, duration, &sub, plan.Index, plan.Block)
+			if err != nil {
+				return err
+			}
 
-		// if the plan was changed since the subscription originally bought it, allow extension
-		// only if the updated plan's price is up to 5% more than the original price
-		if plan.Block != sub.PlanBlock {
+			details := map[string]string{
+				"consumer": consumer,
+				"oldPlan":  sub.PlanIndex,
+				"newPlan":  plan.Index,
+			}
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.UpgradeSubscriptionEventName, details, "subscription upgraded")
+		} else if plan.Block != sub.PlanBlock {
+			// if the plan was changed since the subscription originally bought it, allow extension
+			// only if the updated plan's price is up to 5% more than the original price
 			subPlan, found := k.plansKeeper.FindPlan(ctx, plan.Index, sub.PlanBlock)
 			if !found {
 				return utils.LavaFormatError("cannot extend subscription", fmt.Errorf("critical: cannot find subscription's plan"),
@@ -172,7 +176,7 @@ func (k Keeper) CreateSubscription(
 		}
 
 		// The total duration may not exceed MAX_SUBSCRIPTION_DURATION, but allow an
-		// extra month to account for renwewals before the end of current subscription
+		// extra month to account for renewals before the end of current subscription
 		if sub.DurationLeft+duration > types.MAX_SUBSCRIPTION_DURATION+1 {
 			str := strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10)
 			return utils.LavaFormatWarning("duration would exceed limit ("+str+" months)",
@@ -230,80 +234,85 @@ func (k Keeper) CreateSubscription(
 	return err
 }
 
+func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,
+	block uint64, autoRenewalFlag bool,
+) (types.Subscription, error) {
+	sub := types.Subscription{
+		Creator:       creator,
+		Consumer:      consumer,
+		Block:         block,
+		PlanIndex:     plan.Index,
+		PlanBlock:     plan.Block,
+		DurationTotal: 0,
+		AutoRenewal:   autoRenewalFlag,
+	}
+
+	sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
+	sub.MonthCuLeft = plan.PlanPolicy.GetTotalCuLimit()
+	sub.Cluster = types.GetClusterKey(sub)
+
+	// new subscription needs a default project
+	err := k.projectsKeeper.CreateAdminProject(ctx, consumer, *plan)
+	if err != nil {
+		return types.Subscription{}, utils.LavaFormatWarning("failed to create default project", err)
+	}
+
+	return sub, nil
+}
+
+func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *types.Subscription, toPlanIndex string, toPlanBlock uint64) error {
+	date := ctx.BlockTime()
+	block := uint64(ctx.BlockHeight())
+
+	k.addCuTrackerTimerForSubscription(ctx, block, sub)
+
+	if sub.DurationLeft == 0 {
+		// Subscription was already expired. Can't upgrade.
+		k.handleZeroDurationLeftForSubscription(ctx, block, date, sub)
+		return utils.LavaFormatError("Trying to upgrade subscription, but subscription was already expired", nil,
+			utils.LogAttr("consumer", sub.Consumer))
+	}
+
+	// The "old" subscription's duration is now expired
+	// If called from CreateSubscription, the duration will reset to the duration bought
+	sub.DurationLeft = 0
+	sub.Cluster = types.GetClusterKey(*sub)
+
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("Trying to upgrade subscription, but got an error while trying to get next epoch", err,
+			utils.LogAttr("consumer", sub.Consumer))
+	}
+	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, date)
+
+	sub.PlanIndex = toPlanIndex
+	sub.PlanBlock = toPlanBlock
+
+	return nil
+}
+
 func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	date := ctx.BlockTime()
 	block := uint64(ctx.BlockHeight())
 	consumer := string(subkey)
 
 	var sub types.Subscription
-	if found := k.subsFS.FindEntry(ctx, consumer, block, &sub); !found {
-		// subscription (monthly) timer has expired for an unknown subscription:
-		// either the timer was set wrongly, or the subscription was incorrectly
-		// removed; and we cannot even return an error about it.
-		utils.LavaFormatError("critical: month expiry for unknown subscription, skipping",
-			fmt.Errorf("subscription not found"),
-			utils.Attribute{Key: "consumer", Value: consumer},
-			utils.Attribute{Key: "block", Value: block},
-		)
+	if !k.verifySubExists(ctx, consumer, block, &sub) {
 		return
 	}
 
-	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
-	if err != nil {
-		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
-			utils.Attribute{Key: "block", Value: block},
-		)
-	} else {
-		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave-1, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
-	}
+	k.addCuTrackerTimerForSubscription(ctx, block, &sub)
 
 	if sub.DurationLeft == 0 {
-		// subscription duration has already reached zero before and should have
-		// been removed before. Extend duration by another month (without adding
-		// CUs) to allow smooth operation.
-		utils.LavaFormatError("critical: negative duration for subscription, extend by 1 month",
-			fmt.Errorf("negative duration in AdvanceMonth()"),
-			utils.Attribute{Key: "consumer", Value: consumer},
-			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
-			utils.Attribute{Key: "block", Value: block},
-		)
-		// normally would panic! but can "recover" by auto-extending by 1 month
-		// (don't bother to modfy sub.MonthExpiryTime to minimize state changes)
-		expiry := uint64(NextMonth(date).UTC().Unix())
-		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+		k.handleZeroDurationLeftForSubscription(ctx, block, date, &sub)
 		return
 	}
 
 	sub.DurationLeft -= 1
 
 	if sub.DurationLeft > 0 {
-		// reset projects CU allowance for this coming month
-		k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer)
-
-		// reset subscription CU allowance for this coming month
-		sub.MonthCuLeft = sub.MonthCuTotal
-		sub.Block = block
-
-		// restart timer and append new (fixated) version of this subscription
-		expiry := uint64(NextMonth(date).UTC().Unix())
-		sub.MonthExpiryTime = expiry
-		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
-
 		sub.DurationTotal += 1
-
-		// since the total duration increases, the cluster might change
-		sub.Cluster = types.GetClusterKey(sub)
-
-		err := k.subsFS.AppendEntry(ctx, consumer, block, &sub)
-		if err != nil {
-			// normally would panic! but ok to ignore - the subscription remains
-			// as is with same remaining duration (but not renewed CU)
-			utils.LavaFormatError("critical: failed to recharge subscription", err,
-				utils.Attribute{Key: "consumer", Value: consumer},
-				utils.Attribute{Key: "plan", Value: sub.PlanIndex},
-				utils.Attribute{Key: "block", Value: block},
-			)
-		}
+		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, date)
 	} else {
 		if sub.AutoRenewal {
 			// apply the DurationLeft decrease to 0 and buy an extra month
@@ -318,6 +327,76 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		} else {
 			k.RemoveExpiredSubscription(ctx, consumer, block)
 		}
+	}
+}
+
+func (k Keeper) verifySubExists(ctx sdk.Context, consumer string, block uint64, sub *types.Subscription) bool {
+	if found := k.subsFS.FindEntry(ctx, consumer, block, sub); !found {
+		// subscription (monthly) timer has expired for an unknown subscription:
+		// either the timer was set wrongly, or the subscription was incorrectly
+		// removed; and we cannot even return an error about it.
+		utils.LavaFormatError("critical: month expiry for unknown subscription, skipping",
+			fmt.Errorf("subscription not found"),
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "block", Value: block},
+		)
+		return false
+	}
+	return true
+}
+
+func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, sub *types.Subscription) {
+	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
+	if err != nil {
+		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
+			utils.Attribute{Key: "block", Value: block},
+		)
+	} else {
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave-1, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
+	}
+}
+
+func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uint64, blockTime time.Time, sub *types.Subscription) {
+	// subscription duration has already reached zero before and should have
+	// been removed before. Extend duration by another month (without adding
+	// CUs) to allow smooth operation.
+	utils.LavaFormatError("critical: negative duration for subscription, extend by 1 month",
+		fmt.Errorf("negative duration in AdvanceMonth()"),
+		utils.Attribute{Key: "consumer", Value: sub.Consumer},
+		utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+		utils.Attribute{Key: "block", Value: block},
+	)
+	// normally would panic! but can "recover" by auto-extending by 1 month
+	// (don't bother to modify sub.MonthExpiryTime to minimize state changes)
+	expiry := uint64(NextMonth(blockTime).UTC().Unix())
+	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
+}
+
+func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, blockTime time.Time) {
+	// reset projects CU allowance for this coming month
+	k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer, block)
+
+	// reset subscription CU allowance for this coming month
+	sub.MonthCuLeft = sub.MonthCuTotal
+	sub.Block = block
+
+	// restart timer and append new (fixated) version of this subscription
+	expiry := uint64(NextMonth(blockTime).UTC().Unix())
+	sub.MonthExpiryTime = expiry
+	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
+
+	// since the total duration increases, the cluster might change
+	sub.Cluster = types.GetClusterKey(*sub)
+
+	err := k.subsFS.AppendEntry(ctx, sub.Consumer, block, sub)
+	if err != nil {
+		// normally would panic! but ok to ignore - the subscription remains
+		// as is with same remaining duration (but not renewed CU)
+		utils.LavaFormatError("critical: failed to recharge subscription", err,
+			utils.Attribute{Key: "consumer", Value: sub.Consumer},
+			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
+			utils.Attribute{Key: "block", Value: block},
+		)
 	}
 }
 
@@ -360,7 +439,7 @@ func (k Keeper) AddProjectToSubscription(ctx sdk.Context, consumer string, proje
 
 	plan, found := k.plansKeeper.FindPlan(ctx, sub.PlanIndex, sub.PlanBlock)
 	if !found {
-		err := utils.LavaFormatError("critical: failed to find existing subscriptio plan", legacyerrors.ErrKeyNotFound,
+		err := utils.LavaFormatError("critical: failed to find existing subscription plan", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "consumer", Value: sub.Creator},
 			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
 			utils.Attribute{Key: "planBlock", Value: sub.PlanBlock},
