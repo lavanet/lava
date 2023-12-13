@@ -145,7 +145,6 @@ func (connector *Connector) Close() {
 			}
 			connector.lock.Unlock()
 			time.Sleep(100 * time.Millisecond)
-
 		} else {
 			connector.lock.Unlock()
 			break
