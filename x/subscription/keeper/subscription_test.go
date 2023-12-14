@@ -1092,12 +1092,12 @@ func TestSubscriptionAdvancePurchaseStartsOnExpirationOfCurrent(t *testing.T) {
 	// Make sure the balance checks out
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 
-	newSubDuration := int64(4)
+	newSubDuration := uint64(4)
 	_, err = ts.TxSubscriptionBuy(consumerAdd, consumerAdd, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
 	// Verify that the consumer charged with the correct amount
-	consumerShouldPay := premiumPlan.Price.Amount.MulRaw(newSubDuration)
+	consumerShouldPay := premiumPlan.Price.Amount.MulRaw(int64(newSubDuration))
 	expectedConsumerBalance := consumerBalance - consumerShouldPay.Int64()
 	require.Equal(t, expectedConsumerBalance, ts.GetBalance(consumerAcc.Addr))
 
