@@ -132,16 +132,17 @@ func (connector *Connector) connectorLoop(ctx context.Context) {
 }
 
 func (connector *Connector) Close() {
-	for {
+	for i := 0; ; i++ {
 		connector.lock.Lock()
-		log.Println("Connector closing", len(connector.freeClients))
 		for i := 0; i < len(connector.freeClients); i++ {
 			connector.freeClients[i].Close()
 		}
 		connector.freeClients = []*rpcclient.Client{}
 
 		if connector.usedClients > 0 {
-			log.Println("Connector closing, waiting for in use clients", connector.usedClients)
+			if i > 10 {
+				utils.LavaFormatError("stuck while closing connector", nil, utils.LogAttr("freeClients", connector.freeClients), utils.LogAttr("usedClients", connector.usedClients))
+			}
 			connector.lock.Unlock()
 			time.Sleep(100 * time.Millisecond)
 		} else {
@@ -335,8 +336,8 @@ func (connector *GRPCConnector) GetRpc(ctx context.Context, block bool) (*grpc.C
 	}
 
 	ret := connector.freeClients[0]
-	connector.freeClients = connector.freeClients[1:]
 	connector.usedClients++
+	connector.freeClients = connector.freeClients[1:]
 
 	return ret, nil
 }
@@ -360,16 +361,17 @@ func (connector *GRPCConnector) connectorLoop(ctx context.Context) {
 }
 
 func (connector *GRPCConnector) Close() {
-	for {
+	for i := 0; ; i++ {
 		connector.lock.Lock()
-		log.Println("Connector closing", len(connector.freeClients))
 		for i := 0; i < len(connector.freeClients); i++ {
 			connector.freeClients[i].Close()
 		}
 		connector.freeClients = []*grpc.ClientConn{}
 
 		if connector.usedClients > 0 {
-			log.Println("Connector closing, waiting for in use clients", connector.usedClients)
+			if i > 10 {
+				utils.LavaFormatError("stuck while closing grpc connector", nil, utils.LogAttr("freeClients", connector.freeClients), utils.LogAttr("usedClients", connector.usedClients))
+			}
 			connector.lock.Unlock()
 			time.Sleep(100 * time.Millisecond)
 		} else {
