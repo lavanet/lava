@@ -154,7 +154,6 @@ func CreateTestConnectionProbeCobraCommand() *cobra.Command {
 				}
 			}
 			return err
-
 		},
 	}
 	cmdTestConnectionProbe.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing without TLS")

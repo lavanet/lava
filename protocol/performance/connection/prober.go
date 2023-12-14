@@ -21,6 +21,7 @@ type Prober struct {
 func NewProber(addrss string) *Prober {
 	return &Prober{address: addrss}
 }
+
 func createConnection(ctx context.Context, address string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	cswp := lavasession.ConsumerSessionsWithProvider{}
 	return cswp.ConnectRawClientWithTimeout(ctx, address)
