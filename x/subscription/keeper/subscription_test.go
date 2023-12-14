@@ -914,7 +914,8 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	// Charge CU from project so we can differentiate the old project from the new one
 	projectCuUsed := uint64(100)
 	project := getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
-	ts.Keepers.Projects.ChargeComputeUnitsToProject(ts.Ctx, project, ts.BlockHeight(), projectCuUsed)
+	err = ts.Keepers.Projects.ChargeComputeUnitsToProject(ts.Ctx, project, ts.BlockHeight(), projectCuUsed)
+	require.Nil(t, err)
 
 	// Validate the charge of CU
 	project = getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
