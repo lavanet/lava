@@ -54,15 +54,19 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		ChainID: "LAV1",
-	})
-	for i := 0; i < BlockResultRetry && err != nil; i++ {
+	var specResponse *spectypes.QueryGetSpecResponse
+	for i := 0; i < BlockResultRetry; i++ {
 		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 			ChainID: "LAV1",
 		})
+		if err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
-
+	if err != nil {
+		utils.LavaFormatFatal("failed querying lava spec for state tracker", err)
+	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,

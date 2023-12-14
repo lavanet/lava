@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/cmd/lavad/cmd"
 	"github.com/lavanet/lava/ecosystem/cache"
 	"github.com/lavanet/lava/protocol/badgegenerator"
+	"github.com/lavanet/lava/protocol/monitoring"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -52,6 +53,7 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {

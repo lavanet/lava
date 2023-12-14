@@ -308,7 +308,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		// Add the chain fetcher to the spec validator
 		err := specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
 		if err != nil {
-			return err
+			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 		}
 
 		var found bool
