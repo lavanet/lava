@@ -157,15 +157,15 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", "", &unwantedProviders, timeouts)
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "unwantedProviders", Value: unwantedProviders}}...)
-			if relayResult != nil && relayResult.ProviderAddress != "" {
-				unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+			if relayResult != nil && relayResult.ProviderInfo.ProviderAddress != "" {
+				unwantedProviders[relayResult.ProviderInfo.ProviderAddress] = struct{}{}
 			}
 			if common.IsTimeout(err) {
 				timeouts++
 			}
 		} else {
 			unwantedProviders = map[string]struct{}{}
-			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderAddress}}...)
+			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
@@ -208,7 +208,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// temporarily disable subscriptions
 	isSubscription := chainlib.IsSubscription(chainMessage)
 	if isSubscription {
-		return &common.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are not supported at the moment", nil)
+		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, utils.LavaFormatError("Subscriptions are not supported at the moment", nil)
 	}
 
 	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
@@ -226,7 +226,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
-	relayErrors := []error{}
+	relayErrors := &RelayErrors{}
 	blockOnSyncLoss := map[string]struct{}{}
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
@@ -236,20 +236,20 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, timeouts)
-		if relayResult.ProviderAddress != "" {
+		if relayResult.ProviderInfo.ProviderAddress != "" {
 			if err != nil {
 				// add this provider to the erroring providers
-				if errorRelayResult.ProviderAddress != "" {
-					errorRelayResult.ProviderAddress += ","
+				if errorRelayResult.ProviderInfo.ProviderAddress != "" {
+					errorRelayResult.ProviderInfo.ProviderAddress += ","
 				}
-				errorRelayResult.ProviderAddress += relayResult.ProviderAddress
-				_, ok := blockOnSyncLoss[relayResult.ProviderAddress]
+				errorRelayResult.ProviderInfo.ProviderAddress += relayResult.ProviderInfo.ProviderAddress
+				_, ok := blockOnSyncLoss[relayResult.ProviderInfo.ProviderAddress]
 				if !ok && lavasession.IsSessionSyncLoss(err) {
 					// allow this provider to be wantedProvider on a retry, if it didnt fail once on syncLoss
-					blockOnSyncLoss[relayResult.ProviderAddress] = struct{}{}
-					utils.LavaFormatWarning("Identified SyncLoss in provider, not removing it from list for another attempt", err, utils.Attribute{Key: "address", Value: relayResult.ProviderAddress})
+					blockOnSyncLoss[relayResult.ProviderInfo.ProviderAddress] = struct{}{}
+					utils.LavaFormatWarning("Identified SyncLoss in provider, not removing it from list for another attempt", err, utils.Attribute{Key: "address", Value: relayResult.ProviderInfo.ProviderAddress})
 				} else {
-					unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+					unwantedProviders[relayResult.ProviderInfo.ProviderAddress] = struct{}{}
 				}
 				if common.IsTimeout(err) {
 					timeouts++
@@ -261,7 +261,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 				// keep the error status code
 				errorRelayResult.StatusCode = relayResult.GetStatusCode()
 			}
-			relayErrors = append(relayErrors, err)
+			relayErrors.relayErrors = append(relayErrors.relayErrors, RelayError{err: err, ProviderInfo: relayResult.ProviderInfo})
 			if lavasession.PairingListEmptyError.Is(err) {
 				// if we ran out of pairings because unwantedProviders is too long or validProviders is too short, continue to reply handling code
 				break
@@ -271,7 +271,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			continue
 		}
 		relayResults = append(relayResults, relayResult)
-		unwantedProviders[relayResult.ProviderAddress] = struct{}{}
+		unwantedProviders[relayResult.ProviderInfo.ProviderAddress] = struct{}{}
 		// future relay requests and data reliability requests need to ask for the same specific block height to get consensus on the reply
 		// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
 		reqBlock, _ := chainMessage.RequestedBlock()
@@ -300,11 +300,15 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		}
 	}
 
-	// TODO: secure, go over relay results to find discrepancies and choose majority, or trigger a second wallet relay
 	if len(relayResults) == 0 {
 		rpccs.appendHeadersToRelayResult(ctx, errorRelayResult, retries)
-		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
-	} else if len(relayErrors) > 0 {
+		// suggest the user to add the timeout flag
+		if uint64(timeouts) == retries {
+			utils.LavaFormatDebug("all relays timeout", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors.relayErrors})
+			return errorRelayResult, utils.LavaFormatError("Failed all relay retries due to timeout consider adding 'lava-relay-timeout' header to extend the allowed timeout duration", nil, utils.Attribute{Key: "GUID", Value: ctx})
+		}
+		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, relayErrors.GetBestErrorMessageForUser())
+	} else if len(relayErrors.relayErrors) > 0 {
 		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	}
 	var returnedResult *common.RelayResult
@@ -350,7 +354,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if isSubscription {
 		// temporarily disable subscriptions
 		// TODO: fix subscription and disable this case.
-		return &common.RelayResult{ProviderAddress: ""}, utils.LavaFormatError("Subscriptions are disabled currently", nil)
+		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, utils.LavaFormatError("Subscriptions are disabled currently", nil)
 	}
 
 	privKey := rpccs.privKey
@@ -367,7 +371,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
-		return &common.RelayResult{ProviderAddress: ""}, err
+		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, err
 	}
 
 	type relayResponse struct {
@@ -399,10 +403,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				// Close context
 				goroutineCtxCancel()
 			}()
-
 			localRelayResult = &common.RelayResult{
-				ProviderAddress: providerPublicAddress,
-				Finalized:       false,
+				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderQoSExcellenceSummery: sessionInfo.QoSSummeryResult},
+				Finalized:    false,
 				// setting the single consumer session as the conflict handler.
 				//  to be able to validate if we need to report this provider or not.
 				// holding the pointer is ok because the session is locked atm,
@@ -567,7 +570,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string) (relayResultRet *common.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
-	providerPublicAddress := relayResult.ProviderAddress
+	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		relaySentTime := time.Now()
@@ -699,14 +702,14 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	if err != nil {
 		errAttributes := []utils.Attribute{}
 		// failed to send to a provider
-		if relayResultDataReliability.ProviderAddress != "" {
-			errAttributes = append(errAttributes, utils.Attribute{Key: "address", Value: relayResultDataReliability.ProviderAddress})
+		if relayResultDataReliability.ProviderInfo.ProviderAddress != "" {
+			errAttributes = append(errAttributes, utils.Attribute{Key: "address", Value: relayResultDataReliability.ProviderInfo.ProviderAddress})
 		}
 		errAttributes = append(errAttributes, utils.Attribute{Key: "relayRequestData", Value: relayRequestData})
 		return utils.LavaFormatWarning("failed data reliability relay to provider", err, errAttributes...)
 	}
 	if !relayResultDataReliability.Finalized {
-		utils.LavaFormatInfo("skipping data reliability check since response from second provider was not finalized", utils.Attribute{Key: "providerAddress", Value: relayResultDataReliability.ProviderAddress})
+		utils.LavaFormatInfo("skipping data reliability check since response from second provider was not finalized", utils.Attribute{Key: "providerAddress", Value: relayResultDataReliability.ProviderInfo.ProviderAddress})
 		return nil
 	}
 	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDataReliability, chainMessage.GetApiCollection(), rpccs.chainParser)

@@ -180,6 +180,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 			Sessions:          map[int64]*lavasession.SingleConsumerSession{},
 			MaxComputeUnits:   maxcu,
 			PairingEpoch:      epoch,
+			StakeSize:         provider.Stake,
 		}
 	}
 	if len(pairing) == 0 {

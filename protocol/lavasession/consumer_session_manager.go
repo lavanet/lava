@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/common"
 	metrics "github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
@@ -401,7 +402,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			}
 
 			// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
-			err = consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession, virtualEpoch)
+			providerStakeSize, err := consumerSessionsWithProvider.addUsedComputeUnitsAndReturnProviderStakeSize(cuNeededForSession, virtualEpoch)
 			if err != nil {
 				utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", utils.Attribute{Key: "Error", Value: err.Error()})
 				if MaxComputeUnitsExceededError.Is(err) {
@@ -426,12 +427,26 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 						utils.Attribute{Key: "consumerSession.SessionId", Value: consumerSession.SessionId},
 					)
 				}
+
 				// If no error, add provider session map
-				sessions[providerAddress] = &SessionInfo{
+				sessionInfo := &SessionInfo{
+					StakeSize:         providerStakeSize,
 					Session:           consumerSession,
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
 				}
+				// adding qos summery for error parsing.
+				// consumer session is locked here so its ok to read the qos report.
+				if consumerSession.QoSInfo.LastExcellenceQoSReport != nil {
+					qosComputed, errComputing := consumerSession.QoSInfo.LastExcellenceQoSReport.ComputeQoS()
+					if errComputing != nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
+						utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", consumerSession.QoSInfo.LastExcellenceQoSReport))
+						sessionInfo.QoSSummeryResult = github_com_cosmos_cosmos_sdk_types.ZeroDec()
+					} else {
+						sessionInfo.QoSSummeryResult = qosComputed
+					}
+				}
+				sessions[providerAddress] = sessionInfo
 
 				if consumerSession.RelayNum > 1 {
 					// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists

@@ -24,6 +24,8 @@ var AllowInsecureConnectionToProviders = false
 
 type SessionInfo struct {
 	Session           *SingleConsumerSession
+	StakeSize         sdk.Coin
+	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
 }
@@ -128,7 +130,8 @@ type ConsumerSessionsWithProvider struct {
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
-	conflictFoundAndReported uint32 // 0 == not reported, 1 == reported
+	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
+	StakeSize                sdk.Coin // the stake size the provider staked
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
@@ -251,15 +254,15 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 }
 
 // Validate and add the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch uint64) error {
+func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnitsAndReturnProviderStakeSize(cu, virtualEpoch uint64) (sdk.Coin, error) {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
-		return MaxComputeUnitsExceededError
+		return cswp.StakeSize, MaxComputeUnitsExceededError
 	}
 	cswp.UsedComputeUnits += cu
-	return nil
+	return cswp.StakeSize, nil
 }
 
 // Validate and add the compute units for this provider
