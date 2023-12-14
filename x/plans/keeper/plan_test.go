@@ -336,7 +336,7 @@ func TestAddAndDelete(t *testing.T) {
 
 // TestModifyPlan checks that plan modification acts as expected:
 // 1. there should be no new version in the planFS (latest plan should have the same block)
-// 2. plan price cannot be increased
+// 2. plan price cannot be changed
 func TestModifyPlan(t *testing.T) {
 	ts := newTester(t)
 	ts.AdvanceEpoch()
@@ -367,6 +367,11 @@ func TestModifyPlan(t *testing.T) {
 
 	// modify the plan by increasing its price. proposal should fail
 	originalPlan.Price = originalPlan.Price.AddAmount(math.NewIntFromUint64(1))
+	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
+	require.NotNil(t, err)
+
+	// modify the plan by decreasing its price. proposal should fail
+	originalPlan.Price = originalPlan.Price.SubAmount(math.NewIntFromUint64(2))
 	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
 	require.NotNil(t, err)
 }
