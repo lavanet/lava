@@ -684,10 +684,20 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if requestedBlockHash != nil || finalized {
-			err := cache.SetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
-			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
-				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
-			}
+			relayPrivateDataBytes, marshalErr := request.RelayData.Marshal()
+			go func() {
+				if marshalErr != nil {
+					utils.LavaFormatError("Failed masrhaling relay private data on sendRelayToProvider", marshalErr)
+					return
+				}
+				new_ctx := context.Background()
+				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+				defer cancel()
+				err := cache.SetEntry(new_ctx, relayPrivateDataBytes, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
+				if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
+					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
+				}
+			}()
 		}
 	}
 

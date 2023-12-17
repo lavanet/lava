@@ -84,10 +84,15 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 
 func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, reply *pairingtypes.RelayReply, requestedBlockHash []byte, finalized bool) {
 	if requestedBlockHash != nil || finalized {
+		relayPrivateDataBytes, marshalErr := relayData.Marshal()
+		if marshalErr != nil {
+			utils.LavaFormatError("Failed masrhaling relay private data on sendRelayToProvider", marshalErr)
+			return
+		}
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
+		err := cf.cache.SetEntry(new_ctx, relayPrivateDataBytes, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
 		if err != nil && !performance.NotInitialisedError.Is(err) {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}

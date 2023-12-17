@@ -2,6 +2,7 @@ package performance
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -48,7 +49,12 @@ func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPri
 	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, BlockHash: blockHash, ChainID: chainID, Finalized: finalized, Provider: provider})
 }
 
-func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, reply *pairingtypes.RelayReply, finalized bool, provider string, optionalMetadata []pairingtypes.Metadata) error {
+func (cache *Cache) SetEntry(ctx context.Context, relayPrivateDataBytes []byte, blockHash []byte, chainID string, reply *pairingtypes.RelayReply, finalized bool, provider string, optionalMetadata []pairingtypes.Metadata) error {
+	request := &pairingtypes.RelayPrivateData{}
+	err := json.Unmarshal(relayPrivateDataBytes, request)
+	if err != nil {
+		return err
+	}
 	if cache == nil {
 		// TODO: try to connect again once in a while
 		return NotInitialisedError
@@ -56,8 +62,9 @@ func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayPri
 	if cache.client == nil {
 		return NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
 	}
+
 	// TODO: handle disconnections and SetRelay error types here
-	_, err := cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{
+	_, err = cache.client.SetRelay(ctx, &pairingtypes.RelayCacheSet{
 		Request:          request,
 		BlockHash:        blockHash,
 		ChainID:          chainID,

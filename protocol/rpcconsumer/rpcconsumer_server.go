@@ -504,7 +504,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 			// set cache in a nonblocking call
+			relayPrivateDataBytes, marshalErr := localRelayResult.Request.RelayData.Marshal()
 			go func() {
+				// deal with marshaling error.
+				if marshalErr != nil {
+					utils.LavaFormatError("Failed masrhaling relay private data on sendRelayToProvider", marshalErr)
+					return
+				}
 				requestedBlock, _ := chainMessage.RequestedBlock()
 				if requestedBlock == spectypes.NOT_APPLICABLE {
 					return
@@ -512,7 +518,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err2 := rpccs.cache.SetEntry(new_ctx, localRelayResult.Request.RelayData, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
+				err2 := rpccs.cache.SetEntry(new_ctx, relayPrivateDataBytes, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
 				if err2 != nil && !performance.NotInitialisedError.Is(err2) {
 					utils.LavaFormatWarning("error updating cache with new entry", err2)
 				}
