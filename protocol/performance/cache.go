@@ -2,7 +2,6 @@ package performance
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -51,7 +50,7 @@ func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPri
 
 func (cache *Cache) SetEntry(ctx context.Context, relayPrivateDataBytes []byte, blockHash []byte, chainID string, reply *pairingtypes.RelayReply, finalized bool, provider string, optionalMetadata []pairingtypes.Metadata) error {
 	request := &pairingtypes.RelayPrivateData{}
-	err := json.Unmarshal(relayPrivateDataBytes, request)
+	err := request.Unmarshal(relayPrivateDataBytes)
 	if err != nil {
 		return err
 	}
