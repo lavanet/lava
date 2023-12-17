@@ -71,6 +71,7 @@ type ProviderStateTrackerInf interface {
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 	GetVirtualEpoch(epoch uint64) uint64
+	GetAverageBlockTime() time.Duration
 }
 
 type RPCProvider struct {

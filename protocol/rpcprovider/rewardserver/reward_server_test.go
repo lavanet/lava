@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/rand"
@@ -642,6 +643,18 @@ func (rts *rewardsTxSenderMock) TxRelayPayment(ctx context.Context, payments []*
 
 func (rts *rewardsTxSenderMock) GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(_ context.Context) (uint64, error) {
 	return 0, nil
+}
+
+func (rts *rewardsTxSenderMock) LatestBlock() int64 {
+	return 0
+}
+
+func (rts *rewardsTxSenderMock) GetEpochSize(ctx context.Context) (uint64, error) {
+	return 0, nil
+}
+
+func (rts *rewardsTxSenderMock) GetAverageBlockTime() time.Duration {
+	return time.Second
 }
 
 func (rts *rewardsTxSenderMock) EarliestBlockInMemory(_ context.Context) (uint64, error) {

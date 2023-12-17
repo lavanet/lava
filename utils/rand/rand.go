@@ -55,6 +55,10 @@ func Uint32() uint32 {
 	return protocolRand.Uint32()
 }
 
+func Uint64() uint64 {
+	return protocolRand.Uint64()
+}
+
 func Int63() int64 {
 	return protocolRand.Int63()
 }

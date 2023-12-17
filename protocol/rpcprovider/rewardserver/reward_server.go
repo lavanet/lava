@@ -95,6 +95,9 @@ type RewardsTxSender interface {
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	EarliestBlockInMemory(ctx context.Context) (uint64, error)
+	GetEpochSize(ctx context.Context) (uint64, error)
+	LatestBlock() int64
+	GetAverageBlockTime() time.Duration
 }
 
 type ChainTrackerSpecsInf interface {
@@ -153,9 +156,32 @@ func (rws *RewardServer) saveProofInMemory(ctx context.Context, consumerRewardsK
 }
 
 func (rws *RewardServer) UpdateEpoch(epoch uint64) {
+	go rws.runRewardServerEpochUpdate(epoch)
+}
+
+func (rws *RewardServer) runRewardServerEpochUpdate(epoch uint64) {
 	ctx := context.Background()
+	rws.AddRewardDelayForUnifiedRewardDistribution(ctx, epoch)
 	_ = rws.sendRewardsClaim(ctx, epoch)
 	_, _ = rws.identifyMissingPayments(ctx)
+}
+
+func (rws *RewardServer) AddRewardDelayForUnifiedRewardDistribution(ctx context.Context, epochStart uint64) {
+	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
+	if err != nil {
+		utils.LavaFormatError("Failed fetching epoch size in reward server delay, skipping delay", err)
+		return
+	}
+	halfEpochSize := (epochSize / 2) + 1 // +1 for random to choose 0 to number
+	chosenBlocksForRewardDelay := uint64(rand.Intn(int(halfEpochSize)))
+	utils.LavaFormatDebug("Waiting for number of blocks to send the reward", utils.LogAttr("blocks_delay", chosenBlocksForRewardDelay))
+	for {
+		latestBlock := rws.rewardsTxSender.LatestBlock()
+		if uint64(latestBlock)-epochStart >= chosenBlocksForRewardDelay {
+			return
+		}
+		time.Sleep(rws.rewardsTxSender.GetAverageBlockTime()) // sleep the average block time, to wait for the next block.
+	}
 }
 
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
