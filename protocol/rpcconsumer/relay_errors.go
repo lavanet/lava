@@ -4,24 +4,11 @@ import (
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/maps"
 )
 
 type RelayErrors struct {
 	relayErrors []RelayError
-}
-
-func (r *RelayErrors) findLargestValueInMap(myMap map[string]int) (string, int) {
-	var maxVal int
-	var maxKey string
-
-	for key, val := range myMap {
-		if val > maxVal {
-			maxVal = val
-			maxKey = key
-		}
-	}
-
-	return maxKey, maxVal
 }
 
 func (r *RelayErrors) GetBestErrorMessageForUser() utils.Attribute {
@@ -41,8 +28,8 @@ func (r *RelayErrors) GetBestErrorMessageForUser() utils.Attribute {
 		}
 	}
 
-	errorKey, errorCount := r.findLargestValueInMap(errorMap)
-	if errorCount > (len(r.relayErrors) / 2) {
+	errorKey, errorCount := maps.FindLargestIntValueInMap(errorMap)
+	if errorCount >= (len(r.relayErrors) / 2) {
 		// we have majority of errors we can return this error.
 		return utils.LogAttr("error", errorKey)
 	}
