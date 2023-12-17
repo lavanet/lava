@@ -387,17 +387,20 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 
 func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
-
 	EndBlock(unwrapedCtx, ks)
+	unwrapedCtx = UpdateBlockCtx(ctx, ks, customBlockTime...)
+	NewBlock(unwrapedCtx, ks)
+	return sdk.WrapSDKContext(unwrapedCtx)
+}
 
+func UpdateBlockCtx(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) sdk.Context {
+	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	block := uint64(unwrapedCtx.BlockHeight() + 1)
 	unwrapedCtx = unwrapedCtx.WithBlockHeight(int64(block))
 
 	headerHash := make([]byte, BLOCK_HEADER_LEN)
 	Randomizer.Read(headerHash)
 	unwrapedCtx = unwrapedCtx.WithHeaderHash(headerHash)
-
-	NewBlock(unwrapedCtx, ks)
 
 	if len(customBlockTime) > 0 {
 		ks.BlockStore.AdvanceBlock(customBlockTime[0])
@@ -408,8 +411,7 @@ func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 
 	b := ks.BlockStore.LoadBlock(int64(block))
 	unwrapedCtx = unwrapedCtx.WithBlockTime(b.Header.Time)
-
-	return sdk.WrapSDKContext(unwrapedCtx)
+	return unwrapedCtx
 }
 
 func AdvanceBlocks(ctx context.Context, ks *Keepers, blocks int, customBlockTime ...time.Duration) context.Context {

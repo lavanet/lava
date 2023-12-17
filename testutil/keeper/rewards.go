@@ -12,7 +12,14 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	downtimekeeper "github.com/lavanet/lava/x/downtime/keeper"
+	downtimemoduletypes "github.com/lavanet/lava/x/downtime/types"
+	v1 "github.com/lavanet/lava/x/downtime/v1"
+	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
 	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
@@ -36,25 +43,51 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		types.Amino,
 		storeKey,
 		memStoreKey,
-		"ProjectsParams",
+		"RewardsParams",
 	)
+
+	paramsSubspaceDowntime := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"DowntimeParams",
+	)
+
+	paramsSubspaceEpochstorage := typesparams.NewSubspace(cdc,
+		types.Amino,
+		storeKey,
+		memStoreKey,
+		"EpochStorageParams",
+	)
+
+	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
+	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
+
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
+	downtimeKeeper := downtimekeeper.NewKeeper(cdc, downtimeKey, paramsSubspaceDowntime, epochstorageKeeper)
+
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+
+	downtimeKeeper.SetParams(ctx, v1.DefaultParams())
+
+	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	stakingKeeper := *stakingkeeper.NewKeeper(cdc, stakingStoreKey, mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
 		memStoreKey,
 		paramsSubspace,
-		nil,
+		mockBankKeeper{},
 		mockAccountKeeper{},
 		nil,
 		nil,
-		nil,
-		nil,
+		downtimeKeeper,
+		stakingKeeper,
 		nil,
 		authtypes.FeeCollectorName,
 		timerstorekeeper.NewKeeper(cdc),
 	)
-
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())
