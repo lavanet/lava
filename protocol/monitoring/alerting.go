@@ -441,10 +441,15 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 			// this entry wasn't alerted currently therefore we can shut it off
 			count := al.activeAlerts[alertEntry]
 			count.recovery++ // increase recovery
-			al.activeAlerts[alertEntry] = count
 			if count.recovery >= al.suppressionCounterThreshold {
 				keysToDelete = append(keysToDelete, alertEntry)
+			} else {
+				// if the threshold for an alert wasn't reached we suppress alerting too
+				if count.active < al.suppressionCounterThreshold {
+					count.active = 0
+				}
 			}
+			al.activeAlerts[alertEntry] = count
 		} else {
 			count := al.activeAlerts[alertEntry]
 			count.recovery = 0
