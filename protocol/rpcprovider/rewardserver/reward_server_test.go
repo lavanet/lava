@@ -267,12 +267,12 @@ func TestUpdateEpoch(t *testing.T) {
 		// Make sure that the rewards are flushed to DB
 		rws.resetSnapshotTimerAndSaveRewardsSnapshotToDB()
 
-		rws.UpdateEpoch(1)
+		rws.runRewardServerEpochUpdate(1)
 
 		// 2 payments for epoch 1
 		require.Len(t, stubRewardsTxSender.sentPayments, 2)
 
-		rws.UpdateEpoch(2)
+		rws.runRewardServerEpochUpdate(2)
 
 		// another 3 payments for epoch 2
 		require.Len(t, stubRewardsTxSender.sentPayments, 5)
@@ -300,8 +300,7 @@ func TestUpdateEpoch(t *testing.T) {
 
 		stubRewardsTxSender.earliestBlockInMemory = 2
 
-		rws.UpdateEpoch(3)
-
+		rws.runRewardServerEpochUpdate(3)
 		// ensure no payments have been sent
 		require.Len(t, stubRewardsTxSender.sentPayments, 0)
 		rewards, err := db.FindAll()
@@ -417,7 +416,7 @@ func TestDeleteRewardsFromDBWhenRewardEpochNotInMemory(t *testing.T) {
 
 	newEpoch := epoch + 1
 	stubRewardsTxSender.earliestBlockInMemory = newEpoch
-	rws.UpdateEpoch(newEpoch)
+	rws.runRewardServerEpochUpdate(newEpoch)
 	for _, chainId := range specs {
 		epochRewards, err := rewardDB.FindAllInDB(chainId)
 		require.NoError(t, err)
@@ -463,7 +462,7 @@ func TestRestoreRewardsFromDB(t *testing.T) {
 		rws.restoreRewardsFromDB(spec)
 	}
 
-	rws.UpdateEpoch(epoch + 3)
+	rws.runRewardServerEpochUpdate(epoch + 3)
 	require.Equal(t, 2, len(stubRewardsTxSender.sentPayments))
 }
 
