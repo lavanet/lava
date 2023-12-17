@@ -339,6 +339,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 			if !isReference {
 				healthResults.updateConsumerError(endpoint, err)
 			}
+			return nil
 		}
 		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, compatibleEndpoint, nil)
 		var latestBlock int64
