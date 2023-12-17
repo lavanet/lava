@@ -462,6 +462,18 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 	return expectedLatency
 }
 
+// cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
+func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
+	if cs.QoSInfo.LastExcellenceQoSReport != nil {
+		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoS()
+		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
+			return qosComputed
+		}
+		utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport))
+	}
+	return sdk.ZeroDec()
+}
+
 func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
 	// Add current Session QoS
 	cs.QoSInfo.TotalRelays++    // increase total relays

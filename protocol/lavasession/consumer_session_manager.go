@@ -8,7 +8,6 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/common"
 	metrics "github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
@@ -435,17 +434,10 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
 				}
+
 				// adding qos summery for error parsing.
 				// consumer session is locked here so its ok to read the qos report.
-				if consumerSession.QoSInfo.LastExcellenceQoSReport != nil {
-					qosComputed, errComputing := consumerSession.QoSInfo.LastExcellenceQoSReport.ComputeQoS()
-					if errComputing != nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
-						utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", consumerSession.QoSInfo.LastExcellenceQoSReport))
-						sessionInfo.QoSSummeryResult = github_com_cosmos_cosmos_sdk_types.ZeroDec()
-					} else {
-						sessionInfo.QoSSummeryResult = qosComputed
-					}
-				}
+				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
 				if consumerSession.RelayNum > 1 {
