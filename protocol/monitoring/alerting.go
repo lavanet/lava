@@ -475,9 +475,9 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 		}
 	}
 	if len(al.currentAlerts) == 0 {
-		utils.LavaFormatInfo("[+] healthy - no new alerts")
+		utils.LavaFormatInfo("[+] healthy - no new alerts", utils.LogAttr("healthy", uint64(len(al.healthy))))
 	} else {
-		utils.LavaFormatInfo("[-] unhealthy", utils.LogAttr("count", uint64(len(al.unhealthy))), utils.LogAttr("currently suppressed", al.suppressedAlerts-suppressed))
+		utils.LavaFormatInfo("[-] unhealthy", utils.LogAttr("healthy", uint64(len(al.healthy))), utils.LogAttr("count", uint64(len(al.unhealthy))), utils.LogAttr("currently suppressed", al.suppressedAlerts-suppressed))
 	}
 	al.SendAppendedAlerts()
 }
