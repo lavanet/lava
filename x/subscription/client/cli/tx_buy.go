@@ -58,7 +58,7 @@ If the plan index is different than the consumer's current plan, it will upgrade
 			// check if the command includes --enable-auto-renewal
 			advancedPurchasedFlag := cmd.Flags().Lookup(AdvancedPurchaseFlag)
 			if advancedPurchasedFlag == nil {
-				return fmt.Errorf("%s flag wasn't found", EnableAutoRenewalFlag)
+				return fmt.Errorf("%s flag wasn't found", AdvancedPurchaseFlag)
 			}
 			advancedPurchase := advancedPurchasedFlag.Changed
 
