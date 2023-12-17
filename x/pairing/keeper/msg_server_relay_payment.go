@@ -135,6 +135,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
+		project, err := k.GetProjectData(ctx, clientAddr, relay.SpecId, uint64(relay.Epoch))
+		if err != nil {
+			return nil, err
+		}
+
 		// TODO: add support for spec changes
 		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
 		if !found || !spec.Enabled {
@@ -143,12 +148,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, servicersToPair, projectID, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, allowedCU, servicersToPair, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
 			clientAddr,
 			providerAddr,
 			uint64(relay.Epoch),
+			project,
 		)
 		if err != nil {
 			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
@@ -172,7 +178,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, projectID, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if err != nil {
 			// double spending on user detected!
 			return nil, utils.LavaFormatWarning("double spending detected", err,
@@ -227,7 +233,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			details["ExcellenceQoSSync"] = relay.QosExcellenceReport.Sync.String()
 		}
 
-		details["projectID"] = projectID
+		details["projectID"] = project.Index
 		details["badge"] = fmt.Sprint(badgeSig)
 		details["clientFee"] = "0"
 		details["reliabilityPay"] = "false"
@@ -246,7 +252,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, projectID)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, project.Index)
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
