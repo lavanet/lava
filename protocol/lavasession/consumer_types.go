@@ -132,7 +132,18 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch      uint64
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
 	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
-	StakeSize                sdk.Coin // the stake size the provider staked
+	stakeSize                sdk.Coin // the stake size the provider staked
+}
+
+func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
+	return &ConsumerSessionsWithProvider{
+		PublicLavaAddress: publicLavaAddress,
+		Endpoints:         pairingEndpoints,
+		Sessions:          map[int64]*SingleConsumerSession{},
+		MaxComputeUnits:   maxCu,
+		PairingEpoch:      epoch,
+		stakeSize:         stakeSize,
+	}
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
@@ -270,7 +281,7 @@ func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch u
 func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
 	cswp.Lock.RLock()
 	defer cswp.Lock.RUnlock()
-	return cswp.StakeSize
+	return cswp.stakeSize
 }
 
 // Validate and add the compute units for this provider
