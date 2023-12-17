@@ -76,8 +76,8 @@ func NewKeeper(
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
-		keeper.RefillRewardsPools(ctx, subkey, data)
 		keeper.DistributeMonthlyBonusRewards(ctx)
+		keeper.RefillRewardsPools(ctx, subkey, data)
 	}
 
 	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators

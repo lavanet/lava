@@ -6,6 +6,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/lavanet/lava/testutil/common"
+	planstypes "github.com/lavanet/lava/x/plans/types"
+	rewardsTypes "github.com/lavanet/lava/x/rewards/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 const (
@@ -17,10 +20,23 @@ const (
 
 type tester struct {
 	common.Tester
+	plan planstypes.Plan
+	spec spectypes.Spec
 }
 
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTesterRaw(t)}
+
+	ts.addValidators(1)
+
+	ts.plan = common.CreateMockPlan()
+	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderDistributionPool)
+	ts.plan.Price.Amount = monthlyProvidersPool.QuoRaw(5).AddRaw(5)
+	ts.plan.PlanPolicy.EpochCuLimit = monthlyProvidersPool.Uint64() * 5
+	ts.plan.PlanPolicy.TotalCuLimit = monthlyProvidersPool.Uint64() * 5
+	ts.AddPlan(ts.plan.Index, ts.plan)
+	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
+
 	return ts
 }
 
