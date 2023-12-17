@@ -441,10 +441,14 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 			// this entry wasn't alerted currently therefore we can shut it off
 			count := al.activeAlerts[alertEntry]
 			count.recovery++ // increase recovery
-			al.activeAlerts[alertEntry] = count
 			if count.recovery >= al.suppressionCounterThreshold {
 				keysToDelete = append(keysToDelete, alertEntry)
+			} else if count.active < al.suppressionCounterThreshold {
+				// if the threshold for an alert wasn't reached we suppress alerting too
+				count.active = 0
 			}
+
+			al.activeAlerts[alertEntry] = count
 		} else {
 			count := al.activeAlerts[alertEntry]
 			count.recovery = 0
@@ -471,9 +475,9 @@ func (al *Alerting) CheckHealthResults(healthResults *HealthResults) {
 		}
 	}
 	if len(al.currentAlerts) == 0 {
-		utils.LavaFormatInfo("[+] healthy - no new alerts")
+		utils.LavaFormatInfo("[+] healthy - no new alerts", utils.LogAttr("healthy", uint64(len(al.healthy))))
 	} else {
-		utils.LavaFormatInfo("[-] unhealthy", utils.LogAttr("count", uint64(len(al.unhealthy))), utils.LogAttr("currently suppressed", al.suppressedAlerts-suppressed))
+		utils.LavaFormatInfo("[-] unhealthy", utils.LogAttr("healthy", uint64(len(al.healthy))), utils.LogAttr("count", uint64(len(al.unhealthy))), utils.LogAttr("currently suppressed", al.suppressedAlerts-suppressed))
 	}
 	al.SendAppendedAlerts()
 }

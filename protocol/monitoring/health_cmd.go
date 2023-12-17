@@ -186,14 +186,14 @@ reference_endpoints:
 			}
 			for {
 				select {
-				case <-ticker.C:
-					RunHealthCheck(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 				case <-ctx.Done():
 					utils.LavaFormatInfo("health ctx.Done")
 					return nil
 				case <-signalChan:
 					utils.LavaFormatInfo("health signalChan")
 					return nil
+				case <-ticker.C:
+					RunHealthCheck(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
 				}
 			}
 		},
