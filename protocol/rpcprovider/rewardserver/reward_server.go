@@ -162,8 +162,8 @@ func (rws *RewardServer) UpdateEpoch(epoch uint64) {
 func (rws *RewardServer) runRewardServerEpochUpdate(epoch uint64) {
 	ctx := context.Background()
 	rws.AddRewardDelayForUnifiedRewardDistribution(ctx, epoch)
-	_ = rws.sendRewardsClaim(ctx, epoch)
-	_, _ = rws.identifyMissingPayments(ctx)
+	rws.sendRewardsClaim(ctx, epoch)
+	rws.identifyMissingPayments(ctx)
 }
 
 func (rws *RewardServer) AddRewardDelayForUnifiedRewardDistribution(ctx context.Context, epochStart uint64) {
