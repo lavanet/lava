@@ -312,6 +312,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			// Consumer made advance purchase. Now we activate it.
 			newSubInfo := sub.FutureSubscription
 
+			sub.Creator = newSubInfo.Creator
 			sub.PlanIndex = newSubInfo.PlanIndex
 			sub.PlanBlock = newSubInfo.PlanBlock
 			sub.DurationBought = newSubInfo.DurationBought
@@ -460,8 +461,9 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		)
 	}
 
-	createFutureSubscription := func(sub *types.Subscription, planIndex string, planBlock, duration uint64) {
+	createFutureSubscription := func(sub *types.Subscription, creator, planIndex string, planBlock, duration uint64) {
 		sub.FutureSubscription = &types.FutureSubscription{
+			Creator:        creator,
 			PlanIndex:      planIndex,
 			PlanBlock:      planBlock,
 			DurationBought: duration,
@@ -487,9 +489,10 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 				return err
 			}
 
-			createFutureSubscription(&sub, plan.Index, plan.Block, duration)
+			createFutureSubscription(&sub, creator, plan.Index, plan.Block, duration)
 
 			details := map[string]string{
+				"creator":      creator,
 				"consumer":     consumer,
 				"duration":     strconv.FormatUint(duration, 10),
 				"oldPlanIndex": currentPlan.Index,
@@ -513,7 +516,7 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		return err
 	}
 
-	createFutureSubscription(&sub, plan.Index, plan.Block, duration)
+	createFutureSubscription(&sub, creator, plan.Index, plan.Block, duration)
 
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	return nil

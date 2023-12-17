@@ -23,7 +23,8 @@ message Subscription {
 }
 
 message FutureSubscription {
-	string plan_index = 1; // index (name) of plan
-  uint64 plan_block = 2; // when the plan was created
-  uint64 duration_bought = 3; // total requested duration in months
+  string creator = 1; // creator pays for the future subscription. Will replace the original one once activated
+  string plan_index = 2; // index (name) of plan
+  uint64 plan_block = 3; // when the plan was created
+  uint64 duration_bought = 4; // total requested duration in months
 }
