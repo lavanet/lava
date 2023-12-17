@@ -90,6 +90,20 @@ func TestRelayError(t *testing.T) {
 						},
 					},
 					{
+						err: fmt.Errorf("test4"),
+						ProviderInfo: common.ProviderInfo{
+							ProviderQoSExcellenceSummery: sdk.MustNewDecFromStr("0.7"),
+							ProviderStake:                sdk.NewInt64Coin("ulava", 10),
+						},
+					},
+					{
+						err: fmt.Errorf("test4"),
+						ProviderInfo: common.ProviderInfo{
+							ProviderQoSExcellenceSummery: sdk.MustNewDecFromStr("0.7"),
+							ProviderStake:                sdk.NewInt64Coin("ulava", 10),
+						},
+					},
+					{
 						err: fmt.Errorf(expectedValue),
 						ProviderInfo: common.ProviderInfo{
 							ProviderQoSExcellenceSummery: sdk.MustNewDecFromStr("0.8"),
