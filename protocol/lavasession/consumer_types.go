@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -122,7 +123,7 @@ func (rpce *RPCEndpoint) Key() string {
 }
 
 type ConsumerSessionsWithProvider struct {
-	Lock              utils.LavaMutex
+	Lock              sync.RWMutex
 	PublicLavaAddress string
 	Endpoints         []*Endpoint
 	Sessions          map[int64]*SingleConsumerSession
@@ -154,8 +155,8 @@ func (cswp *ConsumerSessionsWithProvider) StoreConflictReported() {
 }
 
 func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	if addon == "" {
 		return true
 	}
@@ -168,8 +169,8 @@ func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
 }
 
 func (cswp *ConsumerSessionsWithProvider) IsSupportingExtensions(extensions []string) bool {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 endpointLoop:
 	for _, endpoint := range cswp.Endpoints {
 		for _, extension := range extensions {
@@ -190,8 +191,8 @@ func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
 
 // verify data reliability session exists or not
 func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
 		// validate our relay number reached the data reliability relay number limit
 		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
@@ -233,15 +234,15 @@ func (cswp *ConsumerSessionsWithProvider) GetPairingEpoch() uint64 {
 }
 
 func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() (string, uint64) {
-	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is changed
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	return cswp.PublicLavaAddress, cswp.PairingEpoch
 }
 
 // Validate the compute units for this provider
 func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtualEpoch uint64) error {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
@@ -254,15 +255,22 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 }
 
 // Validate and add the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnitsAndReturnProviderStakeSize(cu, virtualEpoch uint64) (sdk.Coin, error) {
+func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch uint64) error {
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
-		return cswp.StakeSize, MaxComputeUnitsExceededError
+		return MaxComputeUnitsExceededError
 	}
 	cswp.UsedComputeUnits += cu
-	return cswp.StakeSize, nil
+	return nil
+}
+
+// Validate and add the compute units for this provider
+func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
+	return cswp.StakeSize
 }
 
 // Validate and add the compute units for this provider

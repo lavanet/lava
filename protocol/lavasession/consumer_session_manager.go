@@ -402,7 +402,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			}
 
 			// If we successfully got a consumerSession we can apply the current CU to the consumerSessionWithProvider.UsedComputeUnits
-			providerStakeSize, err := consumerSessionsWithProvider.addUsedComputeUnitsAndReturnProviderStakeSize(cuNeededForSession, virtualEpoch)
+			err = consumerSessionsWithProvider.addUsedComputeUnits(cuNeededForSession, virtualEpoch)
 			if err != nil {
 				utils.LavaFormatDebug("consumerSessionWithProvider.addUsedComputeUnit", utils.Attribute{Key: "Error", Value: err.Error()})
 				if MaxComputeUnitsExceededError.Is(err) {
@@ -430,7 +430,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 
 				// If no error, add provider session map
 				sessionInfo := &SessionInfo{
-					StakeSize:         providerStakeSize,
+					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
 					Session:           consumerSession,
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
