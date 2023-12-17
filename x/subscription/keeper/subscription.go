@@ -315,6 +315,8 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			sub.PlanIndex = newSubInfo.PlanIndex
 			sub.PlanBlock = newSubInfo.PlanBlock
 			sub.DurationBought = newSubInfo.DurationBought
+			sub.DurationLeft = newSubInfo.DurationBought
+			sub.DurationTotal += 1
 			sub.FutureSubscription = nil
 
 			k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, date)
