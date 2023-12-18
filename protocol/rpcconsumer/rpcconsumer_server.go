@@ -454,7 +454,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// cache failed, move on to regular relay
 			if performance.NotConnectedError.Is(errResponse) {
-				utils.LavaFormatError("cache not connected", errResponse)
+				utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", errResponse))
 			}
 
 			// unique per dappId and ip
