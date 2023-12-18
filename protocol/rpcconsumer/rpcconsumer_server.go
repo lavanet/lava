@@ -509,7 +509,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			copyErr := protocopy.DeepCopyProtoObject(localRelayResult.Request.RelayData, copyPrivateData)
 			// set cache in a nonblocking call
 			go func() {
-				// deal with marshaling error.
+				// deal with copying error.
 				if copyErr != nil {
 					utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", copyErr)
 					return
