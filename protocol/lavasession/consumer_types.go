@@ -5,6 +5,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -24,6 +25,8 @@ var AllowInsecureConnectionToProviders = false
 
 type SessionInfo struct {
 	Session           *SingleConsumerSession
+	StakeSize         sdk.Coin
+	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
 }
@@ -120,7 +123,7 @@ func (rpce *RPCEndpoint) Key() string {
 }
 
 type ConsumerSessionsWithProvider struct {
-	Lock              utils.LavaMutex
+	Lock              sync.RWMutex
 	PublicLavaAddress string
 	Endpoints         []*Endpoint
 	Sessions          map[int64]*SingleConsumerSession
@@ -128,7 +131,19 @@ type ConsumerSessionsWithProvider struct {
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
-	conflictFoundAndReported uint32 // 0 == not reported, 1 == reported
+	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
+	stakeSize                sdk.Coin // the stake size the provider staked
+}
+
+func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
+	return &ConsumerSessionsWithProvider{
+		PublicLavaAddress: publicLavaAddress,
+		Endpoints:         pairingEndpoints,
+		Sessions:          map[int64]*SingleConsumerSession{},
+		MaxComputeUnits:   maxCu,
+		PairingEpoch:      epoch,
+		stakeSize:         stakeSize,
+	}
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
@@ -151,8 +166,8 @@ func (cswp *ConsumerSessionsWithProvider) StoreConflictReported() {
 }
 
 func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	if addon == "" {
 		return true
 	}
@@ -165,8 +180,8 @@ func (cswp *ConsumerSessionsWithProvider) IsSupportingAddon(addon string) bool {
 }
 
 func (cswp *ConsumerSessionsWithProvider) IsSupportingExtensions(extensions []string) bool {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 endpointLoop:
 	for _, endpoint := range cswp.Endpoints {
 		for _, extension := range extensions {
@@ -187,8 +202,8 @@ func (cswp *ConsumerSessionsWithProvider) atomicReadUsedComputeUnits() uint64 {
 
 // verify data reliability session exists or not
 func (cswp *ConsumerSessionsWithProvider) verifyDataReliabilitySessionWasNotAlreadyCreated() (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	if dataReliabilitySession, ok := cswp.Sessions[DataReliabilitySessionId]; ok { // check if we already have a data reliability session.
 		// validate our relay number reached the data reliability relay number limit
 		if dataReliabilitySession.RelayNum >= DataReliabilityRelayNumber {
@@ -230,15 +245,15 @@ func (cswp *ConsumerSessionsWithProvider) GetPairingEpoch() uint64 {
 }
 
 func (cswp *ConsumerSessionsWithProvider) getPublicLavaAddressAndPairingEpoch() (string, uint64) {
-	cswp.Lock.Lock() // TODO: change to RLock when LavaMutex is changed
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	return cswp.PublicLavaAddress, cswp.PairingEpoch
 }
 
 // Validate the compute units for this provider
 func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtualEpoch uint64) error {
-	cswp.Lock.Lock()
-	defer cswp.Lock.Unlock()
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
 	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
@@ -260,6 +275,13 @@ func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch u
 	}
 	cswp.UsedComputeUnits += cu
 	return nil
+}
+
+// Validate and add the compute units for this provider
+func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
+	return cswp.stakeSize
 }
 
 // Validate and add the compute units for this provider
@@ -438,6 +460,18 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay time.Duration) time.Duration {
 	expectedLatency := (timeoutGivenToRelay / 2)
 	return expectedLatency
+}
+
+// cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
+func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
+	if cs.QoSInfo.LastExcellenceQoSReport != nil {
+		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoS()
+		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
+			return qosComputed
+		}
+		utils.LavaFormatError("Failed computing QoS used for error parsing", errComputing, utils.LogAttr("Report", cs.QoSInfo.LastExcellenceQoSReport))
+	}
+	return sdk.ZeroDec()
 }
 
 func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
