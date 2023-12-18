@@ -143,7 +143,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 
-		k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
+		if badgeFound {
+			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
+		}
 
 		// TODO: add support for spec changes
 		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
@@ -246,7 +248,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	// event for rejected CU
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RejectedCuEventName, map[string]string{"rejected_cu": strconv.FormatUint(rejectedCu, 10)}, "Total rejected CU (not paid) in current RelayPayment TX")
+	var rejected_relays bool
+	if rejectedCu != 0 {
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.RejectedCuEventName, map[string]string{"rejected_cu": strconv.FormatUint(rejectedCu, 10)}, "Total rejected CU (not paid) in current RelayPayment TX")
+		rejected_relays = true
+	}
 
 	latestBlockReports := map[string]string{
 		"provider": msg.GetCreator(),
@@ -256,7 +262,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
-	return &types.MsgRelayPaymentResponse{}, nil
+	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
 func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, projectID string) error {
