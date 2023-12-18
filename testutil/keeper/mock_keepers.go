@@ -38,6 +38,10 @@ var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
 
 type mockBankKeeper struct{}
 
+func init_balance() {
+	balance = make(map[string]sdk.Coins)
+}
+
 func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return nil
 }
@@ -164,11 +168,13 @@ func (k mockBankKeeper) SetBalance(ctx sdk.Context, addr sdk.AccAddress, amounts
 func (k mockBankKeeper) AddToBalance(addr sdk.AccAddress, amounts sdk.Coins) error {
 	if _, ok := balance[addr.String()]; ok {
 		for _, coin := range amounts {
+			fmt.Printf("before balance[addr.String()].String(): %v\n", balance[addr.String()].String())
 			balance[addr.String()] = balance[addr.String()].Add(coin)
 		}
 	} else {
 		balance[addr.String()] = amounts
 	}
+	fmt.Printf("after balance[addr.String()].String(): %v\n", balance[addr.String()].String())
 	return nil
 }
 

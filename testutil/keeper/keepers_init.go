@@ -240,6 +240,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
+	init_balance()
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.StakingKeeper)
