@@ -34,10 +34,11 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			if !ok {
 				badgeSigner, err := sigs.ExtractSignerAddress(*relay.Badge)
 				if err != nil {
-					return nil, utils.LavaFormatError("can't extract badge's signer from badge's project signature", err,
+					utils.LavaFormatError("can't extract badge's signer from badge's project signature", err,
 						utils.Attribute{Key: "badgeUserAddress", Value: relay.Badge.Address},
 						utils.Attribute{Key: "epoch", Value: relay.Badge.Epoch},
 					)
+					continue
 				}
 				badgeData := BadgeData{
 					Badge:       *relay.Badge,
@@ -48,25 +49,33 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 	}
 
+	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	for relayIdx, relay := range msg.Relays {
+		var newBadgeTimerExpiry uint64 // if the badge is new and need to setup a timer, this will be a non-zero value
 		if relay.LavaChainId != lavaChainID {
-			return nil, utils.LavaFormatWarning("relay request for the wrong lava chain", fmt.Errorf("relay_payment_wrong_lava_chain_id"),
+			utils.LavaFormatWarning("relay request for the wrong lava chain", fmt.Errorf("relay_payment_wrong_lava_chain_id"),
 				utils.Attribute{Key: "relay.LavaChainId", Value: relay.LavaChainId},
 				utils.Attribute{Key: "expected_ChainID", Value: lavaChainID},
 			)
+			rejectedCu += relay.CuSum
+			continue
 		}
 		if relay.Epoch > ctx.BlockHeight() {
-			return nil, utils.LavaFormatWarning("invalid block in relay msg", fmt.Errorf("relay request for a block in the future"),
+			utils.LavaFormatWarning("invalid block in relay msg", fmt.Errorf("relay request for a block in the future"),
 				utils.Attribute{Key: "blockheight", Value: ctx.BlockHeight()},
 				utils.Attribute{Key: "relayBlock", Value: relay.Epoch},
 			)
+			rejectedCu += relay.CuSum
+			continue
 		}
 
 		clientAddr, err := sigs.ExtractSignerAddress(relay)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("recover PubKey from relay failed", err,
+			utils.LavaFormatWarning("recover PubKey from relay failed", err,
 				utils.Attribute{Key: "sig", Value: relay.Sig},
 			)
+			rejectedCu += relay.CuSum
+			continue
 		}
 
 		addressEpochBadgeMapKey := types.CreateAddressEpochBadgeMapKey(clientAddr.String(), uint64(relay.Epoch))
@@ -74,47 +83,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		badgeSig := []byte{}
 		// if badge is found in the map, clientAddr will change (assuming the badge is valid) since the badge user is not a valid consumer (the badge signer is)
 		if badgeFound {
-			if !badgeData.Badge.IsBadgeValid(clientAddr.String(), relay.LavaChainId, uint64(relay.Epoch)) {
-				return nil, utils.LavaFormatWarning("badge must match traits in relay request", fmt.Errorf("invalid badge"),
-					utils.Attribute{Key: "badgeAddress", Value: badgeData.Badge.Address},
-					utils.Attribute{Key: "badgeLavaChainId", Value: badgeData.Badge.LavaChainId},
-					utils.Attribute{Key: "badgeEpoch", Value: badgeData.Badge.Epoch},
-					utils.Attribute{Key: "relayAddress", Value: clientAddr},
-					utils.Attribute{Key: "relayLavaChainId", Value: relay.LavaChainId},
-					utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
-				)
+			newBadgeTimerExpiry, err = k.checkBadge(ctx, badgeData, clientAddr.String(), relay)
+			if err != nil {
+				utils.LavaFormatWarning("badge check failed", err)
+				rejectedCu += relay.CuSum
+				continue
 			}
-
-			badgeUsedCuKey := types.BadgeUsedCuKey(badgeData.Badge.ProjectSig, relay.Provider)
-			badgeUsedCuMapEntry, found := k.GetBadgeUsedCu(ctx, badgeUsedCuKey)
-			if !found {
-				// setting a timer with a callback to delete the badgeUsedCuEntry after badge.Epoch+blocksToSave (see keeper.go)
-				badgeUsedCuTimerExpiryBlock := k.BadgeUsedCuExpiry(ctx, badgeData.Badge)
-				if badgeUsedCuTimerExpiryBlock <= uint64(ctx.BlockHeight()) {
-					return nil, utils.LavaFormatWarning("badge rejected", fmt.Errorf("badge used CU entry validity expired"),
-						utils.Attribute{Key: "badgeUsedCuTimerExpiryBlock", Value: badgeUsedCuTimerExpiryBlock},
-						utils.Attribute{Key: "currentBlock", Value: uint64(ctx.BlockHeight())},
-					)
-				}
-				// timerKey = badgeUsedCuMapKey since all badgeUsedCuMapKey keys are unique - can be used to differentiate the timers
-				k.badgeTimerStore.AddTimerByBlockHeight(ctx, badgeUsedCuTimerExpiryBlock, badgeUsedCuKey, []byte{})
-
-				badgeUsedCuMapEntry = types.BadgeUsedCu{
-					BadgeUsedCuKey: badgeUsedCuKey,
-					UsedCu:         0,
-				}
-			}
-
-			// enforce badge CU overuse
-			if relay.CuSum+badgeUsedCuMapEntry.UsedCu > badgeData.Badge.CuAllocation {
-				return nil, utils.LavaFormatWarning("badge CU allocation exceeded", fmt.Errorf("could not update badge's used CU"),
-					utils.Attribute{Key: "relayCuSum", Value: relay.CuSum},
-					utils.Attribute{Key: "badgeCuLeft", Value: badgeData.Badge.CuAllocation - badgeUsedCuMapEntry.UsedCu},
-				)
-			}
-
-			badgeUsedCuMapEntry.UsedCu += relay.CuSum
-			k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
 
 			// badge is valid & CU enforced -> switch address to badge signer (developer key) and continue with payment
 			clientAddr = badgeData.BadgeSigner
@@ -123,22 +97,53 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
-			return nil, utils.LavaFormatWarning("invalid provider address in relay msg", err,
+			utils.LavaFormatWarning("invalid provider address in relay msg", err,
 				utils.Attribute{Key: "provider", Value: relay.Provider},
 				utils.Attribute{Key: "creator", Value: msg.Creator},
 			)
+			rejectedCu += relay.CuSum
+			continue
 		}
 		if !providerAddr.Equals(creator) {
-			return nil, utils.LavaFormatWarning("invalid provider address in relay msg", fmt.Errorf("creator and signed provider mismatch"),
+			utils.LavaFormatWarning("invalid provider address in relay msg", fmt.Errorf("creator and signed provider mismatch"),
 				utils.Attribute{Key: "provider", Value: relay.Provider},
 				utils.Attribute{Key: "creator", Value: msg.Creator},
 			)
+			rejectedCu += relay.CuSum
+			continue
 		}
 
 		project, err := k.GetProjectData(ctx, clientAddr, relay.SpecId, uint64(relay.Epoch))
 		if err != nil {
-			return nil, err
+			utils.LavaFormatWarning("invalid project data", err)
+			rejectedCu += relay.CuSum
+			continue
 		}
+
+		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.Epoch))
+		if err == nil {
+			if k.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
+				utils.LavaFormatWarning("double spending detected", err,
+					utils.Attribute{Key: "epoch", Value: epochStart},
+					utils.Attribute{Key: "client", Value: clientAddr.String()},
+					utils.Attribute{Key: "provider", Value: providerAddr.String()},
+					utils.Attribute{Key: "unique_ID", Value: relay.SessionId},
+				)
+				rejectedCu += relay.CuSum
+				continue
+			}
+		} else {
+			utils.LavaFormatWarning("problem getting epoch start", err,
+				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
+				utils.Attribute{Key: "epochStart", Value: epochStart},
+			)
+			rejectedCu += relay.CuSum
+			continue
+		}
+
+		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+
+		k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 
 		// TODO: add support for spec changes
 		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
@@ -169,26 +174,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.Epoch))
-		if err != nil {
-			return nil, utils.LavaFormatWarning("problem getting epoch start", err,
-				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
-				utils.Attribute{Key: "epochStart", Value: epochStart},
-			)
-		}
-
-		// this prevents double spend attacks, and tracks the CU per session a client can use
-		totalCUInEpochForUserProvider, err := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
-		if err != nil {
-			// double spending on user detected!
-			return nil, utils.LavaFormatWarning("double spending detected", err,
-				utils.Attribute{Key: "epoch", Value: epochStart},
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
-				utils.Attribute{Key: "provider", Value: providerAddr.String()},
-				utils.Attribute{Key: "unique_ID", Value: relay.SessionId},
-			)
-		}
-
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
 		if err != nil {
 			// TODO: maybe give provider money but burn user, colluding?
@@ -201,6 +186,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "totalCUInEpochForUserProvider", Value: totalCUInEpochForUserProvider},
 			)
 		}
+
+		rejectedCu += relay.CuSum - rewardedCU
 
 		// pairing is valid, we can pay provider for work
 		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
@@ -257,6 +244,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
 	}
+
+	// event for rejected CU
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RejectedCuEventName, map[string]string{"rejected_cu": strconv.FormatUint(rejectedCu, 10)}, "Total rejected CU (not paid) in current RelayPayment TX")
 
 	latestBlockReports := map[string]string{
 		"provider": msg.GetCreator(),
@@ -365,4 +355,62 @@ func appendRelayPaymentDetailsToEvent(from map[string]string, uniqueIdentifier u
 		to[key+"."+sessionIDStr] = value
 	}
 	return to
+}
+
+func (k Keeper) checkBadge(ctx sdk.Context, badgeData BadgeData, client string, relay *types.RelaySession) (newTimerExpiry uint64, err error) {
+	if !badgeData.Badge.IsBadgeValid(client, relay.LavaChainId, uint64(relay.Epoch)) {
+		return 0, utils.LavaFormatWarning("badge must match traits in relay request", fmt.Errorf("invalid badge"),
+			utils.Attribute{Key: "badgeAddress", Value: badgeData.Badge.Address},
+			utils.Attribute{Key: "badgeLavaChainId", Value: badgeData.Badge.LavaChainId},
+			utils.Attribute{Key: "badgeEpoch", Value: badgeData.Badge.Epoch},
+			utils.Attribute{Key: "relayAddress", Value: client},
+			utils.Attribute{Key: "relayLavaChainId", Value: relay.LavaChainId},
+			utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
+		)
+	}
+
+	badgeUsedCuKey := types.BadgeUsedCuKey(badgeData.Badge.ProjectSig, relay.Provider)
+	badgeUsedCuMapEntry, found := k.GetBadgeUsedCu(ctx, badgeUsedCuKey)
+	if !found {
+		// setting a timer with a callback to delete the badgeUsedCuEntry after badge.Epoch+blocksToSave (see keeper.go)
+		badgeUsedCuTimerExpiryBlock := k.BadgeUsedCuExpiry(ctx, badgeData.Badge)
+		if badgeUsedCuTimerExpiryBlock <= uint64(ctx.BlockHeight()) {
+			return 0, utils.LavaFormatWarning("badge rejected", fmt.Errorf("badge used CU entry validity expired"),
+				utils.Attribute{Key: "badgeUsedCuTimerExpiryBlock", Value: badgeUsedCuTimerExpiryBlock},
+				utils.Attribute{Key: "currentBlock", Value: uint64(ctx.BlockHeight())},
+			)
+		}
+		newTimerExpiry = badgeUsedCuTimerExpiryBlock
+		badgeUsedCuMapEntry = types.BadgeUsedCu{
+			UsedCu: 0,
+		}
+	}
+
+	// enforce badge CU overuse
+	if relay.CuSum+badgeUsedCuMapEntry.UsedCu > badgeData.Badge.CuAllocation {
+		return newTimerExpiry, utils.LavaFormatWarning("badge CU allocation exceeded", fmt.Errorf("could not update badge's used CU"),
+			utils.Attribute{Key: "relayCuSum", Value: relay.CuSum},
+			utils.Attribute{Key: "badgeCuLeft", Value: badgeData.Badge.CuAllocation - badgeUsedCuMapEntry.UsedCu},
+		)
+	}
+
+	return newTimerExpiry, nil
+}
+
+func (k Keeper) handleBadgeCu(ctx sdk.Context, badgeData BadgeData, provider string, relayCuSum uint64, newTimerExpiry uint64) {
+	badgeUsedCuKey := types.BadgeUsedCuKey(badgeData.Badge.ProjectSig, provider)
+	badgeUsedCuMapEntry, found := k.GetBadgeUsedCu(ctx, badgeUsedCuKey)
+	if newTimerExpiry != 0 && !found {
+		// setting a timer with a callback to delete the badgeUsedCuEntry after badge.Epoch+blocksToSave (see keeper.go)
+		// timerKey = badgeUsedCuMapKey since all badgeUsedCuMapKey keys are unique - can be used to differentiate the timers
+		k.badgeTimerStore.AddTimerByBlockHeight(ctx, newTimerExpiry, badgeUsedCuKey, []byte{})
+
+		badgeUsedCuMapEntry = types.BadgeUsedCu{
+			BadgeUsedCuKey: badgeUsedCuKey,
+			UsedCu:         0,
+		}
+	}
+
+	badgeUsedCuMapEntry.UsedCu += relayCuSum
+	k.SetBadgeUsedCu(ctx, badgeUsedCuMapEntry)
 }
