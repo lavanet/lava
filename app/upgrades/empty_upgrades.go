@@ -11,6 +11,7 @@ import (
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 )
 
 func defaultUpgradeHandler(
@@ -160,7 +161,6 @@ var Upgrade_0_30_2 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-
 var Upgrade_0_31_0 = Upgrade{
 	UpgradeName:          "v0.31.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
@@ -173,8 +173,11 @@ var Upgrade_0_31_1 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_remove_mint = Upgrade{
-	UpgradeName:          "remove-mint",
+var Upgrade_0_32_0 = Upgrade{
+	UpgradeName:          "v0.32.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{Deleted: []string{minttypes.ModuleName}},
+	StoreUpgrades: store.StoreUpgrades{
+		Added:   []string{rewardstypes.StoreKey},
+		Deleted: []string{minttypes.StoreKey},
+	},
 }

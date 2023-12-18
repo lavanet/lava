@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -12,46 +11,6 @@ import (
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
-
-const MONTHS_IN_YEAR = 12
-
-// NextMonth returns the date of the same day next month (assumes UTC),
-// adjusting for end-of-months differences if needed.
-func NextMonth(date time.Time) time.Time {
-	// End-of-month days are tricky because months differ in days counts.
-	// To avoid this complixity, we trim day-of-month greater than 28 back to
-	// day 28, which all months always have (at the cost of the user possibly
-	// losing 1 (and up to 3) days of subscription in the first month.
-
-	if utils.DebugPaymentE2E == "debug_payment_e2e" {
-		return time.Date(
-			date.Year(),
-			date.Month(),
-			date.Day(),
-			date.Hour(),
-			date.Minute()+2,
-			date.Second(),
-			0,
-			time.UTC,
-		)
-	}
-
-	dayOfMonth := date.Day()
-	if dayOfMonth > 28 {
-		dayOfMonth = 28
-	}
-
-	return time.Date(
-		date.Year(),
-		date.Month()+1,
-		dayOfMonth,
-		date.Hour(),
-		date.Minute(),
-		date.Second(),
-		0,
-		time.UTC,
-	)
-}
 
 // GetSubscription returns the subscription of a given consumer
 func (k Keeper) GetSubscription(ctx sdk.Context, consumer string) (val types.Subscription, found bool) {
@@ -194,7 +153,7 @@ func (k Keeper) CreateSubscription(
 	price := plan.GetPrice()
 	price.Amount = price.Amount.MulRaw(int64(duration))
 
-	if duration >= MONTHS_IN_YEAR {
+	if duration >= utils.MONTHS_IN_YEAR {
 		// adjust cost if discount given
 		discount := plan.GetAnnualDiscountPercentage()
 		if discount > 0 {
@@ -219,7 +178,7 @@ func (k Keeper) CreateSubscription(
 	}
 
 	if !found {
-		expiry := uint64(NextMonth(ctx.BlockTime()).UTC().Unix())
+		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
@@ -269,7 +228,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		)
 		// normally would panic! but can "recover" by auto-extending by 1 month
 		// (don't bother to modfy sub.MonthExpiryTime to minimize state changes)
-		expiry := uint64(NextMonth(date).UTC().Unix())
+		expiry := uint64(utils.NextMonth(date).UTC().Unix())
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 		return
 	}
@@ -285,7 +244,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.Block = block
 
 		// restart timer and append new (fixated) version of this subscription
-		expiry := uint64(NextMonth(date).UTC().Unix())
+		expiry := uint64(utils.NextMonth(date).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 
