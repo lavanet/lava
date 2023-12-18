@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/slices"
-	subscriptionkeeper "github.com/lavanet/lava/x/subscription/keeper"
 )
 
 func NewDelegation(delegator, provider, chainID string, blockTime time.Time, tokenDenom string) Delegation {
