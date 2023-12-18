@@ -221,6 +221,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 				txResultChan <- result
 				return
 			}
+			utils.LavaFormatDebug("Keep Waiting tx results...", utils.LogAttr("reason", err))
 			if debug {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
@@ -236,7 +237,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 		}
 		break
 	case <-time.After(5 * time.Minute):
-		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "prev resultData", Value: resultData})
+		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "hash", Value: string(resultData.Txhash)})
 	}
 	// we found the tx on chain and it failed
 	if resultData.Code != 0 {
