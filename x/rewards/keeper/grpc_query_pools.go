@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/rewards/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,11 +19,11 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 	pools := []types.PoolInfo{
 		{
 			Name:    string(types.ValidatorsRewardsDistributionPoolName),
-			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)),
+			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)),
 		},
 		{
 			Name:    string(types.ValidatorsRewardsAllocationPoolName),
-			Balance: sdk.NewCoin(epochstoragetypes.TokenDenom, k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName)),
+			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName)),
 		},
 	}
 

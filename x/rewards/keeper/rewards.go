@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/rewards/types"
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
@@ -33,7 +32,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) error {
 		return nil
 	}
 
-	coins := sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, validatorsRewards))
+	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
 
 	// distribute rewards to validators (same as Cosmos mint module)
 	err := k.addCollectedFees(ctx, coins)
@@ -102,7 +101,7 @@ func (k Keeper) refillAllocationPool(ctx sdk.Context, monthsLeft uint64, allocat
 	}
 
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
-	monthlyQuota := sdk.Coins{sdk.Coin{Denom: epochstoragetypes.TokenDenom, Amount: sdk.ZeroInt()}}
+	monthlyQuota := sdk.Coins{sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: sdk.ZeroInt()}}
 	allocPoolBalance := k.TotalPoolTokens(ctx, allocationPool)
 	if monthsLeft != 0 && !allocPoolBalance.IsZero() {
 		monthlyQuota[0] = monthlyQuota[0].AddAmount(allocPoolBalance.QuoRaw(int64(monthsLeft)))

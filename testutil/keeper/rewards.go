@@ -63,15 +63,15 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	downtimeKey := sdk.NewKVStoreKey(downtimemoduletypes.StoreKey)
 	stateStore.MountStoreWithDB(downtimeKey, storetypes.StoreTypeIAVL, db)
 
-	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
+	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
+	stakingKeeper := *stakingkeeper.NewKeeper(cdc, stakingStoreKey, mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, stakingKeeper)
 	downtimeKeeper := downtimekeeper.NewKeeper(cdc, downtimeKey, paramsSubspaceDowntime, epochstorageKeeper)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	downtimeKeeper.SetParams(ctx, v1.DefaultParams())
-
-	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
-	stakingKeeper := *stakingkeeper.NewKeeper(cdc, stakingStoreKey, mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	k := keeper.NewKeeper(
 		cdc,

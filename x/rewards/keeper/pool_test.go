@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/rewards/types"
 	"github.com/stretchr/testify/require"
 )
@@ -200,7 +199,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 		ts.Ctx,
 		string(types.ValidatorsRewardsDistributionPoolName),
 		string(types.ValidatorsRewardsAllocationPoolName),
-		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, distPoolBalance.QuoRaw(2))),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), distPoolBalance.QuoRaw(2))),
 	)
 	require.Nil(t, err)
 
@@ -215,7 +214,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 		ts.Ctx,
 		string(types.ValidatorsRewardsAllocationPoolName),
 		string(types.ValidatorsRewardsDistributionPoolName),
-		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, distPoolBalance.QuoRaw(2))),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), distPoolBalance.QuoRaw(2))),
 	)
 	require.Nil(t, err)
 
