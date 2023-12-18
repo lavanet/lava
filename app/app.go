@@ -517,6 +517,7 @@ func New(
 		app.StakingKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
+		app.FeeGrantKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 

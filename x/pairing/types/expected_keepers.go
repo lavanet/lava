@@ -5,6 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -55,6 +56,7 @@ type EpochstorageKeeper interface {
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
+	EpochsToSave(ctx sdk.Context, block uint64) (res uint64, err error)
 }
 
 type AccountKeeper interface {
@@ -118,4 +120,9 @@ type StakingKeeper interface {
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	BondDenom(ctx sdk.Context) string
+}
+
+type FeeGrantKeeper interface {
+	GrantAllowance(ctx sdk.Context, granter, grantee sdk.AccAddress, feeAllowance feegrant.FeeAllowanceI) error
+	UpdateAllowance(ctx sdk.Context, granter, grantee sdk.AccAddress, feeAllowance feegrant.FeeAllowanceI) error
 }

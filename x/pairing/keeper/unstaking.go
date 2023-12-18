@@ -46,6 +46,15 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 
 	// index might have changed in the unbond
 	existingEntry, _, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+
+	// remove doesn't immediately revoke secondary addresses grants, but only after the revocation period
+	err = k.RemoveSecondaryAddressesFromProvider(ctx, senderAddr, existingEntry.SecondaryAddresses)
+	if err != nil {
+		return utils.LavaFormatWarning("can't remove stake Entry, RemoveSecondaryAddressesFromProvider failed", err,
+			utils.Attribute{Key: "sender", Value: senderAddr},
+			utils.Attribute{Key: "secondaryAddresses", Value: existingEntry.SecondaryAddresses},
+		)
+	}
 	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
 	if err != nil {
 		return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,

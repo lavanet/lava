@@ -6,13 +6,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, secondaryAddresses []string) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
@@ -86,7 +87,11 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.Moniker = moniker
 		existingEntry.DelegateCommission = delegationCommission
 		existingEntry.DelegateLimit = delegationLimit
-
+		err = k.SecondaryAddressesChange(ctx, senderAddr, existingEntry.SecondaryAddresses, secondaryAddresses)
+		if err != nil {
+			return err
+		}
+		existingEntry.SecondaryAddresses = secondaryAddresses
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 
 		if amount.Amount.GT(existingEntry.Stake.Amount) {
@@ -142,8 +147,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
+		SecondaryAddresses: secondaryAddresses,
 	}
 
+	err = k.AddSecondaryAddressesToProvider(ctx, senderAddr, secondaryAddresses)
+	if err != nil {
+		return err
+	}
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 
 	err = k.dualstakingKeeper.DelegateFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, amount)
@@ -247,4 +257,13 @@ func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) 
 
 func (k Keeper) GetAllChainIDs(ctx sdk.Context) []string {
 	return k.specKeeper.GetAllChainIDs(ctx)
+}
+
+func (k Keeper) AllowedSecondaryAddressMessageTypes() []sdk.Msg {
+	return []sdk.Msg{&types.MsgFreezeProvider{},
+		&types.MsgUnfreezeProvider{},
+		&types.MsgRelayPayment{},
+		&conflicttypes.MsgConflictVoteCommit{},
+		&conflicttypes.MsgConflictVoteReveal{},
+	}
 }

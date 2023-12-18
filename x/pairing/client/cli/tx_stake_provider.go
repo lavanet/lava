@@ -17,10 +17,12 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
-	BULK_ARG_COUNT = 4
+	BULK_ARG_COUNT             = 4
+	SecondaryAddressesFlagName = "secondary-addresses"
 )
 
 var _ = strconv.Itoa(0)
@@ -88,6 +90,7 @@ func CmdStakeProvider() *cobra.Command {
 				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			}
 
+			secondaryAddresses := viper.GetStringSlice(SecondaryAddressesFlagName)
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				validator,
@@ -98,6 +101,7 @@ func CmdStakeProvider() *cobra.Command {
 				moniker,
 				delegationLimit,
 				commission,
+				secondaryAddresses,
 			)
 
 			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -110,6 +114,7 @@ func CmdStakeProvider() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
+	cmd.Flags().StringSlice(SecondaryAddressesFlagName, []string{}, "safer keys to use on provider services as they are limited and can be replaced, secondary provider addresses are granted permissions to send freeze unfreeze and relay_payments, consumers will accept responses from them too")
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
@@ -165,6 +170,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
+			secondaryAddresses := viper.GetStringSlice(SecondaryAddressesFlagName)
+
 			handleBulk := func(cmd *cobra.Command, args []string) (msgs []sdk.Msg, err error) {
 				if len(args) != BULK_ARG_COUNT {
 					return nil, fmt.Errorf("invalid argument length %d should be %d", len(args), BULK_ARG_COUNT)
@@ -202,6 +209,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 						moniker,
 						delegationLimit,
 						commission,
+						secondaryAddresses,
 					)
 
 					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -229,6 +237,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
 		},
 	}
+	cmd.Flags().StringSlice(SecondaryAddressesFlagName, []string{}, "safer keys to use on provider services as they are limited and can be replaced, secondary provider addresses are granted permissions to send freeze unfreeze and relay_payments, consumers will accept responses from them too")
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
