@@ -29,6 +29,7 @@ type DowntimeKeeper interface {
 
 type StakingKeeper interface {
 	BondedRatio(ctx sdk.Context) math.LegacyDec
+	BondDenom(ctx sdk.Context) string
 	// Methods imported from bank should be defined here
 }
 
