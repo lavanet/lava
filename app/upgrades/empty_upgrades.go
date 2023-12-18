@@ -173,8 +173,8 @@ var Upgrade_0_31_1 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_remove_mint_add_rewards = Upgrade{
-	UpgradeName:          "remove-mint-add-rewards",
+var Upgrade_0_32_0 = Upgrade{
+	UpgradeName:          "v0.32.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added:   []string{rewardstypes.StoreKey},
