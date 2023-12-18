@@ -13,7 +13,7 @@ type protoTypeIn interface {
 }
 
 func DeepCopyProtoObject(protoIn protoTypeIn, protoOut protoTypeOut) error {
-	// Marshal input using JSON as an intermediate representation
+	// Marshal input as an intermediate representation
 	jsonData, err := protoIn.Marshal()
 	if err != nil {
 		return utils.LavaFormatError("Failed marshaling DeepCopyProtoObject", err)
