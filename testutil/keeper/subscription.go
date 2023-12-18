@@ -63,7 +63,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		"PlansParams",
 	)
-	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, nil)
 	tsKeeper := timerstorekeeper.NewKeeper(cdc)
 	fsKeeper := fixationkeeper.NewKeeper(cdc, tsKeeper, epochstorageKeeper.BlocksToSaveRaw)
 
@@ -76,10 +76,11 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		nil,
 		epochstorageKeeper,
 		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, fsKeeper),
-		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper),
+		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper, nil),
 		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, nil, mockAccountKeeper{}, nil, nil, fsKeeper),
 		fsKeeper,
 		tsKeeper,
+		nil,
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

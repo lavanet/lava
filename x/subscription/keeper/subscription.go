@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -163,7 +162,7 @@ func (k Keeper) CreateSubscription(
 		}
 	}
 
-	if k.bankKeeper.GetBalance(ctx, creatorAcct, epochstoragetypes.TokenDenom).IsLT(price) {
+	if k.bankKeeper.GetBalance(ctx, creatorAcct, k.stakingKeeper.BondDenom(ctx)).IsLT(price) {
 		return utils.LavaFormatWarning("create subscription failed", legacyerrors.ErrInsufficientFunds,
 			utils.Attribute{Key: "creator", Value: creator},
 			utils.Attribute{Key: "price", Value: price},

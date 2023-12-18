@@ -11,9 +11,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils"
+	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
@@ -97,33 +98,36 @@ func (lt *lavaTest) getProvidersAddresses() ([]string, error) {
 	return addresses, nil
 }
 
-// getBalances gets the current balances of the input addresses
-func (lt *lavaTest) getBalances(addresses []string) ([]sdk.Coin, error) {
-	bankQueryClient := bankTypes.NewQueryClient(lt.grpcConn)
+// getRewards gets the current balances of the input addresses
+func (lt *lavaTest) getRewards(addresses []string) ([]sdk.Coin, error) {
+	dualstakingQueryClient := dualstakingTypes.NewQueryClient(lt.grpcConn)
 
-	var balances []sdk.Coin
+	var rewards []sdk.Coin
 	for _, addr := range addresses {
 		sdkAddr, err := sdk.AccAddressFromBech32(addr)
 		if err != nil {
 			return nil, fmt.Errorf("could not get balance of address %s. err: %s", addr, err.Error())
 		}
 
-		balanceRequest := bankTypes.NewQueryBalanceRequest(sdkAddr, epochStorageTypes.TokenDenom)
-		res, err := bankQueryClient.Balance(context.Background(), balanceRequest)
+		rewardsRequest := dualstakingTypes.QueryDelegatorRewardsRequest{Delegator: addr, Provider: addr, ChainId: ""}
+		res, err := dualstakingQueryClient.DelegatorRewards(context.Background(), &rewardsRequest)
 		if err != nil {
-			return nil, fmt.Errorf("could not get balance of address %s. err: %s", sdkAddr.String(), err.Error())
+			return nil, fmt.Errorf("could not get rewards of address %s. err: %s", sdkAddr.String(), err.Error())
 		}
-
-		balances = append(balances, *res.Balance)
+		total := sdk.NewCoin(commonconsts.TestTokenDenom, sdk.ZeroInt())
+		for _, r := range res.Rewards {
+			total = total.Add(r.Amount)
+		}
+		rewards = append(rewards, total)
 	}
 
-	return balances, nil
+	return rewards, nil
 }
 
 // checkPayment checks that at least one providers' balance increased (can't be known
 // in test time since pairing is pseudo-random)
 // with the monthly payment mechanism, we just wait and the providers get the rewards automatically
-func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
+func (lt *lavaTest) checkPayment(providers []string, startRewards []sdk.Coin) {
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 
 	// wait for month+blocksToSave pass (debug_month = 2min, debug_epochsToSave = 5) and query for expected payout
@@ -145,22 +149,22 @@ func (lt *lavaTest) checkPayment(providers []string, startBalances []sdk.Coin) {
 	}
 
 	// get new balance and checks that at least one provider's balance was increased
-	newBalances, err := lt.getBalances(providers)
+	newRewards, err := lt.getRewards(providers)
 	if err != nil {
 		panic(err)
 	}
 
-	for i := range newBalances {
-		newAmount := newBalances[i].Amount
-		startAmount := startBalances[i].Amount
+	for i := range newRewards {
+		newAmount := newRewards[i].Amount
+		startAmount := startRewards[i].Amount
 		payout := newAmount.Sub(startAmount)
 		if payout.IsNegative() || !withinRange(payout.Uint64(), expectedPayoutArr[i], 80) {
 			panic(utils.LavaFormatError("payment check failed", fmt.Errorf("provider did not get expected payment"),
 				utils.Attribute{Key: "provider", Value: providers[i]},
-				utils.Attribute{Key: "start_balance", Value: startBalances[i].String()},
+				utils.Attribute{Key: "start_balance", Value: startRewards[i].String()},
 				utils.Attribute{Key: "expected_payout", Value: expectedPayoutArr[i]},
-				utils.Attribute{Key: "start_balance+expected_payout", Value: startBalances[i].AddAmount(sdk.NewIntFromUint64(expectedPayoutArr[i])).String()},
-				utils.Attribute{Key: "actual_balance", Value: newBalances[i]},
+				utils.Attribute{Key: "start_balance+expected_payout", Value: startRewards[i].AddAmount(sdk.NewIntFromUint64(expectedPayoutArr[i])).String()},
+				utils.Attribute{Key: "actual_balance", Value: newRewards[i]},
 			))
 		}
 	}
@@ -198,6 +202,7 @@ func runPaymentE2E(timeout time.Duration) {
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,
+		tokenDenom:   commonconsts.TestTokenDenom,
 	}
 	// use defer to save logs in case the tests fail
 	defer func() {
@@ -238,7 +243,7 @@ func runPaymentE2E(timeout time.Duration) {
 	if err != nil {
 		panic(err)
 	}
-	startBalances, err := lt.getBalances(providers)
+	startBalances, err := lt.getRewards(providers)
 	if err != nil {
 		panic(err)
 	}

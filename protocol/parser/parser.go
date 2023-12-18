@@ -79,10 +79,11 @@ func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (strin
 	}
 
 	if strings.Contains(response, "\"") {
-		response, err = strconv.Unquote(response)
+		responseUnquoted, err := strconv.Unquote(response)
 		if err != nil {
-			return "", err
+			return response, nil
 		}
+		return responseUnquoted, nil
 	}
 
 	return response, nil

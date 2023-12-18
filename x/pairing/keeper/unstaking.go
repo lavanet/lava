@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -123,7 +122,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			amount = totalAmount
 		}
 		totalAmount = totalAmount.Sub(amount)
-		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator.OperatorAddress, existingEntry.GetAddress(), existingEntry.GetChain(), sdk.NewCoin(epochstoragetypes.TokenDenom, amount), true)
+		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator.OperatorAddress, existingEntry.GetAddress(), existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond seld delegation", err,
 				utils.Attribute{Key: "address", Value: existingEntry.Address},

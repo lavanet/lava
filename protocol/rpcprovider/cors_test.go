@@ -90,7 +90,7 @@ func TestPerformCORSCheckFail(t *testing.T) {
 		IPPORT: "localhost:8080",
 	}
 
-	err := performCORSCheck(endpoint)
+	err := PerformCORSCheck(endpoint)
 	require.NotNil(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "CORS check failed"), "Expected CORS related error message", err)
 }
@@ -100,7 +100,7 @@ func TestPerformCORSCheckFailXGrpcWeb(t *testing.T) {
 		IPPORT: "localhost:8081",
 	}
 
-	err := performCORSCheck(endpoint)
+	err := PerformCORSCheck(endpoint)
 	require.NotNil(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "x-grpc-web"), "Expected error to relate to x-grpc-web")
 }
@@ -110,7 +110,7 @@ func TestPerformCORSCheckFailLavaSdkRelayTimeout(t *testing.T) {
 		IPPORT: "localhost:8082",
 	}
 
-	err := performCORSCheck(endpoint)
+	err := PerformCORSCheck(endpoint)
 	require.NotNil(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "lava-sdk-relay-timeout"), "Expected error to relate to lava-sdk-relay-timeout")
 }
@@ -120,7 +120,7 @@ func TestPerformCORSCheckSuccess(t *testing.T) {
 		IPPORT: "localhost:8083", // pointing to the server with all headers
 	}
 
-	err := performCORSCheck(endpoint)
+	err := PerformCORSCheck(endpoint)
 	require.Nil(t, err, "Expected CORS check to pass but it failed")
 }
 

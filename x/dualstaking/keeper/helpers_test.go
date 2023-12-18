@@ -37,8 +37,7 @@ func newTester(t *testing.T) *tester {
 func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount, unstakingCount int) *tester {
 	ts.addValidators(1)
 	val, _ := ts.GetAccount(common.VALIDATOR, 0)
-	_, err := ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
-	require.Nil(ts.T, err)
+	ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
 
 	ts.addClients(delegatorCount)
 

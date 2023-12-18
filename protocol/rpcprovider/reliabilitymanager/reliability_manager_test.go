@@ -98,11 +98,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
-			Request:         relay,
-			Reply:           reply,
-			ProviderAddress: provider_address.String(),
-			ReplyServer:     nil,
-			Finalized:       true,
+			Request:      relay,
+			Reply:        reply,
+			ProviderInfo: common.ProviderInfo{ProviderAddress: provider_address.String()},
+			ReplyServer:  nil,
+			Finalized:    true,
 		}
 
 		// now send this to another provider
@@ -130,11 +130,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
-			Request:         relayDR,
-			Reply:           replyDR,
-			ProviderAddress: providerDR_address.String(),
-			ReplyServer:     nil,
-			Finalized:       true,
+			Request:      relayDR,
+			Reply:        replyDR,
+			ProviderInfo: common.ProviderInfo{ProviderAddress: provider_address.String()},
+			ReplyServer:  nil,
+			Finalized:    true,
 		}
 
 		conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDR, nil, mockFilter{})
@@ -255,11 +255,11 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
-			Request:         relay,
-			Reply:           reply,
-			ProviderAddress: provider_address.String(),
-			ReplyServer:     nil,
-			Finalized:       true,
+			Request:      relay,
+			Reply:        reply,
+			ProviderInfo: common.ProviderInfo{ProviderAddress: provider_address.String()},
+			ReplyServer:  nil,
+			Finalized:    true,
 		}
 
 		relayExchange := pairingtypes.NewRelayExchange(*relay, *reply)
@@ -292,11 +292,11 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
-			Request:         relayDR,
-			Reply:           replyDR,
-			ProviderAddress: providerDR_address.String(),
-			ReplyServer:     nil,
-			Finalized:       true,
+			Request:      relayDR,
+			Reply:        replyDR,
+			ProviderInfo: common.ProviderInfo{ProviderAddress: provider_address.String()},
+			ReplyServer:  nil,
+			Finalized:    true,
 		}
 
 		conflict := lavaprotocol.VerifyReliabilityResults(ts.Ctx, relayResult, relayResultDR, chainMessage.GetApiCollection(), chainParser)
