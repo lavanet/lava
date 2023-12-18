@@ -24,6 +24,7 @@ type (
 		bankKeeper    types.BankKeeper
 		accountKeeper types.AccountKeeper
 		specKeeper    types.SpecKeeper
+		stakingKeeper types.StakingKeeper
 
 		fixationRegistries map[string]func(sdk.Context) any
 	}
@@ -35,7 +36,10 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 
-	bankKeeper types.BankKeeper, accountKeeper types.AccountKeeper, specKeeper types.SpecKeeper,
+	bankKeeper types.BankKeeper,
+	accountKeeper types.AccountKeeper,
+	specKeeper types.SpecKeeper,
+	stakingKeeper types.StakingKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -43,11 +47,14 @@ func NewKeeper(
 	}
 
 	keeper := &Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
-		memKey:     memKey,
-		paramstore: ps,
-		bankKeeper: bankKeeper, accountKeeper: accountKeeper, specKeeper: specKeeper,
+		cdc:           cdc,
+		storeKey:      storeKey,
+		memKey:        memKey,
+		paramstore:    ps,
+		bankKeeper:    bankKeeper,
+		accountKeeper: accountKeeper,
+		specKeeper:    specKeeper,
+		stakingKeeper: stakingKeeper,
 
 		fixationRegistries: make(map[string]func(sdk.Context) any),
 	}

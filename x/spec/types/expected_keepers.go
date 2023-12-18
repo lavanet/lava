@@ -16,3 +16,7 @@ type BankKeeper interface {
 	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	// Methods imported from bank should be defined here
 }
+
+type StakingKeeper interface {
+	BondDenom(ctx sdk.Context) string
+}

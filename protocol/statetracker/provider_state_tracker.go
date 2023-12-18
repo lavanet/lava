@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -64,6 +65,17 @@ func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
 	}
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
+}
+
+func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Context, specVerifier SpecVerifier, endpoint lavasession.RPCEndpoint) error {
+	// register for spec verifications sets spec and verifies when a spec has been modified
+	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
+	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
+	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	if !ok {
+		utils.LavaFormatFatal("invalid updater type returned from RegisterForSpecVerifications", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
+	}
+	return specUpdater.RegisterSpecVerifier(ctx, &specVerifier, endpoint)
 }
 
 func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
@@ -152,4 +164,8 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 
 func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return pst.stateQuery.GetProtocolVersion(ctx)
+}
+
+func (pst *ProviderStateTracker) GetAverageBlockTime() time.Duration {
+	return pst.StateTracker.GetAverageBlockTime()
 }

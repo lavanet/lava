@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -36,12 +35,5 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 		stakeEntries = stakeEntriesNoFrozen
 	}
 
-	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, req.ChainID)
-	unstakingStakeStorage, found := k.epochStorageKeeper.GetStakeStorageUnstake(ctx)
-	if !found {
-		unstakingStakeStorage = epochstoragetypes.StakeStorage{}
-	}
-	outputStr := fmt.Sprintf("Staked Providers Query Output:\nChainID: %s Enabled: %t Current Block: %d\nStaked Providers:\n%v\nUnstaking Providers:\n%v\n--------------------------------------\n", req.ChainID, foundAndActive, ctx.BlockHeight(), stakeEntries, unstakingStakeStorage.StakeEntries)
-
-	return &types.QueryProvidersResponse{StakeEntry: stakeEntries, Output: outputStr}, nil
+	return &types.QueryProvidersResponse{StakeEntry: stakeEntries}, nil
 }

@@ -34,6 +34,7 @@ type Pair struct {
 }
 
 func RunSDKTest(testFile string, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) error {
+	utils.LavaFormatInfo("[+] Starting SDK test", utils.LogAttr("test_file", testFile))
 	// Prepare command for running test
 	cmd := exec.Command("ts-node", testFile)
 
@@ -61,8 +62,7 @@ func RunSDKTest(testFile string, privateKey string, publicKey string, logs *byte
 	utils.LavaFormatInfo(fmt.Sprintf("Running test: %s", testFile))
 	err := cmd.Run()
 	if err != nil {
-		utils.LavaFormatError("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
-		return err
+		utils.LavaFormatPanic("Failed running test", err, utils.Attribute{Key: "test file", Value: testFile})
 	} else {
 		utils.LavaFormatInfo(logs.String())
 	}

@@ -129,7 +129,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, 0, "", err
 	}
 
-	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID)
+	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, block)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
@@ -174,8 +174,8 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	return providers, strictestPolicy.EpochCuLimit, project.Index, err
 }
 
-func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string) (*planstypes.Policy, string, error) {
-	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription(), uint64(ctx.BlockHeight()))
+func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string, block uint64) (*planstypes.Policy, string, error) {
+	plan, err := k.subscriptionKeeper.GetPlanFromSubscription(ctx, project.GetSubscription(), block)
 	if err != nil {
 		return nil, "", err
 	}

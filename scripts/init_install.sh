@@ -42,26 +42,31 @@ fi
 ############################# BUF INSTALLATION ######################################
 
 if ! command_exists buf; then
-    # Define the version of buf to install
-    BUF_VERSION="1.25.0"  # Update this to the latest version if needed
-
-    # Define the installation directory
-    INSTALL_DIR="/usr/local/bin"  # You might need to adjust this based on your preferences
-
-    # Download and install buf
-    echo "Downloading buf version $BUF_VERSION..."
-    curl -sSL "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-$(uname -s)-$(uname -m)" -o "${INSTALL_DIR}/buf"
-
-    # Add execute permissions to the buf binary
-    chmod +x "${INSTALL_DIR}/buf"
-
-    # Check if the installation was successful
-    if [ $? -eq 0 ]; then
-        echo "buf version $BUF_VERSION has been installed to $INSTALL_DIR."
-        exit 0
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # If the operating system is MacOS, use brew to install buf
+        brew install buf
     else
-        echo "An error occurred during the buf installation process. Please install buf manually."
-        exit 1
+        # Define the version of buf to install
+        BUF_VERSION="1.25.0"  # Update this to the latest version if needed
+
+        # Define the installation directory
+        INSTALL_DIR="/usr/local/bin"  # You might need to adjust this based on your preferences
+
+        # Download and install buf
+        echo "Downloading buf version $BUF_VERSION..."
+        curl -sSL "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-$(uname -s)-$(uname -m)" -o "${INSTALL_DIR}/buf"
+
+        # Add execute permissions to the buf binary
+        chmod +x "${INSTALL_DIR}/buf"
+
+        # Check if the installation was successful
+        if [ $? -eq 0 ]; then
+            echo "buf version $BUF_VERSION has been installed to $INSTALL_DIR."
+            exit 0
+        else
+            echo "An error occurred during the buf installation process. Please install buf manually."
+            exit 1
+        fi
     fi
 else
     echo "buf is already installed"
@@ -79,8 +84,8 @@ fi
 if ! command_exists yq; then
 
     if ! check_go_version; then
-        echo "Go 1.20 is not installed. Installing..."
-        sudo apt install -y golang-1.20
+        echo "Go 1.21 is not installed. Installing..."
+        sudo apt install -y golang-1.21
     fi
     go install github.com/mikefarah/yq/v4@latest 
 

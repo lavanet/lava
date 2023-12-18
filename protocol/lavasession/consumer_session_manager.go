@@ -426,12 +426,19 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 						utils.Attribute{Key: "consumerSession.SessionId", Value: consumerSession.SessionId},
 					)
 				}
+
 				// If no error, add provider session map
-				sessions[providerAddress] = &SessionInfo{
+				sessionInfo := &SessionInfo{
+					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
 					Session:           consumerSession,
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
 				}
+
+				// adding qos summery for error parsing.
+				// consumer session is locked here so its ok to read the qos report.
+				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
+				sessions[providerAddress] = sessionInfo
 
 				if consumerSession.RelayNum > 1 {
 					// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
@@ -638,6 +645,9 @@ func (csm *ConsumerSessionManager) verifyLock(consumerSession *SingleConsumerSes
 	if consumerSession.lock.TryLock() { // verify.
 		// if we managed to lock throw an error for misuse.
 		defer consumerSession.lock.Unlock()
+		// if failed to lock we should block session as it seems like a very rare case.
+		consumerSession.BlockListed = true // block this session from future usages
+		utils.LavaFormatError("Verify Lock failed on session Failure, blocking session", nil, utils.LogAttr("consumerSession", consumerSession))
 		return LockMisUseDetectedError
 	}
 	return nil

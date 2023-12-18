@@ -58,6 +58,15 @@ lavavisor pod --cmd 'lavap rpcconsumer ./config/consumer_examples/lava_consumer.
 ### running multiple wrap commands on the same VM
 if you would like to run multiple wrappers on the same machine, you can set up one --auto-download process while the others are running with --auto-download disabled (default behavior) this will result with one process managing downloading and building while others just wait for the task to be completed. 
 
+### Using keyring-backend os
+If you are using keyring-backend os you will need to provide the lavavisor (wrap/pod commands only) with a keyring-backend password so it can use it to start the lavap process and read from the keyring os. 
+
+In order to do that add the "--enter-keyring-password" flag to the lavavisor command line. when the lavavisor bootstrap it will request the password from the user with the following prompt:
+
+```
+INF [Lavavisor] Please enter the keyring password:
+```
+
 ___
 
 2- **`lavavisor create-service`**: Creates system files according to given consumer / provider config file and configuration flags.
