@@ -931,9 +931,7 @@ func (ts *Tester) AdvanceMonths(months int) *Tester {
 	return ts.AdvanceMonthsFrom(ts.BlockTime(), months)
 }
 
-var (
-	sessionID uint64
-)
+var sessionID uint64
 
 func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []string, cuSum uint64) pairingtypes.MsgRelayPayment {
 	var relays []*pairingtypes.RelaySession
