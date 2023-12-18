@@ -58,7 +58,7 @@ func (msg *MsgAutoRenewal) ValidateBasic() error {
 	}
 
 	if !msg.Enable && strings.TrimSpace(msg.Index) != "" {
-		return sdkerrors.Wrapf(ErrBlankParameter, "can't use plan index when `--disable` flag is passed")
+		return sdkerrors.Wrapf(ErrInvalidParameter, "can't use plan index when `--disable` flag is passed")
 	}
 
 	return nil
