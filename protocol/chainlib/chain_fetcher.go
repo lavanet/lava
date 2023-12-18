@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/protocopy"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -84,10 +85,16 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 
 func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, reply *pairingtypes.RelayReply, requestedBlockHash []byte, finalized bool) {
 	if requestedBlockHash != nil || finalized {
+		copyPrivateData := &pairingtypes.RelayPrivateData{}
+		copyErr := protocopy.DeepCopyProtoObject(relayData, copyPrivateData)
+		if copyErr != nil {
+			utils.LavaFormatError("Failed Copying relay private data on populateCache", copyErr)
+			return
+		}
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
+		err := cf.cache.SetEntry(new_ctx, copyPrivateData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
 		if err != nil && !performance.NotInitialisedError.Is(err) {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}
