@@ -32,16 +32,16 @@ func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types
 		}
 
 		subInfoStruct := types.ListInfoStruct{
-			Consumer:       sub.Consumer,
-			Plan:           sub.PlanIndex,
-			DurationTotal:  sub.DurationTotal,
-			DurationLeft:   sub.DurationLeft,
-			MonthExpiry:    sub.MonthExpiryTime,
-			MonthCuTotal:   sub.MonthCuTotal,
-			MonthCuLeft:    sub.MonthCuLeft,
-			DurationBought: sub.DurationBought,
-			Cluster:        sub.Cluster,
-			AutoRenewal:    sub.AutoRenewal,
+			Consumer:            sub.Consumer,
+			Plan:                sub.PlanIndex,
+			DurationTotal:       sub.DurationTotal,
+			DurationLeft:        sub.DurationLeft,
+			MonthExpiry:         sub.MonthExpiryTime,
+			MonthCuTotal:        sub.MonthCuTotal,
+			MonthCuLeft:         sub.MonthCuLeft,
+			DurationBought:      sub.DurationBought,
+			Cluster:             sub.Cluster,
+			AutoRenewalNextPlan: sub.AutoRenewalNextPlan,
 		}
 
 		allSubsInfo = append(allSubsInfo, subInfoStruct)

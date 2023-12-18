@@ -230,14 +230,20 @@ func (k Keeper) verifySubscriptionBuyInput(ctx sdk.Context, block uint64, creato
 func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,
 	block uint64, autoRenewalFlag bool,
 ) (types.Subscription, error) {
+	autoRenewalNextPlan := types.AUTO_RENEWAL_PLAN_NONE
+	if autoRenewalFlag {
+		// On subscription creation, auto renewal is set to the subscription's plan
+		autoRenewalNextPlan = plan.Index
+	}
+
 	sub := types.Subscription{
-		Creator:       creator,
-		Consumer:      consumer,
-		Block:         block,
-		PlanIndex:     plan.Index,
-		PlanBlock:     plan.Block,
-		DurationTotal: 0,
-		AutoRenewal:   autoRenewalFlag,
+		Creator:             creator,
+		Consumer:            consumer,
+		Block:               block,
+		PlanIndex:           plan.Index,
+		PlanBlock:           plan.Block,
+		DurationTotal:       0,
+		AutoRenewalNextPlan: autoRenewalNextPlan,
 	}
 
 	sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
@@ -285,6 +291,33 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 	return nil
 }
 
+func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) error {
+	date := ctx.BlockTime()
+
+	planIndex := sub.AutoRenewalNextPlan
+	creatorAcct, plan, err := k.verifySubscriptionBuyInput(ctx, sub.Block, sub.Creator, sub.Consumer, planIndex)
+	if err != nil {
+		return err
+	}
+
+	sub.PlanIndex = plan.Index
+	sub.PlanBlock = plan.Block
+	sub.DurationBought += 1
+	sub.DurationLeft = 1
+
+	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, sub.Block, date)
+
+	// Charge creator for 1 extra month
+	price := plan.GetPrice()
+
+	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, price)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	date := ctx.BlockTime()
 	block := uint64(ctx.BlockHeight())
@@ -321,10 +354,10 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			sub.FutureSubscription = nil
 
 			k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, date)
-		} else if sub.AutoRenewal {
+		} else if sub.AutoRenewalNextPlan != types.AUTO_RENEWAL_PLAN_NONE {
 			// apply the DurationLeft decrease to 0 and buy an extra month
 			k.subsFS.ModifyEntry(ctx, sub.Consumer, sub.Block, &sub)
-			err := k.CreateSubscription(ctx, sub.Creator, sub.Consumer, sub.PlanIndex, 1, sub.AutoRenewal)
+			err := k.renewSubscription(ctx, &sub)
 			if err != nil {
 				utils.LavaFormatWarning("subscription auto renewal failed. removing subscription", err,
 					utils.Attribute{Key: "consumer", Value: sub.Consumer},

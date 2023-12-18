@@ -21,12 +21,12 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
 	}
 
-// Queries a list of ListProjects items.
+  // Queries a list of ListProjects items.
 	rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
 		option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
 	}
 
-// Queries a list of List items.
+  // Queries a list of List items.
 	rpc List(QueryListRequest) returns (QueryListResponse) {
 		option (google.api.http).get = "/lavanet/lava/subscription/list";
 	}
@@ -80,7 +80,8 @@ message ListInfoStruct {
   uint64 month_cu_left = 7; // remaining CU allowance this month
   string cluster = 8;
   uint64 duration_total = 9;
-  bool auto_renewal = 10;
+  reserved 10;
+  string auto_renewal_next_plan = 11;
 }
 
 message QueryNextToMonthExpiryRequest {

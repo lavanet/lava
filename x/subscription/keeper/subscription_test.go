@@ -767,50 +767,400 @@ func TestDurationTotal(t *testing.T) {
 // verifies that subs with auto-renewal enabled get renewed automatically
 func TestSubAutoRenewal(t *testing.T) {
 	ts := newTester(t)
-	ts.SetupAccounts(3, 0, 0) // 2 sub, 0 adm, 0 dev
+	subA := "A"
+	subB := "B"
+	subC := "C"
 
 	plan := ts.Plan("free")
-	_, subAddr1 := ts.Account("sub1")
-	_, subAddr2 := ts.Account("sub2")
-	_, subAddr3 := ts.Account("sub3")
 
-	// buy two subscriptions with enabled auto-renewal in two different ways
-	// and one with disabled auto-renewal.
-	// verify the auto-renewal flag is true in the first two subs
-	_, err := ts.TxSubscriptionBuy(subAddr1, subAddr1, plan.Index, 1, true, false)
-	require.Nil(t, err)
-	_, err = ts.TxSubscriptionBuy(subAddr2, subAddr2, plan.Index, 1, false, false)
-	require.Nil(t, err)
-	err = ts.TxSubscriptionAutoRenewal(subAddr2, true)
-	require.Nil(t, err)
-	_, err = ts.TxSubscriptionBuy(subAddr3, subAddr3, plan.Index, 1, false, false)
-	require.Nil(t, err)
+	testCases := []struct {
+		creator                   string
+		consumer                  string
+		immediatelyBuyAutoRenewal bool
+		buyAutoRenewal            bool
+		autoRenewalCreator        string
+		autoRenewalConsumer       string
+		shouldFail                bool
+	}{
+		{
+			creator:                   subA,
+			consumer:                  subA,
+			immediatelyBuyAutoRenewal: true,
+			buyAutoRenewal:            false,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subA,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subA,
+			immediatelyBuyAutoRenewal: false,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subA,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subA,
+			immediatelyBuyAutoRenewal: false,
+			buyAutoRenewal:            false,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subA,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subA,
+			immediatelyBuyAutoRenewal: true,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subA,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subB,
+			immediatelyBuyAutoRenewal: true,
+			buyAutoRenewal:            false,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subB,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subB,
+			immediatelyBuyAutoRenewal: false,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subB,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subB,
+			immediatelyBuyAutoRenewal: true,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subB,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subB,
+			immediatelyBuyAutoRenewal: false,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subA,
+			autoRenewalConsumer:       subA,
+			shouldFail:                true,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subB,
+			immediatelyBuyAutoRenewal: false,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subB,
+			autoRenewalConsumer:       subB,
+			shouldFail:                false,
+		},
+		{
+			creator:                   subA,
+			consumer:                  subB,
+			immediatelyBuyAutoRenewal: false,
+			buyAutoRenewal:            true,
+			autoRenewalCreator:        subC,
+			autoRenewalConsumer:       subB,
+			shouldFail:                true,
+		},
+	}
 
-	sub1, found := ts.getSubscription(subAddr1)
-	require.True(t, found)
-	require.True(t, sub1.AutoRenewal)
-	sub2, found := ts.getSubscription(subAddr2)
-	require.True(t, found)
-	require.True(t, sub2.AutoRenewal)
-	sub3, found := ts.getSubscription(subAddr3)
-	require.True(t, found)
-	require.False(t, sub3.AutoRenewal)
+	addAccounts := func(idx int) []string {
+		creatorAccountName := testCases[idx].creator
+		consumerAccountName := testCases[idx].consumer
+		autoRenewalCreatorAccountName := testCases[idx].autoRenewalCreator
+		autoRenewalConsumerAccountName := testCases[idx].autoRenewalConsumer
+
+		accounts := map[string]struct{}{}
+		if _, ok := accounts[creatorAccountName]; !ok {
+			accounts[creatorAccountName] = struct{}{}
+		}
+		if _, ok := accounts[consumerAccountName]; !ok {
+			accounts[consumerAccountName] = struct{}{}
+		}
+		if _, ok := accounts[autoRenewalCreatorAccountName]; !ok {
+			accounts[autoRenewalCreatorAccountName] = struct{}{}
+		}
+		if _, ok := accounts[autoRenewalConsumerAccountName]; !ok {
+			accounts[autoRenewalConsumerAccountName] = struct{}{}
+		}
+
+		for sub := range accounts {
+			ts.AddAccount(sub, idx, 1000000)
+		}
+
+		return []string{creatorAccountName, consumerAccountName, autoRenewalCreatorAccountName, autoRenewalConsumerAccountName}
+	}
+
+	allAccounts := map[int][]string{}
+
+	for i := 0; i < len(testCases); i++ {
+		allAccounts[i] = addAccounts(i)
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		_, creatorAccountAddr := ts.GetAccount(allAccounts[i][0], i)
+		_, consumerAccountAddr := ts.GetAccount(allAccounts[i][1], i)
+		_, autoRenewalCreatorAccountAddr := ts.GetAccount(allAccounts[i][2], i)
+		_, autoRenewalConsumerAccountAddr := ts.GetAccount(allAccounts[i][3], i)
+
+		testCase := testCases[i]
+
+		_, err := ts.TxSubscriptionBuy(creatorAccountAddr, consumerAccountAddr, plan.Index, 1, testCase.immediatelyBuyAutoRenewal, false)
+		require.Nil(t, err)
+
+		if testCase.buyAutoRenewal {
+			err = ts.TxSubscriptionAutoRenewal(autoRenewalCreatorAccountAddr, autoRenewalConsumerAccountAddr, plan.Index, true)
+			if !testCase.shouldFail {
+				require.Nil(t, err, testCase)
+			} else {
+				require.NotNil(t, err, testCase)
+			}
+		}
+
+		sub, found := ts.getSubscription(consumerAccountAddr)
+		require.True(t, found)
+		if (testCase.immediatelyBuyAutoRenewal || testCase.buyAutoRenewal) && !testCase.shouldFail {
+			require.Equal(t, sub.AutoRenewalNextPlan, plan.Index, testCase)
+			require.Equal(t, sub.Creator, autoRenewalCreatorAccountAddr, testCase)
+		} else {
+			require.Equal(t, sub.AutoRenewalNextPlan, types.AUTO_RENEWAL_PLAN_NONE, testCase)
+		}
+	}
 
 	// advance a couple of months to expire and automatically
 	// extend all subscriptions. verify that sub1 and sub2 can
 	// still be found and their duration left is always 1
-	for i := 0; i < 5; i++ {
+	for month := 0; month < 5; month++ {
 		ts.AdvanceMonths(1).AdvanceEpoch()
 
-		newSub1, found := ts.getSubscription(subAddr1)
-		require.True(t, found)
-		require.Equal(t, uint64(1), newSub1.DurationLeft)
-		newSub2, found := ts.getSubscription(subAddr2)
-		require.True(t, found)
-		require.Equal(t, uint64(1), newSub2.DurationLeft)
-		_, found = ts.getSubscription(subAddr3)
-		require.False(t, found)
+		for i := 0; i < len(testCases); i++ {
+			testCase := testCases[i]
+
+			_, consumerAccountAddr := ts.GetAccount(allAccounts[i][1], i)
+			newSub, found := ts.getSubscription(consumerAccountAddr)
+			if (testCase.immediatelyBuyAutoRenewal || testCase.buyAutoRenewal) && !testCase.shouldFail {
+				require.True(t, found, testCase)
+				require.Equal(t, uint64(1), newSub.DurationLeft, testCase)
+			} else {
+				require.False(t, found, testCase)
+			}
+		}
 	}
+}
+
+func TestSubAutoRenewalDisable(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(3, 0, 0) // 3 sub, 0 adm, 0 dev
+
+	freePlan := ts.Plan("free")
+	_, consumer1 := ts.Account("sub1")
+	_, creator2 := ts.Account("sub2")
+	_, consumer2 := ts.Account("sub3")
+
+	// Buy subscription with auto-renewal on
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, true, false)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found := ts.getSubscription(consumer1)
+	require.True(t, found)
+	require.Equal(t, freePlan.Index, sub.AutoRenewalNextPlan)
+
+	// Disable auto-renewal
+	err = ts.TxSubscriptionAutoRenewal(consumer1, consumer1, freePlan.Index, false)
+	require.Nil(t, err)
+	// Check subscription does not have auto-renewal
+	sub, found = ts.getSubscription(consumer1)
+	require.True(t, found)
+	require.Equal(t, types.AUTO_RENEWAL_PLAN_NONE, sub.AutoRenewalNextPlan)
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check subscription is expired
+	sub, found = ts.getSubscription(consumer1)
+	require.False(t, found)
+
+	// Buy subscription with auto-renewal on
+	_, err = ts.TxSubscriptionBuy(creator2, consumer2, freePlan.Index, 1, true, false)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found = ts.getSubscription(consumer2)
+	require.True(t, found)
+	require.Equal(t, freePlan.Index, sub.AutoRenewalNextPlan)
+
+	// Disable auto-renewal
+	err = ts.TxSubscriptionAutoRenewal(creator2, consumer2, freePlan.Index, false)
+	require.Nil(t, err)
+	// Check subscription does not have auto-renewal
+	sub, found = ts.getSubscription(consumer2)
+	require.True(t, found)
+	require.Equal(t, types.AUTO_RENEWAL_PLAN_NONE, sub.AutoRenewalNextPlan)
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check subscription is expired
+	sub, found = ts.getSubscription(consumer2)
+	require.False(t, found)
+}
+
+func TestSubAutoRenewalDifferentPlanIndexOnSubBuy(t *testing.T) {
+	ts := newTester(t)
+
+	freePlan := ts.Plan("free")
+	premiumPlan := ts.Plan("premium")
+	creatorAcc, creatorAddr := ts.AddAccount("sub", 1, 20000)
+	creatorBalance := ts.GetBalance(creatorAcc.Addr)
+	_, consumerAddr := ts.AddAccount("sub", 2, 200000)
+
+	// Buy subscription with auto-renewal on
+	_, err := ts.TxSubscriptionBuy(creatorAddr, consumerAddr, freePlan.Index, 1, true, false)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, freePlan.Index, sub.AutoRenewalNextPlan)
+	// Check creator paid
+	creatorBalance -= freePlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check new subscription
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, freePlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, freePlan.Index, sub.PlanIndex)
+
+	// Check creator paid for free plan
+	creatorBalance -= freePlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
+
+	// Set auto-renewal to premium
+	err = ts.TxSubscriptionAutoRenewal(creatorAddr, consumerAddr, premiumPlan.Index, true)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, premiumPlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, creatorAddr, sub.Creator)
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check new subscription
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, premiumPlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, premiumPlan.Index, sub.PlanIndex)
+
+	// Check creator paid for new sub
+	creatorBalance -= premiumPlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
+}
+
+func TestSubAutoRenewalDifferentPlanIndexOnSubBuyDifferentCreator(t *testing.T) {
+	ts := newTester(t)
+
+	freePlan := ts.Plan("free")
+	premiumPlan := ts.Plan("premium")
+	creatorAcc, creatorAddr := ts.AddAccount("sub", 1, 20000)
+	creatorBalance := ts.GetBalance(creatorAcc.Addr)
+	consumerAcc, consumerAddr := ts.AddAccount("sub", 2, 200000)
+	consumerBalance := ts.GetBalance(consumerAcc.Addr)
+
+	// Buy subscription with auto-renewal on
+	_, err := ts.TxSubscriptionBuy(creatorAddr, consumerAddr, freePlan.Index, 1, true, false)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, freePlan.Index, sub.AutoRenewalNextPlan)
+	// Check creator paid
+	creatorBalance -= freePlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check new subscription
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, freePlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, freePlan.Index, sub.PlanIndex)
+
+	// Check creator paid for free plan
+	creatorBalance -= freePlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
+
+	// Set auto-renewal to premium
+	err = ts.TxSubscriptionAutoRenewal(consumerAddr, consumerAddr, premiumPlan.Index, true)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, premiumPlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, consumerAddr, sub.Creator)
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check new subscription
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, premiumPlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, premiumPlan.Index, sub.PlanIndex)
+
+	// Check creator paid for new sub
+	consumerBalance -= premiumPlan.Price.Amount.Int64()
+	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
+}
+
+func TestSubAutoRenewalDifferentPlanIndexOnAutoRenewTx(t *testing.T) {
+	ts := newTester(t)
+
+	freePlan := ts.Plan("free")
+	premiumPlan := ts.Plan("premium")
+	creatorAcc, creatorAddr := ts.AddAccount("sub", 1, 20000)
+	creatorBalance := ts.GetBalance(creatorAcc.Addr)
+	_, consumerAddr := ts.AddAccount("sub", 2, 200000)
+
+	// Buy subscription with auto-renewal off
+	_, err := ts.TxSubscriptionBuy(creatorAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.Nil(t, err)
+	// Check subscription does not have auto-renewal
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, types.AUTO_RENEWAL_PLAN_NONE, sub.AutoRenewalNextPlan)
+	// Check creator paid
+	creatorBalance -= freePlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
+
+	// Enable auto-renewal for premium
+	err = ts.TxSubscriptionAutoRenewal(creatorAddr, consumerAddr, premiumPlan.Index, true)
+	require.Nil(t, err)
+	// Check subscription has auto-renewal
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, premiumPlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, creatorAddr, sub.Creator)
+
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// Check new subscription
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, premiumPlan.Index, sub.AutoRenewalNextPlan)
+	require.Equal(t, premiumPlan.Index, sub.PlanIndex)
+
+	// Check creator paid for new sub
+	creatorBalance -= premiumPlan.Price.Amount.Int64()
+	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
 }
 
 // TestSubRenewalFailHighPlanPrice checks that auto-renewal fails when the
@@ -841,7 +1191,7 @@ func TestSubRenewalFailHighPlanPrice(t *testing.T) {
 	// the auto-renewal should've failed since the plan price is too high
 	// so the subscription should not be found
 	_, found = ts.getSubscription(subAddr1)
-	require.False(t, found)
+	require.True(t, found)
 }
 
 // TestNextToMonthExpiryQuery checks that the NextToMonthExpiry query works as intended
@@ -1617,7 +1967,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 	consumerBalance -= freePlan.Price.Amount.MulRaw(freePlanDuration).Int64()
-	// Make sure that creator1 payed for the subscription
+	// Make sure that creator1 paid for the subscription
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 
 	// Creator1 buys a future subscription
@@ -1625,7 +1975,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(creator1Addr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
-	// Make sure that creator1 payed for the new subscription
+	// Make sure that creator1 paid for the new subscription
 	creator1Balance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
 	require.Equal(t, creator1Balance, ts.GetBalance(creator1Acc.Addr))
 
@@ -1641,7 +1991,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(creator2Addr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
-	// Make sure that creator2 payed for the new subscription
+	// Make sure that creator2 paid for the new subscription
 	creator2Balance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
 	require.Equal(t, creator2Balance, ts.GetBalance(creator2Acc.Addr))
 
@@ -1657,7 +2007,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
-	// Make sure that consumer payed for the new subscription
+	// Make sure that consumer paid for the new subscription
 	consumerBalance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 

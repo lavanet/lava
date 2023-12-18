@@ -8,6 +8,7 @@ import (
 
 const (
 	MAX_SUBSCRIPTION_DURATION = 12 // max duration of subscription in months
+	AUTO_RENEWAL_PLAN_NONE    = "none"
 )
 
 // ValidateSubscription validates a subscription object fields
