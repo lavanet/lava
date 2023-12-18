@@ -50,9 +50,9 @@ If the plan index is different than the consumer's current plan, it will upgrade
 			}
 
 			// check if the command includes --enable-auto-renewal
-			enableAutoRenewalFlag := cmd.Flags().Lookup(EnableAutoRenewalFlag)
+			enableAutoRenewalFlag := cmd.Flags().Lookup(BuyEnableAutoRenewalFlag)
 			if enableAutoRenewalFlag == nil {
-				return fmt.Errorf("%s flag wasn't found", EnableAutoRenewalFlag)
+				return fmt.Errorf("%s flag wasn't found", BuyEnableAutoRenewalFlag)
 			}
 			autoRenewal := enableAutoRenewalFlag.Changed
 
@@ -79,7 +79,7 @@ If the plan index is different than the consumer's current plan, it will upgrade
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
-	cmd.Flags().Bool(EnableAutoRenewalFlag, false, "enables auto-renewal upon expiration")
+	cmd.Flags().Bool(BuyEnableAutoRenewalFlag, false, "enables auto-renewal upon expiration")
 	cmd.Flags().Bool(AdvancedPurchaseFlag, false, "make an advanced purchase that will be activated once the current subscription ends")
 
 	return cmd
