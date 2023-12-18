@@ -77,3 +77,6 @@ jobs:
     
     - name: lava downtime unit Tests
       run: go test ./x/downtime/... 
+
+    - name: lava rewards unit Tests
+      run: go test ./x/rewards/... 
