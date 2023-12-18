@@ -252,10 +252,11 @@ func TestRenewSubscription(t *testing.T) {
 	require.Nil(t, err)
 
 	// try extending the subscription (we could extend with 1 more month,
-	// but since the subscription's plan changed and its new price is increased
-	// by more than 5% , the extension should fail)
+	// but since the subscription's plan changed, it should create a future subscription instead
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
-	require.NotNil(t, err)
+	require.NoError(t, err)
+	sub = getSubscriptionAndFailTestIfNotFound(t, ts, sub.Consumer)
+	require.NotNil(t, sub.FutureSubscription)
 	require.Equal(t, uint64(12), sub.DurationLeft)
 	require.Equal(t, uint64(9), sub.DurationBought)
 
@@ -1163,37 +1164,6 @@ func TestSubAutoRenewalDifferentPlanIndexOnAutoRenewTx(t *testing.T) {
 	require.Equal(t, creatorBalance, ts.GetBalance(creatorAcc.Addr))
 }
 
-// TestSubRenewalFailHighPlanPrice checks that auto-renewal fails when the
-// original subscription's plan price increased by more than 5%
-func TestSubRenewalFailHighPlanPrice(t *testing.T) {
-	ts := newTester(t)
-	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
-
-	_, subAddr1 := ts.Account("sub1")
-	plan := ts.Plan("free")
-
-	_, err := ts.TxSubscriptionBuy(subAddr1, subAddr1, plan.Index, 1, true, false)
-	require.Nil(t, err)
-	_, found := ts.getSubscription(subAddr1)
-	require.True(t, found)
-
-	// edit the subscription's plan (increase the price by 6% and change the policy (shouldn't matter))
-	plan.PlanPolicy.EpochCuLimit += 100
-	plan.Price.Amount = plan.Price.Amount.MulRaw(106).QuoRaw(100)
-
-	ts.AdvanceEpoch() // advance epoch so the new plan will be appended as a new entry
-	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
-	require.Nil(t, err)
-
-	// advance month to make the subscription expire
-	ts.AdvanceMonths(1).AdvanceEpoch()
-
-	// the auto-renewal should've failed since the plan price is too high
-	// so the subscription should not be found
-	_, found = ts.getSubscription(subAddr1)
-	require.True(t, found)
-}
-
 // TestNextToMonthExpiryQuery checks that the NextToMonthExpiry query works as intended
 // scenario - buy 3 subs: 2 at the same time, and one a little after. The query should return the two subs
 // then, expire those and expect to get the last one from the query
@@ -1250,6 +1220,51 @@ func TestNextToMonthExpiryQuery(t *testing.T) {
 	res, err = ts.QuerySubscriptionNextToMonthExpiry()
 	require.Nil(t, err)
 	require.Equal(t, 0, len(res.Subscriptions))
+}
+
+func TestSubBuySamePlanBlockUpdated(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	consumerAcc, consumerAddr := ts.Account("sub1")
+	consumerBalance := ts.GetBalance(consumerAcc.Addr)
+	plan := ts.Plan("free")
+
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, plan.Index, 1, false, false)
+	require.Nil(t, err)
+	consumerBalance -= plan.Price.Amount.Int64()
+	_, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+
+	// Advance block so the new plan will get a new block
+	ts.AdvanceBlock()
+
+	// Edit the subscription's plan (increase the price)
+	plan.PlanPolicy.EpochCuLimit += 100
+	plan.Price.Amount = plan.Price.Amount.AddRaw(10)
+	planBlock := ts.BlockHeight()
+
+	// Propose new plan
+	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
+	require.Nil(t, err)
+
+	// Advance epoch so the new plan will be appended
+	ts.AdvanceEpoch()
+
+	// Buy the plan again
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, plan.Index, 1, false, false)
+	require.Nil(t, err)
+	// Make sure that the consumer paid for it
+	consumerBalance -= plan.Price.Amount.Int64()
+	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
+
+	// Make sure that the new plan is now a FutureSubscription
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.NotNil(t, sub.FutureSubscription)
+	require.Equal(t, plan.Index, sub.FutureSubscription.PlanIndex)
+	require.Equal(t, planBlock, sub.FutureSubscription.PlanBlock)
+	require.Equal(t, consumerAddr, sub.FutureSubscription.Creator)
 }
 
 func TestSubscriptionUpgrade(t *testing.T) {
@@ -1422,6 +1437,8 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	// Verify that provider got rewarded for both subscriptions
 	require.Equal(t, freePlan.Price.AddAmount(premiumPlan.Price.Amount), reward.Amount)
 }
+
+// ### Advance Purchase Tests ###
 
 func TestSubscriptionAdvancePurchaseStartsOnExpirationOfCurrent(t *testing.T) {
 	ts := newTester(t)
