@@ -19,7 +19,7 @@ func DeepCopyProtoObject(protoIn protoTypeIn, protoOut protoTypeOut) error {
 		return utils.LavaFormatError("Failed marshaling DeepCopyProtoObject", err)
 	}
 
-	// Unmarshal into output 
+	// Unmarshal output
 	if err := protoOut.Unmarshal(jsonData); err != nil {
 		return utils.LavaFormatError("Failed unmarshaling DeepCopyProtoObject", err)
 	}
